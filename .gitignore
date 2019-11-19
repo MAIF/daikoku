@@ -1,1 +1,12 @@
 .DS_Store
+.metals
+release-*
+*.swp
+mongo-data
+node_modules
+.idea
+target
+.java-version
+*.patch
+.settings
+.project
