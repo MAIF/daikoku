@@ -30,12 +30,10 @@ or using docker
 docker run -p "8080:8080" maif/daikoku:1.0.0
 ```
 
-now open your browser to <a href="http://localhost:8080/" target="_blank">http://localhost:8080/</a>, **log in with the credential generated in the logs** and explore by yourself, if you want better instructions, just go to the @ref:[Quick Start](./quickstart.md)
+now open your browser to <a href="http://localhost:8080/" target="_blank">http://localhost:8080/</a>, **log in with the credential generated in the logs** and explore by yourself
 
 ## Documentation
 
-* @ref:[About Daikoku](./about.md)
-* @ref:[Architecture](./archi.md)
 
 ## Discussion
 
@@ -61,9 +59,4 @@ The work on Daikoku was funded by <a href="https://www.maif.fr/" target="_blank"
 
 Daikoku is Open Source and available under the [Apache 2 License](https://opensource.org/licenses/Apache-2.0)
 
-@@@ index
 
-* [About Daikoku](about.md)
-* [Architecture](archi.md)
-
-@@@
