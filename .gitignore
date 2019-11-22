@@ -14,3 +14,4 @@ es-data
 s3-data
 mongo-data
 /demo/config/mongo-data/
+/demo/config/redis-data/
