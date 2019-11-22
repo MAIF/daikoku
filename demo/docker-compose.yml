@@ -1,0 +1,119 @@
+version: '3'
+services:
+  mongo:
+    image: mongo:4.2
+    ports:
+      - 27017:27017
+    volumes:
+      - ./config/mongo-data:/data/db
+  redis:
+    image: redis:4.0.8
+    expose:
+      - 6379
+    command: redis-server --appendonly yes
+    volumes:
+      - ./config/redis-data:/data
+#  s3server:
+#    image: scality/s3server
+#    expose:
+#      - 8000
+#    environment:
+#      - SCALITY_ACCESS_KEY_ID=access
+#      - SCALITY_SECRET_ACCESS_KEY=secret
+#      - LOG_LEVEL=trace
+#      - ENDPOINT=s3server
+#    volumes:
+#      - ./config/s3-data/s3-data:/usr/src/app/localData
+#      - ./config/s3-data/s3-metadata:/usr/src/app/localMetadata
+  api-prod:
+    image: node
+    environment:
+      - ENV=prod
+    expose:
+      - 3000
+    ports:
+      - 3000:3000
+    volumes:
+      - ./api/index.js:/index.js:ro
+    command: node /index.js
+  api-dev:
+    image: node
+    environment:
+      - ENV=dev
+    expose:
+      - 3000
+    ports:
+      - 3002:3000
+    volumes:
+      - ./api/index.js:/index.js:ro
+    command: node /index.js
+  daikoku:
+    image: maifhorizon-docker-docker.bintray.io/daikoku:latest
+    environment:
+      - DAIKOKU_OTOROSHI_SYNC_CRON=true
+      - MONGODB_ADDON_URI=mongodb://mongo:27017/daikoku
+      - DAIKOKU_TENANT_PROVIDER=Hostname
+      - DAIKOKU_INIT_HOST=daikoku.oto.tools
+      - DAIKOKU_INIT_DATA_FROM=/daikoku.ndjson
+    expose:
+      - 8080
+    volumes:
+      - ./config/daikoku.ndjson:/daikoku.ndjson:ro
+    depends_on:
+      - mongo
+#      - s3server
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.8.4
+    environment:
+      SERVER_NAME: kibana.oto.tools
+      ELASTICSEARCH_URL: http://elastic:9200
+    expose:
+      - 5601
+    ports:
+      - 5601:5601
+    depends_on:
+      - elastic
+
+  elastic:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.4
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./config/es-data:/usr/share/elasticsearch/data
+    expose:
+      - 9200
+  otoroshi:
+    image: maif/otoroshi:1.4.10-jdk11
+    environment:
+      - APP_STORAGE=redis
+      - REDIS_HOST=redis
+      - PORT=8080
+      - APP_PRIVATEAPPS_PORT=80
+      - APP_IMPORT_FROM=/usr/app/otoroshi/imports/otoroshi-state.json
+      - APP_DOMAIN=oto.tools
+    volumes:
+      - "./config:/usr/app/otoroshi/imports"
+    expose:
+      - 8080
+    depends_on:
+      - redis
+      - daikoku
+      - elastic
+      - api-dev
+      - api-prod
+  nginx:
+    image: nginx
+    expose:
+      - 8080
+    ports:
+      - 80:8080
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - otoroshi
