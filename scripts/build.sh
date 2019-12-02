@@ -13,6 +13,16 @@ build_manual () {
   mv $LOCATION/docs/main $LOCATION/docs/manual
 }
 
+fmt_ui () {
+  cd $LOCATION/daikoku/javascript
+  yarn prettier
+}
+
+fmt_server () {
+  cd $LOCATION/daikoku
+  sbt ';scalafmt;sbt:scalafmt;test:scalafmt'
+}
+
 case "${1}" in
   travis)
     clean
@@ -21,6 +31,16 @@ case "${1}" in
   manual)
     clean
     build_manual
+    ;;
+  fmt)
+    fmt_ui
+    fmt_server
+    ;;
+  fmt-server)
+    fmt_server
+    ;;
+  fmt-ui)
+    fmt_ui
     ;;
   *)
     echo "bad params"
