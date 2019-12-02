@@ -38,12 +38,12 @@ fmt_server () {
   sbt ';scalafmt;sbt:scalafmt;test:scalafmt'
 }
 
-test_server {
+test_server () {
   cd $LOCATION/daikoku
   sbt test
 }
 
-release_daikoku {
+release_daikoku ()  {
   if [ -z "$TRAVIS_TAG" ];
   then
       if test "$TRAVIS_PULL_REQUEST" = "false"
@@ -110,7 +110,7 @@ case "${1}" in
     build_daikoku
     ;;
   test)
-    test_servers
+    test_server
     ;;
   manual)
     build_manual
