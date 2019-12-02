@@ -1,6 +1,6 @@
-# Contributing to your-project
+# Contributing to Daikoku
 
-These guidelines apply to all your-project projects living in the the `MAIF/your-project` repository.
+These guidelines apply to all Daikoku projects living in the the `MAIF/daikoku` repository.
 
 These guidelines are meant to be a living document that should be changed and adapted as needed.
 We encourage changes that make it easier to achieve our goals in an efficient way.
@@ -15,14 +15,14 @@ The steps below describe how to get a patch into a main development branch (e.g.
 The steps are exactly the same for everyone involved in the project (be it core team, or first time contributor).
 We follow the standard GitHub [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests. Just fork the official repo, develop in a branch, and submit a PR!
 
-1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/MAIF/your-project/issues) and [existing pull requests](https://github.com/MAIF/your-project/pulls) for existing work.
-   - If there is no ticket yet, feel free to [create one](https://github.com/MAIF/your-project/issues/new) to discuss the problem and the approach you want to take to solve it.
-1. [Fork the project](https://github.com/MAIF/your-project#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a pull request against the mainline your-project.
+1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/MAIF/daikoku/issues) and [existing pull requests](https://github.com/MAIF/daikoku/pulls) for existing work.
+   - If there is no ticket yet, feel free to [create one](https://github.com/MAIF/daikoku/issues/new) to discuss the problem and the approach you want to take to solve it.
+1. [Fork the project](https://github.com/MAIF/daikoku#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a pull request against the mainline Daikoku.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b wip-awesome-new-feature`
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
    - Please write additional tests covering your feature and adjust existing ones if needed before submitting your pull request. 
 1. Once your feature is complete, prepare the commit with a good commit message, for example: `Adding canary mode support for services #42` (note the reference to the ticket it aimed to resolve).
-1. If it's a new feature, or a change of behaviour, document it on the [your-project docs](https://github.com/MAIF/your-project/tree/master/manual), remember, an undocumented feature is not a feature.
+1. If it's a new feature, or a change of behaviour, document it on the [Daikoku docs](https://github.com/MAIF/daikoku/tree/master/manual), remember, an undocumented feature is not a feature.
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
     - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, this will cause the PR to be linked properly with the Issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
 1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip through. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more loose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
@@ -33,7 +33,7 @@ We follow the standard GitHub [fork & pull](https://help.github.com/articles/usi
 
 The TL;DR; of the above very precise workflow version is:
 
-1. Fork your-project
+1. Fork Daikoku
 2. Hack and test on your feature (on a branch)
 3. Document it 
 4. Submit a PR
@@ -56,25 +56,32 @@ Which licenses are compatible with Apache 2 are defined in [this doc](http://www
 
 Each project must also create and maintain a list of all dependencies and their licenses, including all their transitive dependencies. This can be done either in the documentation or in the build file next to each dependency.
 
-You must add the dependency and its licence in https://github.com/MAIF/your-project/blob/master/licences.md
+You must add the dependency and its licence in https://github.com/MAIF/daikoku/blob/master/licences.md
 
 ## Documentation
 
-if you add features to your-project, don't forget to modify the user documentation
+if you add features to Daikoku, don't forget to modify the user documentation
 
-* https://github.com/MAIF/your-project/tree/master/docs/documentation
+* https://github.com/MAIF/daikoku/tree/master/docs/documentation
 
 ## Tests
 
 Every new feature should provide corresponding tests to ensure everything is working and will still working in future releases. To run the tests, just run
 
 ```sh
-./gradlew test
+cd daikoku
+docker run -d -p 27017:27017 -v $(pwd)/mongo-data:/data/db mongo
+sbt test
 ```
 
 ## Source style
 
+Before publishing a PR, format the code using the following command
+
+```sh
+sh ./scripts/build fmt
+```
 
 ## Continuous integration
 
-Every commit and PR to your-project is built by [Travis](https://travis-ci.org/MAIF/your-project). Travis will also check your pull request to prevent merging code that does not build.
+Every commit and PR to Daikoku is built by [Travis](https://travis-ci.org/MAIF/daikoku). Travis will also check your pull request to prevent merging code that does not build.
