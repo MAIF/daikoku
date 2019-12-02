@@ -11,6 +11,7 @@ clean () {
 
 build_manual () {
   cd $LOCATION/manual
+  node indexer.js
   sbt ';clean;paradox'
   cp -r $LOCATION/manual/target/paradox/site/main $LOCATION/docs
   mv $LOCATION/docs/main $LOCATION/docs/manual
