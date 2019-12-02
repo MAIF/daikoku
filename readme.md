@@ -1,6 +1,6 @@
 # Daikoku
 
-[![Build Status](https://travis-ci.org/MAIF/daikoku.svg?branch=master)](https://travis-ci.org/MAIF/daikoku) [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://dl.bintray.com/maif/binaries/daikoku.jar/1.0.0/daikoku.jar)
+[![Build Status](https://travis-ci.org/MAIF/daikoku.svg?branch=master)](https://travis-ci.org/MAIF/daikoku) [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases/download/v1.0.0/daikoku.jar)
 
 **Daikoku** is the missing developer portal for <a href="https://maif.github.io/otoroshi">Otoroshi</a> written in Scala and developped by the <a href="https://maif.github.io" target="_blank">MAIF</a> team .
 
