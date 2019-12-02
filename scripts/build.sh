@@ -3,13 +3,13 @@
 LOCATION=`pwd`
 
 clean () {
-  rm -rf $LOCATION/docs/manual
   cd $LOCATION/daikoku/
   rm -rf ./target/universal
   sbt 'docker:clean'
 }
 
 build_manual () {
+  rm -rf $LOCATION/docs/manual
   cd $LOCATION/manual
   node indexer.js
   sbt ';clean;paradox'
@@ -104,8 +104,15 @@ case "${1}" in
     test_server
     release_daikoku
     ;;
-  manual)
+  build)
     clean
+    build_ui
+    build_daikoku
+    ;;
+  test)
+    test_servers
+    ;;
+  manual)
     build_manual
     ;;
   fmt)

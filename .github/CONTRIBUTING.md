@@ -2,12 +2,14 @@
 
 These guidelines apply to all Daikoku projects living in the the `MAIF/daikoku` repository.
 
-These guidelines are meant to be a living document that should be changed and adapted as needed.
-We encourage changes that make it easier to achieve our goals in an efficient way.
-
 ## Codebase
 
-explain the layout of your repo.
+* [demo](https://github.com/MAIF/daikoku/demo): contains the demos
+* [docs](https://github.com/MAIF/daikoku/docs): contains the Daikoki website, avoid modification as its generated
+* [manual](https://github.com/MAIF/daikoku/manual): the Daikoku user manual that will be generated with [Paradox](https://github.com/lightbend/paradox)
+* [daikoku](https://github.com/MAIF/daikoku/daikoku): the daikoku app
+* [resources](https://github.com/MAIF/daikoku/resources): various static resources
+* [scripts](https://github.com/MAIF/daikoku/scripts): various scripts used by Travis and devs
 
 ## Workflow
 
@@ -62,7 +64,13 @@ You must add the dependency and its licence in https://github.com/MAIF/daikoku/b
 
 if you add features to Daikoku, don't forget to modify the user documentation
 
-* https://github.com/MAIF/daikoku/tree/master/docs/documentation
+* https://github.com/MAIF/daikoku/tree/master/docs/manual
+
+to build the documentation, run the following command at the root of the repository
+
+```sh
+sh ./scripts/build.sh manual
+```
 
 ## Tests
 
