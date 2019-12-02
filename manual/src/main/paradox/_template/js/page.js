@@ -24,6 +24,7 @@ $(function() {
       data.map(page => {
         index.addDoc(page);
       });
+      console.log('Init search ...');
       $('.title-wrapper').append([
         '<div id="search-block" style="width: 100%; display: flex; justify-content: flex-end;padding-right: 0px; padding-top: 14px;">', 
           '<input id="search-zone" type="text" placeholder="Search the doc ..." style="width: 300px;"></input>', 
