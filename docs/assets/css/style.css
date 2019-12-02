@@ -4,7 +4,7 @@ body {
 }
 
 .otoColor {
-  background-color: #F7A600;
+  background-color: rgb(127, 150, 175);
 }
 
 a {
@@ -13,7 +13,7 @@ a {
 }
 
 a:hover {
-  color: #F7A600;
+  color: rgb(127, 150, 175);
 }
 
 .home {
@@ -24,11 +24,11 @@ a:hover {
 }
 
 .home a {
-  color: #c68401;
+  color: rgb(108, 127, 148);
 }
 
 .home a:hover {
-  color: #bc810b;
+  color: rgb(90, 105, 122);
 }
 
 .tagN2 {
@@ -62,7 +62,7 @@ a:hover {
 }
 
 .titleOnLine li:nth-child(even) {
-  color: #F7A600;
+  color: rgb(127, 150, 175);
 }
 
 h1 {
@@ -144,7 +144,7 @@ h2 {
   height: 100px;
   width: 100px;
   position: relative;
-  border: 3px solid #F7A600;
+  border: 3px solid rgb(127, 150, 175);
   border-radius: 50%;
   margin: auto;
   margin-top: 50px;
@@ -152,7 +152,7 @@ h2 {
 
 .inner-circle {
   position: absolute;
-  background: #F7A600;
+  background: rgb(127, 150, 175);
   border-radius: 50%;
   height: 90px;
   width: 90px;
@@ -171,7 +171,7 @@ h2 {
 }
 
 .sidebar {
-  background: linear-gradient(90deg, #F7A600 50%, #2E3031 50%);
+  background: linear-gradient(90deg, #7f96af, 50%, #2E3031 50%);
   position: fixed;
   top: 0;
   bottom: 0;
@@ -258,14 +258,14 @@ h2 {
     flex-direction: column;
   }
   .sidebar {
-    background: linear-gradient(180deg, #F7A600 50%, #2E3031 50%);
+    background: linear-gradient(180deg, rgb(127, 150, 175), 50%, #2E3031 50%);
     position: inherit;
   }
   .footer-contentN2 {
     margin-left: 0px;
     margin-top: 20px;
     width: 100%;
-    background-color: #F7A600;
+    background-color: rgb(127, 150, 175);
   }
   .intro {
     text-align: left;
