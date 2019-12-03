@@ -1,19 +1,21 @@
-body {
-  font-family: 'Arvo', serif;
-  background-color: #2E3031;
+:root {
+  --main-color: #7f96af;
+  --bg-color: #2E3031;
 }
 
-.otoColor {
-  background-color: rgb(127, 150, 175);
+body {
+  font-family: "Arvo", serif;
+  background-color: var(--bg-color);
 }
 
 a {
-  color: #FFF;
+  color: #fff;
   text-decoration: underline;
+  transition-duration: 0.5s;
 }
 
 a:hover {
-  color: rgb(127, 150, 175);
+  color: var(--main-color);
 }
 
 .home {
@@ -23,18 +25,19 @@ a:hover {
   margin-top: 10px;
 }
 
-.home a {
-  color: rgb(108, 127, 148);
+.home a,  a .inner-circle p{
+  color: #fff;
+  opacity: 0.5;
 }
 
-.home a:hover {
-  color: rgb(90, 105, 122);
+.home a:hover, a:hover .inner-circle p{
+  opacity: 0.7;
 }
 
 .tagN2 {
   width: 20%;
   display: block;
-  margin: 0 auto;
+  margin: 20px auto;
 }
 
 .contentN2 {
@@ -46,7 +49,7 @@ a:hover {
 }
 
 .colDashRight {
-  border-right: 1px dashed #F2F2F2;
+  border-right: 1px dashed #f2f2f2;
   padding-right: 60px;
 }
 
@@ -54,7 +57,7 @@ a:hover {
   color: #fff;
   font-size: 36px;
   text-transform: uppercase;
-  padding-left: 0px;
+  padding-left: 0;
 }
 
 .titleOnLine li {
@@ -62,7 +65,7 @@ a:hover {
 }
 
 .titleOnLine li:nth-child(even) {
-  color: rgb(127, 150, 175);
+  color: var(--main-color);
 }
 
 h1 {
@@ -75,22 +78,14 @@ h2 {
   text-transform: uppercase;
 }
 
-.manifesto {
-  border: 0;
-  position: fixed;
-  right: 0;
-  top: 0;
-  z-index: 9000;
-}
-
 .intro {
-  font-family: 'Roboto', serif;
+  font-family: "Roboto", serif;
   font-size: 18px;
   color: #fff;
 }
 
 .details {
-  font-family: 'Roboto', serif;
+  font-family: "Roboto", serif;
   font-size: 14px;
   font-weight: 300;
   color: #fff;
@@ -98,7 +93,7 @@ h2 {
 }
 
 .details ul {
-  padding-left: 20px
+  padding-left: 20px;
 }
 
 .more-details {
@@ -111,55 +106,29 @@ h2 {
   height: 50px;
 }
 
-.youtube_player{
-  margin-bottom: 20px;
-}
-
-.youtube_player {
-	position:relative;
-	padding-bottom:56.25%;
-	padding-top:30px;
-	height:0;
-	overflow:hidden;
-}
-
-.youtube_player iframe, .youtube_player object, .youtube_player embed {
-	position:absolute;
-	top:0;
-	left:0;
-	width:100%;
-	height:100%;
-}
-
-.youtube_player .tac_activate {
-    background: #2E3031;
-}
-
 .more-details .pictoPaysage {
   margin-top: 20px;
-  width: 70px
+  width: 70px;
 }
 
 .outer-circle {
   height: 100px;
   width: 100px;
   position: relative;
-  border: 3px solid rgb(127, 150, 175);
+  border: 3px solid var(--main-color);
   border-radius: 50%;
-  margin: auto;
-  margin-top: 50px;
+  margin: 50px auto auto auto;
 }
 
 .inner-circle {
   position: absolute;
-  background: rgb(127, 150, 175);
+  background: var(--main-color);
   border-radius: 50%;
   height: 90px;
   width: 90px;
   top: 50%;
   left: 50%;
-  margin: -45px 0px 0px -45px;
-  color: #2E3031;
+  margin: -45px 0 0 -45px;
 }
 
 .inner-circle p {
@@ -171,7 +140,11 @@ h2 {
 }
 
 .sidebar {
-  background: linear-gradient(90deg, #7f96af, 50%, #2E3031 50%);
+  background: linear-gradient(
+          90deg,
+          var(--main-color) 50%,
+          var(--bg-color) 50%
+  );
   position: fixed;
   top: 0;
   bottom: 0;
@@ -195,20 +168,6 @@ h2 {
   padding-top: 20px;
 }
 
-.logo-content {
-  background-image: url(../img/header-home.svg);
-  height: 80px;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center top;
-}
-
-.footer-content {
-  width: 300%;
-  margin-left: -100%;
-  overflow: hidden;
-  bottom: 0;
-}
 
 .footer-contentN2 {
   position: relative;
@@ -231,7 +190,8 @@ h2 {
   .titleOnLine li {
     text-align: center;
   }
-  .details li, .details {
+  .details li,
+  .details {
     list-style-type: none;
     text-align: center;
   }
@@ -258,14 +218,14 @@ h2 {
     flex-direction: column;
   }
   .sidebar {
-    background: linear-gradient(180deg, rgb(127, 150, 175), 50%, #2E3031 50%);
+    background: linear-gradient(180deg, var(--main-color) 50%, var(--bg-color) 50%);
     position: inherit;
   }
   .footer-contentN2 {
-    margin-left: 0px;
+    margin-left: 0;
     margin-top: 20px;
     width: 100%;
-    background-color: rgb(127, 150, 175);
+    background-color: var(--main-color);
   }
   .intro {
     text-align: left;
@@ -283,19 +243,20 @@ h2 {
     margin-right: 20px;
   }
   .tagN2 {
-    margin-top: -40px;
+    margin-top: 10px;
   }
   .titleOnLine li {
     text-align: left;
   }
-  .details li, .details {
+  .details li,
+  .details {
     text-align: left;
   }
   .details ul {
-    padding-left: 0px;
+    padding-left: 0;
   }
   .outer-circle {
-    margin-left: 0px;
+    margin-left: 0;
     text-align: center;
   }
   .linkN2 {
@@ -311,7 +272,7 @@ h2 {
   .inner-circle {
     height: 70px;
     width: 70px;
-    margin: -35px 0px 0px -35px;
+    margin: -35px 0 0 -35px;
   }
   .inner-circle p {
     font-size: 12px;

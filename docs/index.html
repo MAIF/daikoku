@@ -1,125 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <!-- Latest compiled and minified CSS -->
-  <link href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-PmY9l28YgO4JwMKbTvgaS7XNZJ30MK9FAZjjzXtlqyZCqBY6X6bXIkM++IkyinN+" crossorigin="anonymous">
-  <link href="https://fonts.googleapis.com/css?family=Arvo|Roboto" rel="stylesheet">
-  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
-  <link href="assets/css/style.css" rel="stylesheet">
-  <link rel="icon" type="image/png" href="assets/images/logos/favicon.png">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <!-- Latest compiled and minified CSS -->
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-PmY9l28YgO4JwMKbTvgaS7XNZJ30MK9FAZjjzXtlqyZCqBY6X6bXIkM++IkyinN+"
+      crossorigin="anonymous"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Arvo|Roboto"
+      rel="stylesheet"
+    />
+    <link
+      href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+      rel="stylesheet"
+    />
+    <link href="assets/css/style.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="assets/images/logos/favicon.png" />
     <!--[if IE]>
 <link rel="shortcut icon" type="image/x-icon" href="/assets/images/favicon.ico">
     -->
-  <title>Daikoku by MAIF</title>
-  <script type="text/javascript" src="assets/js/tarteaucitron/tarteaucitron.js"></script>
-<script type="text/javascript">
-tarteaucitron.init({
-  "hashtag": "#tarteaucitron", /* Ouverture automatique du panel avec le hashtag */
-  "highPrivacy": false, /* désactiver le consentement implicite (en naviguant) ? */
-  "orientation": "top", /* le bandeau doit être en haut (top) ou en bas (bottom) ? */
-  "adblocker": false, /* Afficher un message si un adblocker est détecté */
-  "showAlertSmall": false, /* afficher le petit bandeau en bas à droite ? */
-  "cookieslist": true, /* Afficher la liste des cookies installés ? */
-  "removeCredit": false /* supprimer le lien vers la source ? */
-});
-</script>
-</head>
+    <title>Daikoku by MAIF</title>
+    <script
+      type="text/javascript"
+      src="assets/js/tarteaucitron/tarteaucitron.js"
+    ></script>
+    <script type="text/javascript">
+      tarteaucitron.init({
+        hashtag:
+          "#tarteaucitron" /* Ouverture automatique du panel avec le hashtag */,
+        highPrivacy: false /* désactiver le consentement implicite (en naviguant) ? */,
+        orientation:
+          "top" /* le bandeau doit être en haut (top) ou en bas (bottom) ? */,
+        adblocker: false /* Afficher un message si un adblocker est détecté */,
+        showAlertSmall: false /* afficher le petit bandeau en bas à droite ? */,
+        cookieslist: true /* Afficher la liste des cookies installés ? */,
+        removeCredit: false /* supprimer le lien vers la source ? */
+      });
+    </script>
+  </head>
 
-<body>
-  <div class="home">
-  <a href="https://maif.github.io/"><i class="fa fa-home fa-2x" aria-hidden="true"></i></a>
-</div>
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-4 entete sidebar">
-        <div class="sidebar-container">
-          <div class="sidebar-content">
-            <img src="assets/images/svg/daikoku_logo.svg">
-            <img class="tagN2" src="assets/images/svg/etiquette.svg">
-
+  <body>
+    <div class="home">
+      <a href="https://maif.github.io/"
+        ><i class="fa fa-home fa-2x" aria-hidden="true"></i
+      ></a>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-4 entete sidebar">
+          <div class="sidebar-container">
+            <div class="sidebar-content">
+              <img
+                alt="logo daikoku"
+                src="assets/images/svg/daikoku_logo.svg"
+              />
+              <img
+                alt="logo scala"
+                class="tagN2"
+                src="assets/images/svg/etiquette.svg"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-8 col-sm-offset-4">
+          <div class="row contentN2">
+            <div class="col-md-6 col-xs-12 colDashRight">
+              <ul class="titleOnLine">
+                <li>Developper portal</li>
+                <li>for Otoroshi</li>
+              </ul>
+              <p class="intro">
+                Daikoku is the missing developper portal for
+                <a href="https://maif.github.io/otoroshi">Otoroshi</a> written
+                in Scala and developped by the
+                <a href="https://maif.github.io">MAIF OSS</a> team. Daikoku is
+                designed to manage your apis with ad hoc consumption plans and
+                self service usage.
+              </p>
+              <div class="details">
+                <h1>Features</h1>
+                <ul>
+                  <li>Gorgeous admin UI</li>
+                  <li>Rest admin API</li>
+                  <li>Event-Driven</li>
+                  <li>Official docker image</li>
+                  <li>Available as single jar file</li>
+                </ul>
+              </div>
+            </div>
+            <div class="col-md-6 col-xs-12 more-details">
+              <img
+                alt="logo for configuration"
+                src="assets/images/svg/configure.svg"
+                class="pictoPortrait"
+              />
+              <h2>easy to configure</h2>
+              <p>
+                No config files, gorgeous admin UI, slick admin API. Live
+                reconfiguration at runtime
+              </p>
+              <img
+                alt="logo for latency"
+                src="assets/images/svg/latency.svg"
+                class="pictoPaysage"
+              />
+              <h2>high productivity</h2>
+              <p>
+                Freedom to chose your own stack, no library needed. Route and
+                secure microservices in matter of seconds and accelerate your
+                time to market
+              </p>
+              <div class="row contentCircle">
+                <div class="col-md-12 col-xs-4">
+                  <a href="http://github.com/MAIF/daikoku">
+                    <div class="outer-circle">
+                      <div class="inner-circle">
+                        <p>GITHUB</p>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div class="col-md-12 col-xs-4">
+                  <a href="https://maif.github.io/daikoku/manual/">
+                    <div class="outer-circle">
+                      <div class="inner-circle">
+                        <p>DOC</p>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div class="col-md-12 col-xs-4">
+                  <a
+                    href="https://github.com/MAIF/daikoku/releases/download/v1.0.0/daikoku.jar"
+                  >
+                    <div class="outer-circle">
+                      <div class="inner-circle">
+                        <p class="inner-circle--lowerText">DOWNLOAD</p>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="col-sm-8 col-sm-offset-4">
-        <div class="row contentN2">
-          <div class="col-md-6 col-xs-12 colDashRight">
-            <ul class="titleOnLine">
-              <li>Developper portal</li>
-              <li>for Otoroshi</li>
-            </ul>
-            <p class="intro">
-              Daikoku is the missing developper portal for <a href="https://maif.github.io/otoroshi">Otoroshi</a> written in Scala and developped by the <a href="https://maif.github.io">MAIF OSS</a> team. Daikoku is designed to manage your apis with ad hoc consumption plans and self service usage.
-            </p>
-            <div class="details">
-
-              <h1>Features</h1>
-              <ul>
-                <li>Gorgeous admin UI</li>
-                <li>Rest admin API</li>
-                <li>Event-Driven</li>
-                <li>Official docker image</li>
-                <li>Available as single jar file</li>
-              </ul>
-            </div>
-          </div>
-          <div class="col-md-6 col-xs-12 more-details">
-            <img src="assets/images/svg/configure.svg" class="pictoPortrait">
-            <h2>easy to configure</h2>
-            <p>No config files, gorgeous admin UI, slick admin API. Live reconfiguration at runtime</p>
-            <img src="assets/images/svg/latency.svg" class="pictoPaysage">
-            <h2>high productivity</h2>
-      	    <p>Freedom to chose your own stack, no library needed. Route and secure microservices in matter of seconds and accelerate your time to market</p>
-          <div class="row contentCircle">
-          <div class="col-md-12 col-xs-4">
-            <a href="http://github.com/MAIF/daikoku">
-							<div class="outer-circle">
-								<div class="inner-circle">
-									<p>GITHUB</p>
-								</div>
-							</div>
-						</a>
-          </div>
-          <div class="col-md-12 col-xs-4">
-						<a href="https://maif.github.io/daikoku/manual/">
-							<div class="outer-circle">
-								<div class="inner-circle">
-									<p>DOC</p>
-								</div>
-							</div>
-						</a>
-          </div>
-          <div class="col-md-12 col-xs-4">
-						<a href="https://github.com/MAIF/daikoku/releases/download/v1.0.0/daikoku.jar">
-							<div class="outer-circle">
-								<div class="inner-circle">
-									<p class="inner-circle--lowerText">DOWNLOAD</p>
-								</div>
-							</div>
-						</a>
-          </div>
-          </div>
-          </div>
-				</div>
+    </div>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="footer-contentN2">
+          <img alt="fond de page " src="assets/images/svg/footer.svg" />
+        </div>
       </div>
     </div>
-  </div>
-  <div class="container-fluid">
-    <div class="row">
-      <div class="footer-contentN2">
-        <img src="assets/images/svg/footer.svg">
-      </div>
-    </div>
-  </div>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
-  <script type="text/javascript">
-      tarteaucitron.user.analyticsUa = 'UA-112498312-1';
-      tarteaucitron.user.analyticsMore = function () {};
-      (tarteaucitron.job = tarteaucitron.job || []).push('analytics','youtube');
-  </script>
-</body>
-
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"
+    ></script>
+    <script type="text/javascript">
+      tarteaucitron.user.analyticsUa = "UA-112498312-1";
+      tarteaucitron.user.analyticsMore = function() {};
+      (tarteaucitron.job = tarteaucitron.job || []).push("analytics");
+    </script>
+  </body>
 </html>
