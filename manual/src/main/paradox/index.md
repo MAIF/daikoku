@@ -59,4 +59,17 @@ The work on Daikoku was funded by <a href="https://www.maif.fr/" target="_blank"
 
 Daikoku is Open Source and available under the [Apache 2 License](https://opensource.org/licenses/Apache-2.0)
 
+@@@ index
 
+* [About Daikoku](about.md)
+* [Architecture](archi.md)
+* [Quickstart](quickstart.md)
+* [Get Daikoku](getdaikoku/index.md)
+* [First run](firstrun/index.md)
+* [Setup](setup/index.md)
+* [Using Daikoku](usage/index.md)
+* [Integrations](integrations/index.md)
+* [Admin REST API](api.md)
+* [Deploy to production](deploy/index.md)
+
+@@@
