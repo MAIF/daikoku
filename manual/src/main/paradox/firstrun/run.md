@@ -55,14 +55,13 @@ $ java \
   -Xms2G \
   -Xmx8G \
   -Dhttp.port=8080 \
-  -Ddaikoku.init.data.from=/home/user/daikoku.ndjson \
+  -Ddaikoku.init.data.from=/home/user/daikoku.conf \
   -Dconfig.file=/home/user/daikoku.conf \
   -jar ./daikoku.jar
 
-[warn] otoroshi-in-memory-datastores - Now using InMemory DataStores
-[warn] otoroshi-env - The main datastore seems to be empty, registering some basic services
-[warn] otoroshi-env - Importing from: /home/user/otoroshi.json
 [info] play.api.Play - Application started (Prod)
+[warn] daikokuEnv - Main dataStore seems to be empty, importing from /home/user/daikoku.conf ...
+[warn] daikokuEnv - Importing from: /home/user/otoroshi.json
 [info] p.c.s.AkkaHttpServer - Listening for HTTP on /0:0:0:0:0:0:0:0:8080
 ```
 
@@ -75,9 +74,13 @@ $ java \
   -Dhttp.port=8080 \
   -jar otoroshi.jar
 
-[warn] otoroshi-in-memory-datastores - Now using InMemory DataStores
-[warn] otoroshi-env - The main datastore seems to be empty, registering some basic services
-[warn] otoroshi-env - You can log into the Otoroshi admin console with the following credentials: admin@otoroshi.io / HHUsiF2UC3OPdmg0lGngEv3RrbIwWV5W
 [info] play.api.Play - Application started (Prod)
-[info] p.c.s.AkkaHttpServer - Listening for HTTP on /0:0:0:0:0:0:0:0:8080
+[warn] DaikokuEnv - Main dataStore seems to be empty, generating initial data ...
+[info] p.c.s.AkkaHttpServer - Listening for HTTP on /0.0.0.0:8080
+[warn] DaikokuEnv -
+[warn] DaikokuEnv - You can log in with admin@daikoku.io / wr4pHmVRArCGhHoteMfwqV6UuvQh6J2z
+[warn] DaikokuEnv -
+[warn] DaikokuEnv - Please avoid using the default tenant for anything else than configuring Daikoku
+[warn] DaikokuEnv -
+
 ```
