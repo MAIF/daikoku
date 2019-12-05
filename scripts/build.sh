@@ -46,20 +46,7 @@ test_server () {
 pre_release_daikoku () {
   # fmt_server
   cd $LOCATION/manual/src/main/paradox
-  SCRIPT="
-  const from = '$1';
-  const to = '$2';
-  let fromStdIn = '';
-  process.stdin.on('data', (data) => fromStdIn = fromStdIn + data);
-  process.stdin.on('end', (data) => {
-    fromStdIn.split('\n').map(line => {
-      const content = require('fs').readFileSync(line).toString('utf8');
-      require('fs').writeFileSync(line, content.replace(new RegExp(from.replace(new RegExp('\\.', 'g'), '\\.'), 'g'), to));
-    });
-  });
-  "
-  echo $SCRIPT
-  find . -type f -name '*.md' | node -e $SCRIPT
+  find . -type f -name '*.md' | node $LOCATION/scripts/version.js $1 $2
   # TODO: build swagger
   # build_manual
   # cd $LOCATION/daikoku
@@ -141,7 +128,7 @@ case "${1}" in
     release_daikoku
     ;;
   pre-release)
-    pre_release_daikoku
+    pre_release_daikoku $2 $3
     ;;
   manual)
     build_manual
