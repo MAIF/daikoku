@@ -5,13 +5,13 @@ There is a lot of things you can configure in Daikoku. By default, Daikoku provi
 In this page, any configuration property can be set at runtime using a `-D` flag when launching Daikoku like
 
 ```sh
-java -Dapp.domain=oto.tools -Dhttp.port=8080 -jar daikoku.jar
+java -Dhttp.port=8080 -jar daikoku.jar
 ```
 
 or
 
 ```sh
-./bin/daikoku -Dhttp.port=8080 -Dapp.domain=oto.tools 
+./bin/daikoku -Dhttp.port=8080
 ```
 
 ## Common configuration
