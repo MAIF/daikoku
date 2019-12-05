@@ -115,6 +115,9 @@ case "${1}" in
   manual)
     build_manual
     ;;
+  doc)
+    build_manual
+    ;;
   fmt)
     fmt_ui
     fmt_server
