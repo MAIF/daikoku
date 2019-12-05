@@ -11,6 +11,7 @@ It's impossible to remove oneself the admin status.
 
 To create a new user, just click on the `Create new user` button. 
 You will have some information to inform :
+
 * The user's name
 * An email adress
 * Possibly an avatar. It could be an URl or an assets from the object manager

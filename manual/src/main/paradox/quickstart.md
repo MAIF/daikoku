@@ -14,6 +14,6 @@ docker-compose up
 
 ## What about the UI
 
-Go to <a href="http://daikoku.oto.tools/" target="_blank">http://daikoku.oto.tools/</a> and **log in with the following credential admin@daikoku.io/password**
+Go to <a href="http://daikoku.oto.tools/" target="_blank">http://daikoku.oto.tools/</a> and log in with the **following credential** admin@daikoku.io/password
 
 If you want to know more about Daikoku, you should continue reading the documentation starting with @ref:[how to get Daikoku](./getdaikoku/index.md)

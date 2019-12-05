@@ -14,12 +14,14 @@ here are just pure information like current version of the api and supported ver
 Tags and categories are array of item, mostly used to filter apis.
 
 ### Visibililty and subscription
-Visibility can be
+Visibility can be:
+
 * public: everybody could see the complete api
 * public with authorization: everybody could see just a part of the api, in the catalog page (name, tags, categories and small desc.). Everybody could ask an access to see more to an admin of owner team.
 * private: Just authorized teams have access to the api.
 
-Subscription can be
+Subscription can be: 
+
 * Automatic: all api subscriptions will be accepted automatically
 * Manual: api subscriptions will require an acceptance by a team admin
 
@@ -38,6 +40,7 @@ Plan need name, eventually description and mostly an [otoroshi instance](../tena
 It's possible to allow multiple apikey for a plan for teams.
 
 It's important to choose a type of plan need to be choosen :
+
 * free without quotas: a plan with unlimited number of calls per day and per month
 * free with quotas: a plan with limited number of calls per day and per month. Quotas set by default but can be overwritten.
 * quotas with limit: a priced plan with limited number of calls per day and per month. Quotas set by default but can be overwritten. A fixed cost by month can be set. 

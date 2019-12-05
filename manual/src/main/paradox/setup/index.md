@@ -2,7 +2,7 @@
 
 Now that Daikoku is running, you are ready to log into the Daikoku admin dashboard and setup your instance. Just go to :
 
-<a href="http://daikoku.oto.tools" target="_blank">http://daikoku.oto.tools</a>
+<a href="http://daikoku.oto.tools:8080" target="_blank">http://daikoku.oto.tools:8080</a>
 
 and you will see the following page
  

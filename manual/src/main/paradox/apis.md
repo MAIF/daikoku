@@ -15,7 +15,7 @@ https://maif.github.io/daikoku/swagger-ui/index.html
 
 Every Daikoku instance provides its own embedded OpenAPI descriptor at :
 
-http://daikoku.oto.tools/api/swagger/ui
+http://daikoku.oto.tools:8080/api/swagger/ui
 
 You can also read the swagger UI documentation of the Daikoku admin API below :
 

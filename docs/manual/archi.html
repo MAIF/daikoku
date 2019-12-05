@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>Daikoku</title>
+<title>Architecture · Daikoku</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='daikoku-manual'/>
@@ -26,7 +26,7 @@
 <div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
 <nav class="off-canvas-nav">
 <div class="nav-home">
-<a href="index.html" class="active">
+<a href="index.html" >
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
@@ -36,7 +36,7 @@
 <div class="nav-toc">
 <ul>
   <li><a href="about.html" class="page">About Daikoku</a></li>
-  <li><a href="archi.html" class="page">Architecture</a></li>
+  <li><a href="archi.html" class="active page">Architecture</a></li>
   <li><a href="quickstart.html" class="page">Try Daikoku in 5 minutes</a></li>
   <li><a href="getdaikoku/index.html" class="page">Get Daikoku</a>
   <ul>
@@ -101,7 +101,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 </a>
 <div class="title-wrapper">
 <div class="title-logo"></div>
-<div class="title"><a href="index.html" class="active">Daikoku</a></div>
+<div class="title"><a href="index.html">Daikoku</a></div>
 </div>
 <!--
 <a href="https://www.example.com" class="logo show-for-medium">logo</a>
@@ -114,7 +114,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="medium-3 large-2 show-for-medium column">
 <nav class="site-nav">
 <div class="nav-home">
-<a href="index.html" class="active">
+<a href="index.html" >
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
@@ -124,7 +124,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-toc">
 <ul>
   <li><a href="about.html" class="page">About Daikoku</a></li>
-  <li><a href="archi.html" class="page">Architecture</a></li>
+  <li><a href="archi.html" class="active page">Architecture</a></li>
   <li><a href="quickstart.html" class="page">Try Daikoku in 5 minutes</a></li>
   <li><a href="getdaikoku/index.html" class="page">Get Daikoku</a>
   <ul>
@@ -186,66 +186,25 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-header row">
 <div class="medium-12 show-for-medium column">
+<div class="nav-breadcrumbs">
+<ul>
+  <li><a href="index.html">Daikoku</a></li>
+  <li>Architecture</li>
+</ul>
+</div>
 </div>
 </div>
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#daikoku" name="daikoku" class="anchor"><span class="anchor-link"></span></a>Daikoku</h1>
-<p><strong>Daikoku</strong> is the missing developer portal for Otoroshi written in <a href="https://www.scala-lang.org/" target="_blank">Scala</a> and developped by the <a href="https://maif.github.io" target="_blank">MAIF OSS</a> team.</p>
-<blockquote>
-  <p><em>In Japan, <a href="https://en.wikipedia.org/wiki/File:Daikoku.jpg" target="blank">Daikokuten</a> (大黒天), the god of great darkness or blackness, or the god of five cereals, is one of the Seven Lucky Gods (Fukujin). Daikokuten evolved from the Buddhist form of the Indian deity Shiva intertwined with the Shinto god Ōkuninushi. The name is the Japanese equivalent of Mahākāla, the Hindu name for Shiva.</em></p>
-</blockquote><div class="centered-img">
-<p><a href="https://travis-ci.org/MAIF/daikoku"><img src="https://travis-ci.org/MAIF/daikoku.svg?branch=master" alt="Build Status" /></a> <a href="https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/MAIF/daikoku.svg" alt="Join the chat at https://gitter.im/MAIF/daikoku" /></a> <a href="https://github.com/MAIF/daikoku/releases/download/v1.0.0/daikoku.jar"> <img src="https://img.shields.io/github/release/MAIF/daikoku.svg" alt="Download" /> </a></p></div><div class="centered-img">
-<img src="https://github.com/MAIF/daikoku/raw/master/resources/daikoku-logo.png" width="300"></img></div>
-<h2><a href="#installation" name="installation" class="anchor"><span class="anchor-link"></span></a>Installation</h2>
-<p>You can download the latest build of Daikoku as a <a href="https://github.com/MAIF/daikoku/releases/download/v1.0.0/daikoku.jar">fat jar</a>, as a <a href="https://github.com/MAIF/daikoku/releases/download/v1.0.0/daikoku-dist.zip">zip package</a> </p>
-<p>You can install and run Otoroshi with this little bash snippet</p>
-<pre class="prettyprint"><code class="language-sh">curl -L -o daikoku.jar &#39;https://github.com/MAIF/daikoku/releases/download/v1.0.0./daikoku.jar&#39;
-java -jar daikoku.jar
-</code></pre>
-<p>or using docker</p>
-<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; maif/daikoku:1.0.0
-</code></pre>
-<p>now open your browser to <a href="http://localhost:8080/" target="_blank"><a href="http://localhost:8080/">http://localhost:8080/</a></a>, <strong>log in with the credential generated in the logs</strong> and explore by yourself</p>
-<h2><a href="#documentation" name="documentation" class="anchor"><span class="anchor-link"></span></a>Documentation</h2>
-<h2><a href="#discussion" name="discussion" class="anchor"><span class="anchor-link"></span></a>Discussion</h2>
-<p>Join the <a href="https://gitter.im/MAIF/daikoku">Daikoku</a> channel on the <a href="https://gitter.im/MAIF">MAIF Gitter</a></p>
-<h2><a href="#sources" name="sources" class="anchor"><span class="anchor-link"></span></a>Sources</h2>
-<p>The sources of Daikoku are available on <a href="https://github.com/MAIF/daikoku">Github</a>.</p>
-<h2><a href="#logo" name="logo" class="anchor"><span class="anchor-link"></span></a>Logo</h2>
-<p>You can find the official Daikoku logo <a href="https://github.com/MAIF/daikoku/blob/master/resources/daikoku-logo.png">on GitHub</a>. The Daikoku logo has been created by François Galioto (<a href="https://twitter.com/fgalioto">@fgalioto</a>)</p>
-<h2><a href="#changelog" name="changelog" class="anchor"><span class="anchor-link"></span></a>Changelog</h2>
-<p>Every release, along with the migration instructions, is documented on the <a href="https://github.com/MAIF/daikoku/releases">Github Releases</a> page.</p>
-<h2><a href="#patrons" name="patrons" class="anchor"><span class="anchor-link"></span></a>Patrons</h2>
-<p>The work on Daikoku was funded by <a href="https://www.maif.fr/" target="_blank">MAIF</a> with the help of the community.</p>
-<h2><a href="#licence" name="licence" class="anchor"><span class="anchor-link"></span></a>Licence</h2>
-<p>Daikoku is Open Source and available under the <a href="https://opensource.org/licenses/Apache-2.0">Apache 2 License</a></p>
+<h1><a href="#architecture" name="architecture" class="anchor"><span class="anchor-link"></span></a>Architecture</h1>
+<p>TODO</p><div class="centered-img">
+<img src="./img/architecture.png" /></div>
 <div class="nav-next">
-<p><strong>Next:</strong> <a href="about.html">About Daikoku</a></p>
+<p><strong>Next:</strong> <a href="quickstart.html">Try Daikoku in 5 minutes</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
-<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
-<div class="page-nav">
-<div class="nav-title">On this page:</div>
-<div class="nav-toc">
-<ul>
-  <li><a href="index.html#daikoku" class="header">Daikoku</a>
-  <ul>
-    <li><a href="index.html#installation" class="header">Installation</a></li>
-    <li><a href="index.html#documentation" class="header">Documentation</a></li>
-    <li><a href="index.html#discussion" class="header">Discussion</a></li>
-    <li><a href="index.html#sources" class="header">Sources</a></li>
-    <li><a href="index.html#logo" class="header">Logo</a></li>
-    <li><a href="index.html#changelog" class="header">Changelog</a></li>
-    <li><a href="index.html#patrons" class="header">Patrons</a></li>
-    <li><a href="index.html#licence" class="header">Licence</a></li>
-  </ul></li>
-</ul>
-</div>
-</div>
-</nav>
 </div>
 </div>
 

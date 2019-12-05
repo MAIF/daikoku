@@ -8,6 +8,7 @@ And you should see the list of existing `teams`
 
 Click on the `Create` button.
 A team need some informations :
+
 * tenant (By default, the current tenant)
 * Name (Name need to be unique for the tenant)
 * Description, a small text to describe the team main page.

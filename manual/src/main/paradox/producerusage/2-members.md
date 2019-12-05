@@ -10,6 +10,7 @@ Hover the avatar of the member and click on the `trash` button
 ### Update member permission
 Hover the avatar of the member and click on the `cog` button.
 Then, choose:
+
 * admin: member can access everything
 * api editor: member can't manage team but can create an api.
 * nothing: member can just subscribe another team api
