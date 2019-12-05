@@ -43,6 +43,15 @@ test_server () {
   sbt test
 }
 
+pre_release_daikoku () {
+  fmt_server
+  # TODO: change version in docs
+  # TODO: build swagger
+  build_manual
+  cd $LOCATION/daikoku
+  sbt release
+}
+
 release_daikoku ()  {
   if [ -z "$TRAVIS_TAG" ];
   then
@@ -111,6 +120,14 @@ case "${1}" in
     ;;
   test)
     test_server
+    ;;
+  release)
+    export TRAVIS_TAG=$1
+    export TRAVIS_BRANCH=master
+    release_daikoku
+    ;;
+  pre-release)
+    pre_release_daikoku
     ;;
   manual)
     build_manual
