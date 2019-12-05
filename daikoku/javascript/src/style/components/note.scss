@@ -1,0 +1,21 @@
+
+.note {
+  border: none;
+  border-left: 10px solid #4078c0;
+  background-color: rgba(64, 120, 192, 0.1);
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border-radius: 0;
+  position: relative;
+  color: #0a0a0a;
+}
+
+.note-warning {
+  border-color: #DB504A;
+  background-color: #fff3d9;
+}
+
+.note-title {
+  font-weight: bold;
+  margin-bottom: 0.33em;
+}

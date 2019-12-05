@@ -1,0 +1,32 @@
+.notification-link {
+  width: 50px;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  position: relative;
+}
+
+.notification-link:hover {
+  color: #5a6268;
+  text-decoration: none;
+}
+
+.unread-notifications::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  display: block;
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background-color: tomato;
+  border-radius: 50%;
+  border: 2px solid #7f96af;
+  box-sizing: content-box;
+}
+
+.notification-prop a:hover {
+  color: #fff;
+}

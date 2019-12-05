@@ -1,0 +1,127 @@
+
+.avatar-with-action {
+    cursor: pointer;
+    width: 200px;
+    margin-top: 35px;
+
+    &.avatar-with-action {
+        margin-left: 35px;
+    }
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        width: 100px;
+
+        .overlay {
+            position: absolute;
+            z-index: 1;
+
+            width: 100px;
+            height: 100px;
+            border-radius: 50px;
+            background-color: rgba(0,0,0,0.1);
+            
+            opacity: 0;
+
+            transition: all .2s ease-in-out;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avatar-with-action__avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50px;
+            border: 3px solid #fff;
+            box-shadow: 0px 0px 0px 3px lightgrey;
+            transition: all .2s ease-in-out;
+        }
+
+        .avatar-with-action__infos {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: baseline;
+            margin-top: 20px;
+
+            width: 200%;
+            justify-content: center;
+
+            font-weight: 500;
+            color: #333;
+        }
+    
+        //action limit 4 actions for position
+        .avatar-with-action__action {
+            position: absolute;
+            color: #333;
+            font-size: 23px;
+            opacity: 0;
+            z-index: 2;
+            border: 2px solid #333;
+            border-radius: 50%;
+            background-color: #fff;
+            width: 35px; height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .3s ease-in-out;
+
+            & a {
+                color: #333;
+            }
+
+            &:nth-of-type(1) {
+                top: 0px;
+                right: 0px;
+            }
+
+            &:nth-of-type(2) {
+                top: 0px;
+                left: 0px;
+            }
+
+            &:nth-of-type(3) {
+                top: 65px;
+                right: 0;
+            }
+
+            &:nth-of-type(4) {
+                top: 65px;
+                left: 0;
+            }
+
+            &:hover {
+                transform: scale(1.3)
+            }
+        }
+
+        &:hover {
+            .avatar-with-action__avatar {
+                box-shadow: 0px 0px 0px 5px lightgrey;
+            }
+    
+            .avatar-with-action__action {
+                opacity: 1;
+            }
+    
+            .overlay {
+                opacity: 1;
+            }
+        }
+    }
+}
+
+.admin-active {
+    color: goldenrod;
+    border-color: goldenrod;
+}
+
+.delete-icon:hover {
+    color: tomato;
+}

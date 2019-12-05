@@ -1,0 +1,50 @@
+@import fr.maif.otoroshi.daikoku.env.Env
+@import fr.maif.otoroshi.daikoku.env.DaikokuMode
+@import fr.maif.otoroshi.daikoku.domain.User
+@import fr.maif.otoroshi.daikoku.domain.UserSession
+@import fr.maif.otoroshi.daikoku.domain.Tenant
+@import fr.maif.otoroshi.daikoku.domain.Team
+
+@(user: User, session: UserSession,tenant: Tenant, host: String, env: Env)
+
+@customStyle = {
+  @(tenant.colorTheme())
+  @if(env.config.mode == DaikokuMode.Dev) {
+    <link rel="stylesheet" media="screen" href="http://@host:3000/daikoku.css">
+  } 
+  @if(env.config.mode == DaikokuMode.Prod) {
+    <link rel="stylesheet" media="screen" href="/assets/react-app/daikoku.min.css">
+  }
+  @(tenant.moareStyle())
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-editor-dist@@3.6.31/swagger-editor.css">
+}
+
+@customJs = {
+  @(tenant.moareJs())
+}
+
+@main(tenant.style.map(_.title).getOrElse(tenant.name), moreStyles = customStyle, moreScripts = customJs, favicon = tenant.favicon()) {
+  <div id="app"></div>
+  @if(env.config.mode == DaikokuMode.Dev) {
+    <script type="text/javascript" src="http://@host:3000/daikoku.js"></script>
+  } 
+  @if(env.config.mode == DaikokuMode.Prod) {
+    <script type="text/javascript" src="/assets/react-app/daikoku.min.js"></script>
+  }
+  <!--script src="https://cdn.jsdelivr.net/npm/redoc/bundles/redoc.standalone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/redoc@@next/bundles/redoc.standalone.js"> </script-->
+  <script src="https://cdn.jsdelivr.net/npm/redoc@@v2.0.0-rc.5/bundles/redoc.standalone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-editor-dist@@3.6.31/swagger-editor-bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-editor-dist@@3.6.31/swagger-editor-standalone-preset.js"></script>
+  <!--script src="https://unpkg.com/pdfjs-dist/build/pdf.min.js"></script>
+  <script src="https://unpkg.com/pdfjs-dist/build/pdf.worker.min.js"></script-->
+  <script>
+    Daikoku.init(
+      @Html(play.api.libs.json.Json.prettyPrint(user.toUiPayload(tenant.id))),
+      @Html(play.api.libs.json.Json.prettyPrint(tenant.toUiPayload(env))),
+      @Html(play.api.libs.json.Json.prettyPrint(session.impersonatorJson())),
+      @Html(play.api.libs.json.Json.prettyPrint(session.asSimpleJson)),
+      '@(fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(tenant.authProvider.name).url)'
+    )
+  </script>
+}

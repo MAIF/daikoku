@@ -1,0 +1,14 @@
+.escape {
+    color: $error-color;
+
+    &:hover {
+        color: $error-hover-color;
+    }
+}
+
+.accept {
+    color: $success-color;
+    &:hover {
+        color: $success-hover-color;
+    }
+}

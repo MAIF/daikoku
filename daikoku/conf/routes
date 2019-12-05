@@ -1,0 +1,485 @@
+### NoDocs ###
+GET     /assets/*file                                   controllers.Assets.versioned(path="/public", file: Asset)
+
+### NoDocs ###
+GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+### NoDocs ###
+GET     /signup                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+### NoDocs ###
+GET     /reset                                          fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+### NoDocs ###
+GET     /teams                                          fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+### NoDocs ###
+GET     /organizations                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+### NoDocs ###
+GET     /notifications                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+### NoDocs ###
+GET     /apis                                           fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+### NoDocs ###
+GET     /teams/*path                                    fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
+### NoDocs ###
+GET     /daikoku/*path                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
+### NoDocs ###
+GET     /settings/*path                                 fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
+### NoDocs ###
+GET     /notifications/*path                            fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
+### NoDocs ###
+GET     /apis/*path                                     fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
+### NoDocs ###
+GET     /consumptions/*path                             fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
+### NoDocs ###
+GET     /logout                                         fr.maif.otoroshi.daikoku.ctrls.LoginController.userLogout()
+
+### NoDocs ###
+POST    /account/reset                                  fr.maif.otoroshi.daikoku.ctrls.LoginController.askForPasswordReset()
+### NoDocs ###
+GET     /account/reset                                  fr.maif.otoroshi.daikoku.ctrls.LoginController.passwordResetValidation()
+### NoDocs ###
+GET     /account/validate                               fr.maif.otoroshi.daikoku.ctrls.LoginController.createUserValidation()
+### NoDocs ###
+POST    /account                                        fr.maif.otoroshi.daikoku.ctrls.LoginController.createUser()
+
+### NoDocs ###
+GET     /auth/:provider/login                           fr.maif.otoroshi.daikoku.ctrls.LoginController.loginPage(provider)
+### NoDocs ###
+POST    /auth/:provider/callback                        fr.maif.otoroshi.daikoku.ctrls.LoginController.login(provider)
+### NoDocs ###
+GET     /auth/:provider/callback                        fr.maif.otoroshi.daikoku.ctrls.LoginController.loginGet(provider)
+### NoDocs ###
+GET     /auth/:provider/logout                          fr.maif.otoroshi.daikoku.ctrls.LoginController.logout(provider)
+
+### NoDocs ###
+GET     /api/me/teams/own                               fr.maif.otoroshi.daikoku.ctrls.ApiController.myOwnTeam()
+### NoDocs ###
+GET     /api/me/teams/:id                               fr.maif.otoroshi.daikoku.ctrls.ApiController.oneOfMyTeam(id)
+### NoDocs ###
+GET     /api/me/teams                                   fr.maif.otoroshi.daikoku.ctrls.ApiController.myTeams()
+### NoDocs ###
+GET     /api/me/notifications                           fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUntreatedNotifications(page: Int ?= 0, pageSize: Int ?= 10)
+### NoDocs ###
+GET     /api/me/notifications/all                       fr.maif.otoroshi.daikoku.ctrls.NotificationController.myNotifications(page: Int ?= 0, pageSize: Int ?= 10)
+### NoDocs ###
+GET     /api/me/notifications/unread-count              fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUnreadNotificationsCount()
+### NoDocs ###
+GET     /api/me/visible-apis/:id                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApi(id)
+### NoDocs ###
+GET     /api/me/visible-apis                            fr.maif.otoroshi.daikoku.ctrls.ApiController.myVisibleApis()
+### NoDocs ###
+GET     /api/me/teams/:teamId/visible-apis/:apiId       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId)
+### NoDocs ###
+GET     /api/me/subscriptions/:apiId                    fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId)
+### NoDocs ###
+GET     /api/me                                         fr.maif.otoroshi.daikoku.ctrls.ApiController.me()
+### NoDocs ###
+DELETE  /api/me                                         fr.maif.otoroshi.daikoku.ctrls.UsersController.deleteSelfUser()
+
+### NoDocs ###
+POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
+### NoDocs ###
+GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(apiId, teamId)
+### NoDocs ###
+GET     /api/apis/:apiId/pages/:id/content              fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPageRemoteContent(apiId, id)
+### NoDocs ###
+GET     /api/apis/:apiId/pages/:id                      fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPage(apiId, id)
+### NoDocs ###
+POST    /api/teams/:teamId/subscriptions/:id/name       fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiSubscriptionCustomName(teamId, id)
+### NoDocs ###
+DELETE  /api/teams/:teamId/subscriptions/:id/_delete    fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiSubscription(teamId, id)
+### NoDocs ###
+PUT		/api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
+### NoDocs ###
+DELETE  /api/teams/:teamId/subscriptions/_clean			fr.maif.otoroshi.daikoku.ctrls.ApiController.cleanArchivedSubscriptions(teamId)
+
+### NoDocs ###
+GET     /api/apis/:apiId/doc                            fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId)
+### NoDocs ###
+POST    /api/apis/:apiId/access                         fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiAccess(apiId)
+
+### NoDocs ###
+GET     /api/teams/:teamId/apiKey/:clientId/informations         fr.maif.otoroshi.daikoku.ctrls.ApiController.getPlanInformations(teamId, clientId)
+
+### NoDocs ###
+POST    /api/teams/:teamId/apiKey/:clientId/consumption/_sync    fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.syncApiKeyConsumption(clientId, teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/apis/:apiId/consumption/_sync         fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.syncApiConsumption(apiId, teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/billing/_sync                         fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.syncTeamBilling(teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/revenue/_sync                         fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.syncTeamRevenue(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/apiKey/:clientId/consumption          fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.getApiKeyConsumption(clientId, teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+### NoDocs ###
+GET     /api/teams/:teamId/apis/:apiId/plan/:planId/consumption  fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.getGroupConsumption(teamId, apiId, planId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+### NoDocs ###
+GET     /api/teams/:teamId/apis/:apiId/consumption               fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.getApiConsumption(teamId, apiId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+### NoDocs ###
+GET     /api/teams/:teamId/consumptions                          fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.consumptions(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+### NoDocs ###
+GET     /api/teams/:teamId/billings                              fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.billings(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+### NoDocs ###
+GET     /api/teams/:teamId/revenue                               fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.revenue(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+
+### NoDocs ###
+GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/apis/:apiId/swagger.json     fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId)
+### NoDocs ###
+GET     /api/teams/:teamId/apis/:apiId/swagger          fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId)
+### NoDocs ###
+GET     /api/teams/:teamId/apis/:apiId                  fr.maif.otoroshi.daikoku.ctrls.ApiController.apiOfTeam(teamId, apiId)
+### NoDocs ###
+PUT     /api/teams/:teamId/apis/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiOfTeam(teamId, id)
+### NoDocs ###
+DELETE  /api/teams/:teamId/apis/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiOfTeam(teamId, id)
+### NoDocs ###
+POST    /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku.ctrls.ApiController.createApiOfTeam(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku.ctrls.ApiController.apisOfTeam(teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/apis/_names                  fr.maif.otoroshi.daikoku.ctrls.ApiController.verifyNameUniqueness(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/visible-apis                 fr.maif.otoroshi.daikoku.ctrls.ApiController.visibleApisOfTeam(teamId)
+### NoDocs ###
+GET     /api/categories                                 fr.maif.otoroshi.daikoku.ctrls.ApiController.categories()
+
+### NoDocs ###
+DELETE  /api/teams/:teamId/pages/:pageId                fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteDocPage(teamId, pageId)
+### NoDocs ###
+PUT     /api/teams/:teamId/pages/:pageId                fr.maif.otoroshi.daikoku.ctrls.ApiController.saveDocPage(teamId, pageId)
+### NoDocs ###
+POST    /api/teams/:teamId/pages                        fr.maif.otoroshi.daikoku.ctrls.ApiController.createDocPage(teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/apis/:apiId/pages/_reorder   fr.maif.otoroshi.daikoku.ctrls.ApiController.reorderApiDocPagesIndex(teamId, apiId)
+
+
+### NoDocs ###
+DELETE  /api/teams/:teamId/assets/:assetId              fr.maif.otoroshi.daikoku.ctrls.TeamAssetsController.deleteAsset(teamId, assetId)
+### NoDocs ###
+GET     /api/teams/:teamId/assets/:assetId              fr.maif.otoroshi.daikoku.ctrls.TeamAssetsController.getAsset(teamId, assetId)
+### NoDocs ###
+GET     /team-assets/:teamId/:assetId                   fr.maif.otoroshi.daikoku.ctrls.TeamAssetsController.getAsset(teamId, assetId)
+### NoDocs ###
+GET     /api/teams/:teamId/assets                       fr.maif.otoroshi.daikoku.ctrls.TeamAssetsController.listAssets(teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/assets                       fr.maif.otoroshi.daikoku.ctrls.TeamAssetsController.storeAsset(teamId)
+
+### NoDocs ###
+DELETE  /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.deleteAsset(assetId)
+### NoDocs ###
+GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.getAsset(assetId)
+### NoDocs ###
+GET     /tenant-assets                                  fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.listAssets()
+### NoDocs ###
+POST    /tenant-assets                                  fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.storeAsset()
+
+### NoDocs ###
+GET     /user-assets/:assetId                           fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.getAsset(assetId)
+### NoDocs ###
+POST    /user-assets                                    fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.storeAsset()
+
+### NoDocs ###
+GET     /asset-thumbnails/:assetId                      fr.maif.otoroshi.daikoku.ctrls.AssetsThumbnailController.getAsset(assetId)
+### NoDocs ###
+POST    /asset-thumbnails/:assetId                      fr.maif.otoroshi.daikoku.ctrls.AssetsThumbnailController.storeAsset(assetId)
+
+### NoDocs ###
+DELETE  /api/teams/otoroshis/:id                        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.deleteOtoroshiSettings(id)
+### NoDocs ###
+PUT     /api/teams/otoroshis/:id                        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.saveOtoroshiSettings(id)
+### NoDocs ###
+GET     /api/teams/otoroshis/:id                        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiSettings(id)
+### NoDocs ###
+POST    /api/teams/otoroshis                            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createOtoroshiSettings()
+### NoDocs ###
+GET     /api/teams/otoroshis                            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshisSettings()
+### NoDocs ###
+POST    /api/teams/:teamId/testing/apikeys              fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createTestingApiKey(teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/testing/:apiId/call          fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.fakeApiCall(teamId, apiId)
+### NoDocs ###
+GET     /api/teams/:teamId/tenant/otoroshis/:oto/groups fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsFor(teamId, oto)
+
+### NoDocs ###
+GET     /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.teams()
+### NoDocs ###
+POST    /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.createTeam()
+### NoDocs ###
+PUT     /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.updateTeam(teamId)
+### NoDocs ###
+DELETE  /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.deleteTeam(teamId)
+### NoDocs ###
+GET     /api/teams/joinable                             fr.maif.otoroshi.daikoku.ctrls.TeamController.allJoinableTeams()
+### NoDocs ###
+GET     /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.team(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/_full                        fr.maif.otoroshi.daikoku.ctrls.TeamController.teamFull(teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/join                         fr.maif.otoroshi.daikoku.ctrls.TeamController.askForJoinTeam(teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/members/_permission          fr.maif.otoroshi.daikoku.ctrls.TeamController.updateTeamMembersPermission(teamId)
+### NoDocs ###
+DELETE  /api/teams/:teamId/members/:id                  fr.maif.otoroshi.daikoku.ctrls.TeamController.removeMemberFromTeam(teamId, id)
+### NoDocs ###
+GET     /api/teams/:teamId/members/:id                  fr.maif.otoroshi.daikoku.ctrls.TeamController.memberOfTeam(teamId, id)
+### NoDocs ###
+POST    /api/teams/:teamId/members                      fr.maif.otoroshi.daikoku.ctrls.TeamController.addMembersToTeam(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/members                      fr.maif.otoroshi.daikoku.ctrls.TeamController.membersOfTeam(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/addable-members              fr.maif.otoroshi.daikoku.ctrls.TeamController.addableUsersForTeam(teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/apiKeys/visibility           fr.maif.otoroshi.daikoku.ctrls.TeamController.updateApiKeysVisibility(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/home                         fr.maif.otoroshi.daikoku.ctrls.TeamController.teamHome(teamId)
+
+### NoDocs ###
+GET     /api/teams/:teamId/notifications/unread-count   fr.maif.otoroshi.daikoku.ctrls.NotificationController.unreadNotificationsCountOfTeam(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/notifications/all            fr.maif.otoroshi.daikoku.ctrls.NotificationController.notificationOfTeam(teamId, page: Int ?= 0, pageSize: Int ?= 10)
+### NoDocs ###
+GET     /api/teams/:teamId/notifications                fr.maif.otoroshi.daikoku.ctrls.NotificationController.untreatedNotificationOfTeam(teamId, page: Int ?= 0, pageSize: Int ?= 10)
+### NoDocs ###
+PUT     /api/teams/:teamId/notifications/:id/accept     fr.maif.otoroshi.daikoku.ctrls.NotificationController.acceptNotificationOfTeam(teamId, id)
+### NoDocs ###
+PUT     /api/teams/:teamId/notifications/:id/reject     fr.maif.otoroshi.daikoku.ctrls.NotificationController.rejectNotificationOfTeam(teamId, id)
+
+### NoDocs ###
+POST    /api/oidc/_fetchConfig                          fr.maif.otoroshi.daikoku.ctrls.TenantController.fetchOpenIdConfiguration()
+### NoDocs ###
+GET     /api/tenants/simplified                         fr.maif.otoroshi.daikoku.ctrls.TenantController.tenantList()
+### NoDocs ###
+GET     /api/tenants/:id/_redirect                      fr.maif.otoroshi.daikoku.ctrls.TenantController.redirectToTenant(id)
+
+### NoDocs ###
+POST    /api/tenants/_names                             fr.maif.otoroshi.daikoku.ctrls.TenantController.namesOfTenants()
+### NoDocs ###
+GET     /api/teams/:teamId/tenant                       fr.maif.otoroshi.daikoku.ctrls.TenantController.currentTenant(teamId)
+### NoDocs ###
+PUT     /api/tenants/:tenantId                          fr.maif.otoroshi.daikoku.ctrls.TenantController.saveTenant(tenantId)
+### NoDocs ###
+GET     /api/tenants/:tenantId                          fr.maif.otoroshi.daikoku.ctrls.TenantController.oneTenant(tenantId)
+### NoDocs ###
+DELETE  /api/tenants/:tenantId                          fr.maif.otoroshi.daikoku.ctrls.TenantController.deleteTenant(tenantId)
+### NoDocs ###
+GET     /api/tenants                                    fr.maif.otoroshi.daikoku.ctrls.TenantController.allTenants()
+### NoDocs ###
+POST    /api/tenants                                    fr.maif.otoroshi.daikoku.ctrls.TenantController.createTenant()
+
+### NoDocs ###
+POST    /api/teams/:teamId/apis/:apiId/_translate       fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveApiTranslation(teamId, apiId)
+### NoDocs ###
+POST    /api/tenant/:tenantId/_translate                fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTenantTranslation(tenantId)
+### NoDocs ###
+POST    /api/teams/:teamId/_translate                   fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTeamTranslation(teamId)
+### NoDocs ###
+GET     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.getTenantTranslation()
+
+### NoDocs ###
+GET     /api/admin/users/:id/_impersonate               fr.maif.otoroshi.daikoku.ctrls.UsersController.impersonate(id)
+### NoDocs ###
+GET     /api/me/_deimpersonate                          fr.maif.otoroshi.daikoku.ctrls.UsersController.deImpersonate()
+### NoDocs ###
+GET     /api/admin/users/:id                            fr.maif.otoroshi.daikoku.ctrls.UsersController.findUserById(id)
+### NoDocs ###
+PUT     /api/admin/users/:id                            fr.maif.otoroshi.daikoku.ctrls.UsersController.updateUserById(id)
+### NoDocs ###
+DELETE  /api/admin/users/:id                            fr.maif.otoroshi.daikoku.ctrls.UsersController.deleteUserById(id)
+### NoDocs ###
+POST    /api/admin/users                                fr.maif.otoroshi.daikoku.ctrls.UsersController.createUser()
+### NoDocs ###
+GET     /api/admin/users                                fr.maif.otoroshi.daikoku.ctrls.UsersController.allTenantUsers()
+### NoDocs ###
+GET     /api/admin/auditTrail                           fr.maif.otoroshi.daikoku.ctrls.AuditTrailController.auditTrail()
+
+### NoDocs ###
+DELETE  /api/admin/sessions/:id                         fr.maif.otoroshi.daikoku.ctrls.SessionController.deleteSession(id)
+### NoDocs ###
+DELETE  /api/admin/sessions                             fr.maif.otoroshi.daikoku.ctrls.SessionController.deleteAllSessions()
+### NoDocs ###
+GET     /api/admin/sessions                             fr.maif.otoroshi.daikoku.ctrls.SessionController.allSessions()
+### NoDocs ###
+POST    /api/session/_renew                             fr.maif.otoroshi.daikoku.ctrls.SessionController.sessionRenew()
+
+### NoDocs ###
+GET     /api/entities/tenant                            fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newTenant()
+### NoDocs ###
+GET     /api/entities/team                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newTeam()
+### NoDocs ###
+GET     /api/entities/api                               fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newApi()
+### NoDocs ###
+GET     /api/entities/user                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newUser()
+### NoDocs ###
+GET     /api/entities/otoroshi                          fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newOtoroshi()
+
+### NoDocs ###
+POST    /api/jobs/otoroshi/_sync                        fr.maif.otoroshi.daikoku.ctrls.JobsController.otoroshiSyncJob()
+### NoDocs ###
+POST    /api/jobs/stats/_sync                           fr.maif.otoroshi.daikoku.ctrls.JobsController.apikeysStatsSyncJob()
+
+### NoDocs ###
+POST    /api/_search                                    fr.maif.otoroshi.daikoku.ctrls.ApiController.search()
+
+### NoDocs ###
+POST    /api/reset                                      fr.maif.otoroshi.daikoku.ctrls.MockController.reset()
+
+### NoDocs ###
+GET     /api/state/export                               fr.maif.otoroshi.daikoku.ctrls.StateController.exportState()
+### NoDocs ###
+POST    /api/state/import                               fr.maif.otoroshi.daikoku.ctrls.StateController.importState()
+
+### NoDocs ###
+GET     /fakeotoroshi/api/stats                                      fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiStats(from: String, to: String, apikey: String)
+### NoDocs ###
+GET     /fakeotoroshi/api/groups/:groupId/apikeys/:clientId/quotas   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiQuotas(groupId, clientId)
+### NoDocs ###
+GET     /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKey(groupId, clientId)
+### NoDocs ###
+PUT     /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(groupId, clientId)
+### NoDocs ###
+DELETE  /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.deleteFakeOtoroshiApiKey(groupId, clientId)
+### NoDocs ###
+PUT		  /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(groupId, clientId)
+### NoDocs ###
+POST    /fakeotoroshi/api/groups/:groupId/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.createFakeOtoroshiApiKey(groupId)
+### NoDocs ###
+GET     /fakeotoroshi/api/groups/:groupId/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKeys(groupId)
+### NoDocs ###
+GET     /fakeotoroshi/api/groups/:groupId                            fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroup(groupId)
+### NoDocs ###
+GET     /fakeotoroshi/api/groups                                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroups()
+
+GET     /admin-api/swagger.json                                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
+
+###
+#  summary: read the full content of the datastore in nd-json format
+#  tags:
+#    - Import / Export
+#  responses:
+#    200:
+#      description: success
+#      content:
+#        application/nd-json:
+#          schema:
+#            type: object
+###
+GET     /admin-api/state/export                         fr.maif.otoroshi.daikoku.ctrls.StateAdminApiController.exportState()
+
+###
+#  summary: insert the full content of the datastore from nd-json format
+#  tags:
+#    - Import / Export
+#  requestBody:
+#    description: Datastore content
+#    required: true
+#    content:
+#      application/nd-json:
+#        schema:
+#            type: object
+#  responses:
+#    200:
+#      description: success
+#      content:
+#        application/json:
+#          schema:
+#            type: object
+###
+POST    /admin-api/state/import                         fr.maif.otoroshi.daikoku.ctrls.StateAdminApiController.importState()
+
+DELETE  /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.deleteEntity(id)
+PATCH   /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.patchEntity(id)
+PUT     /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.updateEntity(id)
+
+###
+#  summary: read a tenant
+#  tags:
+#    - Tenant Endpoints
+#  responses:
+#    200:
+#      description: success
+#      content:
+#        application/json:
+#          schema:
+#            type: object
+#            items:
+#              $ref: '#/components/schemas/fr.maif.otoroshi.daikoku.domain.DaikokuStyle'
+###
+GET     /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.findById(id)
+POST    /admin-api/tenants                              fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.createEntity()
+GET     /admin-api/tenants                              fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.findAll()
+
+DELETE  /admin-api/users/:id                            fr.maif.otoroshi.daikoku.ctrls.UserAdminApiController.deleteEntity(id)
+PATCH   /admin-api/users/:id                            fr.maif.otoroshi.daikoku.ctrls.UserAdminApiController.patchEntity(id)
+PUT     /admin-api/users/:id                            fr.maif.otoroshi.daikoku.ctrls.UserAdminApiController.updateEntity(id)
+GET     /admin-api/users/:id                            fr.maif.otoroshi.daikoku.ctrls.UserAdminApiController.findById(id)
+POST    /admin-api/users                                fr.maif.otoroshi.daikoku.ctrls.UserAdminApiController.createEntity()
+GET     /admin-api/users                                fr.maif.otoroshi.daikoku.ctrls.UserAdminApiController.findAll()
+
+DELETE  /admin-api/teams/:id                            fr.maif.otoroshi.daikoku.ctrls.TeamAdminApiController.deleteEntity(id)
+PATCH   /admin-api/teams/:id                            fr.maif.otoroshi.daikoku.ctrls.TeamAdminApiController.patchEntity(id)
+PUT     /admin-api/teams/:id                            fr.maif.otoroshi.daikoku.ctrls.TeamAdminApiController.updateEntity(id)
+GET     /admin-api/teams/:id                            fr.maif.otoroshi.daikoku.ctrls.TeamAdminApiController.findById(id)
+POST    /admin-api/teams                                fr.maif.otoroshi.daikoku.ctrls.TeamAdminApiController.createEntity()
+GET     /admin-api/teams                                fr.maif.otoroshi.daikoku.ctrls.TeamAdminApiController.findAll()
+
+DELETE  /admin-api/apis/:id                             fr.maif.otoroshi.daikoku.ctrls.ApiAdminApiController.deleteEntity(id)
+PATCH   /admin-api/apis/:id                             fr.maif.otoroshi.daikoku.ctrls.ApiAdminApiController.patchEntity(id)
+PUT     /admin-api/apis/:id                             fr.maif.otoroshi.daikoku.ctrls.ApiAdminApiController.updateEntity(id)
+GET     /admin-api/apis/:id                             fr.maif.otoroshi.daikoku.ctrls.ApiAdminApiController.findById(id)
+POST    /admin-api/apis                                 fr.maif.otoroshi.daikoku.ctrls.ApiAdminApiController.createEntity()
+GET     /admin-api/apis                                 fr.maif.otoroshi.daikoku.ctrls.ApiAdminApiController.findAll()
+
+DELETE  /admin-api/subscriptions/:id                    fr.maif.otoroshi.daikoku.ctrls.ApiSubscriptionAdminApiController.deleteEntity(id)
+PATCH   /admin-api/subscriptions/:id                    fr.maif.otoroshi.daikoku.ctrls.ApiSubscriptionAdminApiController.patchEntity(id)
+PUT     /admin-api/subscriptions/:id                    fr.maif.otoroshi.daikoku.ctrls.ApiSubscriptionAdminApiController.updateEntity(id)
+GET     /admin-api/subscriptions/:id                    fr.maif.otoroshi.daikoku.ctrls.ApiSubscriptionAdminApiController.findById(id)
+POST    /admin-api/subscriptions                        fr.maif.otoroshi.daikoku.ctrls.ApiSubscriptionAdminApiController.createEntity()
+GET     /admin-api/subscriptions                        fr.maif.otoroshi.daikoku.ctrls.ApiSubscriptionAdminApiController.findAll()
+
+DELETE  /admin-api/pages/:id                            fr.maif.otoroshi.daikoku.ctrls.ApiDocumentationPageAdminApiController.deleteEntity(id)
+PATCH   /admin-api/pages/:id                            fr.maif.otoroshi.daikoku.ctrls.ApiDocumentationPageAdminApiController.patchEntity(id)
+PUT     /admin-api/pages/:id                            fr.maif.otoroshi.daikoku.ctrls.ApiDocumentationPageAdminApiController.updateEntity(id)
+GET     /admin-api/pages/:id                            fr.maif.otoroshi.daikoku.ctrls.ApiDocumentationPageAdminApiController.findById(id)
+POST    /admin-api/pages                                fr.maif.otoroshi.daikoku.ctrls.ApiDocumentationPageAdminApiController.createEntity()
+GET     /admin-api/pages                                fr.maif.otoroshi.daikoku.ctrls.ApiDocumentationPageAdminApiController.findAll()
+
+DELETE  /admin-api/notifications/:id                    fr.maif.otoroshi.daikoku.ctrls.NotificationAdminApiController.deleteEntity(id)
+PATCH   /admin-api/notifications/:id                    fr.maif.otoroshi.daikoku.ctrls.NotificationAdminApiController.patchEntity(id)
+PUT     /admin-api/notifications/:id                    fr.maif.otoroshi.daikoku.ctrls.NotificationAdminApiController.updateEntity(id)
+GET     /admin-api/notifications/:id                    fr.maif.otoroshi.daikoku.ctrls.NotificationAdminApiController.findById(id)
+POST    /admin-api/notifications                        fr.maif.otoroshi.daikoku.ctrls.NotificationAdminApiController.createEntity()
+GET     /admin-api/notifications                        fr.maif.otoroshi.daikoku.ctrls.NotificationAdminApiController.findAll()
+
+DELETE  /admin-api/sessions/:id                         fr.maif.otoroshi.daikoku.ctrls.UserSessionAdminApiController.deleteEntity(id)
+PATCH   /admin-api/sessions/:id                         fr.maif.otoroshi.daikoku.ctrls.UserSessionAdminApiController.patchEntity(id)
+PUT     /admin-api/sessions/:id                         fr.maif.otoroshi.daikoku.ctrls.UserSessionAdminApiController.updateEntity(id)
+GET     /admin-api/sessions/:id                         fr.maif.otoroshi.daikoku.ctrls.UserSessionAdminApiController.findById(id)
+POST    /admin-api/sessions                             fr.maif.otoroshi.daikoku.ctrls.UserSessionAdminApiController.createEntity()
+GET     /admin-api/sessions                             fr.maif.otoroshi.daikoku.ctrls.UserSessionAdminApiController.findAll()
+
+DELETE  /admin-api/consumptions/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiKeyConsumptionAdminApiController.deleteEntity(id)
+PATCH   /admin-api/consumptions/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiKeyConsumptionAdminApiController.patchEntity(id)
+PUT     /admin-api/consumptions/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiKeyConsumptionAdminApiController.updateEntity(id)
+GET     /admin-api/consumptions/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiKeyConsumptionAdminApiController.findById(id)
+POST    /admin-api/consumptions                         fr.maif.otoroshi.daikoku.ctrls.ApiKeyConsumptionAdminApiController.createEntity()
+GET     /admin-api/consumptions                         fr.maif.otoroshi.daikoku.ctrls.ApiKeyConsumptionAdminApiController.findAll()
+
+DELETE  /admin-api/audit-events/:id                     fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.deleteEntity(id)
+PATCH   /admin-api/audit-events/:id                     fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.patchEntity(id)
+PUT     /admin-api/audit-events/:id                     fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.updateEntity(id)
+GET     /admin-api/audit-events/:id                     fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.findById(id)
+POST    /admin-api/audit-events                         fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.createEntity()
+GET     /admin-api/audit-events                         fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.findAll()
+
+
+GET     /integration-api/:teamId/:apiId/complete        fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiComplete(teamId, apiId)
+GET     /integration-api/:teamId/:apiId/description     fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiDescription(teamId, apiId)
+GET     /integration-api/:teamId/:apiId/plans           fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiPlans(teamId, apiId)
+GET     /integration-api/:teamId/:apiId/documentation   fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiDocumentation(teamId, apiId)
+GET     /integration-api/:teamId/:apiId/apidoc          fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiSwagger(teamId, apiId)
+GET     /integration-api/:teamId/:apiId                 fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.api(teamId, apiId)
+GET     /integration-api/:teamId                        fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAllTeam(teamId)
+GET     /integration-api/apis                           fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.findAll()
+
+### NoDocs ###
+GET     /*path                      fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
+

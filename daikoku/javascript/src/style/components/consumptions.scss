@@ -1,0 +1,88 @@
+.data-vizualisation {
+  border: 1px solid lightgray;
+  border-radius: 10px;
+
+  .data__navbar {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    height: 130px;
+
+    .data__navbar__tab {
+      width: 200px;
+      display: block;
+      cursor: pointer;
+      padding: 15px;
+      background-color: #dfe6ec;
+      margin-right: 1px;
+
+      &:nth-of-type(1) {
+        border-radius: 10px 0 0 0;
+      }
+
+      &.data__navbar__tab--active {
+        background-color: #7f96af;
+        color: #fff;
+      }
+
+
+      .ant-progress-outer {
+        display: inline-block;
+        width: 100%;
+        margin-right: 0;
+        padding-right: 0;
+
+        .ant-progress-inner {
+          position: relative;
+          display: inline-block;
+          width: 100%;
+          vertical-align: middle;
+          background-color: #f5f5f5;
+          border-radius: 100px;
+
+          .ant-progress-bg {
+            background-color: #1890ff;
+            -webkit-transition: all .4s cubic-bezier(.08, .82, .17, 1) 0s;
+            transition: all .4s cubic-bezier(.08, .82, .17, 1) 0s;
+          }
+        }
+      }
+    }
+  }
+
+  .data__content {
+    padding: 5px 15px;
+  }
+}
+
+.period-display {
+  color: gray;
+  font-style: italic;
+}
+
+.consumptions-plan {
+  cursor: pointer;
+
+  &.no-redirect {
+    cursor: default;
+  }
+
+  .card-data {
+    padding: 10px;
+    height: 170px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+
+    color: rgb(32, 37, 41);
+    background-color: rgb(231, 236, 239);
+    font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
+    //font-size: 25pt;
+    text-align: center;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+  }
+}

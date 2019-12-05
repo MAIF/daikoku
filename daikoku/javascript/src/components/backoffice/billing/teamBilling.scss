@@ -1,0 +1,147 @@
+.month__and__total {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.total {
+  flex-grow: 1;
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid #bbc9d8;
+
+  .title__container__bloc {
+    display: flex;
+    align-items: center;
+  }
+
+  .title__container {
+    font-size: 24px;
+  }
+
+  .pricing__zone {
+    border: 1px solid #ececec;
+    padding: 5px;
+
+    .label {
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+  }
+}
+
+.api__billing__card__container {
+  background-color: #ececec;
+  margin-left: 6px;
+  margin-top: 10px;
+
+  .api__billing__card {
+    cursor: pointer;
+    background-color: #fff;
+    border: 1px solid #e8e8e8;
+    padding: 10px;
+    width: 160px;
+    text-align: center;
+
+    .api__billing__name {
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+  }
+}
+
+.currency__total {
+  font-size: 24px;
+  color: #007bff;
+  margin-left: 8px;
+}
+
+.currency {
+  font-size: 24px;
+  color: #007bff;
+
+  .unit {
+    margin-left: 10px;
+    font-weight: bold;
+  }
+}
+
+.price__cartridge {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 15px;
+  border: 1px solid #ececec;
+  border-radius: 4px;
+
+  &.clickable {
+    cursor: pointer;
+  }
+
+  + .price__cartridge {
+    margin-top: 5px;
+  }
+
+  .price__cartridge__total {
+    font-size: 18px;
+    color: #007bff;
+  }
+}
+
+.apikeys {
+  text-align: center;
+  margin-top: 40px;
+
+  @media screen and (max-width: 768px) {
+        position: absolute;
+        top:120px;
+
+      .api-plans-consumptions{
+        background-color: hsla(0, 0%, 83%, 1);
+        padding-bottom: 20px;
+        border: 1px solid #7f96af;
+        // min-height: 200px;
+      }
+  }
+
+  .api__plans__consumption__header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 20px;
+    color: #333;
+    padding: 15px 5px;
+
+    i.quit {
+      cursor: pointer;
+      color: #7f96af;
+
+      &:hover {
+        color: #333;
+      }
+    }
+  }
+}
+
+.pie-chart__legend__entry {
+  display: flex;
+  align-items: center;
+
+  .entry__color {
+    width: 10px;
+    height: 10px;
+    margin-right: 15px;
+  }
+
+  .entry__value {
+    font-size: 14px;
+  }
+}
+.no-data__container{
+  display: flex;
+  justify-content: center;
+  margin: 10px;
+}
+.badge.no-data {
+  font-size: 20px;
+}

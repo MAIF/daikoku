@@ -1,0 +1,39 @@
+@import fr.maif.otoroshi.daikoku.env.Env
+@import fr.maif.otoroshi.daikoku.env.DaikokuMode
+@import fr.maif.otoroshi.daikoku.domain.User
+@import fr.maif.otoroshi.daikoku.domain.UserSession
+@import fr.maif.otoroshi.daikoku.domain.Tenant
+@import fr.maif.otoroshi.daikoku.domain.Team
+
+@(tenant: Tenant, host: String, env: Env)
+
+@customStyle = {
+@(tenant.colorTheme())
+@if(env.config.mode == DaikokuMode.Dev) {
+    <link rel="stylesheet" media="screen" href="http://@host:3000/daikoku.css">
+}
+@if(env.config.mode == DaikokuMode.Prod) {
+    <link rel="stylesheet" media="screen" href="/assets/react-app/daikoku.home.min.css">
+}
+@(tenant.moareStyle())
+}
+
+@customJs = {
+@(tenant.moareJs())
+}
+
+@main(tenant.style.map(_.title).getOrElse(tenant.name), moreStyles = customStyle, moreScripts = customJs, favicon = tenant.favicon()) {
+    <div id="app"></div>
+    @if(env.config.mode == DaikokuMode.Dev) {
+        <script type="text/javascript" src="http://@host:3000/daikoku.js"></script>
+    }
+    @if(env.config.mode == DaikokuMode.Prod) {
+        <script type="text/javascript" src="/assets/react-app/daikoku.home.min.js"></script>
+    }
+    <script>
+        console.log("not logged")
+    Daikoku.initNotLogged(
+      @Html(play.api.libs.json.Json.prettyPrint(tenant.toUiPayload(env)))
+    )
+  </script>
+}

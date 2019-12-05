@@ -1,0 +1,46 @@
+
+#swagger-editor {
+  font-size: 1.3em;
+  font-family: Roboto,sans-serif;
+  font-size: 9px;
+  line-height: 1.42857143;
+  color: #444;
+  margin: 0px;
+}
+
+#swagger-editor .container {
+  height: 100%;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#swagger-editor #editor-wrapper {
+  height: 100%;
+  border:1em solid #000;
+  border:none;
+}
+
+#swagger-editor .Pane2 {
+  overflow-y: scroll;
+}
+
+
+#swagger-editor .topbar {
+  margin-left: -30px;
+  width: 107% !important;
+}
+
+#swagger-ui .response-col_status {
+  width: 20% !important;
+}
+
+#swagger-ui .response-col_description {
+  width: 80% !important;
+}
+
+#redoc-container {
+  width: 100vw;
+  position: absolute;
+  left: 0px;
+}

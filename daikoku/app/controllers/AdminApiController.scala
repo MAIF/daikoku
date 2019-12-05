@@ -1,0 +1,247 @@
+package fr.maif.otoroshi.daikoku.ctrls
+
+import akka.http.scaladsl.util.FastFuture
+import akka.util.ByteString
+import fr.maif.otoroshi.daikoku.actions.DaikokuAction
+import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.DaikokuAdminOnly
+import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json._
+import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
+import fr.maif.otoroshi.daikoku.utils.admin._
+import play.api.http.HttpEntity
+import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.streams.Accumulator
+import play.api.mvc.{AbstractController, BodyParser, ControllerComponents}
+import storage.{DataStore, Repo}
+import cats.implicits._
+
+class StateController(DaikokuAction: DaikokuAction,
+                    env: Env,
+                    otoroshiClient: OtoroshiClient,
+                    cc: ControllerComponents)
+  extends AbstractController(cc) {
+
+  implicit val ec = env.defaultExecutionContext
+  implicit val mat = env.defaultMaterializer
+  implicit val ev = env
+
+  val bodyParser = BodyParser("Import parser") { _ =>
+    Accumulator.source[ByteString].map(Right.apply)
+  }
+
+  def exportState() = DaikokuAction.async { ctx =>
+    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has exported state"))(ctx) {
+      val source = env.dataStore.exportAsStream(false)//(ctx.request.getQueryString("pretty").exists(_ == "true"))
+      val disposition = ("Content-Disposition" -> s"""attachment; filename="daikoku-export-${System.currentTimeMillis}.ndjson"""")
+      val future = if (ctx.request.getQueryString("download").exists(_ == "true")) {
+        Ok.sendEntity(HttpEntity.Streamed(source, None, Some(""))).withHeaders(disposition).as("application/x-ndjson")
+      } else {
+        Ok.sendEntity(HttpEntity.Streamed(source, None, Some(""))).as("application/x-ndjson")
+      }
+      FastFuture.successful(future)
+    }
+  }
+
+  def importState() = DaikokuAction.async(bodyParser) { ctx =>
+    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has imported state"))(ctx) {
+      env.dataStore.importFromStream(ctx.request.body).map(_ => Ok(Json.obj("done" -> true)))
+    }
+  }
+}
+
+class StateAdminApiController(
+                      DaikokuApiAction: DaikokuApiAction,
+                      DaikokuApiActionWithoutTenant: DaikokuApiActionWithoutTenant,
+                      env: Env,
+                      cc: ControllerComponents)
+  extends AbstractController(cc) {
+
+  implicit val ec = env.defaultExecutionContext
+  implicit val mat = env.defaultMaterializer
+  implicit val ev = env
+
+  val bodyParser = BodyParser("Import parser") { _ =>
+    Accumulator.source[ByteString].map(Right.apply)
+  }
+
+  def exportState() = DaikokuApiAction.async { ctx =>
+    val source = env.dataStore.exportAsStream(false)//(ctx.request.getQueryString("pretty").exists(_ == "true"))
+    val disposition = ("Content-Disposition" -> s"""attachment; filename="daikoku-export-${System.currentTimeMillis}.ndjson"""")
+    val future = if (ctx.request.getQueryString("download").exists(_ == "true")) {
+      Ok.sendEntity(HttpEntity.Streamed(source, None, Some(""))).withHeaders(disposition).as("application/x-ndjson")
+    } else {
+      Ok.sendEntity(HttpEntity.Streamed(source, None, Some(""))).as("application/x-ndjson")
+    }
+    FastFuture.successful(future)
+  }
+
+  def importState() = DaikokuApiActionWithoutTenant.async(bodyParser) { req =>
+    env.dataStore.importFromStream(req.body).map(_ => Ok(Json.obj("done" -> true)))
+  }
+}
+
+class TenantAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[Tenant, TenantId](daa, env, cc) {
+  override def entityClass = classOf[Tenant]
+  override def entityName: String = "tenant"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[Tenant, TenantId] = ds.tenantRepo
+  override def toJson(entity: Tenant): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, Tenant] = TenantFormat.reads(entity).asEither.leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class UserAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[User, UserId](daa, env, cc) {
+  override def entityClass = classOf[User]
+  override def entityName: String = "user"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[User, UserId] = ds.userRepo
+  override def toJson(entity: User): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, User] = UserFormat.reads(entity).asEither.leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class TeamAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[Team, TeamId](daa, env, cc) {
+  override def entityClass = classOf[Team]
+  override def entityName: String = "team"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[Team, TeamId] = ds.teamRepo.forTenant(tenant)
+  override def toJson(entity: Team): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, Team] = TeamFormat.reads(entity).asEither.leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class ApiAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[Api, ApiId](daa, env, cc) {
+  override def entityClass = classOf[Api]
+  override def entityName: String = "api"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[Api, ApiId] = ds.apiRepo.forTenant(tenant)
+  override def toJson(entity: Api): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, Api] = ApiFormat.reads(entity).asEither.leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class ApiSubscriptionAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[ApiSubscription, ApiSubscriptionId](daa, env, cc) {
+  override def entityClass = classOf[ApiSubscription]
+  override def entityName: String = "api-subscription"
+  override def pathRoot: String = s"/admin-api/subscriptions"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[ApiSubscription, ApiSubscriptionId] = ds.apiSubscriptionRepo.forTenant(tenant)
+  override def toJson(entity: ApiSubscription): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, ApiSubscription] = ApiSubscriptionFormat.reads(entity).asEither.leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class ApiDocumentationPageAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[ApiDocumentationPage, ApiDocumentationPageId](daa, env, cc) {
+  override def entityClass = classOf[ApiDocumentationPage]
+  override def entityName: String = "api-documentation-page"
+  override def pathRoot: String = s"/admin-api/pages"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[ApiDocumentationPage, ApiDocumentationPageId] = ds.apiDocumentationPageRepo.forTenant(tenant)
+  override def toJson(entity: ApiDocumentationPage): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, ApiDocumentationPage] = ApiDocumentationPageFormat.reads(entity).asEither.leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class NotificationAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[Notification, NotificationId](daa, env, cc) {
+  override def entityClass = classOf[Notification]
+  override def entityName: String = "notification"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[Notification, NotificationId] = ds.notificationRepo.forTenant(tenant)
+  override def toJson(entity: Notification): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, Notification] = NotificationFormat.reads(entity).asEither.leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class UserSessionAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[UserSession, MongoId](daa, env, cc) {
+  override def entityClass = classOf[UserSession]
+  override def entityName: String = "user-session"
+  override def pathRoot: String = s"/admin-api/sessions"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[UserSession, MongoId] = ds.userSessionRepo
+  override def toJson(entity: UserSession): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, UserSession] = UserSessionFormat.reads(entity).asEither.leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class ApiKeyConsumptionAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[ApiKeyConsumption, MongoId](daa, env, cc) {
+  override def entityClass = classOf[ApiKeyConsumption]
+  override def entityName: String = "api-key-consumption"
+  override def pathRoot: String = s"/admin-api/consumptions"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[ApiKeyConsumption, MongoId] = ds.consumptionRepo.forTenant(tenant)
+  override def toJson(entity: ApiKeyConsumption): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, ApiKeyConsumption] = ConsumptionFormat.reads(entity).asEither.leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
+class AuditEventAdminApiController(daa: DaikokuApiAction, env: Env, cc: ControllerComponents) extends AdminApiController[JsObject, MongoId](daa, env, cc) {
+  override def entityClass = classOf[JsObject]
+  override def entityName: String = "audit-event"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[JsObject, MongoId] = ds.auditTrailRepo.forTenant(tenant)
+  override def toJson(entity: JsObject): JsValue = entity
+  override def fromJson(entity: JsValue): Either[String, JsObject] = entity.asOpt[JsObject] match {
+    case Some(v) => Right(v)
+    case None => Left("Not an object")
+  }
+}
+
+class AdminApiSwaggerController(
+                                 env: Env,
+                                 cc: ControllerComponents,
+                                 ctrl1: TenantAdminApiController,
+                                 ctrl2: UserAdminApiController,
+                                 ctrl3: TeamAdminApiController,
+                                 ctrl4: ApiAdminApiController,
+                                 ctrl5: ApiSubscriptionAdminApiController,
+                                 ctrl6: ApiDocumentationPageAdminApiController,
+                                 ctrl7: NotificationAdminApiController,
+                                 ctrl8: UserSessionAdminApiController,
+                                 ctrl9: ApiKeyConsumptionAdminApiController,
+                                 ctrl10: AuditEventAdminApiController
+                               )  extends AbstractController(cc) {
+
+  def schema[A, B <: ValueType](controller: AdminApiController[A, B]): JsObject = controller.openApiComponent(env)
+  def path[A, B <: ValueType](controller: AdminApiController[A, B]): JsObject = controller.openApiPath(env)
+
+  def schemas: JsValue = schema(ctrl1) ++
+    schema(ctrl2) ++
+    schema(ctrl3) ++
+    schema(ctrl4) ++
+    schema(ctrl5) ++
+    schema(ctrl6) ++
+    schema(ctrl7) ++
+    schema(ctrl8) ++
+    schema(ctrl9) ++
+    schema(ctrl10)
+
+  def paths: JsValue = path(ctrl1) ++
+    path(ctrl2) ++
+    path(ctrl3) ++
+    path(ctrl4) ++
+    path(ctrl5) ++
+    path(ctrl6) ++
+    path(ctrl7) ++
+    path(ctrl8) ++
+    path(ctrl9) ++
+    path(ctrl10)
+
+  def swagger() = Action {
+    Ok(Json.obj(
+      "openapi" -> "3.0.1",
+      "externalDocs" -> Json.obj(
+        "description" -> "Find out more about Daikoku",
+        "url" -> "https://maif.github.io/Daikoku/"
+      ),
+      "info" -> Json.obj(
+        "license" -> Json.obj(
+          "name" -> "Apache 2.0",
+          "url" -> "http://www.apache.org/licenses/LICENSE-2.0.html"
+        ),
+        "contact" -> Json.obj(
+          "name" -> "Daikoku Team",
+          "email" -> "oss@maif.fr"
+          ),
+          "description" -> "Admin API of Daikoku",
+          "title" -> "Daikoku Admin API",
+          "version" -> "1.0.0-dev"
+      ),
+      "tags" -> Json.arr(),
+      "components" -> Json.obj(
+        "schemas" -> schemas
+      ),
+      "paths" -> paths
+    )).withHeaders(
+      "Access-Control-Allow-Origin" -> "*"
+    )
+  }
+}

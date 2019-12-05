@@ -1,0 +1,60 @@
+
+.ReactTable {
+	border: none !important;
+  font-size: 14px;
+	background-color: $table-bg-color;
+}
+.ReactTable input {
+		border-radius: 4px;
+		border: none;
+}
+
+.ReactTable	.rt-td {
+		/* height: 40px !important; */
+}
+
+.ReactTable .-pageSizeOptions {
+		display: none !important;
+}
+
+.ReactTable	.-next .-btn,
+.ReactTable	.-previous .-btn {
+		border-radius: 4px !important;
+}
+
+.ReactTable	.-pagination {
+		justify-content: center;
+}
+
+.ReactTable	.-pagination .-previous,
+ .ReactTable .-pagination .-next {
+		flex: none;
+}
+
+.ReactTable	.-pagination .-center {
+		flex: none;
+		border: 1px solid rgba(181, 179, 179, .5);
+		border-radius: 4px;
+		margin-left: 5px;
+		margin-right: 5px;
+}
+
+.ReactTable	.-pagination .-btn:not([disabled]):hover {
+		background: #494948;
+}
+
+.ReactTable 	span.label.table-env {
+	  margin-right: 10px;
+}
+
+.ReactTable select{
+		background: none;
+}
+
+.ReactTable a {
+  color : #212529;
+}
+
+.ReactTable a:hover {
+  text-decoration: none;
+}

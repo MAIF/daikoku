@@ -1,0 +1,57 @@
+
+.navbar-brand {
+  font-size: 18px;
+}
+
+a.navbar-brand, #teamSelector:hover {
+  color:$navbar-brand-color;
+}
+
+.navbar .Select.has-value.Select--single > .Select-control .Select-value .Select-value-label, .Select.has-value.is-pseudo-focused.Select--single > .Select-control .Select-value .Select-value-label {
+  color: #fff;
+}
+
+.navbar {
+  background-color: $navbar-bg-color;
+}
+
+.logo-anonymous {
+  border-radius: 50%;
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+.dropdown-menu {
+  background-color: $menu-bg-color;
+}
+.dropdown-item {
+  color:$menu-text-color;
+  &:hover {
+    background-color: $menu-text-hover-bg-color;
+    color: $menu-text-hover-color
+  }
+}
+
+.add-member-select, .general-search{
+  width: 400px;
+}
+
+.period-select:hover>div,.general-search:hover>div,.add-member-select:hover>div{
+  cursor: pointer;
+}
+
+.general-search>div{
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+}
+
+.full-width-select {
+  width: 100%;
+}
+
+.navbar-toggle {
+  @media screen and (min-width: 768px) {
+      display: none;
+  }
+}

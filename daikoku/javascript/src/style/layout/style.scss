@@ -1,0 +1,204 @@
+body {
+  font-family: Raleway, Helvetica, sans-serif;
+  background-color: $body-bg-color;
+  color:$body-text-color;
+}
+//remove blue border on chrome
+*:focus {
+  outline: 0;
+}
+
+.a-fake,
+a {
+  color: $link-color;
+}
+
+.a-fake {
+  cursor: pointer;
+}
+
+.a-fake:hover,
+.btn:focus,
+.btn:hover,
+a:hover {
+  color:  $link-hover-color;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-help {
+  cursor: help;
+}
+
+.cursor-forbidden {
+  cursor: not-allowed;
+}
+
+.word-break {
+  word-break: break-all;
+}
+
+.hide {
+  display: none;
+}
+
+.user-logo {
+  background-color: white;
+}
+
+.month__selector .ant-calendar-picker:hover .ant-calendar-picker-clear {
+  opacity: 0;
+}
+
+main {
+  background-color: $body-bg-color;
+
+  .jumbotron {
+    background-color: #fff;
+  }
+}
+
+.fa-xxs {
+  font-size: 0.5em;
+}
+/*  */
+.api-description > p {
+  text-align: justify;
+}
+
+a.nav-link.active {
+  background-color: rgb(233, 236, 239);
+}
+
+[role="root-container"] {
+  padding-top: 130px;
+  @media screen and (min-width: 576px) {
+    padding-top: 90px;
+  }
+  @media screen and (min-width: 768px) {
+    padding-top: 60px;
+  }
+}
+
+.album {
+  background-color: $section-bg-color;
+}
+
+.underline-on-hover:hover {
+  text-decoration: underline;
+}
+
+.additionalContent {
+  background-color: $additionalContent-bg-color;
+  color:$additionalContent-text-color;
+}
+
+.navDocumentation ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.navDocumentation li::before {
+  content: "◦ ";
+  color: #6c757d;
+}
+
+.hr-apidescription {
+  width: 100%;
+  border-bottom: 1px solid #BBBBBB;
+  border-top: 0;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.container-api {
+  padding-bottom: 60px;
+}
+
+.form-back-fixedBtns {
+  justify-content: flex-end;
+  position: fixed;
+  bottom: 0;
+  height: 60px;
+  background-color: white;
+  width: 100%;
+  left: 1px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  z-index: 5;
+}
+
+.tenantLogo {
+  width: 290px;
+}
+
+.mediumAssetChooser {
+    width: 200px;
+}
+
+.changePicture {
+   position:absolute;
+   display:none;
+}
+
+img:hover+.changePicture,.changePicture:hover{
+  display:block;
+  opacity: .5;
+}
+
+.swagger-ui .info hgroup.main a{
+  word-break: break-all;
+}
+
+.language-selector {
+  width: 150px;
+}
+
+/* rwd */
+@media screen and (min-width: 768px) {
+  .col-form-label {
+    text-align: right;
+  }
+}
+
+.impersonator-topbar-mb {
+  @media screen and (max-width: 1100px) {
+    margin-bottom: 20px;
+  }
+  @media screen and (max-width: 768px) {
+    margin-bottom: 80px;
+  }
+  @media screen and (max-width: 540px) {
+    margin-bottom: 40px;
+  }
+}
+@media screen and (max-width: 540px) {
+  .nav-tabs .nav-item {
+    border: 1px solid #7b96b1;
+  }
+
+  .nav-tabs .nav-item:first-child {
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+  }
+
+  .nav-tabs .nav-item.show .nav-link,
+  .nav-tabs .nav-link.active {
+    background-color: #e7ecef;
+  }
+
+  .onglets {
+    padding-left: 15px;
+  }
+
+  .pricing-content {
+    margin-top: 20px;
+  }
+
+  .h1-rwd-reduce {
+    font-size: 1.8rem;
+  }
+}

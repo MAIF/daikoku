@@ -1,0 +1,39 @@
+$error-color: #{"var(--error-color, #ff6347)"};
+$error-hover-color: #{"var(--error-color, #ffa494)"};
+$success-color: #{"var(--success-color, #4F8A10)"};
+$success-hover-color: #{"var(--success-color, #76cf18)"};
+
+$link-color: #{"var(--link-color, #7f96af)"};
+$link-hover-color: #{"var(--link--hover-color, #8fa6bf)"};
+
+$body-bg-color:#{"var(--body-bg-color, #fff)"};
+$body-text-color:#{"var(--body-text-color, #212529)"};
+$navbar-bg-color: #{"var(--navbar-bg-color, #7f96af)"};
+$navbar-brand-color: #{"var(--navbar-brand-color, #fff)"};
+$menu-bg-color:#{"var(--menu-bg-color, #fff)"};
+$menu-text-color:#{"var(--menu-text-color, #212529)"};
+$menu-text-hover-bg-color:#{"var(--menu-text-hover-bg-color, #9bb0c5)"};
+$menu-text-hover-color:#{"var(--menu-text-hover-color, #fff)"};
+$section-bg-color:  #{"var(--section-bg-color, #f8f9fa)"};
+$section-text-color:#{"var(--section-text-color, #6c757d)"};
+$section-bottom-color:  #{"var(--section-bottom-color, #eee)"};
+$additionalContent-bg-color:#{"var(--addContent-bg-color, #e9ecef)"};
+$additionalContent-text-color:#{"var(--addContent-text-color, #000)"};
+$sidebar-bg-color: #{"var(--sidebar-bg-color, #f8f9fa)"};
+
+$btn-bg-color: #{"var(--btn-bg-color, #fff)"};
+$btn-text-color: #{"var(--btn-text-color, #495057)"};
+$btn-border-color: #{"var(--btn-border-color, #97b0c7)"};
+
+$badge-tags-bg-color:#{"var(--badge-tags-bg-color, #ffc107)"};
+$badge-tags-bg-hover-color:#{"var(--badge-tags-bg-color, #ffe1a7)"};
+$badge-tags-text-color:#{"var(--badge-tags-text-color, #212529)"};
+
+$pagination-text-color:#{"var(--pagination-text-color, #586069)"};
+$pagination-border-color:#{"var(--pagination-border-color, #586069)"};
+
+$table-bg-color:#{"var(--table-bg-color, #f8f9fa)"};
+
+$apicard-visibility-color: #{"var(--apicard-visibility-color, #586069)"};
+$apicard-visibility-border-color: #{"var(--apicard-visibility-border-color, rgba(27,31,35,.15))"};
+$modal-selection-bg-color: #{"var(--modal-selection-bg-color, rgba(27,31,35,.15))"};

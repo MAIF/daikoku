@@ -1,0 +1,205 @@
+@import '../variables';
+
+.modal-header{
+  background-color: #7f96af;
+}
+.modal-body,.modal-footer{
+  background-color: #fff;
+}
+.modal-content{
+  background-color: initial;
+  color:#fff;
+  .btn:hover,.btn:focus {
+    color: #fff;
+  }
+}
+.modal-footer .btn-success,.modal-footer .btn-danger{
+  background: none;
+}
+
+.modal.show{
+  display: block !important;
+  background-color: rgba(black, 0.8);
+}
+
+//TeamSelectionModal
+
+// .close-modal {
+//   cursor: pointer;
+//
+//   &:hover {
+//     color: black;
+//   }
+// }
+
+.modal-description {
+  color: black;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.team-selection__container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #fff;
+  color: black;
+
+  .team-selection {
+    display: flex;
+    flex-direction: row;
+    // justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: .5rem 1rem;
+    border-bottom: 1px solid #dfdfdf;
+
+    &.team-selection__all-team {
+      padding-bottom: 2rem;
+    }
+
+    &.selectable:hover {
+      cursor: pointer;
+      background-color: $modal-selection-bg-color;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.asset-selection__container--column {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #fff;
+  color: black;
+
+  .asset-selection {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    padding: .5rem 1rem;
+    border-bottom: 1px solid #dfdfdf;
+
+    &:hover {
+      cursor: pointer;
+      background-color: $modal-selection-bg-color;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.asset-selection-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.asset-selection__container--row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  flex: 1;
+  overflow: scroll;
+
+  .asset-selection {
+    width: 5rem;
+    height: 100%;
+    margin: .25rem;
+    object-fit: contain;
+    transition: all .25s ease-in-out;
+
+    &:hover {
+      cursor: pointer;
+    }
+  }
+}
+
+.tiles {
+	display: flex;
+	flex-wrap: wrap;
+	flex-direction: row;
+	justify-content: flex-start;
+	position: relative;
+}
+.tile {
+	margin: 15px;
+	cursor: pointer;
+	overflow: hidden;
+	width: 6vw;
+  height: 6vw;
+  &.selected {
+
+  }
+
+	img {
+		width: 100%;
+		transition: transform 500ms ease;
+		&:hover {
+			transform: scale(0.9);
+		}
+	}
+}
+
+// test
+
+/*******************************
+* MODAL AS LEFT/RIGHT SIDEBAR
+* Add "left" or "right" in modal parent div, after class="modal".
+* Get free snippets on bootpen.com
+*******************************/
+.modal.right .modal-dialog {
+  position: fixed;
+  margin: auto;
+  width: 40%;
+  height: 100%;
+  -webkit-transform: translate3d(0%, 0, 0);
+      -ms-transform: translate3d(0%, 0, 0);
+       -o-transform: translate3d(0%, 0, 0);
+          transform: translate3d(0%, 0, 0);
+}
+
+.modal.right .modal-content {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.modal.right .modal-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+      
+/*Right*/
+.modal.right.fade .modal-dialog {
+  right: -40%;
+  -webkit-transition: opacity 0.3s linear, right 0.3s ease-out;
+     -moz-transition: opacity 0.3s linear, right 0.3s ease-out;
+       -o-transition: opacity 0.3s linear, right 0.3s ease-out;
+          transition: opacity 0.3s linear, right 0.3s ease-out;
+}
+
+.modal.right.fade.in .modal-dialog {
+  right: 0;
+}
+
+.modal-body .asset__preview {
+  border-top: 1px solid #e9ecef;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  color: black;
+  height: 0;
+  opacity: 0;
+  transition: all .30s ease-in-out;
+
+  &.open {
+    height: 65px;
+    opacity: 1;
+  }
+}

@@ -1,0 +1,9 @@
+/* table api */
+.table-plan-name td{
+  cursor: pointer;
+}
+
+.table-plan-name .planSelected {
+  background-color: #343a40;
+  color:#fff;
+}

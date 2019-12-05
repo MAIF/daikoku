@@ -1,0 +1,38 @@
+@import fr.maif.otoroshi.daikoku.env.DaikokuMode
+
+@(message: String, host: String, _env: fr.maif.otoroshi.daikoku.env.Env, tenant: fr.maif.otoroshi.daikoku.domain.Tenant)
+
+@customStyle = {
+  @(tenant.colorTheme())
+  @if(_env.config.mode == DaikokuMode.Dev) {
+    <link rel="stylesheet" media="screen" href="http://@host:3000/daikoku.css">
+  }
+  @if(_env.config.mode == DaikokuMode.Prod) {
+    <link rel="stylesheet" media="screen" href="/assets/react-app/daikoku.min.css">
+  }
+  @(tenant.moareStyle())
+}
+
+@customJs = {
+  @(tenant.moareJs())
+}
+
+@main(tenant.style.map(_.title).getOrElse(tenant.name) + " - error", moreStyles = customStyle, moreScripts = customJs, favicon = tenant.favicon()) {
+<div class="container login">
+  <div id="app">
+    <div>
+      <header>
+        <div class="navbar shadow-sm fixed-top">
+          <div class="container-fluid d-flex justify-content-center justify-content-sm-between"><a href="/" class="navbar-brand d-flex align-items-center"><span>大黒天</span> &nbsp; Daikoku</a></div>
+        </div>
+      </header>
+      <div class="jumbotron text-center">
+        <h1 class="mb-5">Error - @message</h1>
+        <p>
+          <img src="/assets/images/daikoku.svg" alt="logo Daikoku" class="logo-medium" />
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+}

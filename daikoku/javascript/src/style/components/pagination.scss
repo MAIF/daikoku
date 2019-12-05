@@ -1,0 +1,76 @@
+.pagination {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  list-style-type: none;
+  justify-content: center;
+  align-items: center;
+  margin-top: 50px;
+
+  li, li:not(.next,.previous) a {
+    color: $pagination-text-color;
+  }
+
+  li.page-selector {
+    min-width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color .35s ease-in-out;
+    border: 1px solid #586069;
+    margin-left: -1px;
+    &:hover {
+      color: #4B4B4B;
+      cursor: pointer;
+    }
+
+    &.active {
+      background-color: #7f96af;
+      a {
+        color:#fff;
+      }
+    }
+
+    a {
+      color: $pagination-text-color;
+      display: flex;
+      width: 100%;
+      height: 100%;
+      justify-content: center;
+    }
+  }
+
+  li.break {
+    margin: 0 1rem;
+  }
+
+  li.next, li.previous {
+    padding: 0.5rem;
+    border: 1px solid $pagination-border-color;
+    min-width: 30px;
+        height: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &.disabled {
+      cursor: not-allowed;
+      a {
+        color:#bbb;
+      }
+      :hover{
+        text-decoration: none;
+      }
+    }
+  }
+  li.previous {
+    border-bottom-left-radius: .25rem;
+    border-top-left-radius: .25rem;
+  }
+  li.next {
+    border-bottom-right-radius: .25rem;
+    border-top-right-radius: .25rem;
+    margin-left: -1px;
+  }
+}
