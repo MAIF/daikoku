@@ -71,8 +71,8 @@ Daikoku is Open Source and available under the [Apache 2 License](https://openso
 * [Using Daikoku as tenant admin](tenantusage/index.md)
 * [Using Daikoku as api producer](producerusage/index.md)
 * [Using Daikoku as api consumer](consumerusage/index.md)
-* [Integrations](integrations/index.md)
-* [Admin REST API](api.md)
+* [Integrations API](integrations/index.md)
+* [Admin REST API](apis.md)
 * [Deploy to production](deploy/index.md)
 
 @@@

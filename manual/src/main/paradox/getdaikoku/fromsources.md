@@ -20,7 +20,7 @@ then you need to run the `build.sh` script to build the documentation, the React
 sh ./scripts/build.sh
 ```
 
-and that's all, you can grab your Daikoku package at `daikoku/target/scala-2.12/otoroshi` or `daikoku/target/universal/`.
+and that's all, you can grab your Daikoku package at `daikoku/target/scala-2.12/daikoku` or `daikoku/target/universal/`.
 
 For those who want to build only parts of Daikoku, read the following.
 

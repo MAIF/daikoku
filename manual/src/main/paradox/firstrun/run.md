@@ -55,13 +55,13 @@ $ java \
   -Xms2G \
   -Xmx8G \
   -Dhttp.port=8080 \
-  -Ddaikoku.init.data.from=/home/user/daikoku.conf \
+  -Ddaikoku.init.data.from=/home/user/daikoku.ndjson \
   -Dconfig.file=/home/user/daikoku.conf \
   -jar ./daikoku.jar
 
 [info] play.api.Play - Application started (Prod)
 [warn] daikokuEnv - Main dataStore seems to be empty, importing from /home/user/daikoku.conf ...
-[warn] daikokuEnv - Importing from: /home/user/otoroshi.json
+[warn] daikokuEnv - Importing from: /home/user/daikoku.ndjson
 [info] p.c.s.AkkaHttpServer - Listening for HTTP on /0:0:0:0:0:0:0:0:8080
 ```
 
@@ -72,7 +72,7 @@ $ java \
   -Xms2G \
   -Xmx8G \
   -Dhttp.port=8080 \
-  -jar otoroshi.jar
+  -jar daikoku.jar
 
 [info] play.api.Play - Application started (Prod)
 [warn] DaikokuEnv - Main dataStore seems to be empty, generating initial data ...

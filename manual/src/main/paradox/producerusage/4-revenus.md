@@ -1,13 +1,9 @@
-# Using Daikoku as api producer
+# Team revenus
 
-Now we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku.
+In the backoffice team, click on the `Team r`evenus entry, on the left.
+And you should see the list of the `team revenus`.
 
+Revenus are calculated by month and could be synchronized with otoroshi if data's not fresh.
 
-@@@ index
-
-* [managing apis](./1-apis.md)
-* [managing teams members](./2-members.md)
-* [managing assets](./3-assets.md)
-* [team revenus](./4-revenus.md)
-
-@@@
+The total revenus by month is display on top right of the board and below, you can see the total by api.
+After clicking on a api revenu, you can see the division by apikeys.
