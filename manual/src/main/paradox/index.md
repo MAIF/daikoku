@@ -27,7 +27,7 @@ java -jar daikoku.jar
 or using docker
 
 ```sh
-docker run -p "8080:8080" maif/daikoku:1.0.0
+docker run -p "8080:8080" maif/daikoku:1.0.0-rc1
 ```
 
 now open your browser to <a href="http://localhost:8080/" target="_blank">http://localhost:8080/</a>, **log in with the credential generated in the logs** and explore by yourself
