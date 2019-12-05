@@ -44,12 +44,26 @@ test_server () {
 }
 
 pre_release_daikoku () {
-  fmt_server
-  # TODO: change version in docs
+  # fmt_server
+  cd $LOCATION/manual/src/main/paradox
+  SCRIPT="
+  const from = '$1';
+  const to = '$2';
+  let fromStdIn = '';
+  process.stdin.on('data', (data) => fromStdIn = fromStdIn + data);
+  process.stdin.on('end', (data) => {
+    fromStdIn.split('\n').map(line => {
+      const content = require('fs').readFileSync(line).toString('utf8');
+      require('fs').writeFileSync(line, content.replace(new RegExp(from.replace(new RegExp('\\.', 'g'), '\\.'), 'g'), to));
+    });
+  });
+  "
+  echo $SCRIPT
+  find . -type f -name '*.md' | node -e $SCRIPT
   # TODO: build swagger
-  build_manual
-  cd $LOCATION/daikoku
-  sbt release
+  # build_manual
+  # cd $LOCATION/daikoku
+  # sbt release
 }
 
 release_daikoku ()  {
