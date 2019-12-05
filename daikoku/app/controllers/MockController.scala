@@ -2,18 +2,15 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
-import fr.maif.otoroshi.daikoku.domain
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.env.{DaikokuMode, Env}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
 import org.mindrot.jbcrypt.BCrypt
-import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
@@ -405,7 +402,10 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
   }
 
   def reset() = Action.async { ctx =>
-    resetDataStore()
+    env.config.mode match {
+      case DaikokuMode.Dev => resetDataStore()
+      case _ => FastFuture.successful(BadRequest(Json.obj("error" -> "Action not avalaible")))
+    }
   }
 
   def resetDataStore() = {
