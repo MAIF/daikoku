@@ -95,13 +95,13 @@ dockerExposedPorts := Seq(
 )
 packageName in Docker := "daikoku"
 
-maintainer in Docker := "MAIF Team <maif@maif.fr>"
+maintainer in Docker := "MAIF OSS Team <oss@maif.fr>"
 
 dockerBaseImage := "openjdk:11-jre-slim"
 
-//dockerUsername := Some("maifhorizon")
+dockerUsername := Some("maif")
 
-dockerRepository := Some("maifhorizon-docker-docker.bintray.io")
+dockerUpdateLatest := true
 
 dockerCommands :=
   dockerCommands.value.flatMap {
