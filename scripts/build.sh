@@ -44,14 +44,13 @@ test_server () {
 }
 
 pre_release_daikoku () {
-  # fmt_server
+  fmt_server
   cd $LOCATION/manual/src/main/paradox
-  # find . -type f -name '*.md' | node $LOCATION/scripts/version.js $1 $2
   find . -type f -name '*.md' | xargs node $LOCATION/scripts/version.js $1 $2
-  # TODO: build swagger
-  # build_manual
-  # cd $LOCATION/daikoku
-  # sbt release
+  # TODO: build swagger, now its done manually
+  build_manual
+  cd $LOCATION/daikoku
+  sbt "release release-version $2 next-version $3"
 }
 
 release_daikoku ()  {
@@ -129,7 +128,9 @@ case "${1}" in
     release_daikoku
     ;;
   pre-release)
-    pre_release_daikoku $2 $3
+    # from to next
+    # 1.0.0-dev 1.0.0 1.0.1-dev 
+    pre_release_daikoku $2 $3 $4
     ;;
   manual)
     build_manual
