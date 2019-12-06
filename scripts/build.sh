@@ -46,7 +46,8 @@ test_server () {
 pre_release_daikoku () {
   # fmt_server
   cd $LOCATION/manual/src/main/paradox
-  find . -type f -name '*.md' | node $LOCATION/scripts/version.js $1 $2
+  # find . -type f -name '*.md' | node $LOCATION/scripts/version.js $1 $2
+  find . -type f -name '*.md' | xargs node $LOCATION/scripts/version.js $1 $2
   # TODO: build swagger
   # build_manual
   # cd $LOCATION/daikoku
