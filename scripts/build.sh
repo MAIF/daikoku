@@ -56,7 +56,7 @@ pre_release_daikoku () {
   build_manual
   git commit -am 'Update documentation before release'
   cd $LOCATION/daikoku
-  sbt "release release-version $2 next-version $3"
+  sbt "release with-defaults release-version $2 next-version $3"
 }
 
 release_daikoku ()  {
@@ -89,19 +89,19 @@ release_daikoku ()  {
             curl -X POST \
               -H "Content-Type: application/octet-stream" \
               -H "Authorization: token ${GITHUB_TOKEN}" \
-              -d "@$LOCATION/daikoku/target/universal/daikoku-${BINARIES_VERSION}.zip" \
+              --data-binary @$LOCATION/daikoku/target/universal/daikoku-${BINARIES_VERSION}.zip \
               "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku-${BINARIES_VERSION}.zip" 
 
             curl -X POST \
               -H "Content-Type: application/octet-stream" \
               -H "Authorization: token ${GITHUB_TOKEN}" \
-              -d "@$LOCATION/daikoku/target/scala-2.12/daikoku.jar" \
+              --data-binary @$LOCATION/daikoku/target/scala-2.12/daikoku.jar \
               "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku.jar" 
 
             curl -X POST \
               -H "Content-Type: application/octet-stream" \
               -H "Authorization: token ${GITHUB_TOKEN}" \
-              -d "@$LOCATION/daikoku-manual.zip" \
+              --data-binary @$LOCATION/daikoku-manual.zip \
               "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku-manual.zip" 
 
             sbt 'docker:publishLocal'
