@@ -78,8 +78,8 @@ release_daikoku ()  {
             cd $LOCATION/daikoku
 
             sbt 'docker:publishLocal'
-            docker tag otoroshi "maif/daikoku:latest" 
-            docker tag otoroshi "maif/daikoku:${BINARIES_VERSION}" 
+            # docker tag daikoku "maif/daikoku:latest" 
+            # docker tag daikoku "maif/daikoku:${BINARIES_VERSION}" 
             docker login -u ${DOCKER_USER} -p ${DOCKER_PASS} 
             docker push "maif/daikoku:latest"
             docker push "maif/daikoku:${BINARIES_VERSION}"
