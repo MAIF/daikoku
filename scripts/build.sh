@@ -31,6 +31,7 @@ build_daikoku () {
 
 fmt_ui () {
   cd $LOCATION/daikoku/javascript
+  yarn install
   yarn prettier
 }
 
