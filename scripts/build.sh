@@ -52,7 +52,7 @@ pre_release_daikoku () {
   git commit -am 'Format ssources before release'
   cd $LOCATION/manual/src/main/paradox
   find . -type f -name '*.md' | xargs node $LOCATION/scripts/version.js $1 $2
-  # TODO: build swagger, now its done manually
+  # TODO: build swagger, now its done manually by copying the file as generation takes place at runtime
   build_manual
   git commit -am 'Update documentation before release'
   cd $LOCATION/daikoku
