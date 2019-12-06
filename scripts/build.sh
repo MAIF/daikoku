@@ -62,60 +62,60 @@ pre_release_daikoku () {
 release_daikoku ()  {
   if [ -z "$TRAVIS_TAG" ];
   then
-      if test "$TRAVIS_PULL_REQUEST" = "false"
-      then
-          if test "$TRAVIS_BRANCH" = "master"
-          then
-              cd $LOCATION/daikoku
-              BINARIES_VERSION=`echo "${TRAVIS_TAG}" | cut -d "v" -f 2`
-
-              zip -r $LOCATION/daikoku-manual.zip $LOCATION/docs/manual -x '*.DS_Store'
-
-              curl -X POST \
-                -H "Accept: application/json" \
-                -H "Content-Type: application/json" \
-                -H "Authorization: token ${GITHUB_TOKEN}" \
-                "https://api.github.com/repos/MAIF/daikoku/releases" -d "
-                {
-                  \"tag_name\": \"v${BINARIES_VERSION}\",
-                  \"name\": \"${BINARIES_VERSION}\",
-                  \"body\": \"Daikoku version ${BINARIES_VERSION}\",
-                  \"draft\": true,
-                  \"prerelease\": false
-                }" | python -c "import sys, json; print json.load(sys.stdin)['id']" | { read id; echo "release_id: ${id}"; export RELEASE_ID=$id; }
-
-              curl -X POST \
-                -H "Content-Type: application/octet-stream" \
-                -H "Authorization: token ${GITHUB_TOKEN}" \
-                -d "@$LOCATION/daikoku/target/universal/daikoku-${BINARIES_VERSION}.zip" \
-                "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku-${BINARIES_VERSION}.zip" 
-
-              curl -X POST \
-                -H "Content-Type: application/octet-stream" \
-                -H "Authorization: token ${GITHUB_TOKEN}" \
-                -d "@$LOCATION/daikoku/target/scala-2.12/daikoku.jar" \
-                "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku.jar" 
-
-              curl -X POST \
-                -H "Content-Type: application/octet-stream" \
-                -H "Authorization: token ${GITHUB_TOKEN}" \
-                -d "@$LOCATION/daikoku-manual.zip" \
-                "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku-manual.zip" 
-
-              sbt 'docker:publishLocal'
-              docker tag otoroshi "maif/daikoku:latest" 
-              docker tag otoroshi "maif/daikoku:${BINARIES_VERSION}" 
-              docker login -u ${DOCKER_USER} -p ${DOCKER_PASS} 
-              docker push "maif/daikoku:latest"
-              docker push "maif/daikoku:${BINARIES_VERSION}"
-          else
-              echo "Not on the master branch"
-          fi
-      else
-          echo "Just a pull request"
-      fi
+    echo "Not a tag"
   else
-      echo "Not a tag"
+    if test "$TRAVIS_PULL_REQUEST" = "false"
+    then
+        if test "$TRAVIS_BRANCH" = "master"
+        then
+            cd $LOCATION/daikoku
+            BINARIES_VERSION=`echo "${TRAVIS_TAG}" | cut -d "v" -f 2`
+
+            zip -r $LOCATION/daikoku-manual.zip $LOCATION/docs/manual -x '*.DS_Store'
+
+            curl -X POST \
+              -H "Accept: application/json" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              "https://api.github.com/repos/MAIF/daikoku/releases" -d "
+              {
+                \"tag_name\": \"v${BINARIES_VERSION}\",
+                \"name\": \"${BINARIES_VERSION}\",
+                \"body\": \"Daikoku version ${BINARIES_VERSION}\",
+                \"draft\": true,
+                \"prerelease\": false
+              }" | python -c "import sys, json; print json.load(sys.stdin)['id']" | { read id; echo "release_id: ${id}"; export RELEASE_ID=$id; }
+
+            curl -X POST \
+              -H "Content-Type: application/octet-stream" \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              -d "@$LOCATION/daikoku/target/universal/daikoku-${BINARIES_VERSION}.zip" \
+              "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku-${BINARIES_VERSION}.zip" 
+
+            curl -X POST \
+              -H "Content-Type: application/octet-stream" \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              -d "@$LOCATION/daikoku/target/scala-2.12/daikoku.jar" \
+              "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku.jar" 
+
+            curl -X POST \
+              -H "Content-Type: application/octet-stream" \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              -d "@$LOCATION/daikoku-manual.zip" \
+              "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku-manual.zip" 
+
+            sbt 'docker:publishLocal'
+            docker tag otoroshi "maif/daikoku:latest" 
+            docker tag otoroshi "maif/daikoku:${BINARIES_VERSION}" 
+            docker login -u ${DOCKER_USER} -p ${DOCKER_PASS} 
+            docker push "maif/daikoku:latest"
+            docker push "maif/daikoku:${BINARIES_VERSION}"
+        else
+            echo "Not on the master branch"
+        fi
+    else
+        echo "Just a pull request"
+    fi
   fi
 }
 
@@ -140,6 +140,7 @@ case "${1}" in
   release)
     export TRAVIS_TAG=$2
     export TRAVIS_BRANCH=master
+    export TRAVIS_PULL_REQUEST=false
     release_daikoku
     ;;
   pre-release)
