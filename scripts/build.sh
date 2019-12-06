@@ -49,10 +49,12 @@ test_server () {
 pre_release_daikoku () {
   fmt_ui
   fmt_server
+  git commit -am 'Format ssources before release'
   cd $LOCATION/manual/src/main/paradox
   find . -type f -name '*.md' | xargs node $LOCATION/scripts/version.js $1 $2
   # TODO: build swagger, now its done manually
   build_manual
+  git commit -am 'Update documentation before release'
   cd $LOCATION/daikoku
   sbt "release release-version $2 next-version $3"
 }
