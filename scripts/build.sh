@@ -68,41 +68,14 @@ release_daikoku ()  {
     then
         if test "$TRAVIS_BRANCH" = "master"
         then
-            cd $LOCATION/daikoku
             BINARIES_VERSION=`echo "${TRAVIS_TAG}" | cut -d "v" -f 2`
 
+            rm -rf $LOCATION/daikoku-manual.zip
             zip -r $LOCATION/daikoku-manual.zip $LOCATION/docs/manual -x '*.DS_Store'
 
-            curl -X POST \
-              -H "Accept: application/json" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: token ${GITHUB_TOKEN}" \
-              "https://api.github.com/repos/MAIF/daikoku/releases" -d "
-              {
-                \"tag_name\": \"v${BINARIES_VERSION}\",
-                \"name\": \"${BINARIES_VERSION}\",
-                \"body\": \"Daikoku version ${BINARIES_VERSION}\",
-                \"draft\": true,
-                \"prerelease\": false
-              }" | python -c "import sys, json; print json.load(sys.stdin)['id']" | { read id; echo "release_id: ${id}"; export RELEASE_ID=$id; }
+            node $LOCATION/scripts/publish.js $BINARIES_VERSION
 
-            curl -X POST \
-              -H "Content-Type: application/octet-stream" \
-              -H "Authorization: token ${GITHUB_TOKEN}" \
-              --data-binary @$LOCATION/daikoku/target/universal/daikoku-${BINARIES_VERSION}.zip \
-              "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku-${BINARIES_VERSION}.zip" 
-
-            curl -X POST \
-              -H "Content-Type: application/octet-stream" \
-              -H "Authorization: token ${GITHUB_TOKEN}" \
-              --data-binary @$LOCATION/daikoku/target/scala-2.12/daikoku.jar \
-              "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku.jar" 
-
-            curl -X POST \
-              -H "Content-Type: application/octet-stream" \
-              -H "Authorization: token ${GITHUB_TOKEN}" \
-              --data-binary @$LOCATION/daikoku-manual.zip \
-              "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku-manual.zip" 
+            cd $LOCATION/daikoku
 
             sbt 'docker:publishLocal'
             docker tag otoroshi "maif/daikoku:latest" 
