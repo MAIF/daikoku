@@ -6,7 +6,7 @@ const to = process.argv[3];
 
 let fromStdIn = '';
 
-console.log(`replacing '${from}' to '${to}' on :\n`);
+console.log(`\nreplacing '${from}' to '${to}' on :\n`);
 
 process.stdin.on('data', (data) => fromStdIn = fromStdIn + data);
 process.stdin.on('end', () => {
@@ -15,4 +15,5 @@ process.stdin.on('end', () => {
     const content = fs.readFileSync(fullPath).toString('utf8');
     fs.writeFileSync(fullPath, content.replace(new RegExp(from.replace(new RegExp('\\.', 'g'), '\\.'), 'g'), to));
   });
+  console.log('')
 });
