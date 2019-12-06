@@ -1,6 +1,6 @@
 # Choose your audit trail datastore
 
-Right now, Daikoku supports multiple datastore for audit trail.
+Right now, Daikoku supports multiple datastores for the audit trail.
 
 You can choose one datastore over another depending on your use case.
 

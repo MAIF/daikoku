@@ -17,14 +17,14 @@ A team need some informations :
 * Metadatas, some extra informations that can be passed with the api calls with team apikeys
 
 ## Update an existing team
-Hover the team avatar and click the `pen` button. All the informations filled during the team creation can be overwritten.
+Hover the team avatar and click the `update` button (Pen icon). All the informations filled during the team creation can be overwritten.
 
 ## Delete an existing team
 
-Hover the team avatar and click the `trash` button and confirm the command.
+Hover the team avatar and click the `delete` button () and confirm the command.
 
 ## Manage team members
 
-Hover the team avatar and click the `users` button. You will redirect to the team members page.
-You can refer to the [managing members](../producerusage/2-members.md)
+Hover the team avatar and click the `members` button (Users icons). You will redirect to the team members page.
+You can refer to the @ref:[managing members](../producerusage/2-members.md)
 

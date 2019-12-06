@@ -10,7 +10,7 @@ Go to `settings (avatar icon) / Organizations settings`.
 @@@
 
 Go to the `Users` page
-You will see the list of registered admin users.
+You will see the list of registered users.
 
 @@@ div { .centered-img }
 <img src="../img/user_page.png" />

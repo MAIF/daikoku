@@ -5,15 +5,15 @@ In the backoffice team, click on the `Team members` entry, on the left.
 Simply select a user in the selector in the top left of the page.
 
 ### Remove a member
-Hover the avatar of the member and click on the `trash` button
+Hover the avatar of the member and click on the `delete` button (trash icon).
 
 ### Update member permission
-Hover the avatar of the member and click on the `cog` button.
+Hover the avatar of the member and click on the `manage permissions` button (user/cog icon).
 Then, choose:
 
-* admin: member can access everything
+* admin: member can access everything.
 * api editor: member can't manage team but can create an api.
-* nothing: member can just subscribe another team api
+* nothing: member can just subscribe another team api.
 
 ### Update apikeys visibility
-A switch button allow to team admins to set apikey visibility. If it's on off position, just team admins are able to see apikeys.
+A switch button allow to team admins to set apikey visibility. If it's on on position, just team admins are able to see apikeys.

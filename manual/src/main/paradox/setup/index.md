@@ -1,8 +1,6 @@
 # Setup Daikoku
 
-Now that Daikoku is running, you are ready to log into the Daikoku admin dashboard and setup your instance. Just go to :
-
-<a href="http://daikoku.oto.tools:8080" target="_blank">http://daikoku.oto.tools:8080</a>
+Now that Daikoku is running, you are ready to log into the Daikoku UI and setup your instance. Just go to: <a href="http://daikoku.oto.tools:8080" target="_blank">http://daikoku.oto.tools:8080</a>
 
 and you will see the following page
  
@@ -10,7 +8,7 @@ and you will see the following page
 <img src="../img/home_page.png" />
 @@@
 
-now click on the login button and you will see the login page
+now click on the connect button and you will see the login page
 
 @@@ div { .centered-img }
 <img src="../img/login_page.png" />

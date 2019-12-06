@@ -6,15 +6,11 @@ Go to `settings/Organizations settings`
 <img src="../img/organisation_settings.png" />
 @@@
 
-And you should see the list of existing `tenants`
-
-@@@ div { .centered-img }
-<img src="../img/tenant_list.png" />
-@@@
+And you should see the list of existing `tenants`.
 
 ## Create a tenant
 
-To create a new tenant, just click to the `create a new tenant` button
+To create a new tenant, just click to the `create a new tenant` button.
 
 ### common informations
 
@@ -36,17 +32,17 @@ The user session duration can be set here, by default it last 24h.
 ### Audit trail
 
 The settings for the output of the audit trail can be set on this page.
-The output of it, in addition to writing in database, can be an elsatic, a kafka or a webhook.
+The output of it, in addition to writing in database, can be an elastic, a kafka or webhooks.
 
 ### Alerting
 The email adresses to report some Daikoku alert.
 
 ### Mailer
-The mailer type, by default just the standard output. Mailjet can be configure.
+The mailer type, by default just the standard output. Mailgun or Mailjet can be configure.
 
 ### Bucket
 An object storage can be set to store tenant and team assets.
 
 ### Unlogged home description
 The unlogged home description is the first content shown to user for private tenant, before the login page.
-It can be also enable for public tenant.
+It can also be enable for public tenant.

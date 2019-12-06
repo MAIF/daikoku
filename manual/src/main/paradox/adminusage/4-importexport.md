@@ -1,6 +1,6 @@
 # Import and export
 
-With Otoroshi you can easily save the current state of the proxy and restore it later. Go to `settings (avatar icon) / Organizations settings` and then `import/export`.
+With Daikoku you can easily save the current state of the instance and restore it later. Go to `settings (avatar icon) / Organizations settings` and then `import/export`.
 
 ## Full export
 

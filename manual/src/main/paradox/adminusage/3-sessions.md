@@ -4,4 +4,4 @@ With Daikoku you can manage sessions of connected users and you can discard sess
 
 ## Admin. sessions
 
-To see last current admin session on Daikoku from the UI, go to `settings (avatar icon) / Organizations settings` and then `User sessions`. Here you can discard individual sessions or all sessions at once using `trash` button and `delete all sessions` buttons.
+To see last current admin session on Daikoku from the UI, go to `settings (avatar icon) / Organizations settings` and then `User sessions`. Here you can discard individual sessions or all sessions at once using `delete` button (trash icon) or `delete all sessions` buttons.

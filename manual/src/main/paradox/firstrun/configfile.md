@@ -18,11 +18,11 @@ or
 
 | name | type | default value  | description |
 | ---- |:----:| -------------- | ----- |
-|`daikoku.mode`|String|"prod"| Daikoku running mode. Can be dev or prod |
+|`daikoku.mode`|String|"prod"| Daikoku running mode. Can be Dev or Prod |
 |`daikoku.exposedOn`|String|http.port| the http port exposed by Daikoku  |
 |`daikoku.singingkey`|String|"secret"| the secret used for signing the JWT token |
 |`daikoku.tenants.provider` | string | "local" | the way to get the tenant to display. it can be local, header or hostname|
-|`daikoku.exposition.provider` | string | "none" | Activate the otoroshi exchange protocol |
+|`daikoku.exposition.provider` | string | "none" | Activate the otoroshi exchange protocol with value "otoroshi" |
 |`daikoku.snowflake.seed` | number | 0 | this number will is used to generate unique ids across the cluster. Each Otorshi instance must have a unique seed. |
 
 ## Admin api
@@ -31,8 +31,8 @@ or
 | ---- |:----:| -------------- | ----- |
 |`daikoku.api.type`|String|"local"| the provider of apikey for admin apis. it can be local or otoroshi |
 |`daikoku.api.key`|String|"secret"| the local apikey of admin apis |
-|`daikoku.api.headerName`|String|"Otoroshi-Claim"||
-|`daikoku.api.headerSecret`|String|"secret"||
+|`daikoku.api.headerName`|String|"Otoroshi-Claim"| |
+|`daikoku.api.headerSecret`|String|"secret"|  |
 
 ## Otoroshi settings
 | name | type | default value  | description |
@@ -52,8 +52,8 @@ or
 | ---- |:----:| -------------- | ----- |
 |`daikoku.init.host`|String|"localhost"|  |
 |`daikoku.init.admin.name`|String|"Super admin"| Daikoku default admin name |
-|`daikoku.init.admin.email`|String|"admin@daikoku.io"| Daikoku default admin email |
-|`daikoku.init.admin.password`|String||Daikoku default admin password |
+|`daikoku.init.admin.email`|String| "admin@daikoku.io" | Daikoku default admin email |
+|`daikoku.init.admin.password`|String| |Daikoku default admin password |
 |`daikoku.init.data.from` | string |  | a file path or a URL to a Daikoku export file. If the datastore is empty on startup, this file will be used to import data to the empty DB  |
 
 
@@ -86,7 +86,7 @@ As Daikoku is a [Play app](https://www.playframework.com/), you should take a lo
 
 ## More config. options
 
-See https://github.com/MAIF/daikoku/blob/master/daikoku/conf/base.conf and https://github.com/MAIF/daikoku/blob/master/daikoku/conf/application.conf
+See https://github.com/MAIF/daikoku/blob/master/daikoku/conf/application.conf
 
 if you want to configure https on your Daikoku server, just read [PlayFramework documentation about it](https://www.playframework.com/documentation/2.6.x/ConfiguringHttps)
 

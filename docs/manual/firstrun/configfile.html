@@ -221,7 +221,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
       <td><code>daikoku.mode</code></td>
       <td align="center">String</td>
       <td>&ldquo;prod&rdquo;</td>
-      <td>Daikoku running mode. Can be dev or prod </td>
+      <td>Daikoku running mode. Can be Dev or Prod </td>
     </tr>
     <tr>
       <td><code>daikoku.exposedOn</code></td>
@@ -245,7 +245,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
       <td><code>daikoku.exposition.provider</code> </td>
       <td align="center">string </td>
       <td>&ldquo;none&rdquo; </td>
-      <td>Activate the otoroshi exchange protocol </td>
+      <td>Activate the otoroshi exchange protocol with value &ldquo;otoroshi&rdquo; </td>
     </tr>
     <tr>
       <td><code>daikoku.snowflake.seed</code> </td>
@@ -281,12 +281,14 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <tr>
       <td><code>daikoku.api.headerName</code></td>
       <td align="center">String</td>
-      <td colspan="2">&ldquo;Otoroshi-Claim&rdquo;</td>
+      <td>&ldquo;Otoroshi-Claim&rdquo;</td>
+      <td> </td>
     </tr>
     <tr>
       <td><code>daikoku.api.headerSecret</code></td>
       <td align="center">String</td>
-      <td colspan="2">&ldquo;secret&rdquo;</td>
+      <td>&ldquo;secret&rdquo;</td>
+      <td> </td>
     </tr>
   </tbody>
 </table>
@@ -377,11 +379,13 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <tr>
       <td><code>daikoku.init.admin.email</code></td>
       <td align="center">String</td>
-      <td>&quot;<a href="mailto:&#97;&#100;m&#x69;&#x6e;@&#100;&#x61;&#x69;&#107;&#111;&#107;&#117;&#46;&#x69;&#x6f;&#34;&#124;">&#97;&#100;m&#x69;&#x6e;@&#100;&#x61;&#x69;&#107;&#111;&#107;&#117;&#46;&#x69;&#x6f;&#34;&#124;</a> Daikoku default admin email </td>
+      <td>&ldquo;<a href="mailto:&#97;&#100;m&#x69;&#x6e;@&#100;&#x61;&#x69;&#107;&#111;&#107;&#117;&#46;&#x69;&#x6f;">&#97;&#100;m&#x69;&#x6e;@&#100;&#x61;&#x69;&#107;&#111;&#107;&#117;&#46;&#x69;&#x6f;</a>&rdquo; </td>
+      <td>Daikoku default admin email </td>
     </tr>
     <tr>
       <td><code>daikoku.init.admin.password</code></td>
-      <td align="center" colspan="2">String</td>
+      <td align="center">String</td>
+      <td> </td>
       <td>Daikoku default admin password </td>
     </tr>
     <tr>
@@ -498,7 +502,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   </tbody>
 </table>
 <h2><a href="#more-config-options" name="more-config-options" class="anchor"><span class="anchor-link"></span></a>More config. options</h2>
-<p>See <a href="https://github.com/MAIF/daikoku/blob/master/daikoku/conf/base.conf">https://github.com/MAIF/daikoku/blob/master/daikoku/conf/base.conf</a> and <a href="https://github.com/MAIF/daikoku/blob/master/daikoku/conf/application.conf">https://github.com/MAIF/daikoku/blob/master/daikoku/conf/application.conf</a></p>
+<p>See <a href="https://github.com/MAIF/daikoku/blob/master/daikoku/conf/application.conf">https://github.com/MAIF/daikoku/blob/master/daikoku/conf/application.conf</a></p>
 <p>if you want to configure https on your Daikoku server, just read <a href="https://www.playframework.com/documentation/2.6.x/ConfiguringHttps">PlayFramework documentation about it</a></p>
 <h2><a href="#example-of-configuration-file" name="example-of-configuration-file" class="anchor"><span class="anchor-link"></span></a>Example of configuration file</h2>
 <pre class="prettyprint"><code class="language-conf">daikoku {

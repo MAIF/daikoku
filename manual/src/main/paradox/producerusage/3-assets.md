@@ -4,7 +4,7 @@ In the backoffice team, click on the `Team assets` entry, on the left.
 And you should see the list of existing `assets`
 
 @@@ warning
-If a `Something went wrong !!!` message is displayed, look a the [Tenant / Bucket configuration](../adminusage/1-tenants.md)
+If a `Something went wrong !!!` message is displayed, look a the @ref:[Tenant / Bucket configuration](../adminusage/1-tenants.md)
 @@@
 
 ## Add a new assets

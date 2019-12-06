@@ -4,13 +4,13 @@ Users in Daikoku are cross tenants. As Daikoku admin, you are responsible for ma
 
 ## Admin status
 
-Nothing's easier to give or remove admin status to another user. Just hover the user's avatar and click on the `shield` button.
+Nothing's easier to give or remove admin status to **another** user. Just hover the user's avatar and click on the `toggle admin status` button (shield icon).
 It's impossible to remove oneself the admin status.
 
 ## Create a new user
 
 To create a new user, just click on the `Create new user` button. 
-You will have some information to inform :
+You will have some informations to fill :
 
 * The user's name
 * An email adress
@@ -18,15 +18,15 @@ You will have some information to inform :
 * Activate / deactivate the admin status
 * A password
 * A personal token
-* The tenant accessible by the user
+* The tenants accessible by the user
 * Metadatas
 
-To finalize ther creation, click on the `Create` button.
+To finalize the creation, click on the `Create` button.
 
 ## Remove User
 
-To delete a user, just hover the avatar and click on `trash` button. Finaly, confirm the command.
+To delete a user, just hover the avatar and click on `delete` button (trash icon). Finaly, confirm the command.
 
 ## Impersonate user
 
-Daikoku allow to impersonate a user. Just hover the avatar and click on `ninja` button.
+Daikoku allow to impersonate a user. Just hover the avatar and click on `impersonate` button (ninja icon).
