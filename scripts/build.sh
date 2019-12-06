@@ -15,6 +15,7 @@ build_manual () {
   sbt ';clean;paradox'
   cp -r $LOCATION/manual/target/paradox/site/main $LOCATION/docs
   mv $LOCATION/docs/main $LOCATION/docs/manual
+  cp -r $LOCATION/docs/manual $LOCATION/daikoku/public/manual
 }
 
 build_ui () {
@@ -63,6 +64,8 @@ release_daikoku ()  {
               cd $LOCATION/daikoku
               BINARIES_VERSION=`echo "${TRAVIS_TAG}" | cut -d "v" -f 2`
 
+              zip -r $LOCATION/daikoku-manual.zip $LOCATION/docs/manual -x '*.DS_Store'
+
               curl -X POST \
                 -H "Accept: application/json" \
                 -H "Content-Type: application/json" \
@@ -87,6 +90,12 @@ release_daikoku ()  {
                 -H "Authorization: token ${GITHUB_TOKEN}" \
                 -d "@$LOCATION/daikoku/target/scala-2.12/daikoku.jar" \
                 "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku.jar" 
+
+              curl -X POST \
+                -H "Content-Type: application/octet-stream" \
+                -H "Authorization: token ${GITHUB_TOKEN}" \
+                -d "@$LOCATION/daikoku-manual.zip" \
+                "https://uploads.github.com/repos/MAIF/otoroshi/releases/${RELEASE_ID}/assets?name=daikoku-manual.zip" 
 
               sbt 'docker:publishLocal'
               docker tag otoroshi "maif/daikoku:latest" 
@@ -116,6 +125,7 @@ case "${1}" in
     ;;
   build)
     clean
+    build_manual
     build_ui
     build_daikoku
     ;;
@@ -123,7 +133,7 @@ case "${1}" in
     test_server
     ;;
   release)
-    export TRAVIS_TAG=$1
+    export TRAVIS_TAG=$2
     export TRAVIS_BRANCH=master
     release_daikoku
     ;;
