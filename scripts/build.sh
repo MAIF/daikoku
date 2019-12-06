@@ -10,6 +10,7 @@ clean () {
 
 build_manual () {
   rm -rf $LOCATION/docs/manual
+  rm -rf $LOCATION/daikoku/public/manual
   cd $LOCATION/manual
   node indexer.js
   sbt ';clean;paradox'
@@ -46,6 +47,7 @@ test_server () {
 }
 
 pre_release_daikoku () {
+  fmt_ui
   fmt_server
   cd $LOCATION/manual/src/main/paradox
   find . -type f -name '*.md' | xargs node $LOCATION/scripts/version.js $1 $2
