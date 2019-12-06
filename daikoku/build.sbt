@@ -47,9 +47,9 @@ scalacOptions ++= Seq(
   "-Xfatal-warnings"
 )
 
-resolvers += "bintray" at "http://jcenter.bintray.com"
+resolvers += "bintray" at "https://jcenter.bintray.com"
 
-resolvers += "Millhouse Bintray" at "http://dl.bintray.com/themillhousegroup/maven"
+resolvers += "Millhouse Bintray" at "https://dl.bintray.com/themillhousegroup/maven"
 
 PlayKeys.devSettings := Seq("play.server.http.port" -> "9000")
 
