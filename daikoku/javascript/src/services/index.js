@@ -916,8 +916,8 @@ export function syncTeamBilling(teamId) {
   }).then(r => r.json());
 }
 
-export function syncTeamRevenue(teamId) {
-  return fetch(`/api/teams/${teamId}/revenue/_sync`, {
+export function syncTeamIncome(teamId) {
+  return fetch(`/api/teams/${teamId}/income/_sync`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -985,8 +985,8 @@ export function getTeamBillings(teamId, from, to) {
   }).then(r => r.json());
 }
 
-export function getTeamRevenue(teamId, from, to) {
-  return fetch(`/api/teams/${teamId}/revenue?from=${from}&to=${to}`, {
+export function getTeamIncome(teamId, from, to) {
+  return fetch(`/api/teams/${teamId}/income?from=${from}&to=${to}`, {
     method: 'GET',
     credentials: 'include',
     headers: {

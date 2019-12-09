@@ -74,7 +74,7 @@
     "id": "/consumerusage/3-billing.md",
     "url": "/consumerusage/3-billing.html",
     "title": "Team billing",
-    "content": "# Team billing\n\nTeam billing page is basically the same view than @ref:[Team revenus](../producerusage/4-revenus.md) with consumer point of view.\n"
+    "content": "# Team billing\n\nTeam billing page is basically the same view than @ref:[Team income](../producerusage/4-income.md) with consumer point of view.\n"
   },
   {
     "name": "index.md",
@@ -88,7 +88,7 @@
     "id": "/deploy/index.md",
     "url": "/deploy/index.html",
     "title": "Deploy to production",
-    "content": "# Deploy to production\n\nNow it's time to deploy Daikoku in production, in this chapter we will see what kind of things you can do.\n"
+    "content": "# Deploy to production\n\nNow it's time to deploy Daikoku in production, in this chapter we will see what kind of things you can do.\n\n## Deploy with Otoroshi\n"
   },
   {
     "name": "configfile.md",
@@ -196,18 +196,18 @@
     "content": "# Managing team assets\n\nIn the backoffice team, click on the `Team assets` entry, on the left, you should see the list of existing `assets`\n\n@@@ warning\nIf a `Something went wrong !!!` message is displayed, look a the @ref:[Tenant / Bucket configuration](../adminusage/1-tenants.md)\n@@@\n\n## Add a new assets\nSelect a file after click toh the `Select file` button, then the filename, title and content-type should be pre-filled.\nYou can overwrite these informations and add a description if you want.\nClick to the `Add asset` button to finalize the action.\nThis asset can be just used for this team."
   },
   {
-    "name": "4-revenus.md",
-    "id": "/producerusage/4-revenus.md",
-    "url": "/producerusage/4-revenus.html",
+    "name": "4-income.md",
+    "id": "/producerusage/4-income.md",
+    "url": "/producerusage/4-income.html",
     "title": "Team earnings",
-    "content": "# Team earnings\n\nIn the backoffice team, click on the `Team revenus` entry, on the left.\nAnd you should see the list of the `team revenus`.\n\nEarnings are calculated by month and could be synchronized with otoroshi if data's not fresh.\n\nThe total earnings by month is display on top right of the board and below, you can see the total by API.\nAfter clicking on a api revenu, you can see the division by apikeys."
+    "content": "# Team earnings\n\nIn the backoffice team, click on the `Team income` entry, on the left.\nAnd you should see the list of the `team income`.\n\nEarnings are calculated by month and could be synchronized with otoroshi if data's not fresh.\n\nThe total earnings by month is display on top right of the board and below, you can see the total by API.\nAfter clicking on a api income, you can see the division by apikeys."
   },
   {
     "name": "index.md",
     "id": "/producerusage/index.md",
     "url": "/producerusage/index.html",
     "title": "Using Daikoku as api producer",
-    "content": "# Using Daikoku as api producer\n\nNow we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku.\n\n\n@@@ index\n\n* [managing apis](./1-apis.md)\n* [managing teams members](./2-members.md)\n* [managing assets](./3-assets.md)\n* [team revenus](./4-revenus.md)\n\n@@@\n"
+    "content": "# Using Daikoku as api producer\n\nNow we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku.\n\n\n@@@ index\n\n* [managing apis](./1-apis.md)\n* [managing teams members](./2-members.md)\n* [managing assets](./3-assets.md)\n* [team income](./4-income.md)\n\n@@@\n"
   },
   {
     "name": "quickstart.md",

@@ -199,7 +199,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
       eventualConsumptions.get.head.hits mustBe 1000L
     }
 
-    "get team revenue" in {
+    "get team income" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
@@ -214,7 +214,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
       val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
       val to      = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/revenue?from=$from&to=$to"
+        path = s"/api/teams/${teamOwnerId.value}/income?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ 0 \ "billing" \ "total").as[BigDecimal] mustBe BigDecimal(30)
@@ -504,7 +504,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
 		(respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total").as[Long] mustBe 70L
 	}
 
-    "sync team revenue/group consumption" in {
+    "sync team income/group consumption" in {
 		setupEnvBlocking(
 			tenants = Seq(tenant),
 			users = Seq(userAdmin),
@@ -565,7 +565,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
 		val to          = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
 
 		val resp = httpJsonCallBlocking(
-			path = s"/api/teams/${teamOwnerId.value}/revenue/_sync",
+			path = s"/api/teams/${teamOwnerId.value}/income/_sync",
 			method = "POST"
 		)(tenant, session)
 
@@ -677,7 +677,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
       resp.status mustBe 403
     }
 
-    "get team revenue" in {
+    "get team income" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(randomUser),
@@ -692,7 +692,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
       val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
       val to      = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/revenue?from=$from&to=$to"
+        path = s"/api/teams/${teamOwnerId.value}/income?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 403
     }
@@ -916,7 +916,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
 		resp.status mustBe 403
 	}
 
-    "not sync team revenue/group consumption" in {
+    "not sync team income/group consumption" in {
 		setupEnvBlocking(
 			tenants = Seq(tenant),
 			users = Seq(daikokuAdmin, randomUser),
@@ -975,7 +975,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
 		val session     = loginWithBlocking(randomUser, tenant)
 
 		val resp = httpJsonCallBlocking(
-			path = s"/api/teams/${teamOwnerId.value}/revenue/_sync",
+			path = s"/api/teams/${teamOwnerId.value}/income/_sync",
 			method = "POST"
 		)(tenant, session)
 

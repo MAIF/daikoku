@@ -9,7 +9,7 @@ import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './compo
 import { formatCurrency, formatPlanType, Spinner, Can, read, stat } from '../../utils';
 import { t, Translation } from "../../../locales";
 
-class TeamRevenueComponent extends Component {
+class TeamIncomeComponent extends Component {
   state = {
     consumptions: [],
     consumptionsByApi: [],
@@ -27,7 +27,7 @@ class TeamRevenueComponent extends Component {
   getBillingData = team => {
     this.setState({ loading: true }, () => {
       Promise.all([
-        Services.getTeamRevenue(
+        Services.getTeamIncome(
           team._id,
           this.state.date.startOf('month').valueOf(),
           this.state.date.endOf('month').valueOf()
@@ -56,7 +56,7 @@ class TeamRevenueComponent extends Component {
 
   sync = () => {
     this.setState({ loading: true }, () => {
-      Services.syncTeamRevenue(this.props.currentTeam._id)
+      Services.syncTeamIncome(this.props.currentTeam._id)
         .then(() => this.getBillingData(this.props.currentTeam))
     })
   }
@@ -66,13 +66,13 @@ class TeamRevenueComponent extends Component {
     const mostRecentConsumption = _.maxBy(this.state.consumptions, c => c.to)
     const lastDate = mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm')
     return (
-      <TeamBackOffice tab="Revenue">
+      <TeamBackOffice tab="Income">
         <Can I={read} a={stat} team={this.props.currentTeam} dispatchError={true}>
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="Revenue" language={this.props.currentLanguage}>
-                  Revenue
+                <Translation i18nkey="Income" language={this.props.currentLanguage}>
+                  Income
                 </Translation>
               </h1>
               {this.state.loading && <Spinner />}
@@ -188,6 +188,6 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamRevenue = connect(
+export const TeamIncome = connect(
   mapStateToProps
-)(TeamRevenueComponent);
+)(TeamIncomeComponent);

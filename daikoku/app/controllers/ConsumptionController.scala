@@ -107,8 +107,8 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def syncTeamRevenue(teamId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has sync team revenue for team @{team.name}"))(teamId, ctx) { team =>
+  def syncTeamIncome(teamId: String) = DaikokuAction.async { ctx =>
+    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has sync team income for team @{team.name}"))(teamId, ctx) { team =>
       apiKeyStatsJob.syncForOwner(team, ctx.tenant).map(seq => Ok(JsArray(seq.map(_.asJson))))
     }
   }
@@ -289,7 +289,7 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def revenue(teamId: String, from: Option[Long], to: Option[Long]): Action[AnyContent] = DaikokuAction.async { ctx =>
+  def income(teamId: String, from: Option[Long], to: Option[Long]): Action[AnyContent] = DaikokuAction.async { ctx =>
     TeamAdminOnly(AuditTrailEvent(s"@{user.name} has accessed to team billing for @{team.name}"))(teamId, ctx) { team =>
       val fromTimestamp = from.getOrElse(DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
       val toTimestamp   = to.getOrElse(DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)

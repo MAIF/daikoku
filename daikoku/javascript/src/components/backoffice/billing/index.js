@@ -1,2 +1,2 @@
 export * from './TeamBilling';
-export * from './TeamRevenue';
+export * from './TeamIncome';

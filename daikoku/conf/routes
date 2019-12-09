@@ -105,7 +105,7 @@ POST    /api/teams/:teamId/apis/:apiId/consumption/_sync         fr.maif.otorosh
 ### NoDocs ###
 POST    /api/teams/:teamId/billing/_sync                         fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.syncTeamBilling(teamId)
 ### NoDocs ###
-POST    /api/teams/:teamId/revenue/_sync                         fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.syncTeamRevenue(teamId)
+POST    /api/teams/:teamId/income/_sync                         fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.syncTeamIncome(teamId)
 ### NoDocs ###
 GET     /api/teams/:teamId/apiKey/:clientId/consumption          fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.getApiKeyConsumption(clientId, teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 ### NoDocs ###
@@ -117,7 +117,7 @@ GET     /api/teams/:teamId/consumptions                          fr.maif.otorosh
 ### NoDocs ###
 GET     /api/teams/:teamId/billings                              fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.billings(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 ### NoDocs ###
-GET     /api/teams/:teamId/revenue                               fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.revenue(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+GET     /api/teams/:teamId/income                               fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)

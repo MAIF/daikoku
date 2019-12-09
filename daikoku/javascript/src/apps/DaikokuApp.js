@@ -38,7 +38,7 @@ import {
   TeamPlanConsumption,
   TeamConsumption,
   TeamBilling,
-  TeamRevenue,
+  TeamIncome,
   TeamEdit,
   AssetsList
 } from '../components/backoffice';
@@ -267,9 +267,9 @@ class DaikokuAppComponent extends Component {
             />
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/revenue', '/:teamId/settings/revenue']}
+              path={['/teams/:teamId/settings/income', '/:teamId/settings/income']}
               render={smartRedirect(p => (
-                <TeamRevenue match={p.match} history={p.history} location={p.location} />
+                <TeamIncome match={p.match} history={p.history} location={p.location} />
               ))}
             />
             <TeamBackOfficeRoute
