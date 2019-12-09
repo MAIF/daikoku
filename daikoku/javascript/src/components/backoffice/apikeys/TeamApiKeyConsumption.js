@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
-import {Spinner, Can, read, stat} from '../../utils';
+import { Spinner, Can, read, stat } from '../../utils';
 
 class TeamApiKeyConsumptionComponent extends Component {
   state = {
@@ -28,17 +28,12 @@ class TeamApiKeyConsumptionComponent extends Component {
     {
       type: 'Global',
       label: 'Global informations',
-      formatter: data =>
-        data.length
-          ? data[data.length - 1].globalInformations
-          : [],
+      formatter: data => (data.length ? data[data.length - 1].globalInformations : []),
     },
   ];
 
   getLabelForDataIn = (datas, max) => {
-    let hits = datas.length
-      ? datas.reduce((acc, data) => acc + data.hits, 0)
-      : 0;
+    let hits = datas.length ? datas.reduce((acc, data) => acc + data.hits, 0) : 0;
 
     if (!max) {
       return (
@@ -58,7 +53,12 @@ class TeamApiKeyConsumptionComponent extends Component {
           {hits.prettify()} hit{hits > 1 ? 's' : ''} / {max} max.
         </div>
         <div>
-          <Progress status="normal" percent={(hits / max) * 100} default={'default'} showInfo={false} />
+          <Progress
+            status="normal"
+            percent={(hits / max) * 100}
+            default={'default'}
+            showInfo={false}
+          />
         </div>
       </div>
     );
@@ -83,7 +83,12 @@ class TeamApiKeyConsumptionComponent extends Component {
               </div>
             </div>
             <OtoroshiStatsVizualization
-              sync={() => Services.syncApiKeyConsumption(this.props.match.params.clientId, this.props.currentTeam._id)}
+              sync={() =>
+                Services.syncApiKeyConsumption(
+                  this.props.match.params.clientId,
+                  this.props.currentTeam._id
+                )
+              }
               fetchData={(from, to) =>
                 Services.apiKeyConsumption(
                   this.props.match.params.clientId,
@@ -134,6 +139,4 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamApiKeyConsumption = connect(
-  mapStateToProps
-)(TeamApiKeyConsumptionComponent);
+export const TeamApiKeyConsumption = connect(mapStateToProps)(TeamApiKeyConsumptionComponent);

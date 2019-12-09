@@ -1,27 +1,25 @@
-import React, {Component} from 'react';
-import {AssetChooserByModal, MimeTypeFilter} from '../frontend';
+import React, { Component } from 'react';
+import { AssetChooserByModal, MimeTypeFilter } from '../frontend';
 import md5 from 'js-md5';
 import { t, Translation } from '../../locales';
 
-
-
 class Gravatar extends Component {
-    setGravatarLink = () => {
-      const email = this.props.rawValue.contact.toLowerCase().trim();
-      const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
-      this.props.changeValue('avatar', url);
-    };
+  setGravatarLink = () => {
+    const email = this.props.rawValue.contact.toLowerCase().trim();
+    const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
+    this.props.changeValue('avatar', url);
+  };
 
-    render() {
-      return (
-        <button type="button" className="btn btn-outline-success" onClick={this.setGravatarLink}>
-          <i className="fas fa-user-circle mr-1" />
-          <Translation i18nkey="gravatar.btn.label" language={this.props.currentLanguage}>
-            Set avatar from Gravatar
-          </Translation>
-        </button>
-      );
-    }
+  render() {
+    return (
+      <button type="button" className="btn btn-outline-success" onClick={this.setGravatarLink}>
+        <i className="fas fa-user-circle mr-1" />
+        <Translation i18nkey="gravatar.btn.label" language={this.props.currentLanguage}>
+          Set avatar from Gravatar
+        </Translation>
+      </button>
+    );
+  }
 }
 
 class AssetButton extends Component {
@@ -32,8 +30,9 @@ class AssetButton extends Component {
         onlyPreview
         tenantMode={false}
         team={this.props.team()}
-        label={t("Set avatar from asset", this.props.currentLanguage)}
-        onSelect={asset => this.props.changeValue('avatar', asset.link)}/>
+        label={t('Set avatar from asset', this.props.currentLanguage)}
+        onSelect={asset => this.props.changeValue('avatar', asset.link)}
+      />
     );
   }
 }
@@ -43,8 +42,8 @@ export class AvatarChooser extends Component {
     return (
       <div className="form-group row">
         <div className="col-12 d-flex justify-content-end">
-          <Gravatar {...this.props}/>
-          <AssetButton {...this.props}/>
+          <Gravatar {...this.props} />
+          <AssetButton {...this.props} />
         </div>
       </div>
     );

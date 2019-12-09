@@ -91,16 +91,16 @@ class TeamPlanConsumptionComponent extends Component {
             </div>
             <p className="col">
               <Link
-                to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${
-                  this.props.match.params.apiId
-                }`}
+                to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${this.props.match.params.apiId}`}
                 className="btn my-2 btn-access-negative">
                 <i className="fas fa-angle-left" /> Back to plans
               </Link>
             </p>
           </div>
           <OtoroshiStatsVizualization
-            sync={() => Services.syncApiConsumption(this.props.match.params.apiId, this.props.currentTeam._id)}
+            sync={() =>
+              Services.syncApiConsumption(this.props.match.params.apiId, this.props.currentTeam._id)
+            }
             fetchData={(from, to) =>
               Services.apiConsumption(
                 this.props.match.params.apiId,
@@ -122,9 +122,7 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamPlanConsumption = connect(
-  mapStateToProps
-)(TeamPlanConsumptionComponent);
+export const TeamPlanConsumption = connect(mapStateToProps)(TeamPlanConsumptionComponent);
 
 class PlanInformations extends Component {
   state = {

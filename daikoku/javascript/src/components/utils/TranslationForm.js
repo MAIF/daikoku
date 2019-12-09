@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import Select from 'react-select';
-import {languages} from '../../locales'
+import { languages } from '../../locales';
 import { Spinner } from './Spinner';
 
 const LazyForm = React.lazy(() => import('../inputs/Form'));
 
 export const TranslationForm = ({ value, onChange, flow, schema, formatter = v => v }) => {
   const [language, setLanguage] = useState(languages[0]);
-  const [translations, setTranslations] = useState(languages.map(key => ({ key, ...formatter(value) })))
-  const [actualTranslation, setActualTranslation] = useState(translations.find(t => t.key === language))
+  const [translations, setTranslations] = useState(
+    languages.map(key => ({ key, ...formatter(value) }))
+  );
+  const [actualTranslation, setActualTranslation] = useState(
+    translations.find(t => t.key === language)
+  );
 
   useEffect(() => {
-    onChange(translations)
-  }, [translations])
+    onChange(translations);
+  }, [translations]);
 
   useEffect(() => {
-    setTranslations([...translations.filter(t => t.key !== language), actualTranslation])
-  }, [actualTranslation])
+    setTranslations([...translations.filter(t => t.key !== language), actualTranslation]);
+  }, [actualTranslation]);
 
   useEffect(() => {
-    setActualTranslation(translations.find(t => t.key === language))
-  }, [language])
+    setActualTranslation(translations.find(t => t.key === language));
+  }, [language]);
 
   return (
     <div>
@@ -39,5 +43,5 @@ export const TranslationForm = ({ value, onChange, flow, schema, formatter = v =
         />
       </React.Suspense>
     </div>
-  )
-}
+  );
+};

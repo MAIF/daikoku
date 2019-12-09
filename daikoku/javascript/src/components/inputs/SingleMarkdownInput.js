@@ -11,7 +11,7 @@ import 'brace/ext/searchbox';
 import 'brace/ext/language_tools';
 
 import { AssetChooserByModal } from '../frontend/modals/AssetsChooserModal';
-import { t, Translation } from "../../locales";
+import { t, Translation } from '../../locales';
 
 import hljs from 'highlight.js';
 
@@ -111,7 +111,8 @@ export default class SingleMardownInput extends Component {
     {
       name: t('Lorem Ipsum', this.props.currentLanguage),
       icon: 'feather-alt',
-      inject: () => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.',
+      inject: () =>
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.',
     },
     {
       name: t('Long Lorem Ipsum', this.props.currentLanguage),
@@ -124,7 +125,7 @@ Vivamus sapien ligula, hendrerit a libero vitae, convallis maximus massa. Praese
 
 Donec id mi cursus, volutpat dolor sed, bibendum sapien. Etiam vitae mauris sit amet urna semper tempus vel non metus. Integer sed ligula diam. Aenean molestie ultrices libero eget suscipit. Phasellus maximus euismod eros ut scelerisque. Ut quis tempus metus. Sed mollis volutpat velit eget pellentesque. Integer hendrerit ultricies massa eu tincidunt. Quisque at cursus augue. Sed diam odio, molestie sed dictum eget, efficitur nec nulla. Nullam vulputate posuere nunc nec laoreet. Integer varius sed erat vitae cursus. Vivamus auctor augue enim, a fringilla mauris molestie eget.
 
-Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`
+Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`,
     },
   ];
 
@@ -179,8 +180,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
           style={{
             marginBottom: 10,
           }}
-          className="d-flex flex-sm-row flex-column align-items-center"
-        >
+          className="d-flex flex-sm-row flex-column align-items-center">
           <div>
             <div className="btn-group">
               <button
@@ -203,15 +203,13 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               </button>
             </div>
           </div>
-          <div>
-            {this.injectButtons()}
-          </div>
+          <div>{this.injectButtons()}</div>
           <div style={{ width: 250 }}>
             <AssetChooserByModal
               currentLanguage={this.props.currentLanguage}
               tenantMode={this.props.tenantMode}
               team={team}
-              label={t("Set from asset", this.props.currentLanguage)}
+              label={t('Set from asset', this.props.currentLanguage)}
               onSelect={asset => {
                 this.editor.session.insert(this.editor.getCursorPosition(), asset.link);
                 this.editor.focus();

@@ -104,8 +104,7 @@ export class AuditTrailList extends Component {
           onClick={this.previous}>
           <i className="fas fa-arrow-left" />
         </button>
-        ,
-        <span> page </span>,
+        ,<span> page </span>,
         <input
           type="number mr-1"
           style={{ width: 60, textAlign: 'center' }}
@@ -114,8 +113,8 @@ export class AuditTrailList extends Component {
             this.setState({ page: e.target.value });
             this.table.update();
           }}
-        />,
-        <span> on {(this.state.total / this.state.size).toFixed(0)} with </span>,
+        />
+        ,<span> on {(this.state.total / this.state.size).toFixed(0)} with </span>,
         <input
           type="number"
           className="mr-1"
@@ -125,11 +124,12 @@ export class AuditTrailList extends Component {
             this.setState({ size: e.target.value });
             this.table.update();
           }}
-        />,
-        <span> items per fetch</span>,
+        />
+        ,<span> items per fetch</span>,
         <button type="button" className="btn btn-xs btn-outline-primary ml-1" onClick={this.next}>
           <i className="fas fa-arrow-right" />
-        </button>,
+        </button>
+        ,
       </>
     );
   };

@@ -6,7 +6,7 @@ export const login = ({ user, team, tenant, language }) => dispatch => {
     user,
     team,
     tenant,
-    language
+    language,
   });
 };
 
@@ -31,10 +31,12 @@ export const updateTeam = team => dispatch => {
 };
 
 export const updateTeamPromise = team => dispatch => {
-  return Promise.resolve(dispatch({
-    type: UPDATE_TEAM,
-    team,
-  }))
+  return Promise.resolve(
+    dispatch({
+      type: UPDATE_TEAM,
+      team,
+    })
+  );
 };
 
 export const updateNotications = unreadNotificationsCount => dispatch => {
@@ -47,6 +49,6 @@ export const updateNotications = unreadNotificationsCount => dispatch => {
 export const udpateLanguage = language => dispatch => {
   return dispatch({
     type: UPDATE_LANGUAGE,
-    language
-  })
-}
+    language,
+  });
+};

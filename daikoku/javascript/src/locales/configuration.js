@@ -1,15 +1,18 @@
-import translationEng from "../locales/en/translation.json";
-import translationFr from "../locales/fr/translation.json";
+import translationEng from '../locales/en/translation.json';
+import translationFr from '../locales/fr/translation.json';
 
 export const configuration = {
   En: {
     label: 'English',
-    translations: translationEng
+    translations: translationEng,
   },
   Fr: {
     label: 'Français',
-    translations: translationFr
+    translations: translationFr,
   },
 };
 
-export const languages = Object.keys(configuration).map(value => ({value, label: configuration[value].label}));
+export const languages = Object.keys(configuration).map(value => ({
+  value,
+  label: configuration[value].label,
+}));

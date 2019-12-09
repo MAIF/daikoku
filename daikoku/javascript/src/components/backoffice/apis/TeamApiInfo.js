@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 
 import { Spinner } from '../../utils';
 import * as Services from '../../../services';
-import { t, Translation } from "../../../locales";
+import { t, Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -34,8 +34,9 @@ class NameAlreadyExists extends Component {
           style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           {this.props.creating && this.state.exists ? (
             <span className="badge badge-danger">
-              <Translation i18nkey="api.already.exists" 
-                language={this.props.currentLanguage} 
+              <Translation
+                i18nkey="api.already.exists"
+                language={this.props.currentLanguage}
                 replacements={[this.props.rawValue.name]}>
                 api with name "{this.props.rawValue.name}" already exists
               </Translation>
@@ -49,16 +50,20 @@ class NameAlreadyExists extends Component {
 
 export class TeamApiInfo extends Component {
   formSchema = {
-    _id: { type: 'string', disabled: true, props: { label: t('Id', this.props.currentLanguage), placeholder: '---' } },
+    _id: {
+      type: 'string',
+      disabled: true,
+      props: { label: t('Id', this.props.currentLanguage), placeholder: '---' },
+    },
     name: {
       type: 'string',
       props: { label: t('Name', this.props.currentLanguage), placeholder: 'New Api' },
     },
     nameAlreadyExists: {
       type: NameAlreadyExists,
-      props: { 
+      props: {
         creating: this.props.creating,
-        currentLanguage: this.props.currentLanguage 
+        currentLanguage: this.props.currentLanguage,
       },
     },
     smallDescription: {
@@ -146,7 +151,7 @@ export class TeamApiInfo extends Component {
 
   render() {
     return (
-      <React.Suspense fallback={<Spinner/>}>
+      <React.Suspense fallback={<Spinner />}>
         <LazyForm
           flow={this.formFlow}
           schema={this.formSchema}

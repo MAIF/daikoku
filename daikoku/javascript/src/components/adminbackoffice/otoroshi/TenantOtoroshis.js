@@ -58,7 +58,11 @@ export class TenantOtoroshisComponent extends Component {
     if (this.props.connectedUser.isDaikokuAdmin) {
       return true;
     }
-    return this.props.currentTeam.users.filter(u => u.teamPermission === administrator).indexOf(this.props.connectedUser._id) > -1;
+    return (
+      this.props.currentTeam.users
+        .filter(u => u.teamPermission === administrator)
+        .indexOf(this.props.connectedUser._id) > -1
+    );
   };
 
   delete = id => {

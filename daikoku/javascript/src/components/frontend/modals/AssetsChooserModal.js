@@ -1,16 +1,16 @@
-import React, {Component, useState} from 'react';
-import {connect} from 'react-redux';
+import React, { Component, useState } from 'react';
+import { connect } from 'react-redux';
 import classNames from 'classnames';
 import Popover from 'react-popover';
 
 import * as Services from '../../../services';
-import {openModal, closeModal} from '../../../core/modal/actions';
-import { t, Translation } from "../../../locales";
+import { openModal, closeModal } from '../../../core/modal/actions';
+import { t, Translation } from '../../../locales';
 
 export const MimeTypeFilter = {
-  image: (value) => value.startsWith('image'),
-  css: (value) => value.indexOf('css') > -1,
-  javascript: (value) => value.indexOf('javascript') > -1
+  image: value => value.startsWith('image'),
+  css: value => value.indexOf('css') > -1,
+  javascript: value => value.indexOf('javascript') > -1,
 };
 
 export const AssetSelectorModal = ({
@@ -18,18 +18,19 @@ export const AssetSelectorModal = ({
   assets,
   onSelect,
   onlyPreview,
-  currentLanguage
+  currentLanguage,
 }) => {
   const [selectedAsset, setSelectedAsset] = useState({});
   const [search, setSearch] = useState();
-
 
   const selectAssetAndCloseModal = () => {
     onSelect(selectedAsset);
     closeModal();
   };
 
-  const filteredAssets = assets.filter(asset => !search || asset.title.toLowerCase().includes(search));
+  const filteredAssets = assets.filter(
+    asset => !search || asset.title.toLowerCase().includes(search)
+  );
 
   return (
     <div className="modal-content">
@@ -45,20 +46,29 @@ export const AssetSelectorModal = ({
       </div>
       <div className="modal-body">
         <div className="asset-selection-body">
-          <input placeholder={t("Find an assets", currentLanguage)} className="form-control" onChange={e => setSearch(e.target.value)}/>
-          <div className={classNames({
-            'asset-selection__container--column': !onlyPreview,
-            'asset-selection__container--row': onlyPreview,
-            tiles: onlyPreview
-          })}>
+          <input
+            placeholder={t('Find an assets', currentLanguage)}
+            className="form-control"
+            onChange={e => setSearch(e.target.value)}
+          />
+          <div
+            className={classNames({
+              'asset-selection__container--column': !onlyPreview,
+              'asset-selection__container--row': onlyPreview,
+              tiles: onlyPreview,
+            })}>
             {filteredAssets.map((asset, idx) => {
               if (onlyPreview) {
                 return (
-                  <div className={classNames('tile', {selected: asset.value === selectedAsset.value})} key={idx}>
+                  <div
+                    className={classNames('tile', {
+                      selected: asset.value === selectedAsset.value,
+                    })}
+                    key={idx}>
                     <img
                       onClick={() => setSelectedAsset(asset)}
                       src={`/asset-thumbnails/${asset.value}`}
-                      alt={t("Thumbnail", currentLanguage)}
+                      alt={t('Thumbnail', currentLanguage)}
                     />
                   </div>
                 );
@@ -67,7 +77,9 @@ export const AssetSelectorModal = ({
               return (
                 <div
                   key={idx}
-                  className={classNames('asset-selection', {selected: asset.value === selectedAsset.value})}
+                  className={classNames('asset-selection', {
+                    selected: asset.value === selectedAsset.value,
+                  })}
                   onClick={() => setSelectedAsset(asset)}>
                   <span className="ml-2">{asset.title}</span>
                 </div>
@@ -76,15 +88,22 @@ export const AssetSelectorModal = ({
           </div>
         </div>
 
-        <div className={classNames('asset__preview', {open: !!selectedAsset.title})}>
-          {selectedAsset.title && <div>
-            <p>file: {selectedAsset.title}</p>
-            {selectedAsset.desc && selectedAsset.desc !== 'undefined' && <em>{selectedAsset.desc}</em>}
-          </div>}
+        <div className={classNames('asset__preview', { open: !!selectedAsset.title })}>
+          {selectedAsset.title && (
+            <div>
+              <p>file: {selectedAsset.title}</p>
+              {selectedAsset.desc && selectedAsset.desc !== 'undefined' && (
+                <em>{selectedAsset.desc}</em>
+              )}
+            </div>
+          )}
         </div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-success" onClick={() => selectAssetAndCloseModal()}>
+        <button
+          type="button"
+          className="btn btn-outline-success"
+          onClick={() => selectAssetAndCloseModal()}>
           <Translation i18nkey="Select" language={currentLanguage}>
             Select
           </Translation>
@@ -104,36 +123,36 @@ export class AssetChooserComponent extends Component {
     loading: true,
     assets: [],
     error: false,
-    popoverIsOpen: false
+    popoverIsOpen: false,
   };
 
-  getTenantAssets = () => Services.listTenantAssets(this.props.teamId).then(assets => (
-    assets.map(asset => ({
-      label: asset.meta.filename + ' - ' + asset.meta.title,
-      value: asset.meta.asset,
-      filename: asset.meta.filename,
-      title: asset.meta.title,
-      desc: asset.meta.desc,
-      contentType: asset.meta['content-type'],
-      meta: asset.meta,
-      link: `/tenant-assets/${asset.meta.asset}`,
-    }
-    ))
-  ));
+  getTenantAssets = () =>
+    Services.listTenantAssets(this.props.teamId).then(assets =>
+      assets.map(asset => ({
+        label: asset.meta.filename + ' - ' + asset.meta.title,
+        value: asset.meta.asset,
+        filename: asset.meta.filename,
+        title: asset.meta.title,
+        desc: asset.meta.desc,
+        contentType: asset.meta['content-type'],
+        meta: asset.meta,
+        link: `/tenant-assets/${asset.meta.asset}`,
+      }))
+    );
 
-  getTeamAssets = (team) => Services.listAssets(team._id).then(assets => (
-    assets.map(asset => ({
-      label: asset.meta.filename + ' - ' + asset.meta.title,
-      value: asset.meta.asset,
-      filename: asset.meta.filename,
-      title: asset.meta.title,
-      desc: asset.meta.desc,
-      contentType: asset.meta['content-type'],
-      meta: asset.meta,
-      link: `/team-assets/${team._id}/${asset.meta.asset}`,
-    }
-    ))
-  ));
+  getTeamAssets = team =>
+    Services.listAssets(team._id).then(assets =>
+      assets.map(asset => ({
+        label: asset.meta.filename + ' - ' + asset.meta.title,
+        value: asset.meta.asset,
+        filename: asset.meta.filename,
+        title: asset.meta.title,
+        desc: asset.meta.desc,
+        contentType: asset.meta['content-type'],
+        meta: asset.meta,
+        link: `/team-assets/${team._id}/${asset.meta.asset}`,
+      }))
+    );
 
   componentDidMount() {
     this.getAssets(this.props.team);
@@ -156,41 +175,48 @@ export class AssetChooserComponent extends Component {
     fetchAssets()
       .then(assets => {
         if (this.props.typeFilter) {
-          this.setState({assets: assets.filter(asset => this.props.typeFilter(asset.contentType)), loading: false});
+          this.setState({
+            assets: assets.filter(asset => this.props.typeFilter(asset.contentType)),
+            loading: false,
+          });
         } else {
-          this.setState({assets, loading: false});
+          this.setState({ assets, loading: false });
         }
       })
-      .catch(error => this.setState({error, loading: false}));
+      .catch(error => this.setState({ error, loading: false }));
   }
 
   toggle(toState = null) {
-    this.setState({popoverIsOpen: toState === null ? !this.state.popoverIsOpen : toState});
+    this.setState({ popoverIsOpen: toState === null ? !this.state.popoverIsOpen : toState });
   }
 
   render() {
     if (this.state.assets && this.state.loading) {
-      return <button type="button" className="btn btn-outline-success ml-1" disabled>
-        <Translation i18nkey="loading" language={this.props.currentLanguage}>
-          loading...
-        </Translation>
-      </button>;
+      return (
+        <button type="button" className="btn btn-outline-success ml-1" disabled>
+          <Translation i18nkey="loading" language={this.props.currentLanguage}>
+            loading...
+          </Translation>
+        </button>
+      );
     }
 
     if (this.state.error) {
       return (
-        <Popover
-          isOpen={this.state.popoverIsOpen}
-          body={this.state.error.message}>
+        <Popover isOpen={this.state.popoverIsOpen} body={this.state.error.message}>
           <button
             type="button"
             className="btn btn-outline-success ml-1 cursor-help"
             onMouseEnter={() => this.toggle(true)}
             onMouseLeave={() => this.toggle(false)}
-            disabled><i className={classNames('fas', {
-              'fa-user-circle mr-1': !!this.props.onlyPreview,
-              'fa-file mr-1': !this.props.onlyPreview
-            })}/>{this.props.label}
+            disabled>
+            <i
+              className={classNames('fas', {
+                'fa-user-circle mr-1': !!this.props.onlyPreview,
+                'fa-file mr-1': !this.props.onlyPreview,
+              })}
+            />
+            {this.props.label}
           </button>
         </Popover>
       );
@@ -200,37 +226,55 @@ export class AssetChooserComponent extends Component {
       return (
         <Popover
           isOpen={this.state.popoverIsOpen}
-          body={t("No assets found", this.props.currentLanguage)}>
+          body={t('No assets found', this.props.currentLanguage)}>
           <button
             type="button"
             className="btn btn-outline-success ml-1 cursor-help"
-            onMouseEnter={() => this.setState({popoverIsOpen: true}, () => setTimeout(() => this.setState({popoverIsOpen: false}), 2000))}
-            disabled><i className={classNames('fas mr-1', {
-              'fa-user-circle': !!this.props.onlyPreview,
-              'fa-file': !this.props.onlyPreview
-            })}/>{this.props.label}
+            onMouseEnter={() =>
+              this.setState({ popoverIsOpen: true }, () =>
+                setTimeout(() => this.setState({ popoverIsOpen: false }), 2000)
+              )
+            }
+            disabled>
+            <i
+              className={classNames('fas mr-1', {
+                'fa-user-circle': !!this.props.onlyPreview,
+                'fa-file': !this.props.onlyPreview,
+              })}
+            />
+            {this.props.label}
           </button>
         </Popover>
       );
     }
 
     return (
-      <button type="button" className="btn btn-outline-success ml-1" onClick={() => this.props.openModal(
-        {
-          open: true,
-          assets: this.state.assets,
-          onSelect: asset => this.props.onSelect(asset),
-          closeModal: this.props.closeModal,
-          onlyPreview: this.props.onlyPreview,
-          panelView: true,
-          currentLanguage: this.props.currentLanguage
-        },
-        'assetSelector',
-        true
-      )}><i className={classNames('fas mr-1', {
-          'fa-user-circle': !!this.props.onlyPreview,
-          'fa-file': !this.props.onlyPreview
-        })}/> {this.props.label}</button>
+      <button
+        type="button"
+        className="btn btn-outline-success ml-1"
+        onClick={() =>
+          this.props.openModal(
+            {
+              open: true,
+              assets: this.state.assets,
+              onSelect: asset => this.props.onSelect(asset),
+              closeModal: this.props.closeModal,
+              onlyPreview: this.props.onlyPreview,
+              panelView: true,
+              currentLanguage: this.props.currentLanguage,
+            },
+            'assetSelector',
+            true
+          )
+        }>
+        <i
+          className={classNames('fas mr-1', {
+            'fa-user-circle': !!this.props.onlyPreview,
+            'fa-file': !this.props.onlyPreview,
+          })}
+        />{' '}
+        {this.props.label}
+      </button>
     );
   }
 }
@@ -241,7 +285,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   closeModal: () => closeModal(),
-  openModal: (modalProps, modalType) => openModal({modalProps, modalType}),
+  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
 };
 
 export const AssetChooserByModal = connect(

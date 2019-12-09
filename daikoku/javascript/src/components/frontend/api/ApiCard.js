@@ -11,11 +11,11 @@ export class ApiCard extends Component {
   }
 
   authorizedOn = api => api.visibility === 'Public' || api.authorizations.some(a => a.authorized);
-  allTeamsAuthorizedOn = api => api.visibility === 'Public' || api.authorizations.every(a => a.authorized);
+  allTeamsAuthorizedOn = api =>
+    api.visibility === 'Public' || api.authorizations.every(a => a.authorized);
   isPending = api => api.authorizations && api.authorizations.every(a => a.pending || a.authorized);
 
-  redirectToApiPage = (auth) => {
-
+  redirectToApiPage = auth => {
     if (auth) {
       this.props.redirectToApiPage();
     }
@@ -53,11 +53,13 @@ export class ApiCard extends Component {
               {!allTeamsAreAuthorized && !isPending && api.visibility !== 'Private' && (
                 <ActionWithTeamSelector
                   title="Api access"
-                  description={t('api.access.request', 
-                    this.props.currentLanguage, 
-                    false, 
+                  description={t(
+                    'api.access.request',
+                    this.props.currentLanguage,
+                    false,
                     `You will send an access request to the API "${api.name}". For which team do you want to send the request ?`,
-                    [api.name] )}
+                    [api.name]
+                  )}
                   buttonLabel="Send"
                   pendingTeams={api.authorizations
                     .filter(auth => auth.pending)
@@ -89,7 +91,10 @@ export class ApiCard extends Component {
           )}
         </div>
         <div className="col-12">
-          <Translation language={this.props.currentLanguage} i18nkey={`${api._humanReadableId}.description`} extraConf={api.translation}>
+          <Translation
+            language={this.props.currentLanguage}
+            i18nkey={`${api._humanReadableId}.description`}
+            extraConf={api.translation}>
             {api.smallDescription}
           </Translation>
         </div>

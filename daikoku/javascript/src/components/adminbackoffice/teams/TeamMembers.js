@@ -7,7 +7,7 @@ import { Can, manage, daikoku } from '../../utils';
 
 class TeamMembersComponent extends Component {
   state = {
-    team: null
+    team: null,
   };
 
   componentDidMount() {
@@ -15,12 +15,11 @@ class TeamMembersComponent extends Component {
   }
 
   updateMembers = () => {
-    Services.teamFull(this.props.match.params.teamSettingId)
-      .then((team) => {
-        this.setState({
-          team
-        });
+    Services.teamFull(this.props.match.params.teamSettingId).then(team => {
+      this.setState({
+        team,
       });
+    });
   };
 
   render() {
@@ -31,7 +30,11 @@ class TeamMembersComponent extends Component {
     return (
       <UserBackOffice tab="Teams">
         <Can I={manage} a={daikoku} dispatchError>
-          <TeamMembersSimpleComponent currentTeam={this.state.team} connectedUser={this.props.connectedUser} updateTeam={team => Promise.resolve(this.setState({ team }))} />
+          <TeamMembersSimpleComponent
+            currentTeam={this.state.team}
+            connectedUser={this.props.connectedUser}
+            updateTeam={team => Promise.resolve(this.setState({ team }))}
+          />
         </Can>
       </UserBackOffice>
     );
@@ -42,6 +45,4 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamMembersForAdmin = connect(
-  mapStateToProps
-)(TeamMembersComponent);
+export const TeamMembersForAdmin = connect(mapStateToProps)(TeamMembersComponent);

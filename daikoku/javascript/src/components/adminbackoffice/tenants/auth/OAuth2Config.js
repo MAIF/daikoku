@@ -1,15 +1,9 @@
 import React, { Component } from 'react';
-import {
-  SelectInput,
-  TextInput,
-  TextareaInput,
-  ObjectInput,
-  NumberInput,
-} from '../../../inputs';
-import { Spinner } from "../../../utils";
+import { SelectInput, TextInput, TextareaInput, ObjectInput, NumberInput } from '../../../inputs';
+import { Spinner } from '../../../utils';
 
 import set from 'set-value';
-import {t, Translation} from '../../../../locales';
+import { t, Translation } from '../../../../locales';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
@@ -53,39 +47,39 @@ export class AlgoSettings extends Component {
           value={algo.type}
           onChange={e => {
             switch (e) {
-            case 'HSAlgoSettings':
-              changeTheValue(path + '', {
-                type: 'HSAlgoSettings',
-                size: 512,
-                secret: 'secret',
-              });
-              break;
-            case 'RSAlgoSettings':
-              changeTheValue(path + '', {
-                type: 'RSAlgoSettings',
-                size: 512,
-                publicKey: '-----BEGIN PUBLIC KEY-----\nxxxxxxxx\n-----END PUBLIC KEY-----',
-                privateKey: '-----BEGIN PRIVATE KEY-----\nxxxxxxxx\n-----END PRIVATE KEY-----',
-              });
-              break;
-            case 'ESAlgoSettings':
-              changeTheValue(path + '', {
-                type: 'ESAlgoSettings',
-                size: 512,
-                publicKey: '-----BEGIN PUBLIC KEY-----\nxxxxxxxx\n-----END PUBLIC KEY-----',
-                privateKey: '-----BEGIN PRIVATE KEY-----\nxxxxxxxx\n-----END PRIVATE KEY-----',
-              });
-              break;
-            case 'JWKSAlgoSettings':
-              changeTheValue(path + '', {
-                type: 'JWKSAlgoSettings',
-                url: 'https://jwk.foo.bar/.well-known/jwks.json',
-                headers: {},
-                timeout: 2000,
-                ttl: 5 * 60 * 60 * 1000,
-                kty: 'RSA',
-              });
-              break;
+              case 'HSAlgoSettings':
+                changeTheValue(path + '', {
+                  type: 'HSAlgoSettings',
+                  size: 512,
+                  secret: 'secret',
+                });
+                break;
+              case 'RSAlgoSettings':
+                changeTheValue(path + '', {
+                  type: 'RSAlgoSettings',
+                  size: 512,
+                  publicKey: '-----BEGIN PUBLIC KEY-----\nxxxxxxxx\n-----END PUBLIC KEY-----',
+                  privateKey: '-----BEGIN PRIVATE KEY-----\nxxxxxxxx\n-----END PRIVATE KEY-----',
+                });
+                break;
+              case 'ESAlgoSettings':
+                changeTheValue(path + '', {
+                  type: 'ESAlgoSettings',
+                  size: 512,
+                  publicKey: '-----BEGIN PUBLIC KEY-----\nxxxxxxxx\n-----END PUBLIC KEY-----',
+                  privateKey: '-----BEGIN PRIVATE KEY-----\nxxxxxxxx\n-----END PRIVATE KEY-----',
+                });
+                break;
+              case 'JWKSAlgoSettings':
+                changeTheValue(path + '', {
+                  type: 'JWKSAlgoSettings',
+                  url: 'https://jwk.foo.bar/.well-known/jwks.json',
+                  headers: {},
+                  timeout: 2000,
+                  ttl: 5 * 60 * 60 * 1000,
+                  kty: 'RSA',
+                });
+                break;
             }
             // changeTheValue(path + '', e)
           }}
@@ -100,8 +94,12 @@ export class AlgoSettings extends Component {
         {algo.type === 'HSAlgoSettings' && [
           <SelectInput
             key="sha-size"
-            label={t("SHA Size", this.props.currentLanguage)}
-            help={t("sha.size.help", this.props.currentLanguage, "Word size for the SHA-2 hash function used")}
+            label={t('SHA Size', this.props.currentLanguage)}
+            help={t(
+              'sha.size.help',
+              this.props.currentLanguage,
+              'Word size for the SHA-2 hash function used'
+            )}
             value={algo.size}
             onChange={v => changeTheValue(path + '.size', v)}
             possibleValues={[
@@ -112,18 +110,22 @@ export class AlgoSettings extends Component {
           />,
           <TextInput
             key="hmac-secret"
-            label={t("Hmac secret", this.props.currentLanguage)}
+            label={t('Hmac secret', this.props.currentLanguage)}
             placeholder="secret"
             value={algo.secret}
-            help={t("hmac.secet.help", this.props.currentLanguage, "The Hmac secret")}
+            help={t('hmac.secet.help', this.props.currentLanguage, 'The Hmac secret')}
             onChange={e => changeTheValue(path + '.secret', e)}
           />,
         ]}
         {algo.type === 'RSAlgoSettings' && [
           <SelectInput
             key="sha-size"
-            label={t("SHA Size", this.props.currentLanguage)}
-            help={t('sha.size.help', this.props.currentLanguage, "Word size for the SHA-2 hash function used")}
+            label={t('SHA Size', this.props.currentLanguage)}
+            help={t(
+              'sha.size.help',
+              this.props.currentLanguage,
+              'Word size for the SHA-2 hash function used'
+            )}
             value={algo.size}
             onChange={v => changeTheValue(path + '.size', v)}
             possibleValues={[
@@ -134,24 +136,32 @@ export class AlgoSettings extends Component {
           />,
           <TextareaInput
             key="public-key"
-            label={t("Public key", this.props.currentLanguage)}
+            label={t('Public key', this.props.currentLanguage)}
             value={algo.publicKey}
-            help={t("The RSA public key", this.props.currentLanguage)}
+            help={t('The RSA public key', this.props.currentLanguage)}
             onChange={e => changeTheValue(path + '.publicKey', e)}
           />,
           <TextareaInput
             key="private-key"
-            label={t("Private key", this.props.currentLanguage)}
+            label={t('Private key', this.props.currentLanguage)}
             value={algo.privateKey}
-            help={t("private.key.help", this.props.currentLanguage, "The RSA private key, private key can be empty if not used for JWT token signing")}
+            help={t(
+              'private.key.help',
+              this.props.currentLanguage,
+              'The RSA private key, private key can be empty if not used for JWT token signing'
+            )}
             onChange={e => changeTheValue(path + '.privateKey', e)}
           />,
         ]}
         {algo.type === 'ESAlgoSettings' && [
           <SelectInput
             key="sha-size"
-            label={t("SHA Size", this.props.currentLanguage)}
-            help={t("sha.size.help", this.props.currentLanguage, "Word size for the SHA-2 hash function used")}
+            label={t('SHA Size', this.props.currentLanguage)}
+            help={t(
+              'sha.size.help',
+              this.props.currentLanguage,
+              'Word size for the SHA-2 hash function used'
+            )}
             value={algo.size}
             onChange={v => changeTheValue(path + '.size', v)}
             possibleValues={[
@@ -162,57 +172,64 @@ export class AlgoSettings extends Component {
           />,
           <TextareaInput
             key="public-key"
-            label={t("Public key", this.props.currentLanguage)}
+            label={t('Public key', this.props.currentLanguage)}
             value={algo.publicKey}
-            help={t("The ECDSA public key", this.props.currentLanguage)}
+            help={t('The ECDSA public key', this.props.currentLanguage)}
             onChange={e => changeTheValue(path + '.publicKey', e)}
           />,
           <TextareaInput
             key="private-key"
-            label={t("Private key", this.props.currentLanguage)}
+            label={t('Private key', this.props.currentLanguage)}
             value={algo.privateKey}
-            help={t("ecdsa.private.key.help", this.props.currentLanguage, "The ECDSA private key, private key can be empty if not used for JWT token signing")}
+            help={t(
+              'ecdsa.private.key.help',
+              this.props.currentLanguage,
+              'The ECDSA private key, private key can be empty if not used for JWT token signing'
+            )}
             onChange={e => changeTheValue(path + '.privateKey', e)}
           />,
         ]}
         {algo.type === 'JWKSAlgoSettings' && [
           <TextInput
             key="url"
-            label={t("URL", this.props.currentLanguage)}
+            label={t('URL', this.props.currentLanguage)}
             value={algo.url}
-            help={t("The JWK Set url", this.props.currentLanguage)}
+            help={t('The JWK Set url', this.props.currentLanguage)}
             onChange={e => changeTheValue(path + '.url', e)}
           />,
           <NumberInput
             key="http-call-timeout"
-            label={t("HTTP call timeout", this.props.currentLanguage)}
-            suffix={t("millis.", this.props.currentLanguage)}
+            label={t('HTTP call timeout', this.props.currentLanguage)}
+            suffix={t('millis.', this.props.currentLanguage)}
             value={algo.timeout}
-            help={t("Timeout for fetching the keyset", this.props.currentLanguage)}
+            help={t('Timeout for fetching the keyset', this.props.currentLanguage)}
             onChange={e => changeTheValue(path + '.timeout', e)}
           />,
           <NumberInput
             key="ttl"
-            label={t("TTL", this.props.currentLanguage)}
-            suffix={t("millis.", this.props.currentLanguage)}
+            label={t('TTL', this.props.currentLanguage)}
+            suffix={t('millis.', this.props.currentLanguage)}
             value={algo.ttl}
-            help={t("Cache TTL for the keyset", this.props.currentLanguage)}
+            help={t('Cache TTL for the keyset', this.props.currentLanguage)}
             onChange={e => changeTheValue(path + '.ttl', e)}
           />,
           <ObjectInput
             key="http-header"
-            label={t("HTTP Headers", this.props.currentLanguage)}
+            label={t('HTTP Headers', this.props.currentLanguage)}
             value={algo.headers}
-            help={t("The HTTP headers passed", this.props.currentLanguage)}
+            help={t('The HTTP headers passed', this.props.currentLanguage)}
             onChange={e => changeTheValue(path + '.headers', e)}
           />,
           <SelectInput
             key="key-type"
-            label={t("Key type", this.props.currentLanguage)}
-            help={t("Type of key", this.props.currentLanguage)}
+            label={t('Key type', this.props.currentLanguage)}
+            help={t('Type of key', this.props.currentLanguage)}
             value={algo.kty}
             onChange={v => changeTheValue(path + '.kty', v)}
-            possibleValues={[{ label: 'RSA', value: 'RSA' }, { label: 'EC', value: 'EC' }]}
+            possibleValues={[
+              { label: 'RSA', value: 'RSA' },
+              { label: 'EC', value: 'EC' },
+            ]}
           />,
         ]}
       </div>
@@ -399,14 +416,14 @@ export class OAuth2Config extends Component {
     jwtVerifier: {
       type: AlgoSettings,
       props: {
-        currentLanguage: this.props.currentLanguage
-      }
+        currentLanguage: this.props.currentLanguage,
+      },
     },
   };
 
   componentDidMount() {
     if (this.props.rawValue.authProvider === 'OAuth2') {
-      this.props.onChange({...OAuth2Config.defaultConfig, ...this.props.value});
+      this.props.onChange({ ...OAuth2Config.defaultConfig, ...this.props.value });
     }
   }
 

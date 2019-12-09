@@ -55,10 +55,7 @@ class ApiHomeComponent extends Component {
   }
 
   updateSubscriptions = apiId => {
-    Promise.all([
-      Services.getVisibleApi(apiId),
-      Services.myTeams(),
-    ]).then(([api, myTeams]) => {
+    Promise.all([Services.getVisibleApi(apiId), Services.myTeams()]).then(([api, myTeams]) => {
       if (api.error) {
         this.props.setError({ error: { status: 404, message: api.error } });
       } else {
@@ -81,38 +78,38 @@ class ApiHomeComponent extends Component {
     return Services.askForApiKey(this.state.api._id, teams, plan._id)
       .then(results => {
         if (results.error) {
-          return toastr.error(
-            t('Error', this.props.currentLanguage),
-            results.error
-          );
+          return toastr.error(t('Error', this.props.currentLanguage), results.error);
         }
         return results.forEach(result => {
-          console.debug({result})
+          console.debug({ result });
           const team = this.state.myTeams.find(t => t._id === result.subscription.team);
 
           if (result.error) {
-            return toastr.error(
-              t('Error', this.props.currentLanguage),
-              result.error
-            );
+            return toastr.error(t('Error', this.props.currentLanguage), result.error);
           } else if (result.creation === 'done') {
             return toastr.success(
               t('Done', this.props.currentLanguage),
-              t('subscription.plan.accepted', 
-                this.props.currentLanguage, 
-                false, 
+              t(
+                'subscription.plan.accepted',
+                this.props.currentLanguage,
+                false,
                 `Subscription to plan ${planName} for team ${team.name} is accepted`,
-                planName, team.name
-            ));
+                planName,
+                team.name
+              )
+            );
           } else if (result.creation === 'waiting') {
             return toastr.info(
               t('Pending request', this.props.currentLanguage),
-              t('subscription.plan.waiting',
+              t(
+                'subscription.plan.waiting',
                 this.props.currentLanguage,
                 false,
                 `Subscription to plan ${planName} for team ${team.name} is waiting for acceptation`,
-                planName, team.name
-            ));
+                planName,
+                team.name
+              )
+            );
           }
         });
       })
@@ -121,9 +118,7 @@ class ApiHomeComponent extends Component {
 
   redirectToEditPage = api => {
     const adminTeam = this.state.myTeams.find(team => api.team === team._id);
-    this.props.history.push(
-      `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`
-    );
+    this.props.history.push(`/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`);
   };
 
   render() {
@@ -146,7 +141,9 @@ class ApiHomeComponent extends Component {
                   href="#"
                   className="team__settings ml-2"
                   onClick={() => this.redirectToEditPage(api)}>
-                  <button type="button" className="btn btn-sm btn-access-negative"><i className="fas fa-edit" /></button>
+                  <button type="button" className="btn btn-sm btn-access-negative">
+                    <i className="fas fa-edit" />
+                  </button>
                 </a>
               </Can>
             </h1>
@@ -170,14 +167,19 @@ class ApiHomeComponent extends Component {
                   <Link
                     className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
                     to={`/${this.props.match.params.teamId}/${apiId}/pricing`}>
-                    <Translation i18nkey="Plan" language={this.props.currentLanguage} isPlural={true}>
+                    <Translation
+                      i18nkey="Plan"
+                      language={this.props.currentLanguage}
+                      isPlural={true}>
                       Plans
                     </Translation>
                   </Link>
                 </li>
                 <li className="nav-item">
                   <Link
-                    className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''}`}
+                    className={`nav-link ${
+                      tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                    }`}
                     to={`/${this.props.match.params.teamId}/${apiId}/documentation`}>
                     <Translation i18nkey="Documentation" language={this.props.currentLanguage}>
                       Documentation
@@ -190,15 +192,17 @@ class ApiHomeComponent extends Component {
                       className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
                       to={`/${this.props.match.params.teamId}/${apiId}/redoc`}>
                       <Translation i18nkey="Api Reference" language={this.props.currentLanguage}>
-                          Api Reference
+                        Api Reference
                       </Translation>
                     </Link>
                   )}
-                  {!api.swagger && <span className={'nav-link disabled'}>
-                    <Translation i18nkey="Api Reference" language={this.props.currentLanguage}>
-                      Api Reference
-                    </Translation>
-                  </span>}
+                  {!api.swagger && (
+                    <span className={'nav-link disabled'}>
+                      <Translation i18nkey="Api Reference" language={this.props.currentLanguage}>
+                        Api Reference
+                      </Translation>
+                    </span>
+                  )}
                 </li>
                 <Can I={access} a={backoffice}>
                   <li className="nav-item">
@@ -208,10 +212,12 @@ class ApiHomeComponent extends Component {
                         to={`/${this.props.match.params.teamId}/${apiId}/swagger`}>
                         <Translation i18nkey="Try it !" language={this.props.currentLanguage}>
                           Try it !
-                      </Translation>
+                        </Translation>
                       </Link>
                     )}
-                    {!(api.swagger && api.testing.enabled) && <span className={'nav-link disabled'}>Try it !</span>}
+                    {!(api.swagger && api.testing.enabled) && (
+                      <span className={'nav-link disabled'}>Try it !</span>
+                    )}
                   </li>
                 </Can>
                 {/*<li className="nav-item">
@@ -240,8 +246,10 @@ class ApiHomeComponent extends Component {
                   askForApikeys={(teams, plan) => this.askForApikeys(teams, plan)}
                   pendingSubscriptions={this.state.pendingSubscriptions}
                   currentLanguage={this.props.currentLanguage}
-                  redirectToApiKeysPage={(team) => {
-                    this.props.history.push(`/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}`);
+                  redirectToApiKeysPage={team => {
+                    this.props.history.push(
+                      `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}`
+                    );
                   }}
                 />
               )}
@@ -320,10 +328,7 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = {
-  setError
+  setError,
 };
 
-export const ApiHome = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(ApiHomeComponent);
+export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);

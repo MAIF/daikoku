@@ -19,9 +19,12 @@ import play.api.libs.json._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
-class BadFileContentFromContentType() extends RuntimeException("Bad file content") with scala.util.control.NoStackTrace
+class BadFileContentFromContentType()
+    extends RuntimeException("Bad file content")
+    with scala.util.control.NoStackTrace
 
-case class S3ListItem(content: ListBucketResultContents, objectMetadata: ObjectMetadata) {
+case class S3ListItem(content: ListBucketResultContents,
+                      objectMetadata: ObjectMetadata) {
   def asJson: JsValue = Json.obj(
     "bucketName" -> content.bucketName,
     "eTag" -> content.eTag,
@@ -32,8 +35,12 @@ case class S3ListItem(content: ListBucketResultContents, objectMetadata: ObjectM
     "contentType" -> objectMetadata.contentType,
     "cacheControl" -> objectMetadata.cacheControl,
     "versionId" -> objectMetadata.versionId,
-    "rawMeta" -> JsArray(objectMetadata.metadata.map(h => Json.obj("key" -> h.name(), "value" -> h.value()))),
-    "meta" -> JsObject(objectMetadata.metadata.filter(_.name().startsWith("x-amz-meta-")).map(h => (h.name().replace("x-amz-meta-", ""), JsString(h.value()))))
+    "rawMeta" -> JsArray(objectMetadata.metadata.map(h =>
+      Json.obj("key" -> h.name(), "value" -> h.value()))),
+    "meta" -> JsObject(
+      objectMetadata.metadata
+        .filter(_.name().startsWith("x-amz-meta-"))
+        .map(h => (h.name().replace("x-amz-meta-", ""), JsString(h.value()))))
   )
 }
 
@@ -60,7 +67,8 @@ object S3Configuration {
             region = (json \ "region").as[String],
             access = (json \ "access").as[String],
             secret = (json \ "secret").as[String],
-            chunkSize = (json \ "chunkSize").asOpt[Int].getOrElse(1024 * 1024 * 8),
+            chunkSize =
+              (json \ "chunkSize").asOpt[Int].getOrElse(1024 * 1024 * 8),
             v4auth = (json \ "v4auth").asOpt[Boolean].getOrElse(true)
           )
         )
@@ -79,10 +87,12 @@ object S3Configuration {
   }
 }
 
-class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext, mat: ActorMaterializer) {
+class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
+                                                mat: ActorMaterializer) {
 
   private def s3ClientSettingsAttrs(implicit conf: S3Configuration) = {
-    val awsCredentials = new AWSStaticCredentialsProvider(new BasicAWSCredentials(conf.access, conf.secret))
+    val awsCredentials = new AWSStaticCredentialsProvider(
+      new BasicAWSCredentials(conf.access, conf.secret))
     //val url = new URL(conf.endpoint)
     //val proxy = Option(Proxy(url.getHost, url.getPort, url.getProtocol))
     //val settings = new S3Settings(MemoryBufferType, proxy, awsCredentials, conf.region, true)
@@ -98,49 +108,66 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext, m
     S3Attributes.settings(settings)
   }
 
-  def storeAsset(tenant: TenantId, team: TeamId, asset: AssetId, name: String, title: String, desc: String, contentType: String, content: Source[ByteString, _])(implicit conf: S3Configuration): Future[MultipartUploadResult] = {
+  def storeAsset(tenant: TenantId,
+                 team: TeamId,
+                 asset: AssetId,
+                 name: String,
+                 title: String,
+                 desc: String,
+                 contentType: String,
+                 content: Source[ByteString, _])(
+      implicit conf: S3Configuration): Future[MultipartUploadResult] = {
     val ref = new AtomicReference[ByteString](ByteString.empty)
     val validated = new AtomicBoolean(false)
-    val ctype = ContentType.parse(contentType).getOrElse(ContentTypes.`application/octet-stream`)
-    val meta = MetaHeaders(Map(
-      "filename" -> name,
-      "title" -> title,
-      "desc" -> desc,
-      "team" -> team.value,
-      "tenant" -> tenant.value,
-      "asset" -> asset.value,
-      "content-type" -> ctype.value
-    ))
-    val sink = S3.multipartUpload(
-      bucket = conf.bucket,
-      key = s"/${tenant.value}/teams/${team.value}/assets/${asset.value}",
-      contentType = ctype,
-      metaHeaders = meta,
-      cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
-      chunkingParallelism = 1
-    ).withAttributes(s3ClientSettingsAttrs)
-    content.map { byteString =>
-      if (!validated.get()) {
-        val start = ref.get()
-        if (start.size < 4) {
-          ref.set(start ++ byteString)
-          byteString
-        } else {
-          utils.FileChecker.isWellSigned(contentType, ref.get().take(4).toArray) match {
-            case Some(v) if v =>
-              validated.set(true)
-              byteString
-            case Some(v) if !v =>
-              throw new BadFileContentFromContentType()
-            case None =>
-              validated.set(true)
-              byteString
+    val ctype = ContentType
+      .parse(contentType)
+      .getOrElse(ContentTypes.`application/octet-stream`)
+    val meta = MetaHeaders(
+      Map(
+        "filename" -> name,
+        "title" -> title,
+        "desc" -> desc,
+        "team" -> team.value,
+        "tenant" -> tenant.value,
+        "asset" -> asset.value,
+        "content-type" -> ctype.value
+      ))
+    val sink = S3
+      .multipartUpload(
+        bucket = conf.bucket,
+        key = s"/${tenant.value}/teams/${team.value}/assets/${asset.value}",
+        contentType = ctype,
+        metaHeaders = meta,
+        cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
+        chunkingParallelism = 1
+      )
+      .withAttributes(s3ClientSettingsAttrs)
+    content
+      .map { byteString =>
+        if (!validated.get()) {
+          val start = ref.get()
+          if (start.size < 4) {
+            ref.set(start ++ byteString)
+            byteString
+          } else {
+            utils.FileChecker.isWellSigned(contentType,
+                                           ref.get().take(4).toArray) match {
+              case Some(v) if v =>
+                validated.set(true)
+                byteString
+              case Some(v) if !v =>
+                throw new BadFileContentFromContentType()
+              case None =>
+                validated.set(true)
+                byteString
+            }
           }
+        } else {
+          byteString
         }
-      } else {
-        byteString
       }
-    }.toMat(sink)(Keep.right).run()
+      .toMat(sink)(Keep.right)
+      .run()
     // S3.putObject(
     //   conf.bucket,
     //   s"/${tenant.value}/teams/${team.value}/assets/${asset.value}.test",
@@ -153,28 +180,46 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext, m
     // ).withAttributes(s3ClientSettingsAttrs).runForeach(e => println(e))
   }
 
-  def listAssets(tenant: TenantId, team: TeamId)(implicit conf: S3Configuration): Future[Seq[S3ListItem]] = {
+  def listAssets(tenant: TenantId, team: TeamId)(
+      implicit conf: S3Configuration): Future[Seq[S3ListItem]] = {
     val attrs = s3ClientSettingsAttrs
-    S3.listBucket(conf.bucket, Some(s"/${tenant.value}/teams/${team.value}/assets"))
+    S3.listBucket(conf.bucket,
+                  Some(s"/${tenant.value}/teams/${team.value}/assets"))
       .mapAsync(1) { content =>
         val none: Option[ObjectMetadata] = None
-        S3.getObjectMetadata(conf.bucket, content.key).withAttributes(attrs).runFold(none)((_, opt) => opt).map {
-          case None => S3ListItem(content, ObjectMetadata(collection.immutable.Seq.empty[HttpHeader]))
-          case Some(meta) => S3ListItem(content, meta)
-        }
+        S3.getObjectMetadata(conf.bucket, content.key)
+          .withAttributes(attrs)
+          .runFold(none)((_, opt) => opt)
+          .map {
+            case None =>
+              S3ListItem(
+                content,
+                ObjectMetadata(collection.immutable.Seq.empty[HttpHeader]))
+            case Some(meta) => S3ListItem(content, meta)
+          }
       }
-      .withAttributes(attrs).runFold(Seq.empty[S3ListItem])((seq, item) => seq :+ item )
+      .withAttributes(attrs)
+      .runFold(Seq.empty[S3ListItem])((seq, item) => seq :+ item)
   }
 
-  def deleteAsset(tenant: TenantId, team: TeamId, asset: AssetId)(implicit conf: S3Configuration): Future[Done] = {
-    S3.deleteObject(conf.bucket, s"/${tenant.value}/teams/${team.value}/assets/${asset.value}")
-      .withAttributes(s3ClientSettingsAttrs).toMat(Sink.ignore)(Keep.right).run()
+  def deleteAsset(tenant: TenantId, team: TeamId, asset: AssetId)(
+      implicit conf: S3Configuration): Future[Done] = {
+    S3.deleteObject(
+        conf.bucket,
+        s"/${tenant.value}/teams/${team.value}/assets/${asset.value}")
+      .withAttributes(s3ClientSettingsAttrs)
+      .toMat(Sink.ignore)(Keep.right)
+      .run()
   }
 
-  def getAsset(tenant: TenantId, team: TeamId, asset: AssetId)(implicit conf: S3Configuration): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
+  def getAsset(tenant: TenantId, team: TeamId, asset: AssetId)(
+      implicit conf: S3Configuration)
+    : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.download(conf.bucket, s"/${tenant.value}/teams/${team.value}/assets/${asset.value}")
-      .withAttributes(s3ClientSettingsAttrs).runFold(none)((_, opt) => opt)
+    S3.download(conf.bucket,
+                s"/${tenant.value}/teams/${team.value}/assets/${asset.value}")
+      .withAttributes(s3ClientSettingsAttrs)
+      .runFold(none)((_, opt) => opt)
   }
 
   def checkBucket()(implicit conf: S3Configuration): Future[BucketAccess] = {
@@ -183,99 +228,152 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext, m
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  def storeTenantAsset(tenant: TenantId, asset: AssetId, name: String, title: String, desc: String, contentType: String, content: Source[ByteString, _])(implicit conf: S3Configuration): Future[MultipartUploadResult] = {
-    val ctype = ContentType.parse(contentType).getOrElse(ContentTypes.`application/octet-stream`)
-    val meta = MetaHeaders(Map(
-      "filename" -> name,
-      "title" -> title,
-      "desc" -> desc,
-      "tenant" -> tenant.value,
-      "asset" -> asset.value,
-      "content-type" -> ctype.value
-    ))
-    val sink = S3.multipartUpload(
-      bucket = conf.bucket,
-      key = s"/${tenant.value}/tenant-assets/${asset.value}",
-      contentType = ctype,
-      metaHeaders = meta,
-      cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
-      chunkingParallelism = 1
-    ).withAttributes(s3ClientSettingsAttrs)
+  def storeTenantAsset(tenant: TenantId,
+                       asset: AssetId,
+                       name: String,
+                       title: String,
+                       desc: String,
+                       contentType: String,
+                       content: Source[ByteString, _])(
+      implicit conf: S3Configuration): Future[MultipartUploadResult] = {
+    val ctype = ContentType
+      .parse(contentType)
+      .getOrElse(ContentTypes.`application/octet-stream`)
+    val meta = MetaHeaders(
+      Map(
+        "filename" -> name,
+        "title" -> title,
+        "desc" -> desc,
+        "tenant" -> tenant.value,
+        "asset" -> asset.value,
+        "content-type" -> ctype.value
+      ))
+    val sink = S3
+      .multipartUpload(
+        bucket = conf.bucket,
+        key = s"/${tenant.value}/tenant-assets/${asset.value}",
+        contentType = ctype,
+        metaHeaders = meta,
+        cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
+        chunkingParallelism = 1
+      )
+      .withAttributes(s3ClientSettingsAttrs)
     content.toMat(sink)(Keep.right).run()
   }
 
-  def listTenantAssets(tenant: TenantId)(implicit conf: S3Configuration): Future[Seq[S3ListItem]] = {
+  def listTenantAssets(tenant: TenantId)(
+      implicit conf: S3Configuration): Future[Seq[S3ListItem]] = {
     val attrs = s3ClientSettingsAttrs
     S3.listBucket(conf.bucket, Some(s"/${tenant.value}/tenant-assets"))
       .mapAsync(1) { content =>
         val none: Option[ObjectMetadata] = None
-        S3.getObjectMetadata(conf.bucket, content.key).withAttributes(attrs).runFold(none)((_, opt) => opt).map {
-          case None => S3ListItem(content, ObjectMetadata(collection.immutable.Seq.empty[HttpHeader]))
-          case Some(meta) => S3ListItem(content, meta)
-        }
+        S3.getObjectMetadata(conf.bucket, content.key)
+          .withAttributes(attrs)
+          .runFold(none)((_, opt) => opt)
+          .map {
+            case None =>
+              S3ListItem(
+                content,
+                ObjectMetadata(collection.immutable.Seq.empty[HttpHeader]))
+            case Some(meta) => S3ListItem(content, meta)
+          }
       }
-      .withAttributes(attrs).runFold(Seq.empty[S3ListItem])((seq, item) => seq :+ item )
+      .withAttributes(attrs)
+      .runFold(Seq.empty[S3ListItem])((seq, item) => seq :+ item)
   }
 
-  def deleteTenantAsset(tenant: TenantId, asset: AssetId)(implicit conf: S3Configuration): Future[Done] = {
-    S3.deleteObject(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
-      .withAttributes(s3ClientSettingsAttrs).toMat(Sink.ignore)(Keep.right).run()
+  def deleteTenantAsset(tenant: TenantId, asset: AssetId)(
+      implicit conf: S3Configuration): Future[Done] = {
+    S3.deleteObject(conf.bucket,
+                    s"/${tenant.value}/tenant-assets/${asset.value}")
+      .withAttributes(s3ClientSettingsAttrs)
+      .toMat(Sink.ignore)(Keep.right)
+      .run()
   }
 
-  def getTenantAsset(tenant: TenantId, asset: AssetId)(implicit conf: S3Configuration): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
+  def getTenantAsset(tenant: TenantId, asset: AssetId)(
+      implicit conf: S3Configuration)
+    : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
     S3.download(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
-      .withAttributes(s3ClientSettingsAttrs).runFold(none)((_, opt) => opt)
+      .withAttributes(s3ClientSettingsAttrs)
+      .runFold(none)((_, opt) => opt)
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  def storeUserAsset(tenant: TenantId, user: UserId, asset: AssetId, filename: String, contentType: String, content: Source[ByteString, _])(implicit conf: S3Configuration): Future[MultipartUploadResult] = {
-    val ctype = ContentType.parse(contentType).getOrElse(ContentTypes.`application/octet-stream`)
-    val meta = MetaHeaders(Map(
-      "user" -> user.value,
-      "tenant" -> tenant.value,
-      "asset" -> asset.value,
-      "filename" -> filename,
-      "content-type" -> ctype.value
-    ))
-    val sink = S3.multipartUpload(
-      bucket = conf.bucket,
-      key = s"/${tenant.value}/users/${user.value}/${asset.value}",
-      contentType = ctype,
-      metaHeaders = meta,
-      cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
-      chunkingParallelism = 1
-    ).withAttributes(s3ClientSettingsAttrs)
+  def storeUserAsset(tenant: TenantId,
+                     user: UserId,
+                     asset: AssetId,
+                     filename: String,
+                     contentType: String,
+                     content: Source[ByteString, _])(
+      implicit conf: S3Configuration): Future[MultipartUploadResult] = {
+    val ctype = ContentType
+      .parse(contentType)
+      .getOrElse(ContentTypes.`application/octet-stream`)
+    val meta = MetaHeaders(
+      Map(
+        "user" -> user.value,
+        "tenant" -> tenant.value,
+        "asset" -> asset.value,
+        "filename" -> filename,
+        "content-type" -> ctype.value
+      ))
+    val sink = S3
+      .multipartUpload(
+        bucket = conf.bucket,
+        key = s"/${tenant.value}/users/${user.value}/${asset.value}",
+        contentType = ctype,
+        metaHeaders = meta,
+        cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
+        chunkingParallelism = 1
+      )
+      .withAttributes(s3ClientSettingsAttrs)
     content.toMat(sink)(Keep.right).run()
   }
 
-  def getUserAsset(tenant: TenantId, user: UserId, asset: AssetId)(implicit conf: S3Configuration): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
+  def getUserAsset(tenant: TenantId, user: UserId, asset: AssetId)(
+      implicit conf: S3Configuration)
+    : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.download(conf.bucket, s"/${tenant.value}/users/${user.value}/${asset.value}")
-      .withAttributes(s3ClientSettingsAttrs).runFold(none)((_, opt) => opt)
+    S3.download(conf.bucket,
+                s"/${tenant.value}/users/${user.value}/${asset.value}")
+      .withAttributes(s3ClientSettingsAttrs)
+      .runFold(none)((_, opt) => opt)
   }
 
-  def getThumbnail(tenant: TenantId, asset: AssetId)(implicit conf: S3Configuration): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
+  def getThumbnail(tenant: TenantId, asset: AssetId)(
+      implicit conf: S3Configuration)
+    : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
     S3.download(conf.bucket, s"/${tenant.value}/thumbnails/${asset.value}")
-      .withAttributes(s3ClientSettingsAttrs).runFold(none)((_, opt) => opt)
+      .withAttributes(s3ClientSettingsAttrs)
+      .runFold(none)((_, opt) => opt)
   }
 
-  def storeThumbnail(tenant: TenantId, asset: AssetId, content: Source[ByteString, _])(implicit conf: S3Configuration): Future[MultipartUploadResult] = {
-    val ctype = ContentType.parse("image/png").getOrElse(ContentTypes.`application/octet-stream`)
-    val meta = MetaHeaders(Map(
-      "tenant" -> tenant.value,
-      "asset" -> asset.value
-    ))
-    val sink = S3.multipartUpload(
-      bucket = conf.bucket,
-      key = s"/${tenant.value}/thumbnails/${asset.value}",
-      contentType = ctype,
-      metaHeaders = meta,
-      cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
-      chunkingParallelism = 1
-    ).withAttributes(s3ClientSettingsAttrs)
+  def storeThumbnail(tenant: TenantId,
+                     asset: AssetId,
+                     content: Source[ByteString, _])(
+      implicit conf: S3Configuration): Future[MultipartUploadResult] = {
+    val ctype = ContentType
+      .parse("image/png")
+      .getOrElse(ContentTypes.`application/octet-stream`)
+    val meta = MetaHeaders(
+      Map(
+        "tenant" -> tenant.value,
+        "asset" -> asset.value
+      ))
+    val sink = S3
+      .multipartUpload(
+        bucket = conf.bucket,
+        key = s"/${tenant.value}/thumbnails/${asset.value}",
+        contentType = ctype,
+        metaHeaders = meta,
+        cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
+        chunkingParallelism = 1
+      )
+      .withAttributes(s3ClientSettingsAttrs)
     content.toMat(sink)(Keep.right).run()
   }
 }

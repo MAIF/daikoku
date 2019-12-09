@@ -2,19 +2,19 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import Pagination from 'react-paginate';
 import classNames from 'classnames';
-import {t} from '../../locales';
+import { t } from '../../locales';
 
 export class PaginatedComponent extends Component {
   state = {
     selectedPage: 0,
     offset: 0,
     pageNumber: this.props.count || 10,
-    itemsCount: this.props.items.length
+    itemsCount: this.props.items.length,
   };
 
   static getDerivedStateFromProps(props, state) {
     if (state.itemsCount !== props.items.length) {
-      return {selectedPage: 0, offset: 0};
+      return { selectedPage: 0, offset: 0 };
     } else {
       return null;
     }
@@ -33,21 +33,20 @@ export class PaginatedComponent extends Component {
     return (
       <div className="paginated-component">
         <div className="row flex-column">
-          <div className={classNames('row d-flex', {
-            'flex-wrap': this.props.wrap,
-            'flex-column': this.props.columnMode,
-            'flex-column-reverse': this.props.columnMode && this.props.reverse,
-            'flex-row': !this.props.columnMode,
-            'flex-row-reverse': !this.props.columnMode && this.props.reverse
-          })}>
+          <div
+            className={classNames('row d-flex', {
+              'flex-wrap': this.props.wrap,
+              'flex-column': this.props.columnMode,
+              'flex-column-reverse': this.props.columnMode && this.props.reverse,
+              'flex-row': !this.props.columnMode,
+              'flex-row-reverse': !this.props.columnMode && this.props.reverse,
+            })}>
             {pagedItems.map(item => {
               if (React.isValidElement(item)) {
                 return item;
               }
 
-              return (
-                this.props.formatter(item)
-              );
+              return this.props.formatter(item);
             })}
           </div>
           <div className="apis__pagination d-flex justify-content-center" style={{ width: '100%' }}>
@@ -81,5 +80,5 @@ PaginatedComponent.propTypes = {
   previousLabel: PropTypes.string,
   nextLabel: PropTypes.string,
   breakLabel: PropTypes.string,
-  currentLanguage: PropTypes.string
+  currentLanguage: PropTypes.string,
 };

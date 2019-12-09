@@ -24,9 +24,12 @@ class ActionWithTeamSelectorComponent extends Component {
   };
 
   render() {
-    if (!this.props.allowMultipleDemand
-      && this.props.teams.length === 1
-      && (this.props.pendingTeams.includes(this.props.teams[0]._id) || this.props.authorizedTeams.includes(this.props.teams[0]._id))) {
+    if (
+      !this.props.allowMultipleDemand &&
+      this.props.teams.length === 1 &&
+      (this.props.pendingTeams.includes(this.props.teams[0]._id) ||
+        this.props.authorizedTeams.includes(this.props.teams[0]._id))
+    ) {
       return null;
     }
     return (
@@ -39,7 +42,7 @@ class ActionWithTeamSelectorComponent extends Component {
 
 ActionWithTeamSelectorComponent.defaultProps = {
   pendingTeams: [],
-  authorizedTeams: []
+  authorizedTeams: [],
 };
 
 ActionWithTeamSelectorComponent.propTypes = {
@@ -52,7 +55,7 @@ ActionWithTeamSelectorComponent.propTypes = {
   withAllTeamSelector: PropTypes.bool,
   closeOnSelect: PropTypes.bool,
   buttonLabel: PropTypes.string,
-  allowMultipleDemand: PropTypes.bool
+  allowMultipleDemand: PropTypes.bool,
 };
 
 const mapDispatchToProps = {

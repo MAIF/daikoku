@@ -7,14 +7,22 @@ import _ from 'lodash';
 import faker from 'faker';
 
 import { ApiCard } from '../api';
-import { ActionWithTeamSelector, Can, CanIDoAction, manage, api, read, backoffice } from '../../utils';
+import {
+  ActionWithTeamSelector,
+  Can,
+  CanIDoAction,
+  manage,
+  api,
+  read,
+  backoffice,
+} from '../../utils';
 import { updateTeamPromise } from '../../../core';
-import {Translation, t} from '../../../locales';
+import { Translation, t } from '../../../locales';
 
 import * as Services from '../../../services';
 
 const all = { value: 'All', label: 'All' };
-const allCategories = language =>  ({ value: 'All', label: t('All categories', language) });
+const allCategories = language => ({ value: 'All', label: t('All categories', language) });
 const allTags = language => ({ value: 'All', label: t('All tags', language) });
 
 const computeTop = arrayOfArray => {
@@ -70,32 +78,32 @@ class ApiListComponent extends Component {
   }
 
   createNewApi = teamId => {
-    Promise.all(
-      [
-        Services.fetchNewApi()
-          .then(e => {
-            const verb = faker.hacker.verb();
-            const apiName = verb.charAt(0).toUpperCase() +
-              verb.slice(1) +
-              ' ' +
-              faker.hacker.adjective() +
-              ' ' +
-              faker.hacker.noun() +
-              ' api';
+    Promise.all([
+      Services.fetchNewApi().then(e => {
+        const verb = faker.hacker.verb();
+        const apiName =
+          verb.charAt(0).toUpperCase() +
+          verb.slice(1) +
+          ' ' +
+          faker.hacker.adjective() +
+          ' ' +
+          faker.hacker.noun() +
+          ' api';
 
-            e.name = apiName;
-            e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
-            return e;
-          }),
-        this.props.updateTeam(this.props.myTeams.find(t => t._id === teamId))
-      ]
-    )
-      .then(([newApi]) => {
-        this.props.history.push(
-          `/${this.props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
-          { newApi: { ...newApi, team: this.props.currentTeam._id } }
-        );
-      });
+        e.name = apiName;
+        e._humanReadableId = apiName
+          .replace(/\s/gi, '-')
+          .toLowerCase()
+          .trim();
+        return e;
+      }),
+      this.props.updateTeam(this.props.myTeams.find(t => t._id === teamId)),
+    ]).then(([newApi]) => {
+      this.props.history.push(
+        `/${this.props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
+        { newApi: { ...newApi, team: this.props.currentTeam._id } }
+      );
+    });
   };
 
   redirectToTeam = team => {
@@ -149,7 +157,8 @@ class ApiListComponent extends Component {
     return (
       <div className="d-flex justify-content-between">
         <div className="preview">
-          <strong>{count}</strong> {`${t('result', this.props.currentLanguage)}${count > 1 ? 's' : ''}`}&nbsp;
+          <strong>{count}</strong>{' '}
+          {`${t('result', this.props.currentLanguage)}${count > 1 ? 's' : ''}`}&nbsp;
           {!!searched && (
             <span>
               {t('matching', this.props.currentLanguage)} <strong>{searched}</strong>&nbsp;
@@ -157,7 +166,8 @@ class ApiListComponent extends Component {
           )}
           {selectedCategory.value !== all.value && (
             <span>
-              {t('categorised in', this.props.currentLanguage)} <strong>{selectedCategory.value}</strong>&nbsp;
+              {t('categorised in', this.props.currentLanguage)}{' '}
+              <strong>{selectedCategory.value}</strong>&nbsp;
             </span>
           )}
           {selectedTag.value !== all.value && (
@@ -168,9 +178,13 @@ class ApiListComponent extends Component {
         </div>
         <div
           className="clear cursor-pointer"
-          onClick={() => this.setState({ 
-            selectedCategory: allCategories(this.props.currentLanguage), 
-            selectedTag: allTags(this.props.currentLanguage), searched: '' })}>
+          onClick={() =>
+            this.setState({
+              selectedCategory: allCategories(this.props.currentLanguage),
+              selectedTag: allTags(this.props.currentLanguage),
+              searched: '',
+            })
+          }>
           <i className="far fa-times-circle mr-1" />
           <Translation i18nkey="clear filter" language={this.props.currentLanguage}>
             clear filter
@@ -205,16 +219,16 @@ class ApiListComponent extends Component {
       searched === ''
         ? taggedApis
         : taggedApis.filter(api => {
-          if (api.name.toLowerCase().indexOf(searched) > -1) {
-            return true;
-          } else if (api.smallDescription.toLowerCase().indexOf(searched) > -1) {
-            return true;
-          } else if (api.description.toLowerCase().indexOf(searched) > -1) {
-            return true;
-          } else if (this.teamMatch(api, searched)) {
-            return true;
-          } else return this.tagMatches(api, searched) || this.categoryMatches(api, searched);
-        });
+            if (api.name.toLowerCase().indexOf(searched) > -1) {
+              return true;
+            } else if (api.smallDescription.toLowerCase().indexOf(searched) > -1) {
+              return true;
+            } else if (api.description.toLowerCase().indexOf(searched) > -1) {
+              return true;
+            } else if (this.teamMatch(api, searched)) {
+              return true;
+            } else return this.tagMatches(api, searched) || this.categoryMatches(api, searched);
+          });
 
     const paginateApis = filteredApis.slice(
       this.state.offset,
@@ -228,7 +242,7 @@ class ApiListComponent extends Component {
             <input
               type="text"
               className="form-control"
-              placeholder={t("Search your API...", this.props.currentLanguage)}
+              placeholder={t('Search your API...', this.props.currentLanguage)}
               aria-label="Search your API"
               value={this.state.searched}
               onChange={e =>
@@ -256,29 +270,32 @@ class ApiListComponent extends Component {
               this.setState({ selectedCategory: e, selectedPage: 0, offset: 0 });
             }}
           />
-          {
-            this.props.team && 
+          {this.props.team && (
             <Can I={manage} a={api} team={this.props.team}>
               <div className="col-12 col-sm-2">
-                <button className="btn btn-access-negative mb-2 float-right" onClick={() => this.createNewApi(this.props.team._id)}>
+                <button
+                  className="btn btn-access-negative mb-2 float-right"
+                  onClick={() => this.createNewApi(this.props.team._id)}>
                   <i className="fas fa-plus-square" /> API
                 </button>
               </div>
             </Can>
-          }
+          )}
           {!this.props.team && !this.props.connectedUser.isGuest && (
-              <ActionWithTeamSelector
-                title="Select the team for which to create new api"
-                description="You are going to create an api. For which team do you want to create it ?"
-                teams={this.props.myTeams.filter(t => CanIDoAction(this.props.connectedUser, manage, api, t))}
-                action={team => this.createNewApi(team)}
-                withAllTeamSelector={false}>
-                <div className="col-12 col-sm-2">
-                  <button className="btn btn-access-negative mb-2 float-right">
-                    <i className="fas fa-plus-square" /> API
-              </button>
-                </div>
-              </ActionWithTeamSelector>
+            <ActionWithTeamSelector
+              title="Select the team for which to create new api"
+              description="You are going to create an api. For which team do you want to create it ?"
+              teams={this.props.myTeams.filter(t =>
+                CanIDoAction(this.props.connectedUser, manage, api, t)
+              )}
+              action={team => this.createNewApi(team)}
+              withAllTeamSelector={false}>
+              <div className="col-12 col-sm-2">
+                <button className="btn btn-access-negative mb-2 float-right">
+                  <i className="fas fa-plus-square" /> API
+                </button>
+              </div>
+            </ActionWithTeamSelector>
           )}
         </div>
         <div className="row">
@@ -326,8 +343,12 @@ class ApiListComponent extends Component {
             </div>
           </div>
           <div className="d-flex col-12 col-sm-3 text-muted flex-column p-3">
-            {!this.props.team && !this.props.connectedUser.isGuest &&(
-                <YourTeams teams={this.props.myTeams} redirectToTeam={this.redirectToTeam} currentlanguage={this.props.currentLanguage}/>
+            {!this.props.team && !this.props.connectedUser.isGuest && (
+              <YourTeams
+                teams={this.props.myTeams}
+                redirectToTeam={this.redirectToTeam}
+                currentlanguage={this.props.currentLanguage}
+              />
             )}
             {!!this.state.tags.length && (
               <Top
@@ -364,10 +385,7 @@ const mapDispatchToProps = {
   updateTeam: team => updateTeamPromise(team),
 };
 
-export const ApiList = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(ApiListComponent);
+export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
 
 ApiListComponent.propTypes = {
   history: PropTypes.object.isRequired,
@@ -406,10 +424,12 @@ const Top = props => {
   );
 };
 
-const YourTeams = ({teams, redirectToTeam, ...props}) => {
+const YourTeams = ({ teams, redirectToTeam, ...props }) => {
   const [searchedTeam, setSearchedTeam] = useState();
-  const maybeTeams = searchedTeam ? teams.filter(team => team.name.toLowerCase().includes(searchedTeam)) : teams;
-  const language = props.currentlanguage
+  const maybeTeams = searchedTeam
+    ? teams.filter(team => team.name.toLowerCase().includes(searchedTeam))
+    : teams;
+  const language = props.currentlanguage;
   return (
     <div className={'top__container p-3 rounded additionalContent mb-2'}>
       <div>
@@ -418,18 +438,24 @@ const YourTeams = ({teams, redirectToTeam, ...props}) => {
           {t('your teams', language)}
         </h5>
       </div>
-      <input placeholder={t('find team', language)} className="form-control" onChange={e => setSearchedTeam(e.target.value)}/>
+      <input
+        placeholder={t('find team', language)}
+        className="form-control"
+        onChange={e => setSearchedTeam(e.target.value)}
+      />
       <div className="d-flex flex-column">
-        {_.sortBy(maybeTeams, team => team.name.toLowerCase()).slice(0, 5).map(team => {
-          return (
-            <span
-              className="p-1 cursor-pointer underline-on-hover"
-              key={team._id}
-              onClick={() => redirectToTeam(team)}>
-              {team.name}
-            </span>
-          );
-        })}
+        {_.sortBy(maybeTeams, team => team.name.toLowerCase())
+          .slice(0, 5)
+          .map(team => {
+            return (
+              <span
+                className="p-1 cursor-pointer underline-on-hover"
+                key={team._id}
+                onClick={() => redirectToTeam(team)}>
+                {team.name}
+              </span>
+            );
+          })}
       </div>
     </div>
   );

@@ -6,8 +6,8 @@ import { toastr } from 'react-redux-toastr';
 
 import { Spinner } from '../../utils';
 
-import { t, Translation } from "../../../locales";
-import {AssetChooserByModal} from '../../frontend';
+import { t, Translation } from '../../../locales';
+import { AssetChooserByModal } from '../../frontend';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -60,7 +60,7 @@ class AssetButton extends Component {
           <AssetChooserByModal
             currentLanguage={this.props.currentLanguage}
             teamId={teamId}
-            label={t("Set from asset", this.props.currentLanguage)}
+            label={t('Set from asset', this.props.currentLanguage)}
             onSelect={asset => {
               this.props.onRawChange({
                 ...this.props.rawValue,
@@ -110,11 +110,23 @@ export class TeamApiDocumentation extends Component {
         },
       },
     },
-    remoteContentEnabled: { type: 'bool', props: { label: t('Remote content', this.props.currentLanguage) } },
-    contentType: { type: 'select', props: { label: t('Content type', this.props.currentLanguage), possibleValues: mimeTypes } },
-    remoteContentUrl: { type: 'string', props: { label: t('Content URL', this.props.currentLanguage) } },
+    remoteContentEnabled: {
+      type: 'bool',
+      props: { label: t('Remote content', this.props.currentLanguage) },
+    },
+    contentType: {
+      type: 'select',
+      props: { label: t('Content type', this.props.currentLanguage), possibleValues: mimeTypes },
+    },
+    remoteContentUrl: {
+      type: 'string',
+      props: { label: t('Content URL', this.props.currentLanguage) },
+    },
     assetButton: { type: AssetButton, props: { label: '', parentProps: () => this.props } },
-    remoteContentHeaders: { type: 'object', props: { label: t('Content headers', this.props.currentLanguage) } },
+    remoteContentHeaders: {
+      type: 'object',
+      props: { label: t('Content headers', this.props.currentLanguage) },
+    },
   };
 
   updateDetails = () => {
@@ -236,7 +248,7 @@ export class TeamApiDocumentation extends Component {
       console.log('selected at', this.props.value.documentation.pages.indexOf(selected._id));
     }
     console.log(this.props.value.documentation.pages.length, 'pages');
-  
+
     console.log('inserting at', index);
     Services.createDocPage(this.props.teamId, this.props.value._id, {
       _id: faker.random.alphaNumeric(32),
@@ -262,27 +274,35 @@ export class TeamApiDocumentation extends Component {
   };
 
   deletePage = () => {
-    window.confirm(t('delete.documentation.page.confirm', this.props.currentLanguage, 'Are you sure you want to delete this page ?')).then(ok => {
-      if (ok) {
-        Services.deleteDocPage(
-          this.props.teamId,
-          this.props.value._id,
-          this.state.selected._id
-        ).then(() => {
-          let pages = _.cloneDeep(this.props.value.documentation.pages).filter(
-            p => p !== this.state.selected._id
-          );
-          const value = _.cloneDeep(this.props.value);
-          value.documentation.pages = pages;
-          this.props.save().then(() => {
-            this.setState({ selected: null }, () => {
-              this.props.onChange(value);
-              this.updateDetails();
+    window
+      .confirm(
+        t(
+          'delete.documentation.page.confirm',
+          this.props.currentLanguage,
+          'Are you sure you want to delete this page ?'
+        )
+      )
+      .then(ok => {
+        if (ok) {
+          Services.deleteDocPage(
+            this.props.teamId,
+            this.props.value._id,
+            this.state.selected._id
+          ).then(() => {
+            let pages = _.cloneDeep(this.props.value.documentation.pages).filter(
+              p => p !== this.state.selected._id
+            );
+            const value = _.cloneDeep(this.props.value);
+            value.documentation.pages = pages;
+            this.props.save().then(() => {
+              this.setState({ selected: null }, () => {
+                this.props.onChange(value);
+                this.updateDetails();
+              });
             });
           });
-        });
-      }
-    });
+        }
+      });
   };
 
   render() {
@@ -293,7 +313,10 @@ export class TeamApiDocumentation extends Component {
           <table className="table table-striped table-bordered table-hover table-sm table-plan-name">
             <thead className="thead-light">
               <tr>
-                <th scope="col" style={{ display: 'flex', justifyContent: 'space-between' }} className="flex-column flex-md-row">
+                <th
+                  scope="col"
+                  style={{ display: 'flex', justifyContent: 'space-between' }}
+                  className="flex-column flex-md-row">
                   Plan title{' '}
                   <div className="btn-group">
                     <button
@@ -313,10 +336,10 @@ export class TeamApiDocumentation extends Component {
                       type="button"
                       className="btn btn-sm btn-outline-primary float-right">
                       <i className="fas fa-plus" />
-                      <span className="d-none d-sm-block"> 
-                      <Translation i18nkey="Add page" language={this.props.currentLanguage}>
-                        add page
-                      </Translation>
+                      <span className="d-none d-sm-block">
+                        <Translation i18nkey="Add page" language={this.props.currentLanguage}>
+                          add page
+                        </Translation>
                       </span>
                     </button>
                   </div>
@@ -355,7 +378,7 @@ export class TeamApiDocumentation extends Component {
                   onClick={this.deletePage}
                   type="button"
                   className="btn btn-sm btn-outline-danger mb-2">
-                  <i className="fas fa-trash" /> 
+                  <i className="fas fa-trash" />
                   <Translation i18nkey="Delete page" language={this.props.currentLanguage}>
                     Delete page
                   </Translation>

@@ -5,10 +5,10 @@ import * as _ from 'lodash';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../';
-import {Spinner} from '../../utils';
+import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
 import { updateNotications } from '../../../core';
-import { t, Translation } from "../../../locales";
+import { t, Translation } from '../../../locales';
 
 class NotificationListComponent extends Component {
   state = {
@@ -92,9 +92,11 @@ class NotificationListComponent extends Component {
   onSelectTab = tab => {
     this.setState({ tab, loading: true, page: 0 }, () => {
       if (tab === 'all') {
-        Services.myAllNotifications(this.state.page, this.state.pageSize).then(
-          ({ notifications, count }) =>
-            this.setState({ notifications, count, page: this.state.page + 1, loading: false })
+        Services.myAllNotifications(
+          this.state.page,
+          this.state.pageSize
+        ).then(({ notifications, count }) =>
+          this.setState({ notifications, count, page: this.state.page + 1, loading: false })
         );
       } else {
         Services.myNotifications(this.state.page, this.state.pageSize).then(
@@ -160,9 +162,12 @@ class NotificationListComponent extends Component {
                 active: this.state.tab === 'unread',
               })}>
               <a href="#" onClick={() => this.onSelectTab('unread')}>
-                <Translation i18nkey="Untreated" language={this.props.currentLanguage} count={this.state.untreatedCount}>
+                <Translation
+                  i18nkey="Untreated"
+                  language={this.props.currentLanguage}
+                  count={this.state.untreatedCount}>
                   Untreated
-                </Translation> 
+                </Translation>
                 ({this.state.untreatedCount})
               </a>
             </li>
@@ -181,9 +186,14 @@ class NotificationListComponent extends Component {
         }>
         <div className="row">
           <h1>
-            <Translation i18nkey="Notifications" language={this.props.currentLanguage} isPlural={true}>
+            <Translation
+              i18nkey="Notifications"
+              language={this.props.currentLanguage}
+              isPlural={true}>
               Notifications
-            </Translation> ({this.state.count})</h1>
+            </Translation>{' '}
+            ({this.state.count})
+          </h1>
         </div>
         {this.state.loading ? (
           <Spinner />
@@ -191,11 +201,11 @@ class NotificationListComponent extends Component {
           <div className="row">
             {this.state.notifications.length === 0 && (
               <div>
-                  <h4>
-                    <Translation i18nkey="no notification" language={this.props.currentLanguage}>
-                      You have 0 notification
-                    </Translation>
-                  </h4>
+                <h4>
+                  <Translation i18nkey="no notification" language={this.props.currentLanguage}>
+                    You have 0 notification
+                  </Translation>
+                </h4>
               </div>
             )}
             <div className="col-10 offset-1">
@@ -232,7 +242,7 @@ class NotificationListComponent extends Component {
                 <button
                   className="btn btn-access-negative my-2 ml-2"
                   onClick={() => this.getMoreNotifications()}>
-                    <Translation i18nkey="more" language={this.props.currentLanguage}>
+                  <Translation i18nkey="more" language={this.props.currentLanguage}>
                     more
                   </Translation>
                 </button>

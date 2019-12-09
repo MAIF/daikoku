@@ -20,7 +20,7 @@ export class TeamCard extends Component {
           <div className="row">
             <div className="col-12 d-flex justify-content-between">
               <div
-                className='cursor-pointer underline-on-hover'
+                className="cursor-pointer underline-on-hover"
                 onClick={this.props.redirectToTeamPage}>
                 <h3>
                   {this.props.team.name}
@@ -35,15 +35,14 @@ export class TeamCard extends Component {
                 </h3>
               </div>
               <div className="ml-2">
-
                 <div className="btn_group">
                   {team.canJoin && !team.alreadyJoin && (
                     <button
                       className="btn btn-sm btn-access-negative mr-2"
                       onClick={this.props.askToJoin}>
-                        <Translation i18nkey="Join" language={this.props.currentLanguage}>
-                          Join
-                        </Translation>
+                      <Translation i18nkey="Join" language={this.props.currentLanguage}>
+                        Join
+                      </Translation>
                     </button>
                   )}
                   {team.canJoin && team.alreadyJoin && (
@@ -56,7 +55,10 @@ export class TeamCard extends Component {
                 </div>
               </div>
             </div>
-            <Translation language={this.props.currentLanguage} i18nkey={`${team._id}.description`} extraConf={team.translation}>
+            <Translation
+              language={this.props.currentLanguage}
+              i18nkey={`${team._id}.description`}
+              extraConf={team.translation}>
               {team.description}
             </Translation>
           </div>
@@ -72,5 +74,5 @@ TeamCard.propTypes = {
   currentLanguage: PropTypes.string,
   askToJoin: PropTypes.func,
   redirectToTeamPage: PropTypes.func,
-  redirectToTeamSettings: PropTypes.func
-}
+  redirectToTeamSettings: PropTypes.func,
+};

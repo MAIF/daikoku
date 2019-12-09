@@ -19,9 +19,10 @@ object Errors {
     name = "Daikoky",
     domain = "localhost",
     defaultLanguage = Some("En"),
-    style = Some(DaikokuStyle(
-      title = "Daikoku"
-    )),
+    style = Some(
+      DaikokuStyle(
+        title = "Daikoku"
+      )),
     mailerSettings = Some(ConsoleMailerSettings()),
     authProvider = AuthProvider.Local,
     authProviderSettings = Json.obj(
@@ -56,7 +57,7 @@ object Errors {
             )
           )
           .withHeaders(
-            "x-error"     -> "true",
+            "x-error" -> "true",
             "x-error-msg" -> message,
             // TODO: handled by otoroshi filter ?
             // env.config.identitySettings.stateRespHeaderName -> req.headers
@@ -69,7 +70,7 @@ object Errors {
         status
           .apply(Json.obj("error" -> message))
           .withHeaders(
-            "x-error"     -> "true",
+            "x-error" -> "true",
             "x-error-msg" -> message,
             // TODO: handled by otoroshi filter ?
             // env.config.identitySettings.stateRespHeaderName -> req.headers

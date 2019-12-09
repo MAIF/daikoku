@@ -1,6 +1,6 @@
 import React, { Component, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, withRouter, Switch } from 'react-router-dom';
-import { Redirect } from "react-router";
+import { Redirect } from 'react-router';
 import { ConnectedRouter } from 'connected-react-router';
 import { connect } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
@@ -8,8 +8,8 @@ import ReduxToastr from 'react-redux-toastr';
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { TopBar, Spinner, Error, LoginPage } from '../components/utils';
 import * as Services from '../services';
-import {updateTeamPromise} from '../core';
-import {history} from '../core';
+import { updateTeamPromise } from '../core';
+import { history } from '../core';
 
 import 'react-redux-toastr/src/styles/index.scss';
 
@@ -40,7 +40,7 @@ import {
   TeamBilling,
   TeamIncome,
   TeamEdit,
-  AssetsList
+  AssetsList,
 } from '../components/backoffice';
 
 import {
@@ -55,11 +55,11 @@ import {
   ImportExport,
   TeamEditForAdmin,
   TeamMembersForAdmin,
-  TeamList
+  TeamList,
 } from '../components/adminbackoffice';
 
 import { smartRedirect, smartMatch } from '../services/path';
-import { ResetPassword, Signup } from "./DaikokuHomeApp";
+import { ResetPassword, Signup } from './DaikokuHomeApp';
 
 class DaikokuAppComponent extends Component {
   render() {
@@ -120,7 +120,13 @@ class DaikokuAppComponent extends Component {
               '/',
             ]}
             render={smartMatch(p => (
-              <TopBar location={p.location} history={p.history} match={p.match} loginAction={loginAction} loginProvider={loginProvider}/>
+              <TopBar
+                location={p.location}
+                history={p.history}
+                match={p.match}
+                loginAction={loginAction}
+                loginProvider={loginProvider}
+              />
             ))}
           />
           <Switch>
@@ -128,17 +134,13 @@ class DaikokuAppComponent extends Component {
               exact
               path="/reset"
               tenant={tenant}
-              render={p => (
-                <ResetPassword match={p.match} history={p.history}/>
-              )}
+              render={p => <ResetPassword match={p.match} history={p.history} />}
             />
             <UnauthenticatedRoute
               exact
               path="/signup"
               tenant={tenant}
-              render={p => (
-                  <Signup  match={p.match} history={p.history}/>
-              )}
+              render={p => <Signup match={p.match} history={p.history} />}
             />
             <Route
               exact
@@ -148,8 +150,16 @@ class DaikokuAppComponent extends Component {
               )}
             />
             {/* <FrontOfficeRoute exact path="/" render={p => <MyHome match={p.match} history={p.history} />} /> */}
-            <FrontOfficeRoute exact path="/apis" render={p => <MyHome match={p.match} history={p.history} />} />
-            <FrontOfficeRoute exact path="/" render={p => <MaybeHomePage match={p.match} history={p.history} />} />
+            <FrontOfficeRoute
+              exact
+              path="/apis"
+              render={p => <MyHome match={p.match} history={p.history} />}
+            />
+            <FrontOfficeRoute
+              exact
+              path="/"
+              render={p => <MaybeHomePage match={p.match} history={p.history} />}
+            />
             <Route
               exact
               path="/settings/otoroshis/:otoroshiId"
@@ -194,12 +204,16 @@ class DaikokuAppComponent extends Component {
             <Route
               exact
               path="/settings/sessions"
-              render={p => <SessionList match={p.match} history={p.history} location={p.location} />}
+              render={p => (
+                <SessionList match={p.match} history={p.history} location={p.location} />
+              )}
             />
             <Route
               exact
               path="/settings/import-export"
-              render={p => <ImportExport match={p.match} history={p.history} location={p.location} />}
+              render={p => (
+                <ImportExport match={p.match} history={p.history} location={p.location} />
+              )}
             />
             <Route
               exact
@@ -209,12 +223,16 @@ class DaikokuAppComponent extends Component {
             <Route
               exact
               path="/settings/teams/:teamSettingId"
-              render={p => <TeamEditForAdmin match={p.match} history={p.history} location={p.location}/>}
+              render={p => (
+                <TeamEditForAdmin match={p.match} history={p.history} location={p.location} />
+              )}
             />
             <Route
               exact
               path="/settings/teams/:teamSettingId/members"
-              render={p => <TeamMembersForAdmin match={p.match} history={p.history} location={p.location}/>}
+              render={p => (
+                <TeamMembersForAdmin match={p.match} history={p.history} location={p.location} />
+              )}
             />
             <Route
               exact
@@ -225,13 +243,20 @@ class DaikokuAppComponent extends Component {
               exact
               path="/settings/assets"
               render={p => (
-                <AssetsList match={p.match} history={p.history} location={p.location} tenantMode={true} />
+                <AssetsList
+                  match={p.match}
+                  history={p.history}
+                  location={p.location}
+                  tenantMode={true}
+                />
               )}
             />
             <FrontOfficeRoute
               exact
               path="/teams"
-              render={p => <TeamChooser match={p.match} history={p.history} location={p.location} />}
+              render={p => (
+                <TeamChooser match={p.match} history={p.history} location={p.location} />
+              )}
             />
             <FrontOfficeRoute
               exact
@@ -248,9 +273,8 @@ class DaikokuAppComponent extends Component {
             <TeamBackOfficeRoute
               exact
               path={['/teams/:teamId/settings/edition', '/:teamId/settings/edition']}
-              render={p => (
-                <TeamEdit match={p.match} history={p.history} location={p.location}/>
-              )}/>
+              render={p => <TeamEdit match={p.match} history={p.history} location={p.location} />}
+            />
             <TeamBackOfficeRoute
               exact
               path={['/teams/:teamId/settings/consumption', '/:teamId/settings/consumption']}
@@ -336,7 +360,12 @@ class DaikokuAppComponent extends Component {
               exact
               path={['/teams/:teamId/settings/assets', '/:teamId/settings/assets']}
               render={smartRedirect(p => (
-                <AssetsList match={p.match} history={p.history} location={p.location} tenantMode={false}/>
+                <AssetsList
+                  match={p.match}
+                  history={p.history}
+                  location={p.location}
+                  tenantMode={false}
+                />
               ))}
             />
 
@@ -426,9 +455,12 @@ class DaikokuAppComponent extends Component {
                 <TeamHome match={p.match} history={p.history} location={p.location} />
               ))}
             />
-            <Route path='*' render={smartRedirect(() => (
-              <Error error={{status: 404}} />
-            ))} />
+            <Route
+              path="*"
+              render={smartRedirect(() => (
+                <Error error={{ status: 404 }} />
+              ))}
+            />
           </Switch>
         </div>
       </ConnectedRouter>
@@ -438,22 +470,28 @@ class DaikokuAppComponent extends Component {
 
 const mapStateToProps = state => ({
   ...state.context,
-  error: state.error
+  error: state.error,
 });
 
 const mapDispatchToProps = {
-  updateTeam: team => updateTeamPromise(team)
+  updateTeam: team => updateTeamPromise(team),
 };
 
 export const DaikokuApp = connect(null)(DaikokuAppComponent);
 
 //custom component route to get team object if it's not present in  redux store...
 
-const TeamBackOfficeRouteComponent =  ({component: ComponentToRender, render, currentTeam, updateTeam,  ...rest}) => {
+const TeamBackOfficeRouteComponent = ({
+  component: ComponentToRender,
+  render,
+  currentTeam,
+  updateTeam,
+  ...rest
+}) => {
   const [loading, setLoading] = useState(false);
   const [match, setMatch] = useState();
-  const [noRender, setNoRender] =useState(false);
-  const [teamError, setTeamError] =useState(null);
+  const [noRender, setNoRender] = useState(false);
+  const [teamError, setTeamError] = useState(null);
 
   useEffect(() => {
     if (loading && match && rest.path.includes(match.path)) {
@@ -463,7 +501,8 @@ const TeamBackOfficeRouteComponent =  ({component: ComponentToRender, render, cu
             if (team.error) {
               return Promise.reject(team);
             }
-            return updateTeam(team);})
+            return updateTeam(team);
+          })
           .then(() => setLoading(false))
           .catch(error => setTeamError(error));
       } else {
@@ -482,52 +521,53 @@ const TeamBackOfficeRouteComponent =  ({component: ComponentToRender, render, cu
     return null;
   }
 
-  return(
-    <Route {...rest} render={ props => {
-      //todo: if error => show error page
-      if(loading) {
-        return <Spinner/>;
-      } else if (teamError) {
-        return <Error error={{status: 404}}/>;
-      }  else if (!currentTeam || props.match.params.teamId !== currentTeam._humanReadableId) {
-        setLoading(true);
-        setMatch(props.match);
-      } else {
-        return ComponentToRender ? <ComponentToRender {...props}/> : render(props);
-      }
-    }}/>
-  );
-};
-
-const TeamBackOfficeRoute = withRouter(connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(TeamBackOfficeRouteComponent));
-
-
-
-const FrontOfficeRoute = (props) => {
   return (
-    <Route {...props} render={p => <FrontOffice>{props.render(p)}</FrontOffice>}/>
+    <Route
+      {...rest}
+      render={props => {
+        //todo: if error => show error page
+        if (loading) {
+          return <Spinner />;
+        } else if (teamError) {
+          return <Error error={{ status: 404 }} />;
+        } else if (!currentTeam || props.match.params.teamId !== currentTeam._humanReadableId) {
+          setLoading(true);
+          setMatch(props.match);
+        } else {
+          return ComponentToRender ? <ComponentToRender {...props} /> : render(props);
+        }
+      }}
+    />
   );
 };
 
-const UnauthenticatedRouteComponent = ({ component: ComponentToRender, render, connectedUser, ...rest }) => {
+const TeamBackOfficeRoute = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(TeamBackOfficeRouteComponent)
+);
+
+const FrontOfficeRoute = props => {
+  return <Route {...props} render={p => <FrontOffice>{props.render(p)}</FrontOffice>} />;
+};
+
+const UnauthenticatedRouteComponent = ({
+  component: ComponentToRender,
+  render,
+  connectedUser,
+  ...rest
+}) => {
   if (!!connectedUser._humanReadableId) {
-    return (
-      <Redirect to="/" />
-    )
+    return <Redirect to="/" />;
   }
   return (
-    <Route {...rest} 
+    <Route
+      {...rest}
       render={props => (
         <UnauthenticatedHome {...rest}>
           {ComponentToRender ? <ComponentToRender {...props} /> : render(props)}
-        </UnauthenticatedHome>)
-      } />
+        </UnauthenticatedHome>
+      )}
+    />
   );
 };
 
-const UnauthenticatedRoute = withRouter(connect(
-  mapStateToProps
-)(UnauthenticatedRouteComponent));
+const UnauthenticatedRoute = withRouter(connect(mapStateToProps)(UnauthenticatedRouteComponent));

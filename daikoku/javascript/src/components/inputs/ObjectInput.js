@@ -173,7 +173,10 @@ export class VerticalObjectInput extends Component {
           </div>
         )}
         {values.map((value, idx) => (
-          <div key={`from-group-${idx}`} className="form-group row" style={{ marginBottom: 5, flexWrap: 'nowrap' }}>
+          <div
+            key={`from-group-${idx}`}
+            className="form-group row"
+            style={{ marginBottom: 5, flexWrap: 'nowrap' }}>
             <div className="col-xs-12">
               {idx === 0 && (
                 <label className="col-form-label">

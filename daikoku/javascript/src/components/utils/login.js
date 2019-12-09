@@ -13,7 +13,7 @@ export class LoginPage extends Component {
     this.setState({ [e.target.name]: e.target.value });
   };
 
-  handleError = (mess) => {
+  handleError = mess => {
     return err => {
       console.log(err && err.message ? err.message : err);
       this.setState({ error: mess });
@@ -86,11 +86,11 @@ export class LoginPage extends Component {
 LoginPage.propTypes = {
   tenant: PropTypes.shape({
     name: PropTypes.string.isRequired,
-    logo: PropTypes.string.isRequired
+    logo: PropTypes.string.isRequired,
   }).isRequired,
   token: PropTypes.string,
   method: PropTypes.string,
   action: PropTypes.string,
   username: PropTypes.string,
-  password: PropTypes.string
+  password: PropTypes.string,
 };

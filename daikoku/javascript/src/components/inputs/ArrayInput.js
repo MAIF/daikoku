@@ -75,7 +75,8 @@ export class ArrayInput extends Component {
         this.setState({ value: e, values: [...this.state.values, ...newVals] });
       } else {
         this.setState({ value: e });
-        const finaItem = (item) => this.props.transformSet ? this.props.transformSet(item.value) : item.value;
+        const finaItem = item =>
+          this.props.transformSet ? this.props.transformSet(item.value) : item.value;
         this.props.onChange(e.map(finaItem));
       }
     } else {
@@ -93,18 +94,19 @@ export class ArrayInput extends Component {
     if (!inputValue) return;
 
     const newValue = [...value, { label: inputValue, value: inputValue }];
-    const finaItem = (item) => this.props.transformSet ? this.props.transformSet(item.value) : item.value;
+    const finaItem = item =>
+      this.props.transformSet ? this.props.transformSet(item.value) : item.value;
     switch (event.key) {
-    case 'Enter':
-    case 'Tab':
-      this.setState(
-        {
-          inputValue: '',
-          value: newValue,
-        },
-        () => this.props.onChange(newValue.map(finaItem))
-      );
-      event.preventDefault();
+      case 'Enter':
+      case 'Tab':
+        this.setState(
+          {
+            inputValue: '',
+            value: newValue,
+          },
+          () => this.props.onChange(newValue.map(finaItem))
+        );
+        event.preventDefault();
     }
   };
 

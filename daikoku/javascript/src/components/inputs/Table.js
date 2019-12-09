@@ -261,7 +261,7 @@ export class Table extends Component {
               className="form-control input-sm"
               value={d.filter ? d.filter.value : ''}
               onChange={e => d.onChange(e.target.value)}
-              placeholder={t("Search ...", this.props.currentLanguage)}
+              placeholder={t('Search ...', this.props.currentLanguage)}
             />
           ),
           Cell: r => {
@@ -335,7 +335,7 @@ export class Table extends Component {
                 <button
                   type="button"
                   className="btn btn-sm btn-access-negative float-right"
-                  title={t("Reload the table content", this.props.currentLanguage)}
+                  title={t('Reload the table content', this.props.currentLanguage)}
                   onClick={this.update}>
                   <span className="fas fa-sync-alt" />
                 </button>
@@ -356,10 +356,10 @@ export class Table extends Component {
             <div className="rrow">
               <ReactTable
                 className="fulltable -striped -highlight"
-                previousText={t("Previous", this.props.currentLanguage)}
-                nextText={t("Next", this.props.currentLanguage)}
-                noDataText={t("No rows found", this.props.currentLanguage)}
-                pageText={t("Page", this.props.currentLanguage)}
+                previousText={t('Previous', this.props.currentLanguage)}
+                nextText={t('Next', this.props.currentLanguage)}
+                noDataText={t('No rows found', this.props.currentLanguage)}
+                pageText={t('Page', this.props.currentLanguage)}
                 ofText={t('of', this.props.currentLanguage)}
                 loadingText={t('loading', this.props.currentLanguage)}
                 data={this.state.items}

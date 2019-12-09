@@ -5,10 +5,10 @@ import { toastr } from 'react-redux-toastr';
 import faker from 'faker';
 
 import * as Services from '../../../services';
-import {Can, read, manage, stat, api as Api, administrator} from '../../utils';
+import { Can, read, manage, stat, api as Api, administrator } from '../../utils';
 import { TeamBackOffice } from '../..';
 import { Table, SwitchButton } from '../../inputs';
-import { t } from "../../../locales";
+import { t } from '../../../locales';
 
 class TeamApisComponent extends Component {
   columns = [
@@ -34,7 +34,8 @@ class TeamApisComponent extends Component {
             large
             noText
           />
-        </Can>)
+        </Can>
+      ),
     },
     {
       title: t('Actions', this.props.currentLanguage),
@@ -54,11 +55,9 @@ class TeamApisComponent extends Component {
             <Can I={read} a={stat} team={this.props.currentTeam}>
               <Link
                 key={`consumption-${api._humanReadableId}`}
-                to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${
-                  api._humanReadableId
-                }`}
+                to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}`}
                 className="btn btn-sm btn-access-negative"
-                title={t("View this api consumption", this.props.currentLanguage)}>
+                title={t('View this api consumption', this.props.currentLanguage)}>
                 <i className="fas fa-chart-bar" />
               </Link>
             </Can>
@@ -66,9 +65,7 @@ class TeamApisComponent extends Component {
           <Can I={manage} a={Api} team={this.props.currentTeam}>
             <Link
               key={`edit-${api._humanReadableId}`}
-              to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${
-                api._humanReadableId
-              }/infos`}
+              to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/infos`}
               className="btn btn-sm btn-access-negative"
               title="Edit this Api">
               <i className="fas fa-edit" />
@@ -88,24 +85,28 @@ class TeamApisComponent extends Component {
   ];
 
   togglePublish = api => {
-    Services.saveTeamApi(this.props.currentTeam._id, {...api, published: !api.published})
-      .then(() => this.table.update());
+    Services.saveTeamApi(this.props.currentTeam._id, {
+      ...api,
+      published: !api.published,
+    }).then(() => this.table.update());
   };
 
   isTeamAdmin = user => {
     return Option(this.props.currentTeam.users.find(u => u.userId === user._id))
       .map(user => user.teamPermission)
-      .fold(() => false, perm => perm === administrator);
+      .fold(
+        () => false,
+        perm => perm === administrator
+      );
   };
 
   delete = id => {
     window.confirm('Are you sure you want to delete this api ?').then(ok => {
       if (ok) {
-        Services.deleteTeamApi(this.props.currentTeam._id, id)
-          .then(() => {
-            toastr.success('deletion successful');
-            this.table.update();
-          });
+        Services.deleteTeamApi(this.props.currentTeam._id, id).then(() => {
+          toastr.success('deletion successful');
+          this.table.update();
+        });
       }
     });
   };
@@ -114,7 +115,8 @@ class TeamApisComponent extends Component {
     Services.fetchNewApi()
       .then(e => {
         const verb = faker.hacker.verb();
-        const apiName = verb.charAt(0).toUpperCase() +
+        const apiName =
+          verb.charAt(0).toUpperCase() +
           verb.slice(1) +
           ' ' +
           faker.hacker.adjective() +
@@ -123,15 +125,18 @@ class TeamApisComponent extends Component {
           ' api';
 
         e.name = apiName;
-        e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
+        e._humanReadableId = apiName
+          .replace(/\s/gi, '-')
+          .toLowerCase()
+          .trim();
         return e;
       })
-    .then(newApi => {
-      this.props.history.push(
-        `/${this.props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
-        { newApi: { ...newApi, team: this.props.currentTeam._id } }
-      );
-    });
+      .then(newApi => {
+        this.props.history.push(
+          `/${this.props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
+          { newApi: { ...newApi, team: this.props.currentTeam._id } }
+        );
+      });
   };
 
   render() {
@@ -145,7 +150,7 @@ class TeamApisComponent extends Component {
                 <Can I={manage} a={Api} team={this.props.currentTeam}>
                   <a
                     className="btn btn-sm btn-access-negative mb-1 ml-1"
-                    title={t("Create a new API", this.props.currentLanguage)}
+                    title={t('Create a new API', this.props.currentLanguage)}
                     href="#"
                     onClick={e => {
                       e.preventDefault();
@@ -180,6 +185,4 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamApis = connect(
-  mapStateToProps
-)(TeamApisComponent);
+export const TeamApis = connect(mapStateToProps)(TeamApisComponent);

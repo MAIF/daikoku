@@ -5,7 +5,7 @@ import { converterBase2 } from 'byte-converter';
 import moment from 'moment';
 import Select from 'react-select';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
-import {Spinner} from './Spinner';
+import { Spinner } from './Spinner';
 
 Number.prototype.prettify = function() {
   return this.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ');
@@ -20,12 +20,17 @@ class Period {
     this.value = value;
   }
 
-  format = (consumptions) => {
-    let time = ''
+  format = consumptions => {
+    let time = '';
     if (consumptions && consumptions.length) {
-      const maxDate = _.maxBy(consumptions, o => o.to)
-      if (maxDate && moment(maxDate.to).startOf("day").isSame(moment().startOf("day"))) {
-        time = moment(maxDate.to).format('HH:mm')
+      const maxDate = _.maxBy(consumptions, o => o.to);
+      if (
+        maxDate &&
+        moment(maxDate.to)
+          .startOf('day')
+          .isSame(moment().startOf('day'))
+      ) {
+        time = moment(maxDate.to).format('HH:mm');
       }
     }
     if (this.unitTime === 'day') {
@@ -40,11 +45,14 @@ class Period {
 
 const periods = {
   today: new Period({
-  	from: moment().startOf('day'),
-  	to: () => moment().add(1, "day").startOf('day'),
-  	unitTime: 'day',
-  	label: "Today",
-  	value: "TODAY"
+    from: moment().startOf('day'),
+    to: () =>
+      moment()
+        .add(1, 'day')
+        .startOf('day'),
+    unitTime: 'day',
+    label: 'Today',
+    value: 'TODAY',
   }),
   yesterday: new Period({
     from: moment()
@@ -95,12 +103,12 @@ export class OtoroshiStatsVizualization extends Component {
     }
 
     switch (unitTime) {
-    case 'day':
-      return plan.maxPerDay;
-    case 'month':
-      return plan.maxPerMonth;
-    default:
-      return undefined;
+      case 'day':
+        return plan.maxPerDay;
+      case 'month':
+        return plan.maxPerMonth;
+      default:
+        return undefined;
     }
   };
 
@@ -108,9 +116,9 @@ export class OtoroshiStatsVizualization extends Component {
     const realLabel =
       label instanceof Function
         ? label(
-          this.state.consumptions,
-          this.getMaxCall(this.state.period.unitTime, this.state.consumptions.plan)
-        )
+            this.state.consumptions,
+            this.getMaxCall(this.state.period.unitTime, this.state.consumptions.plan)
+          )
         : label;
     return (
       <a
@@ -126,60 +134,60 @@ export class OtoroshiStatsVizualization extends Component {
 
   formatValue = ({ type, formatter, formatter2, title, xAxis, yAxis, dataKey, parentKey }) => {
     switch (type) {
-    case 'Histogram':
-      return (
-        <Histogram series={formatter(this.state.consumptions)} title={title} unit=" bytes" />
-      );
-    case 'LineChart':
-      return (
-        <div style={{ width: '100%', height: 300 }}>
-          <ResponsiveContainer>
-            <LineChart
-              data={formatter(this.state.consumptions)}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}>
-              <XAxis dataKey={xAxis} />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey={yAxis} stroke="#8884d8" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      );
-    case 'RoundChart':
-      return (
-        <RoundChart
-          series={formatter(this.state.consumptions)}
-          title={title}
-          dataKey={dataKey}
-          unit=" hits"
-          size={200}
-        />
-      );
-    case 'DoubleRoundChart':
-      return (
-        <RoundChart
-          series={formatter(this.state.consumptions)}
-          series2={formatter2(this.state.consumptions)}
-          title={title}
-          dataKey={dataKey}
-          unit=" hits"
-          parentKey={parentKey}
-          size={170}
-        />
-      );
-    case 'Global':
-      return (
-        <GlobalDataConsumption
-          data={formatter ? formatter(this.state.consumptions) : this.state.consumptions}
-        />
-      );
-    default:
-      return formatter(this.state.consumptions);
+      case 'Histogram':
+        return (
+          <Histogram series={formatter(this.state.consumptions)} title={title} unit=" bytes" />
+        );
+      case 'LineChart':
+        return (
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <LineChart
+                data={formatter(this.state.consumptions)}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}>
+                <XAxis dataKey={xAxis} />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey={yAxis} stroke="#8884d8" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        );
+      case 'RoundChart':
+        return (
+          <RoundChart
+            series={formatter(this.state.consumptions)}
+            title={title}
+            dataKey={dataKey}
+            unit=" hits"
+            size={200}
+          />
+        );
+      case 'DoubleRoundChart':
+        return (
+          <RoundChart
+            series={formatter(this.state.consumptions)}
+            series2={formatter2(this.state.consumptions)}
+            title={title}
+            dataKey={dataKey}
+            unit=" hits"
+            parentKey={parentKey}
+            size={170}
+          />
+        );
+      case 'Global':
+        return (
+          <GlobalDataConsumption
+            data={formatter ? formatter(this.state.consumptions) : this.state.consumptions}
+          />
+        );
+      default:
+        return formatter(this.state.consumptions);
     }
   };
 
@@ -206,20 +214,21 @@ export class OtoroshiStatsVizualization extends Component {
   };
 
   sync = () => {
-    const {from, to} = this.state.period;
-    this.setState({ loading: true}, () => {
-      this.props.sync()
-      .then(() => this.props.fetchData(from, to()))
-      .then(consumptions => {
-        if (consumptions.error) {
-          this.setState({ error: true, loading: false });
-        } else {
-          this.setState({ consumptions, loading: false });
-        }
-      })
-      .catch(() => this.setState({ error: true, loading: false }));
-    })
-  }
+    const { from, to } = this.state.period;
+    this.setState({ loading: true }, () => {
+      this.props
+        .sync()
+        .then(() => this.props.fetchData(from, to()))
+        .then(consumptions => {
+          if (consumptions.error) {
+            this.setState({ error: true, loading: false });
+          } else {
+            this.setState({ consumptions, loading: false });
+          }
+        })
+        .catch(() => this.setState({ error: true, loading: false }));
+    });
+  };
 
   render() {
     return (
@@ -237,10 +246,14 @@ export class OtoroshiStatsVizualization extends Component {
               });
             }}
           />
-          <span className="col period-display">{this.state.period.format(this.state.consumptions)}</span>
-          {this.props.sync && <button className="btn btn-access-negative" onClick={this.sync}>
-            <i className="fas fa-sync-alt" />
-          </button>}
+          <span className="col period-display">
+            {this.state.period.format(this.state.consumptions)}
+          </span>
+          {this.props.sync && (
+            <button className="btn btn-access-negative" onClick={this.sync}>
+              <i className="fas fa-sync-alt" />
+            </button>
+          )}
         </div>
 
         <div className="row mt-2">
@@ -250,13 +263,13 @@ export class OtoroshiStatsVizualization extends Component {
               {this.state.error && <div>Oops...</div>}
               {!this.state.loading &&
                 !this.state.error && [
-                <div key="navbar" className="data__navbar">
-                  {this.props.mappers.map((tab, idx) => this.tab(idx, tab.label))}
-                </div>,
-                <div key="content" className="data__content">
-                  {this.formatValue(this.props.mappers[this.state.tab])}
-                </div>,
-              ]}
+                  <div key="navbar" className="data__navbar">
+                    {this.props.mappers.map((tab, idx) => this.tab(idx, tab.label))}
+                  </div>,
+                  <div key="content" className="data__content">
+                    {this.formatValue(this.props.mappers[this.state.tab])}
+                  </div>,
+                ]}
             </div>
           </div>
         </div>

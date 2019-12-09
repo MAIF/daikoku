@@ -7,7 +7,7 @@ import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { formatCurrency, formatPlanType, Spinner, Can, read, stat } from '../../utils';
-import { t, Translation } from "../../../locales";
+import { t, Translation } from '../../../locales';
 
 class TeamIncomeComponent extends Component {
   state = {
@@ -56,15 +56,17 @@ class TeamIncomeComponent extends Component {
 
   sync = () => {
     this.setState({ loading: true }, () => {
-      Services.syncTeamIncome(this.props.currentTeam._id)
-        .then(() => this.getBillingData(this.props.currentTeam))
-    })
-  }
+      Services.syncTeamIncome(this.props.currentTeam._id).then(() =>
+        this.getBillingData(this.props.currentTeam)
+      );
+    });
+  };
 
   render() {
     const total = this.state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
-    const mostRecentConsumption = _.maxBy(this.state.consumptions, c => c.to)
-    const lastDate = mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm')
+    const mostRecentConsumption = _.maxBy(this.state.consumptions, c => c.to);
+    const lastDate =
+      mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
     return (
       <TeamBackOffice tab="Income">
         <Can I={read} a={stat} team={this.props.currentTeam} dispatchError={true}>
@@ -81,21 +83,38 @@ class TeamIncomeComponent extends Component {
                   <div className="col apis">
                     <div className="row month__and__total">
                       <div className="col-12 month__selector d-flex align-items-center">
-                        <MonthPicker 
-                        updateDate={date => this.setState({date}, () => this.getBillingData(this.props.currentTeam))} 
-                          value={this.state.date} />
+                        <MonthPicker
+                          updateDate={date =>
+                            this.setState({ date }, () =>
+                              this.getBillingData(this.props.currentTeam)
+                            )
+                          }
+                          value={this.state.date}
+                        />
                         <button className="btn btn-access-negative" onClick={this.sync}>
                           <i className="fas fa-sync-alt ml-1" />
                         </button>
-                        {lastDate && <i className="ml-1">
-                          <Translation i18nkey="date.update" language={this.props.currentLanguage} replacements={[lastDate]}>
-                            upd. {lastDate}
-                          </Translation></i>}
+                        {lastDate && (
+                          <i className="ml-1">
+                            <Translation
+                              i18nkey="date.update"
+                              language={this.props.currentLanguage}
+                              replacements={[lastDate]}>
+                              upd. {lastDate}
+                            </Translation>
+                          </i>
+                        )}
                       </div>
                     </div>
                     <div className="row api__billing__card__container">
-                      <TheadBillingContainer language={this.props.currentLanguage} label={t("Apis", this.props.currentLanguage)} total={formatCurrency(total)} />
-                      {!this.state.consumptionsByApi.length && <NoData language={this.props.currentLanguage}/>}
+                      <TheadBillingContainer
+                        language={this.props.currentLanguage}
+                        label={t('Apis', this.props.currentLanguage)}
+                        total={formatCurrency(total)}
+                      />
+                      {!this.state.consumptionsByApi.length && (
+                        <NoData language={this.props.currentLanguage} />
+                      )}
                       {this.state.consumptionsByApi
                         .sort((api1, api2) => api2.billing.total - api1.billing.total)
                         .map(({ api, billing }) => (
@@ -111,7 +130,11 @@ class TeamIncomeComponent extends Component {
                             total={billing.total}
                           />
                         ))}
-                      <TheadBillingContainer language={this.props.currentLanguage} label={t("Apis", this.props.currentLanguage)} total={formatCurrency(total)} />
+                      <TheadBillingContainer
+                        language={this.props.currentLanguage}
+                        label={t('Apis', this.props.currentLanguage)}
+                        total={formatCurrency(total)}
+                      />
                     </div>
                   </div>
                   <div className="col apikeys">
@@ -147,7 +170,8 @@ class TeamIncomeComponent extends Component {
                       <div>
                         <div className="api__plans__consumption__header">
                           <h3 className="api__name">
-                            {this.state.selectedApi.name} - {formatPlanType(this.state.selectedPlan)}
+                            {this.state.selectedApi.name} -{' '}
+                            {formatPlanType(this.state.selectedPlan)}
                           </h3>
                           <i
                             className="far fa-arrow-alt-circle-left quit"
@@ -188,6 +212,4 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamIncome = connect(
-  mapStateToProps
-)(TeamIncomeComponent);
+export const TeamIncome = connect(mapStateToProps)(TeamIncomeComponent);

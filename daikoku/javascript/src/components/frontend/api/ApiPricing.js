@@ -5,8 +5,8 @@ import { currencies } from '../../../services/currencies';
 
 import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
-import { t, Translation } from "../../../locales";
-import { Can, access, apikey } from "../../utils";
+import { t, Translation } from '../../../locales';
+import { Can, access, apikey } from '../../utils';
 
 const Curreny = ({ plan }) => {
   const cur = _.find(currencies, c => c.code === plan.currency.code);
@@ -18,39 +18,41 @@ const Curreny = ({ plan }) => {
   );
 };
 
-const currency = (plan) => {
+const currency = plan => {
   const cur = _.find(currencies, c => c.code === plan.currency.code);
   return `${cur.name}(${cur.symbol})`;
 };
 
 export class ApiPricingCard extends Component {
-  renderFreeWithoutQuotas = () => <span>
-    <Translation i18nkey="free.without.quotas.desc" 
-    language={this.props.currentLanguage}>
-      You'll pay nothing and do whatever you want :)
-    </Translation>
-  </span>;
+  renderFreeWithoutQuotas = () => (
+    <span>
+      <Translation i18nkey="free.without.quotas.desc" language={this.props.currentLanguage}>
+        You'll pay nothing and do whatever you want :)
+      </Translation>
+    </span>
+  );
 
   renderFreeWithQuotas = () => (
     <span>
-      <Translation i18nkey="free.with.quotas.desc"
+      <Translation
+        i18nkey="free.with.quotas.desc"
         language={this.props.currentLanguage}
-        replacements={[
-          this.props.plan.maxPerMonth
-        ]}>
-        You'll pay nothing but you'll have {this.props.plan.maxPerMonth} authorized requests per month
+        replacements={[this.props.plan.maxPerMonth]}>
+        You'll pay nothing but you'll have {this.props.plan.maxPerMonth} authorized requests per
+        month
       </Translation>
     </span>
   );
 
   renderQuotasWithLimits = () => (
     <span>
-      <Translation i18nkey="quotas.with.limits.desc"
+      <Translation
+        i18nkey="quotas.with.limits.desc"
         language={this.props.currentLanguage}
         replacements={[
           this.props.plan.costPerMonth,
           currency(this.props.plan),
-          this.props.plan.maxPerMonth
+          this.props.plan.maxPerMonth,
         ]}>
         You'll pay {this.props.plan.costPerMonth}
         <Curreny plan={this.props.plan} /> and you'll have {this.props.plan.maxPerMonth} authorized
@@ -59,10 +61,10 @@ export class ApiPricingCard extends Component {
     </span>
   );
 
-
   renderQuotasWithoutLimits = () => (
     <span>
-      <Translation i18nkey="quotas.without.limits.desc"
+      <Translation
+        i18nkey="quotas.without.limits.desc"
         language={this.props.currentLanguage}
         replacements={[
           this.props.plan.costPerMonth,
@@ -83,13 +85,14 @@ export class ApiPricingCard extends Component {
     if (this.props.plan.costPerMonth === 0.0) {
       return (
         <span>
-          <Translation i18nkey="pay.per.use.desc.default"
+          <Translation
+            i18nkey="pay.per.use.desc.default"
             language={this.props.currentLanguage}
             replacements={[
               this.props.plan.costPerMonth,
               currency(this.props.plan),
               this.props.plan.costPerRequest,
-              currency(this.props.plan)
+              currency(this.props.plan),
             ]}>
             You'll pay {this.props.plan.costPerMonth}
             <Curreny plan={this.props.plan} /> per month and you'll be charged{' '}
@@ -101,15 +104,13 @@ export class ApiPricingCard extends Component {
     } else {
       return (
         <span>
-          <Translation i18nkey="pay.per.use.desc.default"
+          <Translation
+            i18nkey="pay.per.use.desc.default"
             language={this.props.currentLanguage}
-            replacements={[
-              this.props.plan.costPerRequest,
-              currency(this.props.plan),
-            ]}>
-              You'll be charged {this.props.plan.costPerRequest}
-              <Curreny plan={this.props.plan} /> per request
-            </Translation>
+            replacements={[this.props.plan.costPerRequest, currency(this.props.plan)]}>
+            You'll be charged {this.props.plan.costPerRequest}
+            <Curreny plan={this.props.plan} /> per request
+          </Translation>
         </span>
       );
     }
@@ -119,7 +120,12 @@ export class ApiPricingCard extends Component {
     const plan = this.props.plan;
     const type = plan.type;
     const customDescription = plan.customDescription;
-    const authorizedTeams = this.props.myTeams.filter(t => this.props.api.visibility === 'Public' || this.props.api.authorizedTeams.includes(t._id) || team._id === this.props.ownerTeam._id);
+    const authorizedTeams = this.props.myTeams.filter(
+      t =>
+        this.props.api.visibility === 'Public' ||
+        this.props.api.authorizedTeams.includes(t._id) ||
+        team._id === this.props.ownerTeam._id
+    );
 
     const allPossibleTeams = _.difference(
       authorizedTeams.map(t => t._id),
@@ -155,27 +161,45 @@ export class ApiPricingCard extends Component {
                   Request in progress{' '}
                 </button>
               )}
-              {this.props.api.published && <Can I={access} a={apikey} teams={authorizedTeams.filter(team => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id)}>
-                {plan.otoroshiTarget && !isAccepted && !isPending && (
-                  <ActionWithTeamSelector
-                    title={t("team.selection.title", this.props.currentLanguage, "Select the team of the subscription")}
-                    description={t("team.selection.desc", this.props.currentLanguage, "You are going to subscribe to the api. On which team do you want to make this subscriptions ?")}
-                    buttonLabel="subscribe"
-                    teams={authorizedTeams
-                      .filter(team => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id)
-                      // .filter(team => plan.allowMultipleKeys || (this.props.subscriptions.every(s => s.team !== team._id) && this.props.pendingSubscriptions.every(s => s.action.team !== team._id)))
-                    }
-                    pendingTeams={this.props.pendingSubscriptions.map(s => s.action.team)}
-                    authorizedTeams={this.props.subscriptions.map(subs => subs.team)}
-                    allowMultipleDemand={plan.allowMultipleKeys}
-                    action={teams => this.props.askForApikeys(teams)}
-                    withAllTeamSelector={true}>
-                    <button type="button" className="btn btn-sm btn-access-negative">
-                      Subscribe
-                    </button>
-                  </ActionWithTeamSelector>
-                )}
-              </Can>}
+              {this.props.api.published && (
+                <Can
+                  I={access}
+                  a={apikey}
+                  teams={authorizedTeams.filter(
+                    team => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                  )}>
+                  {plan.otoroshiTarget && !isAccepted && !isPending && (
+                    <ActionWithTeamSelector
+                      title={t(
+                        'team.selection.title',
+                        this.props.currentLanguage,
+                        'Select the team of the subscription'
+                      )}
+                      description={t(
+                        'team.selection.desc',
+                        this.props.currentLanguage,
+                        'You are going to subscribe to the api. On which team do you want to make this subscriptions ?'
+                      )}
+                      buttonLabel="subscribe"
+                      teams={
+                        authorizedTeams.filter(
+                          team =>
+                            plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                        )
+                        // .filter(team => plan.allowMultipleKeys || (this.props.subscriptions.every(s => s.team !== team._id) && this.props.pendingSubscriptions.every(s => s.action.team !== team._id)))
+                      }
+                      pendingTeams={this.props.pendingSubscriptions.map(s => s.action.team)}
+                      authorizedTeams={this.props.subscriptions.map(subs => subs.team)}
+                      allowMultipleDemand={plan.allowMultipleKeys}
+                      action={teams => this.props.askForApikeys(teams)}
+                      withAllTeamSelector={true}>
+                      <button type="button" className="btn btn-sm btn-access-negative">
+                        Subscribe
+                      </button>
+                    </ActionWithTeamSelector>
+                  )}
+                </Can>
+              )}
             </div>
           </div>
         </div>
@@ -192,7 +216,7 @@ ApiPricingCard.propTypes = {
   pendingSubscriptions: PropTypes.array.isRequired,
   askForApikeys: PropTypes.func.isRequired,
   updateSubscriptions: PropTypes.func.isRequired,
-  ownerTeam: PropTypes.object.isRequired
+  ownerTeam: PropTypes.object.isRequired,
 };
 
 export class ApiPricing extends Component {
@@ -203,10 +227,12 @@ export class ApiPricing extends Component {
     }
 
     const possibleUsagePlans = api.possibleUsagePlans.filter(plan => {
-      return plan.visibility === 'Public' ||
+      return (
+        plan.visibility === 'Public' ||
         this.props.myTeams.some(team => team._id === this.props.ownerTeam._id) ||
         this.props.myTeams.some(team => plan.authorizedTeams.includes(team._id))
-    })
+      );
+    });
 
     return (
       <div className="d-flex col flex-column pricing-content">

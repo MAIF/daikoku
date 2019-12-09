@@ -23,11 +23,11 @@ export function initNotLogged(tenant) {
   const storeInst = store({ tenant, currentLanguage });
 
   ReactDOM.render(
-  <Provider store={storeInst}>
+    <Provider store={storeInst}>
       <DaikokuHomeApp tenant={tenant} />
-  </Provider>,
-  document.getElementById('app')
-);
+    </Provider>,
+    document.getElementById('app')
+  );
 }
 
 {

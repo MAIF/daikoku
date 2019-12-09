@@ -1,15 +1,15 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { connect } from "react-redux";
+import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import faker from 'faker';
 import bcrypt from 'bcryptjs';
 import md5 from 'js-md5';
 
-import {AssetChooserByModal, MimeTypeFilter} from '../../frontend';
+import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, daikoku, Spinner } from '../../utils';
-import { t, Translation } from "../../../locales";
+import { t, Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -36,7 +36,7 @@ class SetPassword extends Component {
             type="button"
             className="btn btn-outline-success"
             onClick={this.genAndSetPassword}>
-            <i className="fas fa-unlock-alt mr-1" /> 
+            <i className="fas fa-unlock-alt mr-1" />
             <Translation i18nkey="Set password" language={this.props.currentLanguage}>
               Set password
             </Translation>
@@ -48,7 +48,6 @@ class SetPassword extends Component {
 }
 
 class RefreshToken extends Component {
-
   reloadToken = () => {
     this.props.changeValue('personalToken', faker.random.alphaNumeric(32));
   };
@@ -58,10 +57,7 @@ class RefreshToken extends Component {
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2 col-form-label" />
         <div className="col-sm-10">
-          <button
-            type="button"
-            className="btn btn-outline-success"
-            onClick={this.reloadToken}>
+          <button type="button" className="btn btn-outline-success" onClick={this.reloadToken}>
             <i className="fas fa-sync-alt mr-1" />
             <Translation i18nkey="Reload personal token" language={this.props.currentLanguage}>
               Reload personal token
@@ -100,8 +96,9 @@ class AssetButton extends Component {
         typeFilter={MimeTypeFilter.image}
         onlyPreview
         tenantMode
-        label={t("Set avatar from asset", this.props.currentLanguage)}
-        onSelect={asset => this.props.changeValue('avatar', asset.link)}/>
+        label={t('Set avatar from asset', this.props.currentLanguage)}
+        onSelect={asset => this.props.changeValue('avatar', asset.link)}
+      />
     );
   }
 }
@@ -110,8 +107,8 @@ class AvatarChooser extends Component {
     return (
       <div className="form-group row">
         <div className="col-12  d-flex justify-content-end">
-          <Gravatar {...this.props}/>
-          <AssetButton {...this.props}/>
+          <Gravatar {...this.props} />
+          <AssetButton {...this.props} />
         </div>
       </div>
     );
@@ -166,14 +163,14 @@ export class UserEditComponent extends Component {
       type: 'string',
       props: {
         label: t('Personal Token', this.props.currentLanguage),
-        disabled: true
+        disabled: true,
       },
     },
     refreshToken: {
       type: RefreshToken,
       props: {
-        currentLanguage: this.props.currentLanguage
-      }
+        currentLanguage: this.props.currentLanguage,
+      },
     },
     password: {
       type: 'string',
@@ -191,14 +188,14 @@ export class UserEditComponent extends Component {
     setPassword: {
       type: SetPassword,
       props: {
-        currentLanguage: this.props.currentLanguage
-      }
+        currentLanguage: this.props.currentLanguage,
+      },
     },
     avatarFromAsset: {
       type: AvatarChooser,
       props: {
-        currentLanguage: this.props.currentLanguage
-      }
+        currentLanguage: this.props.currentLanguage,
+      },
     },
   };
 
@@ -214,7 +211,7 @@ export class UserEditComponent extends Component {
     'refreshToken',
     'tenants',
     'origins',
-    'metadata'
+    'metadata',
   ];
 
   componentDidMount() {
@@ -266,12 +263,12 @@ export class UserEditComponent extends Component {
                 />
               </div>
             )}
-              {!this.state.user && <h1>User</h1>}
-              {this.state.user && (
-                <h1 className="h1-rwd-reduce ml-2">
-                  {this.state.user.name} - {this.state.user.email}
-                </h1>
-              )}
+            {!this.state.user && <h1>User</h1>}
+            {this.state.user && (
+              <h1 className="h1-rwd-reduce ml-2">
+                {this.state.user.name} - {this.state.user.email}
+              </h1>
+            )}
           </div>
           {this.state.user && (
             <div className="row">
@@ -315,7 +312,7 @@ export class UserEditComponent extends Component {
                   <i className="fas fa-save mr-1" />
                   <Translation i18nkey="Save" language={this.props.currentLanguage}>
                     Save
-                </Translation>
+                  </Translation>
                 </span>
               )}
               {this.state.create && (

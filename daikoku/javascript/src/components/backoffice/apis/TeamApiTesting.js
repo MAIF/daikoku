@@ -3,48 +3,43 @@ import faker from 'faker';
 
 import { Spinner } from '../../utils';
 import * as Services from '../../../services';
-import { t, Translation } from "../../../locales";
+import { t, Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 class GenerateApiKeyModal extends Component {
-
-  state = { 
+  state = {
     tenant: null,
-    config: this.props.config
+    config: this.props.config,
   };
 
   componentDidMount() {
-    Services.currentTenant(this.props.teamId)
-      .then(tenant => this.setState({ tenant }))
+    Services.currentTenant(this.props.teamId).then(tenant => this.setState({ tenant }));
   }
 
-  otoroshiFlow = (_found) => {
-    return [
-      'otoroshiSettings',
-      'serviceGroup',
-    ];
+  otoroshiFlow = _found => {
+    return ['otoroshiSettings', 'serviceGroup'];
   };
 
-  otoroshiForm = (_found) => {
+  otoroshiForm = _found => {
     return {
-      'otoroshiSettings': {
+      otoroshiSettings: {
         type: 'select',
         props: {
           label: t('Otoroshi instance', this.props.currentLanguage),
-          possibleValues: this.state.tenant ? this.state.tenant.otoroshiSettings.map(s => ({
-            label: s.url,
-            value: s._id,
-          })) : [],
+          possibleValues: this.state.tenant
+            ? this.state.tenant.otoroshiSettings.map(s => ({
+                label: s.url,
+                value: s._id,
+              }))
+            : [],
         },
       },
-      'serviceGroup': {
+      serviceGroup: {
         type: 'select',
         props: {
           label: t('Service group', this.props.currentLanguage),
-          valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${
-            _found.otoroshiSettings
-          }/groups`,
+          valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${_found.otoroshiSettings}/groups`,
           transformer: s => ({ label: s.name, value: s.id }),
           fetchCondition: () => !!_found.otoroshiSettings,
         },
@@ -66,55 +61,114 @@ class GenerateApiKeyModal extends Component {
     return (
       <div style={{ fontWeight: 'normal' }}>
         <React.Suspense fallback={<Spinner />}>
-          <LazyForm flow={this.otoroshiFlow(config)} schema={this.otoroshiForm(config)} value={config} onChange={config => this.setState({ config })} />
+          <LazyForm
+            flow={this.otoroshiFlow(config)}
+            schema={this.otoroshiForm(config)}
+            value={config}
+            onChange={config => this.setState({ config })}
+          />
         </React.Suspense>
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+          }}>
           <p>
-            <Translation i18nkey="otoroshi.test.key.modal.description" language={this.props.currentLanguage}>
-              In order to make everything work, you'll have to add a tags match (OneTageIn / AllTagIn) in your service descriptor in the 'Api Keys Constraints' section.
-              Make sure this service descriptor is the right one for testing and not a production system.
-            </Translation> 
+            <Translation
+              i18nkey="otoroshi.test.key.modal.description"
+              language={this.props.currentLanguage}>
+              In order to make everything work, you'll have to add a tags match (OneTageIn /
+              AllTagIn) in your service descriptor in the 'Api Keys Constraints' section. Make sure
+              this service descriptor is the right one for testing and not a production system.
+            </Translation>
           </p>
           <p>
-            <Translation i18nkey="otoroshi.test.key.modal.tag.name" language={this.props.currentLanguage}>
+            <Translation
+              i18nkey="otoroshi.test.key.modal.tag.name"
+              language={this.props.currentLanguage}>
               The tag you need to add is the following
             </Translation>
           </p>
-          <div style={{ padding: 10, borderRadius: 5, color: 'white', backgroundColor: 'rgb(73, 73, 72)', width: '100%', marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{config.tag}</div>
+          <div
+            style={{
+              padding: 10,
+              borderRadius: 5,
+              color: 'white',
+              backgroundColor: 'rgb(73, 73, 72)',
+              width: '100%',
+              marginBottom: 16,
+              display: 'flex',
+              justifyContent: 'center',
+            }}>
+            {config.tag}
+          </div>
           <p>
-            <Translation i18nkey="otoroshi.test.key.modal.apikey.name" language={this.props.currentLanguage}>
+            <Translation
+              i18nkey="otoroshi.test.key.modal.apikey.name"
+              language={this.props.currentLanguage}>
               the name of the apikey will be
             </Translation>
           </p>
-          <div style={{ padding: 10, borderRadius: 5, color: 'white', backgroundColor: 'rgb(73, 73, 72)', width: '100%', marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{config.clientName}</div>
+          <div
+            style={{
+              padding: 10,
+              borderRadius: 5,
+              color: 'white',
+              backgroundColor: 'rgb(73, 73, 72)',
+              width: '100%',
+              marginBottom: 16,
+              display: 'flex',
+              justifyContent: 'center',
+            }}>
+            {config.clientName}
+          </div>
         </div>
-        {!!config.otoroshiSettings && !!config.serviceGroup && 
-          <button type="button" className="btn btn-success" onClick={this.generateApiKey}><i className="fas fa-key mr-1" />
-            <Translation i18nkey="Generate" language={this.props.currentLanguage}>Generate</Translation>
-          </button>}
-        {!config.otoroshiSettings && !config.serviceGroup && 
-          <button type="button" className="btn btn-success" disabled><i className="fas fa-key mr-1" />
-            <Translation i18nkey="Generate" language={this.props.currentLanguage}>Generate</Translation>
-          </button>}
+        {!!config.otoroshiSettings && !!config.serviceGroup && (
+          <button type="button" className="btn btn-success" onClick={this.generateApiKey}>
+            <i className="fas fa-key mr-1" />
+            <Translation i18nkey="Generate" language={this.props.currentLanguage}>
+              Generate
+            </Translation>
+          </button>
+        )}
+        {!config.otoroshiSettings && !config.serviceGroup && (
+          <button type="button" className="btn btn-success" disabled>
+            <i className="fas fa-key mr-1" />
+            <Translation i18nkey="Generate" language={this.props.currentLanguage}>
+              Generate
+            </Translation>
+          </button>
+        )}
       </div>
     );
   }
 }
 
 class GenerateApiKey extends Component {
-
   showGenerateApiKeyModal = () => {
     const random = faker.random.alphaNumeric(16);
     const config = {
-      "otoroshiSettings": null,
-      "serviceGroup": null,
-      "clientName": `testing-purpose-only-apikey-for-${this.props.apiName()}`,
-      "api": this.props.api(),
-      "tag": `daikoku_testing_${random}`
+      otoroshiSettings: null,
+      serviceGroup: null,
+      clientName: `testing-purpose-only-apikey-for-${this.props.apiName()}`,
+      api: this.props.api(),
+      tag: `daikoku_testing_${random}`,
     };
-    window.alert(close => <GenerateApiKeyModal currentLanguage={this.props.currentLanguage} changeValue={this.props.changeValue} close={close} teamId={this.props.teamId()} config={config} /> , 
-      t('Generate an apikey for testing', this.props.currentLanguage))
-  }
+    window.alert(
+      close => (
+        <GenerateApiKeyModal
+          currentLanguage={this.props.currentLanguage}
+          changeValue={this.props.changeValue}
+          close={close}
+          teamId={this.props.teamId()}
+          config={config}
+        />
+      ),
+      t('Generate an apikey for testing', this.props.currentLanguage)
+    );
+  };
 
   render() {
     return (
@@ -125,8 +179,10 @@ class GenerateApiKey extends Component {
             type="button"
             className="btn btn-outline-success"
             onClick={() => this.showGenerateApiKeyModal()}>
-            <i className="fas fa-key mr-1" /> 
-            <Translation i18nkey="otoroshi.test.key.generator.button" language={this.props.currentLanguage}>
+            <i className="fas fa-key mr-1" />
+            <Translation
+              i18nkey="otoroshi.test.key.generator.button"
+              language={this.props.currentLanguage}>
               Generate a dedicated testing key in Otoroshi
             </Translation>
           </button>
@@ -144,22 +200,23 @@ export class TeamApiTesting extends Component {
     },
     name: {
       type: 'string',
-      props: { 
-        label: t('Auth. name', this.props.currentLanguage), 
-        placeholder: t('The auth. name in api swagger', this.props.currentLanguage) },
+      props: {
+        label: t('Auth. name', this.props.currentLanguage),
+        placeholder: t('The auth. name in api swagger', this.props.currentLanguage),
+      },
     },
     username: {
       type: 'string',
-      props: { 
-        label: t('Client Id', this.props.currentLanguage), 
-        placeholder: t('The apikey client id', this.props.currentLanguage) 
+      props: {
+        label: t('Client Id', this.props.currentLanguage),
+        placeholder: t('The apikey client id', this.props.currentLanguage),
       },
     },
     password: {
       type: 'string',
       visible: () => this.props.value.testing.auth === 'Basic',
-      props: { 
-        label: t('Client secret', this.props.currentLanguage), 
+      props: {
+        label: t('Client secret', this.props.currentLanguage),
         placeholder: t('The apikey client secret', this.props.currentLanguage),
         type: 'password',
       },
@@ -181,19 +238,12 @@ export class TeamApiTesting extends Component {
         apiName: () => this.props.value.name,
         api: () => this.props.value.id || this.props.value._id,
         changeValue: this.props.changeValue,
-        currentLanguage: this.props.currentLanguage
-      }
-    }
+        currentLanguage: this.props.currentLanguage,
+      },
+    },
   };
 
-  formFlow = [
-    'enabled',
-    'name',
-    'username',
-    'password',
-    'auth',
-    'generateApiKey'
-  ];
+  formFlow = ['enabled', 'name', 'username', 'password', 'auth', 'generateApiKey'];
 
   render() {
     return (

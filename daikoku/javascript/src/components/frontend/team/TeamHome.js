@@ -4,7 +4,7 @@ import * as Services from '../../../services';
 import { ApiList } from './ApiList';
 import { connect } from 'react-redux';
 import { Can, read, team } from '../../utils';
-import {setError, updateTeamPromise} from '../../../core';
+import { setError, updateTeamPromise } from '../../../core';
 
 class TeamHomeComponent extends Component {
   state = {
@@ -21,8 +21,8 @@ class TeamHomeComponent extends Component {
       Services.myTeams(),
     ]).then(([apis, team, teams, myTeams]) => {
       if (apis.error || team.error) {
-        this.props.setError({error: {status: 404, message: apis.error}});
-      }  else {
+        this.props.setError({ error: { status: 404, message: apis.error } });
+      } else {
         this.setState({ apis, team, teams, myTeams });
       }
     });
@@ -37,8 +37,9 @@ class TeamHomeComponent extends Component {
   }
 
   askForApiAccess = (api, teams) => {
-    return Services.askForApiAccess(teams, api._id)
-      .then(() => this.fetchData(this.props.match.params.teamId));
+    return Services.askForApiAccess(teams, api._id).then(() =>
+      this.fetchData(this.props.match.params.teamId)
+    );
   };
 
   redirectToApiPage = api => {
@@ -119,7 +120,9 @@ class TeamHomeComponent extends Component {
           history={this.props.history}
           myTeams={this.state.myTeams}
           showTeam={false}
-          team={this.state.teams.find(team => team._humanReadableId === this.props.match.params.teamId)}
+          team={this.state.teams.find(
+            team => team._humanReadableId === this.props.match.params.teamId
+          )}
         />
       </main>
     );
@@ -135,7 +138,4 @@ const mapDispatchToProps = {
   setError: error => setError(error),
 };
 
-export const TeamHome = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(TeamHomeComponent);
+export const TeamHome = connect(mapStateToProps, mapDispatchToProps)(TeamHomeComponent);

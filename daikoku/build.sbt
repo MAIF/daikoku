@@ -15,26 +15,27 @@ lazy val root = (project in file("."))
 libraryDependencies ++= Seq(
   ws,
   filters,
-  "org.gnieh"                %% "diffson-play-json"        % "3.1.1" excludeAll (ExclusionRule(organization = "com.typesafe.akka")),
-  "org.scalatestplus.play"   %% "scalatestplus-play"       % "3.1.2" % Test,
-  "com.themillhousegroup"    %% "scoup"                    % "0.4.6" % Test,
-  "com.typesafe.play"        %% "play-json"                % "2.6.10",
-  "com.typesafe.play"        %% "play-json-joda"           % "2.6.10",
-  "com.auth0"                % "java-jwt"                  % "3.4.0",
-  "com.auth0"                % "jwks-rsa"                  % "0.7.0", // https://github.com/auth0/jwks-rsa-java
-  "com.nimbusds"             % "nimbus-jose-jwt"           % "6.0",
-  "com.softwaremill.macwire" %% "macros"                   % "2.3.0" % "provided",
-  "javax.xml.bind"           % "jaxb-api"                  % "2.3.0",
-  "com.sun.xml.bind"         % "jaxb-core"                 % "2.3.0",
-  "com.sun.xml.bind"         % "jaxb-impl"                 % "2.3.0",
-  "org.reactivemongo"        %% "play2-reactivemongo"      % "0.16.0-play26",
-  "org.reactivemongo"        %% "reactivemongo-akkastream" % "0.16.0",
-  "com.typesafe.akka"        %% "akka-stream-kafka"        % "0.21",
-  "org.typelevel"            %% "cats-core"                % "1.3.1",
-  "de.svenkubiak"            % "jBCrypt"                   % "0.4.1",
-  "com.propensive"           %% "kaleidoscope"             % "0.1.0",
-  "com.lightbend.akka"       %% "akka-stream-alpakka-s3"   % "1.0.1",
-  "com.github.tomakehurst"   % "wiremock"                  % "1.33" % "test"
+  "org.gnieh" %% "diffson-play-json" % "3.1.1" excludeAll (ExclusionRule(
+    organization = "com.typesafe.akka")),
+  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test,
+  "com.themillhousegroup" %% "scoup" % "0.4.6" % Test,
+  "com.typesafe.play" %% "play-json" % "2.6.10",
+  "com.typesafe.play" %% "play-json-joda" % "2.6.10",
+  "com.auth0" % "java-jwt" % "3.4.0",
+  "com.auth0" % "jwks-rsa" % "0.7.0", // https://github.com/auth0/jwks-rsa-java
+  "com.nimbusds" % "nimbus-jose-jwt" % "6.0",
+  "com.softwaremill.macwire" %% "macros" % "2.3.0" % "provided",
+  "javax.xml.bind" % "jaxb-api" % "2.3.0",
+  "com.sun.xml.bind" % "jaxb-core" % "2.3.0",
+  "com.sun.xml.bind" % "jaxb-impl" % "2.3.0",
+  "org.reactivemongo" %% "play2-reactivemongo" % "0.16.0-play26",
+  "org.reactivemongo" %% "reactivemongo-akkastream" % "0.16.0",
+  "com.typesafe.akka" %% "akka-stream-kafka" % "0.21",
+  "org.typelevel" %% "cats-core" % "1.3.1",
+  "de.svenkubiak" % "jBCrypt" % "0.4.1",
+  "com.propensive" %% "kaleidoscope" % "0.1.0",
+  "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "1.0.1",
+  "com.github.tomakehurst" % "wiremock" % "1.33" % "test"
 )
 
 scalacOptions ++= Seq(
@@ -105,8 +106,9 @@ dockerUpdateLatest := true
 
 dockerCommands :=
   dockerCommands.value.flatMap {
-    case ExecCmd("ENTRYPOINT", args @ _*) => Seq(Cmd("ENTRYPOINT", args.mkString(" ")))
-    case v                                => Seq(v)
+    case ExecCmd("ENTRYPOINT", args @ _*) =>
+      Seq(Cmd("ENTRYPOINT", args.mkString(" ")))
+    case v => Seq(v)
   }
 
 dockerUpdateLatest := true
@@ -118,15 +120,15 @@ dockerUpdateLatest := true
 import ReleaseTransformations._
 
 releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,              // : ReleaseStep
-  inquireVersions,                        // : ReleaseStep
-  runClean,                               // : ReleaseStep
+  checkSnapshotDependencies, // : ReleaseStep
+  inquireVersions, // : ReleaseStep
+  runClean, // : ReleaseStep
   // runTest,                                // : ReleaseStep
-  setReleaseVersion,                      // : ReleaseStep
-  commitReleaseVersion,                   // : ReleaseStep, performs the initial git checks
-  tagRelease,                             // : ReleaseStep
+  setReleaseVersion, // : ReleaseStep
+  commitReleaseVersion, // : ReleaseStep, performs the initial git checks
+  tagRelease, // : ReleaseStep
   // publishArtifacts,                       // : ReleaseStep, checks whether `publishTo` is properly set up
-  setNextVersion,                         // : ReleaseStep
-  commitNextVersion,                      // : ReleaseStep
-  pushChanges                             // : ReleaseStep, also checks that an upstream branch is properly configured
+  setNextVersion, // : ReleaseStep
+  commitNextVersion, // : ReleaseStep
+  pushChanges // : ReleaseStep, also checks that an upstream branch is properly configured
 )

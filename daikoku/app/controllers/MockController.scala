@@ -17,7 +17,10 @@ import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
 
-class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerComponents) extends AbstractController(cc) {
+class MockController(DaikokuAction: DaikokuAction,
+                     env: Env,
+                     cc: ControllerComponents)
+    extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
 
@@ -42,69 +45,69 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
     """.stripMargin
 
   def saveApiDocPages(tenant: TenantId): Future[Seq[ApiDocumentationPageId]] = {
-    val id1  = ApiDocumentationPageId(BSONObjectID.generate().stringify)
-    val id2  = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+    val id1 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+    val id2 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
     val id21 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
-    val id3  = ApiDocumentationPageId(BSONObjectID.generate().stringify)
-    val id4  = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+    val id3 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+    val id4 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
     for {
       apiDocRepos <- env.dataStore.apiDocumentationPageRepo.forTenantF(tenant)
       _ <- apiDocRepos.save(
-            ApiDocumentationPage(
-              id = id1,
-              tenant = tenant,
-              // api = api,
-              title = "Introduction",
-              lastModificationAt = DateTime.now(),
-              content =
-                "# Introduction\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. \n\n@@@ note \nHello World\n@@@\n\nDuis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
-            )
-          )
+        ApiDocumentationPage(
+          id = id1,
+          tenant = tenant,
+          // api = api,
+          title = "Introduction",
+          lastModificationAt = DateTime.now(),
+          content =
+            "# Introduction\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. \n\n@@@ note \nHello World\n@@@\n\nDuis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
+        )
+      )
       _ <- apiDocRepos.save(
-            ApiDocumentationPage(
-              id = id2,
-              tenant = tenant,
-              // api = api,
-              title = "Do This",
-              lastModificationAt = DateTime.now(),
-              content =
-                s"# Do This\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor,\n\n* abc\n* def\n* hij\n\na aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. \n\n$scalaCode\n\nDonec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
-            )
-          )
+        ApiDocumentationPage(
+          id = id2,
+          tenant = tenant,
+          // api = api,
+          title = "Do This",
+          lastModificationAt = DateTime.now(),
+          content =
+            s"# Do This\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor,\n\n* abc\n* def\n* hij\n\na aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. \n\n$scalaCode\n\nDonec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
+        )
+      )
       _ <- apiDocRepos.save(
-            ApiDocumentationPage(
-              id = id21,
-              tenant = tenant,
-              // api = api,
-              title = "and do it well",
-              level = 1,
-              lastModificationAt = DateTime.now(),
-              content =
-                s"# and do it well\n\nLorem ipsum dolor sit amet, \n\n@@@ warning { title='Achtung !!!' } \nHello World\n @@@ \n\nconsectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
-            )
-          )
+        ApiDocumentationPage(
+          id = id21,
+          tenant = tenant,
+          // api = api,
+          title = "and do it well",
+          level = 1,
+          lastModificationAt = DateTime.now(),
+          content =
+            s"# and do it well\n\nLorem ipsum dolor sit amet, \n\n@@@ warning { title='Achtung !!!' } \nHello World\n @@@ \n\nconsectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
+        )
+      )
       _ <- apiDocRepos.save(
-            ApiDocumentationPage(
-              id = id3,
-              tenant = tenant,
-              // api = api,
-              title = "Do That",
-              lastModificationAt = DateTime.now(),
-              content =
-                "# Do That\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. \n\n@@@ warning \nHello World\n@@@\n\n Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. \n\n* 123\n* 456\n* 789\n\nDonec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
-            )
-          )
+        ApiDocumentationPage(
+          id = id3,
+          tenant = tenant,
+          // api = api,
+          title = "Do That",
+          lastModificationAt = DateTime.now(),
+          content =
+            "# Do That\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. \n\n@@@ warning \nHello World\n@@@\n\n Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. \n\n* 123\n* 456\n* 789\n\nDonec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
+        )
+      )
       _ <- apiDocRepos.save(
-            ApiDocumentationPage(
-              id = id4,
-              tenant = tenant,
-              // api = api,
-              title = "FAQ",
-              lastModificationAt = DateTime.now(),
-              content =
-                "# FAQ\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in **pellentesque** justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
-            )
-          )
+        ApiDocumentationPage(
+          id = id4,
+          tenant = tenant,
+          // api = api,
+          title = "FAQ",
+          lastModificationAt = DateTime.now(),
+          content =
+            "# FAQ\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in **pellentesque** justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus"
+        )
+      )
     } yield {
       Seq(id1, id2, id21, id3, id4)
     }
@@ -122,7 +125,8 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
     deleted = false,
     name = s"$name - $id",
     lastUpdate = DateTime.now(),
-    smallDescription = s"$name to Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+    smallDescription =
+      s"$name to Lorem ipsum dolor sit amet, consectetur adipiscing elit",
     tags = Set("api", "rest", "java", "fun"),
     description = s"""# $name - $id
          |
@@ -231,7 +235,11 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
     defaultUsagePlan = UsagePlanId("1")
   )
 
-  def ToyApi(version: String, tenant: TenantId, teamId: TeamId, docIds: Seq[ApiDocumentationPageId], authorizedTeams:  Seq[TeamId] = Seq.empty) = Api(
+  def ToyApi(version: String,
+             tenant: TenantId,
+             teamId: TeamId,
+             docIds: Seq[ApiDocumentationPageId],
+             authorizedTeams: Seq[TeamId] = Seq.empty) = Api(
     id = ApiId(s"my-toy-api-${tenant.value}-$version"),
     tenant = tenant,
     team = teamId,
@@ -281,7 +289,8 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
       pages = docIds,
       lastModificationAt = DateTime.now(),
     ),
-    swagger = Some(SwaggerAccess(url = "/assets/swaggers/petstore.json", content = None)),
+    swagger = Some(
+      SwaggerAccess(url = "/assets/swaggers/petstore.json", content = None)),
     possibleUsagePlans = Seq(
       FreeWithoutQuotas(
         id = UsagePlanId("1"),
@@ -307,7 +316,7 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(OtoroshiSettingsId("default"),
-          OtoroshiServiceGroupId("12345"))
+                         OtoroshiServiceGroupId("12345"))
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams
@@ -369,9 +378,14 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
     defaultUsagePlan = UsagePlanId("1")
   )
 
-  def createUserAndTeam(name: String, email: String, tenantId: TenantId, admin: Boolean = true): (User, Team) = {
+  def createUserAndTeam(name: String,
+                        email: String,
+                        tenantId: TenantId,
+                        admin: Boolean = true): (User, Team) = {
     val userId = UserId(IdGenerator.token)
-    val userWithPermission = if (admin) UserWithPermission(userId, TeamUser) else UserWithPermission(userId, Administrator)
+    val userWithPermission =
+      if (admin) UserWithPermission(userId, TeamUser)
+      else UserWithPermission(userId, Administrator)
 
     val team = Team(
       id = TeamId(IdGenerator.token),
@@ -379,7 +393,8 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
       `type` = TeamType.Personal,
       name = s"$name",
       description = s"The personal team of $name",
-      avatar = Some(s"https://www.gravatar.com/avatar/${email.md5}?size=128&d=robohash"),
+      avatar = Some(
+        s"https://www.gravatar.com/avatar/${email.md5}?size=128&d=robohash"),
       users = Set(userWithPermission),
       subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
@@ -404,16 +419,18 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
   def reset() = Action.async { ctx =>
     env.config.mode match {
       case DaikokuMode.Dev => resetDataStore()
-      case _ => FastFuture.successful(BadRequest(Json.obj("error" -> "Action not avalaible")))
+      case _ =>
+        FastFuture.successful(
+          BadRequest(Json.obj("error" -> "Action not avalaible")))
     }
   }
 
   def resetDataStore() = {
-    val team1Id    = BSONObjectID.generate().stringify
-    val team2Id    = BSONObjectID.generate().stringify
-    val team3Id    = BSONObjectID.generate().stringify
+    val team1Id = BSONObjectID.generate().stringify
+    val team2Id = BSONObjectID.generate().stringify
+    val team3Id = BSONObjectID.generate().stringify
     val teamJohnnyId = BSONObjectID.generate().stringify
-    val tenantId   = Tenant.Default
+    val tenantId = Tenant.Default
     val tenant2Id = TenantId("tenant-2")
     val notifApiId = BSONObjectID.generate().stringify
     val notifApi = Api(
@@ -423,7 +440,8 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
       deleted = false,
       name = s"notif test api",
       lastUpdate = DateTime.now(),
-      smallDescription = s"notification - to Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+      smallDescription =
+        s"notification - to Lorem ipsum dolor sit amet, consectetur adipiscing elit",
       tags = Set("api", "rest", "java", "fun"),
       description = s"""# notification
              |
@@ -533,61 +551,69 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
       authorizedTeams = Seq(TeamId(team1Id))
     )
 
-    val (user1, userTeam1) = createUserAndTeam("Mathieu", "mathieu@foo.bar", tenantId)
-    val (user2, userTeam2) = createUserAndTeam("Quentin", "quentin@foo.bar", tenantId)
-    val (user3, userTeam3) = createUserAndTeam("Tester", "tester@foo.bar", tenantId)
-    val (user4, userTeam4) = createUserAndTeam("philippe", "philippe@foo.bar", tenantId)
-    val (user5, userTeam5) = createUserAndTeam("fifou", "fifou@foo.bar", tenantId, false)
+    val (user1, userTeam1) =
+      createUserAndTeam("Mathieu", "mathieu@foo.bar", tenantId)
+    val (user2, userTeam2) =
+      createUserAndTeam("Quentin", "quentin@foo.bar", tenantId)
+    val (user3, userTeam3) =
+      createUserAndTeam("Tester", "tester@foo.bar", tenantId)
+    val (user4, userTeam4) =
+      createUserAndTeam("philippe", "philippe@foo.bar", tenantId)
+    val (user5, userTeam5) =
+      createUserAndTeam("fifou", "fifou@foo.bar", tenantId, false)
 
     val sender = user5
 
     for {
-      teamRepo1                <- env.dataStore.teamRepo.forTenantF(tenantId)
-      teamRepo2                <- env.dataStore.teamRepo.forTenantF(tenant2Id)
-      apiRepo                  <- env.dataStore.apiRepo.forTenantF(tenantId)
-      apiRepo2                 <- env.dataStore.apiRepo.forTenantF(tenant2Id)
-      apiSubscriptionRepo      <- env.dataStore.apiSubscriptionRepo.forTenantF(tenantId)
-      apiDocumentationPageRepo <- env.dataStore.apiDocumentationPageRepo.forTenantF(tenantId)
-      notificationRepo         <- env.dataStore.notificationRepo.forTenantF(tenantId)
-      consumptionRepo          <- env.dataStore.consumptionRepo.forTenantF(tenantId)
-      _                        <- env.dataStore.tenantRepo.deleteAll()
-      _                        <- env.dataStore.userRepo.deleteAll()
-      _                        <- env.dataStore.auditTrailRepo.forAllTenant().deleteAll()
-      _                        <- env.dataStore.userSessionRepo.deleteAll()
-      _                        <- env.dataStore.teamRepo.forAllTenant().deleteAll()
-      _                        <- env.dataStore.apiRepo.forAllTenant().deleteAll()
-      _                        <- env.dataStore.apiSubscriptionRepo.forAllTenant().deleteAll()
-      _                        <- env.dataStore.apiDocumentationPageRepo.forAllTenant().deleteAll()
-      _                        <- env.dataStore.notificationRepo.forAllTenant().deleteAll()
-      _                        <- env.dataStore.consumptionRepo.forAllTenant().deleteAll()
+      teamRepo1 <- env.dataStore.teamRepo.forTenantF(tenantId)
+      teamRepo2 <- env.dataStore.teamRepo.forTenantF(tenant2Id)
+      apiRepo <- env.dataStore.apiRepo.forTenantF(tenantId)
+      apiRepo2 <- env.dataStore.apiRepo.forTenantF(tenant2Id)
+      apiSubscriptionRepo <- env.dataStore.apiSubscriptionRepo
+        .forTenantF(tenantId)
+      apiDocumentationPageRepo <- env.dataStore.apiDocumentationPageRepo
+        .forTenantF(tenantId)
+      notificationRepo <- env.dataStore.notificationRepo.forTenantF(tenantId)
+      consumptionRepo <- env.dataStore.consumptionRepo.forTenantF(tenantId)
+      _ <- env.dataStore.tenantRepo.deleteAll()
+      _ <- env.dataStore.userRepo.deleteAll()
+      _ <- env.dataStore.auditTrailRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.userSessionRepo.deleteAll()
+      _ <- env.dataStore.teamRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.apiRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.apiSubscriptionRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.apiDocumentationPageRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.notificationRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.consumptionRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.tenantRepo.save(
-            Tenant(
-              id = Tenant.Default,
-              deleted = false,
-              enabled = true,
-              name = "Evil Corp.",
-              domain = "localhost",
-              defaultLanguage = Some("En"),
-              style = Some(DaikokuStyle(
-                title = "Evil Corp."
-              )),
-              mailerSettings = Some(ConsoleMailerSettings()),
-              authProvider = AuthProvider.Local,
-              authProviderSettings = Json.obj(
-                "sessionMaxAge" -> 86400
-              ),
-              bucketSettings = None,
-              otoroshiSettings = Set(
-                OtoroshiSettings(
-                  id = OtoroshiSettingsId("default"),
-                  url = s"http://127.0.0.1:${env.config.port}/fakeotoroshi",
-                  host = "otoroshi-api.foo.bar",
-                  clientId = "admin-api-apikey-id",
-                  clientSecret = "admin-api-apikey-id"
-                )
-              )
+        Tenant(
+          id = Tenant.Default,
+          deleted = false,
+          enabled = true,
+          name = "Evil Corp.",
+          domain = "localhost",
+          defaultLanguage = Some("En"),
+          style = Some(
+            DaikokuStyle(
+              title = "Evil Corp."
+            )),
+          mailerSettings = Some(ConsoleMailerSettings()),
+          authProvider = AuthProvider.Local,
+          authProviderSettings = Json.obj(
+            "sessionMaxAge" -> 86400
+          ),
+          bucketSettings = None,
+          otoroshiSettings = Set(
+            OtoroshiSettings(
+              id = OtoroshiSettingsId("default"),
+              url = s"http://127.0.0.1:${env.config.port}/fakeotoroshi",
+              host = "otoroshi-api.foo.bar",
+              clientId = "admin-api-apikey-id",
+              clientSecret = "admin-api-apikey-id"
             )
           )
+        )
+      )
       _ <- env.dataStore.tenantRepo.save(
         Tenant(
           id = tenant2Id,
@@ -596,16 +622,16 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
           name = "Johnny be good",
           domain = "localhost",
           defaultLanguage = Some("fr"),
-          style = Some(DaikokuStyle(
-            title = "North American Johnny Look Alike Association",
-            description = "On a tous en nous quelque chose de Johnny",
-            logo = "https://i.ytimg.com/vi/a2DMlY8f1IE/hqdefault.jpg",
-            js = """<script>
+          style = Some(
+            DaikokuStyle(
+              title = "North American Johnny Look Alike Association",
+              description = "On a tous en nous quelque chose de Johnny",
+              logo = "https://i.ytimg.com/vi/a2DMlY8f1IE/hqdefault.jpg",
+              js = """<script>
                 |  console.log('Allumez le feu !!!')
                 |</script>
               """.stripMargin,
-            css =
-            """body {
+              css = """body {
               |}
               |
               |.user-logo {
@@ -804,7 +830,8 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
               |    background-color: #e7ecef;
               |  }
               |}
-            """.stripMargin)),
+            """.stripMargin
+            )),
           mailerSettings = Some(ConsoleMailerSettings()),
           authProvider = AuthProvider.Local,
           authProviderSettings = Json.obj(
@@ -823,49 +850,59 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
         )
       )
       _ <- teamRepo1.save(
-            Team(
-              id = TeamId(team3Id),
-              tenant = tenantId,
-              `type` = TeamType.Organization,
-              name = s"Opun Team",
-              description = s"The team for Opun people",
-              avatar = Some(s"https://www.gravatar.com/avatar/${"opun-team@otoroshi.io".md5}?size=128&d=robohash"),
-              users = Set(
-                UserWithPermission(user1.id, TeamUser),
-                UserWithPermission(user2.id, TeamUser),
-                UserWithPermission(user3.id, TeamUser),
-                UserWithPermission(user4.id, TeamUser),
-                UserWithPermission(user5.id, Administrator)),
-              subscriptions = Seq(ApiSubscriptionId("1"), ApiSubscriptionId("2"), ApiSubscriptionId("3"), ApiSubscriptionId("4"), ApiSubscriptionId("5")) ++ (1 to 10).map(version => ApiSubscriptionId(s"sub-$version"))
-            )
-          )
+        Team(
+          id = TeamId(team3Id),
+          tenant = tenantId,
+          `type` = TeamType.Organization,
+          name = s"Opun Team",
+          description = s"The team for Opun people",
+          avatar = Some(
+            s"https://www.gravatar.com/avatar/${"opun-team@otoroshi.io".md5}?size=128&d=robohash"),
+          users = Set(
+            UserWithPermission(user1.id, TeamUser),
+            UserWithPermission(user2.id, TeamUser),
+            UserWithPermission(user3.id, TeamUser),
+            UserWithPermission(user4.id, TeamUser),
+            UserWithPermission(user5.id, Administrator)
+          ),
+          subscriptions = Seq(ApiSubscriptionId("1"),
+                              ApiSubscriptionId("2"),
+                              ApiSubscriptionId("3"),
+                              ApiSubscriptionId("4"),
+                              ApiSubscriptionId("5")) ++ (1 to 10).map(
+            version => ApiSubscriptionId(s"sub-$version"))
+        )
+      )
       _ <- teamRepo1.save(
-            Team(
-              id = TeamId(team1Id),
-              tenant = tenantId,
-              `type` = TeamType.Organization,
-              name = s"Fifou's Team",
-              description = s"The team for Fifou people",
-              avatar = Some(s"https://www.gravatar.com/avatar/${"fifou-team@otoroshi.io".md5}?size=128&d=robohash"),
-              users = Set(
-                UserWithPermission(user1.id, Administrator),
-                UserWithPermission(user2.id, Administrator),
-                UserWithPermission(user3.id, Administrator),
-                UserWithPermission(user4.id, Administrator),
-                UserWithPermission(user5.id, ApiEditor))
-            )
+        Team(
+          id = TeamId(team1Id),
+          tenant = tenantId,
+          `type` = TeamType.Organization,
+          name = s"Fifou's Team",
+          description = s"The team for Fifou people",
+          avatar = Some(
+            s"https://www.gravatar.com/avatar/${"fifou-team@otoroshi.io".md5}?size=128&d=robohash"),
+          users = Set(
+            UserWithPermission(user1.id, Administrator),
+            UserWithPermission(user2.id, Administrator),
+            UserWithPermission(user3.id, Administrator),
+            UserWithPermission(user4.id, Administrator),
+            UserWithPermission(user5.id, ApiEditor)
           )
+        )
+      )
       _ <- teamRepo1.save(
-            Team(
-              id = TeamId(team2Id),
-              tenant = tenantId,
-              `type` = TeamType.Organization,
-              name = s"Bobby's Team",
-              description = s"The team for Bobby people",
-              avatar = Some(s"https://www.gravatar.com/avatar/${"bobby-team@otoroshi.io".md5}?size=128&d=robohash"),
-              users = Set(UserWithPermission(user5.id, Administrator))
-            )
-          )
+        Team(
+          id = TeamId(team2Id),
+          tenant = tenantId,
+          `type` = TeamType.Organization,
+          name = s"Bobby's Team",
+          description = s"The team for Bobby people",
+          avatar = Some(
+            s"https://www.gravatar.com/avatar/${"bobby-team@otoroshi.io".md5}?size=128&d=robohash"),
+          users = Set(UserWithPermission(user5.id, Administrator))
+        )
+      )
       _ <- teamRepo2.save(
         Team(
           id = TeamId(teamJohnnyId),
@@ -873,105 +910,136 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
           `type` = TeamType.Organization,
           name = s"Johnny's Team",
           description = s"The team for Johnny's fans",
-          avatar = Some(s"https://www.gravatar.com/avatar/${"johnny-team@otoroshi.io".md5}?size=128&d=robohash"),
+          avatar = Some(
+            s"https://www.gravatar.com/avatar/${"johnny-team@otoroshi.io".md5}?size=128&d=robohash"),
           users = Set.empty
         )
       )
-      _   <- env.dataStore.userRepo.save(user1)
-      _   <- env.dataStore.userRepo.save(user2)
-      _   <- env.dataStore.userRepo.save(user3)
-      _   <- env.dataStore.userRepo.save(user4)
-      _   <- env.dataStore.userRepo.save(user5)
-      _   <- teamRepo1.save(userTeam1)
-      _   <- teamRepo1.save(userTeam2)
-      _   <- teamRepo1.save(userTeam3)
-      _   <- teamRepo1.save(userTeam4)
-      _   <- teamRepo1.save(userTeam5)
+      _ <- env.dataStore.userRepo.save(user1)
+      _ <- env.dataStore.userRepo.save(user2)
+      _ <- env.dataStore.userRepo.save(user3)
+      _ <- env.dataStore.userRepo.save(user4)
+      _ <- env.dataStore.userRepo.save(user5)
+      _ <- teamRepo1.save(userTeam1)
+      _ <- teamRepo1.save(userTeam2)
+      _ <- teamRepo1.save(userTeam3)
+      _ <- teamRepo1.save(userTeam4)
+      _ <- teamRepo1.save(userTeam5)
       ids <- saveApiDocPages(tenantId)
       ids2 <- saveApiDocPages(tenant2Id)
       _ <- Future.sequence(
-            Seq(
-              apiRepo.save(ToyApi("0", tenantId, TeamId(team1Id), ids,  Seq(TeamId(team3Id)))),
-              apiRepo2.save(ToyApi("0", tenant2Id, TeamId(teamJohnnyId), ids2)),
-              apiRepo.save(SampleApi("1", tenantId, "Opun Api", TeamId(team1Id), ids)),
-              apiRepo.save(SampleApi("2", tenantId, "Opun Api", TeamId(team1Id), ids)),
-              apiRepo.save(SampleApi("3", tenantId, "Opun Api", TeamId(team1Id), ids)),
-              apiRepo.save(SampleApi("4", tenantId, "Opun Api", TeamId(team1Id), ids)),
-              apiRepo.save(
-                SampleApi("1", tenantId, "Bobby Api", TeamId(team2Id), ids, ApiVisibility.PublicWithAuthorizations)
-              ),
-              apiRepo.save(
-                SampleApi("2", tenantId, "Bobby Api", TeamId(team2Id), ids, ApiVisibility.PublicWithAuthorizations)
-              ),
-              apiRepo.save(
-                SampleApi("3", tenantId, "Bobby Api", TeamId(team2Id), ids, ApiVisibility.PublicWithAuthorizations)
-              ),
-              apiRepo.save(
-                SampleApi("4", tenantId, "Bobby Api", TeamId(team2Id), ids, ApiVisibility.PublicWithAuthorizations)
-              ),
-              apiRepo.save(SampleApi("1", tenantId, "Fifou Api", TeamId(team2Id), ids)),
-              apiRepo.save(SampleApi("2", tenantId, "Fifou Api", TeamId(team2Id), ids)),
-              apiRepo.save(SampleApi("3", tenantId, "Fifou Api", TeamId(team2Id), ids)),
-              apiRepo.save(SampleApi("4", tenantId, "Fifou Api", TeamId(team2Id), ids))
-            )
-          )
+        Seq(
+          apiRepo.save(
+            ToyApi("0", tenantId, TeamId(team1Id), ids, Seq(TeamId(team3Id)))),
+          apiRepo2.save(ToyApi("0", tenant2Id, TeamId(teamJohnnyId), ids2)),
+          apiRepo.save(
+            SampleApi("1", tenantId, "Opun Api", TeamId(team1Id), ids)),
+          apiRepo.save(
+            SampleApi("2", tenantId, "Opun Api", TeamId(team1Id), ids)),
+          apiRepo.save(
+            SampleApi("3", tenantId, "Opun Api", TeamId(team1Id), ids)),
+          apiRepo.save(
+            SampleApi("4", tenantId, "Opun Api", TeamId(team1Id), ids)),
+          apiRepo.save(
+            SampleApi("1",
+                      tenantId,
+                      "Bobby Api",
+                      TeamId(team2Id),
+                      ids,
+                      ApiVisibility.PublicWithAuthorizations)
+          ),
+          apiRepo.save(
+            SampleApi("2",
+                      tenantId,
+                      "Bobby Api",
+                      TeamId(team2Id),
+                      ids,
+                      ApiVisibility.PublicWithAuthorizations)
+          ),
+          apiRepo.save(
+            SampleApi("3",
+                      tenantId,
+                      "Bobby Api",
+                      TeamId(team2Id),
+                      ids,
+                      ApiVisibility.PublicWithAuthorizations)
+          ),
+          apiRepo.save(
+            SampleApi("4",
+                      tenantId,
+                      "Bobby Api",
+                      TeamId(team2Id),
+                      ids,
+                      ApiVisibility.PublicWithAuthorizations)
+          ),
+          apiRepo.save(
+            SampleApi("1", tenantId, "Fifou Api", TeamId(team2Id), ids)),
+          apiRepo.save(
+            SampleApi("2", tenantId, "Fifou Api", TeamId(team2Id), ids)),
+          apiRepo.save(
+            SampleApi("3", tenantId, "Fifou Api", TeamId(team2Id), ids)),
+          apiRepo.save(
+            SampleApi("4", tenantId, "Fifou Api", TeamId(team2Id), ids))
+        )
+      )
       _ <- apiRepo.save(notifApi)
       _ <- Future.sequence(
-            Seq(
-              notificationRepo.save(
-                SampleNotification(
-                  team1Id,
-                  sender,
-                  DateTime.now().minusDays(5),
-                  NotificationStatus.Rejected(DateTime.now().minusDays(5)),
-                  NotificationAction.TeamAccess(TeamId(team2Id))
-                )
-              ),
-              notificationRepo.save(
-                SampleNotification(
-                  team1Id,
-                  sender,
-                  DateTime.now().minusDays(4),
-                  NotificationStatus.Accepted(DateTime.now().minusDays(4)),
-                  NotificationAction.TeamAccess(TeamId(team2Id))
-                )
-              ),
-              notificationRepo.save(
-                SampleNotification(
-                  team1Id,
-                  sender,
-                  DateTime.now().minusDays(3),
-                  NotificationStatus.Rejected(DateTime.now().minusDays(3)),
-                  NotificationAction.TeamAccess(TeamId(team2Id))
-                )
-              ),
-              notificationRepo.save(
-                SampleNotification(
-                  team1Id,
-                  sender,
-                  DateTime.now().minusDays(3),
-                  NotificationStatus.Rejected(DateTime.now().minusDays(3)),
-                  NotificationAction.ApiAccess(ApiId(notifApiId), TeamId(team2Id))
-                )
-              ),
-              notificationRepo.save(
-                SampleNotification(
-                  team1Id,
-                  sender,
-                  DateTime.now().minusDays(3),
-                  NotificationStatus.Pending,
-                  NotificationAction.ApiAccess(ApiId(notifApiId), TeamId(team2Id))
-                )
-              )
+        Seq(
+          notificationRepo.save(
+            SampleNotification(
+              team1Id,
+              sender,
+              DateTime.now().minusDays(5),
+              NotificationStatus.Rejected(DateTime.now().minusDays(5)),
+              NotificationAction.TeamAccess(TeamId(team2Id))
+            )
+          ),
+          notificationRepo.save(
+            SampleNotification(
+              team1Id,
+              sender,
+              DateTime.now().minusDays(4),
+              NotificationStatus.Accepted(DateTime.now().minusDays(4)),
+              NotificationAction.TeamAccess(TeamId(team2Id))
+            )
+          ),
+          notificationRepo.save(
+            SampleNotification(
+              team1Id,
+              sender,
+              DateTime.now().minusDays(3),
+              NotificationStatus.Rejected(DateTime.now().minusDays(3)),
+              NotificationAction.TeamAccess(TeamId(team2Id))
+            )
+          ),
+          notificationRepo.save(
+            SampleNotification(
+              team1Id,
+              sender,
+              DateTime.now().minusDays(3),
+              NotificationStatus.Rejected(DateTime.now().minusDays(3)),
+              NotificationAction.ApiAccess(ApiId(notifApiId), TeamId(team2Id))
+            )
+          ),
+          notificationRepo.save(
+            SampleNotification(
+              team1Id,
+              sender,
+              DateTime.now().minusDays(3),
+              NotificationStatus.Pending,
+              NotificationAction.ApiAccess(ApiId(notifApiId), TeamId(team2Id))
             )
           )
+        )
+      )
       _ <- Future.sequence((1 to 10).map(version => {
         val subPlanId = UsagePlanId((math.round(math.random) + 4).toString)
         val apiSubscription = ApiSubscription(
           ApiSubscriptionId(s"sub-$version"),
           tenantId,
           apiKey = OtoroshiApiKey(
-            clientName = "daikoku-api-key-My-Toy-Apy-Free-plan-opun-team-1551171770474",
+            clientName =
+              "daikoku-api-key-My-Toy-Apy-Free-plan-opun-team-1551171770474",
             clientId = s"client-id-$version",
             clientSecret = "secret-free"),
           plan = subPlanId,
@@ -985,87 +1053,99 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
         val plan = api.possibleUsagePlans.filter(_.id == subPlanId).head
 
         apiRepo
-            .save(api.copy(possibleUsagePlans = api.possibleUsagePlans.filterNot(_.id == subPlanId) :+ plan.addAutorizedTeam(TeamId(team3Id))))
-            .map(_ => apiSubscriptionRepo.save(apiSubscription))
+          .save(api.copy(possibleUsagePlans = api.possibleUsagePlans.filterNot(
+            _.id == subPlanId) :+ plan.addAutorizedTeam(TeamId(team3Id))))
+          .map(_ => apiSubscriptionRepo.save(apiSubscription))
       }))
-      _ <- Future.sequence(Seq(
-        apiSubscriptionRepo.save(ApiSubscription(
-          ApiSubscriptionId("1"),
-          tenantId,
-          apiKey = OtoroshiApiKey(
-            clientName = "daikoku-api-key-My-Toy-Apy-Free-plan-opun-team-1551171770474",
-            clientId = "client-free-id",
-            clientSecret = "secret-free"),
-          plan = UsagePlanId("1"),
-          createdAt = DateTime.now().minusDays(5),
-          team = TeamId(team3Id),
-          api = ApiId(s"my-toy-api-${tenantId.value}-0"),
-          by = user5.id,
-          customName = None
-        )),
-        apiSubscriptionRepo.save(ApiSubscription(
-          ApiSubscriptionId("2"),
-          tenantId,
-          apiKey = OtoroshiApiKey(
-            clientName = "daikoku-api-key-my-toy-api-free-with-quota-opun-team-1551171774997",
-            clientId = "client-free-quota-id",
-            clientSecret = "secret-quota"),
-          plan = UsagePlanId("2"),
-          createdAt = DateTime.now().minusDays(5),
-          team = TeamId(team3Id),
-          api = ApiId(s"my-toy-api-${tenantId.value}-0"),
-          by = user5.id,
-          customName = None
-        )),
-        apiSubscriptionRepo.save(ApiSubscription(
-          ApiSubscriptionId("3"),
-          tenantId,
-          apiKey = OtoroshiApiKey(
-            clientName = "daikoku-api-key-my-toy-api-quotas-with-limit-opun-team-1551171774997",
-            clientId = "client-quota-only-id",
-            clientSecret = "secret-quota"),
-          plan = UsagePlanId("3"),
-          createdAt = DateTime.now().minusDays(5),
-          team = TeamId(team3Id),
-          api = ApiId(s"my-toy-api-${tenantId.value}-0"),
-          by = user5.id,
-          customName = None
-        )),
-        apiSubscriptionRepo.save(ApiSubscription(
-          ApiSubscriptionId("4"),
-          tenantId,
-          apiKey = OtoroshiApiKey(
-            clientName = "daikoku-api-key-my-toy-api-quotas-without-limit-opun-team-1551171774997",
-            clientId = "client-quota-without-limit-id",
-            clientSecret = "secret-quota"),
-          plan = UsagePlanId("4"),
-          createdAt = DateTime.now().minusDays(5),
-          team = TeamId(team3Id),
-          api = ApiId(s"my-toy-api-${tenantId.value}-0"),
-          by = user5.id,
-          customName = None
-        )),
-        apiSubscriptionRepo.save(ApiSubscription(
-          ApiSubscriptionId("5"),
-          tenantId,
-          apiKey = OtoroshiApiKey(
-            clientName = "daikoku-api-key-my-toy-api-pay-per-use-opun-team-1551171789193",
-            clientId = "client-pay-per-use-id",
-            clientSecret = "secret-pay-per-use"),
-          plan = UsagePlanId("5"),
-          createdAt = DateTime.now().minusDays(5),
-          team = TeamId(team3Id),
-          api = ApiId(s"my-toy-api-${tenantId.value}-0"),
-          by = user5.id,
-          customName = None
+      _ <- Future.sequence(
+        Seq(
+          apiSubscriptionRepo.save(ApiSubscription(
+            ApiSubscriptionId("1"),
+            tenantId,
+            apiKey = OtoroshiApiKey(
+              clientName =
+                "daikoku-api-key-My-Toy-Apy-Free-plan-opun-team-1551171770474",
+              clientId = "client-free-id",
+              clientSecret = "secret-free"),
+            plan = UsagePlanId("1"),
+            createdAt = DateTime.now().minusDays(5),
+            team = TeamId(team3Id),
+            api = ApiId(s"my-toy-api-${tenantId.value}-0"),
+            by = user5.id,
+            customName = None
+          )),
+          apiSubscriptionRepo.save(ApiSubscription(
+            ApiSubscriptionId("2"),
+            tenantId,
+            apiKey = OtoroshiApiKey(
+              clientName =
+                "daikoku-api-key-my-toy-api-free-with-quota-opun-team-1551171774997",
+              clientId = "client-free-quota-id",
+              clientSecret = "secret-quota"),
+            plan = UsagePlanId("2"),
+            createdAt = DateTime.now().minusDays(5),
+            team = TeamId(team3Id),
+            api = ApiId(s"my-toy-api-${tenantId.value}-0"),
+            by = user5.id,
+            customName = None
+          )),
+          apiSubscriptionRepo.save(ApiSubscription(
+            ApiSubscriptionId("3"),
+            tenantId,
+            apiKey = OtoroshiApiKey(
+              clientName =
+                "daikoku-api-key-my-toy-api-quotas-with-limit-opun-team-1551171774997",
+              clientId = "client-quota-only-id",
+              clientSecret = "secret-quota"),
+            plan = UsagePlanId("3"),
+            createdAt = DateTime.now().minusDays(5),
+            team = TeamId(team3Id),
+            api = ApiId(s"my-toy-api-${tenantId.value}-0"),
+            by = user5.id,
+            customName = None
+          )),
+          apiSubscriptionRepo.save(ApiSubscription(
+            ApiSubscriptionId("4"),
+            tenantId,
+            apiKey = OtoroshiApiKey(
+              clientName =
+                "daikoku-api-key-my-toy-api-quotas-without-limit-opun-team-1551171774997",
+              clientId = "client-quota-without-limit-id",
+              clientSecret = "secret-quota"
+            ),
+            plan = UsagePlanId("4"),
+            createdAt = DateTime.now().minusDays(5),
+            team = TeamId(team3Id),
+            api = ApiId(s"my-toy-api-${tenantId.value}-0"),
+            by = user5.id,
+            customName = None
+          )),
+          apiSubscriptionRepo.save(ApiSubscription(
+            ApiSubscriptionId("5"),
+            tenantId,
+            apiKey = OtoroshiApiKey(
+              clientName =
+                "daikoku-api-key-my-toy-api-pay-per-use-opun-team-1551171789193",
+              clientId = "client-pay-per-use-id",
+              clientSecret = "secret-pay-per-use"),
+            plan = UsagePlanId("5"),
+            createdAt = DateTime.now().minusDays(5),
+            team = TeamId(team3Id),
+            api = ApiId(s"my-toy-api-${tenantId.value}-0"),
+            by = user5.id,
+            customName = None
+          ))
         ))
-      ))
     } yield {
       Ok(Json.obj("done" -> true))
     }
   }
 
-  def SampleNotification(teamId: String, sender: User, date: DateTime, status: NotificationStatus, action: NotificationAction) =
+  def SampleNotification(teamId: String,
+                         sender: User,
+                         date: DateTime,
+                         status: NotificationStatus,
+                         action: NotificationAction) =
     Notification(
       id = NotificationId(BSONObjectID.generate().stringify),
       tenant = Tenant.Default,
@@ -1109,16 +1189,18 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
     }
     found match {
       case Some(group) => Ok(group)
-      case None => NotFound(Json.obj("error" -> "not found"))
+      case None        => NotFound(Json.obj("error" -> "not found"))
     }
   }
 
   def fakeOtoroshiApiKeys(groupId: String) = Action {
-    Ok(JsArray(apikeys.filter(ak => (ak \ "authorizedGroup").as[String] == groupId)))
+    Ok(JsArray(apikeys.filter(ak =>
+      (ak \ "authorizedGroup").as[String] == groupId)))
   }
 
   def fakeOtoroshiApiKey(groupId: String, clientId: String) = Action {
-    Ok(ActualOtoroshiApiKey(
+    Ok(
+      ActualOtoroshiApiKey(
         clientId = clientId,
         clientSecret = "",
         clientName = "",
@@ -1138,68 +1220,87 @@ class MockController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCompo
     Ok(req.body.as[JsObject])
   }
 
-  def updateFakeOtoroshiApiKey(groupId: String, clientId: String) = Action(parse.json) { req =>
-    json.ActualOtoroshiApiKeyFormat.reads(req.body)
-        .asOpt match {
-      case Some(apiKey) => Ok(apiKey.asJson)
-      case None => BadRequest(Json.obj("error" -> "wrong apikey format"))
+  def updateFakeOtoroshiApiKey(groupId: String, clientId: String) =
+    Action(parse.json) { req =>
+      json.ActualOtoroshiApiKeyFormat.reads(req.body).asOpt match {
+        case Some(apiKey) => Ok(apiKey.asJson)
+        case None         => BadRequest(Json.obj("error" -> "wrong apikey format"))
+      }
     }
-  }
 
-  def deleteFakeOtoroshiApiKey(groupId: String, clientId: String) = Action(parse.json) {
-    Ok(Json.obj("deleted" -> true))
-  }
+  def deleteFakeOtoroshiApiKey(groupId: String, clientId: String) =
+    Action(parse.json) {
+      Ok(Json.obj("deleted" -> true))
+    }
 
-  def fakeOtoroshiStats(from: String, to: String, apikey: String) = Action.async {
-    val r = scala.util.Random
+  def fakeOtoroshiStats(from: String, to: String, apikey: String) =
+    Action.async {
+      val r = scala.util.Random
 
-    env.dataStore.apiSubscriptionRepo
-    .forAllTenant()
-    .findOneNotDeleted(Json.obj("apiKey.clientId" -> apikey))
-    .flatMap {
-      case None => FastFuture.successful(NotFound(Json.obj("error" -> "subscription not found")))
-      case Some(sub) =>
-        env.dataStore.apiRepo.forAllTenant().findByIdNotDeleted(sub.api).map {
-          case None => NotFound(Json.obj("error" -> "api not found (1)"))
-          case Some(api) => Ok(Json.obj("hits" -> Json.obj("count" -> r.nextInt(100))))
+      env.dataStore.apiSubscriptionRepo
+        .forAllTenant()
+        .findOneNotDeleted(Json.obj("apiKey.clientId" -> apikey))
+        .flatMap {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "subscription not found")))
+          case Some(sub) =>
+            env.dataStore.apiRepo
+              .forAllTenant()
+              .findByIdNotDeleted(sub.api)
+              .map {
+                case None => NotFound(Json.obj("error" -> "api not found (1)"))
+                case Some(api) =>
+                  Ok(Json.obj("hits" -> Json.obj("count" -> r.nextInt(100))))
+              }
         }
     }
-  }
 
   def fakeOtoroshiQuotas(groupId: String, clientId: String) = Action.async {
     val r = scala.util.Random
 
     env.dataStore.apiSubscriptionRepo
-        .forAllTenant()
-        .findOneNotDeleted(Json.obj("apiKey.clientId" -> clientId))
-        .flatMap {
-          case None => FastFuture.successful(NotFound(Json.obj("error" -> "subscription not found")))
-          case Some(sub) =>
-            env.dataStore.apiRepo.forAllTenant().findByIdNotDeleted(sub.api).map {
-              case None => NotFound(Json.obj("error" -> "api not found (2)"))
-              case Some(api) =>
-                api.possibleUsagePlans
-                    .find(pp => pp.id == sub.plan)
-                    .map(
-                      pp => {
-                        val callPerSec = r.nextInt(pp.maxRequestPerSecond.getOrElse(10L).toInt)
-                        val callPerDay = r.nextInt(pp.maxRequestPerDay.getOrElse(100L).toInt)
-                        val callPerMonth = r.nextInt(pp.maxRequestPerMonth.getOrElse(1000L).toInt)
+      .forAllTenant()
+      .findOneNotDeleted(Json.obj("apiKey.clientId" -> clientId))
+      .flatMap {
+        case None =>
+          FastFuture.successful(
+            NotFound(Json.obj("error" -> "subscription not found")))
+        case Some(sub) =>
+          env.dataStore.apiRepo.forAllTenant().findByIdNotDeleted(sub.api).map {
+            case None => NotFound(Json.obj("error" -> "api not found (2)"))
+            case Some(api) =>
+              api.possibleUsagePlans
+                .find(pp => pp.id == sub.plan)
+                .map(
+                  pp => {
+                    val callPerSec =
+                      r.nextInt(pp.maxRequestPerSecond.getOrElse(10L).toInt)
+                    val callPerDay =
+                      r.nextInt(pp.maxRequestPerDay.getOrElse(100L).toInt)
+                    val callPerMonth =
+                      r.nextInt(pp.maxRequestPerMonth.getOrElse(1000L).toInt)
 
-                        Ok(ApiKeyQuotas(
-                          authorizedCallsPerSec = pp.maxRequestPerSecond.getOrElse(0),
-                          currentCallsPerSec = callPerSec,
-                          remainingCallsPerSec = pp.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                          authorizedCallsPerDay = pp.maxRequestPerDay.getOrElse(0),
-                          currentCallsPerDay = callPerDay,
-                          remainingCallsPerDay = pp.maxRequestPerDay.getOrElse(0L) - callPerDay,
-                          authorizedCallsPerMonth = pp.maxRequestPerMonth.getOrElse(0),
-                          currentCallsPerMonth = callPerMonth,
-                          remainingCallsPerMonth = pp.maxRequestPerMonth.getOrElse(0L) - callPerMonth,
-                        ).asJson)
-                      }
-                    ).getOrElse(NotFound(Json.obj("error" -> "plan not found")))
-            }
-        }
+                    Ok(ApiKeyQuotas(
+                      authorizedCallsPerSec =
+                        pp.maxRequestPerSecond.getOrElse(0),
+                      currentCallsPerSec = callPerSec,
+                      remainingCallsPerSec = pp.maxRequestPerSecond.getOrElse(
+                        0L) - callPerSec,
+                      authorizedCallsPerDay = pp.maxRequestPerDay.getOrElse(0),
+                      currentCallsPerDay = callPerDay,
+                      remainingCallsPerDay = pp.maxRequestPerDay
+                        .getOrElse(0L) - callPerDay,
+                      authorizedCallsPerMonth =
+                        pp.maxRequestPerMonth.getOrElse(0),
+                      currentCallsPerMonth = callPerMonth,
+                      remainingCallsPerMonth = pp.maxRequestPerMonth.getOrElse(
+                        0L) - callPerMonth,
+                    ).asJson)
+                  }
+                )
+                .getOrElse(NotFound(Json.obj("error" -> "plan not found")))
+          }
+      }
   }
 }

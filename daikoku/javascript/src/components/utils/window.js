@@ -66,7 +66,7 @@ Alert.propTypes = {
   close: PropTypes.func.isRequired,
   message: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
   title: PropTypes.string,
-  linkOpt: PropTypes.object
+  linkOpt: PropTypes.object,
 };
 
 class Confirm extends Component {
@@ -121,7 +121,7 @@ class Confirm extends Component {
 Confirm.propTypes = {
   cancel: PropTypes.func.isRequired,
   ok: PropTypes.func.isRequired,
-  message: PropTypes.string
+  message: PropTypes.string,
 };
 
 class Prompt extends Component {
@@ -190,7 +190,7 @@ Prompt.propTypes = {
   value: PropTypes.string,
   ok: PropTypes.func.isRequired,
   cancel: PropTypes.func.isRequired,
-  message: PropTypes.string
+  message: PropTypes.string,
 };
 
 export function registerAlert() {
@@ -226,7 +226,7 @@ export function registerConfirm() {
     document.body.appendChild(div);
   }
   window.confirm = message => {
-    return new Promise((success) => {
+    return new Promise(success => {
       ReactDOM.render(
         <Confirm
           message={message}
@@ -253,7 +253,7 @@ export function registerPrompt() {
     document.body.appendChild(div);
   }
   window.prompt = (message, value) => {
-    return new Promise((success) => {
+    return new Promise(success => {
       ReactDOM.render(
         <Prompt
           message={message}

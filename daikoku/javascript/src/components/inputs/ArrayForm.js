@@ -1,34 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Help } from './Help';
 import Select from 'react-select';
-import {Spinner} from '../utils'
+import { Spinner } from '../utils';
 
 const LazyForm = React.lazy(() => import('./Form'));
 
-const ArrayForm = (props) => {
-  const possibleValues = props.value.map(v => v[props.selector])
-  const [selectedSelector, setSelectedSelector] =  useState(possibleValues[0])
-  const [selectedValue, setSelectedValue] =  useState(props.value[0])
+const ArrayForm = props => {
+  const possibleValues = props.value.map(v => v[props.selector]);
+  const [selectedSelector, setSelectedSelector] = useState(possibleValues[0]);
+  const [selectedValue, setSelectedValue] = useState(props.value[0]);
 
   useEffect(() => {
-    const value = props.value.find(v => v[props.selector] === selectedSelector)
-    setSelectedValue(value)
-  }, [selectedSelector])
+    const value = props.value.find(v => v[props.selector] === selectedSelector);
+    setSelectedValue(value);
+  }, [selectedSelector]);
 
   useEffect(() => {
-    onChange(selectedValue)
-  }, [selectedValue])
+    onChange(selectedValue);
+  }, [selectedValue]);
 
   useEffect(() => {
-    const value = props.value.find(v => v[props.selector] === selectedSelector)
-    setSelectedValue(value)
-  }, [props.value])
+    const value = props.value.find(v => v[props.selector] === selectedSelector);
+    setSelectedValue(value);
+  }, [props.value]);
 
   const onChange = e => {
     if (e && e.preventDefault) e.preventDefault();
-    const updated = [...props.value.filter(v => v[props.selector] !== selectedSelector), e]
+    const updated = [...props.value.filter(v => v[props.selector] !== selectedSelector), e];
     props.onChange(updated);
-  }
+  };
 
   if (props.hide) {
     return null;
@@ -73,5 +73,5 @@ const ArrayForm = (props) => {
       </div>
     </div>
   );
-}
+};
 export default ArrayForm;

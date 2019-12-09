@@ -1,32 +1,48 @@
 import React, { Component } from 'react';
-import { connect } from "react-redux";
+import { connect } from 'react-redux';
 import md5 from 'js-md5';
 import queryString from 'query-string';
 
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
 
-import { t, Translation } from "../locales/Translation";
+import { t, Translation } from '../locales/Translation';
 import { udpateLanguage } from '../core/context/actions';
-import {Spinner} from '../components/utils/Spinner'
+import { Spinner } from '../components/utils/Spinner';
 
 const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 
 function validate(pwd1 = '', pwd2 = '', currentLanguage) {
   if (pwd1 === pwd2) {
     if (pwd1.trim().length === 0) {
-      return { ok: false, error: t('password.empty.error', currentLanguage, 'Your password can\'t be empty') };
+      return {
+        ok: false,
+        error: t('password.empty.error', currentLanguage, "Your password can't be empty"),
+      };
     }
     if (pwd2.trim().length === 0) {
-      return { ok: false, error: t('password.empty.error', currentLanguage, 'Your password can\'t be empty') };
+      return {
+        ok: false,
+        error: t('password.empty.error', currentLanguage, "Your password can't be empty"),
+      };
     }
     if (/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/.test(pwd1)) {
       return { ok: true };
     } else {
-      return { ok: false, error: t('password.security.error', currentLanguage, 'Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !') };
+      return {
+        ok: false,
+        error: t(
+          'password.security.error',
+          currentLanguage,
+          'Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !'
+        ),
+      };
     }
   } else {
-    return { ok: false, error: t('password.match.error', currentLanguage, 'Your password does not match !') };
+    return {
+      ok: false,
+      error: t('password.match.error', currentLanguage, 'Your password does not match !'),
+    };
   }
 }
 
@@ -43,7 +59,7 @@ class Gravatar extends Component {
         <label className="col-xs-12 col-sm-2 col-form-label" />
         <div className="col-sm-10">
           <button type="button" className="btn btn-outline-success" onClick={this.setGravatarLink}>
-            <i className="fas fa-user-circle mr-1" /> 
+            <i className="fas fa-user-circle mr-1" />
             <Translation i18nkey="Set avatar from Gravatar" language={this.props.currentLanguage}>
               Set avatar from Gravatar
             </Translation>
@@ -55,14 +71,13 @@ class Gravatar extends Component {
 }
 
 export class SignupComponent extends Component {
-  
   state = {
     user: {
-      avatar: `https://www.gravatar.com/avatar/${md5('foo@foo.bar')}?size=128&d=robohash`
+      avatar: `https://www.gravatar.com/avatar/${md5('foo@foo.bar')}?size=128&d=robohash`,
     },
   };
 
-  formSchema = (currentLanguage) => ({    
+  formSchema = currentLanguage => ({
     name: {
       type: 'string',
       props: {
@@ -98,34 +113,44 @@ export class SignupComponent extends Component {
     gravatar: {
       type: Gravatar,
       props: {
-        currentLanguage: currentLanguage
-      }
+        currentLanguage: currentLanguage,
+      },
     },
     createAccount: {
       type: () => (
-        <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end'}}>
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end' }}>
           <button
             style={{ marginLeft: 5 }}
             type="button"
             className="btn btn-outline-success"
             onClick={this.createAccount}>
             <span>
-              <i className="fas fa-save mr-1" /> 
+              <i className="fas fa-save mr-1" />
               <Translation i18nkey="Create account" language={currentLanguage}>
                 Create account
               </Translation>
             </span>
           </button>
         </div>
-      )
-    }
+      ),
+    },
   });
 
   formFlow = ['name', 'email', 'avatar', 'password1', 'password2', 'gravatar', 'createAccount'];
 
   createAccount = () => {
-    if (this.state.user.name && this.state.user.email && this.state.user.avatar && this.state.user.password1 && this.state.user.password2) {
-      const validation = validate(this.state.user.password1, this.state.user.password2, this.props.currentLanguage);
+    if (
+      this.state.user.name &&
+      this.state.user.email &&
+      this.state.user.avatar &&
+      this.state.user.password1 &&
+      this.state.user.password2
+    ) {
+      const validation = validate(
+        this.state.user.password1,
+        this.state.user.password2,
+        this.props.currentLanguage
+      );
       if (validation.ok) {
         return fetch('/account', {
           method: 'POST',
@@ -134,25 +159,37 @@ export class SignupComponent extends Component {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ ...this.state.user }),
-        }).then(r => r.json()).then(res => {
-          if (res.error) {
-            this.setState({ state: 'error', error: res.error });
-          } else {
-            this.setState({ state: 'done' });
-          }
-        });
+        })
+          .then(r => r.json())
+          .then(res => {
+            if (res.error) {
+              this.setState({ state: 'error', error: res.error });
+            } else {
+              this.setState({ state: 'done' });
+            }
+          });
       } else {
         this.setState({ state: 'error', error: validation.error });
-      } 
+      }
     } else {
-      this.setState({ state: 'error', error: t('Missing informations ...', this.props.currentLanguage) });
-    } 
+      this.setState({
+        state: 'error',
+        error: t('Missing informations ...', this.props.currentLanguage),
+      });
+    }
   };
 
   componentDidMount() {
     const query = queryString.parse(window.location.search);
     if (query.error && query.error === 'not-valid-anymore') {
-      this.setState({ state: 'error', error: t('account.creation.error', this.props.currentLanguage, 'Your account creation request is not valid anymore (it\'s only valid for 15 minutes). Please creates a new request.') });
+      this.setState({
+        state: 'error',
+        error: t(
+          'account.creation.error',
+          this.props.currentLanguage,
+          "Your account creation request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
+        ),
+      });
     }
   }
 
@@ -166,9 +203,13 @@ export class SignupComponent extends Component {
             </Translation>
           </h1>
           <p style={{ width: '100%', textAlign: 'center' }}>
-            <Translation i18nkey="create.accuont.done" language={this.props.currentLanguage} replacements={[this.state.user.email]}>
-              You will receive an email at <b>{this.state.user.email}</b> to finish your account creation process.
-              You will have 15 minutes from now to finish your account creation process.
+            <Translation
+              i18nkey="create.accuont.done"
+              language={this.props.currentLanguage}
+              replacements={[this.state.user.email]}>
+              You will receive an email at <b>{this.state.user.email}</b> to finish your account
+              creation process. You will have 15 minutes from now to finish your account creation
+              process.
             </Translation>
           </p>
         </div>
@@ -222,12 +263,11 @@ export class SignupComponent extends Component {
 }
 
 export class ResetPasswordComponent extends Component {
-
   state = {
     user: {},
   };
 
-  formSchema = (currentLanguage) =>  ({    
+  formSchema = currentLanguage => ({
     email: {
       type: 'string',
       props: {
@@ -250,22 +290,22 @@ export class ResetPasswordComponent extends Component {
     },
     resetPassword: {
       type: () => (
-        <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end'}}>
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end' }}>
           <button
             style={{ marginLeft: 5 }}
             type="button"
             className="btn btn-outline-danger"
             onClick={this.resetPassword}>
             <span>
-              <i className="fas fa-bomb" /> 
+              <i className="fas fa-bomb" />
               <Translation i18nkey="Reset password" language={currentLanguage}>
                 Reset password
               </Translation>
             </span>
           </button>
         </div>
-      )
-    }
+      ),
+    },
   });
 
   formFlow = ['email', 'password1', 'password2', 'resetPassword'];
@@ -281,25 +321,37 @@ export class ResetPasswordComponent extends Component {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(this.state.user),
-        }).then(r => r.json()).then(res => {
-          if (res.error) {
-            this.setState({ state: 'error', error: res.error });
-          } else {
-            this.setState({ state: 'done' });
-          }
-        });
+        })
+          .then(r => r.json())
+          .then(res => {
+            if (res.error) {
+              this.setState({ state: 'error', error: res.error });
+            } else {
+              this.setState({ state: 'done' });
+            }
+          });
       } else {
         this.setState({ state: 'error', error: validation.error });
-      } 
+      }
     } else {
-      this.setState({ state: 'error', error: t('Missing informations ...', this.props.currentLanguage) });
-    } 
+      this.setState({
+        state: 'error',
+        error: t('Missing informations ...', this.props.currentLanguage),
+      });
+    }
   };
 
   componentDidMount() {
     const query = queryString.parse(window.location.search);
     if (query.error && query.error === 'not-valid-anymore') {
-      this.setState({ state: 'error', error: t('account.reset.error', this.props.currentLanguage, 'Your password reset request is not valid anymore (it\'s only valid for 15 minutes). Please creates a new request.') });
+      this.setState({
+        state: 'error',
+        error: t(
+          'account.reset.error',
+          this.props.currentLanguage,
+          "Your password reset request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
+        ),
+      });
     }
   }
 
@@ -313,11 +365,14 @@ export class ResetPasswordComponent extends Component {
             </Translation>
           </h1>
           <p style={{ width: '100%', textAlign: 'center' }}>
-            <Translation i18nkey="password.reset.done" language={this.props.currentLanguage} replacements={[this.state.user.email]}>
-              You will receive an email at <b>{this.state.user.email}</b> to finish your passsword reset process. 
-              You will have 15 minutes from now to finish your password reset process.
+            <Translation
+              i18nkey="password.reset.done"
+              language={this.props.currentLanguage}
+              replacements={[this.state.user.email]}>
+              You will receive an email at <b>{this.state.user.email}</b> to finish your passsword
+              reset process. You will have 15 minutes from now to finish your password reset
+              process.
             </Translation>
-            
           </p>
         </div>
       );
@@ -351,7 +406,6 @@ export class ResetPasswordComponent extends Component {
   }
 }
 
-
 export class DaikokuHomeApp extends Component {
   render() {
     const tenant = this.props.tenant;
@@ -379,17 +433,9 @@ export class DaikokuHomeApp extends Component {
           <Route
             exact
             path="/signup"
-            render={p => (
-              <Signup tenant={tenant} match={p.match} history={p.history}/>
-            )}
+            render={p => <Signup tenant={tenant} match={p.match} history={p.history} />}
           />
-          <Route
-            exact
-            path="/reset"
-            render={p => (
-              <ResetPassword />
-            )}
-          />
+          <Route exact path="/reset" render={p => <ResetPassword />} />
         </div>
       </Router>
     );
@@ -397,11 +443,11 @@ export class DaikokuHomeApp extends Component {
 }
 
 const mapStateToProps = state => ({
-  ...state.context
+  ...state.context,
 });
 
 const mapDispatchToProps = {
-  updateContextLanguage: team => udpateLanguage(team)
+  updateContextLanguage: team => udpateLanguage(team),
 };
 
 export const Signup = connect(mapStateToProps, mapDispatchToProps)(SignupComponent);

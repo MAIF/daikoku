@@ -7,7 +7,7 @@ import asciidoctor from 'asciidoctor';
 
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { t, Translation } from "../../../locales";
+import { t, Translation } from '../../../locales';
 
 import 'highlight.js/styles/monokai.css';
 
@@ -23,9 +23,7 @@ export class ApiDocumentationCartidge extends Component {
             return (
               <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
                 <Link
-                  to={`/${this.props.match.params.teamId}/${apiId}/documentation/${
-                    obj._humanReadableId
-                  }`}>
+                  to={`/${this.props.match.params.teamId}/${apiId}/documentation/${obj._humanReadableId}`}>
                   {obj.title}
                 </Link>
               </li>
@@ -113,14 +111,14 @@ export class ApiDocumentation extends Component {
           <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
             {prevId && (
               <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${prevId}`}>
-                <i className="fas fa-chevron-left" /> 
+                <i className="fas fa-chevron-left" />
                 <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
                   Previous page
                 </Translation>
               </Link>
             )}
             {nextId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${nextId}`}> 
+              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${nextId}`}>
                 <Translation i18nkey="Next page" language={this.props.currentLanguage}>
                   Next page
                 </Translation>
@@ -158,7 +156,7 @@ export class ApiDocumentation extends Component {
               <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${nextId}`}>
                 <Translation i18nkey="Next page" language={this.props.currentLanguage}>
                   Next page
-                </Translation> 
+                </Translation>
                 <i className="fas fa-chevron-right" />
               </Link>
             )}
@@ -170,17 +168,15 @@ export class ApiDocumentation extends Component {
 }
 
 const TypeNotSupportedYet = () => <h3>Content type not supported yet !</h3>;
-const Image = props => <img src={props.url} style={{ width: '100%' }}  alt={props.alt}/>;
+const Image = props => <img src={props.url} style={{ width: '100%' }} alt={props.alt} />;
 const Video = props => <video src={props.url} style={{ width: '100%' }} />;
 const Html = props => (
-  <iframe src={props.url} style={{ width: '100%', height: '100vh', border: 0 }}  />
+  <iframe src={props.url} style={{ width: '100%', height: '100vh', border: 0 }} />
 );
 
 class Pdf extends Component {
   render() {
-    return (
-      <iframe src={this.props.url} style={{ width: '100%', height: '100vh', border: 0 }} />
-    );
+    return <iframe src={this.props.url} style={{ width: '100%', height: '100vh', border: 0 }} />;
   }
 }
 
@@ -277,9 +273,7 @@ class Asciidoc extends Component {
 class OpenDocument extends Component {
   render() {
     console.log(
-      `${window.location.origin}/assets/viewerjs/index.html#${window.location.origin}${
-        this.props.url
-      }`
+      `${window.location.origin}/assets/viewerjs/index.html#${window.location.origin}${this.props.url}`
     );
     return (
       <iframe

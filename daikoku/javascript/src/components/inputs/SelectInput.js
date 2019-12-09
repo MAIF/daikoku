@@ -71,9 +71,13 @@ export class SelectInput extends Component {
         .then(values => {
           return this.setState({
             values,
-            value: values.find(item => item.value === (this.state.value ? this.state.value.value : this.state.value)) || null,
+            value:
+              values.find(
+                item =>
+                  item.value === (this.state.value ? this.state.value.value : this.state.value)
+              ) || null,
             loading: false,
-          })
+          });
         });
     }
   };
@@ -125,7 +129,9 @@ export class SelectInput extends Component {
                 value={this.state.value}
                 onChange={this.onChangeClassic}>
                 {this.state.values.map((value, idx) => (
-                  <option key={idx} value={value.value}>{value.label}</option>
+                  <option key={idx} value={value.value}>
+                    {value.label}
+                  </option>
                 ))}
               </select>
             </div>

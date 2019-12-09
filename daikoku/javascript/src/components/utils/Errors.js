@@ -1,7 +1,7 @@
 import React from 'react';
-import {connect} from 'react-redux';
-import {Link} from 'react-router-dom';
-import {goBack} from 'connected-react-router';
+import { connect } from 'react-redux';
+import { Link } from 'react-router-dom';
+import { goBack } from 'connected-react-router';
 
 const getErrorLabel = (status, error) => {
   if (status === 400) {
@@ -10,7 +10,7 @@ const getErrorLabel = (status, error) => {
     return 'Forbidden';
   } else if (status === 403) {
     return 'Unauthorized';
-  }  else if (status === 404) {
+  } else if (status === 404) {
     return error.message || 'Page Not Found';
   } else if (status > 399 && status < 500) {
     return 'Client Error';
@@ -21,7 +21,7 @@ const getErrorLabel = (status, error) => {
   }
 };
 
-const ErrorComponent = ({error, goBack}) => {
+const ErrorComponent = ({ error, goBack }) => {
   const label = getErrorLabel(error.status, error);
 
   if (!label) {
@@ -37,10 +37,10 @@ const ErrorComponent = ({error, goBack}) => {
           </div>
           <div>
             <Link className="btn btn-access-negative mr-1" to="/">
-              <i className="fas fa-home"/> Go home
+              <i className="fas fa-home" /> Go home
             </Link>
             <button className="btn btn-access-negative" onClick={() => goBack()}>
-              <i className="fas fa-angle-double-left"/> Go back
+              <i className="fas fa-angle-double-left" /> Go back
             </button>
           </div>
         </div>
@@ -51,11 +51,11 @@ const ErrorComponent = ({error, goBack}) => {
 
 const mapStateToProps = state => ({
   error: state.error,
-  router: state.router
+  router: state.router,
 });
 
 const mapDispatchToProps = {
-  goBack
+  goBack,
 };
 
 export const Error = connect(mapStateToProps, mapDispatchToProps)(ErrorComponent);

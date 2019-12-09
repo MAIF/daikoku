@@ -6,7 +6,10 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -23,14 +26,15 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
     with IntegrationPatience
     with BeforeAndAfterEach {
 
-  override def getConfiguration(configuration: Configuration): Configuration = configuration ++ configurationSpec ++ Configuration(
-    ConfigFactory.parseString(s"""
+  override def getConfiguration(configuration: Configuration): Configuration =
+    configuration ++ configurationSpec ++ Configuration(
+      ConfigFactory.parseString(s"""
 									 |{
 									 |  http.port=$port
 									 |  play.server.http.port=$port
 									 |}
      """.stripMargin).resolve()
-  )
+    )
 
   lazy val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
   override def beforeEach {
@@ -99,20 +103,23 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 200
-      val eventualPlan = fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat.reads((resp.json \ "plan").as[JsObject])
+      val eventualPlan = fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat
+        .reads((resp.json \ "plan").as[JsObject])
       eventualPlan.isSuccess mustBe true
       val eventualConsumptions =
-        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat.reads((resp.json \ "consumptions").as[JsArray])
+        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat
+          .reads((resp.json \ "consumptions").as[JsArray])
       eventualConsumptions.isSuccess mustBe true
 
-      val maybePlan = defaultApi.possibleUsagePlans.find(u => u.typeName == "PayPerUse")
+      val maybePlan =
+        defaultApi.possibleUsagePlans.find(u => u.typeName == "PayPerUse")
       maybePlan.isDefined mustBe true
 
       eventualPlan.get mustBe maybePlan.get
@@ -132,15 +139,16 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/plan/${payPerUsePlanId.value}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
-        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat.reads(resp.json.as[JsArray])
+        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat
+          .reads(resp.json.as[JsArray])
       eventualConsumptions.isSuccess mustBe true
 
       eventualConsumptions.get.length mustBe 1
@@ -159,14 +167,16 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption?from=$from&to=$to"
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
-        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat.reads(resp.json.as[JsArray])
+        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat
+          .reads(resp.json.as[JsArray])
       eventualConsumptions.isSuccess mustBe true
 
       eventualConsumptions.get.length mustBe 1
@@ -185,14 +195,16 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
+        path =
+          s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 200
       val eventualConsumptions =
-        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat.reads(resp.json)
+        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat
+          .reads(resp.json)
       eventualConsumptions.isSuccess mustBe true
 
       eventualConsumptions.get.length mustBe 1
@@ -211,8 +223,8 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/income?from=$from&to=$to"
       )(tenant, session)
@@ -232,8 +244,8 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}/billings?from=$from&to=$to"
       )(tenant, session)
@@ -255,11 +267,12 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
 
-      val plan           = defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
       val otoroshiTarget = plan.otoroshiTarget
 
-      val callPerSec   = 100L
-      val callPerDay   = 1000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
       val callPerMonth = 2000L
 
       val otoApiKey = ActualOtoroshiApiKey(
@@ -297,13 +310,16 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
               .withBody(
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
-                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value, "name" -> otoroshiTarget.get.serviceGroup.value)
+                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
+                             "name" -> otoroshiTarget.get.serviceGroup.value)
                 )
               )
               .withStatus(200)
           )
       )
-      val otoPathQuotas = otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value, payperUserSub.apiKey.clientId)
+      val otoPathQuotas =
+        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
+                                 payperUserSub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -311,15 +327,20 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
               .withBody(
                 Json.stringify(
                   ApiKeyQuotas(
-                    authorizedCallsPerSec = plan.maxRequestPerSecond.getOrElse(0),
+                    authorizedCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
+                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
+                      0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay.getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0),
+                    remainingCallsPerDay = plan.maxRequestPerDay
+                      .getOrElse(0L) - callPerDay,
+                    authorizedCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
+                      0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -327,12 +348,14 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
           )
       )
 
-      val session     = loginWithBlocking(userAdmin, tenant)
-      val threeDayAgo = DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
-      val to          = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
+      val session = loginWithBlocking(userAdmin, tenant)
+      val threeDayAgo =
+        DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption/_sync",
+        path =
+          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption/_sync",
         method = "POST"
       )(tenant, session)
 
@@ -345,241 +368,277 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
       )(tenant, session)
       respConsumption.status mustBe 200
 
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits").as[Long] mustBe 3000L
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total").as[Long] mustBe 70L
+      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
+        .as[Long] mustBe 3000L
+      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total")
+        .as[Long] mustBe 70L
 
     }
 
     "sync api consumption" in {
-		setupEnvBlocking(
-			tenants = Seq(tenant),
-			users = Seq(userAdmin),
-			teams = Seq(teamOwner, teamConsumer),
-			apis = Seq(defaultApi),
-			subscriptions = Seq(payperUserSub),
-			consumptions = Seq(
-				yesterdayConsumption
-			)
-		)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
 
-		val plan           = defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
-		val otoroshiTarget = plan.otoroshiTarget
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val otoroshiTarget = plan.otoroshiTarget
 
-		val callPerSec   = 100L
-		val callPerDay   = 1000L
-		val callPerMonth = 2000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
+      val callPerMonth = 2000L
 
-		wireMockServer.isRunning mustBe true
-		stubFor(
-			get(urlMatching(s"$otoroshiPathStats.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								Json.obj("hits" -> Json.obj("count" -> 2000))
-							)
-						)
-						.withStatus(200)
-				)
-		)
-		val otoPathQuotas = otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value, payperUserSub.apiKey.clientId)
-		stubFor(
-			get(urlMatching(s"$otoPathQuotas.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								ApiKeyQuotas(
-									authorizedCallsPerSec = plan.maxRequestPerSecond.getOrElse(0),
-									currentCallsPerSec = callPerSec,
-									remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-									authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
-									currentCallsPerDay = callPerDay,
-									remainingCallsPerDay = plan.maxRequestPerDay.getOrElse(0L) - callPerDay,
-									authorizedCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0),
-									currentCallsPerMonth = callPerMonth,
-									remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
-								).asJson
-							)
-						)
-						.withStatus(200)
-				)
-		)
+      wireMockServer.isRunning mustBe true
+      stubFor(
+        get(urlMatching(s"$otoroshiPathStats.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.obj("hits" -> Json.obj("count" -> 2000))
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      val otoPathQuotas =
+        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
+                                 payperUserSub.apiKey.clientId)
+      stubFor(
+        get(urlMatching(s"$otoPathQuotas.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ApiKeyQuotas(
+                    authorizedCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0),
+                    currentCallsPerSec = callPerSec,
+                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
+                      0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                    currentCallsPerDay = callPerDay,
+                    remainingCallsPerDay = plan.maxRequestPerDay
+                      .getOrElse(0L) - callPerDay,
+                    authorizedCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0),
+                    currentCallsPerMonth = callPerMonth,
+                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
+                      0L) - callPerMonth
+                  ).asJson
+                )
+              )
+              .withStatus(200)
+          )
+      )
 
-		val session     = loginWithBlocking(userAdmin, tenant)
-		val threeDayAgo = DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
-		val to          = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
+      val session = loginWithBlocking(userAdmin, tenant)
+      val threeDayAgo =
+        DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
 
-		val resp = httpJsonCallBlocking(
-			path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption/_sync",
-			method = "POST"
-		)(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption/_sync",
+        method = "POST"
+      )(tenant, session)
 
-		resp.status mustBe 200
+      resp.status mustBe 200
 
-		val respConsumption = httpJsonCallBlocking(
-			path =
-				s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
-		)(tenant, session)
-		respConsumption.status mustBe 200
+      val respConsumption = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
+      )(tenant, session)
+      respConsumption.status mustBe 200
 
-		(respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits").as[Long] mustBe 3000L
-		(respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total").as[Long] mustBe 70L
-	}
+      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
+        .as[Long] mustBe 3000L
+      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total")
+        .as[Long] mustBe 70L
+    }
 
     "sync team billing/consumptions" in {
-		setupEnvBlocking(
-			tenants = Seq(tenant),
-			users = Seq(userAdmin),
-			teams = Seq(teamOwner, teamConsumer),
-			apis = Seq(defaultApi),
-			subscriptions = Seq(payperUserSub),
-			consumptions = Seq(
-				yesterdayConsumption
-			)
-		)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
 
-		val plan           = defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
-		val otoroshiTarget = plan.otoroshiTarget
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val otoroshiTarget = plan.otoroshiTarget
 
-		val callPerSec   = 100L
-		val callPerDay   = 1000L
-		val callPerMonth = 2000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
+      val callPerMonth = 2000L
 
-		wireMockServer.isRunning mustBe true
-		stubFor(
-			get(urlMatching(s"$otoroshiPathStats.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								Json.obj("hits" -> Json.obj("count" -> 2000))
-							)
-						)
-						.withStatus(200)
-				)
-		)
-		val otoPathQuotas = otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value, payperUserSub.apiKey.clientId)
-		stubFor(
-			get(urlMatching(s"$otoPathQuotas.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								ApiKeyQuotas(
-									authorizedCallsPerSec = plan.maxRequestPerSecond.getOrElse(0),
-									currentCallsPerSec = callPerSec,
-									remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-									authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
-									currentCallsPerDay = callPerDay,
-									remainingCallsPerDay = plan.maxRequestPerDay.getOrElse(0L) - callPerDay,
-									authorizedCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0),
-									currentCallsPerMonth = callPerMonth,
-									remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
-								).asJson
-							)
-						)
-						.withStatus(200)
-				)
-		)
+      wireMockServer.isRunning mustBe true
+      stubFor(
+        get(urlMatching(s"$otoroshiPathStats.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.obj("hits" -> Json.obj("count" -> 2000))
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      val otoPathQuotas =
+        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
+                                 payperUserSub.apiKey.clientId)
+      stubFor(
+        get(urlMatching(s"$otoPathQuotas.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ApiKeyQuotas(
+                    authorizedCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0),
+                    currentCallsPerSec = callPerSec,
+                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
+                      0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                    currentCallsPerDay = callPerDay,
+                    remainingCallsPerDay = plan.maxRequestPerDay
+                      .getOrElse(0L) - callPerDay,
+                    authorizedCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0),
+                    currentCallsPerMonth = callPerMonth,
+                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
+                      0L) - callPerMonth
+                  ).asJson
+                )
+              )
+              .withStatus(200)
+          )
+      )
 
-		val session     = loginWithBlocking(userAdmin, tenant)
-		val threeDayAgo = DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
-		val to          = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
+      val session = loginWithBlocking(userAdmin, tenant)
+      val threeDayAgo =
+        DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
 
-		val resp = httpJsonCallBlocking(
-			path = s"/api/teams/${teamConsumerId.value}/billing/_sync",
-			method = "POST"
-		)(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumerId.value}/billing/_sync",
+        method = "POST"
+      )(tenant, session)
 
-		resp.status mustBe 200
+      resp.status mustBe 200
 
-		val respConsumption = httpJsonCallBlocking(
-			path =
-				s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
-		)(tenant, session)
-		respConsumption.status mustBe 200
+      val respConsumption = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
+      )(tenant, session)
+      respConsumption.status mustBe 200
 
-		(respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits").as[Long] mustBe 3000L
-		(respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total").as[Long] mustBe 70L
-	}
+      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
+        .as[Long] mustBe 3000L
+      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total")
+        .as[Long] mustBe 70L
+    }
 
     "sync team income/group consumption" in {
-		setupEnvBlocking(
-			tenants = Seq(tenant),
-			users = Seq(userAdmin),
-			teams = Seq(teamOwner, teamConsumer),
-			apis = Seq(defaultApi),
-			subscriptions = Seq(payperUserSub),
-			consumptions = Seq(
-				yesterdayConsumption
-			)
-		)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
 
-		val plan           = defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
-		val otoroshiTarget = plan.otoroshiTarget
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val otoroshiTarget = plan.otoroshiTarget
 
-		val callPerSec   = 100L
-		val callPerDay   = 1000L
-		val callPerMonth = 2000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
+      val callPerMonth = 2000L
 
-		wireMockServer.isRunning mustBe true
-		stubFor(
-			get(urlMatching(s"$otoroshiPathStats.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								Json.obj("hits" -> Json.obj("count" -> 2000))
-							)
-						)
-						.withStatus(200)
-				)
-		)
-		val otoPathQuotas = otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value, payperUserSub.apiKey.clientId)
-		stubFor(
-			get(urlMatching(s"$otoPathQuotas.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								ApiKeyQuotas(
-									authorizedCallsPerSec = plan.maxRequestPerSecond.getOrElse(0),
-									currentCallsPerSec = callPerSec,
-									remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-									authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
-									currentCallsPerDay = callPerDay,
-									remainingCallsPerDay = plan.maxRequestPerDay.getOrElse(0L) - callPerDay,
-									authorizedCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0),
-									currentCallsPerMonth = callPerMonth,
-									remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
-								).asJson
-							)
-						)
-						.withStatus(200)
-				)
-		)
+      wireMockServer.isRunning mustBe true
+      stubFor(
+        get(urlMatching(s"$otoroshiPathStats.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.obj("hits" -> Json.obj("count" -> 2000))
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      val otoPathQuotas =
+        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
+                                 payperUserSub.apiKey.clientId)
+      stubFor(
+        get(urlMatching(s"$otoPathQuotas.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ApiKeyQuotas(
+                    authorizedCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0),
+                    currentCallsPerSec = callPerSec,
+                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
+                      0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                    currentCallsPerDay = callPerDay,
+                    remainingCallsPerDay = plan.maxRequestPerDay
+                      .getOrElse(0L) - callPerDay,
+                    authorizedCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0),
+                    currentCallsPerMonth = callPerMonth,
+                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
+                      0L) - callPerMonth
+                  ).asJson
+                )
+              )
+              .withStatus(200)
+          )
+      )
 
-		val session     = loginWithBlocking(userAdmin, tenant)
-		val threeDayAgo = DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
-		val to          = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
+      val session = loginWithBlocking(userAdmin, tenant)
+      val threeDayAgo =
+        DateTime.now().minusDays(3).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().plusDays(1).withTimeAtStartOfDay().getMillis
 
-		val resp = httpJsonCallBlocking(
-			path = s"/api/teams/${teamOwnerId.value}/income/_sync",
-			method = "POST"
-		)(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/income/_sync",
+        method = "POST"
+      )(tenant, session)
 
-		resp.status mustBe 200
+      resp.status mustBe 200
 
-		val respConsumption = httpJsonCallBlocking(
-			path =
-				s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
-		)(tenant, session)
-		respConsumption.status mustBe 200
+      val respConsumption = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
+      )(tenant, session)
+      respConsumption.status mustBe 200
 
-		(respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits").as[Long] mustBe 3000L
-		(respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total").as[Long] mustBe 70L
-	}
+      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
+        .as[Long] mustBe 3000L
+      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total")
+        .as[Long] mustBe 70L
+    }
   }
 
   "a user or apiEditor" can {
@@ -608,10 +667,11 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/apiKey/${sub.apiKey.clientId}/consumption?from=$from&to=$to"
+        path =
+          s"/api/teams/${teamConsumerId.value}/apiKey/${sub.apiKey.clientId}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 403
     }
@@ -628,8 +688,8 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/plan/${payPerUsePlanId.value}/consumption?from=$from&to=$to"
@@ -649,10 +709,11 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption?from=$from&to=$to"
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 403
     }
@@ -669,10 +730,11 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
+        path =
+          s"/api/teams/${teamConsumerId.value}/consumptions?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 403
     }
@@ -689,8 +751,8 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/income?from=$from&to=$to"
       )(tenant, session)
@@ -709,8 +771,8 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         )
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val from    = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to      = DateTime.now().withTimeAtStartOfDay().getMillis
+      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
+      val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}/billings?from=$from&to=$to"
       )(tenant, session)
@@ -719,268 +781,302 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
     }
 
     "not sync apikey consumption" in {
-		setupEnvBlocking(
-			tenants = Seq(tenant),
-			users = Seq(daikokuAdmin, randomUser),
-			teams = Seq(teamOwner, teamConsumer),
-			apis = Seq(defaultApi),
-			subscriptions = Seq(payperUserSub),
-			consumptions = Seq(
-				yesterdayConsumption
-			)
-		)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, randomUser),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
 
-		val plan           = defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
-		val otoroshiTarget = plan.otoroshiTarget
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val otoroshiTarget = plan.otoroshiTarget
 
-		val callPerSec   = 100L
-		val callPerDay   = 1000L
-		val callPerMonth = 2000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
+      val callPerMonth = 2000L
 
-		wireMockServer.isRunning mustBe true
-		stubFor(
-			get(urlMatching(s"$otoroshiPathStats.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								Json.obj("hits" -> Json.obj("count" -> 2000))
-							)
-						)
-						.withStatus(200)
-				)
-		)
-		val otoPathQuotas = otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value, payperUserSub.apiKey.clientId)
-		stubFor(
-			get(urlMatching(s"$otoPathQuotas.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								ApiKeyQuotas(
-									authorizedCallsPerSec = plan.maxRequestPerSecond.getOrElse(0),
-									currentCallsPerSec = callPerSec,
-									remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-									authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
-									currentCallsPerDay = callPerDay,
-									remainingCallsPerDay = plan.maxRequestPerDay.getOrElse(0L) - callPerDay,
-									authorizedCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0),
-									currentCallsPerMonth = callPerMonth,
-									remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
-								).asJson
-							)
-						)
-						.withStatus(200)
-				)
-		)
+      wireMockServer.isRunning mustBe true
+      stubFor(
+        get(urlMatching(s"$otoroshiPathStats.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.obj("hits" -> Json.obj("count" -> 2000))
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      val otoPathQuotas =
+        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
+                                 payperUserSub.apiKey.clientId)
+      stubFor(
+        get(urlMatching(s"$otoPathQuotas.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ApiKeyQuotas(
+                    authorizedCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0),
+                    currentCallsPerSec = callPerSec,
+                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
+                      0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                    currentCallsPerDay = callPerDay,
+                    remainingCallsPerDay = plan.maxRequestPerDay
+                      .getOrElse(0L) - callPerDay,
+                    authorizedCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0),
+                    currentCallsPerMonth = callPerMonth,
+                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
+                      0L) - callPerMonth
+                  ).asJson
+                )
+              )
+              .withStatus(200)
+          )
+      )
 
-		val session     = loginWithBlocking(randomUser, tenant)
+      val session = loginWithBlocking(randomUser, tenant)
 
-		val resp = httpJsonCallBlocking(
-			path = s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption/_sync",
-			method = "POST"
-		)(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption/_sync",
+        method = "POST"
+      )(tenant, session)
 
-		resp.status mustBe 403
-	}
+      resp.status mustBe 403
+    }
 
     "not sync api consumption" in {
-		setupEnvBlocking(
-			tenants = Seq(tenant),
-			users = Seq(daikokuAdmin, randomUser),
-			teams = Seq(teamOwner, teamConsumer),
-			apis = Seq(defaultApi),
-			subscriptions = Seq(payperUserSub),
-			consumptions = Seq(
-				yesterdayConsumption
-			)
-		)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, randomUser),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
 
-		val plan           = defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
-		val otoroshiTarget = plan.otoroshiTarget
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val otoroshiTarget = plan.otoroshiTarget
 
-		val callPerSec   = 100L
-		val callPerDay   = 1000L
-		val callPerMonth = 2000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
+      val callPerMonth = 2000L
 
-		wireMockServer.isRunning mustBe true
-		stubFor(
-			get(urlMatching(s"$otoroshiPathStats.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								Json.obj("hits" -> Json.obj("count" -> 2000))
-							)
-						)
-						.withStatus(200)
-				)
-		)
-		val otoPathQuotas = otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value, payperUserSub.apiKey.clientId)
-		stubFor(
-			get(urlMatching(s"$otoPathQuotas.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								ApiKeyQuotas(
-									authorizedCallsPerSec = plan.maxRequestPerSecond.getOrElse(0),
-									currentCallsPerSec = callPerSec,
-									remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-									authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
-									currentCallsPerDay = callPerDay,
-									remainingCallsPerDay = plan.maxRequestPerDay.getOrElse(0L) - callPerDay,
-									authorizedCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0),
-									currentCallsPerMonth = callPerMonth,
-									remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
-								).asJson
-							)
-						)
-						.withStatus(200)
-				)
-		)
+      wireMockServer.isRunning mustBe true
+      stubFor(
+        get(urlMatching(s"$otoroshiPathStats.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.obj("hits" -> Json.obj("count" -> 2000))
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      val otoPathQuotas =
+        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
+                                 payperUserSub.apiKey.clientId)
+      stubFor(
+        get(urlMatching(s"$otoPathQuotas.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ApiKeyQuotas(
+                    authorizedCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0),
+                    currentCallsPerSec = callPerSec,
+                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
+                      0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                    currentCallsPerDay = callPerDay,
+                    remainingCallsPerDay = plan.maxRequestPerDay
+                      .getOrElse(0L) - callPerDay,
+                    authorizedCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0),
+                    currentCallsPerMonth = callPerMonth,
+                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
+                      0L) - callPerMonth
+                  ).asJson
+                )
+              )
+              .withStatus(200)
+          )
+      )
 
-		val session     = loginWithBlocking(randomUser, tenant)
+      val session = loginWithBlocking(randomUser, tenant)
 
-		val resp = httpJsonCallBlocking(
-			path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption/_sync",
-			method = "POST"
-		)(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/consumption/_sync",
+        method = "POST"
+      )(tenant, session)
 
-		resp.status mustBe 403
-	}
+      resp.status mustBe 403
+    }
 
     "not sync team billing/consumptions" in {
-		setupEnvBlocking(
-			tenants = Seq(tenant),
-			users = Seq(daikokuAdmin, randomUser),
-			teams = Seq(teamOwner, teamConsumer),
-			apis = Seq(defaultApi),
-			subscriptions = Seq(payperUserSub),
-			consumptions = Seq(
-				yesterdayConsumption
-			)
-		)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, randomUser),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
 
-		val plan           = defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
-		val otoroshiTarget = plan.otoroshiTarget
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val otoroshiTarget = plan.otoroshiTarget
 
-		val callPerSec   = 100L
-		val callPerDay   = 1000L
-		val callPerMonth = 2000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
+      val callPerMonth = 2000L
 
-		wireMockServer.isRunning mustBe true
-		stubFor(
-			get(urlMatching(s"$otoroshiPathStats.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								Json.obj("hits" -> Json.obj("count" -> 2000))
-							)
-						)
-						.withStatus(200)
-				)
-		)
-		val otoPathQuotas = otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value, payperUserSub.apiKey.clientId)
-		stubFor(
-			get(urlMatching(s"$otoPathQuotas.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								ApiKeyQuotas(
-									authorizedCallsPerSec = plan.maxRequestPerSecond.getOrElse(0),
-									currentCallsPerSec = callPerSec,
-									remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-									authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
-									currentCallsPerDay = callPerDay,
-									remainingCallsPerDay = plan.maxRequestPerDay.getOrElse(0L) - callPerDay,
-									authorizedCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0),
-									currentCallsPerMonth = callPerMonth,
-									remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
-								).asJson
-							)
-						)
-						.withStatus(200)
-				)
-		)
+      wireMockServer.isRunning mustBe true
+      stubFor(
+        get(urlMatching(s"$otoroshiPathStats.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.obj("hits" -> Json.obj("count" -> 2000))
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      val otoPathQuotas =
+        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
+                                 payperUserSub.apiKey.clientId)
+      stubFor(
+        get(urlMatching(s"$otoPathQuotas.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ApiKeyQuotas(
+                    authorizedCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0),
+                    currentCallsPerSec = callPerSec,
+                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
+                      0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                    currentCallsPerDay = callPerDay,
+                    remainingCallsPerDay = plan.maxRequestPerDay
+                      .getOrElse(0L) - callPerDay,
+                    authorizedCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0),
+                    currentCallsPerMonth = callPerMonth,
+                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
+                      0L) - callPerMonth
+                  ).asJson
+                )
+              )
+              .withStatus(200)
+          )
+      )
 
-		val session     = loginWithBlocking(randomUser, tenant)
+      val session = loginWithBlocking(randomUser, tenant)
 
-		val resp = httpJsonCallBlocking(
-			path = s"/api/teams/${teamConsumerId.value}/billing/_sync",
-			method = "POST"
-		)(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumerId.value}/billing/_sync",
+        method = "POST"
+      )(tenant, session)
 
-		resp.status mustBe 403
-	}
+      resp.status mustBe 403
+    }
 
     "not sync team income/group consumption" in {
-		setupEnvBlocking(
-			tenants = Seq(tenant),
-			users = Seq(daikokuAdmin, randomUser),
-			teams = Seq(teamOwner, teamConsumer),
-			apis = Seq(defaultApi),
-			subscriptions = Seq(payperUserSub),
-			consumptions = Seq(
-				yesterdayConsumption
-			)
-		)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, randomUser),
+        teams = Seq(teamOwner, teamConsumer),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(payperUserSub),
+        consumptions = Seq(
+          yesterdayConsumption
+        )
+      )
 
-		val plan           = defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
-		val otoroshiTarget = plan.otoroshiTarget
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val otoroshiTarget = plan.otoroshiTarget
 
-		val callPerSec   = 100L
-		val callPerDay   = 1000L
-		val callPerMonth = 2000L
+      val callPerSec = 100L
+      val callPerDay = 1000L
+      val callPerMonth = 2000L
 
-		wireMockServer.isRunning mustBe true
-		stubFor(
-			get(urlMatching(s"$otoroshiPathStats.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								Json.obj("hits" -> Json.obj("count" -> 2000))
-							)
-						)
-						.withStatus(200)
-				)
-		)
-		val otoPathQuotas = otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value, payperUserSub.apiKey.clientId)
-		stubFor(
-			get(urlMatching(s"$otoPathQuotas.*"))
-				.willReturn(
-					aResponse()
-						.withBody(
-							Json.stringify(
-								ApiKeyQuotas(
-									authorizedCallsPerSec = plan.maxRequestPerSecond.getOrElse(0),
-									currentCallsPerSec = callPerSec,
-									remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-									authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
-									currentCallsPerDay = callPerDay,
-									remainingCallsPerDay = plan.maxRequestPerDay.getOrElse(0L) - callPerDay,
-									authorizedCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0),
-									currentCallsPerMonth = callPerMonth,
-									remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
-								).asJson
-							)
-						)
-						.withStatus(200)
-				)
-		)
+      wireMockServer.isRunning mustBe true
+      stubFor(
+        get(urlMatching(s"$otoroshiPathStats.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.obj("hits" -> Json.obj("count" -> 2000))
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      val otoPathQuotas =
+        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
+                                 payperUserSub.apiKey.clientId)
+      stubFor(
+        get(urlMatching(s"$otoPathQuotas.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ApiKeyQuotas(
+                    authorizedCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0),
+                    currentCallsPerSec = callPerSec,
+                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
+                      0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                    currentCallsPerDay = callPerDay,
+                    remainingCallsPerDay = plan.maxRequestPerDay
+                      .getOrElse(0L) - callPerDay,
+                    authorizedCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0),
+                    currentCallsPerMonth = callPerMonth,
+                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
+                      0L) - callPerMonth
+                  ).asJson
+                )
+              )
+              .withStatus(200)
+          )
+      )
 
-		val session     = loginWithBlocking(randomUser, tenant)
+      val session = loginWithBlocking(randomUser, tenant)
 
-		val resp = httpJsonCallBlocking(
-			path = s"/api/teams/${teamOwnerId.value}/income/_sync",
-			method = "POST"
-		)(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/income/_sync",
+        method = "POST"
+      )(tenant, session)
 
-		resp.status mustBe 403
-	}
+      resp.status mustBe 403
+    }
   }
 
 }

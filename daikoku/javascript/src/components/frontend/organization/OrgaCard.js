@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 
-import {Translation} from "../../../locales";
+import { Translation } from '../../../locales';
 
 export class OrgaCard extends Component {
   redirectToOrga = () => {
@@ -63,5 +63,5 @@ export class OrgaCard extends Component {
 OrgaCard.propTypes = {
   user: PropTypes.object,
   orga: PropTypes.object.isRequired,
-  currentLanguage:  PropTypes.string
-}
+  currentLanguage: PropTypes.string,
+};

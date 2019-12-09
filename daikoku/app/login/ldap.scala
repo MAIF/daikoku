@@ -45,11 +45,15 @@ object LdapConfig {
           serverUrl = (json \ "serverUrl").as[String],
           searchBase = (json \ "searchBase").as[String],
           userBase = (json \ "userBase").asOpt[String].filterNot(_.trim.isEmpty),
-          groupFilter = (json \ "groupFilter").asOpt[String].filterNot(_.trim.isEmpty),
-          adminGroupFilter = (json \ "adminGroupFilter").asOpt[String].filterNot(_.trim.isEmpty),
+          groupFilter =
+            (json \ "groupFilter").asOpt[String].filterNot(_.trim.isEmpty),
+          adminGroupFilter =
+            (json \ "adminGroupFilter").asOpt[String].filterNot(_.trim.isEmpty),
           searchFilter = (json \ "searchFilter").as[String],
-          adminUsername = (json \ "adminUsername").asOpt[String].filterNot(_.trim.isEmpty),
-          adminPassword = (json \ "adminPassword").asOpt[String].filterNot(_.trim.isEmpty),
+          adminUsername =
+            (json \ "adminUsername").asOpt[String].filterNot(_.trim.isEmpty),
+          adminPassword =
+            (json \ "adminPassword").asOpt[String].filterNot(_.trim.isEmpty),
           nameField = (json \ "nameField").as[String],
           emailField = (json \ "emailField").as[String],
           pictureField = (json \ "pictureField").asOpt[String],
@@ -75,19 +79,37 @@ case class LdapConfig(
     pictureField: Option[String] = None
 ) {
   def asJson = Json.obj(
-    "type"    -> "ldap",
-    "sessionMaxAge"    -> this.sessionMaxAge,
-    "serverUrl"        -> this.serverUrl,
-    "searchBase"       -> this.searchBase,
-    "userBase"         -> this.userBase.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-    "groupFilter"      -> this.groupFilter.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-    "adminGroupFilter" -> this.adminGroupFilter.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-    "searchFilter"     -> this.searchFilter,
-    "adminUsername"    -> this.adminUsername.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-    "adminPassword"    -> this.adminPassword.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-    "nameField"        -> this.nameField,
-    "emailField"       -> this.emailField,
-    "pictureField"     -> this.pictureField.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+    "type" -> "ldap",
+    "sessionMaxAge" -> this.sessionMaxAge,
+    "serverUrl" -> this.serverUrl,
+    "searchBase" -> this.searchBase,
+    "userBase" -> this.userBase
+      .map(JsString.apply)
+      .getOrElse(JsNull)
+      .as[JsValue],
+    "groupFilter" -> this.groupFilter
+      .map(JsString.apply)
+      .getOrElse(JsNull)
+      .as[JsValue],
+    "adminGroupFilter" -> this.adminGroupFilter
+      .map(JsString.apply)
+      .getOrElse(JsNull)
+      .as[JsValue],
+    "searchFilter" -> this.searchFilter,
+    "adminUsername" -> this.adminUsername
+      .map(JsString.apply)
+      .getOrElse(JsNull)
+      .as[JsValue],
+    "adminPassword" -> this.adminPassword
+      .map(JsString.apply)
+      .getOrElse(JsNull)
+      .as[JsValue],
+    "nameField" -> this.nameField,
+    "emailField" -> this.emailField,
+    "pictureField" -> this.pictureField
+      .map(JsString.apply)
+      .getOrElse(JsNull)
+      .as[JsValue],
   )
 }
 
@@ -109,8 +131,10 @@ object LdapSupport {
 
     val env = new util.Hashtable[String, AnyRef]
     env.put(Context.SECURITY_AUTHENTICATION, "simple")
-    ldapConfig.adminUsername.foreach(u => env.put(Context.SECURITY_PRINCIPAL, u))
-    ldapConfig.adminPassword.foreach(p => env.put(Context.SECURITY_CREDENTIALS, p))
+    ldapConfig.adminUsername.foreach(u =>
+      env.put(Context.SECURITY_PRINCIPAL, u))
+    ldapConfig.adminPassword.foreach(p =>
+      env.put(Context.SECURITY_CREDENTIALS, p))
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
     env.put(Context.PROVIDER_URL, ldapConfig.serverUrl)
 
@@ -121,13 +145,16 @@ object LdapSupport {
 
     val usersInGroup: Seq[String] = ldapConfig.groupFilter
       .map { filter =>
-        val groupSearch = ctx.search(ldapConfig.searchBase, filter, searchControls)
+        val groupSearch =
+          ctx.search(ldapConfig.searchBase, filter, searchControls)
         val uids = if (groupSearch.hasMore) {
-          val item  = groupSearch.next()
+          val item = groupSearch.next()
           val attrs = item.getAttributes
-          attrs.getAll.asScala.toSeq.filter(a => a.getID == "uniqueMember" || a.getID == "member").flatMap { attr =>
-            attr.getAll.asScala.toSeq.map(_.toString)
-          }
+          attrs.getAll.asScala.toSeq
+            .filter(a => a.getID == "uniqueMember" || a.getID == "member")
+            .flatMap { attr =>
+              attr.getAll.asScala.toSeq.map(_.toString)
+            }
         } else {
           Seq.empty[String]
         }
@@ -137,13 +164,16 @@ object LdapSupport {
       .getOrElse(Seq.empty[String])
     val usersInAdminGroup: Seq[String] = ldapConfig.adminGroupFilter
       .map { filter =>
-        val groupSearch = ctx.search(ldapConfig.searchBase, filter, searchControls)
+        val groupSearch =
+          ctx.search(ldapConfig.searchBase, filter, searchControls)
         val uids = if (groupSearch.hasMore) {
-          val item  = groupSearch.next()
+          val item = groupSearch.next()
           val attrs = item.getAttributes
-          attrs.getAll.asScala.toSeq.filter(a => a.getID == "uniqueMember" || a.getID == "member").flatMap { attr =>
-            attr.getAll.asScala.toSeq.map(_.toString)
-          }
+          attrs.getAll.asScala.toSeq
+            .filter(a => a.getID == "uniqueMember" || a.getID == "member")
+            .flatMap { attr =>
+              attr.getAll.asScala.toSeq.map(_.toString)
+            }
         } else {
           Seq.empty[String]
         }
@@ -151,16 +181,20 @@ object LdapSupport {
         uids
       }
       .getOrElse(Seq.empty[String])
-    val res = ctx.search(ldapConfig.userBase.map(_ + ",").getOrElse("") + ldapConfig.searchBase,
-                         ldapConfig.searchFilter.replace("${username}", username),
-                         searchControls)
+    val res = ctx.search(
+      ldapConfig.userBase.map(_ + ",").getOrElse("") + ldapConfig.searchBase,
+      ldapConfig.searchFilter.replace("${username}", username),
+      searchControls)
     val boundUser: Future[Option[User]] = if (res.hasMore) {
       val item = res.next()
-      val dn   = item.getNameInNamespace
-      if (ldapConfig.adminGroupFilter.map(_ => usersInAdminGroup.contains(dn)).getOrElse(false)) {
+      val dn = item.getNameInNamespace
+      if (ldapConfig.adminGroupFilter
+            .map(_ => usersInAdminGroup.contains(dn))
+            .getOrElse(false)) {
         val attrs = item.getAttributes
-        val env2  = new util.Hashtable[String, AnyRef]
-        env2.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+        val env2 = new util.Hashtable[String, AnyRef]
+        env2.put(Context.INITIAL_CONTEXT_FACTORY,
+                 "com.sun.jndi.ldap.LdapCtxFactory")
         env2.put(Context.PROVIDER_URL, ldapConfig.serverUrl)
         env2.put(Context.SECURITY_AUTHENTICATION, "simple")
         env2.put(Context.SECURITY_PRINCIPAL, dn)
@@ -169,8 +203,10 @@ object LdapSupport {
           val ctx2 = new InitialDirContext(env2)
           ctx2.close()
           // Auth passed
-          val email = attrs.get(ldapConfig.emailField).toString.split(":").last.trim
-          val name = attrs.get(ldapConfig.nameField).toString.split(":").last.trim
+          val email =
+            attrs.get(ldapConfig.emailField).toString.split(":").last.trim
+          val name =
+            attrs.get(ldapConfig.nameField).toString.split(":").last.trim
           _env.dataStore.userRepo
             .findOne(
               Json.obj(
@@ -238,10 +274,13 @@ object LdapSupport {
         } recover {
           case _ => FastFuture.successful(None)
         } get
-      } else if (ldapConfig.groupFilter.map(_ => usersInGroup.contains(dn)).getOrElse(true)) {
+      } else if (ldapConfig.groupFilter
+                   .map(_ => usersInGroup.contains(dn))
+                   .getOrElse(true)) {
         val attrs = item.getAttributes
-        val env2  = new util.Hashtable[String, AnyRef]
-        env2.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+        val env2 = new util.Hashtable[String, AnyRef]
+        env2.put(Context.INITIAL_CONTEXT_FACTORY,
+                 "com.sun.jndi.ldap.LdapCtxFactory")
         env2.put(Context.PROVIDER_URL, ldapConfig.serverUrl)
         env2.put(Context.SECURITY_AUTHENTICATION, "simple")
         env2.put(Context.SECURITY_PRINCIPAL, dn)
@@ -250,8 +289,10 @@ object LdapSupport {
           val ctx2 = new InitialDirContext(env2)
           ctx2.close()
           // Auth passed
-          val email = attrs.get(ldapConfig.emailField).toString.split(":").last.trim
-          val name = attrs.get(ldapConfig.nameField).toString.split(":").last.trim
+          val email =
+            attrs.get(ldapConfig.emailField).toString.split(":").last.trim
+          val name =
+            attrs.get(ldapConfig.nameField).toString.split(":").last.trim
           _env.dataStore.userRepo
             .findOne(
               Json.obj(

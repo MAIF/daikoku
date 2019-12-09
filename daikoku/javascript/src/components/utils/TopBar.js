@@ -8,15 +8,15 @@ import AsyncSelect from 'react-select/async';
 
 import * as Services from '../../services';
 import { logout, updateNotications, udpateLanguage } from '../../core/context/actions';
-import {t, Translation, languages} from '../../locales';
+import { t, Translation, languages } from '../../locales';
 
-const GuestUserMenu = ({loginProvider, loginAction, user, currentLanguage}) => {
-  const [login, setLogin] = useState("");
-  const [password, setPassword] = useState("");
+const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) => {
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
 
   switch (loginProvider) {
-    case "Local":
-    case "LDAP":
+    case 'Local':
+    case 'LDAP':
       return (
         <div className="d-flex justify-content-end mt-1 mt-lg-0">
           <div className="dropdown">
@@ -28,10 +28,7 @@ const GuestUserMenu = ({loginProvider, loginAction, user, currentLanguage}) => {
               alt="user menu"
             />
             <div className="dropdown-menu dropdown-menu-right" style={{ width: '300px' }}>
-              <form
-                className="form-horizontal text-left mx-1"
-                action={loginAction}
-                method="POST">
+              <form className="form-horizontal text-left mx-1" action={loginAction} method="POST">
                 <div className="form-group">
                   <label htmlFor="username">
                     <Translation i18nkey="Username" language={currentLanguage}>
@@ -73,7 +70,7 @@ const GuestUserMenu = ({loginProvider, loginAction, user, currentLanguage}) => {
                   <Translation i18nkey="Login" language={currentLanguage}>
                     Login
                   </Translation>
-            </button>
+                </button>
               </form>
               <div className="dropdown-divider" />
               <a className="dropdown-item" href="/signup">
@@ -84,9 +81,9 @@ const GuestUserMenu = ({loginProvider, loginAction, user, currentLanguage}) => {
             </div>
           </div>
         </div>
-      )
-    case "OAuth2":
-    default: 
+      );
+    case 'OAuth2':
+    default:
       return (
         <div className="d-flex justify-content-end mt-1 mt-lg-0">
           <div className="dropdown">
@@ -104,15 +101,15 @@ const GuestUserMenu = ({loginProvider, loginAction, user, currentLanguage}) => {
             </div>
           </div>
         </div>
-      )
+      );
   }
-}
+};
 export class TopBarComponent extends Component {
   state = {
-    error: null, 
+    error: null,
     unreadNotifications: false,
     search: '',
-    teams: []
+    teams: [],
   };
 
   componentDidCatch(e) {
@@ -126,18 +123,18 @@ export class TopBarComponent extends Component {
   selectSearchedItem = item => {
     const team = this.state.teams.find(t => t._id === item.team);
     switch (item.type) {
-    case 'link':
-      this.props.history.push(item.url);
-      break;
-    case 'tenant':
-      this.props.history.push(`/settings/tenants/${item.value}`);
-      break;
-    case 'team':
-      this.props.history.push(`/${item.value}`);
-      break;
-    case 'api':
-      this.props.history.push(`/${team ? team._humanReadableId : item.team}/${item.value}`);
-      break;
+      case 'link':
+        this.props.history.push(item.url);
+        break;
+      case 'tenant':
+        this.props.history.push(`/settings/tenants/${item.value}`);
+        break;
+      case 'team':
+        this.props.history.push(`/${item.value}`);
+        break;
+      case 'api':
+        this.props.history.push(`/${team ? team._humanReadableId : item.team}/${item.value}`);
+        break;
     }
   };
 
@@ -193,7 +190,7 @@ export class TopBarComponent extends Component {
         </p>
         {this.props.impersonator && (
           <p className="dropdown-item">
-            {t("Impersonated by")} <b>{this.props.impersonator.email}</b>
+            {t('Impersonated by')} <b>{this.props.impersonator.email}</b>
           </p>
         )}
         <div className="dropdown-divider" />
@@ -210,7 +207,8 @@ export class TopBarComponent extends Component {
         <div className="dropdown-divider" />
         {this.props.connectedUser.isDaikokuAdmin && (
           <Link className="dropdown-item" to={'/settings/teams'}>
-            <i className="fas fa-cogs" /> {this.props.tenant.name} {t('settings', this.props.currentLanguage)}
+            <i className="fas fa-cogs" /> {this.props.tenant.name}{' '}
+            {t('settings', this.props.currentLanguage)}
           </Link>
         )}
         {this.props.connectedUser.isDaikokuAdmin && (
@@ -218,9 +216,7 @@ export class TopBarComponent extends Component {
             <i className="fas fa-cogs" /> {t('Organizations settings', this.props.currentLanguage)}
           </Link>
         )}
-        {this.props.connectedUser.isDaikokuAdmin && (
-          <div className="dropdown-divider" />
-        )}
+        {this.props.connectedUser.isDaikokuAdmin && <div className="dropdown-divider" />}
         {this.props.tenant.mode === 'Dev' && (
           <a className="dropdown-item" href="#" onClick={this.reset}>
             <i className="fas fa-skull-crossbones" /> {t('Reset', this.props.currentLanguage)}
@@ -262,7 +258,12 @@ export class TopBarComponent extends Component {
 
     const promiseOptions = inputValue => {
       const options = [
-        { value: 'me', label: t('My profile', this.props.currentLanguage), type: 'link', url: '/settings/me' },
+        {
+          value: 'me',
+          label: t('My profile', this.props.currentLanguage),
+          type: 'link',
+          url: '/settings/me',
+        },
         {
           value: 'tenant',
           label: t('Organizations settings', this.props.currentLanguage),
@@ -283,7 +284,10 @@ export class TopBarComponent extends Component {
         options: options.filter(i => i.label.toLowerCase().includes(inputValue.toLowerCase())),
       };
 
-      return Services.search(inputValue).then(result => [utils, ...result.map(item => ({...item, label: t(item.label,  this.props.currentLanguage)}))]);
+      return Services.search(inputValue).then(result => [
+        utils,
+        ...result.map(item => ({ ...item, label: t(item.label, this.props.currentLanguage) })),
+      ]);
     };
 
     return (
@@ -293,12 +297,24 @@ export class TopBarComponent extends Component {
           <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end">
             <div className="d-flex flex-column flex-md-row">
               <div className="pl-1 pr-2">
-                <a href="/" className="navbar-brand d-flex align-items-center mr-4" title="Daikoku home">
-                  <img src={this.props.tenant.logo} style={{ maxWidth: 28, maxHeight: 28, borderRadius: '50%', marginRight: 5 ,width:'100%'}} />
+                <a
+                  href="/"
+                  className="navbar-brand d-flex align-items-center mr-4"
+                  title="Daikoku home">
+                  <img
+                    src={this.props.tenant.logo}
+                    style={{
+                      maxWidth: 28,
+                      maxHeight: 28,
+                      borderRadius: '50%',
+                      marginRight: 5,
+                      width: '100%',
+                    }}
+                  />
                   {this.props.tenant.name}
                 </a>
               </div>
-              { !this.props.connectedUser.isGuest && 
+              {!this.props.connectedUser.isGuest && (
                 <div className="input-group">
                   <div className="input-group-prepend d-none d-lg-flex">
                     <div className="input-group-text">
@@ -306,7 +322,7 @@ export class TopBarComponent extends Component {
                     </div>
                   </div>
                   <AsyncSelect
-                    placeholder={t("Search", this.props.currentLanguage)}
+                    placeholder={t('Search', this.props.currentLanguage)}
                     className="general-search px-1 px-lg-0"
                     ref={r => (this.selector = r)}
                     cacheOptions
@@ -316,12 +332,13 @@ export class TopBarComponent extends Component {
                     onChange={this.selectSearchedItem}
                   />
                 </div>
-              }
+              )}
             </div>
             <div className="d-flex flex-column flex-md-row mt-1 mt-xl-0">
               {this.props.impersonator && (
                 <a href="/api/me/_deimpersonate" className="btn btn-danger">
-                  <i className="fas fa-user-ninja" /> {t('Quit impersonation', this.props.currentLanguage)}
+                  <i className="fas fa-user-ninja" />{' '}
+                  {t('Quit impersonation', this.props.currentLanguage)}
                   <b className="ml-1">{impersonator.email}</b>
                 </a>
               )}
@@ -334,12 +351,15 @@ export class TopBarComponent extends Component {
                   onChange={e => this.props.udpateLanguageProp(e.value)}
                 />
               )}
-              {
-                this.props.connectedUser.isGuest && 
-                <GuestUserMenu user={this.props.connectedUser} loginAction={this.props.loginAction} loginProvider={this.props.loginProvider} currentLanguage={this.props.currentLanguage} />
-              }
-              {
-                !this.props.connectedUser.isGuest &&
+              {this.props.connectedUser.isGuest && (
+                <GuestUserMenu
+                  user={this.props.connectedUser}
+                  loginAction={this.props.loginAction}
+                  loginProvider={this.props.loginProvider}
+                  currentLanguage={this.props.currentLanguage}
+                />
+              )}
+              {!this.props.connectedUser.isGuest && (
                 <div className="d-flex justify-content-end mt-1 mt-lg-0">
                   <Link
                     className={classNames({
@@ -347,7 +367,7 @@ export class TopBarComponent extends Component {
                       'unread-notifications': !!unreadNotificationsCount,
                     })}
                     to="/notifications"
-                    title={t("Access to the notifications", this.props.currentLanguage)}>
+                    title={t('Access to the notifications', this.props.currentLanguage)}>
                     <i className="fas fa-bell" />
                   </Link>
                   <div className="dropdown">
@@ -359,8 +379,10 @@ export class TopBarComponent extends Component {
                       title={
                         impersonator
                           ? `${this.props.connectedUser.name} (${
-                          this.props.connectedUser.email
-                          }) ${t('Impersonated by', this.props.currentLanguage)} ${impersonator.name} (${impersonator.email})`
+                              this.props.connectedUser.email
+                            }) ${t('Impersonated by', this.props.currentLanguage)} ${
+                              impersonator.name
+                            } (${impersonator.email})`
                           : this.props.connectedUser.name
                       }
                       alt="user menu"
@@ -368,7 +390,7 @@ export class TopBarComponent extends Component {
                     {this.userMenu()}
                   </div>
                 </div>
-              }
+              )}
             </div>
           </div>
         </div>
@@ -392,10 +414,7 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = {
   logout: () => logout(),
   updateNotificationsCount: count => updateNotications(count),
-  udpateLanguageProp: l => udpateLanguage(l)
+  udpateLanguageProp: l => udpateLanguage(l),
 };
 
-export const TopBar = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(TopBarComponent);
+export const TopBar = connect(mapStateToProps, mapDispatchToProps)(TopBarComponent);

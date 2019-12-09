@@ -19,7 +19,7 @@ import { LoginPage } from './components';
 import { registerAlert, registerConfirm, registerPrompt } from './components/utils/window';
 import { customizeFetch } from './services/customize';
 import { Option } from './components/utils';
-import {t, Translation} from './locales';
+import { t, Translation } from './locales';
 
 window.$ = jQuery;
 window.jQuery = jQuery;
@@ -34,14 +34,20 @@ export function init(user, tenant, impersonator, session, loginCallback) {
 
   ReactDOM.render(
     <Provider store={storeInst}>
-      <DaikokuApp user={user} tenant={tenant} impersonator={impersonator} loginProvider={tenant.authProvider} loginAction={loginCallback}/>
+      <DaikokuApp
+        user={user}
+        tenant={tenant}
+        impersonator={impersonator}
+        loginProvider={tenant.authProvider}
+        loginAction={loginCallback}
+      />
     </Provider>,
     document.getElementById('app')
   );
   if (session) {
     let reloadTimeout = null;
 
-    const extendSession = (close) => {
+    const extendSession = close => {
       return fetch('/api/session/_renew', {
         method: 'POST',
         credentials: 'include',
@@ -59,7 +65,7 @@ export function init(user, tenant, impersonator, session, loginCallback) {
         });
     };
 
-    const setupTimeouts = (_session) => {
+    const setupTimeouts = _session => {
       const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
       const secondPing = _session.expires - Date.now() + 2000;
       setTimeout(() => {
@@ -67,7 +73,9 @@ export function init(user, tenant, impersonator, session, loginCallback) {
           close => (
             <div style={{ width: '100%' }}>
               <p>
-                <Translation i18nkey="session.expire.info" language={store.getState().currentLanguage}>
+                <Translation
+                  i18nkey="session.expire.info"
+                  language={store.getState().currentLanguage}>
                   Your session is about to expire in less than 2 minutes. Do you want to extend it ?
                 </Translation>
               </p>

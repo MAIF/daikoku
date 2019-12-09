@@ -7,7 +7,12 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuTenantAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
@@ -21,7 +26,10 @@ import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc._
 import play.api.routing.Router
-import play.modules.reactivemongo.{ReactiveMongoApi, ReactiveMongoApiFromContext}
+import play.modules.reactivemongo.{
+  ReactiveMongoApi,
+  ReactiveMongoApiFromContext
+}
 import router.Routes
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -54,48 +62,53 @@ package object modules {
 
     lazy val apiService = wire[ApiService]
 
-    override lazy val httpFilters: Seq[EssentialFilter] = Seq(new SecurityFilter(env)) ++ env.expositionFilters ++ env.identityFilters
+    override lazy val httpFilters: Seq[EssentialFilter] = Seq(
+      new SecurityFilter(env)) ++ env.expositionFilters ++ env.identityFilters
 
     lazy val filters = new DefaultHttpFilters(httpFilters: _*)
 
     override lazy val httpErrorHandler: HttpErrorHandler = wire[ErrorHandler]
 
-    val daikokuAction       = wire[DaikokuAction]
+    val daikokuAction = wire[DaikokuAction]
     val daikokuTenantAction = wire[DaikokuTenantAction]
     val daikokuTenantActionMaybeWithGuest = wire[DaikokuActionMaybeWithGuest]
     val daikokuActionMaybeWithoutUser = wire[DaikokuActionMaybeWithoutUser]
-    val daikokuApiAction    = wire[DaikokuApiAction]
+    val daikokuApiAction = wire[DaikokuApiAction]
     val daikokuApiActionWithoutTenant = wire[DaikokuApiActionWithoutTenant]
 
-    lazy val homeController         = wire[HomeController]
-    lazy val mockController         = wire[MockController]
-    lazy val apiController          = wire[ApiController]
-    lazy val loginController        = wire[LoginController]
-    lazy val teamController         = wire[TeamController]
+    lazy val homeController = wire[HomeController]
+    lazy val mockController = wire[MockController]
+    lazy val apiController = wire[ApiController]
+    lazy val loginController = wire[LoginController]
+    lazy val teamController = wire[TeamController]
     lazy val notificationController = wire[NotificationController]
-    lazy val tenantController       = wire[TenantController]
-    lazy val otoSettingsController  = wire[OtoroshiSettingsController]
-    lazy val usersController        = wire[UsersController]
-    lazy val auditTrailController   = wire[AuditTrailController]
-    lazy val entitiesController     = wire[EntitiesController]
-    lazy val sessionController      = wire[SessionController]
-    lazy val jobsController         = wire[JobsController]
-    lazy val consumptionController  = wire[ConsumptionController]
-    lazy val teamAssetsController   = wire[TeamAssetsController]
+    lazy val tenantController = wire[TenantController]
+    lazy val otoSettingsController = wire[OtoroshiSettingsController]
+    lazy val usersController = wire[UsersController]
+    lazy val auditTrailController = wire[AuditTrailController]
+    lazy val entitiesController = wire[EntitiesController]
+    lazy val sessionController = wire[SessionController]
+    lazy val jobsController = wire[JobsController]
+    lazy val consumptionController = wire[ConsumptionController]
+    lazy val teamAssetsController = wire[TeamAssetsController]
     lazy val tenantAssetsController = wire[TenantAssetsController]
-    lazy val userAssetsController   = wire[UserAssetsController]
+    lazy val userAssetsController = wire[UserAssetsController]
     lazy val assetsThumbnailController = wire[AssetsThumbnailController]
-    lazy val stateController        = wire[StateController]
+    lazy val stateController = wire[StateController]
     lazy val stateAdminApiController = wire[StateAdminApiController]
     lazy val tenantAdminApiController = wire[TenantAdminApiController]
     lazy val userAdminApiController = wire[UserAdminApiController]
     lazy val teamAdminApiController = wire[TeamAdminApiController]
     lazy val apiAdminApiController = wire[ApiAdminApiController]
-    lazy val apiSubscriptionAdminApiController = wire[ApiSubscriptionAdminApiController]
-    lazy val apiDocumentationPageAdminApiController = wire[ApiDocumentationPageAdminApiController]
-    lazy val notificationAdminApiController = wire[NotificationAdminApiController]
+    lazy val apiSubscriptionAdminApiController =
+      wire[ApiSubscriptionAdminApiController]
+    lazy val apiDocumentationPageAdminApiController =
+      wire[ApiDocumentationPageAdminApiController]
+    lazy val notificationAdminApiController =
+      wire[NotificationAdminApiController]
     lazy val userSessionAdminApiController = wire[UserSessionAdminApiController]
-    lazy val apiKeyConsumptionAdminApiController = wire[ApiKeyConsumptionAdminApiController]
+    lazy val apiKeyConsumptionAdminApiController =
+      wire[ApiKeyConsumptionAdminApiController]
     lazy val auditEventAdminApiController = wire[AuditEventAdminApiController]
     lazy val integrationApiController = wire[IntegrationApiController]
     lazy val translationController = wire[TranslationController]
@@ -125,10 +138,12 @@ package object modules {
     lazy val logger = Logger("daikoku-error-handler")
 
     def onClientError(request: RequestHeader, statusCode: Int, mess: String) = {
-      val uuid = java.util.UUID.nameUUIDFromBytes(new SecureRandom().generateSeed(16))
+      val uuid =
+        java.util.UUID.nameUUIDFromBytes(new SecureRandom().generateSeed(16))
       val message =
         Option(mess).filterNot(_.trim.isEmpty).getOrElse("An error occured")
-      val errorMessage = s"Client Error [$uuid]: $message on ${request.relativeUri} ($statusCode)"
+      val errorMessage =
+        s"Client Error [$uuid]: $message on ${request.relativeUri} ($statusCode)"
 
       logger.error(errorMessage)
       Errors.craftResponseResult(
@@ -141,9 +156,12 @@ package object modules {
     }
 
     def onServerError(request: RequestHeader, exception: Throwable) = {
-      val uuid = java.util.UUID.nameUUIDFromBytes(new SecureRandom().generateSeed(16))
+      val uuid =
+        java.util.UUID.nameUUIDFromBytes(new SecureRandom().generateSeed(16))
 
-      logger.error(s"Server Error [$uuid]: ${exception.getMessage} on ${request.relativeUri}", exception)
+      logger.error(
+        s"Server Error [$uuid]: ${exception.getMessage} on ${request.relativeUri}",
+        exception)
       Errors.craftResponseResult(
         s"Server Error: $uuid",
         Results.InternalServerError,
@@ -154,34 +172,41 @@ package object modules {
     }
   }
 
-  private class SecurityFilter(env: Env)(implicit val mat: Materializer, ec: ExecutionContext) extends Filter {
+  private class SecurityFilter(env: Env)(implicit val mat: Materializer,
+                                         ec: ExecutionContext)
+      extends Filter {
     val regex = Pattern.compile("\\/api\\/apis\\/.*\\/pages\\/.*\\/content")
-    def apply(nextFilter: RequestHeader => Future[Result])(request: RequestHeader): Future[Result] = {
+    def apply(nextFilter: RequestHeader => Future[Result])(
+        request: RequestHeader): Future[Result] = {
       nextFilter(request).map { result =>
         env.config.mode match {
           case DaikokuMode.Dev => result
-          case DaikokuMode.Prod if regex.matcher(request.relativeUri).find() => {
+          case DaikokuMode.Prod
+              if regex.matcher(request.relativeUri).find() => {
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net localhost:3000 blob:; img-src * data: blob:; font-src 'self' https://*; connect-src *",
               "X-XSS-Protection" -> "1 ; mode=block",
               "X-Content-Type-Options" -> "nosniff",
             )
           }
-          case DaikokuMode.Prod if request.relativeUri.startsWith("/team-assets/") => {
+          case DaikokuMode.Prod
+              if request.relativeUri.startsWith("/team-assets/") => {
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
               "X-XSS-Protection" -> "1 ; mode=block",
               "X-Content-Type-Options" -> "nosniff",
             )
           }
-          case DaikokuMode.Prod if request.relativeUri.startsWith("/tenant-assets/") => {
+          case DaikokuMode.Prod
+              if request.relativeUri.startsWith("/tenant-assets/") => {
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
               "X-XSS-Protection" -> "1 ; mode=block",
               "X-Content-Type-Options" -> "nosniff",
             )
           }
-          case DaikokuMode.Prod if request.relativeUri.startsWith("/user-assets/") => {
+          case DaikokuMode.Prod
+              if request.relativeUri.startsWith("/user-assets/") => {
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
               "X-XSS-Protection" -> "1 ; mode=block",

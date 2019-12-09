@@ -9,14 +9,16 @@ import { AvatarChooser, Spinner } from '../../utils';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-
 export class TeamEditComponent extends Component {
   state = {
     team: null,
-    tab: 'infos'
+    tab: 'infos',
   };
 
-  flow = window.location.pathname.indexOf('/edition') === -1 ? ['_id', '_tenant', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'] : ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'];
+  flow =
+    window.location.pathname.indexOf('/edition') === -1
+      ? ['_id', '_tenant', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata']
+      : ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'];
 
   schema = {
     _id: {
@@ -60,8 +62,8 @@ export class TeamEditComponent extends Component {
     avatarFrom: {
       type: AvatarChooser,
       props: {
-        team: () => this.state.team
-      }
+        team: () => this.state.team,
+      },
     },
     metadata: {
       type: 'object',
@@ -78,16 +80,14 @@ export class TeamEditComponent extends Component {
 
   save = () => {
     if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
-      Services.createTeam(this.state.team)
-        .then(team => {
-          this.setState({ team });
-          window.location.reload();
-        });
+      Services.createTeam(this.state.team).then(team => {
+        this.setState({ team });
+        window.location.reload();
+      });
     } else {
-      Services.updateTeam(this.state.team)
-        .then(team => {
-          this.setState({ team }, () => this.props.updateTeam(team));
-        });
+      Services.updateTeam(this.state.team).then(team => {
+        this.setState({ team }, () => this.props.updateTeam(team));
+      });
     }
   };
 
@@ -101,7 +101,7 @@ export class TeamEditComponent extends Component {
     }
 
     return (
-      <TeamBackOffice >
+      <TeamBackOffice>
         <div className="row d-flex justify-content-start align-items-center">
           {this.state.team && (
             <div
@@ -141,7 +141,7 @@ export class TeamEditComponent extends Component {
             href="#"
             onClick={() => this.props.history.goBack()}>
             <i className="fas fa-chevron-left" /> Back
-                </a>
+          </a>
           <button
             style={{ marginLeft: 5 }}
             type="button"
@@ -150,7 +150,7 @@ export class TeamEditComponent extends Component {
             onClick={this.members}>
             <span>
               <i className="fas fa-users" /> Members
-                  </span>
+            </span>
           </button>
           <button
             style={{ marginLeft: 5 }}
@@ -160,12 +160,12 @@ export class TeamEditComponent extends Component {
             {!this.state.create && (
               <span>
                 <i className="fas fa-save" /> Save
-                </span>
+              </span>
             )}
             {this.state.create && (
               <span>
                 <i className="fas fa-save" /> Create
-                </span>
+              </span>
             )}
           </button>
         </div>
@@ -182,7 +182,4 @@ const mapDispatchToProps = {
   updateTeam: team => updateTeamPromise(team),
 };
 
-export const TeamEdit = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(TeamEditComponent);
+export const TeamEdit = connect(mapStateToProps, mapDispatchToProps)(TeamEditComponent);

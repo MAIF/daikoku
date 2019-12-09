@@ -5,10 +5,10 @@ import uuidv4 from 'uuid/v4';
 
 const placements = ['topRight', 'topLeft', 'bottomRight', 'bottomLeft'];
 
-export const AvatarWithAction = (props) => {
+export const AvatarWithAction = props => {
   const [secondaryActions, setSecondaryActions] = useState([]);
 
-  const handleAction = (action) => {
+  const handleAction = action => {
     if (secondaryActions.length) {
       setSecondaryActions([]);
     }
@@ -22,13 +22,17 @@ export const AvatarWithAction = (props) => {
     if (Array.isArray(action.action)) {
       ActionComponent = (
         <span className="avatar-with-action__action" key={uuid}>
-          <a href={action.link}><i className={action.iconClass} onClick={() => setSecondaryActions(action.action)} /></a>
+          <a href={action.link}>
+            <i className={action.iconClass} onClick={() => setSecondaryActions(action.action)} />
+          </a>
         </span>
       );
     } else if (action.link) {
       ActionComponent = (
         <span className="avatar-with-action__action" key={uuid}>
-          <a href={action.link}><i className={action.iconClass} onClick={() => handleAction(action.action)} /></a>
+          <a href={action.link}>
+            <i className={action.iconClass} onClick={() => handleAction(action.action)} />
+          </a>
         </span>
       );
     } else {
@@ -49,15 +53,12 @@ export const AvatarWithAction = (props) => {
     return ActionComponent;
   };
 
-
   return (
     <div className="avatar-with-action">
       <div className="container">
         <div className="overlay" />
         <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />
-        <div className="avatar-with-action__infos">
-          {props.infos}
-        </div>
+        <div className="avatar-with-action__infos">{props.infos}</div>
         {!secondaryActions.length && props.actions.map((action, idx) => getAction(action, idx))}
         {!!secondaryActions.length && secondaryActions.map((action, idx) => getAction(action, idx))}
       </div>
@@ -67,14 +68,13 @@ export const AvatarWithAction = (props) => {
 
 AvatarWithAction.propTypes = {
   avatar: PropTypes.string.isRequired,
-  infos: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.element
-  ]),
-  actions: PropTypes.arrayOf(PropTypes.shape({
-    action: PropTypes.oneOfType([PropTypes.func, PropTypes.array]),
-    link: PropTypes.string,
-    iconClass: PropTypes.string.isRequired,
-    tooltip: PropTypes.string
-  }))
+  infos: PropTypes.oneOfType([PropTypes.string, PropTypes.element]),
+  actions: PropTypes.arrayOf(
+    PropTypes.shape({
+      action: PropTypes.oneOfType([PropTypes.func, PropTypes.array]),
+      link: PropTypes.string,
+      iconClass: PropTypes.string.isRequired,
+      tooltip: PropTypes.string,
+    })
+  ),
 };

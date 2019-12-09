@@ -2,31 +2,33 @@ import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import _ from 'lodash';
 
-import { TextInput } from '../../inputs'
-import { Option, manage, Can, daikoku } from '../../utils'
+import { TextInput } from '../../inputs';
+import { Option, manage, Can, daikoku } from '../../utils';
 import * as Services from '../../../services';
-import { languages } from '../../../locales'
-
+import { languages } from '../../../locales';
 
 export const TeamTranslationForm = ({ team, t, onTranslationChange }) => {
-  const [translation, setTranslation] = useState(t)
-  const [language, setLanguage] = useState(languages[0])
+  const [translation, setTranslation] = useState(t);
+  const [language, setLanguage] = useState(languages[0]);
 
   useEffect(() => {
-    onTranslationChange(translation)
-  }, [translation])
+    onTranslationChange(translation);
+  }, [translation]);
 
   const getTranslatedValue = (key, lng) => {
     return Option(translation)
       .map(t => t[lng])
-      .fold(() => undefined, t => t[key])
-  }
+      .fold(
+        () => undefined,
+        t => t[key]
+      );
+  };
 
-  const descriptionKey = `${team._id}.description`
+  const descriptionKey = `${team._id}.description`;
 
   const handleChange = (value, key) => {
-    setTranslation({ ...translation, [language]: { ...translation[language], [key]: value } })
-  }
+    setTranslation({ ...translation, [language]: { ...translation[language], [key]: value } });
+  };
 
   return (
     <Can I={manage} a={daikoku} dispatchError>
@@ -49,5 +51,5 @@ export const TeamTranslationForm = ({ team, t, onTranslationChange }) => {
         </div>
       </div>
     </Can>
-  )
-}
+  );
+};

@@ -1,4 +1,3 @@
-
 export function currentTenant(team) {
   return fetch(`/api/teams/${team}/tenant`, {
     method: 'GET',
@@ -279,7 +278,7 @@ export function deleteApiKey(teamId, subscriptionId) {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-    }
+    },
   }).then(r => r.json());
 }
 
@@ -290,7 +289,7 @@ export function archiveApiKey(teamId, subscriptionId, enable) {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-    }
+    },
   }).then(r => r.json());
 }
 
@@ -301,7 +300,7 @@ export function cleanArchivedSubscriptions(teamId) {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-    }
+    },
   }).then(r => r.json());
 }
 
@@ -1130,7 +1129,7 @@ export function updateSubscriptionCustomName(team, subscription, customName) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({customName}),
+    body: JSON.stringify({ customName }),
   }).then(r => r.json());
 }
 

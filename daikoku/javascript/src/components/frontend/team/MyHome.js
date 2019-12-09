@@ -17,14 +17,11 @@ class MyHomeComponent extends Component {
 
   fetchData = () => {
     this.setState({ loading: true }, () => {
-      Promise.all([
-        Services.myVisibleApis(),
-        Services.teams(),
-        Services.myTeams()])
-        .then(([apis, teams, myTeams]) => {
+      Promise.all([Services.myVisibleApis(), Services.teams(), Services.myTeams()]).then(
+        ([apis, teams, myTeams]) => {
           this.setState({ apis, teams, myTeams, loading: false });
         }
-        );
+      );
     });
   };
 
@@ -43,8 +40,7 @@ class MyHomeComponent extends Component {
   }
 
   askForApiAccess = (api, teams) => {
-    return Services.askForApiAccess(teams, api._id)
-      .then(() => this.fetchData());
+    return Services.askForApiAccess(teams, api._id).then(() => this.fetchData());
   };
 
   redirectToTeamPage = team => {
@@ -89,7 +85,9 @@ class MyHomeComponent extends Component {
               </div>
               <div className="col-sm-8 d-flex flex-column justify-content-center">
                 <h1 className="jumbotron-heading">
-                  {this.props.tenant.title ? this.props.tenant.title : t('Your APIs center', this.props.currentLanguage)}
+                  {this.props.tenant.title
+                    ? this.props.tenant.title
+                    : t('Your APIs center', this.props.currentLanguage)}
                   {this.props.connectedUser.isDaikokuAdmin && (
                     <Link
                       to={`/settings/tenants/${this.props.tenant._humanReadableId}`}
@@ -98,7 +96,10 @@ class MyHomeComponent extends Component {
                     </Link>
                   )}
                 </h1>
-                <Description description={this.props.tenant.description} currentLanguage={this.props.currentLanguage} />
+                <Description
+                  description={this.props.tenant.description}
+                  currentLanguage={this.props.currentLanguage}
+                />
               </div>
             </div>
           </div>
@@ -126,11 +127,10 @@ const Description = props => {
       <p className="lead">
         <Translation i18nkey="Daikoku description start" language={props.currentLanguage}>
           Daikoku is the perfect
-          </Translation>
+        </Translation>
         <a href="https: //www.otoroshi.io">Otoroshi</a>
         <Translation i18nkey="Daikoku description end" language={props.currentLanguage}>
-          companion to manage,
-          document, and expose your beloved APIs to your developpers community.
+          companion to manage, document, and expose your beloved APIs to your developpers community.
           Publish a new API in a few seconds
         </Translation>
       </p>
@@ -148,7 +148,4 @@ const mapDispatchToProps = {
   updateTeam: team => updateTeamPromise(team),
 };
 
-export const MyHome = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(MyHomeComponent);
+export const MyHome = connect(mapStateToProps, mapDispatchToProps)(MyHomeComponent);

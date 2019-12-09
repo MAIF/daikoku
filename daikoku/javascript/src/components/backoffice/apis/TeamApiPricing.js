@@ -4,19 +4,31 @@ import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import faker from 'faker';
 import Select from 'react-select';
-import classNames from 'classnames'
+import classNames from 'classnames';
 
 import { Spinner } from '../../utils';
-import { t, Translation } from "../../../locales";
+import { t, Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 const SUBSCRIPTION_PLAN_TYPES = {
-  FreeWithoutQuotas: {defaultName: 'Free plan', defaultDescription: 'Free plan with unlimited number of calls per day and per month'},
-  FreeWithQuotas: {defaultName: 'Free plan with quotas', defaultDescription: 'Free plan with limited number of calls per day and per month'},
-  QuotasWithLimits: {defaultName: 'Quotas with limits', defaultDescription: 'Priced plan with limited number of calls per day and per month'},
-  QuotasWithoutLimits: {defaultName: 'Quotas with Pay per use', defaultDescription: 'Priced plan with unlimited number of calls per day and per month'},
-  PayPerUse: {defaultName: 'Pay per use', defaultDescription: 'Plan priced on usage'},
+  FreeWithoutQuotas: {
+    defaultName: 'Free plan',
+    defaultDescription: 'Free plan with unlimited number of calls per day and per month',
+  },
+  FreeWithQuotas: {
+    defaultName: 'Free plan with quotas',
+    defaultDescription: 'Free plan with limited number of calls per day and per month',
+  },
+  QuotasWithLimits: {
+    defaultName: 'Quotas with limits',
+    defaultDescription: 'Priced plan with limited number of calls per day and per month',
+  },
+  QuotasWithoutLimits: {
+    defaultName: 'Quotas with Pay per use',
+    defaultDescription: 'Priced plan with unlimited number of calls per day and per month',
+  },
+  PayPerUse: { defaultName: 'Pay per use', defaultDescription: 'Plan priced on usage' },
 };
 
 const PUBLIC = 'Public';
@@ -28,9 +40,15 @@ export class TeamApiPricing extends Component {
     tenant: null,
   };
 
-  otoroshiFlow = (_found) => {
+  otoroshiFlow = _found => {
     console.log(_found.otoroshiTarget.otoroshiSettings, _found.otoroshiTarget.serviceGroup);
-    if (!(!!_found.otoroshiTarget && !!_found.otoroshiTarget.otoroshiSettings && !!_found.otoroshiTarget.serviceGroup)) {
+    if (
+      !(
+        !!_found.otoroshiTarget &&
+        !!_found.otoroshiTarget.otoroshiSettings &&
+        !!_found.otoroshiTarget.serviceGroup
+      )
+    ) {
       return [
         `>>> ${t('Otoroshi', this.props.currentLanguage)}`,
         'otoroshiTarget.otoroshiSettings',
@@ -55,28 +73,37 @@ export class TeamApiPricing extends Component {
     ];
   };
 
-  otoroshiForm = (_found) => {
-    
-    console.log(_found.otoroshiTarget.otoroshiSettings, _found.otoroshiTarget.serviceGroup, this.props.value);
-    if (!(!!_found.otoroshiTarget && !!_found.otoroshiTarget.otoroshiSettings && !!_found.otoroshiTarget.serviceGroup)) {
+  otoroshiForm = _found => {
+    console.log(
+      _found.otoroshiTarget.otoroshiSettings,
+      _found.otoroshiTarget.serviceGroup,
+      this.props.value
+    );
+    if (
+      !(
+        !!_found.otoroshiTarget &&
+        !!_found.otoroshiTarget.otoroshiSettings &&
+        !!_found.otoroshiTarget.serviceGroup
+      )
+    ) {
       return {
         'otoroshiTarget.otoroshiSettings': {
           type: 'select',
           props: {
             label: t('Otoroshi instance', this.props.currentLanguage),
-            possibleValues: this.state.tenant ? this.state.tenant.otoroshiSettings.map(s => ({
-              label: s.url,
-              value: s._id,
-            })) : [],
+            possibleValues: this.state.tenant
+              ? this.state.tenant.otoroshiSettings.map(s => ({
+                  label: s.url,
+                  value: s._id,
+                }))
+              : [],
           },
         },
         'otoroshiTarget.serviceGroup': {
           type: 'select',
           props: {
             label: t('Service group', this.props.currentLanguage),
-            valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${
-              _found.otoroshiTarget.otoroshiSettings
-            }/groups`,
+            valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${_found.otoroshiTarget.otoroshiSettings}/groups`,
             transformer: s => ({ label: s.name, value: s.id }),
             fetchCondition: () => !!_found.otoroshiTarget.otoroshiSettings,
           },
@@ -89,19 +116,19 @@ export class TeamApiPricing extends Component {
         type: 'select',
         props: {
           label: t('Otoroshi instance', this.props.currentLanguage),
-          possibleValues: this.state.tenant ? this.state.tenant.otoroshiSettings.map(s => ({
-            label: s.url,
-            value: s._id,
-          })) : [],
+          possibleValues: this.state.tenant
+            ? this.state.tenant.otoroshiSettings.map(s => ({
+                label: s.url,
+                value: s._id,
+              }))
+            : [],
         },
       },
       'otoroshiTarget.serviceGroup': {
         type: 'select',
         props: {
           label: t('Service group', this.props.currentLanguage),
-          valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${
-            found.otoroshiTarget.otoroshiSettings
-          }/groups`,
+          valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${found.otoroshiTarget.otoroshiSettings}/groups`,
           transformer: s => ({ label: s.name, value: s.id }),
           fetchCondition: () => !!found.otoroshiTarget.otoroshiSettings,
         },
@@ -128,7 +155,11 @@ export class TeamApiPricing extends Component {
         type: 'string',
         props: {
           label: t('Dynamic prefix', this.props.currentLanguage),
-          help: t('dynamic.prefix.help', this.props.currentLanguage, 'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'),
+          help: t(
+            'dynamic.prefix.help',
+            this.props.currentLanguage,
+            'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
+          ),
         },
       },
       'otoroshiTarget.apikeyCustomization.metadata': {
@@ -153,7 +184,11 @@ export class TeamApiPricing extends Component {
         type: 'bool',
         props: {
           label: t('Allow at last', this.props.currentLanguage),
-          help: t('allow.least.help', this.props.currentLanguage, 'Allowed path will be evaluated at last'),
+          help: t(
+            'allow.least.help',
+            this.props.currentLanguage,
+            'Allowed path will be evaluated at last'
+          ),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.allowed': {
@@ -189,16 +224,19 @@ export class TeamApiPricing extends Component {
     this.setState({ selected });
   };
 
-  smartNameAndDescription = (newType) => {
+  smartNameAndDescription = newType => {
     let response = {};
     if (newType !== this.state.selected.type) {
-      const {customName, customDescription, type} = this.state.selected;
-      const {defaultName, defaultDescription} = SUBSCRIPTION_PLAN_TYPES[type];
+      const { customName, customDescription, type } = this.state.selected;
+      const { defaultName, defaultDescription } = SUBSCRIPTION_PLAN_TYPES[type];
       if (!customName || customName === defaultName) {
-        response = {...response, customName: SUBSCRIPTION_PLAN_TYPES[newType].defaultName};
+        response = { ...response, customName: SUBSCRIPTION_PLAN_TYPES[newType].defaultName };
       }
       if (!customDescription || customDescription === defaultDescription) {
-        response = {...response, customDescription: SUBSCRIPTION_PLAN_TYPES[newType].defaultDescription};
+        response = {
+          ...response,
+          customDescription: SUBSCRIPTION_PLAN_TYPES[newType].defaultDescription,
+        };
       }
     }
     return response;
@@ -208,7 +246,7 @@ export class TeamApiPricing extends Component {
     if (!v.currency) {
       v.currency = { code: 'EUR' };
     }
-    v = {...v, ...this.smartNameAndDescription(v.type)};
+    v = { ...v, ...this.smartNameAndDescription(v.type) };
     const selected = this.props.value.possibleUsagePlans.filter(p => p._id === v._id)[0];
     const idx = this.props.value.possibleUsagePlans.indexOf(selected);
     let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
@@ -233,18 +271,20 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      `>>> ${t('Billing',this.props.currentLanguage)}`,
+      `>>> ${t('Billing', this.props.currentLanguage)}`,
       'billingDuration.value',
       'billingDuration.unit',
-      ...this.otoroshiFlow(found)
+      ...this.otoroshiFlow(found),
     ];
     const schema = {
-      _id: { type: 'string',
-      disabled: true,
-      props: {
-        label: t('Id', this.props.currentLanguage),
-        placeholder: '---'
-      }},
+      _id: {
+        type: 'string',
+        disabled: true,
+        props: {
+          label: t('Id', this.props.currentLanguage),
+          placeholder: '---',
+        },
+      },
       type: {
         type: 'select',
         props: {
@@ -261,8 +301,9 @@ export class TeamApiPricing extends Component {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', this.props.currentLanguage)
-        }},
+          label: t('Billing every', this.props.currentLanguage),
+        },
+      },
       'billingDuration.unit': {
         type: 'select',
         props: {
@@ -275,14 +316,18 @@ export class TeamApiPricing extends Component {
           ],
         },
       },
-      customName: { type: 'string', props: {
-        label: t('Name', this.props.currentLanguage),
-        placeholder: t('Plan name', this.props.currentLanguage) } },
+      customName: {
+        type: 'string',
+        props: {
+          label: t('Name', this.props.currentLanguage),
+          placeholder: t('Plan name', this.props.currentLanguage),
+        },
+      },
       customDescription: {
         type: 'string',
         props: {
           label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage)
+          placeholder: t('Plan description', this.props.currentLanguage),
         },
       },
       allowMultipleKeys: {
@@ -291,11 +336,11 @@ export class TeamApiPricing extends Component {
           label: t('Allow multiple apiKey demands', this.props.currentLanguage),
         },
       },
-      ...this.otoroshiForm(found)
+      ...this.otoroshiForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-          <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} /> 
+        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
       </React.Suspense>
     );
   };
@@ -321,14 +366,16 @@ export class TeamApiPricing extends Component {
       `>>> ${t('Billing', this.props.currentLanguage)}`,
       'billingDuration.value',
       'billingDuration.unit',
-      ...this.otoroshiFlow(found)
+      ...this.otoroshiFlow(found),
     ];
     const schema = {
-      _id: { type: 'string', disabled: true,
-      props: {
-        label: t('Id', this.props.currentLanguage),
-        placeholder: '---'
-      }
+      _id: {
+        type: 'string',
+        disabled: true,
+        props: {
+          label: t('Id', this.props.currentLanguage),
+          placeholder: '---',
+        },
       },
       type: {
         type: 'select',
@@ -347,7 +394,8 @@ export class TeamApiPricing extends Component {
         type: 'number',
         props: {
           label: t('Billing every', this.props.currentLanguage),
-        } },
+        },
+      },
       'billingDuration.unit': {
         type: 'select',
         props: {
@@ -385,22 +433,23 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Max. per month', this.props.currentLanguage),
           placeholder: t('Max. requests per month', this.props.currentLanguage),
-          },
+        },
       },
       customName: {
         type: 'string',
         props: {
           label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage), }
-          },
+          placeholder: t('Plan name', this.props.currentLanguage),
+        },
+      },
       customDescription: {
         type: 'string',
         props: {
           label: t('Description', this.props.currentLanguage),
           placeholder: t('Plan description', this.props.currentLanguage),
-          },
+        },
       },
-      ...this.otoroshiForm(found)
+      ...this.otoroshiForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -435,7 +484,7 @@ export class TeamApiPricing extends Component {
       'currency.code',
       'billingDuration.value',
       'billingDuration.unit',
-      ...this.otoroshiFlow(found)
+      ...this.otoroshiFlow(found),
     ];
     const schema = {
       _id: {
@@ -443,8 +492,9 @@ export class TeamApiPricing extends Component {
         disabled: true,
         props: {
           label: t('Id', this.props.currentLanguage),
-          placeholder: '---'
-        }},
+          placeholder: '---',
+        },
+      },
       type: {
         type: 'select',
         props: {
@@ -461,8 +511,9 @@ export class TeamApiPricing extends Component {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', this.props.currentLanguage)
-        }},
+          label: t('Billing every', this.props.currentLanguage),
+        },
+      },
       'billingDuration.unit': {
         type: 'select',
         props: {
@@ -493,7 +544,7 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Trial period unit', this.props.currentLanguage),
           possibleValues: [
-            { label: 'Hours', value: 'hours' },//todo: maybe translate label ???
+            { label: 'Hours', value: 'hours' }, //todo: maybe translate label ???
             { label: 'Days', value: 'days' },
             { label: 'Months', value: 'months' },
             { label: 'Years', value: 'years' },
@@ -504,28 +555,28 @@ export class TeamApiPricing extends Component {
         type: 'number',
         props: {
           label: t('Max. per second', this.props.currentLanguage),
-          placeholder: t('Max. requests per second', this.props.currentLanguage)
+          placeholder: t('Max. requests per second', this.props.currentLanguage),
         },
       },
       maxPerDay: {
         type: 'number',
         props: {
           label: t('Max. per day', this.props.currentLanguage),
-          placeholder: t('Max. requests per day', this.props.currentLanguage)
+          placeholder: t('Max. requests per day', this.props.currentLanguage),
         },
       },
       maxPerMonth: {
         type: 'number',
         props: {
           label: t('Max. per month', this.props.currentLanguage),
-          placeholder: t('Max. requests per month', this.props.currentLanguage)
+          placeholder: t('Max. requests per month', this.props.currentLanguage),
         },
       },
       costPerMonth: {
         type: 'number',
         props: {
           label: t('Cost per month', this.props.currentLanguage),
-          placeholder: t('Cost per month', this.props.currentLanguage)
+          placeholder: t('Cost per month', this.props.currentLanguage),
         },
       },
       'currency.code': {
@@ -542,16 +593,17 @@ export class TeamApiPricing extends Component {
         type: 'string',
         props: {
           label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage)
-        }},
+          placeholder: t('Plan name', this.props.currentLanguage),
+        },
+      },
       customDescription: {
         type: 'string',
         props: {
           label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage)
+          placeholder: t('Plan description', this.props.currentLanguage),
         },
       },
-      ...this.otoroshiForm(found)
+      ...this.otoroshiForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -587,7 +639,7 @@ export class TeamApiPricing extends Component {
       'currency.code',
       'billingDuration.value',
       'billingDuration.unit',
-      ...this.otoroshiFlow(found)
+      ...this.otoroshiFlow(found),
     ];
     const schema = {
       _id: {
@@ -595,8 +647,9 @@ export class TeamApiPricing extends Component {
         disabled: true,
         props: {
           label: t('Id', this.props.currentLanguage),
-          placeholder: '---'
-        }},
+          placeholder: '---',
+        },
+      },
       type: {
         type: 'select',
         props: {
@@ -613,8 +666,9 @@ export class TeamApiPricing extends Component {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', this.props.currentLanguage)
-        }},
+          label: t('Billing every', this.props.currentLanguage),
+        },
+      },
       'billingDuration.unit': {
         type: 'select',
         props: {
@@ -637,7 +691,7 @@ export class TeamApiPricing extends Component {
         type: 'number',
         props: {
           label: t('Trial period', this.props.currentLanguage),
-          placeholder: t('The trial period', this.props.currentLanguage)
+          placeholder: t('The trial period', this.props.currentLanguage),
         },
       },
       'trialPeriod.unit': {
@@ -656,35 +710,35 @@ export class TeamApiPricing extends Component {
         type: 'number',
         props: {
           label: t('Max. per second', this.props.currentLanguage),
-          placeholder: t('Max. requests per second', this.props.currentLanguage)
+          placeholder: t('Max. requests per second', this.props.currentLanguage),
         },
       },
       maxPerDay: {
         type: 'number',
         props: {
           label: t('Max. per day', this.props.currentLanguage),
-          placeholder: t('Max. requests per day', this.props.currentLanguage)
+          placeholder: t('Max. requests per day', this.props.currentLanguage),
         },
       },
       maxPerMonth: {
         type: 'number',
         props: {
           label: t('Max. per month', this.props.currentLanguage),
-          placeholder: t('Max. requests per month', this.props.currentLanguage)
+          placeholder: t('Max. requests per month', this.props.currentLanguage),
         },
       },
       costPerMonth: {
         type: 'number',
         props: {
           label: t('Cost per month', this.props.currentLanguage),
-          placeholder: t('Cost per month', this.props.currentLanguage)
+          placeholder: t('Cost per month', this.props.currentLanguage),
         },
       },
       costPerAdditionalRequest: {
         type: 'number',
         props: {
           label: t('Cost per add. req.', this.props.currentLanguage),
-          placeholder: t('Cost per additionnal request', this.props.currentLanguage)
+          placeholder: t('Cost per additionnal request', this.props.currentLanguage),
         },
       },
       'currency.code': {
@@ -701,18 +755,19 @@ export class TeamApiPricing extends Component {
         type: 'string',
         props: {
           label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage)
-        } },
+          placeholder: t('Plan name', this.props.currentLanguage),
+        },
+      },
       customDescription: {
         type: 'string',
         props: {
           label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage)
+          placeholder: t('Plan description', this.props.currentLanguage),
         },
       },
-      ...this.otoroshiForm(found)
+      ...this.otoroshiForm(found),
     };
-    return (  
+    return (
       <React.Suspense fallback={<Spinner />}>
         <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
       </React.Suspense>
@@ -742,7 +797,7 @@ export class TeamApiPricing extends Component {
       `>>> ${t('Trial', this.props.currentLanguage)}`,
       'trialPeriod.value',
       'trialPeriod.unit',
-      ...this.otoroshiFlow(found)
+      ...this.otoroshiFlow(found),
     ];
     const schema = {
       _id: {
@@ -750,7 +805,9 @@ export class TeamApiPricing extends Component {
         disabled: true,
         props: {
           label: t('Id', this.props.currentLanguage),
-          placeholder: '---' } },
+          placeholder: '---',
+        },
+      },
       type: {
         type: 'select',
         props: {
@@ -768,13 +825,14 @@ export class TeamApiPricing extends Component {
         type: 'number',
         props: {
           label: t('Cost per month', this.props.currentLanguage),
-          placeholder: t('Cost per month', this.props.currentLanguage)
+          placeholder: t('Cost per month', this.props.currentLanguage),
         },
       },
       costPerRequest: {
         type: 'number',
-        props: { label: t('Cost per req.', this.props.currentLanguage),
-          placeholder: t('Cost per request', this.props.currentLanguage)
+        props: {
+          label: t('Cost per req.', this.props.currentLanguage),
+          placeholder: t('Cost per request', this.props.currentLanguage),
         },
       },
       'currency.code': {
@@ -790,8 +848,9 @@ export class TeamApiPricing extends Component {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', this.props.currentLanguage)
-        } },
+          label: t('Billing every', this.props.currentLanguage),
+        },
+      },
       'billingDuration.unit': {
         type: 'select',
         props: {
@@ -812,8 +871,9 @@ export class TeamApiPricing extends Component {
       },
       'trialPeriod.value': {
         type: 'number',
-        props: { label: t('Trial period', this.props.currentLanguage),
-          placeholder: t('The trial period', this.props.currentLanguage)
+        props: {
+          label: t('Trial period', this.props.currentLanguage),
+          placeholder: t('The trial period', this.props.currentLanguage),
         },
       },
       'trialPeriod.unit': {
@@ -832,22 +892,22 @@ export class TeamApiPricing extends Component {
         type: 'string',
         props: {
           label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage)
-        } },
+          placeholder: t('Plan name', this.props.currentLanguage),
+        },
+      },
       customDescription: {
         type: 'string',
         props: {
           label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage)
+          placeholder: t('Plan description', this.props.currentLanguage),
         },
       },
-      ...this.otoroshiForm(found)
+      ...this.otoroshiForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
         <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
       </React.Suspense>
-
     );
   };
 
@@ -884,7 +944,7 @@ export class TeamApiPricing extends Component {
           allowed: [],
           forbidden: [],
           notFound: [],
-        }
+        },
       },
     };
     plans.push(newPlan);
@@ -895,18 +955,26 @@ export class TeamApiPricing extends Component {
   };
 
   deletePlan = () => {
-    window.confirm(t('delete.plan.confirm', this.props.currentLanguage, 'Are you sure you want to delete this plan ?')).then(ok => {
-      if (ok) {
-        let plans = _.cloneDeep(this.props.value.possibleUsagePlans).filter(
-          p => p._id !== this.state.selected._id
-        );
-        const value = _.cloneDeep(this.props.value);
-        value.possibleUsagePlans = plans;
-        this.setState({ selected: plans.length ? plans[0] : null}, () => {
-          this.props.onChange(value);
-        });
-      }
-    });
+    window
+      .confirm(
+        t(
+          'delete.plan.confirm',
+          this.props.currentLanguage,
+          'Are you sure you want to delete this plan ?'
+        )
+      )
+      .then(ok => {
+        if (ok) {
+          let plans = _.cloneDeep(this.props.value.possibleUsagePlans).filter(
+            p => p._id !== this.state.selected._id
+          );
+          const value = _.cloneDeep(this.props.value);
+          value.possibleUsagePlans = plans;
+          this.setState({ selected: plans.length ? plans[0] : null }, () => {
+            this.props.onChange(value);
+          });
+        }
+      });
   };
 
   makesDefault = () => {
@@ -919,23 +987,20 @@ export class TeamApiPricing extends Component {
 
   makePrivate = () => {
     if (this.props.value.defaultUsagePlan !== this.state.selected._id) {
-
       const originalVisibility = this.state.selected.visibility;
       const visibility = originalVisibility === PUBLIC ? PRIVATE : PUBLIC;
       const updatedPlan = { ...this.state.selected, visibility };
-      this.select(updatedPlan)
+      this.select(updatedPlan);
 
-      const updatedValue = { 
-        ...this.props.value, 
-        possibleUsagePlans: 
-          [
-            ...this.props.value.possibleUsagePlans.filter(pp => pp._id !== this.state.selected._id), 
-            updatedPlan
-        ]}
-      
+      const updatedValue = {
+        ...this.props.value,
+        possibleUsagePlans: [
+          ...this.props.value.possibleUsagePlans.filter(pp => pp._id !== this.state.selected._id),
+          updatedPlan,
+        ],
+      };
+
       this.props.onChange(updatedValue);
-
-
     }
   };
 
@@ -947,12 +1012,12 @@ export class TeamApiPricing extends Component {
             <i className="fas fa-star" /> {plan.customName || plan.type}
           </span>
         ) : plan.visibility === PRIVATE ? (
-            <span>
-              <i className="fas fa-mask" /> {plan.customName || plan.type}
-            </span>
-          ) : (
-              <span>{plan.customName || plan.type}</span>
-            ),
+          <span>
+            <i className="fas fa-mask" /> {plan.customName || plan.type}
+          </span>
+        ) : (
+          <span>{plan.customName || plan.type}</span>
+        ),
       default: this.props.value.defaultUsagePlan === plan._id,
       value: plan._id,
       plan,
@@ -967,10 +1032,7 @@ export class TeamApiPricing extends Component {
 
     if (!this.props.value.possibleUsagePlans.length) {
       return (
-        <button
-          onClick={this.addNewPlan}
-          type="button"
-          className="btn btn-sm btn-outline-primary">
+        <button onClick={this.addNewPlan} type="button" className="btn btn-sm btn-outline-primary">
           <i className="fas fa-plus mr-1" />
           <Translation i18nkey="add a new plan" language={this.props.currentLanguage}>
             add a new plan
@@ -1017,32 +1079,43 @@ export class TeamApiPricing extends Component {
           {!!this.state.selected && (
             <div>
               <div className="d-flex justify-content-end">
-                {this.props.value.defaultUsagePlan !== this.state.selected._id && this.state.selected.visibility !== PRIVATE && (
+                {this.props.value.defaultUsagePlan !== this.state.selected._id &&
+                  this.state.selected.visibility !== PRIVATE && (
+                    <button
+                      onClick={this.makesDefault}
+                      type="button"
+                      className="btn btn-sm btn-outline-primary mr-1 mb-2">
+                      <i className="fas fa-star mr-1" title="Default plan" />
+                      <Translation
+                        i18nkey="Make default plan"
+                        language={this.props.currentLanguage}>
+                        Make default plan
+                      </Translation>
+                    </button>
+                  )}
+                {this.props.value.defaultUsagePlan !== this.state.selected._id && (
                   <button
-                    onClick={this.makesDefault}
+                    onClick={this.makePrivate}
                     type="button"
-                    className="btn btn-sm btn-outline-primary mr-1 mb-2">
-                    <i className="fas fa-star mr-1" title="Default plan" />
-                    <Translation i18nkey="Make default plan" language={this.props.currentLanguage}>
-                      Make default plan
-                    </Translation>
+                    className="btn btn-sm btn-outline-danger mb-2 mr-1">
+                    <i
+                      className={classNames('fas mr-1', {
+                        'fa-lock': this.state.selected.visibility === 'Public',
+                        'fa-unlock': this.state.selected.visibility === 'Private',
+                      })}
+                    />
+                    {this.state.selected.visibility === 'Public' && (
+                      <Translation i18nkey="Make it private" language={this.props.currentLanguage}>
+                        Make it private
+                      </Translation>
+                    )}
+                    {this.state.selected.visibility === 'Private' && (
+                      <Translation i18nkey="Make it public" language={this.props.currentLanguage}>
+                        Make it public
+                      </Translation>
+                    )}
                   </button>
                 )}
-                {this.props.value.defaultUsagePlan !== this.state.selected._id && <button
-                  onClick={this.makePrivate}
-                  type="button"
-                  className="btn btn-sm btn-outline-danger mb-2 mr-1">
-                  <i className={classNames("fas mr-1", {
-                    'fa-lock': this.state.selected.visibility === 'Public',
-                    'fa-unlock': this.state.selected.visibility === 'Private',
-                  })} />
-                  {this.state.selected.visibility === 'Public' && <Translation i18nkey="Make it private" language={this.props.currentLanguage}>
-                    Make it private
-                  </Translation>}
-                  {this.state.selected.visibility === 'Private' && <Translation i18nkey="Make it public" language={this.props.currentLanguage}>
-                    Make it public
-                  </Translation>}
-                </button>}
                 <button
                   onClick={this.deletePlan}
                   type="button"

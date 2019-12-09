@@ -16,27 +16,33 @@ import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration.FiniteDuration
 
-class SessionController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerComponents) extends AbstractController(cc) {
+class SessionController(DaikokuAction: DaikokuAction,
+                        env: Env,
+                        cc: ControllerComponents)
+    extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
 
   def allSessions() = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(AuditTrailEvent("@{user.name} has accessed all sessions"))(ctx) {
+    DaikokuAdminOnly(AuditTrailEvent("@{user.name} has accessed all sessions"))(
+      ctx) {
       env.dataStore.userSessionRepo.findAll().map { users =>
         Ok(JsArray(users.map(_.asJson)))
       }
     }
   }
   def deleteAllSessions() = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(AuditTrailEvent("@{user.name} has deleted all sessions"))(ctx) {
+    DaikokuAdminOnly(AuditTrailEvent("@{user.name} has deleted all sessions"))(
+      ctx) {
       env.dataStore.userSessionRepo.deleteAll().map { _ =>
         Ok(Json.obj("done" -> true))
       }
     }
   }
-  def deleteSession(id: String)  = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has deleted session with id ${id}"))(ctx) {
+  def deleteSession(id: String) = DaikokuAction.async { ctx =>
+    DaikokuAdminOnly(
+      AuditTrailEvent(s"@{user.name} has deleted session with id ${id}"))(ctx) {
       env.dataStore.userSessionRepo.deleteById(id).map { _ =>
         Ok(Json.obj("done" -> true))
       }
@@ -44,8 +50,11 @@ class SessionController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCo
   }
 
   def sessionRenew() = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(s"@{user.name} has renewed its session"))(ctx) {
-      val sessionMaxAge = (ctx.tenant.authProviderSettings \ "sessionMaxAge").asOpt[Int].getOrElse(86400)
+    PublicUserAccess(AuditTrailEvent(s"@{user.name} has renewed its session"))(
+      ctx) {
+      val sessionMaxAge = (ctx.tenant.authProviderSettings \ "sessionMaxAge")
+        .asOpt[Int]
+        .getOrElse(86400)
       val session = UserSession(
         id = MongoId(BSONObjectID.generate().stringify),
         userId = ctx.user.id,
@@ -64,7 +73,7 @@ class SessionController(DaikokuAction: DaikokuAction, env: Env, cc: ControllerCo
         env.dataStore.userSessionRepo.save(session).map { _ =>
           Ok(
             session.asSimpleJson
-          ).withSession("sessionId" -> session.sessionId.value )
+          ).withSession("sessionId" -> session.sessionId.value)
         }
       }
     }

@@ -4,8 +4,8 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 
 import { UserBackOffice } from '../../backoffice';
-import {AvatarChooser, Can, manage, daikoku, Spinner} from '../../utils';
-import {t, Translation} from  '../../../locales';
+import { AvatarChooser, Can, manage, daikoku, Spinner } from '../../utils';
+import { t, Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -14,7 +14,10 @@ class TeamEditForAdministrationComponent extends Component {
     team: null,
   };
 
-  flow = window.location.pathname.indexOf('/edition') === -1 ? ['_id', '_tenant', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'] : ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'];
+  flow =
+    window.location.pathname.indexOf('/edition') === -1
+      ? ['_id', '_tenant', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata']
+      : ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'];
 
   schema = {
     _id: {
@@ -24,7 +27,7 @@ class TeamEditForAdministrationComponent extends Component {
     _tenant: {
       type: 'select',
       props: {
-        label: t('Tenant',this.props.currentLanguage),
+        label: t('Tenant', this.props.currentLanguage),
         valuesFrom: '/api/tenants',
         transformer: tenant => ({ label: tenant.name, value: tenant._id }),
       },
@@ -59,8 +62,8 @@ class TeamEditForAdministrationComponent extends Component {
       type: AvatarChooser,
       props: {
         team: () => this.state.team,
-        currentLanguage: this.props.currentLanguage
-      }
+        currentLanguage: this.props.currentLanguage,
+      },
     },
     metadata: {
       type: 'object',
@@ -78,8 +81,7 @@ class TeamEditForAdministrationComponent extends Component {
         window.location.reload();
       });
     } else {
-      Services.updateTeam(this.state.team)
-        .then(team => this.setState({ team }));
+      Services.updateTeam(this.state.team).then(team => this.setState({ team }));
     }
   };
 
@@ -91,8 +93,9 @@ class TeamEditForAdministrationComponent extends Component {
     if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
       this.setState({ team: this.props.location.state.newTeam, create: true });
     } else {
-      Services.teamFull(this.props.match.params.teamSettingId)
-        .then(team => this.setState({ team }));
+      Services.teamFull(this.props.match.params.teamSettingId).then(team =>
+        this.setState({ team })
+      );
     }
   }
 
@@ -100,7 +103,7 @@ class TeamEditForAdministrationComponent extends Component {
     if (!this.state.team) {
       return null;
     }
-    
+
     return (
       <UserBackOffice tab="Teams">
         <Can I={manage} a={daikoku} dispatchError>
@@ -154,7 +157,7 @@ class TeamEditForAdministrationComponent extends Component {
                 disabled={this.state.create}
                 onClick={this.members}>
                 <span>
-                  <i className="fas fa-users mr-1" /> 
+                  <i className="fas fa-users mr-1" />
                   <Translation i18nkey="members" language={this.props.currentLanguage} isPlural>
                     Members
                   </Translation>
@@ -167,10 +170,10 @@ class TeamEditForAdministrationComponent extends Component {
                 onClick={this.save}>
                 {!this.state.create && (
                   <span>
-                    <i className="fas fa-save mr-1" /> 
+                    <i className="fas fa-save mr-1" />
                     <Translation i18nkey="Save" language={this.props.currentLanguage}>
                       Save
-                  </Translation>
+                    </Translation>
                   </span>
                 )}
                 {this.state.create && (
@@ -178,7 +181,7 @@ class TeamEditForAdministrationComponent extends Component {
                     <i className="fas fa-save mr-1" />
                     <Translation i18nkey="Create" language={this.props.currentLanguage}>
                       Create
-                  </Translation>
+                    </Translation>
                   </span>
                 )}
               </button>
@@ -194,6 +197,4 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamEditForAdmin = connect(
-  mapStateToProps
-)(TeamEditForAdministrationComponent);
+export const TeamEditForAdmin = connect(mapStateToProps)(TeamEditForAdministrationComponent);

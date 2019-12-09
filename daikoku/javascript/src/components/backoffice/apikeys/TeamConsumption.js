@@ -68,6 +68,4 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamConsumption = connect(
-  mapStateToProps
-)(TeamConsumptionComponent);
+export const TeamConsumption = connect(mapStateToProps)(TeamConsumptionComponent);

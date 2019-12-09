@@ -4,7 +4,7 @@ import Pagination from 'react-paginate';
 
 import * as Services from '../../../services';
 import { OrgaCard } from '.';
-import {t, Translation} from '../../../locales';
+import { t, Translation } from '../../../locales';
 
 class OrganizationChooserComponent extends Component {
   state = {
@@ -30,10 +30,10 @@ class OrganizationChooserComponent extends Component {
       searched === ''
         ? organizations
         : organizations.filter(orga => {
-          if (orga.name.toLowerCase().indexOf(searched) > -1) {
-            return true;
-          } else return orga.desc.toLowerCase().indexOf(searched) > -1;
-        });
+            if (orga.name.toLowerCase().indexOf(searched) > -1) {
+              return true;
+            } else return orga.desc.toLowerCase().indexOf(searched) > -1;
+          });
     const paginateOrganizations = filteredOrganizations.slice(
       this.state.offset,
       this.state.offset + this.state.pageNumber
@@ -66,7 +66,7 @@ class OrganizationChooserComponent extends Component {
               <input
                 type="text"
                 className="form-control"
-                placeholder={t("Search an organization", this.props.currentLanguage)}
+                placeholder={t('Search an organization', this.props.currentLanguage)}
                 aria-label="Search an organization"
                 value={this.state.searched}
                 onChange={e => this.setState({ searched: e.target.value })}
@@ -76,11 +76,12 @@ class OrganizationChooserComponent extends Component {
           <div className="row">
             <div className="d-flex col flex-column p-3">
               {paginateOrganizations.map(orga => (
-                <OrgaCard 
-                  key={orga._id} 
-                  user={this.props.connectedUser} 
+                <OrgaCard
+                  key={orga._id}
+                  user={this.props.connectedUser}
                   orga={orga}
-                  currentLanguage={this.props.currentLanguage} />
+                  currentLanguage={this.props.currentLanguage}
+                />
               ))}
               <div className="apis__pagination">
                 <Pagination

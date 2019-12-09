@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 
 import * as Services from '../../services';
 import { Error, Can, manage, read, api, apikey, stat, team, asset, daikoku } from '../utils';
-import {t, Translation} from '../../locales';
+import { t, Translation } from '../../locales';
 
 function elvis(value, f) {
   if (value) {
@@ -16,9 +16,9 @@ function elvis(value, f) {
 }
 
 const BackOfficeContent = props => {
-  return  (
+  return (
     <div className="pt-5 pr-3 pl-3" style={{ height: '100%' }}>
-      {props.error.status && <Error error={props.error}/>}
+      {props.error.status && <Error error={props.error} />}
       {!props.error.status && props.children}
     </div>
   );
@@ -41,8 +41,7 @@ class TeamBackOfficeHomeComponent extends Component {
       // document.getElementById('toggle-navigation').setAttribute('class', 'navbar-toggle collapsed');
     });
 
-    Services.teamHome(this.props.currentTeam._id)
-      .then(team => this.setState({ team }));
+    Services.teamHome(this.props.currentTeam._id).then(team => this.setState({ team }));
   }
 
   render() {
@@ -54,9 +53,7 @@ class TeamBackOfficeHomeComponent extends Component {
       <TeamBackOffice tab="Home">
         <div className="row">
           <div className="col">
-            <h1>
-              {this.props.currentTeam.name}{' '}
-            </h1>
+            <h1>{this.props.currentTeam.name} </h1>
             <div className="d-flex justify-content-center align-items-center col-12 mt-5">
               <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
                 <Link
@@ -64,7 +61,10 @@ class TeamBackOfficeHomeComponent extends Component {
                   className="home-tile">
                   <span className="home-tile-number">{this.state.team.apisCount}</span>
                   <span className="home-tile-text">
-                    <Translation i18nkey="apis published" language={this.props.currentLanguage} count={this.state.team.apisCount}>
+                    <Translation
+                      i18nkey="apis published"
+                      language={this.props.currentLanguage}
+                      count={this.state.team.apisCount}>
                       apis published
                     </Translation>
                   </span>
@@ -74,17 +74,27 @@ class TeamBackOfficeHomeComponent extends Component {
                   className="home-tile">
                   <span className="home-tile-number">{this.state.team.subscriptionsCount}</span>
                   <span className="home-tile-text">
-                    <Translation i18nkey="apis subcriptions" language={this.props.currentLanguage} count={this.state.team.subscriptionsCount}>
+                    <Translation
+                      i18nkey="apis subcriptions"
+                      language={this.props.currentLanguage}
+                      count={this.state.team.subscriptionsCount}>
                       apis subcriptions
                     </Translation>
                   </span>
                 </Link>
                 <Link
-                  to={this.props.currentTeam.type === 'Personal' ? '#' : `/${this.props.currentTeam._humanReadableId}/settings/members`}
+                  to={
+                    this.props.currentTeam.type === 'Personal'
+                      ? '#'
+                      : `/${this.props.currentTeam._humanReadableId}/settings/members`
+                  }
                   className="home-tile">
                   <span className="home-tile-number">{this.state.team.users.length}</span>
                   <span className="home-tile-text">
-                    <Translation i18nkey="members" language={this.props.currentLanguage} count={this.state.team.users.length}>
+                    <Translation
+                      i18nkey="members"
+                      language={this.props.currentLanguage}
+                      count={this.state.team.users.length}>
                       members
                     </Translation>
                   </span>
@@ -92,7 +102,10 @@ class TeamBackOfficeHomeComponent extends Component {
                 <Link to={'/notifications'} className="home-tile">
                   <span className="home-tile-number">{this.state.team.notificationCount}</span>
                   <span className="home-tile-text">
-                    <Translation i18nkey="unread notifications" language={this.props.currentLanguage} count={this.state.team.notificationCount}>
+                    <Translation
+                      i18nkey="unread notifications"
+                      language={this.props.currentLanguage}
+                      count={this.state.team.notificationCount}>
                       unread notifications
                     </Translation>
                   </span>
@@ -132,7 +145,7 @@ class TeamBackOfficeComponent extends Component {
 
   render() {
     const { tab, currentTeam } = this.props;
-    
+
     if (!currentTeam) {
       return null;
     }
@@ -156,15 +169,14 @@ class TeamBackOfficeComponent extends Component {
               <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
                 <div className="sidebar-sticky">
                   <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                    <Link
-                      to={`/${currentTeam._humanReadableId}/settings`}>
+                    <Link to={`/${currentTeam._humanReadableId}/settings`}>
                       {this.props.currentTeam.name}
                     </Link>
-                    <Can I={manage} a={team} team={this.props.currentTeam} >
+                    <Can I={manage} a={team} team={this.props.currentTeam}>
                       <Link
                         to={`/${this.props.currentTeam._humanReadableId}/settings/edition`}
                         className=""
-                        title={t("Update team", this.props.currentLanguage)}>
+                        title={t('Update team', this.props.currentLanguage)}>
                         <i className="fas fa-pen" />
                       </Link>
                     </Can>
@@ -191,7 +203,7 @@ class TeamBackOfficeComponent extends Component {
                           </Translation>
                         </Link>
                       </li>
-                    </Can> 
+                    </Can>
                     <Can I={read} a={stat} team={this.props.currentTeam}>
                       <li className="nav-item">
                         <Link
@@ -233,7 +245,9 @@ class TeamBackOfficeComponent extends Component {
                               fill="#999"
                             />
                           </svg>
-                          <Translation i18nkey="Team api keys" language={this.props.currentLanguage}>
+                          <Translation
+                            i18nkey="Team api keys"
+                            language={this.props.currentLanguage}>
                             Team api keys
                           </Translation>
                         </Link>
@@ -264,35 +278,38 @@ class TeamBackOfficeComponent extends Component {
                         </Link>
                       </li>
                     </Can>
-                    
-                    {this.props.currentTeam.type !== 'Personal' && 
-                    <Can I={manage} a={team} team={this.props.currentTeam}>
-                      <li className="nav-item">
-                        <Link
-                          className={`nav-link ${tab === 'Members' ? 'active' : ''}`}
-                          to={`/${currentTeam._humanReadableId}/settings/members`}>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="feather feather-users">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                            <circle cx="9" cy="7" r="4" />
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                          </svg>
-                          <Translation i18nkey="Team members" language={this.props.currentLanguage}>
-                            Team members
-                          </Translation>
-                        </Link>
-                      </li>
-                    </Can>}
+
+                    {this.props.currentTeam.type !== 'Personal' && (
+                      <Can I={manage} a={team} team={this.props.currentTeam}>
+                        <li className="nav-item">
+                          <Link
+                            className={`nav-link ${tab === 'Members' ? 'active' : ''}`}
+                            to={`/${currentTeam._humanReadableId}/settings/members`}>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="feather feather-users">
+                              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                              <circle cx="9" cy="7" r="4" />
+                              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                            <Translation
+                              i18nkey="Team members"
+                              language={this.props.currentLanguage}>
+                              Team members
+                            </Translation>
+                          </Link>
+                        </li>
+                      </Can>
+                    )}
                     <Can I={manage} a={asset} team={this.props.currentTeam}>
                       <li className="nav-item">
                         <Link
@@ -315,12 +332,15 @@ class TeamBackOfficeComponent extends Component {
                   </ul>
                 </div>
               </nav>
-              <main
-                role="main"
-                className="col-md-10 ml-sm-auto px-4 sidebar-next-main">
-
-                <div className={classNames('back-office-overlay', {active: this.props.isLoading && !this.props.error.status})} />
-                <BackOfficeContent error={this.props.error}>{this.props.children}</BackOfficeContent>
+              <main role="main" className="col-md-10 ml-sm-auto px-4 sidebar-next-main">
+                <div
+                  className={classNames('back-office-overlay', {
+                    active: this.props.isLoading && !this.props.error.status,
+                  })}
+                />
+                <BackOfficeContent error={this.props.error}>
+                  {this.props.children}
+                </BackOfficeContent>
               </main>
             </div>
           )}
@@ -333,7 +353,7 @@ class TeamBackOfficeComponent extends Component {
 class UserBackOfficeComponent extends Component {
   render() {
     const { tab } = this.props;
-    
+
     return (
       <>
         <Route
@@ -358,9 +378,9 @@ class UserBackOfficeComponent extends Component {
                       <Link
                         className={`nav-link ${tab === 'Me' ? 'active' : ''}`}
                         to={'/settings/me'}>
-                        <i className="fas fa-user mr-1" /> 
+                        <i className="fas fa-user mr-1" />
                         <Translation i18nkey="My profile" language={this.props.currentLanguage}>
-                            My profile
+                          My profile
                         </Translation>
                       </Link>
                     </li>
@@ -380,7 +400,9 @@ class UserBackOfficeComponent extends Component {
                   <Can I={manage} a={daikoku}>
                     <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                       <span>
-                        <Translation i18nkey="Tenant administration" language={this.props.currentLanguage}>
+                        <Translation
+                          i18nkey="Tenant administration"
+                          language={this.props.currentLanguage}>
                           Tenant administration
                         </Translation>
                       </span>
@@ -401,7 +423,10 @@ class UserBackOfficeComponent extends Component {
                               fill="#999"
                             />
                           </svg>{' '}
-                          <Translation i18nkey="Otoroshi instance" language={this.props.currentLanguage} isPlural>
+                          <Translation
+                            i18nkey="Otoroshi instance"
+                            language={this.props.currentLanguage}
+                            isPlural>
                             Otoroshi instances
                           </Translation>
                         </Link>
@@ -410,7 +435,7 @@ class UserBackOfficeComponent extends Component {
                         <Link
                           className={`nav-link ${tab === 'Audit trail' ? 'active' : ''}`}
                           to={'/settings/audit'}>
-                          <i className="fas fa-copy mr-1" /> 
+                          <i className="fas fa-copy mr-1" />
                           <Translation i18nkey="Audit trail" language={this.props.currentLanguage}>
                             Audit trail
                           </Translation>
@@ -453,7 +478,9 @@ class UserBackOfficeComponent extends Component {
                               marginRight: 5,
                             }}
                           />
-                          <Translation i18nkey="Tenant assets" language={this.props.currentLanguage}>
+                          <Translation
+                            i18nkey="Tenant assets"
+                            language={this.props.currentLanguage}>
                             Tenant assets
                           </Translation>
                         </Link>
@@ -461,7 +488,9 @@ class UserBackOfficeComponent extends Component {
                     </ul>
                     <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                       <span>
-                        <Translation i18nkey="Daikoku administration" language={this.props.currentLanguage}>
+                        <Translation
+                          i18nkey="Daikoku administration"
+                          language={this.props.currentLanguage}>
                           Daikoku administration
                         </Translation>
                       </span>
@@ -488,7 +517,7 @@ class UserBackOfficeComponent extends Component {
                             <line x1="16" y1="17" x2="8" y2="17" />
                             <polyline points="10 9 9 9 8 9" />
                           </svg>
-                          
+
                           <Translation i18nkey="Tenants" language={this.props.currentLanguage}>
                             Tenants
                           </Translation>
@@ -523,8 +552,10 @@ class UserBackOfficeComponent extends Component {
                         <Link
                           className={`nav-link ${tab === 'User sessions' ? 'active' : ''}`}
                           to={'/settings/sessions'}>
-                          <i className="fas fa-address-card mr-1" /> 
-                          <Translation i18nkey="User sessions" language={this.props.currentLanguage}>
+                          <i className="fas fa-address-card mr-1" />
+                          <Translation
+                            i18nkey="User sessions"
+                            language={this.props.currentLanguage}>
                             User sessions
                           </Translation>
                         </Link>
@@ -533,8 +564,10 @@ class UserBackOfficeComponent extends Component {
                         <Link
                           className={`nav-link ${tab === 'Import / Export' ? 'active' : ''}`}
                           to={'/settings/import-export'}>
-                          <i className="fas fa-download" /> 
-                          <Translation i18nkey="Import / Export" language={this.props.currentLanguage}>
+                          <i className="fas fa-download" />
+                          <Translation
+                            i18nkey="Import / Export"
+                            language={this.props.currentLanguage}>
                             Import / Export
                           </Translation>
                         </Link>
@@ -543,10 +576,10 @@ class UserBackOfficeComponent extends Component {
                   </Can>
                 </div>
               </nav>
-              <main
-                role="main"
-                className="col-md-10 ml-sm-auto px-4 sidebar-next-main">
-                <div className={classNames('back-office-overlay', {active: this.props.isLoading})} />
+              <main role="main" className="col-md-10 ml-sm-auto px-4 sidebar-next-main">
+                <div
+                  className={classNames('back-office-overlay', { active: this.props.isLoading })}
+                />
                 <BackOfficeContent error={this.props.error}>
                   {this.props.children}
                 </BackOfficeContent>
@@ -561,12 +594,10 @@ class UserBackOfficeComponent extends Component {
 
 const mapStateToProps = state => ({
   ...state.context,
-  error: state.error
+  error: state.error,
 });
 
 export const TeamBackOffice = connect(mapStateToProps)(TeamBackOfficeComponent);
 export const UserBackOffice = connect(mapStateToProps)(UserBackOfficeComponent);
 
-export const TeamBackOfficeHome = connect(
-  mapStateToProps
-)(TeamBackOfficeHomeComponent);
+export const TeamBackOfficeHome = connect(mapStateToProps)(TeamBackOfficeHomeComponent);

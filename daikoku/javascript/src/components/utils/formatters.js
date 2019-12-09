@@ -19,15 +19,15 @@ export const formatPlanType = (plan, language) => {
   }
 
   switch (plan.type) {
-  case 'FreeWithoutQuotas':
+    case 'FreeWithoutQuotas':
       return t('FreeWithoutQuotas', language, false, 'Free without quotas');
-  case 'FreeWithQuotas':
+    case 'FreeWithQuotas':
       return t('FreeWithQuotas', language, false, 'Free with quotas');
-  case 'QuotasWithLimits':
+    case 'QuotasWithLimits':
       return t('QuotasWithLimits', language, false, 'Quotas only');
-  case 'QuotasWithoutLimits':
+    case 'QuotasWithoutLimits':
       return t('Quotas / pay per use', language, false, 'Quotas / pay per use');
-  case 'PayPerUse':
+    case 'PayPerUse':
       return t('Pay per use', language, false, 'Pay per use');
   }
 };
@@ -35,5 +35,5 @@ export const formatPlanType = (plan, language) => {
 export const teamPermissions = {
   administrator: 'Administrator',
   ApiEditor: 'ApiEditor',
-  user: 'User'
+  user: 'User',
 };

@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import { Error } from '../utils';
 
-const FrontOfficeComponent = (props) => {
+const FrontOfficeComponent = props => {
   return (
     <>
       {props.error.status && <Error error={props.error} />}

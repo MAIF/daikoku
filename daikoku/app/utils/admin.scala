@@ -7,7 +7,11 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.auth0.jwt.JWT
 import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
+import fr.maif.otoroshi.daikoku.env.{
+  Env,
+  LocalAdminApiConfig,
+  OtoroshiAdminApiConfig
+}
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
 import gnieh.diffson.playJson._
@@ -25,29 +29,51 @@ import scala.util.{Success, Try}
 case class DaikokuApiActionContext[A](request: Request[A], tenant: Tenant)
 
 class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
-  extends ActionBuilder[DaikokuApiActionContext, AnyContent]
+    extends ActionBuilder[DaikokuApiActionContext, AnyContent]
     with ActionFunction[Request, DaikokuApiActionContext] {
 
   implicit lazy val ec = env.defaultExecutionContext
 
-  override def invokeBlock[A](request: Request[A], block: DaikokuApiActionContext[A] => Future[Result]): Future[Result] = {
+  override def invokeBlock[A](
+      request: Request[A],
+      block: DaikokuApiActionContext[A] => Future[Result]): Future[Result] = {
     TenantHelper.withTenant(request, env) { tenant =>
       env.config.adminApiConfig match {
-        case OtoroshiAdminApiConfig(headerName, algo) => request.headers.get(headerName) match {
-          case Some(value) => {
-            Try(JWT.require(algo).build().verify(value)) match {
-              case Success(decoded) if !decoded.getClaim("apikey").isNull => {
-                block(DaikokuApiActionContext[A](request, tenant))
+        case OtoroshiAdminApiConfig(headerName, algo) =>
+          request.headers.get(headerName) match {
+            case Some(value) => {
+              Try(JWT.require(algo).build().verify(value)) match {
+                case Success(decoded) if !decoded.getClaim("apikey").isNull => {
+                  block(DaikokuApiActionContext[A](request, tenant))
+                }
+                case _ =>
+                  Errors.craftResponseResult("No api key provided",
+                                             Results.Unauthorized,
+                                             request,
+                                             None,
+                                             env)
               }
-              case _ => Errors.craftResponseResult("No api key provided", Results.Unauthorized, request, None, env)
             }
+            case _ =>
+              Errors.craftResponseResult("No api key provided",
+                                         Results.Unauthorized,
+                                         request,
+                                         None,
+                                         env)
           }
-          case _ => Errors.craftResponseResult("No api key provided", Results.Unauthorized, request, None, env)
-        }
-        case LocalAdminApiConfig(keyValue) =>  request.getQueryString("key").orElse(request.headers.get("X-Api-Key")) match {
-          case Some(key) if key == keyValue => block(DaikokuApiActionContext[A](request, tenant))
-          case _ => Errors.craftResponseResult("No api key provided", Results.Unauthorized, request, None, env)
-        }
+        case LocalAdminApiConfig(keyValue) =>
+          request
+            .getQueryString("key")
+            .orElse(request.headers.get("X-Api-Key")) match {
+            case Some(key) if key == keyValue =>
+              block(DaikokuApiActionContext[A](request, tenant))
+            case _ =>
+              Errors.craftResponseResult("No api key provided",
+                                         Results.Unauthorized,
+                                         request,
+                                         None,
+                                         env)
+          }
       }
     }
   }
@@ -55,30 +81,52 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
   override protected def executionContext: ExecutionContext = ec
 }
 
-class DaikokuApiActionWithoutTenant(val parser: BodyParser[AnyContent], env: Env)
-  extends ActionBuilder[Request, AnyContent]
+class DaikokuApiActionWithoutTenant(val parser: BodyParser[AnyContent],
+                                    env: Env)
+    extends ActionBuilder[Request, AnyContent]
     with ActionFunction[Request, Request] {
 
   implicit lazy val ec = env.defaultExecutionContext
 
-  override def invokeBlock[A](request: Request[A], block: Request[A] => Future[Result]): Future[Result] = {
+  override def invokeBlock[A](
+      request: Request[A],
+      block: Request[A] => Future[Result]): Future[Result] = {
     println("invokeBlock")
     env.config.adminApiConfig match {
-      case OtoroshiAdminApiConfig(headerName, algo) => request.headers.get(headerName) match {
-        case Some(value) => {
-          Try(JWT.require(algo).build().verify(value)) match {
-            case Success(decoded) if !decoded.getClaim("apikey").isNull => {
-              block(request)
+      case OtoroshiAdminApiConfig(headerName, algo) =>
+        request.headers.get(headerName) match {
+          case Some(value) => {
+            Try(JWT.require(algo).build().verify(value)) match {
+              case Success(decoded) if !decoded.getClaim("apikey").isNull => {
+                block(request)
+              }
+              case _ =>
+                Errors.craftResponseResult("No api key provided",
+                                           Results.Unauthorized,
+                                           request,
+                                           None,
+                                           env)
             }
-            case _ => Errors.craftResponseResult("No api key provided", Results.Unauthorized, request, None, env)
           }
+          case _ =>
+            Errors.craftResponseResult("No api key provided",
+                                       Results.Unauthorized,
+                                       request,
+                                       None,
+                                       env)
         }
-        case _ => Errors.craftResponseResult("No api key provided", Results.Unauthorized, request, None, env)
-      }
-      case LocalAdminApiConfig(keyValue) =>  request.getQueryString("key").orElse(request.headers.get("X-Api-Key")) match {
-        case Some(key) if key == keyValue => block(request)
-        case _ => Errors.craftResponseResult("No api key provided", Results.Unauthorized, request, None, env)
-      }
+      case LocalAdminApiConfig(keyValue) =>
+        request
+          .getQueryString("key")
+          .orElse(request.headers.get("X-Api-Key")) match {
+          case Some(key) if key == keyValue => block(request)
+          case _ =>
+            Errors.craftResponseResult("No api key provided",
+                                       Results.Unauthorized,
+                                       request,
+                                       None,
+                                       env)
+        }
     }
   }
 
@@ -86,11 +134,10 @@ class DaikokuApiActionWithoutTenant(val parser: BodyParser[AnyContent], env: Env
 }
 
 abstract class AdminApiController[Of, Id <: ValueType](
-                                           DaikokuApiAction: DaikokuApiAction,
-                                           env: Env,
-                                           cc: ControllerComponents)
-
-  extends AbstractController(cc) {
+    DaikokuApiAction: DaikokuApiAction,
+    env: Env,
+    cc: ControllerComponents)
+    extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -106,56 +153,107 @@ abstract class AdminApiController[Of, Id <: ValueType](
   def entityClass: Class[Of]
 
   def findAll() = DaikokuApiAction.async { ctx =>
-    val paginationPage: Int = ctx.request.queryString.get("page").flatMap(_.headOption).map(_.toInt).getOrElse(1)
+    val paginationPage: Int = ctx.request.queryString
+      .get("page")
+      .flatMap(_.headOption)
+      .map(_.toInt)
+      .getOrElse(1)
     val paginationPageSize: Int =
-      ctx.request.queryString.get("pageSize").flatMap(_.headOption).map(_.toInt).getOrElse(Int.MaxValue)
+      ctx.request.queryString
+        .get("pageSize")
+        .flatMap(_.headOption)
+        .map(_.toInt)
+        .getOrElse(Int.MaxValue)
     val paginationPosition = (paginationPage - 1) * paginationPageSize
-    val allEntities = ctx.request.queryString.get("notDeleted").exists(_ == "true") match {
-      case true => entityStore(ctx.tenant, env.dataStore).findAllNotDeleted()
-      case false => entityStore(ctx.tenant, env.dataStore).findAll()
-    }
-    allEntities.map(all => all.drop(paginationPosition).take(paginationPageSize).map(entity => toJson(entity))).map { all =>
-      ctx.request.queryString.get("stream").exists(_ == "true") match {
-        case true => Ok.sendEntity(HttpEntity.Streamed(Source(all.map(a => ByteString(Json.stringify(a))).toList), None, Some("application/x-ndjson")))
-        case false => Ok(JsArray(all))
+    val allEntities =
+      ctx.request.queryString.get("notDeleted").exists(_ == "true") match {
+        case true  => entityStore(ctx.tenant, env.dataStore).findAllNotDeleted()
+        case false => entityStore(ctx.tenant, env.dataStore).findAll()
       }
-    }
-  }
-  
-  def findById(id: String) = DaikokuApiAction.async { ctx =>
-    val notDeleted: Boolean = ctx.request.queryString.get("notDeleted").exists(_ == "true")
-    notDeleted match {
-      case true => entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
-        case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
-        case None => Errors.craftResponseResult(s"$entityName not found", Results.NotFound, ctx.request, None, env)
+    allEntities
+      .map(
+        all =>
+          all
+            .drop(paginationPosition)
+            .take(paginationPageSize)
+            .map(entity => toJson(entity)))
+      .map { all =>
+        ctx.request.queryString.get("stream").exists(_ == "true") match {
+          case true =>
+            Ok.sendEntity(
+              HttpEntity.Streamed(
+                Source(all.map(a => ByteString(Json.stringify(a))).toList),
+                None,
+                Some("application/x-ndjson")))
+          case false => Ok(JsArray(all))
+        }
       }
-      case false => entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
-        case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
-        case None => Errors.craftResponseResult(s"$entityName not found", Results.NotFound, ctx.request, None, env)
-      }
-    }
   }
 
+  def findById(id: String) = DaikokuApiAction.async { ctx =>
+    val notDeleted: Boolean =
+      ctx.request.queryString.get("notDeleted").exists(_ == "true")
+    notDeleted match {
+      case true =>
+        entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
+          case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
+          case None =>
+            Errors.craftResponseResult(s"$entityName not found",
+                                       Results.NotFound,
+                                       ctx.request,
+                                       None,
+                                       env)
+        }
+      case false =>
+        entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
+          case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
+          case None =>
+            Errors.craftResponseResult(s"$entityName not found",
+                                       Results.NotFound,
+                                       ctx.request,
+                                       None,
+                                       env)
+        }
+    }
+  }
 
   def createEntity() = DaikokuApiAction.async(parse.json) { ctx =>
     fromJson(ctx.request.body) match {
       case Left(e) =>
         logger.error(s"Bad $entityName format", new RuntimeException(e))
-        Errors.craftResponseResult(s"Bad $entityName format", Results.BadRequest, ctx.request, None, env)
-      case Right(newEntity) => entityStore(ctx.tenant, env.dataStore).save(newEntity).map(_ => Created(toJson(newEntity)))
+        Errors.craftResponseResult(s"Bad $entityName format",
+                                   Results.BadRequest,
+                                   ctx.request,
+                                   None,
+                                   env)
+      case Right(newEntity) =>
+        entityStore(ctx.tenant, env.dataStore)
+          .save(newEntity)
+          .map(_ => Created(toJson(newEntity)))
     }
   }
 
   def updateEntity(id: String) = DaikokuApiAction.async(parse.json) { ctx =>
     entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
-      case None => Errors.craftResponseResult(s"Entity $entityName not found", Results.NotFound, ctx.request, None, env)
+      case None =>
+        Errors.craftResponseResult(s"Entity $entityName not found",
+                                   Results.NotFound,
+                                   ctx.request,
+                                   None,
+                                   env)
       case Some(entity) => {
         fromJson(ctx.request.body) match {
           case Left(e) =>
             logger.error(s"Bad $entityName format", new RuntimeException(e))
-            Errors.craftResponseResult(s"Bad $entityName format", Results.BadRequest, ctx.request, None, env)
+            Errors.craftResponseResult(s"Bad $entityName format",
+                                       Results.BadRequest,
+                                       ctx.request,
+                                       None,
+                                       env)
           case Right(newEntity) => {
-            entityStore(ctx.tenant, env.dataStore).save(newEntity).map(_ => Ok(toJson(newEntity)))
+            entityStore(ctx.tenant, env.dataStore)
+              .save(newEntity)
+              .map(_ => Ok(toJson(newEntity)))
           }
         }
       }
@@ -163,22 +261,35 @@ abstract class AdminApiController[Of, Id <: ValueType](
   }
 
   def patchEntity(id: String) = DaikokuApiAction.async(parse.json) { ctx =>
-    val fu: Future[Option[Of]] = ctx.request.queryString.get("notDeleted").exists(_ == "true") match {
-      case true => entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
-      case false => entityStore(ctx.tenant, env.dataStore).findById(id)
-    }
+    val fu: Future[Option[Of]] =
+      ctx.request.queryString.get("notDeleted").exists(_ == "true") match {
+        case true =>
+          entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
+        case false => entityStore(ctx.tenant, env.dataStore).findById(id)
+      }
     fu.flatMap {
-      case None => Errors.craftResponseResult(s"Entity $entityName not found", Results.NotFound, ctx.request, None, env)
+      case None =>
+        Errors.craftResponseResult(s"Entity $entityName not found",
+                                   Results.NotFound,
+                                   ctx.request,
+                                   None,
+                                   env)
       case Some(entity) => {
         val currentJson = toJson(entity)
-        val patch       = JsonPatch(ctx.request.body)
-        val newEntity   = patch(currentJson)
+        val patch = JsonPatch(ctx.request.body)
+        val newEntity = patch(currentJson)
         fromJson(newEntity) match {
           case Left(e) =>
             logger.error(s"Bad $entityName format", new RuntimeException(e))
-            Errors.craftResponseResult(s"Bad $entityName format", Results.BadRequest, ctx.request, None, env)
+            Errors.craftResponseResult(s"Bad $entityName format",
+                                       Results.BadRequest,
+                                       ctx.request,
+                                       None,
+                                       env)
           case Right(newNewEntity) => {
-            entityStore(ctx.tenant, env.dataStore).save(newNewEntity).map(_ => Ok(toJson(newNewEntity)))
+            entityStore(ctx.tenant, env.dataStore)
+              .save(newNewEntity)
+              .map(_ => Ok(toJson(newNewEntity)))
           }
         }
       }
@@ -187,59 +298,97 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def deleteEntity(id: String) = DaikokuApiAction.async { ctx =>
     ctx.request.queryString.get("logically").exists(_ == "true") match {
-      case true => entityStore(ctx.tenant, env.dataStore).deleteByIdLogically(id).map(_ => Ok(Json.obj("done" -> true)))
-      case false => entityStore(ctx.tenant, env.dataStore).deleteById(id).map(_ => Ok(Json.obj("done" -> true)))
+      case true =>
+        entityStore(ctx.tenant, env.dataStore)
+          .deleteByIdLogically(id)
+          .map(_ => Ok(Json.obj("done" -> true)))
+      case false =>
+        entityStore(ctx.tenant, env.dataStore)
+          .deleteById(id)
+          .map(_ => Ok(Json.obj("done" -> true)))
     }
   }
 
-  private def transformType(fieldName: String, fieldType: String, fieldGeneric: Option[String], missing: TrieMap[String, Unit], required: TrieMap[String, Unit]): JsObject = {
+  private def transformType(fieldName: String,
+                            fieldType: String,
+                            fieldGeneric: Option[String],
+                            missing: TrieMap[String, Unit],
+                            required: TrieMap[String, Unit]): JsObject = {
     val f = fieldType
     required.putIfAbsent(fieldName, ())
     f match {
-      case "int" => Json.obj("type" -> "integer", "format" -> "int32")
-      case "long" => Json.obj("type" -> "integer", "format" -> "int64")
+      case "int"    => Json.obj("type" -> "integer", "format" -> "int32")
+      case "long"   => Json.obj("type" -> "integer", "format" -> "int64")
       case "double" => Json.obj("type" -> "number", "format" -> "float64")
-      case "scala.math.BigDecimal" => Json.obj("type" -> "number", "format" -> "float64")
-      case "scala.math.BigInteger" => Json.obj("type" -> "integer", "format" -> "int64")
+      case "scala.math.BigDecimal" =>
+        Json.obj("type" -> "number", "format" -> "float64")
+      case "scala.math.BigInteger" =>
+        Json.obj("type" -> "integer", "format" -> "int64")
       case "play.api.libs.json.JsObject" => Json.obj("type" -> "object")
-      case "play.api.libs.json.JsArray" => Json.obj("type" -> "array")
-      case "org.joda.time.DateTime" => Json.obj("type" -> "integer", "format" -> "timestamp")
+      case "play.api.libs.json.JsArray"  => Json.obj("type" -> "array")
+      case "org.joda.time.DateTime" =>
+        Json.obj("type" -> "integer", "format" -> "timestamp")
       case "java.lang.String" => Json.obj("type" -> "string")
-      case "scala.concurrent.duration.FiniteDuration" => Json.obj("type" -> "integer", "format" -> "int64")
-      case "scala.collection.immutable.Set" => fieldGeneric match {
-        case None => Json.obj("type" -> "any")
-        case Some(_generic) =>
-          val generic = _generic.replace(">", "").split("\\<").toSeq.apply(1)
-          Json.obj("type" -> "array", "items" -> transformType(fieldName, generic, None, missing, required))
-      }
-      case "scala.collection.Seq" => fieldGeneric match {
-        case None => Json.obj("type" -> "any")
-        case Some(_generic) =>
-          val generic = _generic.replace(">", "").split("\\<").toSeq.apply(1)
-          Json.obj("type" -> "array", "items" -> transformType(fieldName, generic, None, missing, required))
-      }
+      case "scala.concurrent.duration.FiniteDuration" =>
+        Json.obj("type" -> "integer", "format" -> "int64")
+      case "scala.collection.immutable.Set" =>
+        fieldGeneric match {
+          case None => Json.obj("type" -> "any")
+          case Some(_generic) =>
+            val generic = _generic.replace(">", "").split("\\<").toSeq.apply(1)
+            Json.obj("type" -> "array",
+                     "items" -> transformType(fieldName,
+                                              generic,
+                                              None,
+                                              missing,
+                                              required))
+        }
+      case "scala.collection.Seq" =>
+        fieldGeneric match {
+          case None => Json.obj("type" -> "any")
+          case Some(_generic) =>
+            val generic = _generic.replace(">", "").split("\\<").toSeq.apply(1)
+            Json.obj("type" -> "array",
+                     "items" -> transformType(fieldName,
+                                              generic,
+                                              None,
+                                              missing,
+                                              required))
+        }
       case "scala.collection.immutable.Map" => Json.obj("type" -> "object")
-      case "scala.Option" => fieldGeneric match {
-        case None => Json.obj("type" -> "any")
-        case Some(_generic) =>
-          required.remove(fieldName)
-          val generic = _generic.replace(">", "").split("\\<").toSeq.apply(1)
-          transformType(fieldName, generic, None, missing, required)
-      }
-      case "java.lang.Object" if fieldName == "avgDuration" => Json.obj("type" -> "number", "format" -> "float64")
-      case "java.lang.Object" if fieldName == "avgOverhead" => Json.obj("type" -> "number", "format" -> "float64")
-      case str if str.startsWith("fr.maif.otoroshi.daikoku.domain") && str.endsWith("Id") => Json.obj("type" -> "string")
+      case "scala.Option" =>
+        fieldGeneric match {
+          case None => Json.obj("type" -> "any")
+          case Some(_generic) =>
+            required.remove(fieldName)
+            val generic = _generic.replace(">", "").split("\\<").toSeq.apply(1)
+            transformType(fieldName, generic, None, missing, required)
+        }
+      case "java.lang.Object" if fieldName == "avgDuration" =>
+        Json.obj("type" -> "number", "format" -> "float64")
+      case "java.lang.Object" if fieldName == "avgOverhead" =>
+        Json.obj("type" -> "number", "format" -> "float64")
+      case str
+          if str.startsWith("fr.maif.otoroshi.daikoku.domain") && str.endsWith(
+            "Id") =>
+        Json.obj("type" -> "string")
       case str if str.startsWith("fr.maif.otoroshi.daikoku") =>
         missing.putIfAbsent(str, ())
         Json.obj("$ref" -> s"#/components/schemas/${str.replace("$", ".")}")
-      case _ =>  Json.obj("type" -> f)
+      case _ => Json.obj("type" -> f)
 
     }
   }
 
-  private def properties(clazz: Class[_], missing: TrieMap[String, Unit], required: TrieMap[String, Unit]): JsObject = {
+  private def properties(clazz: Class[_],
+                         missing: TrieMap[String, Unit],
+                         required: TrieMap[String, Unit]): JsObject = {
     val fields = (clazz.getDeclaredFields.toSeq).map { f =>
-      val a = transformType(f.getName, f.getType.getName, Option(f.getGenericType).map(_.getTypeName), missing, required)// ++ Json.obj("description" -> "--")
+      val a = transformType(f.getName,
+                            f.getType.getName,
+                            Option(f.getGenericType).map(_.getTypeName),
+                            missing,
+                            required) // ++ Json.obj("description" -> "--")
       Json.obj(f.getName -> a)
     }
     fields.foldLeft(Json.obj())(_ ++ _)
@@ -281,14 +430,13 @@ abstract class AdminApiController[Of, Id <: ValueType](
   private def computeRef(ref: String): String = {
     ref match {
       case "play.api.libs.json.JsObject" => "object"
-      case _ => ref
+      case _                             => ref
     }
   }
 
   def openApiPath(implicit env: Env): JsObject = Json.obj(
     s"$pathRoot/{id}" -> Json.obj(
-      "delete" -> Json.parse(
-        s"""{
+      "delete" -> Json.parse(s"""{
            |  "summary": "delete a $entityName",
            |  "operationId": "${entityName}s.delete",
            |  "responses": {
@@ -320,8 +468,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
            |  ]
            |}
         """.stripMargin),
-      "patch" -> Json.parse(
-        s"""{
+      "patch" -> Json.parse(s"""{
            |  "summary": "update a $entityName with JSON patch",
            |  "operationId": "${entityName}s.patch",
            |  "requestBody": {
@@ -345,7 +492,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
            |          "schema": {
            |            "type": "object",
            |            "items": {
-           |              "$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"
+           |              "$$ref": "#/components/schemas/${computeRef(
+                                 entityClass.getName)}"
            |            }
            |          }
            |        }
@@ -367,8 +515,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
            |  ]
            |}
         """.stripMargin),
-      "put" -> Json.parse(
-        s"""{
+      "put" -> Json.parse(s"""{
            |  "summary": "update a $entityName",
            |  "operationId": "${entityName}s.update",
            |  "requestBody": {
@@ -377,7 +524,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
            |    "content": {
            |      "application/json": {
            |        "schema": {
-           |          "$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"
+           |          "$$ref": "#/components/schemas/${computeRef(
+                               entityClass.getName)}"
            |        }
            |      }
            |    }
@@ -392,7 +540,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
            |          "schema": {
            |            "type": "object",
            |            "items": {
-           |              "$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"
+           |              "$$ref": "#/components/schemas/${computeRef(
+                               entityClass.getName)}"
            |            }
            |          }
            |        }
@@ -414,8 +563,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
            |  ]
            |}
         """.stripMargin),
-      "get" -> Json.parse(
-        s"""{
+      "get" -> Json.parse(s"""{
           |  "summary": "read a $entityName",
           |  "operationId": "${entityName}s.findById",
           |  "responses": {
@@ -428,7 +576,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
           |          "schema": {
           |            "type": "object",
           |            "items": {
-          |              "$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"
+          |              "$$ref": "#/components/schemas/${computeRef(
+                               entityClass.getName)}"
           |            }
           |          }
           |        }
@@ -452,8 +601,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
         """.stripMargin),
     ),
     s"$pathRoot" -> Json.obj(
-      "get" -> Json.parse(
-        s"""{
+      "get" -> Json.parse(s"""{
           |"summary": "read all $entityName",
           |"operationId": "${entityName}s.findAll",
           |"responses": {
@@ -463,7 +611,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
           |    "content": {
           |      "application/json": {
           |        "schema": {
-          |          "$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"
+          |          "$$ref": "#/components/schemas/${computeRef(
+                               entityClass.getName)}"
           |        }
           |      }
           |    }
@@ -473,8 +622,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
           |  "$entityName"
           |]}
         """.stripMargin),
-      "post" -> Json.parse(
-        s"""{
+      "post" -> Json.parse(s"""{
           |"summary": "creates a $entityName",
           |"requestBody": {
           |  "description": "the $entityName to create",
@@ -482,7 +630,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
           |  "content": {
           |    "application/json": {
           |      "schema": {
-          |        "$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"
+          |        "$$ref": "#/components/schemas/${computeRef(
+                                entityClass.getName)}"
           |      }
           |    }
           |  }
@@ -496,7 +645,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
           |    "content": {
           |      "application/json": {
           |        "schema": {
-          |          "$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"
+          |          "$$ref": "#/components/schemas/${computeRef(
+                                entityClass.getName)}"
           |        }
           |      }
           |    }
@@ -518,34 +668,44 @@ abstract class AdminApiController[Of, Id <: ValueType](
       Json.obj()
     } else {
       val entity = Json.obj(
-        clazz.getName -> cache.getOrElseUpdate(clazz.getName, Json.obj(
-          "description" -> description,
-          "properties" -> properties(entityClass, missing, required)
-        ) ++ (if (required.isEmpty) {
-          Json.obj()
-        } else {
+        clazz.getName -> cache.getOrElseUpdate(
+          clazz.getName,
           Json.obj(
-            "required" -> JsArray(required.keySet.map(JsString.apply).toSeq)
-          )
-        }))
+            "description" -> description,
+            "properties" -> properties(entityClass, missing, required)
+          ) ++ (if (required.isEmpty) {
+                  Json.obj()
+                } else {
+                  Json.obj(
+                    "required" -> JsArray(
+                      required.keySet.map(JsString.apply).toSeq)
+                  )
+                })
+        )
       )
       def findMissing(miss: Set[String]): JsObject = {
         val requiredd = new TrieMap[String, Unit]()
         val missingg = new TrieMap[String, Unit]()
-        val res = miss.map { str =>
-          val clazzzz = env.environment.classLoader.loadClass(str)
-          val ne: JsObject = cache.getOrElseUpdate(str, Json.obj(
-            "description" -> str, // TODO: find actual desc
-            "properties" -> properties(clazzzz, missingg, requiredd)
-          ) ++ (if (requiredd.isEmpty) {
-            Json.obj()
-          } else {
-            Json.obj(
-              "required" -> JsArray(requiredd.keySet.map(JsString.apply).toSeq)
+        val res = miss
+          .map { str =>
+            val clazzzz = env.environment.classLoader.loadClass(str)
+            val ne: JsObject = cache.getOrElseUpdate(
+              str,
+              Json.obj(
+                "description" -> str, // TODO: find actual desc
+                "properties" -> properties(clazzzz, missingg, requiredd)
+              ) ++ (if (requiredd.isEmpty) {
+                      Json.obj()
+                    } else {
+                      Json.obj(
+                        "required" -> JsArray(
+                          requiredd.keySet.map(JsString.apply).toSeq)
+                      )
+                    })
             )
-          }))
-          Json.obj(str -> ne)
-        }.foldLeft(Json.obj())(_ ++ _)
+            Json.obj(str -> ne)
+          }
+          .foldLeft(Json.obj())(_ ++ _)
         if (missingg.isEmpty) {
           res
         } else {
@@ -553,8 +713,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
         }
       }
 
-      entity ++ Json.obj("object" -> Json.obj("type" -> "object")) ++ Json.parse(
-        """{
+      entity ++ Json.obj("object" -> Json.obj("type" -> "object")) ++ Json
+        .parse("""{
           |  "done": {
           |    "description": "task is done",
           |    "properties": {
@@ -564,8 +724,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
           |    }
           |  }
           |}
-        """.stripMargin).as[JsObject] ++ Json.parse(
-        """{
+        """.stripMargin)
+        .as[JsObject] ++ Json.parse("""{
           |  "error": {
           |    "description": "error response",
           |    "properties": {
@@ -575,22 +735,23 @@ abstract class AdminApiController[Of, Id <: ValueType](
           |    }
           |  }
           |}
-        """.stripMargin).as[JsObject] ++ Json.obj("patch" -> Json.obj(
-        "description" -> "A set of changes described in JSON Patch format: http://jsonpatch.com/ (RFC 6902)",
-        "type"        -> "array",
-        "items" -> Json.obj(
-          "type"     -> "object",
-          "required" -> Json.arr("op", "path"),
-          "properties" -> Json.obj(
-            "op" -> Json.obj(
-              "type" -> "string",
-              "enum" -> Json.arr("add", "replace", "remove", "copy", "test")
-            ),
-            "path"  -> Json.obj("type" -> "string"),
-            "value" -> Json.obj()
+        """.stripMargin).as[JsObject] ++ Json.obj(
+        "patch" -> Json.obj(
+          "description" -> "A set of changes described in JSON Patch format: http://jsonpatch.com/ (RFC 6902)",
+          "type" -> "array",
+          "items" -> Json.obj(
+            "type" -> "object",
+            "required" -> Json.arr("op", "path"),
+            "properties" -> Json.obj(
+              "op" -> Json.obj(
+                "type" -> "string",
+                "enum" -> Json.arr("add", "replace", "remove", "copy", "test")
+              ),
+              "path" -> Json.obj("type" -> "string"),
+              "value" -> Json.obj()
+            )
           )
-        )
-      )) ++ findMissing(missing.keySet.toSet)
+        )) ++ findMissing(missing.keySet.toSet)
     }
   }
 }

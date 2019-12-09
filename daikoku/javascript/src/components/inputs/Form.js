@@ -12,9 +12,9 @@ import {
   TextareaInput,
 } from '.';
 
-const LazyCodeInput = React.lazy(() => import("./CodeInput.js"));
-const LazySingleMarkdownInput = React.lazy(() => import("./SingleMarkdownInput.js"));
-const LazyArrayForm = React.lazy(() => import("./ArrayForm"))
+const LazyCodeInput = React.lazy(() => import('./CodeInput.js'));
+const LazySingleMarkdownInput = React.lazy(() => import('./SingleMarkdownInput.js'));
+const LazyArrayForm = React.lazy(() => import('./ArrayForm'));
 
 import _ from 'lodash';
 import { Collapse } from './Collapse';
@@ -190,7 +190,7 @@ export default class Form extends Component {
                 {...props}
                 onChange={v => this.changeValue(name, v)}
               />
-            </React.Suspense> 
+            </React.Suspense>
           );
         } else if (type === 'markdown') {
           component = (
@@ -219,7 +219,7 @@ export default class Form extends Component {
         } else if (type === 'arrayForm') {
           component = (
             <React.Suspense fallback={<Spinner />}>
-              <LazyArrayForm 
+              <LazyArrayForm
                 disabled={disabled}
                 key={name}
                 value={this.getValue(name, '')}
@@ -227,7 +227,7 @@ export default class Form extends Component {
                 onChange={v => this.changeValue(name, v)}
               />
             </React.Suspense>
-          )
+          );
         } else if (_.isFunction(type)) {
           component = React.createElement(type, {
             ...props,

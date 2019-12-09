@@ -1,15 +1,15 @@
 import React, { Component } from 'react';
-import {connect} from 'react-redux';
+import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import _ from 'lodash';
 
 import { UserBackOffice } from '../../backoffice';
-import {PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
-import { t,  Translation } from "../../../locales";
+import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
+import { t, Translation } from '../../../locales';
 
 class TeamListComponent extends Component {
   state = {
-    teams: []
+    teams: [],
   };
 
   createNewTeam = () => {
@@ -23,7 +23,10 @@ class TeamListComponent extends Component {
   }
 
   deleteTeam = teamId => {
-    window.confirm(t('delete team', this.props.currentTeam, 'Are you sure you want to delete this team ?'))
+    window
+      .confirm(
+        t('delete team', this.props.currentTeam, 'Are you sure you want to delete this team ?')
+      )
       .then(ok => {
         if (ok) {
           Services.deleteTeam(teamId).then(() => {
@@ -34,12 +37,13 @@ class TeamListComponent extends Component {
   };
 
   updateTeams = () => {
-    Services.teams()
-      .then(teams => this.setState({teams}));
+    Services.teams().then(teams => this.setState({ teams }));
   };
 
   render() {
-    const filteredTeams = this.state.search ? this.state.teams.filter(({name}) => name.toLowerCase().includes(this.state.search)) : this.state.teams;
+    const filteredTeams = this.state.search
+      ? this.state.teams.filter(({ name }) => name.toLowerCase().includes(this.state.search))
+      : this.state.teams;
 
     return (
       <UserBackOffice tab="Teams">
@@ -53,7 +57,7 @@ class TeamListComponent extends Component {
                   </Translation>
                   <a
                     className="btn btn-sm btn-access-negative mb-1 ml-1"
-                    title={t("Create a new team", this.props.currentLanguage)}
+                    title={t('Create a new team', this.props.currentLanguage)}
                     href="#"
                     onClick={e => {
                       e.preventDefault();
@@ -62,25 +66,43 @@ class TeamListComponent extends Component {
                     <i className="fas fa-plus-circle" />
                   </a>
                 </h1>
-                <input placeholder={t("Find a team", this.props.currentLanguage)} className="form-control col-5" onChange={e => {
-                  this.setState({search: e.target.value});
-                }}/>
+                <input
+                  placeholder={t('Find a team', this.props.currentLanguage)}
+                  className="form-control col-5"
+                  onChange={e => {
+                    this.setState({ search: e.target.value });
+                  }}
+                />
               </div>
-              <PaginatedComponent 
+              <PaginatedComponent
                 items={_.sortBy(filteredTeams, [team => team.name.toLowerCase()])}
                 count={15}
                 formatter={team => {
                   return (
-                    <AvatarWithAction 
+                    <AvatarWithAction
                       key={team._id}
                       avatar={team.avatar}
-                      infos={<>
-                        <span className="team__name text-truncate">{team.name}</span>
-                      </>}
+                      infos={
+                        <>
+                          <span className="team__name text-truncate">{team.name}</span>
+                        </>
+                      }
                       actions={[
-                        {action: () => this.deleteTeam(team._id), iconClass: 'fas fa-trash delete-icon', tooltip: t('Delete team', this.props.currentLanguage)},
-                        {link: `/settings/teams/${team._humanReadableId}`, iconClass: 'fas fa-pen', tooltip: t('Edit team', this.props.currentLanguage)},
-                        {link: `/settings/teams/${team._humanReadableId}/members`, iconClass: 'fas fa-users', tooltip: t('Team members', this.props.currentLanguage)}
+                        {
+                          action: () => this.deleteTeam(team._id),
+                          iconClass: 'fas fa-trash delete-icon',
+                          tooltip: t('Delete team', this.props.currentLanguage),
+                        },
+                        {
+                          link: `/settings/teams/${team._humanReadableId}`,
+                          iconClass: 'fas fa-pen',
+                          tooltip: t('Edit team', this.props.currentLanguage),
+                        },
+                        {
+                          link: `/settings/teams/${team._humanReadableId}/members`,
+                          iconClass: 'fas fa-users',
+                          tooltip: t('Team members', this.props.currentLanguage),
+                        },
                       ]}
                     />
                   );
@@ -99,6 +121,4 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamList = connect(
-  mapStateToProps
-)(TeamListComponent);
+export const TeamList = connect(mapStateToProps)(TeamListComponent);

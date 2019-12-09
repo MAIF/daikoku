@@ -1,6 +1,6 @@
-import React, {useState} from 'react';
-import {PropTypes} from 'prop-types';
-import {CheckSquare, Square} from 'react-feather';
+import React, { useState } from 'react';
+import { PropTypes } from 'prop-types';
+import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
 
 export const TeamSelectorModal = ({
@@ -13,10 +13,12 @@ export const TeamSelectorModal = ({
   acceptedTeams = [],
   action,
   allTeamSelector,
-  allowMultipleDemand
+  allowMultipleDemand,
 }) => {
   const [selectedTeams, setSelectedTeams] = useState([]);
-  const allTeams = teams.filter(team => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id));
+  const allTeams = teams.filter(
+    team => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
+  );
 
   const finalAction = () => {
     if (selectedTeams.length) {
@@ -55,7 +57,10 @@ export const TeamSelectorModal = ({
   };
 
   const doTeamAction = team => {
-    if (allowMultipleDemand || (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))) {
+    if (
+      allowMultipleDemand ||
+      (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))
+    ) {
       if (allTeamSelector) {
         if (selectedTeams.includes(team._id)) {
           setSelectedTeams(selectedTeams.filter(t => t !== team._id));
@@ -104,7 +109,9 @@ export const TeamSelectorModal = ({
               <div
                 key={team._id}
                 className={classNames('team-selection team-selection__team', {
-                  selectable: allowMultipleDemand || (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)),
+                  selectable:
+                    allowMultipleDemand ||
+                    (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)),
                 })}
                 onClick={() => doTeamAction(team)}>
                 {getButton(team)}

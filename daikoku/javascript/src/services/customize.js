@@ -16,9 +16,8 @@ export function customizeFetch(store) {
   let willRedirect = false;
   window.old_fetch = window.fetch;
   window.fetch = (...args) => {
-
-    const dispatchError = response => response.json()
-      .then(error => {
+    const dispatchError = response =>
+      response.json().then(error => {
         store.dispatch({
           type: SET_ERROR,
           error: { status: response.status, message: error.error, args, response: error },

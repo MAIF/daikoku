@@ -44,10 +44,10 @@ class TeamChooserComponent extends Component {
       searched === ''
         ? teams
         : teams.filter(team => {
-          if (team.name.toLowerCase().indexOf(searched) > -1) {
-            return true;
-          } else return team.description.toLowerCase().indexOf(searched) > -1;
-        });
+            if (team.name.toLowerCase().indexOf(searched) > -1) {
+              return true;
+            } else return team.description.toLowerCase().indexOf(searched) > -1;
+          });
     const paginateTeams = filteredTeams.slice(
       this.state.offset,
       this.state.offset + this.state.pageNumber
@@ -81,7 +81,7 @@ class TeamChooserComponent extends Component {
               <input
                 type="text"
                 className="form-control"
-                placeholder={t("Search a team", this.props.currentLanguage)}
+                placeholder={t('Search a team', this.props.currentLanguage)}
                 aria-label="Search a team"
                 value={this.state.searched}
                 onChange={e => this.setState({ searched: e.target.value })}
@@ -133,7 +133,4 @@ const mapDispatchToProps = {
   updateTeam: team => updateTeamPromise(team),
 };
 
-export const TeamChooser = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(TeamChooserComponent);
+export const TeamChooser = connect(mapStateToProps, mapDispatchToProps)(TeamChooserComponent);

@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
-import {connect} from 'react-redux';
+import { connect } from 'react-redux';
 import moment from 'moment';
 
 import * as Services from '../../../services';
 
-import { t, Translation } from "../../../locales";
+import { t, Translation } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
 import { Table } from '../../inputs';
 import { Can, manage, daikoku } from '../../utils';
@@ -52,31 +52,47 @@ class SessionListComponent extends Component {
   ];
 
   deleteSession = session => {
-    window.confirm(t('destroy.session.confirm', this.props.currentLanguage, 'Are you sure you want to destroy this session ?')).then(ok => {
-      if (ok) {
-        Services.deleteSession(session._id).then(() => {
-          if (this.table) {
-            this.table.update();
-            if (this.props.connectedUser._id === session.userId) {
-              window.location.reload();
+    window
+      .confirm(
+        t(
+          'destroy.session.confirm',
+          this.props.currentLanguage,
+          'Are you sure you want to destroy this session ?'
+        )
+      )
+      .then(ok => {
+        if (ok) {
+          Services.deleteSession(session._id).then(() => {
+            if (this.table) {
+              this.table.update();
+              if (this.props.connectedUser._id === session.userId) {
+                window.location.reload();
+              }
             }
-          }
-        });
-      }
-    });
+          });
+        }
+      });
   };
 
   deleteSessions = () => {
-    window.confirm(t('destroy.all.sessions.confirm', this.props.currentLanguage, 'Are you sure you want to destroy all sessions including yours ?')).then(ok => {
-      if (ok) {
-        Services.deleteSessions().then(() => {
-          if (this.table) {
-            this.table.update();
-            window.location.reload();
-          }
-        });
-      }
-    });
+    window
+      .confirm(
+        t(
+          'destroy.all.sessions.confirm',
+          this.props.currentLanguage,
+          'Are you sure you want to destroy all sessions including yours ?'
+        )
+      )
+      .then(ok => {
+        if (ok) {
+          Services.deleteSessions().then(() => {
+            if (this.table) {
+              this.table.update();
+              window.location.reload();
+            }
+          });
+        }
+      });
   };
 
   render() {
@@ -109,8 +125,10 @@ class SessionListComponent extends Component {
                     title="Delete all session"
                     style={{ marginLeft: 10 }}
                     onClick={() => this.deleteSessions()}>
-                    <i className="fas fa-trash" /> 
-                    <Translation i18nkey="Delete all sessions" language={this.props.currentLanguage}>
+                    <i className="fas fa-trash" />
+                    <Translation
+                      i18nkey="Delete all sessions"
+                      language={this.props.currentLanguage}>
                       Delete all sessions
                     </Translation>
                   </button>

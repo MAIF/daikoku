@@ -14,7 +14,7 @@ export class ApiSwagger extends Component {
         docExpansion: 'list',
         presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
         plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-        requestInterceptor: (req) => {
+        requestInterceptor: req => {
           if (req.loadSpec) return req;
           const body = JSON.stringify({
             credentials: req.credentials,
@@ -27,13 +27,13 @@ export class ApiSwagger extends Component {
             url: `/api/teams/${this.props.teamId}/testing/${this.props.api._id}/call`,
             method: 'POST',
             body,
-            headers: { 
+            headers: {
               accept: 'application/json',
               'content-type': 'application/json',
             },
           };
           return newReq;
-        }
+        },
       });
     }
   };
@@ -41,38 +41,42 @@ export class ApiSwagger extends Component {
   componentDidMount() {
     this.drawSwaggerUi();
     setTimeout(() => {
-      [...document.querySelectorAll('.scheme-container')].map(i => i.style.display = 'none');
-      [...document.querySelectorAll('.information-container')].map(i => i.style.display = 'none');
+      [...document.querySelectorAll('.scheme-container')].map(i => (i.style.display = 'none'));
+      [...document.querySelectorAll('.information-container')].map(i => (i.style.display = 'none'));
       this.handleAuthorize(false);
     }, 500);
   }
 
-  handleAuthorize = (canCreate) => {
+  handleAuthorize = canCreate => {
     // TODO: at start, try to see if user has test key for it and use it
     //if (canCreate && this.props.testing.auth === "ApiKey") {
     //  // TODO: create a key dedicated for tests and use it
     //} else if (canCreate && this.props.testing.auth === "Basic") {
     //  // TODO: create a key dedicated for tests and use it
-    //} else 
-    if (this.props.testing.auth === "ApiKey") {
+    //} else
+    if (this.props.testing.auth === 'ApiKey') {
       // window.ui.preauthorizeApiKey('api_key', 'hello');
       // console.log('ApiKey', this.props.testing.name, this.props.testing.username)
       // window.ui.preauthorizeApiKey(this.props.testing.name, this.props.testing.username);
       window.ui.preauthorizeApiKey(this.props.testing.name, 'fake-' + this.props.api._id);
-    } else if (this.props.testing.auth === "Basic") {
+    } else if (this.props.testing.auth === 'Basic') {
       // window.ui.preauthorizeBasic('api_key', 'user', 'pass');
       // console.log('Baisc', this.props.testing.name, this.props.testing.username, this.props.testing.password)
       // window.ui.preauthorizeBasic(this.props.testing.name, this.props.testing.username, this.props.testing.password);
-      window.ui.preauthorizeBasic(this.props.testing.name, 'fake-' + this.props.api._id, 'fake-' + this.props.api._id);
+      window.ui.preauthorizeBasic(
+        this.props.testing.name,
+        'fake-' + this.props.api._id,
+        'fake-' + this.props.api._id
+      );
     } else {
-      console.log(this.props)
+      console.log(this.props);
       if (canCreate) {
-        window.alert("Unknown authentication type");
+        window.alert('Unknown authentication type');
       } else {
-        console.log("Unknown authentication type");
+        console.log('Unknown authentication type');
       }
     }
-  }
+  };
 
   render() {
     const api = this.props.api;

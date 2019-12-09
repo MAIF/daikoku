@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import { t } from "../../../../locales";
-import { Spinner } from "../../../utils";
+import { t } from '../../../../locales';
+import { Spinner } from '../../../utils';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
@@ -41,7 +41,7 @@ export class OtoroshiConfig extends Component {
 
   render() {
     return (
-      <React.Suspense fallback={<Spinner/>}>
+      <React.Suspense fallback={<Spinner />}>
         <LazyForm
           value={this.props.value}
           onChange={this.props.onChange}

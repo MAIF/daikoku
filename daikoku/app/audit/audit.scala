@@ -20,8 +20,16 @@ import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSRequest}
 import play.api.mvc.RequestHeader
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
-import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
+import org.apache.kafka.clients.producer.{
+  Callback,
+  KafkaProducer,
+  ProducerRecord,
+  RecordMetadata
+}
+import org.apache.kafka.common.serialization.{
+  ByteArraySerializer,
+  StringSerializer
+}
 import akka.kafka.ProducerSettings
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.config.internals.BrokerSecurityConfigs
@@ -66,30 +74,64 @@ object AuthorizationLevel {
 
 sealed trait AuditEvent {
   def message: String
-  def logTenantAuditEvent(tenant: Tenant, user: User, session: UserSession, req: RequestHeader, ctx: TrieMap[String, String], authorized: AuthorizationLevel, details: JsObject = Json.obj())(implicit ec: ExecutionContext, env: Env): Unit = {
+  def logTenantAuditEvent(tenant: Tenant,
+                          user: User,
+                          session: UserSession,
+                          req: RequestHeader,
+                          ctx: TrieMap[String, String],
+                          authorized: AuthorizationLevel,
+                          details: JsObject = Json.obj())(
+      implicit ec: ExecutionContext,
+      env: Env): Unit = {
     session.impersonatorId.map { iid =>
       env.dataStore.userRepo.findById(iid)
     } getOrElse {
       FastFuture.successful(None)
     } map { impersonator =>
-      env.auditActor ! TenantAuditEvent(this, tenant, user, impersonator, Some(req.relativeUri), Some(req.method), ctx, authorized, details)
+      env.auditActor ! TenantAuditEvent(this,
+                                        tenant,
+                                        user,
+                                        impersonator,
+                                        Some(req.relativeUri),
+                                        Some(req.method),
+                                        ctx,
+                                        authorized,
+                                        details)
     }
   }
 
-  def logJobEvent(tenant: Tenant, user: User, details: JsObject = Json.obj())(implicit ec: ExecutionContext, env: Env): Unit = {
-    env.auditActor ! TenantAuditEvent(this, tenant, user, None, None, None, new TrieMap[String, String](), AuthorizationLevel.AuthorizedJob, details)
+  def logJobEvent(tenant: Tenant, user: User, details: JsObject = Json.obj())(
+      implicit ec: ExecutionContext,
+      env: Env): Unit = {
+    env.auditActor ! TenantAuditEvent(this,
+                                      tenant,
+                                      user,
+                                      None,
+                                      None,
+                                      None,
+                                      new TrieMap[String, String](),
+                                      AuthorizationLevel.AuthorizedJob,
+                                      details)
   }
 }
 case class AuditTrailEvent(message: String) extends AuditEvent
 case class JobEvent(message: String) extends AuditEvent
 case class AlertEvent(message: String) extends AuditEvent
 
-case class TenantAuditEvent(evt: AuditEvent, tenant: Tenant, user: User, impersonator: Option[User], uri: Option[String], verb: Option[String], ctx: TrieMap[String, String], authorized: AuthorizationLevel, details: JsObject = Json.obj()) {
+case class TenantAuditEvent(evt: AuditEvent,
+                            tenant: Tenant,
+                            user: User,
+                            impersonator: Option[User],
+                            uri: Option[String],
+                            verb: Option[String],
+                            ctx: TrieMap[String, String],
+                            authorized: AuthorizationLevel,
+                            details: JsObject = Json.obj()) {
 
   private def theType: String = evt match {
     case _: AuditTrailEvent => "AuditTrailEvent"
-    case _: AlertEvent => "AlertEvent"
-    case _: JobEvent => "JobEvent"
+    case _: AlertEvent      => "AlertEvent"
+    case _: JobEvent        => "JobEvent"
   }
 
   def computedMessage(): String = {
@@ -100,9 +142,11 @@ case class TenantAuditEvent(evt: AuditEvent, tenant: Tenant, user: User, imperso
       .replace("@{user.id}", user.id.value)
       .replace("@{user.name}", user.name)
       .replace("@{user.email}", user.email)
-      .replace("@{impersonator.id}", impersonator.map(_.id.value).getOrElse("--"))
+      .replace("@{impersonator.id}",
+               impersonator.map(_.id.value).getOrElse("--"))
       .replace("@{impersonator.name}", impersonator.map(_.name).getOrElse("--"))
-      .replace("@{impersonator.email}", impersonator.map(_.email).getOrElse("--"))
+      .replace("@{impersonator.email}",
+               impersonator.map(_.email).getOrElse("--"))
       .replace("@{authorized}", authorized.value)
     ctx.foldLeft(init)((a, b) => a.replace(s"@{${b._1}}", b._2))
   }
@@ -111,7 +155,8 @@ case class TenantAuditEvent(evt: AuditEvent, tenant: Tenant, user: User, imperso
     "_id" -> BSONObjectID.generate().stringify,
     "@type" -> theType,
     "@id" -> env.snowflakeGenerator.nextIdStr(),
-    "@timestamp" -> play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites.writes(DateTime.now()),
+    "@timestamp" -> play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites
+      .writes(DateTime.now()),
     "@tenantId" -> tenant.id.value,
     "@userId" -> user.id.value,
     "message" -> computedMessage(),
@@ -128,12 +173,17 @@ case class TenantAuditEvent(evt: AuditEvent, tenant: Tenant, user: User, imperso
       "name" -> tenant.name,
     ),
     "authorized" -> authorized.value,
-    "impersonator" -> impersonator.map(a => Json.obj(
-      "id" -> a.id.value,
-      "name" -> a.name,
-      "email" -> a.email,
-      "isDaikokuAdmin" -> a.isDaikokuAdmin
-    )).getOrElse(JsNull).as[JsValue]
+    "impersonator" -> impersonator
+      .map(
+        a =>
+          Json.obj(
+            "id" -> a.id.value,
+            "name" -> a.name,
+            "email" -> a.email,
+            "isDaikokuAdmin" -> a.isDaikokuAdmin
+        ))
+      .getOrElse(JsNull)
+      .as[JsValue]
     // TODO: add complete tenant ?
     // TODO: add complete user ?
   )
@@ -152,17 +202,21 @@ class AuditActor(implicit env: Env) extends Actor {
   lazy val logger = Logger("audit-actor")
   lazy val console = Logger("audit-console")
 
-  lazy val kafkaWrapperAudit = new KafkaWrapper(env.defaultActorSystem, env, _.auditTopic)
+  lazy val kafkaWrapperAudit =
+    new KafkaWrapper(env.defaultActorSystem, env, _.auditTopic)
 
-  def sendEmails(tenant: Tenant, rawEvts: Seq[TenantAuditEvent]): Future[Unit] = {
+  def sendEmails(tenant: Tenant,
+                 rawEvts: Seq[TenantAuditEvent]): Future[Unit] = {
     tenant.auditTrailConfig.alertsEmails match {
       case e if e.isEmpty => FastFuture.successful(())
       case emails => {
-        val evts = rawEvts.filter { te => te.evt match {
-          case _: AuditTrailEvent => false
-          case _: JobEvent => false
-          case _: AlertEvent => true
-        }}
+        val evts = rawEvts.filter { te =>
+          te.evt match {
+            case _: AuditTrailEvent => false
+            case _: JobEvent        => false
+            case _: AlertEvent      => true
+          }
+        }
         val titles = evts
           .map(_.toJson)
           .map { jsonEvt =>
@@ -177,11 +231,15 @@ class AuditActor(implicit env: Env) extends Actor {
         val email = evts
           .map(_.toJson)
           .map { jsonEvt =>
-            val alert = (jsonEvt \ "alert").asOpt[String].getOrElse("Unkown alert")
-            val message = (jsonEvt \ "audit" \ "message").asOpt[String].getOrElse("No description message")
+            val alert =
+              (jsonEvt \ "alert").asOpt[String].getOrElse("Unkown alert")
+            val message = (jsonEvt \ "audit" \ "message")
+              .asOpt[String]
+              .getOrElse("No description message")
             val date = new DateTime((jsonEvt \ "@timestamp").as[Long])
             val id = (jsonEvt \ "@id").as[String]
-            s"""<h3 id="$id">$alert - ${date.toString()}</h3><pre>${Json.prettyPrint(jsonEvt)}</pre><br/>"""
+            s"""<h3 id="$id">$alert - ${date.toString()}</h3><pre>${Json
+              .prettyPrint(jsonEvt)}</pre><br/>"""
           }
           .mkString("\n")
 
@@ -190,7 +248,9 @@ class AuditActor(implicit env: Env) extends Actor {
              |$titles
              |
          |$email""".stripMargin
-        tenant.mailer.send(s"Otoroshi Alert - ${evts.size} new alerts", emails, emailBody)
+        tenant.mailer.send(s"Otoroshi Alert - ${evts.size} new alerts",
+                           emails,
+                           emailBody)
       }
     }
   }
@@ -215,29 +275,39 @@ class AuditActor(implicit env: Env) extends Actor {
         }
         evts.foreach(evt => console.debug(Json.stringify(evt.toJson)))
         Future.sequence(
-          Seq(env.dataStore.auditTrailRepo.forTenant(tenant).insertMany(evts.map(_.toJson))) ++
-          Seq(sendEmails(tenant, evts)) ++
-          config.auditWebhooks.map(c => new WebHookAnalytics(c).publish(evts)) ++
-          config.elasticConfigs.map(c => new ElasticWritesAnalytics(c, env).publish(evts))
+          Seq(
+            env.dataStore.auditTrailRepo
+              .forTenant(tenant)
+              .insertMany(evts.map(_.toJson))) ++
+            Seq(sendEmails(tenant, evts)) ++
+            config.auditWebhooks
+              .map(c => new WebHookAnalytics(c).publish(evts)) ++
+            config.elasticConfigs.map(c =>
+              new ElasticWritesAnalytics(c, env).publish(evts))
         )
       })
     }
 
-  lazy val (queue, done) = stream.toMat(Sink.ignore)(Keep.both).run()(env.defaultMaterializer)
+  lazy val (queue, done) =
+    stream.toMat(Sink.ignore)(Keep.both).run()(env.defaultMaterializer)
 
   override def receive: Receive = {
     case ge: TenantAuditEvent => {
       logger.debug("SEND_TO_ANALYTICS: Event sent to stream")
       val myself = self
       queue.offer(ge).andThen {
-        case Success(QueueOfferResult.Enqueued) => logger.debug("SEND_TO_ANALYTICS: Event enqueued")
+        case Success(QueueOfferResult.Enqueued) =>
+          logger.debug("SEND_TO_ANALYTICS: Event enqueued")
         case Success(QueueOfferResult.Dropped) =>
-          logger.error("SEND_TO_ANALYTICS_ERROR: Enqueue Dropped AnalyticEvent :(")
+          logger.error(
+            "SEND_TO_ANALYTICS_ERROR: Enqueue Dropped AnalyticEvent :(")
         case Success(QueueOfferResult.QueueClosed) =>
           logger.error("SEND_TO_ANALYTICS_ERROR: Queue closed :(")
           context.stop(myself)
         case Success(QueueOfferResult.Failure(t)) =>
-          logger.error("SEND_TO_ANALYTICS_ERROR: Enqueue Failre AnalyticEvent :(", t)
+          logger.error(
+            "SEND_TO_ANALYTICS_ERROR: Enqueue Failre AnalyticEvent :(",
+            t)
           context.stop(myself)
         case e =>
           logger.error(s"SEND_TO_ANALYTICS_ERROR: analytics actor error : ${e}")
@@ -251,7 +321,7 @@ class AuditActor(implicit env: Env) extends Actor {
 class AuditActorSupervizer(env: Env) extends Actor {
 
   lazy val childName = "audit-actor"
-  lazy val logger    = Logger("audit-actor-supervizer")
+  lazy val logger = Logger("audit-actor-supervizer")
 
   override def receive: Receive = {
     case Terminated(ref) =>
@@ -287,9 +357,13 @@ object KafkaConfig {
 
 object KafkaSettings {
 
-  def producerSettings(_env: Env, config: KafkaConfig): ProducerSettings[Array[Byte], String] = {
+  def producerSettings(
+      _env: Env,
+      config: KafkaConfig): ProducerSettings[Array[Byte], String] = {
     val settings = ProducerSettings
-      .create(_env.defaultActorSystem, new ByteArraySerializer(), new StringSerializer())
+      .create(_env.defaultActorSystem,
+              new ByteArraySerializer(),
+              new StringSerializer())
       .withBootstrapServers(config.servers.mkString(","))
 
     val s = for {
@@ -314,9 +388,12 @@ object KafkaSettings {
 case class KafkaWrapperEvent(event: JsValue, env: Env, config: KafkaConfig)
 case class KafkaWrapperEventClose()
 
-class KafkaWrapper(actorSystem: ActorSystem, env: Env, topicFunction: KafkaConfig => String) {
+class KafkaWrapper(actorSystem: ActorSystem,
+                   env: Env,
+                   topicFunction: KafkaConfig => String) {
 
-  val kafkaWrapperActor = actorSystem.actorOf(KafkaWrapperActor.props(env, topicFunction))
+  val kafkaWrapperActor =
+    actorSystem.actorOf(KafkaWrapperActor.props(env, topicFunction))
 
   def publish(event: JsValue)(env: Env, config: KafkaConfig): Future[Done] = {
     kafkaWrapperActor ! KafkaWrapperEvent(event, env, config)
@@ -328,28 +405,33 @@ class KafkaWrapper(actorSystem: ActorSystem, env: Env, topicFunction: KafkaConfi
   }
 }
 
-class KafkaWrapperActor(env: Env, topicFunction: KafkaConfig => String) extends Actor {
+class KafkaWrapperActor(env: Env, topicFunction: KafkaConfig => String)
+    extends Actor {
 
   implicit val ec = env.defaultExecutionContext
 
-  var config: Option[KafkaConfig]               = None
+  var config: Option[KafkaConfig] = None
   var eventProducer: Option[KafkaEventProducer] = None
 
   lazy val logger = play.api.Logger("kafka-wrapper")
 
   override def receive: Receive = {
-    case event: KafkaWrapperEvent if config.isEmpty && eventProducer.isEmpty => {
+    case event: KafkaWrapperEvent
+        if config.isEmpty && eventProducer.isEmpty => {
       config = Some(event.config)
       eventProducer.foreach(_.close())
-      eventProducer = Some(new KafkaEventProducer(event.env, event.config, topicFunction))
+      eventProducer = Some(
+        new KafkaEventProducer(event.env, event.config, topicFunction))
       eventProducer.get.publish(event.event).andThen {
         case Failure(e) => logger.error("Error while pushing event to kafka", e)
       }
     }
-    case event: KafkaWrapperEvent if config.isDefined && config.get != event.config => {
+    case event: KafkaWrapperEvent
+        if config.isDefined && config.get != event.config => {
       config = Some(event.config)
       eventProducer.foreach(_.close())
-      eventProducer = Some(new KafkaEventProducer(event.env, event.config, topicFunction))
+      eventProducer = Some(
+        new KafkaEventProducer(event.env, event.config, topicFunction))
       eventProducer.get.publish(event.event).andThen {
         case Failure(e) => logger.error("Error while pushing event to kafka", e)
       }
@@ -367,10 +449,13 @@ class KafkaWrapperActor(env: Env, topicFunction: KafkaConfig => String) extends 
 }
 
 object KafkaWrapperActor {
-  def props(env: Env, topicFunction: KafkaConfig => String) = Props(new KafkaWrapperActor(env, topicFunction))
+  def props(env: Env, topicFunction: KafkaConfig => String) =
+    Props(new KafkaWrapperActor(env, topicFunction))
 }
 
-class KafkaEventProducer(_env: Env, config: KafkaConfig, topicFunction: KafkaConfig => String) {
+class KafkaEventProducer(_env: Env,
+                         config: KafkaConfig,
+                         topicFunction: KafkaConfig => String) {
 
   implicit val ec = _env.defaultExecutionContext
 
@@ -380,14 +465,17 @@ class KafkaEventProducer(_env: Env, config: KafkaConfig, topicFunction: KafkaCon
 
   logger.debug(s"Initializing kafka event store on topic ${topic}")
 
-  private lazy val producerSettings                             = KafkaSettings.producerSettings(_env, config)
-  private lazy val producer: KafkaProducer[Array[Byte], String] = producerSettings.createKafkaProducer
+  private lazy val producerSettings =
+    KafkaSettings.producerSettings(_env, config)
+  private lazy val producer: KafkaProducer[Array[Byte], String] =
+    producerSettings.createKafkaProducer
 
   def publish(event: JsValue): Future[Done] = {
     val promise = Promise[RecordMetadata]
     try {
       val message = Json.stringify(event)
-      producer.send(new ProducerRecord[Array[Byte], String](topic, message), callback(promise))
+      producer.send(new ProducerRecord[Array[Byte], String](topic, message),
+                    callback(promise))
     } catch {
       case NonFatal(e) =>
         promise.failure(e)
@@ -467,7 +555,8 @@ object ElasticWritesAnalytics {
 
   val clusterInitializedCache = new ConcurrentHashMap[String, Boolean]()
 
-  def toKey(config: ElasticAnalyticsConfig): String = s"${config.clusterUri}/${config.index}/${config.`type`}"
+  def toKey(config: ElasticAnalyticsConfig): String =
+    s"${config.clusterUri}/${config.index}/${config.`type`}"
 
   def initialized(config: ElasticAnalyticsConfig): Unit = {
     clusterInitializedCache.putIfAbsent(toKey(config), true)
@@ -483,9 +572,9 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
   lazy val logger = Logger("audit-writes-elastic")
 
   private def urlFromPath(path: String): String = s"${config.clusterUri}$path"
-  private val index: String                     = config.index.getOrElse("otoroshi-events")
-  private val `type`: String                    = config.`type`.getOrElse("event")
-  private implicit val mat                      = env.defaultMaterializer
+  private val index: String = config.index.getOrElse("otoroshi-events")
+  private val `type`: String = config.`type`.getOrElse("event")
+  private implicit val mat = env.defaultMaterializer
 
   private def url(url: String): WSRequest = {
     val builder = env.wsClient.url(url)
@@ -501,22 +590,25 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
       ()
     } else {
       implicit val ec: ExecutionContext = env.defaultExecutionContext
-      val strTpl                        = ElasticTemplates.indexTemplate
-      val tpl: JsValue                  = Json.parse(strTpl.replace("$$$INDEX$$$", index))
+      val strTpl = ElasticTemplates.indexTemplate
+      val tpl: JsValue = Json.parse(strTpl.replace("$$$INDEX$$$", index))
       logger.info(
         s"Creating Otoroshi template for $index on es cluster at ${config.clusterUri}/${config.index}/${config.`type`}"
       )
-      logger.debug(s"Creating otoroshi template with \n${Json.prettyPrint(tpl)}")
+      logger.debug(
+        s"Creating otoroshi template with \n${Json.prettyPrint(tpl)}")
       Await.result(
         url(urlFromPath("/_template/daikoku-tpl"))
           .get()
           .flatMap { resp =>
             resp.status match {
               case 200 =>
-                val tplCreated = url(urlFromPath("/_template/daikoku-tpl")).put(tpl)
+                val tplCreated =
+                  url(urlFromPath("/_template/daikoku-tpl")).put(tpl)
                 tplCreated.onComplete {
                   case Success(r) if r.status >= 400 =>
-                    logger.error(s"Error creating template ${r.status}: ${r.body}")
+                    logger.error(
+                      s"Error creating template ${r.status}: ${r.body}")
                   case Failure(e) =>
                     logger.error("Error creating template", e)
                   case _ =>
@@ -525,10 +617,12 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
                 }
                 tplCreated.map(_ => ())
               case 404 =>
-                val tplCreated = url(urlFromPath("/_template/otoroshi-tpl")).post(tpl)
+                val tplCreated =
+                  url(urlFromPath("/_template/otoroshi-tpl")).post(tpl)
                 tplCreated.onComplete {
                   case Success(r) if r.status >= 400 =>
-                    logger.error(s"Error creating template ${r.status}: ${r.body}")
+                    logger.error(
+                      s"Error creating template ${r.status}: ${r.body}")
                   case Failure(e) =>
                     logger.error("Error creating template", e)
                   case _ =>
@@ -537,7 +631,8 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
                 }
                 tplCreated.map(_ => ())
               case _ =>
-                logger.error(s"Error creating template ${resp.status}: ${resp.body}")
+                logger.error(
+                  s"Error creating template ${resp.status}: ${resp.body}")
                 FastFuture.successful(())
             }
           },
@@ -549,21 +644,26 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
   init()
 
   private def bulkRequest(source: JsValue): String = {
-    val df            = ISODateTimeFormat.date().print(DateTime.now())
+    val df = ISODateTimeFormat.date().print(DateTime.now())
     val indexWithDate = s"$index-$df"
-    val indexClause   = Json.stringify(Json.obj("index" -> Json.obj("_index" -> indexWithDate, "_type" -> `type`)))
-    val sourceClause  = Json.stringify(source)
+    val indexClause = Json.stringify(
+      Json.obj(
+        "index" -> Json.obj("_index" -> indexWithDate, "_type" -> `type`)))
+    val sourceClause = Json.stringify(source)
     s"$indexClause\n$sourceClause"
   }
 
   private def authHeader(): Option[String] = {
     for {
-      user     <- config.user
+      user <- config.user
       password <- config.password
-    } yield s"Basic ${Base64.getEncoder.encodeToString(s"$user:$password".getBytes())}"
+    } yield
+      s"Basic ${Base64.getEncoder.encodeToString(s"$user:$password".getBytes())}"
   }
 
-  def publish(event: Seq[TenantAuditEvent])(implicit env: Env, ec: ExecutionContext): Future[Unit] = {
+  def publish(event: Seq[TenantAuditEvent])(
+      implicit env: Env,
+      ec: ExecutionContext): Future[Unit] = {
     val builder = env.wsClient.url(urlFromPath("/_bulk"))
 
     val clientInstance = authHeader()
@@ -574,7 +674,7 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
       } { h =>
         builder.withHttpHeaders(
           "Authorization" -> h,
-          "Content-Type"  -> "application/x-ndjson"
+          "Content-Type" -> "application/x-ndjson"
         )
       }
       .addHttpHeaders(config.headers.toSeq: _*)
@@ -583,12 +683,13 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
       .grouped(500)
       .map(_.map(bulkRequest))
       .mapAsync(10) { bulk =>
-        val req  = bulk.mkString("", "\n", "\n\n")
+        val req = bulk.mkString("", "\n", "\n\n")
         val post = clientInstance.post(req)
         post.onComplete {
           case Success(resp) =>
             if (resp.status >= 400) {
-              logger.error(s"Error publishing event to elastic: ${resp.status}, ${resp.body} --- event: $event")
+              logger.error(
+                s"Error publishing event to elastic: ${resp.status}, ${resp.body} --- event: $event")
             }
           case Failure(e) =>
             logger.error(s"Error publishing event to elastic", e)
@@ -609,11 +710,14 @@ class WebHookAnalytics(webhook: Webhook) {
                 from: Option[DateTime],
                 to: Option[DateTime],
                 page: Option[Int] = None,
-                size: Option[Int] = None)(implicit env: Env, ec: ExecutionContext): Future[Option[JsValue]] =
+                size: Option[Int] = None)(
+      implicit env: Env,
+      ec: ExecutionContext): Future[Option[JsValue]] =
     env.wsClient
       .url(webhook.url + path)
       .withHttpHeaders(webhook.headers.toSeq: _*)
-      .withQueryStringParameters(defaultParams(service, from, to, page, size): _*)
+      .withQueryStringParameters(
+        defaultParams(service, from, to, page, size): _*)
       .get()
       .map(_.json)
       .map(r => Some(r))
@@ -625,8 +729,8 @@ class WebHookAnalytics(webhook: Webhook) {
                             size: Option[Int] = None): Seq[(String, String)] =
     Seq(
       service.map(s => "services" -> s),
-      page.map(s => "page"        -> s.toString),
-      size.map(s => "size"        -> s.toString),
+      page.map(s => "page" -> s.toString),
+      size.map(s => "size" -> s.toString),
       Some(
         "from" -> from
           .getOrElse(DateTime.now().minusHours(1))
@@ -639,19 +743,27 @@ class WebHookAnalytics(webhook: Webhook) {
       )
     ).flatten
 
-  def publish(event: Seq[TenantAuditEvent])(implicit env: Env, ec: ExecutionContext): Future[Unit] = {
+  def publish(event: Seq[TenantAuditEvent])(
+      implicit env: Env,
+      ec: ExecutionContext): Future[Unit] = {
     val headers: Seq[(String, String)] = webhook.headers.toSeq
 
     val url = event.headOption
-      .map(evt =>webhook.url)
+      .map(evt => webhook.url)
       .getOrElse(webhook.url)
-    val postResponse = env.wsClient.url(url).withHttpHeaders(headers: _*).post(JsArray(event.map(_.toJson)))
+    val postResponse = env.wsClient
+      .url(url)
+      .withHttpHeaders(headers: _*)
+      .post(JsArray(event.map(_.toJson)))
     postResponse.andThen {
       case Success(resp) => {
-        logger.debug(s"SEND_TO_ANALYTICS_SUCCESS: ${resp.status} - ${resp.headers} - ${resp.body}")
+        logger.debug(
+          s"SEND_TO_ANALYTICS_SUCCESS: ${resp.status} - ${resp.headers} - ${resp.body}")
       }
       case Failure(e) => {
-        logger.error("SEND_TO_ANALYTICS_FAILURE: Error while sending AnalyticEvent", e)
+        logger.error(
+          "SEND_TO_ANALYTICS_FAILURE: Error while sending AnalyticEvent",
+          e)
       }
     }
     postResponse.map(_ => ())

@@ -4,4 +4,4 @@ export const api = 'API';
 export const stat = 'STAT';
 export const team = 'TEAM';
 export const daikoku = 'DAIKOKU';
-export const backoffice = "BACKOFFICE"
+export const backoffice = 'BACKOFFICE';

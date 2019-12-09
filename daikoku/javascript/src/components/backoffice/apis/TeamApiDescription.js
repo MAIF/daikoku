@@ -26,7 +26,7 @@ export class TeamApiDescription extends Component {
 }
 
 TeamApiDescription.propTypes = {
-  team:  PropTypes.object,
+  team: PropTypes.object,
   value: PropTypes.object.isRequired,
-  onChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
 };

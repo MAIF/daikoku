@@ -17,13 +17,13 @@ const OffSwitch = props => (
 
 export class BooleanInput extends Component {
   toggleOff = e => {
-    console.debug({ e })
+    console.debug({ e });
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChange(false);
   };
 
   toggleOn = e => {
-    console.debug({e})
+    console.debug({ e });
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChange(true);
   };

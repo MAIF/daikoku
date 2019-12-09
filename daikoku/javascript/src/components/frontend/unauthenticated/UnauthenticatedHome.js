@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
-import { connect } from "react-redux";
+import { connect } from 'react-redux';
 import { converter } from '../../../services/showdown';
 import hljs from 'highlight.js';
 
-import { Translation } from "../../../locales";
+import { Translation } from '../../../locales';
 
 export class UnauthenticatedHomeComponent extends Component {
   state = {};
@@ -47,16 +47,20 @@ export class UnauthenticatedHomeComponent extends Component {
                 <p>
                   {this.props.tenant.authProvider === 'Local' && (
                     <a className="btn btn-access-negative my-2 ml-2" href={'/signup'}>
-                      <i className="fas fa-plus-square mr-1" /> 
-                      <Translation i18nkey="Create your account" language={this.props.currentLanguage}>
+                      <i className="fas fa-plus-square mr-1" />
+                      <Translation
+                        i18nkey="Create your account"
+                        language={this.props.currentLanguage}>
                         Create your account
                       </Translation>
                     </a>
                   )}
                   {false && this.props.tenant.authProvider === 'Local' && (
                     <a className="btn btn-access-negative my-2 ml-2" href={'/reset'}>
-                      <i className="fas fa-bomb mr-1" /> 
-                      <Translation i18nkey="Reset your password" language={this.props.currentLanguage}>
+                      <i className="fas fa-bomb mr-1" />
+                      <Translation
+                        i18nkey="Reset your password"
+                        language={this.props.currentLanguage}>
                         Reset your password
                       </Translation>
                     </a>
@@ -65,7 +69,9 @@ export class UnauthenticatedHomeComponent extends Component {
                     className="btn btn-access-negative my-2 ml-2"
                     href={`/auth/${this.props.tenant.authProvider}/login`}>
                     <i className="fas fa-user mr-1" />
-                    <Translation i18nkey="Connect to your account" language={this.props.currentLanguage}>
+                    <Translation
+                      i18nkey="Connect to your account"
+                      language={this.props.currentLanguage}>
                       Connect to your account
                     </Translation>
                   </a>
@@ -76,9 +82,7 @@ export class UnauthenticatedHomeComponent extends Component {
         </section>
         {!!this.props.children && (
           <section className="container">
-            <div className="row">
-              {this.props.children}
-            </div>
+            <div className="row">{this.props.children}</div>
           </section>
         )}
         {!this.props.children && (
@@ -116,7 +120,7 @@ class TenantDescription extends Component {
 }
 
 const mapStateToProps = state => ({
-  ...state.context
+  ...state.context,
 });
 
 export const UnauthenticatedHome = connect(mapStateToProps)(UnauthenticatedHomeComponent);

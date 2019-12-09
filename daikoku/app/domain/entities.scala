@@ -26,16 +26,17 @@ import scala.concurrent.{ExecutionContext, Future}
 trait CanJson[A] {
   def asJson: JsValue
 }
+
 /**
- * Entity representing the UI style of the tenant
- * @param js Javascript code injected in each page
- * @param css CSS code injected in each page
- * @param colorTheme CSS code to customize colors of the current tenant
- */
+  * Entity representing the UI style of the tenant
+  * @param js Javascript code injected in each page
+  * @param css CSS code injected in each page
+  * @param colorTheme CSS code to customize colors of the current tenant
+  */
 case class DaikokuStyle(
-   js: String = "",
-   css: String = "",
-   colorTheme: String = s""":root {
+    js: String = "",
+    css: String = "",
+    colorTheme: String = s""":root {
   --error-color: #ff6347;
   --error-color: #ffa494;
   --success-color: #4F8A10;
@@ -76,23 +77,24 @@ case class DaikokuStyle(
   --apicard-visibility-border-color: rgba(27,31,35,.15);
   --modal-selection-bg-color: rgba(27,31,35,.15);
 }""",
-   jsUrl: Option[String] = None,
-   cssUrl: Option[String] = None,
-   faviconUrl: Option[String] = None,
-   title: String = "New Organization",
-   description: String = "A new organization to host very fine APIs",
-   unloggedHome: String = "",
-   homePageVisible: Boolean = false,
-   logo: String = "/assets/images/daikoku.svg",
+    jsUrl: Option[String] = None,
+    cssUrl: Option[String] = None,
+    faviconUrl: Option[String] = None,
+    title: String = "New Organization",
+    description: String = "A new organization to host very fine APIs",
+    unloggedHome: String = "",
+    homePageVisible: Boolean = false,
+    logo: String = "/assets/images/daikoku.svg",
 ) extends CanJson[DaikokuStyle] {
   override def asJson: JsValue = json.DaikokuStyleFormat.writes(this)
 }
 
 case class AuditTrailConfig(
-  elasticConfigs: Seq[ElasticAnalyticsConfig] = Seq.empty[ElasticAnalyticsConfig],
-  auditWebhooks: Seq[Webhook] = Seq.empty[Webhook],
-  alertsEmails: Seq[String] = Seq.empty[String],
-  kafkaConfig: Option[KafkaConfig] = None,
+    elasticConfigs: Seq[ElasticAnalyticsConfig] =
+      Seq.empty[ElasticAnalyticsConfig],
+    auditWebhooks: Seq[Webhook] = Seq.empty[Webhook],
+    alertsEmails: Seq[String] = Seq.empty[String],
+    kafkaConfig: Option[KafkaConfig] = None,
 ) extends CanJson[AuditTrailConfig] {
   override def asJson: JsValue = json.AuditTrailConfigFormat.writes(this)
 }
@@ -102,7 +104,7 @@ case class Tenant(
     enabled: Boolean = true,
     deleted: Boolean = false,
     name: String,
-    domain: String,// = "localhost",
+    domain: String, // = "localhost",
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
     otoroshiSettings: Set[OtoroshiSettings],
@@ -116,21 +118,33 @@ case class Tenant(
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
   def asJsonWithJwt(implicit env: Env): JsValue =
-    json.TenantFormat.writes(this).as[JsObject] ++ json.DaikokuHeader.jsonHeader(id)
-  def mailer(implicit env: Env): Mailer = mailerSettings.map(_.mailer).getOrElse(ConsoleMailer())
+    json.TenantFormat.writes(this).as[JsObject] ++ json.DaikokuHeader
+      .jsonHeader(id)
+  def mailer(implicit env: Env): Mailer =
+    mailerSettings.map(_.mailer).getOrElse(ConsoleMailer())
   def humanReadableId = name.urlPathSegmentSanitized
   def toUiPayload(env: Env): JsValue = {
     Json.obj(
       "_id" -> id.value,
       "_humanReadableId" -> name.urlPathSegmentSanitized,
       "name" -> name,
-      "title" -> style.map(a => JsString(a.title)).getOrElse(JsNull).as[JsValue],
-      "description" -> style.map(a => JsString(a.description)).getOrElse(JsNull).as[JsValue],
-      "unloggedHome" -> style.map(a => JsString(a.unloggedHome)).getOrElse(JsNull).as[JsValue],
+      "title" -> style
+        .map(a => JsString(a.title))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "description" -> style
+        .map(a => JsString(a.description))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "unloggedHome" -> style
+        .map(a => JsString(a.unloggedHome))
+        .getOrElse(JsNull)
+        .as[JsValue],
       "logo" -> style.map(a => JsString(a.logo)).getOrElse(JsNull).as[JsValue],
       "mode" -> env.config.mode.name,
       "authProvider" -> authProvider.name,
-      "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(JsString.apply),
+      "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(
+        JsString.apply),
       "homePageVisible" -> style.exists(_.homePageVisible)
     )
   }
@@ -141,11 +155,15 @@ case class Tenant(
   }
   def moareStyle(): Html = {
     style.map { s =>
-      val moreCss = s.cssUrl.map(u => s"""<link rel="stylesheet" media="screen" href="${u}">""").getOrElse("")
+      val moreCss = s.cssUrl
+        .map(u => s"""<link rel="stylesheet" media="screen" href="${u}">""")
+        .getOrElse("")
       if (s.css.startsWith("http")) {
-        Html(s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss""")
+        Html(
+          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss""")
       } else if (s.css.startsWith("/")) {
-        Html(s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss""")
+        Html(
+          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss""")
       } else {
         Html(s"""<style>${s.css}</style>\n$moreCss""")
       }
@@ -153,7 +171,8 @@ case class Tenant(
   }
   def moareJs(): Html = {
     style.map { s =>
-      val moreJs = s.jsUrl.map(u => s"""<script" src="${u}"></script>""").getOrElse("")
+      val moreJs =
+        s.jsUrl.map(u => s"""<script" src="${u}"></script>""").getOrElse("")
       if (s.js.startsWith("http")) {
         Html(s"""<script" src="${s.js}"></script>\n$moreJs""")
       } else if (s.js.startsWith("<script")) {
@@ -183,7 +202,8 @@ sealed trait MailerSettings {
 }
 
 case class ConsoleMailerSettings()
-  extends MailerSettings with CanJson[ConsoleMailerSettings] {
+    extends MailerSettings
+    with CanJson[ConsoleMailerSettings] {
   def mailerType: String = "console"
   def asJson: JsValue = Json.obj("type" -> "console")
   def mailer(implicit env: Env): Mailer = {
@@ -191,8 +211,12 @@ case class ConsoleMailerSettings()
   }
 }
 
-case class MailgunSettings(domain: String, key: String, fromTitle: String, fromEmail: String)
-    extends MailerSettings with CanJson[MailgunSettings] {
+case class MailgunSettings(domain: String,
+                           key: String,
+                           fromTitle: String,
+                           fromEmail: String)
+    extends MailerSettings
+    with CanJson[MailgunSettings] {
   def mailerType: String = "mailgun"
   def asJson: JsValue = json.MailgunSettingsFormat.writes(this)
   def mailer(implicit env: Env): Mailer = {
@@ -200,8 +224,12 @@ case class MailgunSettings(domain: String, key: String, fromTitle: String, fromE
   }
 }
 
-case class MailjetSettings(apiKeyPublic: String, apiKeyPrivate: String, fromTitle: String, fromEmail: String)
-    extends MailerSettings with CanJson[MailjetSettings] {
+case class MailjetSettings(apiKeyPublic: String,
+                           apiKeyPrivate: String,
+                           fromTitle: String,
+                           fromEmail: String)
+    extends MailerSettings
+    with CanJson[MailjetSettings] {
   def mailerType: String = "mailjet"
   def asJson: JsValue = json.MailjetSettingsFormat.writes(this)
   def mailer(implicit env: Env): Mailer = {
@@ -228,28 +256,29 @@ case class OtoroshiSettings(id: OtoroshiSettingsId,
   def asJson: JsValue = json.OtoroshiSettingsFormat.writes(this)
 }
 
-case class ApiKeyRestrictionPath(method: String, path: String) extends CanJson[ApiKeyRestrictionPath] {
+case class ApiKeyRestrictionPath(method: String, path: String)
+    extends CanJson[ApiKeyRestrictionPath] {
   def asJson: JsValue = json.ApiKeyRestrictionPathFormat.writes(this)
 }
 
 case class ApiKeyRestrictions(
-  enabled: Boolean = false,
-  allowLast: Boolean = true,
-  allowed: Seq[ApiKeyRestrictionPath] = Seq.empty,
-  forbidden: Seq[ApiKeyRestrictionPath] = Seq.empty,
-  notFound: Seq[ApiKeyRestrictionPath] = Seq.empty,
+    enabled: Boolean = false,
+    allowLast: Boolean = true,
+    allowed: Seq[ApiKeyRestrictionPath] = Seq.empty,
+    forbidden: Seq[ApiKeyRestrictionPath] = Seq.empty,
+    notFound: Seq[ApiKeyRestrictionPath] = Seq.empty,
 ) extends CanJson[ApiKeyRestrictions] {
   def asJson: JsValue = json.ApiKeyRestrictionsFormat.writes(this)
 }
 
 case class ApikeyCustomization(
-  dynamicPrefix: Option[String] = None,
-  clientIdOnly: Boolean = false,
-  readOnly: Boolean = false,
-  constrainedServicesOnly: Boolean = false,
-  metadata: JsObject = play.api.libs.json.Json.obj(),
-  tags: JsArray = play.api.libs.json.Json.arr(),
-  restrictions: ApiKeyRestrictions = ApiKeyRestrictions()
+    dynamicPrefix: Option[String] = None,
+    clientIdOnly: Boolean = false,
+    readOnly: Boolean = false,
+    constrainedServicesOnly: Boolean = false,
+    metadata: JsObject = play.api.libs.json.Json.obj(),
+    tags: JsArray = play.api.libs.json.Json.arr(),
+    restrictions: ApiKeyRestrictions = ApiKeyRestrictions()
 ) extends CanJson[ApikeyCustomization] {
   def asJson: JsValue = json.ApikeyCustomizationFormat.writes(this)
 }
@@ -267,7 +296,9 @@ object OtoroshiTarget {
           }
         } recover {
           case e =>
-            OtoroshiTarget.logger.error(s"Error while parsing expression, returning raw value: $value", e)
+            OtoroshiTarget.logger.error(
+              s"Error while parsing expression, returning raw value: $value",
+              e)
             value
         } get
       case _ => value
@@ -276,20 +307,28 @@ object OtoroshiTarget {
 }
 
 case class OtoroshiTarget(
-  otoroshiSettings: OtoroshiSettingsId,
-  serviceGroup: OtoroshiServiceGroupId,
-  apikeyCustomization: ApikeyCustomization = ApikeyCustomization()
+    otoroshiSettings: OtoroshiSettingsId,
+    serviceGroup: OtoroshiServiceGroupId,
+    apikeyCustomization: ApikeyCustomization = ApikeyCustomization()
 ) extends CanJson[OtoroshiTarget] {
   def asJson: JsValue = json.OtoroshiTargetFormat.writes(this)
   def processedMetadata(context: Map[String, String]): Map[String, String] = {
-    apikeyCustomization.metadata.asOpt[Map[String, String]].getOrElse(Map.empty[String, String]).mapValues(v => OtoroshiTarget.processValue(v, context))
+    apikeyCustomization.metadata
+      .asOpt[Map[String, String]]
+      .getOrElse(Map.empty[String, String])
+      .mapValues(v => OtoroshiTarget.processValue(v, context))
   }
   def processedTags(context: Map[String, String]): Seq[String] = {
-    apikeyCustomization.tags.asOpt[Seq[String]].getOrElse(Seq.empty[String]).map(v => OtoroshiTarget.processValue(v, context))
+    apikeyCustomization.tags
+      .asOpt[Seq[String]]
+      .getOrElse(Seq.empty[String])
+      .map(v => OtoroshiTarget.processValue(v, context))
   }
 }
 
-case class OtoroshiService(name: String, otoroshiSettings: OtoroshiSettingsId, service: OtoroshiServiceId)
+case class OtoroshiService(name: String,
+                           otoroshiSettings: OtoroshiSettingsId,
+                           service: OtoroshiServiceId)
     extends CanJson[OtoroshiService] {
   def asJson: JsValue = json.OtoroshiServiceFormat.writes(this)
 }
@@ -297,13 +336,19 @@ case class OtoroshiService(name: String, otoroshiSettings: OtoroshiSettingsId, s
 sealed trait ValueType {
   def value: String
 }
-case class OtoroshiServiceId(value: String) extends ValueType with CanJson[OtoroshiServiceId] {
+case class OtoroshiServiceId(value: String)
+    extends ValueType
+    with CanJson[OtoroshiServiceId] {
   def asJson: JsValue = JsString(value)
 }
-case class OtoroshiSettingsId(value: String) extends ValueType with CanJson[OtoroshiSettingsId] {
+case class OtoroshiSettingsId(value: String)
+    extends ValueType
+    with CanJson[OtoroshiSettingsId] {
   def asJson: JsValue = JsString(value)
 }
-case class UsagePlanId(value: String) extends ValueType with CanJson[UsagePlanId] {
+case class UsagePlanId(value: String)
+    extends ValueType
+    with CanJson[UsagePlanId] {
   def asJson: JsValue = JsString(value)
 }
 case class UserId(value: String) extends ValueType with CanJson[UserId] {
@@ -315,13 +360,19 @@ case class TeamId(value: String) extends ValueType with CanJson[TeamId] {
 case class ApiId(value: String) extends ValueType with CanJson[ApiId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiSubscriptionId(value: String) extends ValueType with CanJson[ApiSubscriptionId] {
+case class ApiSubscriptionId(value: String)
+    extends ValueType
+    with CanJson[ApiSubscriptionId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiDocumentationId(value: String) extends ValueType with CanJson[ApiDocumentationId] {
+case class ApiDocumentationId(value: String)
+    extends ValueType
+    with CanJson[ApiDocumentationId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiDocumentationPageId(value: String) extends ValueType with CanJson[ApiDocumentationPageId] {
+case class ApiDocumentationPageId(value: String)
+    extends ValueType
+    with CanJson[ApiDocumentationPageId] {
   def asJson: JsValue = JsString(value)
 }
 case class Version(value: String) extends ValueType with CanJson[Version] {
@@ -333,16 +384,24 @@ case class TenantId(value: String) extends ValueType with CanJson[TenantId] {
 case class AssetId(value: String) extends ValueType with CanJson[AssetId] {
   def asJson: JsValue = JsString(value)
 }
-case class OtoroshiGroup(value: String) extends ValueType with CanJson[OtoroshiGroup] {
+case class OtoroshiGroup(value: String)
+    extends ValueType
+    with CanJson[OtoroshiGroup] {
   def asJson: JsValue = JsString(value)
 }
-case class OtoroshiServiceGroupId(value: String) extends ValueType with CanJson[OtoroshiServiceGroupId] {
+case class OtoroshiServiceGroupId(value: String)
+    extends ValueType
+    with CanJson[OtoroshiServiceGroupId] {
   def asJson: JsValue = JsString(value)
 }
-case class NotificationId(value: String) extends ValueType with CanJson[NotificationId] {
+case class NotificationId(value: String)
+    extends ValueType
+    with CanJson[NotificationId] {
   def asJson: JsValue = JsString(value)
 }
-case class UserSessionId(value: String) extends ValueType with CanJson[UserSessionId] {
+case class UserSessionId(value: String)
+    extends ValueType
+    with CanJson[UserSessionId] {
   def asJson: JsValue = JsString(value)
 }
 case class MongoId(value: String) extends ValueType with CanJson[MongoId] {
@@ -382,7 +441,8 @@ object BillingTimeUnit {
   }
 }
 
-case class BillingDuration(value: Long, unit: BillingTimeUnit) extends CanJson[BillingDuration] {
+case class BillingDuration(value: Long, unit: BillingTimeUnit)
+    extends CanJson[BillingDuration] {
   def asJson: JsValue = json.BillingDurationFormat.writes(this)
 }
 
@@ -445,9 +505,9 @@ object UsagePlanVisibility {
   val values: Seq[UsagePlanVisibility] =
     Seq(Public, Private)
   def apply(name: String): Option[UsagePlanVisibility] = name match {
-    case "Public"                   => Public.some
-    case "Private"                  => Private.some
-    case _                          => None
+    case "Public"  => Public.some
+    case "Private" => Private.some
+    case _         => None
   }
 }
 
@@ -500,149 +560,178 @@ sealed trait UsagePlan {
 
 case object UsagePlan {
   case class FreeWithoutQuotas(
-                                  id: UsagePlanId,
-                                  currency: Currency,
-                                  billingDuration: BillingDuration,
-                                  customName: Option[String],
-                                  customDescription: Option[String],
-                                  otoroshiTarget: Option[OtoroshiTarget],
-                                  allowMultipleKeys: Option[Boolean],
-                                  override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                                  override val authorizedTeams: Seq[TeamId] = Seq.empty
+      id: UsagePlanId,
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "FreeWithoutQuotas"
-    override def costPerMonth: BigDecimal             = BigDecimal(0)
-    override def maxRequestPerSecond: Option[Long]    = None
-    override def maxRequestPerDay: Option[Long]       = None
-    override def maxRequestPerMonth: Option[Long]     = None
-    override def costFor(requests: Long): BigDecimal  = BigDecimal(0)
+    override def costPerMonth: BigDecimal = BigDecimal(0)
+    override def maxRequestPerSecond: Option[Long] = None
+    override def maxRequestPerDay: Option[Long] = None
+    override def maxRequestPerMonth: Option[Long] = None
+    override def costFor(requests: Long): BigDecimal = BigDecimal(0)
     override def trialPeriod: Option[BillingDuration] = None
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan = this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan = this.copy(authorizedTeams = teamIds)
+    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams :+ teamId)
+    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
+    override def removeAllAuthorizedTeams(): UsagePlan =
+      this.copy(authorizedTeams = Seq.empty)
+    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
+      this.copy(authorizedTeams = teamIds)
   }
   case class FreeWithQuotas(
-                               id: UsagePlanId,
-                               maxPerSecond: Long,
-                               maxPerDay: Long,
-                               maxPerMonth: Long,
-                               currency: Currency,
-                               billingDuration: BillingDuration,
-                               customName: Option[String],
-                               customDescription: Option[String],
-                               otoroshiTarget: Option[OtoroshiTarget],
-                               allowMultipleKeys: Option[Boolean],
-                               override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                               override val authorizedTeams: Seq[TeamId] = Seq.empty
-
+      id: UsagePlanId,
+      maxPerSecond: Long,
+      maxPerDay: Long,
+      maxPerMonth: Long,
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "FreeWithQuotas"
-    override def costPerMonth: BigDecimal             = BigDecimal(0)
-    override def maxRequestPerSecond: Option[Long]    = maxPerSecond.some
-    override def maxRequestPerDay: Option[Long]       = maxPerDay.some
-    override def maxRequestPerMonth: Option[Long]     = maxPerMonth.some
-    override def costFor(requests: Long): BigDecimal  = BigDecimal(0)
+    override def costPerMonth: BigDecimal = BigDecimal(0)
+    override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
+    override def maxRequestPerDay: Option[Long] = maxPerDay.some
+    override def maxRequestPerMonth: Option[Long] = maxPerMonth.some
+    override def costFor(requests: Long): BigDecimal = BigDecimal(0)
     override def trialPeriod: Option[BillingDuration] = None
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan = this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan = this.copy(authorizedTeams = teamIds)
+    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams :+ teamId)
+    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
+    override def removeAllAuthorizedTeams(): UsagePlan =
+      this.copy(authorizedTeams = Seq.empty)
+    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
+      this.copy(authorizedTeams = teamIds)
   }
   case class QuotasWithLimits(
-                                 id: UsagePlanId,
-                                 maxPerSecond: Long,
-                                 maxPerDay: Long,
-                                 maxPerMonth: Long,
-                                 costPerMonth: BigDecimal,
-                                 trialPeriod: Option[BillingDuration],
-                                 currency: Currency,
-                                 billingDuration: BillingDuration,
-                                 customName: Option[String],
-                                 customDescription: Option[String],
-                                 otoroshiTarget: Option[OtoroshiTarget],
-                                 allowMultipleKeys: Option[Boolean],
-                                 override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                                 override val authorizedTeams: Seq[TeamId] = Seq.empty
+      id: UsagePlanId,
+      maxPerSecond: Long,
+      maxPerDay: Long,
+      maxPerMonth: Long,
+      costPerMonth: BigDecimal,
+      trialPeriod: Option[BillingDuration],
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "QuotasWithLimits"
-    override def maxRequestPerSecond: Option[Long]   = maxPerSecond.some
-    override def maxRequestPerDay: Option[Long]      = maxPerDay.some
-    override def maxRequestPerMonth: Option[Long]    = maxPerMonth.some
+    override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
+    override def maxRequestPerDay: Option[Long] = maxPerDay.some
+    override def maxRequestPerMonth: Option[Long] = maxPerMonth.some
     override def costFor(requests: Long): BigDecimal = costPerMonth
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan = this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan = this.copy(authorizedTeams = teamIds)
+    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams :+ teamId)
+    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
+    override def removeAllAuthorizedTeams(): UsagePlan =
+      this.copy(authorizedTeams = Seq.empty)
+    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
+      this.copy(authorizedTeams = teamIds)
   }
   case class QuotasWithoutLimits(
-                                    id: UsagePlanId,
-                                    maxPerSecond: Long,
-                                    maxPerDay: Long,
-                                    maxPerMonth: Long,
-                                    costPerAdditionalRequest: BigDecimal,
-                                    costPerMonth: BigDecimal,
-                                    trialPeriod: Option[BillingDuration],
-                                    currency: Currency,
-                                    billingDuration: BillingDuration,
-                                    customName: Option[String],
-                                    customDescription: Option[String],
-                                    otoroshiTarget: Option[OtoroshiTarget],
-                                    allowMultipleKeys: Option[Boolean],
-                                    override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                                    override val authorizedTeams: Seq[TeamId] = Seq.empty
+      id: UsagePlanId,
+      maxPerSecond: Long,
+      maxPerDay: Long,
+      maxPerMonth: Long,
+      costPerAdditionalRequest: BigDecimal,
+      costPerMonth: BigDecimal,
+      trialPeriod: Option[BillingDuration],
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "QuotasWithoutLimits"
     override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
-    override def maxRequestPerDay: Option[Long]    = maxPerDay.some
-    override def maxRequestPerMonth: Option[Long]  = maxPerMonth.some
+    override def maxRequestPerDay: Option[Long] = maxPerDay.some
+    override def maxRequestPerMonth: Option[Long] = maxPerMonth.some
     override def costFor(requests: Long): BigDecimal =
       costPerMonth + (Math.max(requests - maxPerMonth, 0) * costPerAdditionalRequest)
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan = this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan = this.copy(authorizedTeams = teamIds)
+    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams :+ teamId)
+    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
+    override def removeAllAuthorizedTeams(): UsagePlan =
+      this.copy(authorizedTeams = Seq.empty)
+    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
+      this.copy(authorizedTeams = teamIds)
   }
   case class PayPerUse(
-                          id: UsagePlanId,
-                          costPerMonth: BigDecimal,
-                          costPerRequest: BigDecimal,
-                          trialPeriod: Option[BillingDuration],
-                          currency: Currency,
-                          billingDuration: BillingDuration,
-                          customName: Option[String],
-                          customDescription: Option[String],
-                          otoroshiTarget: Option[OtoroshiTarget],
-                          allowMultipleKeys: Option[Boolean],
-                          override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                          override val authorizedTeams: Seq[TeamId] = Seq.empty
+      id: UsagePlanId,
+      costPerMonth: BigDecimal,
+      costPerRequest: BigDecimal,
+      trialPeriod: Option[BillingDuration],
+      currency: Currency,
+      billingDuration: BillingDuration,
+      customName: Option[String],
+      customDescription: Option[String],
+      otoroshiTarget: Option[OtoroshiTarget],
+      allowMultipleKeys: Option[Boolean],
+      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def typeName: String = "PayPerUse"
     override def costFor(requests: Long): BigDecimal =
       costPerMonth + (requests * costPerRequest)
-    override def maxRequestPerMonth: Option[Long]  = None
+    override def maxRequestPerMonth: Option[Long] = None
     override def maxRequestPerSecond: Option[Long] = None
-    override def maxRequestPerDay: Option[Long]    = None
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan = this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan = this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan = this.copy(authorizedTeams = teamIds)
+    override def maxRequestPerDay: Option[Long] = None
+    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams :+ teamId)
+    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
+    override def removeAllAuthorizedTeams(): UsagePlan =
+      this.copy(authorizedTeams = Seq.empty)
+    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
+      this.copy(authorizedTeams = teamIds)
   }
 }
 
-case class OtoroshiApiKey(clientName: String, clientId: String, clientSecret: String)
+case class OtoroshiApiKey(clientName: String,
+                          clientId: String,
+                          clientSecret: String)
 
 case class SwaggerAccess(url: String,
                          content: Option[String] = None,
-                         headers: Map[String, String] = Map.empty[String, String]) {
-  def swaggerContent()(implicit ec: ExecutionContext, env: Env): Future[JsValue] = {
+                         headers: Map[String, String] =
+                           Map.empty[String, String]) {
+  def swaggerContent()(implicit ec: ExecutionContext,
+                       env: Env): Future[JsValue] = {
     content match {
       case Some(c) => FastFuture.successful(Json.parse(c))
       case None => {
-        val finalUrl = if (url.startsWith("/")) s"http://127.0.0.1:${env.config.port}${url}" else url
-        env.wsClient.url(finalUrl).withHttpHeaders(headers.toSeq: _*).get().map { resp =>
-          Json.parse(resp.body)
-        }
+        val finalUrl =
+          if (url.startsWith("/")) s"http://127.0.0.1:${env.config.port}${url}"
+          else url
+        env.wsClient
+          .url(finalUrl)
+          .withHttpHeaders(headers.toSeq: _*)
+          .get()
+          .map { resp =>
+            Json.parse(resp.body)
+          }
       }
     }
   }
@@ -658,7 +747,10 @@ case class ApiDocumentation(id: ApiDocumentationId,
     env.dataStore.apiDocumentationPageRepo
       .forTenant(tenant.id)
       .findWithProjection(
-        Json.obj("_deleted" -> false, "_id" -> Json.obj("$in" -> JsArray(pages.map(_.value).map(JsString.apply).toSeq))),
+        Json.obj(
+          "_deleted" -> false,
+          "_id" -> Json.obj(
+            "$in" -> JsArray(pages.map(_.value).map(JsString.apply).toSeq))),
         Json.obj(
           "_id" -> true,
           "_humanReadableId" -> true,
@@ -671,7 +763,9 @@ case class ApiDocumentation(id: ApiDocumentationId,
       )
       .map { list =>
         // TODO: fetch remote content
-        pages.map(id => list.find(o => (o \ "_id").as[String] == id.value)).collect { case Some(e) => e }
+        pages
+          .map(id => list.find(o => (o \ "_id").as[String] == id.value))
+          .collect { case Some(e) => e }
       }
   }
 }
@@ -689,12 +783,14 @@ case class ApiDocumentationPage(id: ApiDocumentationPageId,
                                 contentType: String = "text/markdown",
                                 remoteContentEnabled: Boolean = false,
                                 remoteContentUrl: Option[String] = None,
-                                remoteContentHeaders: Map[String, String] = Map.empty[String, String])
+                                remoteContentHeaders: Map[String, String] =
+                                  Map.empty[String, String])
     extends CanJson[ApiDocumentationPage] {
   //def humanReadableId = s"$index-$level-${title.urlPathSegmentSanitized}"
   def humanReadableId = s"$level-${title.urlPathSegmentSanitized}"
   override def asJson: JsValue = json.ApiDocumentationPageFormat.writes(this)
-  def asWebUiJson: JsValue = json.ApiDocumentationPageFormat.writes(this).as[JsObject]
+  def asWebUiJson: JsValue =
+    json.ApiDocumentationPageFormat.writes(this).as[JsObject]
 }
 
 case class User(
@@ -733,7 +829,8 @@ case class User(
       "email" -> email,
       "picture" -> picture,
       "isDaikokuAdmin" -> isDaikokuAdmin,
-      "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(JsString.apply),
+      "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(
+        JsString.apply),
       "isGuest" -> isGuest
       // "lastTeam" -> json.TeamIdFormat.writes(lastTeams.getOrElse(tenantId, Team.Default))
     )
@@ -755,8 +852,9 @@ object GuestUser {
 }
 
 object GuestUserSession {
-  def apply (user: User, tenant: Tenant): UserSession = {
-    val sessionMaxAge = tenant.authProviderSettings.\("sessionMaxAge").asOpt[Int].getOrElse(86400)
+  def apply(user: User, tenant: Tenant): UserSession = {
+    val sessionMaxAge =
+      tenant.authProviderSettings.\("sessionMaxAge").asOpt[Int].getOrElse(86400)
     UserSession(
       id = MongoId(BSONObjectID.generate().stringify),
       userId = user.id,
@@ -799,7 +897,7 @@ object TeamPermission {
 }
 
 case class UserWithPermission(
-    userId:  UserId,
+    userId: UserId,
     teamPermission: TeamPermission
 ) extends CanJson[UserWithPermission] {
   override def asJson: JsValue = json.UserWithPermissionFormat.writes(this)
@@ -841,7 +939,8 @@ case class Team(
   def includeUser(userId: UserId): Boolean = {
     users.exists(_.userId == userId)
   }
-  def admins(): Set[UserId] = users.filter(u => u.teamPermission  == Administrator).map(_.userId)
+  def admins(): Set[UserId] =
+    users.filter(u => u.teamPermission == Administrator).map(_.userId)
 }
 
 sealed trait TestingAuth {
@@ -858,11 +957,11 @@ object TestingAuth {
 }
 
 case class Testing(
-  enabled: Boolean = false,
-  auth: TestingAuth = TestingAuth.Basic,
-  name: Option[String] = None,
-  username: Option[String] = None,
-  password: Option[String] = None,
+    enabled: Boolean = false,
+    auth: TestingAuth = TestingAuth.Basic,
+    name: Option[String] = None,
+    username: Option[String] = None,
+    password: Option[String] = None,
 ) extends CanJson[User] {
   override def asJson: JsValue = json.TestingFormat.writes(this)
 }
@@ -881,7 +980,8 @@ case class Api(
     published: Boolean = false,
     testing: Testing = Testing(),
     documentation: ApiDocumentation,
-    swagger: Option[SwaggerAccess] = Some(SwaggerAccess(url = "/assets/swaggers/petstore.json")),
+    swagger: Option[SwaggerAccess] = Some(
+      SwaggerAccess(url = "/assets/swaggers/petstore.json")),
     tags: Set[String] = Set.empty,
     categories: Set[String] = Set.empty,
     visibility: ApiVisibility,
@@ -895,33 +995,33 @@ case class Api(
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
   def asSimpleJson: JsValue = Json.obj(
-    "_id"               -> id.asJson,
-    "_humanReadableId"  -> name.urlPathSegmentSanitized,
-    "_tenant"           -> tenant.asJson,
-    "team"              -> team.value,
-    "name"              -> name,
-    "smallDescription"  -> smallDescription,
-    "description"       -> description,
-    "currentVersion"    -> currentVersion.asJson,
+    "_id" -> id.asJson,
+    "_humanReadableId" -> name.urlPathSegmentSanitized,
+    "_tenant" -> tenant.asJson,
+    "team" -> team.value,
+    "name" -> name,
+    "smallDescription" -> smallDescription,
+    "description" -> description,
+    "currentVersion" -> currentVersion.asJson,
     "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
-    "tags"              -> JsArray(tags.map(JsString.apply).toSeq),
-    "categories"        -> JsArray(categories.map(JsString.apply).toSeq),
-    "visibility"        -> visibility.name,
+    "tags" -> JsArray(tags.map(JsString.apply).toSeq),
+    "categories" -> JsArray(categories.map(JsString.apply).toSeq),
+    "visibility" -> visibility.name,
     "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
     "subscriptionProcess" -> subscriptionProcess.name
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
     Json.obj(
-      "id"        -> s"${t}/${name.urlPathSegmentSanitized}",
-      "team"              -> t,
-      "name"              -> name,
-      "smallDescription"  -> smallDescription,
-      "currentVersion"    -> currentVersion.asJson,
+      "id" -> s"${t}/${name.urlPathSegmentSanitized}",
+      "team" -> t,
+      "name" -> name,
+      "smallDescription" -> smallDescription,
+      "currentVersion" -> currentVersion.asJson,
       "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
-      "tags"              -> JsArray(tags.map(JsString.apply).toSeq),
-      "categories"        -> JsArray(categories.map(JsString.apply).toSeq),
-      "visibility"        -> visibility.name,
+      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
+      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
+      "visibility" -> visibility.name,
       "subscriptionProcess" -> subscriptionProcess.name
     )
   }
@@ -942,15 +1042,18 @@ case class ApiSubscription(
 ) extends CanJson[User] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asSimpleJson: JsValue = Json.obj(
-      "_id"       -> json.ApiSubscriptionIdFormat.writes(id),
-      "_tenant"   -> json.TenantIdFormat.writes(tenant),
-      "_deleted"  -> deleted,
-      "plan"      -> json.UsagePlanIdFormat.writes(plan),
-      "team"      -> json.TeamIdFormat.writes(team),
-      "api"       -> json.ApiIdFormat.writes(api),
-      "createdAt" -> json.DateTimeFormat.writes(createdAt),
-      "customName"-> customName.map(id => JsString(id)).getOrElse(JsNull).as[JsValue],
-      "enabled"  -> JsBoolean(enabled)
+    "_id" -> json.ApiSubscriptionIdFormat.writes(id),
+    "_tenant" -> json.TenantIdFormat.writes(tenant),
+    "_deleted" -> deleted,
+    "plan" -> json.UsagePlanIdFormat.writes(plan),
+    "team" -> json.TeamIdFormat.writes(team),
+    "api" -> json.ApiIdFormat.writes(api),
+    "createdAt" -> json.DateTimeFormat.writes(createdAt),
+    "customName" -> customName
+      .map(id => JsString(id))
+      .getOrElse(JsNull)
+      .as[JsValue],
+    "enabled" -> JsBoolean(enabled)
   )
 }
 
@@ -958,20 +1061,21 @@ object RemainingQuotas {
   val MaxValue: Long = 10000000L
 }
 
-case class ActualOtoroshiApiKey(clientId: String = IdGenerator.token(16),
-                                clientSecret: String = IdGenerator.token(64),
-                                clientName: String,
-                                authorizedGroup: String,
-                                enabled: Boolean = true,
-                                allowClientIdOnly: Boolean = false,
-                                readOnly: Boolean = false,
-                                constrainedServicesOnly: Boolean = false,
-                                throttlingQuota: Long = RemainingQuotas.MaxValue,
-                                dailyQuota: Long = RemainingQuotas.MaxValue,
-                                monthlyQuota: Long = RemainingQuotas.MaxValue,
-                                tags: Seq[String] = Seq.empty[String],
-                                metadata: Map[String, String] = Map.empty[String, String],
-                                restrictions: ApiKeyRestrictions = ApiKeyRestrictions())
+case class ActualOtoroshiApiKey(
+    clientId: String = IdGenerator.token(16),
+    clientSecret: String = IdGenerator.token(64),
+    clientName: String,
+    authorizedGroup: String,
+    enabled: Boolean = true,
+    allowClientIdOnly: Boolean = false,
+    readOnly: Boolean = false,
+    constrainedServicesOnly: Boolean = false,
+    throttlingQuota: Long = RemainingQuotas.MaxValue,
+    dailyQuota: Long = RemainingQuotas.MaxValue,
+    monthlyQuota: Long = RemainingQuotas.MaxValue,
+    tags: Seq[String] = Seq.empty[String],
+    metadata: Map[String, String] = Map.empty[String, String],
+    restrictions: ApiKeyRestrictions = ApiKeyRestrictions())
     extends CanJson[OtoroshiApiKey] {
   override def asJson: JsValue = json.ActualOtoroshiApiKeyFormat.writes(this)
 }
@@ -979,9 +1083,15 @@ case class ActualOtoroshiApiKey(clientId: String = IdGenerator.token(16),
 sealed trait NotificationStatus
 
 object NotificationStatus {
-  case object Pending                                  extends NotificationStatus with Product with Serializable
-  case class Accepted(date: DateTime = DateTime.now()) extends NotificationStatus with Product with Serializable
-  case class Rejected(date: DateTime = DateTime.now()) extends NotificationStatus with Product with Serializable
+  case object Pending extends NotificationStatus with Product with Serializable
+  case class Accepted(date: DateTime = DateTime.now())
+      extends NotificationStatus
+      with Product
+      with Serializable
+  case class Rejected(date: DateTime = DateTime.now())
+      extends NotificationStatus
+      with Product
+      with Serializable
 }
 
 sealed trait NotificationAction
@@ -995,15 +1105,26 @@ object NotificationAction {
 
   case class TeamAccess(team: TeamId) extends NotificationAction
 
-  case class ApiSubscriptionDemand(api: ApiId, plan: UsagePlanId, team: TeamId) extends NotificationAction
+  case class ApiSubscriptionDemand(api: ApiId, plan: UsagePlanId, team: TeamId)
+      extends NotificationAction
 
-  case class OtoroshiSyncSubscriptionError(subscription: ApiSubscription, message: String) extends OtoroshiSyncNotificationAction {
-    def json: JsValue = Json.obj("errType" -> "OtoroshiSyncSubscriptionError", "errMessage" -> message, "subscription" -> subscription.asJson)
+  case class OtoroshiSyncSubscriptionError(subscription: ApiSubscription,
+                                           message: String)
+      extends OtoroshiSyncNotificationAction {
+    def json: JsValue =
+      Json.obj("errType" -> "OtoroshiSyncSubscriptionError",
+               "errMessage" -> message,
+               "subscription" -> subscription.asJson)
   }
-  case class OtoroshiSyncApiError(api: Api, message: String) extends OtoroshiSyncNotificationAction {
-    def json: JsValue = Json.obj("errType" -> "OtoroshiSyncApiError", "errMessage" -> message, "api" -> api.asJson)
+  case class OtoroshiSyncApiError(api: Api, message: String)
+      extends OtoroshiSyncNotificationAction {
+    def json: JsValue =
+      Json.obj("errType" -> "OtoroshiSyncApiError",
+               "errMessage" -> message,
+               "api" -> api.asJson)
   }
-  case class ApiKeyDeletionInformation(api: String, clientId: String) extends NotificationAction
+  case class ApiKeyDeletionInformation(api: String, clientId: String)
+      extends NotificationAction
 }
 
 sealed trait NotificationType {
@@ -1068,73 +1189,74 @@ case class UserSession(id: MongoId,
   }
 }
 
-case class ApiKeyConsumption(id: MongoId,
-                       tenant: TenantId,
-                       team: TeamId,
-                       api: ApiId,
-                       plan: UsagePlanId,
-                       clientId: String,
-                       hits: Long,
-                       globalInformations: ApiKeyGlobalConsumptionInformations,
-                       quotas: ApiKeyQuotas,
-                       billing: ApiKeyBilling,
-                       from: DateTime,
-                       to: DateTime) extends CanJson[ApiKeyConsumption] {
+case class ApiKeyConsumption(
+    id: MongoId,
+    tenant: TenantId,
+    team: TeamId,
+    api: ApiId,
+    plan: UsagePlanId,
+    clientId: String,
+    hits: Long,
+    globalInformations: ApiKeyGlobalConsumptionInformations,
+    quotas: ApiKeyQuotas,
+    billing: ApiKeyBilling,
+    from: DateTime,
+    to: DateTime)
+    extends CanJson[ApiKeyConsumption] {
   override def asJson: JsValue = json.ConsumptionFormat.writes(this)
 }
 
-case class ApiKeyGlobalConsumptionInformations(
-    hits: Long,
-    dataIn: Long,
-    dataOut: Long,
-    avgDuration: Option[Double],
-    avgOverhead: Option[Double]) extends CanJson[ApiKeyGlobalConsumptionInformations] {
-    override def asJson: JsValue = json.GlobalConsumptionInformationsFormat.writes(this)
+case class ApiKeyGlobalConsumptionInformations(hits: Long,
+                                               dataIn: Long,
+                                               dataOut: Long,
+                                               avgDuration: Option[Double],
+                                               avgOverhead: Option[Double])
+    extends CanJson[ApiKeyGlobalConsumptionInformations] {
+  override def asJson: JsValue =
+    json.GlobalConsumptionInformationsFormat.writes(this)
 }
 
-case class ApiKeyQuotas(
-  authorizedCallsPerSec: Long,
-  currentCallsPerSec: Long,
-  remainingCallsPerSec: Long,
-  authorizedCallsPerDay: Long,
-  currentCallsPerDay: Long,
-  remainingCallsPerDay: Long,
-  authorizedCallsPerMonth: Long,
-  currentCallsPerMonth: Long,
-  remainingCallsPerMonth: Long) extends CanJson[ApiKeyQuotas] {
+case class ApiKeyQuotas(authorizedCallsPerSec: Long,
+                        currentCallsPerSec: Long,
+                        remainingCallsPerSec: Long,
+                        authorizedCallsPerDay: Long,
+                        currentCallsPerDay: Long,
+                        remainingCallsPerDay: Long,
+                        authorizedCallsPerMonth: Long,
+                        currentCallsPerMonth: Long,
+                        remainingCallsPerMonth: Long)
+    extends CanJson[ApiKeyQuotas] {
   override def asJson: JsValue = json.ApiKeyQuotasFormat.writes(this)
 }
 
-case class ApiKeyBilling(
-  hits: Long,
-  total: BigDecimal) extends CanJson[ApiKeyBilling] {
+case class ApiKeyBilling(hits: Long, total: BigDecimal)
+    extends CanJson[ApiKeyBilling] {
   override def asJson: JsValue = json.ApiKeyBillingFormat.writes(this)
 }
 
-
 case class PasswordReset(
-  id: MongoId,
-  deleted: Boolean = false,
-  randomId: String,
-  email: String,
-  password: String,
-  user: UserId,
-  creationDate: DateTime,
-  validUntil: DateTime,
+    id: MongoId,
+    deleted: Boolean = false,
+    randomId: String,
+    email: String,
+    password: String,
+    user: UserId,
+    creationDate: DateTime,
+    validUntil: DateTime,
 ) extends CanJson[PasswordReset] {
   override def asJson: JsValue = json.PasswordResetFormat.writes(this)
 }
 
 case class AccountCreation(
-  id: MongoId,
-  deleted: Boolean = false,
-  randomId: String,
-  email: String,
-  name: String,
-  avatar: String,
-  password: String,
-  creationDate: DateTime,
-  validUntil: DateTime,
+    id: MongoId,
+    deleted: Boolean = false,
+    randomId: String,
+    email: String,
+    name: String,
+    avatar: String,
+    password: String,
+    creationDate: DateTime,
+    validUntil: DateTime,
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
@@ -1142,17 +1264,18 @@ sealed trait TranslationElement
 
 object TranslationElement {
   case class ApiTranslationElement(api: ApiId) extends TranslationElement
-  case class TenantTranslationElement(tenant: TenantId) extends TranslationElement
+  case class TenantTranslationElement(tenant: TenantId)
+      extends TranslationElement
   case class TeamTranslationElement(team: TeamId) extends TranslationElement
 }
 
-case class Translation(
-  id: MongoId,
-  tenant: TenantId,
-  element: TranslationElement,
-  language: String,
-  key: String,
-  value: String) extends CanJson[Translation] {
+case class Translation(id: MongoId,
+                       tenant: TenantId,
+                       element: TranslationElement,
+                       language: String,
+                       key: String,
+                       value: String)
+    extends CanJson[Translation] {
   override def asJson: JsValue = json.TranslationFormat.writes(this)
   def asUiTranslationJson: JsValue = {
     Json.obj(

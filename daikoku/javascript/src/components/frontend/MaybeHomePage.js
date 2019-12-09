@@ -1,14 +1,12 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router';
-import { converter } from '../../services/showdown'
-import {Translation} from '../../locales';
+import { converter } from '../../services/showdown';
+import { Translation } from '../../locales';
 
 const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
   if (!tenant.homePageVisible) {
-    return (
-      <Redirect to="/apis" />
-    )
+    return <Redirect to="/apis" />;
   }
   return (
     <main role="main">
@@ -35,9 +33,7 @@ const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
         </div>
 
         <div>
-          <a
-            className="btn btn-access-negative my-2 ml-2"
-            href={`/apis`}>
+          <a className="btn btn-access-negative my-2 ml-2" href={`/apis`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -51,7 +47,7 @@ const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
             </svg>
             <Translation i18nkey="Apis" language={currentLanguage}>
               Apis
-          </Translation>
+            </Translation>
           </a>
         </div>
       </section>

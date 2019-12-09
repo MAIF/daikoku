@@ -1,10 +1,9 @@
 import React, { Component } from 'react';
 
-import { t, Translation } from "../../../locales";
-import { SingleJsonInput, TextInput, BooleanInput, ObjectInput,  } from '../../inputs';
+import { t, Translation } from '../../../locales';
+import { SingleJsonInput, TextInput, BooleanInput, ObjectInput } from '../../inputs';
 
 export class TeamApiSwagger extends Component {
-
   componentDidMount() {
     if (!!this.props.value.swagger.content) {
       this.initSwaggerEditor(this.props.value.swagger.content);
@@ -21,19 +20,17 @@ export class TeamApiSwagger extends Component {
     }
   }
 
-  initSwaggerEditor = (content) => {
-    console.log('initSwaggerEditor')
+  initSwaggerEditor = content => {
+    console.log('initSwaggerEditor');
     window.editor = SwaggerEditorBundle({
       dom_id: '#swagger-editor',
       layout: 'StandaloneLayout',
-      presets: [
-        SwaggerEditorStandalonePreset
-      ],
+      presets: [SwaggerEditorStandalonePreset],
       showExtensions: false,
       swagger2GeneratorUrl: 'https://generator.swagger.io/api/swagger.json',
       oas3GeneratorUrl: 'https://generator3.swagger.io/openapi.json',
       swagger2ConverterUrl: 'https://converter.swagger.io/api/convert',
-      spec: content
+      spec: content,
     });
     this.lastContent = content;
     window.editor.specActions.updateSpec(content);
@@ -47,19 +44,19 @@ export class TeamApiSwagger extends Component {
   };
 
   updateStateFromSwaggerEditor = () => {
-    console.log('updateStateFromSwaggerEditor')
+    console.log('updateStateFromSwaggerEditor');
     const spec = window.editor.specSelectors.specStr();
     const value = this.props.value;
     value.swagger.content = spec;
     this.props.onChange(value);
-  }
+  };
 
   killSwaggerEditor = () => {
-    console.log('killSwaggerEditor')
+    console.log('killSwaggerEditor');
     if (this.unsubscribe) {
       this.unsubscribe();
     }
-  }
+  };
 
   componentWillUnmount() {
     this.killSwaggerEditor();
@@ -71,7 +68,7 @@ export class TeamApiSwagger extends Component {
       <form>
         {!swagger.content && (
           <TextInput
-            label={t("URL", this.props.currentLanguage)}
+            label={t('URL', this.props.currentLanguage)}
             placeholder="The url of the swagger file"
             value={swagger.url}
             help="..."
@@ -84,7 +81,7 @@ export class TeamApiSwagger extends Component {
         )}
         {!swagger.content && (
           <ObjectInput
-            label={t("Headers", this.props.currentLanguage)}
+            label={t('Headers', this.props.currentLanguage)}
             value={swagger.headers}
             help="..."
             onChange={e => {
@@ -95,7 +92,7 @@ export class TeamApiSwagger extends Component {
           />
         )}
         <BooleanInput
-          label={t("Use swagger content", this.props.currentLanguage)}
+          label={t('Use swagger content', this.props.currentLanguage)}
           value={!!swagger.content}
           help="..."
           onChange={e => {
@@ -135,7 +132,7 @@ export class TeamApiSwagger extends Component {
           </div>
             )*/}
         {!!swagger.content && (
-          <div id="swagger-editor" style={{ height: (window.outerHeight - 60 - 58) }}></div>
+          <div id="swagger-editor" style={{ height: window.outerHeight - 60 - 58 }}></div>
         )}
       </form>
     );

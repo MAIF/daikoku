@@ -7,7 +7,7 @@ import { TeamSelectorModal, AssetSelectorModal } from './';
 
 const MODAL_TYPES = {
   teamSelector: TeamSelectorModal,
-  assetSelector: AssetSelectorModal
+  assetSelector: AssetSelectorModal,
 };
 
 class ModalContainer extends Component {
@@ -42,7 +42,7 @@ class ModalContainer extends Component {
           onRequestClose={this.closeModal}
           contentLabel="Example Modal"
           ariaHideApp={false}
-          overlayClassName={ClasseNames('modal fade in show', {'right': modalProps.panelView})}
+          overlayClassName={ClasseNames('modal fade in show', { right: modalProps.panelView })}
           bodyOpenClassName="modal-open"
           className="modal-dialog modal-lg">
           <SpecifiedModal closeModal={this.closeModal} {...modalProps} />
@@ -56,7 +56,4 @@ const mapStateToProps = state => ({
   ...state.modal,
 });
 
-export const ModalRoot = connect(
-  mapStateToProps,
-  null
-)(ModalContainer);
+export const ModalRoot = connect(mapStateToProps, null)(ModalContainer);

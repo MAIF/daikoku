@@ -92,9 +92,7 @@ class TeamApiConsumptionComponent extends Component {
                 period={this.state.period}
                 handleClick={() =>
                   this.props.history.push(
-                    `/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${
-                      this.state.api._humanReadableId
-                    }/plan/${plan._id}`
+                    `/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${this.state.api._humanReadableId}/plan/${plan._id}`
                   )
                 }
               />
@@ -115,27 +113,34 @@ class TeamApiConsumptionComponent extends Component {
     return (
       <TeamBackOffice tab="Apis" isLoading={!this.state.api}>
         <Can I={read} a={stat} team={this.props.currentTeam} dispatchError={true}>
-          {!!this.state.api && <div className="d-flex col flex-column pricing-content">
-            <div className="row">
-              <div className="col-12">
-                <h1>Api Consumption - {this.state.api.name}</h1>
-              </div>
-              <div className="col">
-                <OtoroshiStatsVizualization
-                  sync={() => Services.syncApiConsumption(this.props.match.params.apiId, this.props.currentTeam._id)}
-                  fetchData={(from, to) =>
-                    Services.apiGlobalConsumption(
-                      this.props.match.params.apiId,
-                      this.props.currentTeam._id,
-                      from.valueOf(),
-                      to.valueOf()
-                    )
-                  }
-                  mappers={this.mappers}
-                />
+          {!!this.state.api && (
+            <div className="d-flex col flex-column pricing-content">
+              <div className="row">
+                <div className="col-12">
+                  <h1>Api Consumption - {this.state.api.name}</h1>
+                </div>
+                <div className="col">
+                  <OtoroshiStatsVizualization
+                    sync={() =>
+                      Services.syncApiConsumption(
+                        this.props.match.params.apiId,
+                        this.props.currentTeam._id
+                      )
+                    }
+                    fetchData={(from, to) =>
+                      Services.apiGlobalConsumption(
+                        this.props.match.params.apiId,
+                        this.props.currentTeam._id,
+                        from.valueOf(),
+                        to.valueOf()
+                      )
+                    }
+                    mappers={this.mappers}
+                  />
+                </div>
               </div>
             </div>
-          </div>}
+          )}
         </Can>
       </TeamBackOffice>
     );
@@ -146,9 +151,7 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TeamApiConsumption = connect(
-  mapStateToProps
-)(TeamApiConsumptionComponent);
+export const TeamApiConsumption = connect(mapStateToProps)(TeamApiConsumptionComponent);
 
 class PlanLightConsumption extends Component {
   state = {

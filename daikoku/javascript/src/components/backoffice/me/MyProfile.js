@@ -8,24 +8,22 @@ import { connect } from 'react-redux';
 import { configuration } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
 import { Spinner } from '../../utils';
-import {t, Translation} from '../../../locales';
+import { t, Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 class SetPassword extends Component {
   genAndSetPassword = () => {
-    window.prompt(t('Type the password', this.props.currentLanguage))
-      .then(pw1 => {
-        if (pw1) {
-          window.prompt(t('Re-type the password', this.props.currentLanguage))
-            .then(pw2 => {
-              if (pw2 && pw1 === pw2) {
-                const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-                this.props.changeValue('password', hashed);
-              }
-            });
-        }
-      });
+    window.prompt(t('Type the password', this.props.currentLanguage)).then(pw1 => {
+      if (pw1) {
+        window.prompt(t('Re-type the password', this.props.currentLanguage)).then(pw2 => {
+          if (pw2 && pw1 === pw2) {
+            const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
+            this.props.changeValue('password', hashed);
+          }
+        });
+      }
+    });
   };
 
   render() {
@@ -56,7 +54,6 @@ class SetPassword extends Component {
 }
 
 class RefreshToken extends Component {
-
   reloadToken = () => {
     this.props.changeValue('personalToken', faker.random.alphaNumeric(32));
   };
@@ -66,10 +63,7 @@ class RefreshToken extends Component {
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2 col-form-label" />
         <div className="col-sm-10">
-          <button
-            type="button"
-            className="btn btn-outline-success"
-            onClick={this.reloadToken}>
+          <button type="button" className="btn btn-outline-success" onClick={this.reloadToken}>
             <i className="fas fa-sync-alt mr-1" />
             <Translation i18nkey="Reload personal token" language={this.props.currentLanguage}>
               Reload personal token
@@ -123,9 +117,7 @@ class TenantList extends Component {
           </Translation>
         </label>
         <div className="col-sm-10">
-          <p className="fake-form-control">
-            {this.state.tenants.join(', ')}
-          </p>
+          <p className="fake-form-control">{this.state.tenants.join(', ')}</p>
         </div>
       </div>
     );
@@ -133,10 +125,9 @@ class TenantList extends Component {
 }
 
 class PictureUpload extends Component {
-
   state = { uploading: false };
 
-  setFiles = (e) => {
+  setFiles = e => {
     const files = e.target.files;
     this.setState({ uploading: true }, () => {
       this.props.setFiles(files).then(() => {
@@ -153,18 +144,25 @@ class PictureUpload extends Component {
     return (
       <div className="changePicture">
         <input
-          ref={r => this.input = r}
+          ref={r => (this.input = r)}
           type="file"
           className="form-control hide"
           onChange={this.setFiles}
         />
-        <button type="button" className="btn btn-outline-secondary" disabled={this.state.uploading} onClick={this.trigger} style={{ width:200,height:200 }}>
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          disabled={this.state.uploading}
+          onClick={this.trigger}
+          style={{ width: 200, height: 200 }}>
           {this.state.uploading && <i className="fas fa-spinner" />}
-          {!this.state.uploading && <div className="text-white">
-            <Translation i18nkey="Change your picture" language={this.props.currentLanguage}>
-              Change your picture
-            </Translation>
-          </div>}
+          {!this.state.uploading && (
+            <div className="text-white">
+              <Translation i18nkey="Change your picture" language={this.props.currentLanguage}>
+                Change your picture
+              </Translation>
+            </div>
+          )}
         </button>
       </div>
     );
@@ -181,8 +179,8 @@ class MyProfileComponent extends Component {
     tenants: {
       type: TenantList,
       props: {
-        currentLanguage: this.props.currentLanguage
-      }
+        currentLanguage: this.props.currentLanguage,
+      },
     },
     origins: {
       type: ({ value }) => (
@@ -193,9 +191,7 @@ class MyProfileComponent extends Component {
             </Translation>
           </label>
           <div className="col-sm-10">
-            <p className="fake-form-control">
-              {value.join(', ')}
-            </p>
+            <p className="fake-form-control">{value.join(', ')}</p>
           </div>
         </div>
       ),
@@ -222,14 +218,14 @@ class MyProfileComponent extends Component {
       type: 'string',
       props: {
         label: t('Personal Token', this.props.currentLanguage),
-        disabled: true
+        disabled: true,
       },
     },
     refreshToken: {
       type: RefreshToken,
       props: {
-        currentLanguage: this.props.currentLanguage
-      }
+        currentLanguage: this.props.currentLanguage,
+      },
     },
     isDaikokuAdmin: {
       type: 'bool',
@@ -240,38 +236,38 @@ class MyProfileComponent extends Component {
     setPassword: {
       type: SetPassword,
       props: {
-        currentLanguage: this.props.currentLanguage
-      }
+        currentLanguage: this.props.currentLanguage,
+      },
     },
     gravatar: {
       type: Gravatar,
       props: {
-        currentLanguage: this.props.currentLanguage
-      }
+        currentLanguage: this.props.currentLanguage,
+      },
     },
-    'defaultLanguage': {
+    defaultLanguage: {
       type: 'select',
       props: {
         label: t('Default language', this.props.currentLanguage),
         possibleValues: Object.keys(configuration).map(key => ({
           label: key,
-          value: key
+          value: key,
         })),
       },
     },
   };
 
   formFlow = [
-    'tenants', 
-    'origins', 
-    'name', 
-    'email', 
-    'setPassword', 
-    'picture', 
-    'gravatar', 
-    'personalToken', 
+    'tenants',
+    'origins',
+    'name',
+    'email',
+    'setPassword',
+    'picture',
+    'gravatar',
+    'personalToken',
     'refreshToken',
-    'defaultLanguage'
+    'defaultLanguage',
   ];
 
   setFiles = files => {
@@ -286,14 +282,15 @@ class MyProfileComponent extends Component {
         'Asset-Content-Type': contentType,
       },
       body: file,
-    }).then(r => r.json()).then(res => {
-      this.setState({ user: {...this.state.user, picture: `/user-assets/${res.id}` }});
-    });
+    })
+      .then(r => r.json())
+      .then(res => {
+        this.setState({ user: { ...this.state.user, picture: `/user-assets/${res.id}` } });
+      });
   };
 
   componentDidMount() {
-    Services.me(this.props.connectedUser._id)
-      .then(user => this.setState({ user }));
+    Services.me(this.props.connectedUser._id).then(user => this.setState({ user }));
   }
 
   save = () => {
@@ -304,7 +301,13 @@ class MyProfileComponent extends Component {
 
   removeUser = () => {
     window
-      .confirm(t('delete account', this.props.currentLanguage, 'Are you sure you want to delete your account ? This action cannot be undone ...'))
+      .confirm(
+        t(
+          'delete account',
+          this.props.currentLanguage,
+          'Are you sure you want to delete your account ? This action cannot be undone ...'
+        )
+      )
       .then(ok => {
         if (ok) {
           Services.deleteSelfUserById().then(() => {
@@ -325,7 +328,7 @@ class MyProfileComponent extends Component {
                 {this.state.user.name} - {this.state.user.email}
               </h1>
             )}
-            {this.state.user && 
+            {this.state.user && (
               <div
                 style={{
                   width: '100%',
@@ -337,12 +340,20 @@ class MyProfileComponent extends Component {
                 }}>
                 <img
                   src={this.state.user.picture}
-                  style={{ width: 200, borderRadius: '50%', backgroundColor: 'white',position:'relative' }}
+                  style={{
+                    width: 200,
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
+                    position: 'relative',
+                  }}
                   alt="avatar"
                 />
-                <PictureUpload setFiles={this.setFiles} currentLanguage={this.props.currentLanguage}/>
+                <PictureUpload
+                  setFiles={this.setFiles}
+                  currentLanguage={this.props.currentLanguage}
+                />
               </div>
-            }
+            )}
             {this.state.user && (
               <React.Suspense fallback={<Spinner />}>
                 <LazyForm

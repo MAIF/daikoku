@@ -7,12 +7,11 @@ import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import play.api.libs.json.Json
 import play.api.mvc.{AbstractController, ControllerComponents}
 
-class JobsController(
-                        otoroshiVerifierJob: OtoroshiVerifierJob,
-                        apiKeyStatsJob: ApiKeyStatsJob,
-                        env: Env,
-                        cc: ControllerComponents,
-                        otoroshiClient: OtoroshiClient)
+class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
+                     apiKeyStatsJob: ApiKeyStatsJob,
+                     env: Env,
+                     cc: ControllerComponents,
+                     otoroshiClient: OtoroshiClient)
     extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
@@ -24,10 +23,13 @@ class JobsController(
         case Some(key) if key == env.config.otoroshiSyncKey => {
           otoroshiVerifierJob.verify().map(_ => Ok(Json.obj("done" -> true)))
         }
-        case _ => FastFuture.successful(Ok(Json.obj("error" -> "you're not authorized here !")))
+        case _ =>
+          FastFuture.successful(
+            Ok(Json.obj("error" -> "you're not authorized here !")))
       }
     } else {
-      FastFuture.successful(NotFound(Json.obj("error" -> "API not found ! (1)")))
+      FastFuture.successful(
+        NotFound(Json.obj("error" -> "API not found ! (1)")))
     }
   }
 
@@ -35,7 +37,8 @@ class JobsController(
     if (env.config.apikeysStatsByCron) {
       apiKeyStatsJob.getStats().map(_ => Ok(Json.obj("done" -> true)))
     } else {
-      FastFuture.successful(NotFound(Json.obj("error" -> "API not found ! (2)")))
+      FastFuture.successful(
+        NotFound(Json.obj("error" -> "API not found ! (2)")))
     }
   }
 }

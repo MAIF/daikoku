@@ -33,7 +33,7 @@ export const PriceCartridge = ({ label, total, currency, handleClick, ...props }
   );
 };
 
-export const NoData = ({language}) => {
+export const NoData = ({ language }) => {
   return (
     <div className="col-12 no-data__container">
       <span className="badge badge-secondary no-data">

@@ -64,8 +64,11 @@ object LocalLoginSupport {
         )
       )
       .map {
-        case Some(user) if user.password.isDefined && BCrypt.checkpw(password, user.password.get) => Some(user)
-        case _                                                                                    => None
+        case Some(user)
+            if user.password.isDefined && BCrypt.checkpw(password,
+                                                         user.password.get) =>
+          Some(user)
+        case _ => None
       }
   }
 }

@@ -2,9 +2,16 @@ package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
+  Administrator,
+  ApiEditor,
+  TeamUser
+}
 import fr.maif.otoroshi.daikoku.domain.UserWithPermission
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.Configuration
@@ -18,14 +25,15 @@ class TeamControllerSpec(configurationSpec: => Configuration)
     with DaikokuSpecHelper
     with IntegrationPatience {
 
-  override def getConfiguration(configuration: Configuration) = configuration ++ configurationSpec ++ Configuration(
-    ConfigFactory.parseString(s"""
+  override def getConfiguration(configuration: Configuration) =
+    configuration ++ configurationSpec ++ Configuration(
+      ConfigFactory.parseString(s"""
 									 |{
 									 |  http.port=$port
 									 |  play.server.http.port=$port
 									 |}
      """.stripMargin).resolve()
-  )
+    )
 
   "a daikoku admin" can {
     "create, update or delete a team" in {
@@ -56,8 +64,11 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       )(tenant, session)
       respUpdate.status mustBe 200
 
-      val respGet     = httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant, session)
-      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGet.json)
+      val respGet =
+        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant,
+                                                                 session)
+      val updatedTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGet.json)
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.name mustBe "bobby team"
 
@@ -118,8 +129,11 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       )(tenant, session)
       respCreation.status mustBe 200
 
-      val respGet     = httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant, session)
-      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGet.json)
+      val respGet =
+        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant,
+                                                                 session)
+      val updatedTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGet.json)
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.name mustBe "bobby team"
     }
@@ -132,26 +146,34 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       )
       val session = loginWithBlocking(userAdmin, tenant)
 
-      val respGet = httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}/_full")(tenant, session)
+      val respGet = httpJsonCallBlocking(
+        s"/api/teams/${teamOwnerId.value}/_full")(tenant, session)
       respGet.status mustBe 200
-      respGet.json mustBe teamOwner.asJson.as[JsObject] ++ Json.obj("translation" -> Json.obj())
+      respGet.json mustBe teamOwner.asJson.as[JsObject] ++ Json.obj(
+        "translation" -> Json.obj())
     }
 
     "add members to his team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
-        teams = Seq(teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))))
+        teams = Seq(
+          teamOwner.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))))
       )
       val session = loginWithBlocking(userAdmin, tenant)
 
       val respUpdate =
-        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/members",
-                             method = "POST",
-                             body = Some(Json.obj("members" -> Json.arr(userTeamUserId.asJson))))(tenant, session)
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(userTeamUserId.asJson))))(
+          tenant,
+          session)
       respUpdate.status mustBe 200
       (respUpdate.json \ "done").as[Boolean] mustBe true
-      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads((respUpdate.json \ "team").as[JsObject])
+      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
+        .reads((respUpdate.json \ "team").as[JsObject])
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.users.size mustBe 2
       updatedTeam.get.users.exists(u => u.userId == userTeamUserId) mustBe true
@@ -167,11 +189,14 @@ class TeamControllerSpec(configurationSpec: => Configuration)
 
       teamOwner.users.size mustBe 3
 
-      val resp = httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/members/${userTeamUserId.value}",
-                                      method = "DELETE")(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/members/${userTeamUserId.value}",
+        method = "DELETE")(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
-      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads((resp.json \ "team").as[JsObject])
+      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
+        .reads((resp.json \ "team").as[JsObject])
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.users.size mustBe 2
       updatedTeam.get.users.exists(u => u.userId == userTeamUserId) mustBe false
@@ -189,16 +214,18 @@ class TeamControllerSpec(configurationSpec: => Configuration)
         method = "POST",
         body = Some(
           Json.obj(
-            "members"    -> Json.arr(user.id.value),
+            "members" -> Json.arr(user.id.value),
             "permission" -> "Administrator"
           )
         )
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
-      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads((resp.json \ "team").as[JsObject])
+      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
+        .reads((resp.json \ "team").as[JsObject])
       updatedTeam.isSuccess mustBe true
-      val updatedUser = updatedTeam.get.users.find(u => u.userId == userTeamUserId)
+      val updatedUser =
+        updatedTeam.get.users.find(u => u.userId == userTeamUserId)
       updatedUser.isDefined mustBe true
       updatedUser.get.teamPermission mustBe Administrator
     }
@@ -207,16 +234,25 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
-        teams = Seq(teamOwner, teamConsumer.copy(users = Set(UserWithPermission(userTeamUserId, Administrator))))
+        teams =
+          Seq(teamOwner,
+              teamConsumer.copy(
+                users = Set(UserWithPermission(userTeamUserId, Administrator))))
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp =
-        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}/members/${userTeamUserId.value}")(tenant, session)
+        httpJsonCallBlocking(
+          s"/api/teams/${teamOwnerId.value}/members/${userTeamUserId.value}")(
+          tenant,
+          session)
       resp.status mustBe 200
       resp.json mustBe user.asSimpleJson
 
       val respForbidden =
-        httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}/members/${userTeamUserId.value}")(tenant, session)
+        httpJsonCallBlocking(
+          s"/api/teams/${teamConsumerId.value}/members/${userTeamUserId.value}")(
+          tenant,
+          session)
       respForbidden.status mustBe 403
     }
 
@@ -224,19 +260,29 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user, userApiEditor),
-        teams = Seq(teamOwner, teamConsumer.copy(users = Set(UserWithPermission(userTeamUserId, Administrator))))
+        teams =
+          Seq(teamOwner,
+              teamConsumer.copy(
+                users = Set(UserWithPermission(userTeamUserId, Administrator))))
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp =
-        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}/members")(tenant, session)
+        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}/members")(
+          tenant,
+          session)
       resp.status mustBe 200
-      val users = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat.reads(resp.json)
+      val users =
+        fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat.reads(resp.json)
       users.isSuccess mustBe true
       users.get.length mustBe 3
-      users.get.map(_.id).toSet mustEqual Set(userTeamAdminId, userApiEditorId, userTeamUserId)
+      users.get.map(_.id).toSet mustEqual Set(userTeamAdminId,
+                                              userApiEditorId,
+                                              userTeamUserId)
 
       val respForbidden =
-        httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}/members")(tenant, session)
+        httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}/members")(
+          tenant,
+          session)
       respForbidden.status mustBe 403
     }
 
@@ -258,7 +304,8 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       resp.status mustBe 200
 
       (resp.json \ "done").as[Boolean] mustBe true
-      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads((resp.json \ "team").as[JsObject])
+      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
+        .reads((resp.json \ "team").as[JsObject])
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.showApiKeyOnlyToAdmins mustBe false
     }
@@ -275,7 +322,8 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       )
       val session = loginWithBlocking(randomUser, tenant)
 
-      val respGet = httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}/_full")(tenant, session)
+      val respGet = httpJsonCallBlocking(
+        s"/api/teams/${teamOwnerId.value}/_full")(tenant, session)
       respGet.status mustBe 403
     }
 
@@ -283,10 +331,13 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, randomUser),
-        teams = Seq(teamOwner, teamConsumer.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))))
+        teams = Seq(
+          teamOwner,
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))))
       )
       val session = loginWithBlocking(randomUser, tenant)
-      val resp    = httpJsonCallBlocking("/api/teams/joinable")(tenant, session)
+      val resp = httpJsonCallBlocking("/api/teams/joinable")(tenant, session)
       resp.status mustBe 200
     }
 
@@ -294,19 +345,25 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, randomUser),
-        teams = Seq(teamConsumer.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))))
+        teams = Seq(
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))))
       )
       val session = loginWithBlocking(randomUser, tenant)
       val resp =
-        httpJsonCallBlocking(path = s"/api/teams/${teamConsumerId.value}/join", method = "POST")(tenant, session)
+        httpJsonCallBlocking(path = s"/api/teams/${teamConsumerId.value}/join",
+                             method = "POST")(tenant, session)
       resp.status mustBe 200
 
       val adminSession = loginWithBlocking(userAdmin, tenant)
       val respNotifications =
-        httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}/notifications")(tenant, adminSession)
+        httpJsonCallBlocking(
+          s"/api/teams/${teamConsumerId.value}/notifications")(tenant,
+                                                               adminSession)
       respNotifications.status mustBe 200
-      val notifications = fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
-        .reads((respNotifications.json \ "notifications").as[JsArray])
+      val notifications =
+        fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
+          .reads((respNotifications.json \ "notifications").as[JsArray])
       notifications.isSuccess mustBe true
       notifications.get.length mustBe 1
       val notif = notifications.get.head
@@ -319,18 +376,25 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(randomUser),
-        teams = Seq(teamOwner.copy(users = Set(UserWithPermission(randomUser.id, TeamUser))))
+        teams = Seq(
+          teamOwner.copy(
+            users = Set(UserWithPermission(randomUser.id, TeamUser))))
       )
       val session = loginWithBlocking(randomUser, tenant)
 
       val respUpdate =
-        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/members",
-                             method = "POST",
-                             body = Some(Json.obj("members" -> Json.arr(userAdmin.asJson))))(tenant, session)
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(userAdmin.asJson))))(
+          tenant,
+          session)
       respUpdate.status mustBe 403
 
-      val respDelete = httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/members/${userTeamAdminId.value}",
-                                            method = "DELETE")(tenant, session)
+      val respDelete = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/members/${userTeamAdminId.value}",
+        method = "DELETE")(tenant, session)
       respDelete.status mustBe 403
     }
 
@@ -342,20 +406,26 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       )
       val session = loginWithBlocking(randomUser, tenant)
 
-      val respMyTeam = httpJsonCallBlocking("/api/me/teams/own")(tenant, session)
+      val respMyTeam =
+        httpJsonCallBlocking("/api/me/teams/own")(tenant, session)
       respMyTeam.status mustBe 200
-      val myTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
+      val myTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
       myTeam.isSuccess mustBe true
       val myTeamId = myTeam.get.id
 
       val respUpdate =
-        httpJsonCallBlocking(path = s"/api/teams/${myTeamId.value}/members",
-                             method = "POST",
-                             body = Some(Json.obj("members" -> Json.arr(userAdmin.asJson))))(tenant, session)
+        httpJsonCallBlocking(
+          path = s"/api/teams/${myTeamId.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(userAdmin.asJson))))(
+          tenant,
+          session)
       respUpdate.status mustBe 409
 
-      val respDelete = httpJsonCallBlocking(path = s"/api/teams/${myTeamId.value}/members/${userTeamAdminId.value}",
-                                            method = "DELETE")(tenant, session)
+      val respDelete = httpJsonCallBlocking(
+        path = s"/api/teams/${myTeamId.value}/members/${userTeamAdminId.value}",
+        method = "DELETE")(tenant, session)
       respDelete.status mustBe 409
     }
 
@@ -363,7 +433,9 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, randomUser),
-        teams = Seq(teamOwner.copy(users = Set(UserWithPermission(randomUser.id, TeamUser))))
+        teams = Seq(
+          teamOwner.copy(
+            users = Set(UserWithPermission(randomUser.id, TeamUser))))
       )
       val session = loginWithBlocking(randomUser, tenant)
 
@@ -372,7 +444,7 @@ class TeamControllerSpec(configurationSpec: => Configuration)
         method = "POST",
         body = Some(
           Json.obj(
-            "members"    -> Json.arr(userTeamAdminId.value),
+            "members" -> Json.arr(userTeamAdminId.value),
             "permission" -> ApiEditor.name
           )
         )
@@ -387,8 +459,10 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       )
       val session = loginWithBlocking(randomUser, tenant)
 
-      val respMyTeam = httpJsonCallBlocking("/api/me/teams/own")(tenant, session)
-      val myTeam     = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
+      val respMyTeam =
+        httpJsonCallBlocking("/api/me/teams/own")(tenant, session)
+      val myTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
       myTeam.isSuccess mustBe true
       val myTeamId = myTeam.get.id
 
@@ -397,7 +471,7 @@ class TeamControllerSpec(configurationSpec: => Configuration)
         method = "POST",
         body = Some(
           Json.obj(
-            "members"    -> Json.arr(randomUser.id.value),
+            "members" -> Json.arr(randomUser.id.value),
             "permission" -> ApiEditor.name
           )
         )
@@ -430,8 +504,10 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       )
       val session = loginWithBlocking(randomUser, tenant)
 
-      val respMyTeam = httpJsonCallBlocking("/api/me/teams/own")(tenant, session)
-      val myTeam     = fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
+      val respMyTeam =
+        httpJsonCallBlocking("/api/me/teams/own")(tenant, session)
+      val myTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
       myTeam.isSuccess mustBe true
       val myTeamId = myTeam.get.id
 

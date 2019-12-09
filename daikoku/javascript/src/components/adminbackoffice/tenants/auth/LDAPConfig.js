@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {t} from '../../../../locales';
+import { t } from '../../../../locales';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
@@ -105,7 +105,7 @@ export class LDAPConfig extends Component {
 
   componentDidMount() {
     if (this.props.rawValue.authProvider === 'LDAP') {
-      this.props.onChange({...LDAPConfig.defaultConfig, ...this.props.value});
+      this.props.onChange({ ...LDAPConfig.defaultConfig, ...this.props.value });
     }
   }
 
