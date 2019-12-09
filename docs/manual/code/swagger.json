@@ -1,0 +1,4449 @@
+{
+  "openapi": "3.0.1",
+  "externalDocs": {
+    "description": "Find out more about Daikoku",
+    "url": "https://maif.github.io/Daikoku/"
+  },
+  "info": {
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "contact": {
+      "name": "Daikoku Team",
+      "email": "oss@maif.fr"
+    },
+    "description": "Admin API of Daikoku",
+    "title": "Daikoku Admin API",
+    "version": "1.0.0-dev"
+  },
+  "tags": [],
+  "components": {
+    "schemas": {
+      "fr.maif.otoroshi.daikoku.domain.UsagePlan": {
+        "description": "fr.maif.otoroshi.daikoku.domain.UsagePlan",
+        "properties": {},
+        "required": [
+          "headers",
+          "content",
+          "value",
+          "url"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.TestingAuth": {
+        "description": "fr.maif.otoroshi.daikoku.domain.TestingAuth",
+        "properties": {}
+      },
+      "fr.maif.otoroshi.daikoku.domain.ApiDocumentationPage": {
+        "description": "fr.maif.otoroshi.daikoku.domain.ApiDocumentationPage",
+        "properties": {
+          "remoteContentHeaders": {
+            "type": "object"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "lastModificationAt": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "remoteContentEnabled": {
+            "type": "boolean"
+          },
+          "remoteContentUrl": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "tenant": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant",
+          "content",
+          "remoteContentHeaders",
+          "remoteContentEnabled",
+          "id",
+          "contentType",
+          "deleted",
+          "remoteContentUrl",
+          "level",
+          "title",
+          "lastModificationAt"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.User": {
+        "description": "fr.maif.otoroshi.daikoku.domain.User",
+        "properties": {
+          "tenants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "isGuest": {
+            "type": "boolean"
+          },
+          "picture": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "isDaikokuAdmin": {
+            "type": "boolean"
+          },
+          "defaultLanguage": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "origins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.login.AuthProvider"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "hardwareKeyRegistrations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "lastTenant": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "personalToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "lastTenant",
+          "email",
+          "origins",
+          "isGuest",
+          "metadata",
+          "defaultLanguage",
+          "id",
+          "password",
+          "name",
+          "picture",
+          "isDaikokuAdmin",
+          "tenants",
+          "deleted",
+          "hardwareKeyRegistrations",
+          "personalToken"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.Version": {
+        "description": "fr.maif.otoroshi.daikoku.domain.Version",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "headers",
+          "content",
+          "value",
+          "url"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.OtoroshiService": {
+        "description": "fr.maif.otoroshi.daikoku.domain.OtoroshiService",
+        "properties": {
+          "otoroshiSettings": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "content",
+          "service",
+          "value",
+          "name",
+          "headers",
+          "otoroshiSettings"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.TeamPermission": {
+        "description": "fr.maif.otoroshi.daikoku.domain.TeamPermission",
+        "properties": {}
+      },
+      "fr.maif.otoroshi.daikoku.domain.NotificationType": {
+        "description": "fr.maif.otoroshi.daikoku.domain.NotificationType",
+        "properties": {},
+        "required": [
+          "lastTenant",
+          "email",
+          "origins",
+          "isGuest",
+          "metadata",
+          "defaultLanguage",
+          "id",
+          "password",
+          "name",
+          "picture",
+          "isDaikokuAdmin",
+          "tenants",
+          "deleted",
+          "hardwareKeyRegistrations",
+          "personalToken"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.DaikokuStyle": {
+        "description": "fr.maif.otoroshi.daikoku.domain.DaikokuStyle",
+        "properties": {
+          "css": {
+            "type": "string"
+          },
+          "faviconUrl": {
+            "type": "string"
+          },
+          "cssUrl": {
+            "type": "string"
+          },
+          "homePageVisible": {
+            "type": "boolean"
+          },
+          "colorTheme": {
+            "type": "string"
+          },
+          "js": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "jsUrl": {
+            "type": "string"
+          },
+          "unloggedHome": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "unloggedHome",
+          "description",
+          "clientSecret",
+          "url",
+          "alertsEmails",
+          "jsUrl",
+          "kafkaConfig",
+          "elasticConfigs",
+          "v4auth",
+          "endpoint",
+          "access",
+          "host",
+          "chunkSize",
+          "faviconUrl",
+          "id",
+          "region",
+          "colorTheme",
+          "js",
+          "logo",
+          "bucket",
+          "cssUrl",
+          "secret",
+          "clientId",
+          "auditWebhooks",
+          "css",
+          "homePageVisible",
+          "title"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig": {
+        "description": "fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig",
+        "properties": {
+          "clusterUri": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "object"
+          },
+          "password": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "clusterUri",
+          "password",
+          "index",
+          "headers",
+          "user",
+          "type"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.ApiKeyGlobalConsumptionInformations": {
+        "description": "fr.maif.otoroshi.daikoku.domain.ApiKeyGlobalConsumptionInformations",
+        "properties": {
+          "hits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dataOut": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "avgOverhead": {
+            "type": "number",
+            "format": "float64"
+          },
+          "dataIn": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "avgDuration": {
+            "type": "number",
+            "format": "float64"
+          }
+        },
+        "required": [
+          "remainingCallsPerSec",
+          "authorizedCallsPerMonth",
+          "currentCallsPerSec",
+          "remainingCallsPerDay",
+          "avgOverhead",
+          "total",
+          "avgDuration",
+          "authorizedCallsPerDay",
+          "authorizedCallsPerSec",
+          "hits",
+          "currentCallsPerMonth",
+          "currentCallsPerDay",
+          "dataOut",
+          "remainingCallsPerMonth",
+          "dataIn"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.MailerSettings": {
+        "description": "fr.maif.otoroshi.daikoku.domain.MailerSettings",
+        "properties": {},
+        "required": [
+          "clientSecret",
+          "url",
+          "alertsEmails",
+          "kafkaConfig",
+          "elasticConfigs",
+          "host",
+          "id",
+          "clientId",
+          "auditWebhooks"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.NotificationStatus": {
+        "description": "fr.maif.otoroshi.daikoku.domain.NotificationStatus",
+        "properties": {},
+        "required": [
+          "lastTenant",
+          "email",
+          "origins",
+          "isGuest",
+          "metadata",
+          "defaultLanguage",
+          "id",
+          "password",
+          "name",
+          "picture",
+          "isDaikokuAdmin",
+          "tenants",
+          "deleted",
+          "hardwareKeyRegistrations",
+          "personalToken"
+        ]
+      },
+      "error": {
+        "description": "error response",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "fr.maif.otoroshi.daikoku.domain.Notification": {
+        "description": "fr.maif.otoroshi.daikoku.domain.Notification",
+        "properties": {
+          "date": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.User"
+          },
+          "action": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.NotificationAction"
+          },
+          "id": {
+            "type": "string"
+          },
+          "team": {
+            "type": "string"
+          },
+          "notificationType": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.NotificationType"
+          },
+          "tenant": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.NotificationStatus"
+          }
+        },
+        "required": [
+          "team",
+          "tenant",
+          "date",
+          "status",
+          "notificationType",
+          "id",
+          "deleted",
+          "action",
+          "sender"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.Testing": {
+        "description": "fr.maif.otoroshi.daikoku.domain.Testing",
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "auth": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.TestingAuth"
+          },
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "content",
+          "auth",
+          "service",
+          "username",
+          "password",
+          "value",
+          "name",
+          "headers",
+          "otoroshiSettings",
+          "enabled"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.SwaggerAccess": {
+        "description": "fr.maif.otoroshi.daikoku.domain.SwaggerAccess",
+        "properties": {
+          "headers": {
+            "type": "object"
+          },
+          "url": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "headers",
+          "content",
+          "url"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.UserWithPermission": {
+        "description": "fr.maif.otoroshi.daikoku.domain.UserWithPermission",
+        "properties": {
+          "teamPermission": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.TeamPermission"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "teamPermission"
+        ]
+      },
+      "patch": {
+        "description": "A set of changes described in JSON Patch format: http://jsonpatch.com/ (RFC 6902)",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "op",
+            "path"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "enum": [
+                "add",
+                "replace",
+                "remove",
+                "copy",
+                "test"
+              ]
+            },
+            "path": {
+              "type": "string"
+            },
+            "value": {}
+          }
+        }
+      },
+      "fr.maif.otoroshi.daikoku.login.AuthProvider": {
+        "description": "fr.maif.otoroshi.daikoku.login.AuthProvider",
+        "properties": {}
+      },
+      "fr.maif.otoroshi.daikoku.utils.S3Configuration": {
+        "description": "fr.maif.otoroshi.daikoku.utils.S3Configuration",
+        "properties": {
+          "bucket": {
+            "type": "string"
+          },
+          "v4auth": {
+            "type": "boolean"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "access": {
+            "type": "string"
+          },
+          "chunkSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientSecret",
+          "url",
+          "alertsEmails",
+          "kafkaConfig",
+          "elasticConfigs",
+          "v4auth",
+          "endpoint",
+          "access",
+          "host",
+          "chunkSize",
+          "id",
+          "region",
+          "bucket",
+          "secret",
+          "clientId",
+          "auditWebhooks"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.SubscriptionProcess": {
+        "description": "fr.maif.otoroshi.daikoku.domain.SubscriptionProcess",
+        "properties": {},
+        "required": [
+          "tenant",
+          "pages",
+          "url",
+          "content",
+          "auth",
+          "service",
+          "username",
+          "id",
+          "password",
+          "value",
+          "name",
+          "headers",
+          "otoroshiSettings",
+          "enabled",
+          "lastModificationAt"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.ApiKeyConsumption": {
+        "description": "fr.maif.otoroshi.daikoku.domain.ApiKeyConsumption",
+        "properties": {
+          "hits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "quotas": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyQuotas"
+          },
+          "globalInformations": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyGlobalConsumptionInformations"
+          },
+          "from": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "id": {
+            "type": "string"
+          },
+          "team": {
+            "type": "string"
+          },
+          "api": {
+            "type": "string"
+          },
+          "to": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "tenant": {
+            "type": "string"
+          },
+          "billing": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyBilling"
+          }
+        },
+        "required": [
+          "team",
+          "tenant",
+          "api",
+          "from",
+          "plan",
+          "quotas",
+          "globalInformations",
+          "id",
+          "hits",
+          "to",
+          "clientId",
+          "billing"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.audit.KafkaConfig": {
+        "description": "fr.maif.otoroshi.daikoku.audit.KafkaConfig",
+        "properties": {
+          "auditTopic": {
+            "type": "string"
+          },
+          "servers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "keyPass": {
+            "type": "string"
+          },
+          "keystore": {
+            "type": "string"
+          },
+          "truststore": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "keyPass",
+          "url",
+          "clusterUri",
+          "password",
+          "truststore",
+          "index",
+          "keystore",
+          "headers",
+          "servers",
+          "user",
+          "auditTopic",
+          "type"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.ApiKeyQuotas": {
+        "description": "fr.maif.otoroshi.daikoku.domain.ApiKeyQuotas",
+        "properties": {
+          "remainingCallsPerDay": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "authorizedCallsPerMonth": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currentCallsPerSec": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "authorizedCallsPerSec": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remainingCallsPerMonth": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remainingCallsPerSec": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "authorizedCallsPerDay": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currentCallsPerDay": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currentCallsPerMonth": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "remainingCallsPerSec",
+          "authorizedCallsPerMonth",
+          "currentCallsPerSec",
+          "remainingCallsPerDay",
+          "total",
+          "authorizedCallsPerDay",
+          "authorizedCallsPerSec",
+          "hits",
+          "currentCallsPerMonth",
+          "currentCallsPerDay",
+          "remainingCallsPerMonth"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.ApiKeyBilling": {
+        "description": "fr.maif.otoroshi.daikoku.domain.ApiKeyBilling",
+        "properties": {
+          "hits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "number",
+            "format": "float64"
+          }
+        },
+        "required": [
+          "hits",
+          "total"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.AuditTrailConfig": {
+        "description": "fr.maif.otoroshi.daikoku.domain.AuditTrailConfig",
+        "properties": {
+          "alertsEmails": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "elasticConfigs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig"
+            }
+          },
+          "kafkaConfig": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.audit.KafkaConfig"
+          },
+          "auditWebhooks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.audit.config.Webhook"
+            }
+          }
+        },
+        "required": [
+          "kafkaConfig",
+          "elasticConfigs",
+          "alertsEmails",
+          "auditWebhooks"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.Tenant": {
+        "description": "fr.maif.otoroshi.daikoku.domain.Tenant",
+        "properties": {
+          "otoroshiSettings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.OtoroshiSettings"
+            }
+          },
+          "bucketSettings": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.utils.S3Configuration"
+          },
+          "isPrivate": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "authProvider": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.login.AuthProvider"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "defaultLanguage": {
+            "type": "string"
+          },
+          "auditTrailConfig": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.AuditTrailConfig"
+          },
+          "authProviderSettings": {
+            "type": "object"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "style": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.DaikokuStyle"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mailerSettings": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.MailerSettings"
+          }
+        },
+        "required": [
+          "authProviderSettings",
+          "auditTrailConfig",
+          "style",
+          "isPrivate",
+          "authProvider",
+          "defaultLanguage",
+          "id",
+          "name",
+          "mailerSettings",
+          "deleted",
+          "otoroshiSettings",
+          "bucketSettings",
+          "domain",
+          "enabled"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.ApiDocumentation": {
+        "description": "fr.maif.otoroshi.daikoku.domain.ApiDocumentation",
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lastModificationAt": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "id": {
+            "type": "string"
+          },
+          "tenant": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant",
+          "pages",
+          "url",
+          "content",
+          "auth",
+          "service",
+          "username",
+          "id",
+          "password",
+          "value",
+          "name",
+          "headers",
+          "otoroshiSettings",
+          "enabled",
+          "lastModificationAt"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.ApiVisibility": {
+        "description": "fr.maif.otoroshi.daikoku.domain.ApiVisibility",
+        "properties": {},
+        "required": [
+          "headers",
+          "content",
+          "url"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.ApiSubscription": {
+        "description": "fr.maif.otoroshi.daikoku.domain.ApiSubscription",
+        "properties": {
+          "createdAt": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "apiKey": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.OtoroshiApiKey"
+          },
+          "by": {
+            "type": "string"
+          },
+          "customName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "team": {
+            "type": "string"
+          },
+          "api": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "tenant": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "team",
+          "tenant",
+          "apiKey",
+          "api",
+          "createdAt",
+          "by",
+          "plan",
+          "id",
+          "customName",
+          "deleted",
+          "enabled"
+        ]
+      },
+      "done": {
+        "description": "task is done",
+        "properties": {
+          "done": {
+            "type": "boolean"
+          }
+        }
+      },
+      "fr.maif.otoroshi.daikoku.domain.OtoroshiGroup": {
+        "description": "fr.maif.otoroshi.daikoku.domain.OtoroshiGroup",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "value",
+          "teamPermission"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.OtoroshiApiKey": {
+        "description": "fr.maif.otoroshi.daikoku.domain.OtoroshiApiKey",
+        "properties": {
+          "clientId": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientName",
+          "clientId",
+          "clientSecret"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.audit.config.Webhook": {
+        "description": "fr.maif.otoroshi.daikoku.audit.config.Webhook",
+        "properties": {
+          "headers": {
+            "type": "object"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "headers",
+          "url"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.Api": {
+        "description": "fr.maif.otoroshi.daikoku.domain.Api",
+        "properties": {
+          "subscriptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "supportedVersions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Version"
+            }
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiVisibility"
+          },
+          "smallDescription": {
+            "type": "string"
+          },
+          "testing": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Testing"
+          },
+          "documentation": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiDocumentation"
+          },
+          "managedServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.OtoroshiService"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "authorizedTeams": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "team": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "currentVersion": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Version"
+          },
+          "swagger": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.SwaggerAccess"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "lastUpdate": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subscriptionProcess": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.SubscriptionProcess"
+          },
+          "id": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tenant": {
+            "type": "string"
+          },
+          "defaultUsagePlan": {
+            "type": "string"
+          },
+          "possibleUsagePlans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.UsagePlan"
+            }
+          }
+        },
+        "required": [
+          "team",
+          "supportedVersions",
+          "tenant",
+          "defaultUsagePlan",
+          "description",
+          "categories",
+          "lastUpdate",
+          "smallDescription",
+          "authorizedTeams",
+          "published",
+          "currentVersion",
+          "managedServices",
+          "tags",
+          "visibility",
+          "id",
+          "swagger",
+          "subscriptionProcess",
+          "testing",
+          "possibleUsagePlans",
+          "subscriptions",
+          "name",
+          "deleted",
+          "documentation"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.Team": {
+        "description": "fr.maif.otoroshi.daikoku.domain.Team",
+        "properties": {
+          "subscriptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "description": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.TeamType"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.UserWithPermission"
+            }
+          },
+          "showApiKeyOnlyToAdmins": {
+            "type": "boolean"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "contact": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "authorizedOtoroshiGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.OtoroshiGroup"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "tenant": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "authorizedOtoroshiGroups",
+          "tenant",
+          "contact",
+          "description",
+          "avatar",
+          "showApiKeyOnlyToAdmins",
+          "users",
+          "metadata",
+          "id",
+          "subscriptions",
+          "name",
+          "deleted",
+          "type"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.NotificationAction": {
+        "description": "fr.maif.otoroshi.daikoku.domain.NotificationAction",
+        "properties": {},
+        "required": [
+          "lastTenant",
+          "email",
+          "origins",
+          "isGuest",
+          "metadata",
+          "defaultLanguage",
+          "id",
+          "password",
+          "name",
+          "picture",
+          "isDaikokuAdmin",
+          "tenants",
+          "deleted",
+          "hardwareKeyRegistrations",
+          "personalToken"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.UserSession": {
+        "description": "fr.maif.otoroshi.daikoku.domain.UserSession",
+        "properties": {
+          "impersonatorName": {
+            "type": "string"
+          },
+          "expires": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "impersonatorSessionId": {
+            "type": "string"
+          },
+          "created": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "impersonatorId": {
+            "type": "string"
+          },
+          "userEmail": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "impersonatorEmail": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "ttl": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "expires",
+          "impersonatorName",
+          "impersonatorEmail",
+          "sessionId",
+          "id",
+          "ttl",
+          "impersonatorSessionId",
+          "created",
+          "impersonatorId",
+          "userName",
+          "userId",
+          "userEmail"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.OtoroshiSettings": {
+        "description": "fr.maif.otoroshi.daikoku.domain.OtoroshiSettings",
+        "properties": {
+          "clientId": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientSecret",
+          "url",
+          "alertsEmails",
+          "kafkaConfig",
+          "elasticConfigs",
+          "host",
+          "id",
+          "clientId",
+          "auditWebhooks"
+        ]
+      },
+      "fr.maif.otoroshi.daikoku.domain.TeamType": {
+        "description": "fr.maif.otoroshi.daikoku.domain.TeamType",
+        "properties": {}
+      },
+      "object": {
+        "type": "object"
+      }
+    }
+  },
+  "paths": {
+    "/admin-api/tenants": {
+      "get": {
+        "summary": "read all tenant",
+        "operationId": "tenants.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Tenant"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tenant"
+        ]
+      },
+      "post": {
+        "summary": "creates a tenant",
+        "requestBody": {
+          "description": "the tenant to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Tenant"
+              }
+            }
+          }
+        },
+        "operationId": "tenants.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Tenant"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/admin-api/teams/{id}": {
+      "delete": {
+        "summary": "delete a team",
+        "operationId": "teams.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "team"
+        ]
+      },
+      "patch": {
+        "summary": "update a team with JSON patch",
+        "operationId": "teams.patch",
+        "requestBody": {
+          "description": "the patch to update the team",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Team"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "team"
+        ]
+      },
+      "put": {
+        "summary": "update a team",
+        "operationId": "teams.update",
+        "requestBody": {
+          "description": "the team to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Team"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Team"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "team"
+        ]
+      },
+      "get": {
+        "summary": "read a team",
+        "operationId": "teams.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Team"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/admin-api/consumptions": {
+      "get": {
+        "summary": "read all api-key-consumption",
+        "operationId": "api-key-consumptions.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyConsumption"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api-key-consumption"
+        ]
+      },
+      "post": {
+        "summary": "creates a api-key-consumption",
+        "requestBody": {
+          "description": "the api-key-consumption to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyConsumption"
+              }
+            }
+          }
+        },
+        "operationId": "api-key-consumptions.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyConsumption"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api-key-consumption"
+        ]
+      }
+    },
+    "/admin-api/audit-events": {
+      "get": {
+        "summary": "read all audit-event",
+        "operationId": "audit-events.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "audit-event"
+        ]
+      },
+      "post": {
+        "summary": "creates a audit-event",
+        "requestBody": {
+          "description": "the audit-event to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/object"
+              }
+            }
+          }
+        },
+        "operationId": "audit-events.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "audit-event"
+        ]
+      }
+    },
+    "/admin-api/pages/{id}": {
+      "delete": {
+        "summary": "delete a api-documentation-page",
+        "operationId": "api-documentation-pages.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-documentation-page"
+        ]
+      },
+      "patch": {
+        "summary": "update a api-documentation-page with JSON patch",
+        "operationId": "api-documentation-pages.patch",
+        "requestBody": {
+          "description": "the patch to update the api-documentation-page",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiDocumentationPage"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-documentation-page"
+        ]
+      },
+      "put": {
+        "summary": "update a api-documentation-page",
+        "operationId": "api-documentation-pages.update",
+        "requestBody": {
+          "description": "the api-documentation-page to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiDocumentationPage"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiDocumentationPage"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-documentation-page"
+        ]
+      },
+      "get": {
+        "summary": "read a api-documentation-page",
+        "operationId": "api-documentation-pages.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiDocumentationPage"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-documentation-page"
+        ]
+      }
+    },
+    "/admin-api/notifications/{id}": {
+      "delete": {
+        "summary": "delete a notification",
+        "operationId": "notifications.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "notification"
+        ]
+      },
+      "patch": {
+        "summary": "update a notification with JSON patch",
+        "operationId": "notifications.patch",
+        "requestBody": {
+          "description": "the patch to update the notification",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Notification"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "notification"
+        ]
+      },
+      "put": {
+        "summary": "update a notification",
+        "operationId": "notifications.update",
+        "requestBody": {
+          "description": "the notification to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Notification"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Notification"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "notification"
+        ]
+      },
+      "get": {
+        "summary": "read a notification",
+        "operationId": "notifications.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Notification"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/admin-api/notifications": {
+      "get": {
+        "summary": "read all notification",
+        "operationId": "notifications.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Notification"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      },
+      "post": {
+        "summary": "creates a notification",
+        "requestBody": {
+          "description": "the notification to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Notification"
+              }
+            }
+          }
+        },
+        "operationId": "notifications.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Notification"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/admin-api/consumptions/{id}": {
+      "delete": {
+        "summary": "delete a api-key-consumption",
+        "operationId": "api-key-consumptions.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-key-consumption"
+        ]
+      },
+      "patch": {
+        "summary": "update a api-key-consumption with JSON patch",
+        "operationId": "api-key-consumptions.patch",
+        "requestBody": {
+          "description": "the patch to update the api-key-consumption",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyConsumption"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-key-consumption"
+        ]
+      },
+      "put": {
+        "summary": "update a api-key-consumption",
+        "operationId": "api-key-consumptions.update",
+        "requestBody": {
+          "description": "the api-key-consumption to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyConsumption"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyConsumption"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-key-consumption"
+        ]
+      },
+      "get": {
+        "summary": "read a api-key-consumption",
+        "operationId": "api-key-consumptions.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiKeyConsumption"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-key-consumption"
+        ]
+      }
+    },
+    "/admin-api/pages": {
+      "get": {
+        "summary": "read all api-documentation-page",
+        "operationId": "api-documentation-pages.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiDocumentationPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api-documentation-page"
+        ]
+      },
+      "post": {
+        "summary": "creates a api-documentation-page",
+        "requestBody": {
+          "description": "the api-documentation-page to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiDocumentationPage"
+              }
+            }
+          }
+        },
+        "operationId": "api-documentation-pages.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiDocumentationPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api-documentation-page"
+        ]
+      }
+    },
+    "/admin-api/tenants/{id}": {
+      "delete": {
+        "summary": "delete a tenant",
+        "operationId": "tenants.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "tenant"
+        ]
+      },
+      "patch": {
+        "summary": "update a tenant with JSON patch",
+        "operationId": "tenants.patch",
+        "requestBody": {
+          "description": "the patch to update the tenant",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Tenant"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "tenant"
+        ]
+      },
+      "put": {
+        "summary": "update a tenant",
+        "operationId": "tenants.update",
+        "requestBody": {
+          "description": "the tenant to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Tenant"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Tenant"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "tenant"
+        ]
+      },
+      "get": {
+        "summary": "read a tenant",
+        "operationId": "tenants.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Tenant"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/admin-api/subscriptions": {
+      "get": {
+        "summary": "read all api-subscription",
+        "operationId": "api-subscriptions.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiSubscription"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api-subscription"
+        ]
+      },
+      "post": {
+        "summary": "creates a api-subscription",
+        "requestBody": {
+          "description": "the api-subscription to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiSubscription"
+              }
+            }
+          }
+        },
+        "operationId": "api-subscriptions.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api-subscription"
+        ]
+      }
+    },
+    "/admin-api/teams": {
+      "get": {
+        "summary": "read all team",
+        "operationId": "teams.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Team"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "team"
+        ]
+      },
+      "post": {
+        "summary": "creates a team",
+        "requestBody": {
+          "description": "the team to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Team"
+              }
+            }
+          }
+        },
+        "operationId": "teams.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Team"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/admin-api/subscriptions/{id}": {
+      "delete": {
+        "summary": "delete a api-subscription",
+        "operationId": "api-subscriptions.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-subscription"
+        ]
+      },
+      "patch": {
+        "summary": "update a api-subscription with JSON patch",
+        "operationId": "api-subscriptions.patch",
+        "requestBody": {
+          "description": "the patch to update the api-subscription",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiSubscription"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-subscription"
+        ]
+      },
+      "put": {
+        "summary": "update a api-subscription",
+        "operationId": "api-subscriptions.update",
+        "requestBody": {
+          "description": "the api-subscription to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiSubscription"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiSubscription"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-subscription"
+        ]
+      },
+      "get": {
+        "summary": "read a api-subscription",
+        "operationId": "api-subscriptions.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.ApiSubscription"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api-subscription"
+        ]
+      }
+    },
+    "/admin-api/users": {
+      "get": {
+        "summary": "read all user",
+        "operationId": "users.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "user"
+        ]
+      },
+      "post": {
+        "summary": "creates a user",
+        "requestBody": {
+          "description": "the user to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.User"
+              }
+            }
+          }
+        },
+        "operationId": "users.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/admin-api/apis/{id}": {
+      "delete": {
+        "summary": "delete a api",
+        "operationId": "apis.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api"
+        ]
+      },
+      "patch": {
+        "summary": "update a api with JSON patch",
+        "operationId": "apis.patch",
+        "requestBody": {
+          "description": "the patch to update the api",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api"
+        ]
+      },
+      "put": {
+        "summary": "update a api",
+        "operationId": "apis.update",
+        "requestBody": {
+          "description": "the api to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api"
+        ]
+      },
+      "get": {
+        "summary": "read a api",
+        "operationId": "apis.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "api"
+        ]
+      }
+    },
+    "/admin-api/sessions/{id}": {
+      "delete": {
+        "summary": "delete a user-session",
+        "operationId": "user-sessions.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "user-session"
+        ]
+      },
+      "patch": {
+        "summary": "update a user-session with JSON patch",
+        "operationId": "user-sessions.patch",
+        "requestBody": {
+          "description": "the patch to update the user-session",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.UserSession"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "user-session"
+        ]
+      },
+      "put": {
+        "summary": "update a user-session",
+        "operationId": "user-sessions.update",
+        "requestBody": {
+          "description": "the user-session to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.UserSession"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.UserSession"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "user-session"
+        ]
+      },
+      "get": {
+        "summary": "read a user-session",
+        "operationId": "user-sessions.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.UserSession"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "user-session"
+        ]
+      }
+    },
+    "/admin-api/sessions": {
+      "get": {
+        "summary": "read all user-session",
+        "operationId": "user-sessions.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.UserSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "user-session"
+        ]
+      },
+      "post": {
+        "summary": "creates a user-session",
+        "requestBody": {
+          "description": "the user-session to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.UserSession"
+              }
+            }
+          }
+        },
+        "operationId": "user-sessions.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.UserSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "user-session"
+        ]
+      }
+    },
+    "/admin-api/audit-events/{id}": {
+      "delete": {
+        "summary": "delete a audit-event",
+        "operationId": "audit-events.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "audit-event"
+        ]
+      },
+      "patch": {
+        "summary": "update a audit-event with JSON patch",
+        "operationId": "audit-events.patch",
+        "requestBody": {
+          "description": "the patch to update the audit-event",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "audit-event"
+        ]
+      },
+      "put": {
+        "summary": "update a audit-event",
+        "operationId": "audit-events.update",
+        "requestBody": {
+          "description": "the audit-event to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "audit-event"
+        ]
+      },
+      "get": {
+        "summary": "read a audit-event",
+        "operationId": "audit-events.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "audit-event"
+        ]
+      }
+    },
+    "/admin-api/users/{id}": {
+      "delete": {
+        "summary": "delete a user",
+        "operationId": "users.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      },
+      "patch": {
+        "summary": "update a user with JSON patch",
+        "operationId": "users.patch",
+        "requestBody": {
+          "description": "the patch to update the user",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.User"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      },
+      "put": {
+        "summary": "update a user",
+        "operationId": "users.update",
+        "requestBody": {
+          "description": "the user to update",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.User"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.User"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      },
+      "get": {
+        "summary": "read a user",
+        "operationId": "users.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.User"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/admin-api/apis": {
+      "get": {
+        "summary": "read all api",
+        "operationId": "apis.findAll",
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      },
+      "post": {
+        "summary": "creates a api",
+        "requestBody": {
+          "description": "the api to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+              }
+            }
+          }
+        },
+        "operationId": "apis.create",
+        "responses": {
+          "201": {
+            "description": "entity created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad entity format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "api"
+        ]
+      }
+    }
+  }
+}
