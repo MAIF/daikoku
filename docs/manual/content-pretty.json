@@ -137,7 +137,7 @@
     "id": "/getdaikoku/frombinaries.md",
     "url": "/getdaikoku/frombinaries.html",
     "title": "From binaries",
-    "content": "# From binaries\n\nIf you want to download the last version of Daikoku, you can grab them from the release page of the Daikoku github page :\n\nGo to https://github.com/MAIF/daikoku/releases and get the last version of the `daikoku-dist.zip` file or the `daikoku.jar` file.\n"
+    "content": "# From binaries\n\nIf you want to download the last version of Daikoku, you can grab them from the release page of the Daikoku github page :\n\nGo to https://github.com/MAIF/daikoku/releases and get the last version of the `daikoku-xxx.zip` file or the `daikoku.jar` file.\n"
   },
   {
     "name": "fromdocker.md",
