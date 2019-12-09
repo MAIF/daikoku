@@ -2,7 +2,6 @@ import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
 
 name := """daikoku"""
 organization := "fr.maif.otoroshi"
-version := "1.0.0-dev"
 maintainer := "oss@maif.fr"
 packageName in Universal := "daikoku"
 
