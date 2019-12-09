@@ -13,12 +13,13 @@ jobs:
         ref: master
     - name: Debug
       run: |
-        ls -ahl
+        git checkout master
         git show-ref
         git rev-parse --abbrev-ref HEAD
         git branch
     - name: Generate documentation website
-      run: sh ./scripts/build.sh doc
+      run: |
+        sh ./scripts/build.sh doc
     - name: Push documentation
       run: |
         git config user.name "${GITHUB_ACTOR}"
