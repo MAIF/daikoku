@@ -9,6 +9,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Debug
+      run: ls -ahl
     - name: Generate documentation website
       run: sh ./scripts/build.sh doc
     - name: Push documentation
