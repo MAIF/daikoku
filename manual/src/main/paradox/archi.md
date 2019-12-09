@@ -4,5 +4,5 @@ TODO
 
 
 @@@ div { .centered-img }
-<img src="./img/architecture.png" />
+<img src="./img/daikoku-architecture.png" />
 @@@
