@@ -197,9 +197,10 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#architecture" name="architecture" class="anchor"><span class="anchor-link"></span></a>Architecture</h1>
-<p>TODO</p><div class="centered-img">
+<h1><a href="#architecture" name="architecture" class="anchor"><span class="anchor-link"></span></a>Architecture</h1><div class="centered-img">
 <img src="./img/daikoku-architecture.png" /></div>
+<p>To make Daikoku works, you&rsquo;ll need an <a href="https://www.mongodb.com/">Mongodb</a> datastore and an emailing provider (<a href="https://www.mailgun.com/">Mailgun</a> and <a href="https://www.mailjet.com/">Mailjet</a> are supported). Tou can also export the audit trail of Daikoku using many techniques with webhooks, a <a href="https://kafka.apache.org/">Kafka</a> topic or an <a href="https://www.elastic.co/fr/products/elasticsearch">elastic cluster</a>.</p>
+<p>As you can see, Daikoku is capable of working with many <a href="https://maif.github.io/otoroshi">Otoroshi</a> cluster instances to handle all the use cases of exposing APIs. Daikoku will <strong>never</strong> interact directly with your APIs.</p>
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="quickstart.html">Try Daikoku in 5 minutes</a></p>
 </div>
