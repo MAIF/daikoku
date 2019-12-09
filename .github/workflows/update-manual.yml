@@ -10,12 +10,17 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Debug
-      run: ls -ahl
+      run: |
+        ls -ahl
+        git show-ref
+        git rev-parse --abbrev-ref HEAD
+        git branch
     - name: Generate documentation website
       run: sh ./scripts/build.sh doc
     - name: Push documentation
       run: |
         git config user.name "${GITHUB_ACTOR}"
         git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+        git add --all
         git commit -am 'Update documentation'
-        git push origin master
+        git push -u origin master
