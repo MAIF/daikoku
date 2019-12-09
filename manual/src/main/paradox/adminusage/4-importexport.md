@@ -1,12 +1,12 @@
 # Import and export
 
-With Daikoku you can easily save the current state of the instance and restore it later. Go to `settings (avatar icon) / Organizations settings` and then `import/export`.
+With Daikoku, you can easily save the current state of the instance and restore it later. Go to `Settings (avatar icon) / Organizations settings` and then `import/export`.
 
 ## Full export
 
 Click on the `download state` button.
 
-Your browser will start to download a ndjson file containing the internal state of your Daikoku instance.
+Your browser will start downloading a ndjson file containing the internal state of your Daikoku instance.
 
 ## Full import
 

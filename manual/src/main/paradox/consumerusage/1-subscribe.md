@@ -1,7 +1,7 @@
 # Subscribe to an api
 
-## choose a plan
-First of all, you've got to choose an api to subscribe. In the information page of the api, select the `Plans` tab.
+## Choose a plan
+First of all, you need to choose an API to subscribe. In the information page of the API, select the `Plans` tab.
 here are presented the differents pricing plans of the api (if team decides to present multiple plans).
 Just click the `subscribe` button. If you are member of several teams, please choose teams to make subscription and click the `subscribe` button.
 

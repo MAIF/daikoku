@@ -1,6 +1,6 @@
 # Run Daikoku
 
-Now you are ready to run Daikoku. You can run the following command with some tweaks depending on the way you want to configure Daikoku. If you want to pass a custom configuration file, use the `-Dconfig.file=/path/to/file.conf` flag in the following commands.
+Now you are ready to run Daikoku. You can run the following command with some tweaks depending on the way you want to configure Daikoku. If you want to pass a custom configuration file, use the `-Dconfig.file=/path/to/file.conf` option in the following commands.
 
 ## From .zip file
 

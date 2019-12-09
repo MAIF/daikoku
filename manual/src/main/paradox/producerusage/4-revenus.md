@@ -1,9 +1,9 @@
-# Team revenus
+# Team earnings
 
 In the backoffice team, click on the `Team revenus` entry, on the left.
 And you should see the list of the `team revenus`.
 
-Revenus are calculated by month and could be synchronized with otoroshi if data's not fresh.
+Earnings are calculated by month and could be synchronized with otoroshi if data's not fresh.
 
-The total revenus by month is display on top right of the board and below, you can see the total by apis.
+The total earnings by month is display on top right of the board and below, you can see the total by API.
 After clicking on a api revenu, you can see the division by apikeys.

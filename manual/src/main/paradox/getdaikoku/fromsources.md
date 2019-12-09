@@ -1,6 +1,6 @@
 # From sources
 
-to build Daikoku from sources, you need the following tools :
+To build Daikoku from sources, you need the following tools :
 
 * git
 * JDK 11

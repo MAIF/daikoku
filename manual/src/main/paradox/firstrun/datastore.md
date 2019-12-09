@@ -1,8 +1,6 @@
 # Choose your audit trail datastore
 
-Right now, Daikoku supports multiple datastores for the audit trail.
-
-You can choose one datastore over another depending on your use case.
+Daikoku needs to store its audit trail in a datastore. Daikoku supports multiple datastores. 
 
 Available datastores for audit trail are the following :
 
@@ -11,4 +9,4 @@ Available datastores for audit trail are the following :
 * kafka
 * webhook
 
-you can manage it in the tenant settings page.
+You can manage it in the tenant settings page.

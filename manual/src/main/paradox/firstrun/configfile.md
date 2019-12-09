@@ -1,8 +1,8 @@
 # Config. with files
 
-There is a lot of things you can configure in Daikoku. By default, Daikoku provides a configuration that should be enough for testing purpose. But you'll likely need to update this configuration when you'll need to move into production.
+There are a lot of things you may configure in Daikoku. By default, Daikoku provides a configuration that should be enough for testing purpose. But you'll likely need to update this configuration when you'll need to move Daikoku into production.
 
-In this page, any configuration property can be set at runtime using a `-D` flag when launching Daikoku like
+In this page, any configuration property can be set at runtime using a `-D` flag when launching Daikoku like :
 
 ```sh
 java -Dhttp.port=8080 -jar daikoku.jar
@@ -18,18 +18,18 @@ or
 
 | name | type | default value  | description |
 | ---- |:----:| -------------- | ----- |
-|`daikoku.mode`|String|"prod"| Daikoku running mode. Can be Dev or Prod |
+|`daikoku.mode`|String|"prod"| Daikoku running mode. Supported values are `dev` or `prod` |
 |`daikoku.exposedOn`|String|http.port| the http port exposed by Daikoku  |
 |`daikoku.singingkey`|String|"secret"| the secret used for signing the JWT token |
-|`daikoku.tenants.provider` | string | "local" | the way to get the tenant to display. it can be local, header or hostname|
-|`daikoku.exposition.provider` | string | "none" | Activate the otoroshi exchange protocol with value "otoroshi" |
+|`daikoku.tenants.provider` | string | "local" | the way to get the tenant to display. Supported values are `local`, `header` or `hostname`|
+|`daikoku.exposition.provider` | string | "none" | activate the exchange protocol. Supported values are `otoroshi` (for [Otoroshi Exchange Protocol](https://maif.github.io/otoroshi/manual/usage/2-services.html#otoroshi-exchange-protocol) and `none` |
 |`daikoku.snowflake.seed` | number | 0 | this number will is used to generate unique ids across the cluster. Each Otorshi instance must have a unique seed. |
 
 ## Admin api
 
 | name | type | default value  | description |
 | ---- |:----:| -------------- | ----- |
-|`daikoku.api.type`|String|"local"| the provider of apikey for admin apis. it can be local or otoroshi |
+|`daikoku.api.type`|String|"local"| the provider of apikey for admin apis. Supported values are `local` and `otoroshi` |
 |`daikoku.api.key`|String|"secret"| the local apikey of admin apis |
 |`daikoku.api.headerName`|String|"Otoroshi-Claim"| |
 |`daikoku.api.headerSecret`|String|"secret"|  |

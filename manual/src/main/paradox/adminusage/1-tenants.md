@@ -6,15 +6,15 @@ Go to `settings/Organizations settings`
 <img src="../img/organisation_settings.png" />
 @@@
 
-And you should see the list of existing `tenants`.
+And you should see the list of the existing `tenants`.
 
 ## Create a tenant
 
-To create a new tenant, just click to the `create a new tenant` button.
+To create a new tenant, just click on the `create a new tenant` button.
 
-### common informations
+### Common informations
 
-modify the name and the domain name of the tenant.
+Modify the name and the domain name of the current tenant.
 It's possible to set the default language of the tenant.
 
 ### Tenant style
@@ -25,7 +25,7 @@ The css can be customized with some css code or js code, with overwriting css va
 
 ### Authentication
 
-A tenant can be be private or public. In the last case, just public api can be accessed by unauthenticated users.
+A tenant can be private or public. In the last case, just public api can be accessed by unauthenticated users.
 Authentication can be set by choosen Local auth. or a tiers auth. like LDAP, OAuth2 or Otoroshi.
 The user session duration can be set here, by default it last 24h.
 
@@ -38,11 +38,11 @@ The output of it, in addition to writing in database, can be an elastic, a kafka
 The email adresses to report some Daikoku alert.
 
 ### Mailer
-The mailer type, by default just the standard output. Mailgun or Mailjet can be configure.
+The mailer type, by default just the standard output. Mailgun or Mailjet can be configured.
 
 ### Bucket
 An object storage can be set to store tenant and team assets.
 
 ### Unlogged home description
 The unlogged home description is the first content shown to user for private tenant, before the login page.
-It can also be enable for public tenant.
+It can also be enabled for public tenant.
