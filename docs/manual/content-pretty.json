@@ -53,7 +53,7 @@
     "id": "/archi.md",
     "url": "/archi.html",
     "title": "Architecture",
-    "content": "# Architecture\n\nTODO\n\n\n@@@ div { .centered-img }\n<img src=\"./img/architecture.png\" />\n@@@\n"
+    "content": "# Architecture\n\nTODO\n\n\n@@@ div { .centered-img }\n<img src=\"./img/daikoku-architecture.png\" />\n@@@\n"
   },
   {
     "name": "1-subscribe.md",
