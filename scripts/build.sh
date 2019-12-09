@@ -69,10 +69,16 @@ release_daikoku ()  {
     then
         if test "$TRAVIS_BRANCH" = "master"
         then
+            echo "On the master branch"
+        else
             BINARIES_VERSION=`echo "${TRAVIS_TAG}" | cut -d "v" -f 2`
 
             rm -rf $LOCATION/daikoku-manual.zip
             zip -r $LOCATION/daikoku-manual.zip $LOCATION/docs/manual -x '*.DS_Store'
+
+            cd $LOCATION/scripts
+            yarn install
+            $LOCATION
 
             node $LOCATION/scripts/publish.js $BINARIES_VERSION
 
@@ -84,8 +90,6 @@ release_daikoku ()  {
             docker login -u ${DOCKER_USER} -p ${DOCKER_PASS} 
             docker push "maif/daikoku:latest"
             docker push "maif/daikoku:${BINARIES_VERSION}"
-        else
-            echo "Not on the master branch"
         fi
     else
         echo "Just a pull request"
@@ -108,12 +112,18 @@ case "${1}" in
     build_ui
     build_daikoku
     ;;
+  build-ui)
+    build_ui
+    ;;
+  build-server)
+    build_daikoku
+    ;;
   test)
     test_server
     ;;
   release)
     export TRAVIS_TAG=$2
-    export TRAVIS_BRANCH=master
+    export TRAVIS_BRANCH=$2
     export TRAVIS_PULL_REQUEST=false
     release_daikoku
     ;;
