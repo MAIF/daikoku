@@ -48,7 +48,7 @@ services:
       - ./api/index.js:/index.js:ro
     command: node /index.js
   daikoku:
-    image: maifhorizon-docker-docker.bintray.io/daikoku:latest
+    image: maif/daikoku:latest
     environment:
       - DAIKOKU_OTOROSHI_SYNC_CRON=true
       - MONGODB_ADDON_URI=mongodb://mongo:27017/daikoku
