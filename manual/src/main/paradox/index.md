@@ -6,7 +6,7 @@
 > *In Japan, <a href="https://en.wikipedia.org/wiki/File:Daikoku.jpg" target="blank">Daikokuten</a> (大黒天), the god of great darkness or blackness, or the god of five cereals, is one of the Seven Lucky Gods (Fukujin). Daikokuten evolved from the Buddhist form of the Indian deity Shiva intertwined with the Shinto god Ōkuninushi. The name is the Japanese equivalent of Mahākāla, the Hindu name for Shiva.*
 
 @@@ div { .centered-img }
-[![Build Status](https://travis-ci.org/MAIF/daikoku.svg?branch=master)](https://travis-ci.org/MAIF/daikoku) [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku.jar)
+[![Build Status](https://travis-ci.org/MAIF/daikoku.svg?branch=master)](https://travis-ci.org/MAIF/daikoku) [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.jar)
 @@@
 
 @@@ div { .centered-img }
@@ -19,12 +19,12 @@ You are not sure of what is **Otoroshi**, you should probably have a look at [th
 
 ## Installation
 
-You can download the latest build of Daikoku as a [fat jar](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku.jar) or as a [zip package](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-dist.zip).
+You can download the latest build of Daikoku as a [fat jar](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.jar) or as a [zip package](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-dist.zip).
 
 You can install and run Otoroshi with this little bash snippet :
 
 ```sh
-curl -L -o daikoku.jar 'https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1./daikoku.jar'
+curl -L -o daikoku.jar 'https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.jar'
 java -jar daikoku.jar
 ```
 
