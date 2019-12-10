@@ -471,12 +471,7 @@ class UserBackOfficeComponent extends Component {
                           className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
                           to={'/settings/assets'}>
                           <i
-                            className="fas fa-copy"
-                            style={{
-                              color: tab === 'Assets' ? '#007bff' : '',
-                              marginLeft: 2,
-                              marginRight: 5,
-                            }}
+                            className="fas fa-copy mr-1"
                           />
                           <Translation
                             i18nkey="Tenant assets"
@@ -564,7 +559,7 @@ class UserBackOfficeComponent extends Component {
                         <Link
                           className={`nav-link ${tab === 'Import / Export' ? 'active' : ''}`}
                           to={'/settings/import-export'}>
-                          <i className="fas fa-download" />
+                          <i className="fas fa-download mr-1" />
                           <Translation
                             i18nkey="Import / Export"
                             language={this.props.currentLanguage}>
