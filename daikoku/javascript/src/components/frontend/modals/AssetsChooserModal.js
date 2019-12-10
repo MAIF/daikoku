@@ -206,7 +206,7 @@ export class AssetChooserComponent extends Component {
         <Popover isOpen={this.state.popoverIsOpen} body={this.state.error.message}>
           <button
             type="button"
-            className="btn btn-outline-success ml-1 cursor-help"
+            className="btn btn-outline-primary ml-1 cursor-help"
             onMouseEnter={() => this.toggle(true)}
             onMouseLeave={() => this.toggle(false)}
             disabled>

@@ -125,7 +125,7 @@ class SessionListComponent extends Component {
                     title="Delete all session"
                     style={{ marginLeft: 10 }}
                     onClick={() => this.deleteSessions()}>
-                    <i className="fas fa-trash" />
+                    <i className="fas fa-trash mr-1" />
                     <Translation
                       i18nkey="Delete all sessions"
                       language={this.props.currentLanguage}>
