@@ -19,7 +19,7 @@ You are not sure of what is **Otoroshi**, you should probably have a look at [th
 
 ## Installation
 
-You can download the latest build of Daikoku as a [fat jar](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.jar) or as a [zip package](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-dist.zip).
+You can download the latest build of Daikoku as a [fat jar](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.jar) or as a [zip package](https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.zip).
 
 You can install and run Otoroshi with this little bash snippet :
 
