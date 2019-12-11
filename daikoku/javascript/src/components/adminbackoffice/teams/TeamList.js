@@ -45,6 +45,31 @@ class TeamListComponent extends Component {
       ? this.state.teams.filter(({ name }) => name.toLowerCase().includes(this.state.search))
       : this.state.teams;
 
+    const actions = team => {
+      const basicActions = [
+        {
+          action: () => this.deleteTeam(team._id),
+          iconClass: 'fas fa-trash delete-icon',
+          tooltip: t('Delete team', this.props.currentLanguage),
+        },
+        {
+          redirect: () => this.props.history.push(`/settings/teams/${team._humanReadableId}`),
+          iconClass: 'fas fa-pen',
+          tooltip: t('Edit team', this.props.currentLanguage),
+        },
+      ]
+
+      if (team.type === 'Personal') {
+        return basicActions;
+      }
+
+      return [...basicActions, {
+        redirect: () => this.props.history.push(`/settings/teams/${team._humanReadableId}/members`),
+        iconClass: 'fas fa-users',
+        tooltip: t('Team members', this.props.currentLanguage),
+      }];
+    }
+
     return (
       <UserBackOffice tab="Teams">
         <Can I={manage} a={daikoku} dispatchError>
@@ -87,23 +112,7 @@ class TeamListComponent extends Component {
                           <span className="team__name text-truncate">{team.name}</span>
                         </>
                       }
-                      actions={[
-                        {
-                          action: () => this.deleteTeam(team._id),
-                          iconClass: 'fas fa-trash delete-icon',
-                          tooltip: t('Delete team', this.props.currentLanguage),
-                        },
-                        {
-                          link: `/settings/teams/${team._humanReadableId}`,
-                          iconClass: 'fas fa-pen',
-                          tooltip: t('Edit team', this.props.currentLanguage),
-                        },
-                        {
-                          link: `/settings/teams/${team._humanReadableId}/members`,
-                          iconClass: 'fas fa-users',
-                          tooltip: t('Team members', this.props.currentLanguage),
-                        },
-                      ]}
+                      actions={actions(team)}
                     />
                   );
                 }}

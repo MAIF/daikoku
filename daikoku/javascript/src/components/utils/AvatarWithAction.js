@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'antd';
 import uuidv4 from 'uuid/v4';
+import { t } from '../../locales';
 
 const placements = ['topRight', 'topLeft', 'bottomRight', 'bottomLeft'];
 
@@ -33,6 +34,14 @@ export const AvatarWithAction = props => {
           <a href={action.link}>
             <i className={action.iconClass} onClick={() => handleAction(action.action)} />
           </a>
+        </span>
+      );
+    } else if (action.redirect) {
+      ActionComponent = (
+        <span className="avatar-with-action__action" key={uuid}>
+          <span onClick={() => action.redirect()}>
+            <i className={action.iconClass} />
+          </span>
         </span>
       );
     } else {

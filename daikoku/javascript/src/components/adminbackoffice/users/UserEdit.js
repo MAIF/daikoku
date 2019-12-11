@@ -5,6 +5,7 @@ import * as Services from '../../../services';
 import faker from 'faker';
 import bcrypt from 'bcryptjs';
 import md5 from 'js-md5';
+import { toastr } from 'react-redux-toastr';
 
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { UserBackOffice } from '../../backoffice';
@@ -230,12 +231,17 @@ export class UserEditComponent extends Component {
 
   save = () => {
     if (this.state.create) {
-      Services.createUser(this.state.user).then(() => {});
+      Services.createUser(this.state.user).then(() => {
+        toastr.success(`user ${this.state.user.name} created`)
+        this.props.history.push('/settings/users');
+      });
     } else {
       Services.updateUserById(this.state.user).then(user => {
-        this.setState({ user, create: false });
+        this.setState({ user, create: false }, () => {
+          toastr.success(`user ${this.state.user.name} updated`)
+          this.props.history.push('/settings/users');
+        });
       });
-      this.props.history.push('/settings/users');
     }
   };
 
