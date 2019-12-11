@@ -437,7 +437,7 @@
   "The apikey client id": "Le client id de la clé d'api ",
   "Auth. type": "Type d'Auth.",
   "otoroshi.test.key.generator.button": "Générer une clé de test dédiée dans Otoroshi",
-  "otoroshi.test.key.modal.description": "Pour que tout fonctionne correctement, vous devez ajouter une correspondance de balises (OneTageIn / AllTagIn) dans votre descripteur de service dans la section \"Contraintes des clés Api\". Assurez-vous que ce descripteur de service est le bon pour les tests et non un système de production.",
+  "otoroshi.test.key.modal.description": "Pour que tout fonctionne correctement, vous devez ajouter une correspondance de balises (OneTagIn / AllTagIn) dans votre descripteur de service dans la section \"Contraintes des clés Api\". Assurez-vous que ce descripteur de service est le bon pour les tests et non un système de production.",
   "otoroshi.test.key.modal.tag.name": "La balise que vous devez ajouter est la suivante",
   "otoroshi.test.key.modal.apikey.name": "Le nom de le clé d'api",
   "Generate": "Générer",
