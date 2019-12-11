@@ -2,25 +2,42 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
 import akka.util.ByteString
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuTenantAction
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.AssetId
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import play.api.Logger
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, Json}
 import play.api.libs.streams.Accumulator
 import play.api.mvc.{AbstractController, BodyParser, ControllerComponents}
 
+trait NormalizeSupport {
+
+  import java.text.Normalizer.{normalize => jnormalize, _}
+
+  def normalize(in: String): String = {
+    val cleaned = in.trim.toLowerCase
+    val normalized = jnormalize(cleaned, Form.NFC)
+
+    normalized.replaceAll("'s", "")
+      .replaceAll("ß", "ss")
+      .replaceAll("ø", "o")
+      .replaceAll("[^a-zA-Z0-9-]+", "-")
+      .replaceAll("-+", "-")
+      .stripSuffix("-")
+  }
+}
+
+object NormalizeSupport extends NormalizeSupport
+
 class TeamAssetsController(DaikokuAction: DaikokuAction,
                            env: Env,
                            cc: ControllerComponents)
-    extends AbstractController(cc) {
+  extends AbstractController(cc)
+    with NormalizeSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -32,15 +49,15 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
   def storeAsset(teamId: String) = DaikokuAction.async(bodyParser) { ctx =>
     TeamApiEditorOnly(
       AuditTrailEvent(s"@{user.name} stores asset in team @{team.id}"))(teamId,
-                                                                        ctx) {
+      ctx) {
       team =>
         val contentType = ctx.request.headers
           .get("Asset-Content-Type")
           .orElse(ctx.request.contentType)
           .getOrElse("application/octet-stream")
-        val filename = ctx.request
+        val filename = normalize(ctx.request
           .getQueryString("filename")
-          .getOrElse(IdGenerator.token(16))
+          .getOrElse(IdGenerator.token(16)))
         val title = ctx.request.getQueryString("title").getOrElse("--")
         val desc = ctx.request.getQueryString("desc").getOrElse("--")
         val assetId = AssetId(IdGenerator.uuid)
@@ -51,19 +68,21 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
           case Some(cfg) =>
             env.assetsStore
               .storeAsset(ctx.tenant.id,
-                          team.id,
-                          assetId,
-                          filename,
-                          title,
-                          desc,
-                          contentType,
-                          ctx.request.body)(cfg)
+                team.id,
+                assetId,
+                filename,
+                title,
+                desc,
+                contentType,
+                ctx.request.body)(cfg)
               .map { res =>
                 Ok(Json.obj("done" -> true, "id" -> assetId.value))
               } recover {
               case e: fr.maif.otoroshi.daikoku.utils.BadFileContentFromContentType =>
                 BadRequest(Json.obj("error" -> "Bad file content"))
-              case e => InternalServerError(Json.obj("error" -> e.toString))
+              case e =>
+                Logger.error(s"Error during tenant asset storage: ${e.getMessage}", e)
+                InternalServerError(Json.obj("error" -> e.toString))
             }
         }
     }
@@ -72,7 +91,7 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
   def listAssets(teamId: String) = DaikokuAction.async { ctx =>
     TeamAdminOnly(
       AuditTrailEvent(s"@{user.name} listed assets of team @{team.id}"))(teamId,
-                                                                         ctx) {
+      ctx) {
       team =>
         ctx.tenant.bucketSettings match {
           case None =>
@@ -137,15 +156,15 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
                         .getOrElse("asset.txt")
                       val disposition = ("Content-Disposition" -> s"""attachment; filename="$filename"""")
                       if (ctx.request
-                            .getQueryString("download")
-                            .exists(_ == "true")) {
+                        .getQueryString("download")
+                        .exists(_ == "true")) {
                         Ok.sendEntity(
-                            HttpEntity.Streamed(
-                              source,
-                              None,
-                              meta.contentType
-                                .map(Some.apply)
-                                .getOrElse(Some("application/octet-stream"))))
+                          HttpEntity.Streamed(
+                            source,
+                            None,
+                            meta.contentType
+                              .map(Some.apply)
+                              .getOrElse(Some("application/octet-stream"))))
                           .withHeaders(disposition)
                       } else {
                         Ok.sendEntity(
@@ -169,7 +188,8 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
                              DaikokuTenantAction: DaikokuTenantAction,
                              env: Env,
                              cc: ControllerComponents)
-    extends AbstractController(cc) {
+  extends AbstractController(cc)
+    with NormalizeSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -185,9 +205,8 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
         .get("Asset-Content-Type")
         .orElse(ctx.request.contentType)
         .getOrElse("application/octet-stream")
-      val filename =
-        ctx.request.getQueryString("filename").getOrElse(IdGenerator.token(16))
-      val title = ctx.request.getQueryString("title").getOrElse("--")
+      val filename = normalize(ctx.request.getQueryString("filename").getOrElse(IdGenerator.token(16)))
+      val title = normalize(ctx.request.getQueryString("title").getOrElse("--"))
       val desc = ctx.request.getQueryString("desc").getOrElse("--")
       val assetId = AssetId(IdGenerator.uuid)
       ctx.tenant.bucketSettings match {
@@ -197,16 +216,18 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
         case Some(cfg) =>
           env.assetsStore
             .storeTenantAsset(ctx.tenant.id,
-                              assetId,
-                              filename,
-                              title,
-                              desc,
-                              contentType,
-                              ctx.request.body)(cfg)
+              assetId,
+              filename,
+              title,
+              desc,
+              contentType,
+              ctx.request.body)(cfg)
             .map { res =>
               Ok(Json.obj("done" -> true, "id" -> assetId.value))
             } recover {
-            case e => InternalServerError(Json.obj("error" -> ec.toString))
+            case e =>
+              Logger.error(s"Error during tenant asset storage: ${filename}", e)
+              InternalServerError(Json.obj("error" -> ec.toString))
           }
       }
     }
@@ -285,12 +306,12 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
               val disposition = ("Content-Disposition" -> s"""attachment; filename="$filename"""")
               if (ctx.request.getQueryString("download").exists(_ == "true")) {
                 Ok.sendEntity(
-                    HttpEntity.Streamed(
-                      source,
-                      None,
-                      meta.contentType
-                        .map(Some.apply)
-                        .getOrElse(Some("application/octet-stream"))))
+                  HttpEntity.Streamed(
+                    source,
+                    None,
+                    meta.contentType
+                      .map(Some.apply)
+                      .getOrElse(Some("application/octet-stream"))))
                   .withHeaders(disposition)
               } else {
                 Ok.sendEntity(
@@ -310,7 +331,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
 class UserAssetsController(DaikokuAction: DaikokuAction,
                            env: Env,
                            cc: ControllerComponents)
-    extends AbstractController(cc) {
+  extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -336,11 +357,11 @@ class UserAssetsController(DaikokuAction: DaikokuAction,
         case Some(cfg) =>
           env.assetsStore
             .storeUserAsset(ctx.tenant.id,
-                            ctx.user.id,
-                            assetId,
-                            filename,
-                            contentType,
-                            ctx.request.body)(cfg)
+              ctx.user.id,
+              assetId,
+              filename,
+              contentType,
+              ctx.request.body)(cfg)
             .map { res =>
               Ok(Json.obj("done" -> true, "id" -> assetId.value))
             } recover {
@@ -368,12 +389,12 @@ class UserAssetsController(DaikokuAction: DaikokuAction,
               val disposition = ("Content-Disposition" -> s"""attachment; filename="$filename"""")
               if (ctx.request.getQueryString("download").exists(_ == "true")) {
                 Ok.sendEntity(
-                    HttpEntity.Streamed(
-                      source,
-                      None,
-                      meta.contentType
-                        .map(Some.apply)
-                        .getOrElse(Some("application/octet-stream"))))
+                  HttpEntity.Streamed(
+                    source,
+                    None,
+                    meta.contentType
+                      .map(Some.apply)
+                      .getOrElse(Some("application/octet-stream"))))
                   .withHeaders(disposition)
               } else {
                 Ok.sendEntity(
@@ -393,7 +414,7 @@ class UserAssetsController(DaikokuAction: DaikokuAction,
 class AssetsThumbnailController(DaikokuAction: DaikokuAction,
                                 env: Env,
                                 cc: ControllerComponents)
-    extends AbstractController(cc) {
+  extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
