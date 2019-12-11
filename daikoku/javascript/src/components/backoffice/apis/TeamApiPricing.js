@@ -41,7 +41,6 @@ export class TeamApiPricing extends Component {
   };
 
   otoroshiFlow = _found => {
-    console.log(_found.otoroshiTarget.otoroshiSettings, _found.otoroshiTarget.serviceGroup);
     if (
       !(
         !!_found.otoroshiTarget &&
@@ -74,11 +73,6 @@ export class TeamApiPricing extends Component {
   };
 
   otoroshiForm = _found => {
-    console.log(
-      _found.otoroshiTarget.otoroshiSettings,
-      _found.otoroshiTarget.serviceGroup,
-      this.props.value
-    );
     if (
       !(
         !!_found.otoroshiTarget &&
