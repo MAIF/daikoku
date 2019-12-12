@@ -67,7 +67,7 @@ class DaikokuAppComponent extends Component {
     if (!user) {
       return (
         <Router>
-          <div role="root-container">
+          <div role="root-container" className="container-fluid">
             <Route
               exact
               path="/"
@@ -93,7 +93,7 @@ class DaikokuAppComponent extends Component {
     }
     return (
       <ConnectedRouter history={history}>
-        <div role="root-container">
+        <div role="root-container" className="container-fluid">
           <ModalRoot />
           <ReduxToastr
             timeOut={4000}

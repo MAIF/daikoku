@@ -8,7 +8,7 @@ import { toastr } from 'react-redux-toastr';
 
 import { configuration } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
-import { Spinner, validatePassword } from '../../utils';
+import { Spinner, validatePassword, ValidateEmail } from '../../utils';
 import { t, Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -303,9 +303,22 @@ class MyProfileComponent extends Component {
   }
 
   save = () => {
-    Services.updateUserById(this.state.user).then(user => {
-      this.setState({ user });
-    });
+    if (
+      this.state.user.name &&
+      this.state.user.email &&
+      this.state.user.picture
+    ) {
+      const emailValidation = ValidateEmail(this.state.user.email);
+      if (emailValidation.ok) {
+        Services.updateUserById(this.state.user).then(user => {
+          this.setState({ user });
+        });
+      } else {
+        toastr.error(emailValidation.error)
+      }
+    } else {
+      toastr.error(t('Missing informations ...', this.props.currentLanguage))
+    }
   };
 
   removeUser = () => {

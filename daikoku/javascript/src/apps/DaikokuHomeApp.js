@@ -9,7 +9,7 @@ import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/fronte
 import { t, Translation } from '../locales/Translation';
 import { udpateLanguage } from '../core/context/actions';
 import { Spinner } from '../components/utils/Spinner';
-import {validatePassword} from '../components/utils/validation';
+import {validatePassword, ValidateEmail} from '../components/utils/validation';
 
 const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 
@@ -54,7 +54,8 @@ export class SignupComponent extends Component {
     email: {
       type: 'string',
       props: {
-        label: t('Email address', currentLanguage),
+        type: 'email',
+        label: t('Email address', currentLanguage)
       },
     },
     avatar: {
@@ -113,12 +114,13 @@ export class SignupComponent extends Component {
       this.state.user.password1 &&
       this.state.user.password2
     ) {
-      const validation = validatePassword(
+      const validationPassword = validatePassword(
         this.state.user.password1,
         this.state.user.password2,
         this.props.currentLanguage
       );
-      if (validation.ok) {
+      const validationEmail = ValidateEmail(this.state.user.email, this.props.currentLanguage)
+      if (validationPassword.ok && validationEmail.ok) {
         return fetch('/account', {
           method: 'POST',
           credentials: 'include',
@@ -135,8 +137,10 @@ export class SignupComponent extends Component {
               this.setState({ state: 'done' });
             }
           });
+      } else if(!!validationPassword.error){
+        this.setState({ state: 'error', error: validationPassword.error });
       } else {
-        this.setState({ state: 'error', error: validation.error });
+        this.setState({ state: 'error', error: validationEmail.error });
       }
     } else {
       this.setState({
@@ -378,7 +382,7 @@ export class DaikokuHomeApp extends Component {
     const tenant = this.props.tenant;
     return (
       <Router>
-        <div role="root-container">
+        <div role="root-container" className="container-fluid">
           <Route
             path="/"
             render={p => (

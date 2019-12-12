@@ -105,7 +105,10 @@ class AssetButton extends Component {
         onlyPreview
         tenantMode
         label={t('Set avatar from asset', this.props.currentLanguage)}
-        onSelect={asset => this.props.changeValue('avatar', asset.link)}
+        onSelect={asset => {
+          console.debug({asset})
+          this.props.changeValue('picture', asset.link)}
+        }
       />
     );
   }
