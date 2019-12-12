@@ -70,7 +70,7 @@ export class ApiCard extends Component {
                   teams={this.props.myTeams}
                   action={teams => this.props.askForApiAccess(teams)}
                   withAllTeamSelector={true}>
-                  <button className="btn btn-sm btn-access-negative mr-2">
+                  <button className="btn btn-sm btn-access-negative ml-1 mr-2">
                     <Translation i18nkey="Access" language={this.props.currentLanguage}>
                       Access
                     </Translation>
