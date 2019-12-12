@@ -15,9 +15,9 @@ const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 class SetPassword extends Component {
   genAndSetPassword = () => {
-    window.prompt(t('Type the password', this.props.currentLanguage)).then(pw1 => {
+    window.prompt(t('Type the password', this.props.currentLanguage), undefined, true).then(pw1 => {
       if (pw1) {
-        window.prompt(t('Re-type the password', this.props.currentLanguage)).then(pw2 => {
+        window.prompt(t('Re-type the password', this.props.currentLanguage), undefined, true).then(pw2 => {
           const validation = validatePassword(
             pw1,
             pw2,

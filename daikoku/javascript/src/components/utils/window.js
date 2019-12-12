@@ -158,7 +158,7 @@ class Prompt extends Component {
                 <div className="modal-description">
                   <p>{this.props.message}</p>
                   <input
-                    type="text"
+                    type={!!this.props.isPassword ? "password" : "text"}
                     className="form-control"
                     value={this.state.text}
                     ref={r => (this.ref = r)}
@@ -252,10 +252,11 @@ export function registerPrompt() {
     div.setAttribute('id', 'daikoku-alerts-container');
     document.body.appendChild(div);
   }
-  window.prompt = (message, value) => {
+  window.prompt = (message, value, isPassword) => {
     return new Promise(success => {
       ReactDOM.render(
         <Prompt
+          isPassword={!!isPassword}
           message={message}
           value={value}
           ok={inputValue => {
