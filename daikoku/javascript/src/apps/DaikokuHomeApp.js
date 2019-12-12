@@ -378,7 +378,7 @@ export class DaikokuHomeApp extends Component {
     const tenant = this.props.tenant;
     return (
       <Router>
-        <div role="root-container">
+        <div role="root-container" className="container-fluid">
           <Route
             path="/"
             render={p => (
