@@ -43,7 +43,7 @@ export function validateUser(user, currentLanguage) {
   } else if(!user.password.trim()) {
     return {
       ok: false,
-      error: t('peronal.token.empty.error', currentLanguage, "Your personal token can't be empty"),
+      error: t('personal.token.empty.error', currentLanguage, "Your personal token can't be empty"),
     };
   } else {
     return { ok: true };

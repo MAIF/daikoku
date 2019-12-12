@@ -512,5 +512,6 @@
   "Api saved": "Api sauvegardée",
   "api.created.success": "Api %s créée",
   "oops, something went wrong.": "oups, quelque chose s'est mal passé.",
-  "peronal.token.empty.error": "Votre jeton perso. ne peut être vide"
+  "personal.token.empty.error": "Votre jeton perso. ne peut être vide",
+  "remove.user.success": "l'utilisateur %s à été correctement supprimé"
 }

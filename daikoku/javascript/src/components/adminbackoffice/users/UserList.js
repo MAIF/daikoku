@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import faker from 'faker';
 import _ from 'lodash';
+import {toastr} from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
@@ -39,7 +40,7 @@ class UserListComponent extends Component {
     });
   };
 
-  removeUser = userId => {
+  removeUser = user => {
     window
       .confirm(
         t(
@@ -50,7 +51,11 @@ class UserListComponent extends Component {
       )
       .then(ok => {
         if (ok) {
-          Services.deleteUserById(userId).then(() => this.updateUsers());
+          Services.deleteUserById(user._id)
+          .then(() => {
+            toastr.info(t('remove.user.success', this.props.currentLanguage, false, `user ${user.name} is successfully deleted`, user.name))
+            this.updateUsers()
+          });
         }
       });
   };
@@ -84,7 +89,7 @@ class UserListComponent extends Component {
             <div className="col">
               <div className="d-flex justify-content-between align-items-center">
                 <h1>
-                  Users
+                  {t('Users', this.props.currentLanguage)}
                   <a
                     className="btn btn-sm btn-access-negative mb-1 ml-1"
                     title={t('Create a new user', this.props.currentLanguage)}
@@ -122,7 +127,7 @@ class UserListComponent extends Component {
                       }
                       actions={[
                         {
-                          action: () => this.removeUser(user._id),
+                          action: () => this.removeUser(user),
                           iconClass: 'fas fa-trash delete-icon',
                           tooltip: t('Remove user', this.props.currentLanguage),
                         },

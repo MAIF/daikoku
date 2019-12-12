@@ -512,5 +512,6 @@
     "Api saved": "Api saved",
     "api.created.success": "Api %s created",
     "oops, something went wrong.": "oops, something went wrong.",
-    "peronal.token.empty.error": "Your personal token can't be empty"
+    "personal.token.empty.error": "Your personal token can't be empty",
+    "remove.user.success": "user %s is successfully deleted"
 }

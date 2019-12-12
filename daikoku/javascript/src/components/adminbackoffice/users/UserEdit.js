@@ -232,9 +232,21 @@ export class UserEditComponent extends Component {
   }
 
   removeUser = () => {
-    Services.deleteUserById(this.state.user._id).then(() => {
-      this.props.history.push('/settings/users');
-    });
+    window.confirm(
+      t(
+        'remove.user.confirm',
+        this.props.currentLanguage,
+        'Are you sure you want to delete this user ?'
+      )
+    )
+      .then(ok => {
+        if (ok) {
+          Services.deleteUserById(this.state.user._id).then(() => {
+            toastr.info(t('remove.user.success', this.props.currentLanguage, false, `user ${this.state.user.name} is successfully deleted`, this.state.user.name))
+            this.props.history.push('/settings/users');
+          });
+        }
+      });
   };
 
   save = () => {
