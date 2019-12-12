@@ -513,5 +513,6 @@
     "api.created.success": "Api %s created",
     "oops, something went wrong.": "oops, something went wrong.",
     "personal.token.empty.error": "Your personal token can't be empty",
-    "remove.user.success": "user %s is successfully deleted"
+    "remove.user.success": "user %s is successfully deleted",
+    "email.validity.error": "You have entered an invalid email address"
 }
