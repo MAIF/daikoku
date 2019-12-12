@@ -100,17 +100,17 @@ export const AssetSelectorModal = ({
         </div>
       </div>
       <div className="modal-footer">
+          <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
+              <Translation i18nkey="Close" language={currentLanguage}>
+                  Close
+              </Translation>
+          </button>
         <button
           type="button"
           className="btn btn-outline-success"
           onClick={() => selectAssetAndCloseModal()}>
           <Translation i18nkey="Select" language={currentLanguage}>
             Select
-          </Translation>
-        </button>
-        <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          <Translation i18nkey="Close" language={currentLanguage}>
-            Close
           </Translation>
         </button>
       </div>
