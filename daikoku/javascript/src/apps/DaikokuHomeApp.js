@@ -9,42 +9,9 @@ import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/fronte
 import { t, Translation } from '../locales/Translation';
 import { udpateLanguage } from '../core/context/actions';
 import { Spinner } from '../components/utils/Spinner';
+import {validatePassword} from '../components/utils/validation';
 
 const LazyForm = React.lazy(() => import('../components/inputs/Form'));
-
-function validate(pwd1 = '', pwd2 = '', currentLanguage) {
-  if (pwd1 === pwd2) {
-    if (pwd1.trim().length === 0) {
-      return {
-        ok: false,
-        error: t('password.empty.error', currentLanguage, "Your password can't be empty"),
-      };
-    }
-    if (pwd2.trim().length === 0) {
-      return {
-        ok: false,
-        error: t('password.empty.error', currentLanguage, "Your password can't be empty"),
-      };
-    }
-    if (/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/.test(pwd1)) {
-      return { ok: true };
-    } else {
-      return {
-        ok: false,
-        error: t(
-          'password.security.error',
-          currentLanguage,
-          'Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !'
-        ),
-      };
-    }
-  } else {
-    return {
-      ok: false,
-      error: t('password.match.error', currentLanguage, 'Your password does not match !'),
-    };
-  }
-}
 
 class Gravatar extends Component {
   setGravatarLink = () => {
@@ -146,7 +113,7 @@ export class SignupComponent extends Component {
       this.state.user.password1 &&
       this.state.user.password2
     ) {
-      const validation = validate(
+      const validation = validatePassword(
         this.state.user.password1,
         this.state.user.password2,
         this.props.currentLanguage
@@ -312,7 +279,7 @@ export class ResetPasswordComponent extends Component {
 
   resetPassword = () => {
     if (this.state.user.email && this.state.user.password1 && this.state.user.password2) {
-      const validation = validate(this.state.user.password1, this.state.user.password2);
+      const validation = validatePassword(this.state.user.password1, this.state.user.password2, this.props.currentLanguage);
       if (validation.ok) {
         return fetch('/account/reset', {
           method: 'POST',

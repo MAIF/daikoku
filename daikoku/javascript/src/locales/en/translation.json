@@ -495,7 +495,7 @@
     "account.creation.error": "Your account creation request is not valid anymore (it's only valid for 15 minutes). Please creates a new request.",
     "create.account.done": "You will receive an email at %s to finish your account creation process. You will have 15 minutes from now to finish your account creation process.",
     "Missing informations ...": "Missing informations ...",
-    "password.match.error": "Your password does not match !",
+    "password.match.error": "Your passwords does not match !",
     "password.empty.error": "Your password can't be empty",
     "password.security.error": "Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !",
     "Type your new password": "Type your new password",
@@ -511,5 +511,6 @@
     "Forgot your password ?": "Forgot your password ?",
     "Api saved": "Api saved",
     "api.created.success": "Api %s created",
-    "oops, something went wrong.": "oops, something went wrong."
+    "oops, something went wrong.": "oops, something went wrong.",
+    "peronal.token.empty.error": "Your personal token can't be empty"
 }

@@ -4,10 +4,11 @@ import faker from 'faker';
 import bcrypt from 'bcryptjs';
 import md5 from 'js-md5';
 import { connect } from 'react-redux';
+import { toastr } from 'react-redux-toastr';
 
 import { configuration } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
-import { Spinner } from '../../utils';
+import { Spinner, validatePassword } from '../../utils';
 import { t, Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -17,9 +18,16 @@ class SetPassword extends Component {
     window.prompt(t('Type the password', this.props.currentLanguage)).then(pw1 => {
       if (pw1) {
         window.prompt(t('Re-type the password', this.props.currentLanguage)).then(pw2 => {
-          if (pw2 && pw1 === pw2) {
+          const validation = validatePassword(
+            pw1,
+            pw2,
+            this.props.currentLanguage
+          );
+          if (validation.ok) {
             const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
             this.props.changeValue('password', hashed);
+          } else {
+            this.props.displayError(validation.error);
           }
         });
       }
@@ -237,6 +245,7 @@ class MyProfileComponent extends Component {
       type: SetPassword,
       props: {
         currentLanguage: this.props.currentLanguage,
+        displayError: error => toastr.error(error)
       },
     },
     gravatar: {

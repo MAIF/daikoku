@@ -9,7 +9,7 @@ import { toastr } from 'react-redux-toastr';
 
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, daikoku, Spinner } from '../../utils';
+import { Can, manage, daikoku, Spinner, validatePassword, validateUser } from '../../utils';
 import { t, Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -19,9 +19,16 @@ class SetPassword extends Component {
     window.prompt(t('Type the password', this.props.currentLanguage)).then(pw1 => {
       if (pw1) {
         window.prompt(t('Re-type the password', this.props.currentLanguage)).then(pw2 => {
-          if (pw2 && pw1 === pw2) {
+          const validation = validatePassword(
+            pw1,
+            pw2,
+            this.props.currentLanguage
+          );
+          if (validation.ok) {
             const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
             this.props.changeValue('password', hashed);
+          } else {
+            this.props.displayError(validation.error);
           }
         });
       }
@@ -190,6 +197,7 @@ export class UserEditComponent extends Component {
       type: SetPassword,
       props: {
         currentLanguage: this.props.currentLanguage,
+        displayError: error => toastr.error(error)
       },
     },
     avatarFromAsset: {
@@ -217,7 +225,7 @@ export class UserEditComponent extends Component {
 
   componentDidMount() {
     if (this.props.location && this.props.location.state && this.props.location.state.newUser) {
-      this.setState({ user: this.props.location.state.newUser, create: true });
+      this.setState({ user: { ...this.props.location.state.newUser, personalToken: faker.random.alphaNumeric(32)}, create: true });
     } else {
       Services.findUserById(this.props.match.params.userId).then(user => this.setState({ user }));
     }
@@ -230,18 +238,23 @@ export class UserEditComponent extends Component {
   };
 
   save = () => {
-    if (this.state.create) {
-      Services.createUser(this.state.user).then(() => {
-        toastr.success(`user ${this.state.user.name} created`)
-        this.props.history.push('/settings/users');
-      });
-    } else {
-      Services.updateUserById(this.state.user).then(user => {
-        this.setState({ user, create: false }, () => {
-          toastr.success(`user ${this.state.user.name} updated`)
+    const validation = validateUser(this.state.user, this.props.currentLanguage);
+    if (validation.ok) {
+      if (this.state.create) {
+        Services.createUser(this.state.user).then(() => {
+          toastr.success(`user ${this.state.user.name} created`)
           this.props.history.push('/settings/users');
         });
-      });
+      } else {
+        Services.updateUserById(this.state.user).then(user => {
+          this.setState({ user, create: false }, () => {
+            toastr.success(`user ${this.state.user.name} updated`)
+            this.props.history.push('/settings/users');
+          });
+        });
+      }
+    } else {
+      toastr.error(validation.error);
     }
   };
 
