@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
@@ -7,6 +7,7 @@ import { TeamBackOffice, UserBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, asset, daikoku, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { closeModal, openModal } from '../../../core/modal';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -37,6 +38,54 @@ const mimeTypes = [
   { label: '.js fichier javascript', value: 'text/javascript' },
   { label: '.css fichier css', value: 'text/css' },
 ];
+
+const ReplaceButton = props => {
+  
+const [file, setFile] = useState()
+
+  useEffect(() => {
+    if(!!file) {
+      Services.updateTenantAsset(
+        props.asset.meta.asset,
+        props.asset.contentType,
+        file
+      ).then(() => props.postAction());
+    }
+  }, [file])
+  
+  let input;
+
+
+  const trigger = () => {
+    input.click();
+  };
+
+  return (
+    <>
+      <input
+        ref={r => input = r}
+        type="file"
+        multiple
+        className="form-control hide"
+        onChange={e => {
+          const file = e.target.files[0]
+          console.debug({ file})
+          setFile(
+          {
+            filename: file.name,
+            title: file.name.slice(0, file.name.lastIndexOf('.')),
+            contentType: file.type
+          })}}
+      />
+      <button
+        type="button"
+        onClick={trigger}
+        className="btn btn-sm btn-outline-primary">
+        <i className="fas fa-retweet" />
+      </button>
+    </>
+  )
+}
 
 class FileInput extends Component {
   state = { uploading: false };
@@ -127,7 +176,7 @@ class AssetsListComponent extends Component {
       type: AddAsset,
       props: { addAsset: () => this.addAsset(), currentLanguage: this.props.currentLanguage },
     },
-  };
+  };  
 
   columns = [
     {
@@ -179,6 +228,23 @@ class AssetsListComponent extends Component {
       style: { justifyContent: 'center', alignItems: 'center', display: 'flex', width: 120 },
       content: item => (
         <div className="btn-group">
+          {/* {item.contentType.startsWith('text') && <button
+            type="button"
+            onClick={() => this.readAndUpdate(item)}
+            className="btn btn-sm btn-outline-primary">
+            <i className="fas fa-pen" />
+          </button>} */}
+          <ReplaceButton asset={item} postAction={() => {
+            if (this.table) {
+              this.table.update();
+            }
+          }}/>
+          <button
+            type="button"
+            onClick={() => this.replaceAsset(item)}
+            className="btn btn-sm btn-outline-primary">
+            <i className="fas fa-retweet" />
+          </button>
           <a
             href={this.assetLink(item.meta.asset)}
             target="_blank"
@@ -196,6 +262,37 @@ class AssetsListComponent extends Component {
       ),
     },
   ];
+
+  replaceAsset = asset => {
+    Services.updateTenantAsset(asset.meta.asset,asset.contentType,undefined)
+    .then(r => console.debug({r}))
+  }
+
+  readAndUpdate = asset => {
+    let link;
+    if (this.props.tenantMode) {
+      link = `/tenant-assets/${asset.meta.asset}?download=true`;
+    } else {
+      link = `/api/teams/${this.props.currentTeam._id}/assets/${asset.meta.asset}?download=true`;
+    }
+
+    fetch(link, {
+      method: 'GET',
+      credentials: 'include'
+    }).then(response => response.text())
+      .then(value => this.props.openModal(
+        {
+          open: true,
+          action: value => console.warn(value),
+          closeModal: this.props.closeModal,
+          title: asset.meta.filename,
+          value,
+          team: this.props.currentTeam,
+          currentLanguage: this.props.currentLanguage
+        },
+        'wysywygModal'
+      ))
+  }
 
   assetLink = asset => {
     if (this.props.tenantMode) {
@@ -432,4 +529,9 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const AssetsList = connect(mapStateToProps)(AssetsListComponent);
+const mapDispatchToProps = {
+  closeModal: () => closeModal(),
+  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
+};
+
+export const AssetsList = connect(mapStateToProps, mapDispatchToProps)(AssetsListComponent);

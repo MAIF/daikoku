@@ -16,6 +16,7 @@ import com.amazonaws.regions.AwsRegionProvider
 import fr.maif.otoroshi.daikoku.domain._
 import play.api.libs.json._
 
+import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
@@ -259,6 +260,15 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
       )
       .withAttributes(s3ClientSettingsAttrs)
     content.toMat(sink)(Keep.right).run()
+  }
+
+  def getMetaHeaders(tenant: TenantId, asset: AssetId)(implicit conf:S3Configuration): Future[Option[ObjectMetadata]] = {
+    S3.getObjectMetadata(
+      bucket = conf.bucket,
+      key = s"/${tenant.value}/tenant-assets/${asset.value}"
+    )
+      .withAttributes(s3ClientSettingsAttrs)
+      .runWith(Sink.head)
   }
 
   def listTenantAssets(tenant: TenantId)(

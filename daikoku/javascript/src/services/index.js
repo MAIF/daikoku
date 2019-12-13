@@ -1075,6 +1075,17 @@ export function deleteTenantAsset(assetId) {
   }).then(r => r.json());
 }
 
+export function updateTenantAsset(assetId, contentType, formData) {
+  return fetch(`/tenant-assets/${assetId}/_replace`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: contentType,
+      'Content-Type': contentType,
+    },
+  }).then(r => r.json());
+}
+
 export function listTenantAssets(teamId) {
   if (teamId) {
     return fetch(`/tenant-assets?teamId=${teamId}`, {
