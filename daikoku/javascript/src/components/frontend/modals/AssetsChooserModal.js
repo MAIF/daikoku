@@ -67,6 +67,10 @@ export const AssetSelectorModal = ({
                     key={idx}>
                     <img
                       onClick={() => setSelectedAsset(asset)}
+                      onDoubleClick={() => {
+                        setSelectedAsset(asset)
+                        selectAssetAndCloseModal()
+                      }}
                       src={`/asset-thumbnails/${asset.value}`}
                       alt={t('Thumbnail', currentLanguage)}
                     />
