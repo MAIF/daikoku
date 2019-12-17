@@ -22,14 +22,18 @@ trait NormalizeSupport {
 
   def normalize(in: String): String = {
     val cleaned = in.trim.toLowerCase
-    val normalized = jnormalize(cleaned, Form.NFC)
+    val tuple = cleaned.splitAt(cleaned.lastIndexOf('.'))
 
-    normalized.replaceAll("'s", "")
+    val normalized = jnormalize(tuple._1, Form.NFC)
+
+    val fileNameNormalized = normalized.replaceAll("'s", "")
       .replaceAll("ß", "ss")
       .replaceAll("ø", "o")
       .replaceAll("[^a-zA-Z0-9-]+", "-")
       .replaceAll("-+", "-")
       .stripSuffix("-")
+
+    fileNameNormalized + tuple._2
   }
 }
 
@@ -252,7 +256,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
             .getMetaHeaders(ctx.tenant.id, AssetId(assetId))(cfg)
             .flatMap {
               case None => FastFuture.successful(NotFound(Json.obj("error" -> "Asset not found")))
-              case Some(metadata) => {
+              case Some(metadata) =>
                 val filename = getMetaHeaderValue(metadata, "filename").getOrElse("--")
                 val desc = getMetaHeaderValue(metadata, "desc").getOrElse("--")
                 val title = getMetaHeaderValue(metadata, "title").getOrElse("--")
@@ -275,7 +279,6 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
                     Logger.error(s"Error during update tenant asset: $filename", e)
                     InternalServerError(Json.obj("error" -> ec.toString))
                 }
-              }
             }
       }
     }

@@ -39,23 +39,65 @@ const mimeTypes = [
   { label: '.css fichier css', value: 'text/css' },
 ];
 
+const maybeCreateThumbnail = (id, file) => {
+  return new Promise(s => {
+    if (
+      file.type === 'image/gif' ||
+      file.type === 'image/png' ||
+      file.type === 'image/jpeg' ||
+      file.type === 'image.jpg'
+    ) {
+      const reader = new FileReader();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      reader.onload = function (event) {
+        var img = new Image();
+        img.onload = function () {
+          canvas.width = 128; //img.width;
+          canvas.height = 128; //img.height;
+          ctx.drawImage(img, 0, 0, 128, 128);
+          const base64 = canvas.toDataURL();
+          canvas.toBlob(blob => {
+            Services.storeThumbnail(id, blob).then(() => {
+              s(base64);
+            });
+          });
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      s('data:image/png;base64,');
+    }
+  });
+}
+
 const ReplaceButton = props => {
-  
-const [file, setFile] = useState()
+  const [file, setFile] = useState()
+  const [input, setInput] = useState();
 
   useEffect(() => {
     if(!!file) {
-      Services.updateTenantAsset(
-        props.asset.meta.asset,
-        props.asset.contentType,
-        file
-      ).then(() => props.postAction());
+      maybeCreateThumbnail(props.asset.meta.asset, file)
+        .then(() => {
+          if (props.tenantMode) {
+            Services.updateTenantAsset(
+              props.asset.meta.asset,
+              props.asset.contentType,
+              file
+            )
+          } else {
+            Services.updateAsset(
+              props.teamId,
+              props.asset.meta.asset,
+              props.asset.contentType,
+              file
+            )
+          }})
+        .then(() => props.postAction());
     }
   }, [file])
   
-  let input;
-
-
   const trigger = () => {
     input.click();
   };
@@ -63,19 +105,13 @@ const [file, setFile] = useState()
   return (
     <>
       <input
-        ref={r => input = r}
+        ref={r => setInput(r)}
         type="file"
         multiple
         className="form-control hide"
         onChange={e => {
           const file = e.target.files[0]
-          console.debug({ file})
-          setFile(
-          {
-            filename: file.name,
-            title: file.name.slice(0, file.name.lastIndexOf('.')),
-            contentType: file.type
-          })}}
+          setFile(file)}}
       />
       <button
         type="button"
@@ -199,6 +235,7 @@ class AssetsListComponent extends Component {
       style: { alignItems: 'center', justifyContent: 'center', display: 'flex', width: 86 },
       content: item => {
         const type = item.meta['content-type'];
+        console.debug({item})
         if (
           type === 'image/gif' ||
           type === 'image/png' ||
@@ -207,7 +244,7 @@ class AssetsListComponent extends Component {
         ) {
           return (
             <img
-              src={`/asset-thumbnails/${item.meta.asset}`}
+              src={`/asset-thumbnails/${item.meta.asset}?${new Date().getTime()}`}
               width="64"
               height="64"
               alt="thumbnail"
@@ -239,12 +276,6 @@ class AssetsListComponent extends Component {
               this.table.update();
             }
           }}/>
-          <button
-            type="button"
-            onClick={() => this.replaceAsset(item)}
-            className="btn btn-sm btn-outline-primary">
-            <i className="fas fa-retweet" />
-          </button>
           <a
             href={this.assetLink(item.meta.asset)}
             target="_blank"
@@ -262,11 +293,6 @@ class AssetsListComponent extends Component {
       ),
     },
   ];
-
-  replaceAsset = asset => {
-    Services.updateTenantAsset(asset.meta.asset,asset.contentType,undefined)
-    .then(r => console.debug({r}))
-  }
 
   readAndUpdate = asset => {
     let link;
@@ -363,44 +389,11 @@ class AssetsListComponent extends Component {
   };
 
   addAsset = () => {
-    function handleImage(id, file) {
-      return new Promise(s => {
-        if (
-          file.type === 'image/gif' ||
-          file.type === 'image/png' ||
-          file.type === 'image/jpeg' ||
-          file.type === 'image.jpg'
-        ) {
-          const reader = new FileReader();
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          reader.onload = function(event) {
-            var img = new Image();
-            img.onload = function() {
-              canvas.width = 128; //img.width;
-              canvas.height = 128; //img.height;
-              ctx.drawImage(img, 0, 0, 128, 128);
-              const base64 = canvas.toDataURL();
-              canvas.toBlob(blob => {
-                Services.storeThumbnail(id, blob).then(() => {
-                  s(base64);
-                });
-              });
-            };
-            img.src = event.target.result;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          s('data:image/png;base64,');
-        }
-      });
-    }
-
     const multiple = this.state.assets.length > 1;
     const files = [...this.state.assets];
     this.setState({ loading: true });
     const promises = files.map(file => {
-      const formData = file; //this.state.assets[0];
+      const formData = file;
       if (formData && this.state.newAsset.filename && this.state.newAsset.title) {
         if (this.props.tenantMode) {
           return Services.storeTenantAsset(
@@ -412,7 +405,7 @@ class AssetsListComponent extends Component {
             multiple ? file.type : this.state.newAsset.contentType,
             formData
           ).then(asset => {
-            return handleImage(asset.id, formData).then(() => {
+            return maybeCreateThumbnail(asset.id, formData).then(() => {
               this.setState({ newAsset: {} });
               if (this.table) {
                 this.table.update();
@@ -430,7 +423,7 @@ class AssetsListComponent extends Component {
             multiple ? file.type : this.state.newAsset.contentType,
             formData
           ).then(asset => {
-            return handleImage(asset.id, formData).then(() => {
+            return maybeCreateThumbnail(asset.id, formData).then(() => {
               this.setState({ newAsset: {} });
               if (this.table) {
                 this.table.update();

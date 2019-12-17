@@ -1052,6 +1052,18 @@ export function storeAsset(teamId, filename, title, desc, contentType, formData)
   }).then(r => r.json());
 }
 
+export function updateAsset(teamId, assetId, contentType, formData) {
+  return fetch(`/api/teams/${teamId}/assets/${assetId}/_replace`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: contentType,
+      'Content-Type': contentType,
+    },
+    body: formData,
+  }).then(r => r.json());
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 // Tenant Assets
 /////////////////////////////////////////////////////////////////////////////////
@@ -1077,12 +1089,13 @@ export function deleteTenantAsset(assetId) {
 
 export function updateTenantAsset(assetId, contentType, formData) {
   return fetch(`/tenant-assets/${assetId}/_replace`, {
-    method: 'PUT',
+    method: 'POST',
     credentials: 'include',
     headers: {
       Accept: contentType,
       'Content-Type': contentType,
     },
+    body: formData,
   }).then(r => r.json());
 }
 
