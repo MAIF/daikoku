@@ -235,7 +235,6 @@ class AssetsListComponent extends Component {
       style: { alignItems: 'center', justifyContent: 'center', display: 'flex', width: 86 },
       content: item => {
         const type = item.meta['content-type'];
-        console.debug({item})
         if (
           type === 'image/gif' ||
           type === 'image/png' ||
@@ -265,13 +264,13 @@ class AssetsListComponent extends Component {
       style: { justifyContent: 'center', alignItems: 'center', display: 'flex', width: 120 },
       content: item => (
         <div className="btn-group">
-          {/* {item.contentType.startsWith('text') && <button
+          {item.contentType.startsWith('text') && <button
             type="button"
             onClick={() => this.readAndUpdate(item)}
             className="btn btn-sm btn-outline-primary">
             <i className="fas fa-pen" />
-          </button>} */}
-          <ReplaceButton asset={item} postAction={() => {
+          </button>}
+          <ReplaceButton asset={item} tenantMode={this.props.tenantMode} teamId={this.props.currentTeam ? this.props.currentTeam._id : undefined} postAction={() => {
             if (this.table) {
               this.table.update();
             }
@@ -309,7 +308,26 @@ class AssetsListComponent extends Component {
       .then(value => this.props.openModal(
         {
           open: true,
-          action: value => console.warn(value),
+          action: value => {
+            const textFileAsBlob = new Blob([value], { type: 'text/plain' });
+            const file = new File([textFileAsBlob], asset.filename);
+
+
+            if (this.props.tenantMode) {
+              Services.updateTenantAsset(
+                asset.meta.asset,
+                asset.contentType,
+                file
+              )
+            } else {
+              Services.updateAsset(
+                this.props.currentTeam._id,
+                asset.meta.asset,
+                asset.contentType,
+                file
+              )
+            }
+          },
           closeModal: this.props.closeModal,
           title: asset.meta.filename,
           value,

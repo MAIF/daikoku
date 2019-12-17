@@ -262,10 +262,19 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
     content.toMat(sink)(Keep.right).run()
   }
 
-  def getMetaHeaders(tenant: TenantId, asset: AssetId)(implicit conf:S3Configuration): Future[Option[ObjectMetadata]] = {
+  def getTenantAssetMetaHeaders(tenant: TenantId, asset: AssetId)(implicit conf:S3Configuration): Future[Option[ObjectMetadata]] = {
     S3.getObjectMetadata(
       bucket = conf.bucket,
       key = s"/${tenant.value}/tenant-assets/${asset.value}"
+    )
+      .withAttributes(s3ClientSettingsAttrs)
+      .runWith(Sink.head)
+  }
+
+  def getAssetMetaHeaders(tenant: TenantId, team: TeamId, asset: AssetId)(implicit conf:S3Configuration): Future[Option[ObjectMetadata]] = {
+    S3.getObjectMetadata(
+      bucket = conf.bucket,
+      key = s"/${tenant.value}/teams/${team.value}/assets/${asset.value}"
     )
       .withAttributes(s3ClientSettingsAttrs)
       .runWith(Sink.head)

@@ -94,6 +94,52 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def replaceAsset(teamId: String, assetId:String) = DaikokuAction.async(bodyParser) { ctx =>
+    TeamApiEditorOnly(
+      AuditTrailEvent(s"@{user.name} replace asset in team @{team.id}"))(teamId, ctx) { team =>
+
+      def getMetaHeaderValue(metadata: ObjectMetadata, headerName: String): Option[String] = {
+        metadata.headers.asScala.find(_.name() == s"x-amz-meta-$headerName").map(_.value())
+      }
+
+      ctx.tenant.bucketSettings match {
+        case None =>
+          FastFuture.successful(
+            NotFound(Json.obj("error" -> "No bucket config found !")))
+        case Some(cfg) =>
+          env.assetsStore
+            .getAssetMetaHeaders(ctx.tenant.id, team.id, AssetId(assetId))(cfg)
+            .flatMap {
+              case None => FastFuture.successful(NotFound(Json.obj("error" -> "Asset not found")))
+              case Some(metadata) =>
+                val filename = getMetaHeaderValue(metadata, "filename").getOrElse("--")
+                val desc = getMetaHeaderValue(metadata, "desc").getOrElse("--")
+                val title = getMetaHeaderValue(metadata, "title").getOrElse("--")
+                val contentType = metadata.contentType
+                  .orElse(ctx.request.contentType)
+                  .getOrElse("application/octet-stream")
+
+                env.assetsStore
+                  .storeAsset(ctx.tenant.id,
+                    team.id,
+                    AssetId(assetId),
+                    filename,
+                    title,
+                    desc,
+                    contentType,
+                    ctx.request.body)(cfg)
+                  .map { res =>
+                    Ok(Json.obj("done" -> true, "id" -> assetId))
+                  } recover {
+                  case e =>
+                    Logger.error(s"Error during update tenant asset: $filename", e)
+                    InternalServerError(Json.obj("error" -> ec.toString))
+                }
+            }
+      }
+    }
+  }
+
   def listAssets(teamId: String) = DaikokuAction.async { ctx =>
     TeamAdminOnly(
       AuditTrailEvent(s"@{user.name} listed assets of team @{team.id}"))(teamId,
@@ -253,7 +299,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
             NotFound(Json.obj("error" -> "No bucket config found !")))
         case Some(cfg) =>
           env.assetsStore
-            .getMetaHeaders(ctx.tenant.id, AssetId(assetId))(cfg)
+            .getTenantAssetMetaHeaders(ctx.tenant.id, AssetId(assetId))(cfg)
             .flatMap {
               case None => FastFuture.successful(NotFound(Json.obj("error" -> "Asset not found")))
               case Some(metadata) =>

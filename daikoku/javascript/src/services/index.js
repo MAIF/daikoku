@@ -1053,6 +1053,7 @@ export function storeAsset(teamId, filename, title, desc, contentType, formData)
 }
 
 export function updateAsset(teamId, assetId, contentType, formData) {
+  console.debug({ formData })
   return fetch(`/api/teams/${teamId}/assets/${assetId}/_replace`, {
     method: 'POST',
     credentials: 'include',
@@ -1088,6 +1089,7 @@ export function deleteTenantAsset(assetId) {
 }
 
 export function updateTenantAsset(assetId, contentType, formData) {
+  console.debug({formData})
   return fetch(`/tenant-assets/${assetId}/_replace`, {
     method: 'POST',
     credentials: 'include',
