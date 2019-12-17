@@ -261,7 +261,7 @@ class AssetsListComponent extends Component {
     },
     {
       title: t('Actions', this.props.currentLanguage),
-      style: { justifyContent: 'center', alignItems: 'center', display: 'flex', width: 120 },
+      style: { justifyContent: 'flex-end', alignItems: 'center', display: 'flex', width: 150 },
       content: item => (
         <div className="btn-group">
           {item.contentType.startsWith('text') && <button
