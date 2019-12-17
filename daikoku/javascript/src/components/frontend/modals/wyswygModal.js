@@ -5,7 +5,7 @@ import {Spinner} from '../../utils'
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
-export const WyswygModal = ({
+export const WysiwygModal = ({
   closeModal,
   action,
   value,
@@ -63,7 +63,7 @@ export const WyswygModal = ({
   );
 };
 
-WyswygModal.propTypes = {
+WysiwygModal.propTypes = {
   closeModal: PropTypes.func.isRequired,
   action: PropTypes.func.isRequired,
   value: PropTypes.string.isRequired,
