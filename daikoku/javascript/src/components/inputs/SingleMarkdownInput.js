@@ -205,7 +205,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
           </div>
           <div>{this.injectButtons()}</div>
           <div style={{ width: 250 }}>
-            <AssetChooserByModal
+            {this.props.assertChooserActive && <AssetChooserByModal
               currentLanguage={this.props.currentLanguage}
               tenantMode={this.props.tenantMode}
               team={team}
@@ -214,7 +214,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
                 this.editor.session.insert(this.editor.getCursorPosition(), asset.link);
                 this.editor.focus();
               }}
-            />
+            />}
           </div>
         </div>
         {!this.state.preview && (

@@ -1,7 +1,9 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.alpakka.s3.ObjectMetadata
 import akka.util.ByteString
+import scala.collection.JavaConverters._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
@@ -20,14 +22,18 @@ trait NormalizeSupport {
 
   def normalize(in: String): String = {
     val cleaned = in.trim.toLowerCase
-    val normalized = jnormalize(cleaned, Form.NFC)
+    val tuple = cleaned.splitAt(cleaned.lastIndexOf('.'))
 
-    normalized.replaceAll("'s", "")
+    val normalized = jnormalize(tuple._1, Form.NFC)
+
+    val fileNameNormalized = normalized.replaceAll("'s", "")
       .replaceAll("ß", "ss")
       .replaceAll("ø", "o")
       .replaceAll("[^a-zA-Z0-9-]+", "-")
       .replaceAll("-+", "-")
       .stripSuffix("-")
+
+    fileNameNormalized + tuple._2
   }
 }
 
@@ -85,6 +91,52 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
                 InternalServerError(Json.obj("error" -> e.toString))
             }
         }
+    }
+  }
+
+  def replaceAsset(teamId: String, assetId:String) = DaikokuAction.async(bodyParser) { ctx =>
+    TeamApiEditorOnly(
+      AuditTrailEvent(s"@{user.name} replace asset in team @{team.id}"))(teamId, ctx) { team =>
+
+      def getMetaHeaderValue(metadata: ObjectMetadata, headerName: String): Option[String] = {
+        metadata.headers.asScala.find(_.name() == s"x-amz-meta-$headerName").map(_.value())
+      }
+
+      ctx.tenant.bucketSettings match {
+        case None =>
+          FastFuture.successful(
+            NotFound(Json.obj("error" -> "No bucket config found !")))
+        case Some(cfg) =>
+          env.assetsStore
+            .getAssetMetaHeaders(ctx.tenant.id, team.id, AssetId(assetId))(cfg)
+            .flatMap {
+              case None => FastFuture.successful(NotFound(Json.obj("error" -> "Asset not found")))
+              case Some(metadata) =>
+                val filename = getMetaHeaderValue(metadata, "filename").getOrElse("--")
+                val desc = getMetaHeaderValue(metadata, "desc").getOrElse("--")
+                val title = getMetaHeaderValue(metadata, "title").getOrElse("--")
+                val contentType = metadata.contentType
+                  .orElse(ctx.request.contentType)
+                  .getOrElse("application/octet-stream")
+
+                env.assetsStore
+                  .storeAsset(ctx.tenant.id,
+                    team.id,
+                    AssetId(assetId),
+                    filename,
+                    title,
+                    desc,
+                    contentType,
+                    ctx.request.body)(cfg)
+                  .map { res =>
+                    Ok(Json.obj("done" -> true, "id" -> assetId))
+                  } recover {
+                  case e =>
+                    Logger.error(s"Error during update tenant asset: $filename", e)
+                    InternalServerError(Json.obj("error" -> ec.toString))
+                }
+            }
+      }
     }
   }
 
@@ -229,6 +281,51 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
               Logger.error(s"Error during tenant asset storage: ${filename}", e)
               InternalServerError(Json.obj("error" -> ec.toString))
           }
+      }
+    }
+  }
+
+  def replaceAsset(assetId:String) = DaikokuAction.async(bodyParser) { ctx =>
+    DaikokuAdminOnly(
+      AuditTrailEvent(s"@{user.name} replace asset in team @{team.id}"))(ctx) {
+
+      def getMetaHeaderValue(metadata: ObjectMetadata, headerName: String): Option[String] = {
+        metadata.headers.asScala.find(_.name() == s"x-amz-meta-$headerName").map(_.value())
+      }
+
+      ctx.tenant.bucketSettings match {
+        case None =>
+          FastFuture.successful(
+            NotFound(Json.obj("error" -> "No bucket config found !")))
+        case Some(cfg) =>
+          env.assetsStore
+            .getTenantAssetMetaHeaders(ctx.tenant.id, AssetId(assetId))(cfg)
+            .flatMap {
+              case None => FastFuture.successful(NotFound(Json.obj("error" -> "Asset not found")))
+              case Some(metadata) =>
+                val filename = getMetaHeaderValue(metadata, "filename").getOrElse("--")
+                val desc = getMetaHeaderValue(metadata, "desc").getOrElse("--")
+                val title = getMetaHeaderValue(metadata, "title").getOrElse("--")
+                val contentType = metadata.contentType
+                  .orElse(ctx.request.contentType)
+                  .getOrElse("application/octet-stream")
+
+                env.assetsStore
+                  .storeTenantAsset(ctx.tenant.id,
+                    AssetId(assetId),
+                    filename,
+                    title,
+                    desc,
+                    contentType,
+                    ctx.request.body)(cfg)
+                  .map { res =>
+                    Ok(Json.obj("done" -> true, "id" -> assetId))
+                  } recover {
+                  case e =>
+                    Logger.error(s"Error during update tenant asset: $filename", e)
+                    InternalServerError(Json.obj("error" -> ec.toString))
+                }
+            }
       }
     }
   }

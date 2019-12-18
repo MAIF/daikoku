@@ -658,7 +658,6 @@ export function askToJoinTeam(team) {
 }
 
 export function askForApiAccess(teams, api) {
-  console.log(api, teams);
   return fetch(`/api/apis/${api}/access`, {
     method: 'POST',
     credentials: 'include',
@@ -1052,6 +1051,18 @@ export function storeAsset(teamId, filename, title, desc, contentType, formData)
   }).then(r => r.json());
 }
 
+export function updateAsset(teamId, assetId, contentType, formData) {
+  return fetch(`/api/teams/${teamId}/assets/${assetId}/_replace`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: contentType,
+      'Content-Type': contentType,
+    },
+    body: formData,
+  }).then(r => r.json());
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 // Tenant Assets
 /////////////////////////////////////////////////////////////////////////////////
@@ -1072,6 +1083,18 @@ export function deleteTenantAsset(assetId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
+  }).then(r => r.json());
+}
+
+export function updateTenantAsset(assetId, contentType, formData) {
+  return fetch(`/tenant-assets/${assetId}/_replace`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: contentType,
+      'Content-Type': contentType,
+    },
+    body: formData,
   }).then(r => r.json());
 }
 

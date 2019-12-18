@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
@@ -7,6 +7,7 @@ import { TeamBackOffice, UserBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, asset, daikoku, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { closeModal, openModal } from '../../../core/modal';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -37,6 +38,90 @@ const mimeTypes = [
   { label: '.js fichier javascript', value: 'text/javascript' },
   { label: '.css fichier css', value: 'text/css' },
 ];
+
+const maybeCreateThumbnail = (id, file) => {
+  return new Promise(s => {
+    if (
+      file.type === 'image/gif' ||
+      file.type === 'image/png' ||
+      file.type === 'image/jpeg' ||
+      file.type === 'image.jpg'
+    ) {
+      const reader = new FileReader();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      reader.onload = function (event) {
+        var img = new Image();
+        img.onload = function () {
+          canvas.width = 128; //img.width;
+          canvas.height = 128; //img.height;
+          ctx.drawImage(img, 0, 0, 128, 128);
+          const base64 = canvas.toDataURL();
+          canvas.toBlob(blob => {
+            Services.storeThumbnail(id, blob).then(() => {
+              s(base64);
+            });
+          });
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      s('data:image/png;base64,');
+    }
+  });
+}
+
+const ReplaceButton = props => {
+  const [file, setFile] = useState()
+  const [input, setInput] = useState();
+
+  useEffect(() => {
+    if(!!file) {
+      maybeCreateThumbnail(props.asset.meta.asset, file)
+        .then(() => {
+          if (props.tenantMode) {
+            Services.updateTenantAsset(
+              props.asset.meta.asset,
+              props.asset.contentType,
+              file
+            )
+          } else {
+            Services.updateAsset(
+              props.teamId,
+              props.asset.meta.asset,
+              props.asset.contentType,
+              file
+            )
+          }})
+        .then(() => props.postAction());
+    }
+  }, [file])
+  
+  const trigger = () => {
+    input.click();
+  };
+
+  return (
+    <>
+      <input
+        ref={r => setInput(r)}
+        type="file"
+        multiple
+        className="form-control hide"
+        onChange={e => {
+          const file = e.target.files[0]
+          setFile(file)}}
+      />
+      <button
+        type="button"
+        onClick={trigger}
+        className="btn btn-sm btn-outline-primary">
+        <i className="fas fa-retweet" />
+      </button>
+    </>
+  )
+}
 
 class FileInput extends Component {
   state = { uploading: false };
@@ -127,7 +212,7 @@ class AssetsListComponent extends Component {
       type: AddAsset,
       props: { addAsset: () => this.addAsset(), currentLanguage: this.props.currentLanguage },
     },
-  };
+  };  
 
   columns = [
     {
@@ -158,7 +243,7 @@ class AssetsListComponent extends Component {
         ) {
           return (
             <img
-              src={`/asset-thumbnails/${item.meta.asset}`}
+              src={`/asset-thumbnails/${item.meta.asset}?${new Date().getTime()}`}
               width="64"
               height="64"
               alt="thumbnail"
@@ -176,9 +261,20 @@ class AssetsListComponent extends Component {
     },
     {
       title: t('Actions', this.props.currentLanguage),
-      style: { justifyContent: 'center', alignItems: 'center', display: 'flex', width: 120 },
+      style: { justifyContent: 'flex-end', alignItems: 'center', display: 'flex', width: 150 },
       content: item => (
         <div className="btn-group">
+          {item.contentType.startsWith('text') && <button
+            type="button"
+            onClick={() => this.readAndUpdate(item)}
+            className="btn btn-sm btn-outline-primary">
+            <i className="fas fa-pen" />
+          </button>}
+          <ReplaceButton asset={item} tenantMode={this.props.tenantMode} teamId={this.props.currentTeam ? this.props.currentTeam._id : undefined} postAction={() => {
+            if (this.table) {
+              this.table.update();
+            }
+          }}/>
           <a
             href={this.assetLink(item.meta.asset)}
             target="_blank"
@@ -196,6 +292,51 @@ class AssetsListComponent extends Component {
       ),
     },
   ];
+
+  readAndUpdate = asset => {
+    let link;
+    if (this.props.tenantMode) {
+      link = `/tenant-assets/${asset.meta.asset}?download=true`;
+    } else {
+      link = `/api/teams/${this.props.currentTeam._id}/assets/${asset.meta.asset}?download=true`;
+    }
+
+    fetch(link, {
+      method: 'GET',
+      credentials: 'include'
+    }).then(response => response.text())
+      .then(value => this.props.openModal(
+        {
+          open: true,
+          action: value => {
+            const textFileAsBlob = new Blob([value], { type: 'text/plain' });
+            const file = new File([textFileAsBlob], asset.filename);
+
+
+            if (this.props.tenantMode) {
+              Services.updateTenantAsset(
+                asset.meta.asset,
+                asset.contentType,
+                file
+              )
+            } else {
+              Services.updateAsset(
+                this.props.currentTeam._id,
+                asset.meta.asset,
+                asset.contentType,
+                file
+              )
+            }
+          },
+          closeModal: this.props.closeModal,
+          title: asset.meta.filename,
+          value,
+          team: this.props.currentTeam,
+          currentLanguage: this.props.currentLanguage
+        },
+        'wysywygModal'
+      ))
+  }
 
   assetLink = asset => {
     if (this.props.tenantMode) {
@@ -266,44 +407,11 @@ class AssetsListComponent extends Component {
   };
 
   addAsset = () => {
-    function handleImage(id, file) {
-      return new Promise(s => {
-        if (
-          file.type === 'image/gif' ||
-          file.type === 'image/png' ||
-          file.type === 'image/jpeg' ||
-          file.type === 'image.jpg'
-        ) {
-          const reader = new FileReader();
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          reader.onload = function(event) {
-            var img = new Image();
-            img.onload = function() {
-              canvas.width = 128; //img.width;
-              canvas.height = 128; //img.height;
-              ctx.drawImage(img, 0, 0, 128, 128);
-              const base64 = canvas.toDataURL();
-              canvas.toBlob(blob => {
-                Services.storeThumbnail(id, blob).then(() => {
-                  s(base64);
-                });
-              });
-            };
-            img.src = event.target.result;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          s('data:image/png;base64,');
-        }
-      });
-    }
-
     const multiple = this.state.assets.length > 1;
     const files = [...this.state.assets];
     this.setState({ loading: true });
     const promises = files.map(file => {
-      const formData = file; //this.state.assets[0];
+      const formData = file;
       if (formData && this.state.newAsset.filename && this.state.newAsset.title) {
         if (this.props.tenantMode) {
           return Services.storeTenantAsset(
@@ -315,7 +423,7 @@ class AssetsListComponent extends Component {
             multiple ? file.type : this.state.newAsset.contentType,
             formData
           ).then(asset => {
-            return handleImage(asset.id, formData).then(() => {
+            return maybeCreateThumbnail(asset.id, formData).then(() => {
               this.setState({ newAsset: {} });
               if (this.table) {
                 this.table.update();
@@ -333,7 +441,7 @@ class AssetsListComponent extends Component {
             multiple ? file.type : this.state.newAsset.contentType,
             formData
           ).then(asset => {
-            return handleImage(asset.id, formData).then(() => {
+            return maybeCreateThumbnail(asset.id, formData).then(() => {
               this.setState({ newAsset: {} });
               if (this.table) {
                 this.table.update();
@@ -432,4 +540,9 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const AssetsList = connect(mapStateToProps)(AssetsListComponent);
+const mapDispatchToProps = {
+  closeModal: () => closeModal(),
+  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
+};
+
+export const AssetsList = connect(mapStateToProps, mapDispatchToProps)(AssetsListComponent);
