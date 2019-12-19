@@ -162,6 +162,8 @@ GET     /team-assets/:teamId/:assetId                   fr.maif.otoroshi.daikoku
 GET     /api/teams/:teamId/assets                       fr.maif.otoroshi.daikoku.ctrls.TeamAssetsController.listAssets(teamId)
 ### NoDocs ###
 POST    /api/teams/:teamId/assets                       fr.maif.otoroshi.daikoku.ctrls.TeamAssetsController.storeAsset(teamId)
+### NoDocs ###
+POST    /api/teams/:teamId/assets/:assetId/_replace     fr.maif.otoroshi.daikoku.ctrls.TeamAssetsController.replaceAsset(teamId, assetId)
 
 ### NoDocs ###
 DELETE  /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.deleteAsset(assetId)
@@ -171,6 +173,8 @@ GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku
 GET     /tenant-assets                                  fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.listAssets()
 ### NoDocs ###
 POST    /tenant-assets                                  fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.storeAsset()
+### NoDocs ###
+POST    /tenant-assets/:assetId/_replace                fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.replaceAsset(assetId)
 
 ### NoDocs ###
 GET     /user-assets/:assetId                           fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.getAsset(assetId)

@@ -516,5 +516,8 @@
     "oops, something went wrong.": "oops, something went wrong.",
     "personal.token.empty.error": "Your personal token can't be empty",
     "remove.user.success": "user %s is successfully deleted",
-    "email.validity.error": "You have entered an invalid email address"
+    "email.validity.error": "You have entered an invalid email address",
+    "content type is not allowed": "content type is not allowed",
+    "error.replace.files.multi": "You can't replace a file with more than one",
+    "error.replace.files.content.type": "You cannot replace a file with another of a different content-type"
 }

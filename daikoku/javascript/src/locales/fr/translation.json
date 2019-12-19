@@ -516,5 +516,7 @@
   "oops, something went wrong.": "Oups, quelque chose s'est mal passé.",
   "personal.token.empty.error": "Votre jeton perso. ne peut être vide",
   "remove.user.success": "l'utilisateur %s à été correctement supprimé",
-  "email.validity.error": "Vous avez fournis une adresse courriel invalide"
+  "content type is not allowed": "le type de contenu n'est pas autorisé",
+  "email.validity.error": "Vous avez fournis une adresse courriel invalide",
+  "error.replace.files.content.type": "Vous ne pouvez pas remplacer un fichier par un autre de type différent"
 }
