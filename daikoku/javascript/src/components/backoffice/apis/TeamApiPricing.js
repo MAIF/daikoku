@@ -1091,7 +1091,7 @@ export class TeamApiPricing extends Component {
                   <button
                     onClick={this.makePrivate}
                     type="button"
-                    className="btn btn-sm btn-outline-danger mb-2 mr-1">
+                    className="btn btn-sm btn-outline-primary mb-2 mr-1">
                     <i
                       className={classNames('fas mr-1', {
                         'fa-lock': this.state.selected.visibility === 'Public',
