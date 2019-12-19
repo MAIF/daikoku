@@ -378,7 +378,7 @@ export class TeamApiDocumentation extends Component {
                   onClick={this.deletePage}
                   type="button"
                   className="btn btn-sm btn-outline-danger mb-2">
-                  <i className="fas fa-trash" />
+                  <i className="fas fa-trash mr-1" />
                   <Translation i18nkey="Delete page" language={this.props.currentLanguage}>
                     Delete page
                   </Translation>
