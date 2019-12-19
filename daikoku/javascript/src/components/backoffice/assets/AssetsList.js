@@ -15,7 +15,6 @@ const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
   { label: '.avi	AVI : Audio Video Interleaved', value: 'video/x-msvideo' },
   { label: '.gif	fichier Graphics Interchange Format (GIF)', value: 'image/gif' },
-  { label: '.html	fichier HyperText Markup Language (HTML)', value: 'text/html' },
   { label: '.jpg	image JPEG', value: 'image/jpeg' },
   { label: '.svg  image SVG', value: 'image/svg+xml' },
   { label: '.md	Markown file', value: 'text/markdown' },
@@ -35,8 +34,9 @@ const mimeTypes = [
   { label: '.png	fichier Portable Network Graphics', value: 'image/png' },
   { label: '.pdf	Adobe Portable Document Format (PDF)', value: 'application/pdf' },
   { label: '.webm fichier vidéo WEBM', value: 'video/webm' },
-  { label: '.js fichier javascript', value: 'text/javascript' },
-  { label: '.css fichier css', value: 'text/css' },
+  { label: '.html	fichier HyperText Markup Language (HTML)', value: 'text/html', tenantModeOnly: true },
+  { label: '.js fichier javascript', value: 'text/javascript', tenantModeOnly: true },
+  { label: '.css fichier css', value: 'text/css', tenantModeOnly: true },
 ];
 
 const maybeCreateThumbnail = (id, file) => {
@@ -68,6 +68,23 @@ const maybeCreateThumbnail = (id, file) => {
       reader.readAsDataURL(file);
     } else {
       s('data:image/png;base64,');
+    }
+  });
+}
+
+const handleAssetType = (tenantMode, type, currentLanguage) => {
+  return new Promise(function (resolve, reject) {
+    if (tenantMode) {
+      return resolve(true);
+    } else if (
+      type === 'text/html' ||
+      type === 'text/css' ||
+      type === 'text/javascript' ||
+      type === 'application/x-javascript'
+    ) {
+      return reject(t("content type is not allowed", currentLanguage));
+    } else {
+      return resolve(true);
     }
   });
 }
@@ -110,8 +127,14 @@ const ReplaceButton = props => {
         multiple
         className="form-control hide"
         onChange={e => {
-          const file = e.target.files[0]
-          setFile(file)}}
+          const file = e.target.files[0];
+          if (e.target.files.length > 1) {
+            props.displayError(t('error.replace.files.multi', props.currentLanguage))
+          } else if (props.asset.contentType !== file.type) {
+            props.displayError(t('error.replace.files.content.type', props.currentLanguage))
+          } else {
+            setFile(file)}}
+          }
       />
       <button
         type="button"
@@ -202,7 +225,10 @@ class AssetsListComponent extends Component {
     description: { type: 'string', props: { label: t('Description', this.props.currentLanguage) } },
     contentType: {
       type: 'select',
-      props: { label: t('Content-Type', this.props.currentLanguage), possibleValues: mimeTypes },
+      props: { 
+        label: t('Content-Type', this.props.currentLanguage), 
+        possibleValues: mimeTypes.filter(mt => !!mt.tenantModeOnly === this.props.tenantMode).map(({label, value}) => ({label, value})) 
+      },
     },
     input: {
       type: FileInput,
@@ -249,7 +275,16 @@ class AssetsListComponent extends Component {
               alt="thumbnail"
             />
           );
-        } else {
+        } else if (type === 'image/svg+xml') {
+          return (
+            <img
+              src={`/team-assets/${this.props.currentTeam._id}/${item.meta.asset}?${new Date().getTime()}`}
+              width="64"
+              height="64"
+              alt="thumbnail"
+            />
+          )
+        } {
           return null;
         }
       },
@@ -270,11 +305,18 @@ class AssetsListComponent extends Component {
             className="btn btn-sm btn-outline-primary">
             <i className="fas fa-pen" />
           </button>}
-          <ReplaceButton asset={item} tenantMode={this.props.tenantMode} teamId={this.props.currentTeam ? this.props.currentTeam._id : undefined} postAction={() => {
-            if (this.table) {
-              this.table.update();
-            }
-          }}/>
+          <ReplaceButton 
+            asset={item} 
+            tenantMode={this.props.tenantMode} 
+            teamId={this.props.currentTeam ? this.props.currentTeam._id : undefined}
+            displayError={error => toastr.error(error)} 
+            currentLanguage={this.props.currentLanguage}
+            postAction={() => {
+              if (this.table) {
+                this.table.update();
+              }
+            }}
+          />
           <a
             href={this.assetLink(item.meta.asset)}
             target="_blank"
@@ -431,23 +473,25 @@ class AssetsListComponent extends Component {
             });
           });
         } else {
-          return Services.storeAsset(
-            this.props.currentTeam._id,
-            multiple ? file.name : this.state.newAsset.filename || '--',
-            multiple
-              ? file.name.slice(0, file.name.lastIndexOf('.'))
-              : this.state.newAsset.title || '--',
-            this.state.newAsset.description || '--',
-            multiple ? file.type : this.state.newAsset.contentType,
-            formData
-          ).then(asset => {
-            return maybeCreateThumbnail(asset.id, formData).then(() => {
-              this.setState({ newAsset: {} });
-              if (this.table) {
-                this.table.update();
-              }
-            });
-          });
+          return handleAssetType(this.props.tenantMode, file.type, this.props.currentLanguage)
+            .then(() => Services.storeAsset(
+              this.props.currentTeam._id,
+              multiple ? file.name : this.state.newAsset.filename || '--',
+              multiple
+                ? file.name.slice(0, file.name.lastIndexOf('.'))
+                : this.state.newAsset.title || '--',
+              this.state.newAsset.description || '--',
+              multiple ? file.type : this.state.newAsset.contentType,
+              formData
+            ).then(asset => {
+              return maybeCreateThumbnail(asset.id, formData).then(() => {
+                this.setState({ newAsset: {} });
+                if (this.table) {
+                  this.table.update();
+                }
+              });
+            }))
+            .catch(error => toastr.error(error))
         }
       } else {
         toastr.error(
@@ -457,9 +501,11 @@ class AssetsListComponent extends Component {
         return Promise.resolve('');
       }
     });
-    Promise.all(promises).then(() => {
-      this.setState({ loading: false });
-    });
+    Promise.all(promises)
+      .then(() => {
+        this.setState({ loading: false });
+      })
+      .catch(() => this.setState({ loading: false}));
   };
 
   setFiles = assets =>

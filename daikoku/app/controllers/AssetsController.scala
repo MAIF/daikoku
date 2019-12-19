@@ -52,6 +52,8 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
     Accumulator.source[ByteString].map(Right.apply)
   }
 
+  val illegalTeamAssetContentTypes: Seq[String] = Seq("text/html", "text/css", "text/javascript", "application/x-javascript")
+
   def storeAsset(teamId: String) = DaikokuAction.async(bodyParser) { ctx =>
     TeamApiEditorOnly(
       AuditTrailEvent(s"@{user.name} stores asset in team @{team.id}"))(teamId,
@@ -71,6 +73,9 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
           case None =>
             FastFuture.successful(
               NotFound(Json.obj("error" -> "No bucket config found !")))
+          case Some(_) if illegalTeamAssetContentTypes.contains(contentType) =>
+            FastFuture.successful(
+              Forbidden(Json.obj("error" -> "content type is not allowed")))
           case Some(cfg) =>
             env.assetsStore
               .storeAsset(ctx.tenant.id,
@@ -102,6 +107,11 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
         metadata.headers.asScala.find(_.name() == s"x-amz-meta-$headerName").map(_.value())
       }
 
+      val requestContentType = ctx.request.headers
+        .get("Asset-Content-Type")
+        .orElse(ctx.request.contentType)
+        .getOrElse("application/octet-stream")
+
       ctx.tenant.bucketSettings match {
         case None =>
           FastFuture.successful(
@@ -111,6 +121,10 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
             .getAssetMetaHeaders(ctx.tenant.id, team.id, AssetId(assetId))(cfg)
             .flatMap {
               case None => FastFuture.successful(NotFound(Json.obj("error" -> "Asset not found")))
+              case Some(metadata) if metadata.contentType.get != requestContentType =>
+                FastFuture.successful(Forbidden(Json.obj("error" -> "content type is different from the original")))
+              case Some(_)  if illegalTeamAssetContentTypes.contains(requestContentType) =>
+                FastFuture.successful(Forbidden(Json.obj("error" -> "content type is not allowed")))
               case Some(metadata) =>
                 val filename = getMetaHeaderValue(metadata, "filename").getOrElse("--")
                 val desc = getMetaHeaderValue(metadata, "desc").getOrElse("--")

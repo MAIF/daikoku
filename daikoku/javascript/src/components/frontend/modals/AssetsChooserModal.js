@@ -71,7 +71,7 @@ export const AssetSelectorModal = ({
                         setSelectedAsset(asset)
                         selectAssetAndCloseModal()
                       }}
-                      src={`/asset-thumbnails/${asset.value}`}
+                      src={asset.contentType.includes('svg') ? asset.link : `/asset-thumbnails/${asset.value}`}
                       alt={t('Thumbnail', currentLanguage)}
                     />
                   </div>

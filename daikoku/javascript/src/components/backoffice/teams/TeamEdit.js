@@ -63,6 +63,7 @@ export class TeamEditComponent extends Component {
       type: AvatarChooser,
       props: {
         team: () => this.state.team,
+        currentLanguage: this.props.currentLanguage
       },
     },
     metadata: {
