@@ -5,10 +5,10 @@
 @customStyle = {
   @(tenant.colorTheme())
   @if(_env.config.mode == DaikokuMode.Dev) {
-    <link rel="stylesheet" media="screen" href="http://@host:3000/daikoku.css">
+    <link rel="stylesheet" media="screen" href="http://@host:3000/daikoku.css" />
   }
   @if(_env.config.mode == DaikokuMode.Prod) {
-    <link rel="stylesheet" media="screen" href="/assets/react-app/daikoku.min.css">
+    <link rel="stylesheet" media="screen" href="/assets/react-app/daikoku.min.css" />
   }
   @(tenant.moareStyle())
 }
@@ -20,17 +20,17 @@
 @main(tenant.style.map(_.title).getOrElse(tenant.name) + " - error", moreStyles = customStyle, moreScripts = customJs, favicon = tenant.favicon()) {
 <div class="container login">
   <div id="app">
-    <div>
+    <div class="row" style="padding-top: 60px;">
       <header>
-        <div class="navbar shadow-sm fixed-top">
-          <div class="container-fluid d-flex justify-content-center justify-content-sm-between"><a href="/" class="navbar-brand d-flex align-items-center"><span>大黒天</span> &nbsp; Daikoku</a></div>
+        <div class="navbar shadow-sm fixed-top" style="background-color: var(--navbar-bg-color, #7f96af);">
+          <div class="container-fluid d-flex justify-content-center justify-content-sm-between"><a href="/" class="navbar-brand d-flex align-items-center" style="color: var(--navbar-brand-color, #fff);"><span>大黒天</span> &nbsp; Daikoku</a></div>
         </div>
       </header>
-      <div class="jumbotron text-center">
+      <div class="jumbotron text-center mt-5">
         <h1 class="mb-5">Error - @message</h1>
-        <p>
-          <img src="/assets/images/daikoku.svg" alt="logo Daikoku" class="logo-medium" />
-        </p>
+        <div class="col-6 offset-3">
+          <img src="/assets/images/daikoku.svg" alt="logo Daikoku" class="img-fluid" />
+        </div>
       </div>
     </div>
   </div>

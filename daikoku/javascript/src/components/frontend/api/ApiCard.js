@@ -78,7 +78,7 @@ export class ApiCard extends Component {
                 </ActionWithTeamSelector>
               )}
               {isPending && (
-                <button className="btn btn-sm btn-access-negative mr-2">
+                <button className="btn btn-sm btn-access-negative ml-1 mr-2">
                   <Translation i18nkey="Pending request" language={this.props.currentLanguage}>
                     Pending request
                   </Translation>
