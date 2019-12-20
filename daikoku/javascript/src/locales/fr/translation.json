@@ -518,5 +518,7 @@
   "remove.user.success": "l'utilisateur %s à été correctement supprimé",
   "content type is not allowed": "le type de contenu n'est pas autorisé",
   "email.validity.error": "Vous avez fourni un courriel invalide",
-  "error.replace.files.content.type": "Vous ne pouvez pas remplacer un fichier par un autre de type différent"
+  "error.replace.files.content.type": "Vous ne pouvez pas remplacer un fichier par un autre de type différent",
+  "Email address does not exist": "Le courriel n'existe pas",
+  "login.to.tenant": "Se connecter à %s"
 }

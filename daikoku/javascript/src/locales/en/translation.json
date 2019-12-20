@@ -519,5 +519,7 @@
     "email.validity.error": "You have entered an invalid email address",
     "content type is not allowed": "content type is not allowed",
     "error.replace.files.multi": "You can't replace a file with more than one",
-    "error.replace.files.content.type": "You cannot replace a file with another of a different content-type"
+    "error.replace.files.content.type": "You cannot replace a file with another of a different content-type",
+    "Email address does not exist": "Email address does not exist",
+    "login.to.tenant": "Login to %s"
 }

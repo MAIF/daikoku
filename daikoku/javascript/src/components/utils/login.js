@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { t, Translation } from "../../locales";
 
 export class LoginPage extends Component {
   state = {
@@ -25,14 +26,19 @@ export class LoginPage extends Component {
     return (
       <div>
         <div className="jumbotron text-center">
-          <h3 className="mb-5">Login to {this.props.tenant.name}</h3>
+          <h3 className="mb-5">
+            <Translation language={this.props.tenant.defaultLanguage} i18nkey="login.to.tenant" replacements={[this.props.tenant.name]} >
+              Login to {this.props.tenant.name}
+              </Translation>
+          </h3>
           <form
             className="form-horizontal text-left"
             method={this.props.method}
             action={this.props.action}>
             <input type="hidden" name="token" className="form-control" value={this.props.token} />
             <div className="form-group">
-              <label className="col-sm-2 control-label">Username</label>
+              <label className="col-sm-2 control-label">
+                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Username">Username</Translation></label>
               <div className="col-sm-10">
                 <input
                   type="text"
@@ -44,7 +50,9 @@ export class LoginPage extends Component {
               </div>
             </div>
             <div className="form-group">
-              <label className="col-sm-2 control-label">Password</label>
+              <label className="col-sm-2 control-label">
+                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Password">Password</Translation>
+              </label>
               <div className="col-sm-10">
                 <input
                   type="password"
@@ -59,14 +67,20 @@ export class LoginPage extends Component {
               <label className="col-sm-2 control-label" />
               <div className="col-sm-10">
                 <button type="submit" className="btn btn-access-negative" style={{ marginLeft: 0 }}>
-                  Login
+                  <Translation language={this.props.tenant.defaultLanguage} i18nkey="Login">
+                    Login
+                  </Translation>
                 </button>
               </div>
             </div>
             <div className="form-group">
               <label className="col-sm-2 control-label" />
               <div className="col-sm-10">
-                <a href="/reset">Forgot your password ?</a>
+                <a href="/reset">
+                  <Translation language={this.props.tenant.defaultLanguage} i18nkey="Forgot your password ?">
+                    Forgot your password ?
+                  </Translation>
+                </a>
                 <p>{!this.state.error && this.state.message}</p>
                 <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
                   {!!this.state.error && this.state.error}

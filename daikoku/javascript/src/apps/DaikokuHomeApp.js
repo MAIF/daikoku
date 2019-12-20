@@ -175,7 +175,7 @@ export class SignupComponent extends Component {
           </h1>
           <p style={{ width: '100%', textAlign: 'center' }}>
             <Translation
-              i18nkey="create.accuont.done"
+              i18nkey="create.account.done"
               language={this.props.currentLanguage}
               replacements={[this.state.user.email]}>
               You will receive an email at <b>{this.state.user.email}</b> to finish your account
@@ -242,6 +242,7 @@ export class ResetPasswordComponent extends Component {
     email: {
       type: 'string',
       props: {
+        type: 'email',
         label: t('Email address', currentLanguage),
       },
     },
@@ -296,7 +297,7 @@ export class ResetPasswordComponent extends Component {
           .then(r => r.json())
           .then(res => {
             if (res.error) {
-              this.setState({ state: 'error', error: res.error });
+              this.setState({ state: 'error', error: t(res.error, this.props.currentLanguage) });
             } else {
               this.setState({ state: 'done' });
             }
