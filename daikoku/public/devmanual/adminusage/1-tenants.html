@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+<title>Managing tenants · Daikoku</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='daikoku-manual'/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../js/page.js"></script>
+<script type="text/javascript" src="../js/warnOldVersion.js"></script>
+<script type="text/javascript" src="../js/groups.js"></script>
+<link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="../css/page.css"/>
+
+<!--
+<link rel="shortcut icon" href="../images/favicon.ico" />
+-->
+</head>
+
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>Daikoku
+</a>
+<div class="version-number">
+1.0.0-dev
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../about.html" class="page">About Daikoku</a></li>
+  <li><a href="../archi.html" class="page">Architecture</a></li>
+  <li><a href="../quickstart.html" class="page">Try Daikoku in 5 minutes</a></li>
+  <li><a href="../getdaikoku/index.html" class="page">Get Daikoku</a>
+  <ul>
+    <li><a href="../getdaikoku/fromsources.html" class="page">From sources</a></li>
+    <li><a href="../getdaikoku/frombinaries.html" class="page">From binaries</a></li>
+    <li><a href="../getdaikoku/fromdocker.html" class="page">From docker</a></li>
+  </ul></li>
+  <li><a href="../firstrun/index.html" class="page">First run</a>
+  <ul>
+    <li><a href="../firstrun/datastore.html" class="page">Choose your audit trail datastore</a></li>
+    <li><a href="../firstrun/configfile.html" class="page">Config. with files</a></li>
+    <li><a href="../firstrun/env.html" class="page">Config. with ENVs</a></li>
+    <li><a href="../firstrun/initialstate.html" class="page">Import initial state</a></li>
+    <li><a href="../firstrun/run.html" class="page">Run Daikoku</a></li>
+  </ul></li>
+  <li><a href="../setup/index.html" class="page">Setup Daikoku</a>
+  <ul>
+    <li><a href="../setup/admin.html" class="page">Manage admin users</a></li>
+  </ul></li>
+  <li><a href="../adminusage/index.html" class="page">Using Daikoku as Daikoku admin</a>
+  <ul>
+    <li><a href="../adminusage/1-tenants.html" class="active page">Managing tenants</a></li>
+    <li><a href="../adminusage/2-users.html" class="page">Managing users</a></li>
+    <li><a href="../adminusage/3-sessions.html" class="page">Managing sessions</a></li>
+    <li><a href="../adminusage/4-importexport.html" class="page">Import and export</a></li>
+  </ul></li>
+  <li><a href="../tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
+  <ul>
+    <li><a href="../tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
+    <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
+    <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
+  </ul></li>
+  <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
+  <ul>
+    <li><a href="../producerusage/1-apis.html" class="page">Managing APIs</a></li>
+    <li><a href="../producerusage/2-members.html" class="page">Managing team members</a></li>
+    <li><a href="../producerusage/3-assets.html" class="page">Managing team assets</a></li>
+    <li><a href="../producerusage/4-income.html" class="page">Team earnings</a></li>
+  </ul></li>
+  <li><a href="../consumerusage/index.html" class="page">Using Daikoku as api consumer</a>
+  <ul>
+    <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
+    <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
+    <li><a href="../consumerusage/3-billing.html" class="page">Team billing</a></li>
+  </ul></li>
+  <li><a href="../integrations.html" class="page">Integrations API</a></li>
+  <li><a href="../apis.html" class="page">Admin REST API</a></li>
+  <li><a href="../deploy/index.html" class="page">Deploy to production</a></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title-wrapper">
+<div class="title-logo"></div>
+<div class="title"><a href="../index.html">Daikoku</a></div>
+</div>
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>Daikoku
+</a>
+<div class="version-number">
+1.0.0-dev
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../about.html" class="page">About Daikoku</a></li>
+  <li><a href="../archi.html" class="page">Architecture</a></li>
+  <li><a href="../quickstart.html" class="page">Try Daikoku in 5 minutes</a></li>
+  <li><a href="../getdaikoku/index.html" class="page">Get Daikoku</a>
+  <ul>
+    <li><a href="../getdaikoku/fromsources.html" class="page">From sources</a></li>
+    <li><a href="../getdaikoku/frombinaries.html" class="page">From binaries</a></li>
+    <li><a href="../getdaikoku/fromdocker.html" class="page">From docker</a></li>
+  </ul></li>
+  <li><a href="../firstrun/index.html" class="page">First run</a>
+  <ul>
+    <li><a href="../firstrun/datastore.html" class="page">Choose your audit trail datastore</a></li>
+    <li><a href="../firstrun/configfile.html" class="page">Config. with files</a></li>
+    <li><a href="../firstrun/env.html" class="page">Config. with ENVs</a></li>
+    <li><a href="../firstrun/initialstate.html" class="page">Import initial state</a></li>
+    <li><a href="../firstrun/run.html" class="page">Run Daikoku</a></li>
+  </ul></li>
+  <li><a href="../setup/index.html" class="page">Setup Daikoku</a>
+  <ul>
+    <li><a href="../setup/admin.html" class="page">Manage admin users</a></li>
+  </ul></li>
+  <li><a href="../adminusage/index.html" class="page">Using Daikoku as Daikoku admin</a>
+  <ul>
+    <li><a href="../adminusage/1-tenants.html" class="active page">Managing tenants</a></li>
+    <li><a href="../adminusage/2-users.html" class="page">Managing users</a></li>
+    <li><a href="../adminusage/3-sessions.html" class="page">Managing sessions</a></li>
+    <li><a href="../adminusage/4-importexport.html" class="page">Import and export</a></li>
+  </ul></li>
+  <li><a href="../tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
+  <ul>
+    <li><a href="../tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
+    <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
+    <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
+  </ul></li>
+  <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
+  <ul>
+    <li><a href="../producerusage/1-apis.html" class="page">Managing APIs</a></li>
+    <li><a href="../producerusage/2-members.html" class="page">Managing team members</a></li>
+    <li><a href="../producerusage/3-assets.html" class="page">Managing team assets</a></li>
+    <li><a href="../producerusage/4-income.html" class="page">Team earnings</a></li>
+  </ul></li>
+  <li><a href="../consumerusage/index.html" class="page">Using Daikoku as api consumer</a>
+  <ul>
+    <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
+    <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
+    <li><a href="../consumerusage/3-billing.html" class="page">Team billing</a></li>
+  </ul></li>
+  <li><a href="../integrations.html" class="page">Integrations API</a></li>
+  <li><a href="../apis.html" class="page">Admin REST API</a></li>
+  <li><a href="../deploy/index.html" class="page">Deploy to production</a></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+<div class="nav-breadcrumbs">
+<ul>
+  <li><a href="../index.html">Daikoku</a></li>
+  <li><a href="../adminusage/index.html">Using Daikoku as Daikoku admin</a></li>
+  <li>Managing tenants</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h1><a href="#managing-tenants" name="managing-tenants" class="anchor"><span class="anchor-link"></span></a>Managing tenants</h1>
+<p>Go to <code>settings/Organizations settings</code></p><div class="centered-img">
+<img src="../img/organisation_settings.png" /></div>
+<p>And you should see the list of the existing <code>tenants</code>.</p>
+<h2><a href="#create-a-tenant" name="create-a-tenant" class="anchor"><span class="anchor-link"></span></a>Create a tenant</h2>
+<p>To create a new tenant, just click on the <code>create a new tenant</code> button.</p>
+<h3><a href="#common-informations" name="common-informations" class="anchor"><span class="anchor-link"></span></a>Common informations</h3>
+<p>Modify the name and the domain name of the current tenant. It&rsquo;s possible to set the default language of the tenant.</p>
+<h3><a href="#tenant-style" name="tenant-style" class="anchor"><span class="anchor-link"></span></a>Tenant style</h3>
+<p>Tenants could be customized in Daikoku. Logo, title, description can be changed. The css can be customized with some css code or js code, with overwriting css variables or with a css/js file.</p>
+<h3><a href="#authentication" name="authentication" class="anchor"><span class="anchor-link"></span></a>Authentication</h3>
+<p>A tenant can be private or public. In the last case, just public api can be accessed by unauthenticated users. Authentication can be set by choosen Local auth. or a tiers auth. like LDAP, OAuth2 or Otoroshi. The user session duration can be set here, by default it last 24h.</p>
+<h3><a href="#audit-trail" name="audit-trail" class="anchor"><span class="anchor-link"></span></a>Audit trail</h3>
+<p>The settings for the output of the audit trail can be set on this page. The output of it, in addition to writing in database, can be an elastic, a kafka or webhooks.</p>
+<h3><a href="#alerting" name="alerting" class="anchor"><span class="anchor-link"></span></a>Alerting</h3>
+<p>The email adresses to report some Daikoku alert.</p>
+<h3><a href="#mailer" name="mailer" class="anchor"><span class="anchor-link"></span></a>Mailer</h3>
+<p>The mailer type, by default just the standard output. Mailgun or Mailjet can be configured.</p>
+<h3><a href="#bucket" name="bucket" class="anchor"><span class="anchor-link"></span></a>Bucket</h3>
+<p>An object storage can be set to store tenant and team assets.</p>
+<h3><a href="#unlogged-home-description" name="unlogged-home-description" class="anchor"><span class="anchor-link"></span></a>Unlogged home description</h3>
+<p>The unlogged home description is the first content shown to user for private tenant, before the login page. It can also be enabled for public tenant.</p>
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="../adminusage/2-users.html">Managing users</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../adminusage/1-tenants.html#managing-tenants" class="header">Managing tenants</a>
+  <ul>
+    <li><a href="../adminusage/1-tenants.html#create-a-tenant" class="header">Create a tenant</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
+
+</section>
+</div>
+
+</div>
+
+<footer class="site-footer">
+
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</section>
+
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2019</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="../lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="../js/magellan.js"></script>
+
+<style type="text/css">@import "../lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-dev', '')});</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'UA-112498312-1');
+</script>
+
+</html>

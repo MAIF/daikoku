@@ -19,6 +19,17 @@ build_manual () {
   cp -r $LOCATION/docs/manual $LOCATION/daikoku/public/manual
 }
 
+build_dev_manual () {
+  rm -rf $LOCATION/docs/devmanual
+  rm -rf $LOCATION/daikoku/public/devmanual
+  cd $LOCATION/manual
+  node indexer.js
+  sbt ';clean;paradox'
+  cp -r $LOCATION/manual/target/paradox/site/main $LOCATION/docs
+  mv $LOCATION/docs/main $LOCATION/docs/devmanual
+  cp -r $LOCATION/docs/devmanual $LOCATION/daikoku/public/devmanual
+}
+
 build_ui () {
   cd $LOCATION/daikoku/javascript
   yarn install
@@ -137,11 +148,18 @@ case "${1}" in
   manual)
     build_manual
     ;;
+  devmanual)
+    build_dev_manual
+    ;;
   doc)
     build_manual
     ;;
+  devdoc)
+    build_dev_manual
+    ;;
   docs)
     build_manual
+    build_dev_manual
     ;;
   fmt)
     fmt_ui
