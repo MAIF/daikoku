@@ -50,7 +50,7 @@ const mimeTypes = [
 
 class AssetButton extends Component {
   render() {
-    const teamId = this.props.parentProps().teamId;
+    const team = this.props.parentProps().team;
     return (
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2 col-form-label" />
@@ -59,7 +59,8 @@ class AssetButton extends Component {
           style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}>
           <AssetChooserByModal
             currentLanguage={this.props.currentLanguage}
-            teamId={teamId}
+            team={team}
+            teamId={team._id}
             label={t('Set from asset', this.props.currentLanguage)}
             onSelect={asset => {
               this.props.onRawChange({
@@ -122,7 +123,10 @@ export class TeamApiDocumentation extends Component {
       type: 'string',
       props: { label: t('Content URL', this.props.currentLanguage) },
     },
-    assetButton: { type: AssetButton, props: { label: '', parentProps: () => this.props } },
+    assetButton: { 
+      type: AssetButton, 
+      props: { label: '', parentProps: () => this.props } 
+    },
     remoteContentHeaders: {
       type: 'object',
       props: { label: t('Content headers', this.props.currentLanguage) },
@@ -224,14 +228,11 @@ export class TeamApiDocumentation extends Component {
   onDown = () => {
     let pages = _.cloneDeep(this.props.value.documentation.pages);
     if (this.state.selected) {
-      console.log(JSON.stringify(pages, null, 2));
       const oldIndex = pages.indexOf(this.state.selected._id);
-      console.log(oldIndex);
       if (oldIndex < pages.length) {
         pages = pages.move(oldIndex, oldIndex + 1);
         const value = _.cloneDeep(this.props.value);
         value.documentation.pages = pages;
-        console.log(JSON.stringify(pages, null, 2));
         this.props.onChange(value);
         this.props.save().then(() => {
           this.updateDetails();
@@ -245,11 +246,8 @@ export class TeamApiDocumentation extends Component {
     let index = this.props.value.documentation.pages.length;
     if (selected) {
       index = this.props.value.documentation.pages.indexOf(selected._id) + 1;
-      console.log('selected at', this.props.value.documentation.pages.indexOf(selected._id));
     }
-    console.log(this.props.value.documentation.pages.length, 'pages');
 
-    console.log('inserting at', index);
     Services.createDocPage(this.props.teamId, this.props.value._id, {
       _id: faker.random.alphaNumeric(32),
       _tenant: this.props.value._tenant,

@@ -58,7 +58,7 @@ export default class Form extends Component {
         this.collapsedState = true;
         this.collapsedLabel = name.replace('>>>', '');
         return (
-          <Collapse key={collapsedLabel} label={collapsedLabel} collapsed={collapsedState}>
+          <Collapse key={idx} label={collapsedLabel} collapsed={collapsedState}>
             {collapsed}
           </Collapse>
         );
@@ -77,7 +77,7 @@ export default class Form extends Component {
         this.collapsedState = false;
         this.collapsedLabel = name.replace('<<<', '');
         return (
-          <Collapse key={collapsedLabel} label={collapsedLabel} collapsed={collapsedState}>
+          <Collapse key={idx} label={collapsedLabel} collapsed={collapsedState}>
             {collapsed}
           </Collapse>
         );
@@ -97,7 +97,7 @@ export default class Form extends Component {
         delete this.collapsedLabel;
         return (
           <Collapse
-            key={collapsedLabel}
+            key={idx}
             label={collapsedLabel}
             collapsed={collapsedState}
             lineEnd={true}>
@@ -182,7 +182,7 @@ export default class Form extends Component {
           );
         } else if (type === 'code') {
           return (
-            <React.Suspense fallback={<div>loading...</div>}>
+            <React.Suspense key={name} fallback={<div>loading...</div>}>
               <LazyCodeInput
                 disabled={disabled}
                 key={name}
@@ -194,7 +194,7 @@ export default class Form extends Component {
           );
         } else if (type === 'markdown') {
           component = (
-            <React.Suspense fallback={<div>loading...</div>}>
+            <React.Suspense key={name} fallback={<div>loading...</div>}>
               <LazySingleMarkdownInput
                 disabled={disabled}
                 key={name}
@@ -218,7 +218,7 @@ export default class Form extends Component {
           );
         } else if (type === 'arrayForm') {
           component = (
-            <React.Suspense fallback={<Spinner />}>
+            <React.Suspense key={name} fallback={<Spinner />}>
               <LazyArrayForm
                 disabled={disabled}
                 key={name}
