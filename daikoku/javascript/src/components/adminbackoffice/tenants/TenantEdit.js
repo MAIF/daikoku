@@ -344,6 +344,7 @@ export class TenantEditComponent extends Component {
       type: StyleLogoAssetButton,
       props: {
         tenant: () => this.state.tenant,
+        currentLanguage: this.props.currentLanguage,
         onChangeLogo: obj => {
           console.log(obj);
         },
