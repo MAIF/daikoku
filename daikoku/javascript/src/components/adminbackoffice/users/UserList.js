@@ -137,7 +137,7 @@ class UserListComponent extends Component {
                           tooltip: t('Edit user', this.props.currentLanguage),
                         },
                         {
-                          redirect: () => this.props.history.push(`/api/admin/users/${user._id}/_impersonate`),
+                          link: `/api/admin/users/${user._id}/_impersonate`,
                           iconClass: 'fas fa-user-ninja',
                           tooltip: t('Impersonate this user', this.props.currentLanguage),
                         },
