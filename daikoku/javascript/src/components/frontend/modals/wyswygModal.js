@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
 import { PropTypes } from 'prop-types';
-import {Spinner} from '../../utils';
-
+import { Spinner } from '../../utils';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
-export const WysiwygModal = ({
-  closeModal,
-  action,
-  value,
-  team,
-  currentLanguage,
-  title
-}) => {
-
+export const WysiwygModal = ({ closeModal, action, value, team, currentLanguage, title }) => {
   const [newValue, setNewValue] = useState(value);
 
   const actionAndClose = () => {
@@ -28,9 +19,7 @@ export const WysiwygModal = ({
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">
-            {title}
-        </h5>
+        <h5 className="modal-title">{title}</h5>
         <button type="button" className="close" aria-label="Close" onClick={closeModal}>
           <span aria-hidden="true">&times;</span>
         </button>
@@ -52,10 +41,7 @@ export const WysiwygModal = ({
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
           Close
         </button>
-        <button
-          type="button"
-          className='btn btn-outline-success'
-          onClick={() => actionAndClose()}>
+        <button type="button" className="btn btn-outline-success" onClick={() => actionAndClose()}>
           Update asset
         </button>
       </div>
@@ -68,5 +54,5 @@ WysiwygModal.propTypes = {
   action: PropTypes.func.isRequired,
   value: PropTypes.string.isRequired,
   currentLanguage: PropTypes.string,
-  title: PropTypes.string
+  title: PropTypes.string,
 };

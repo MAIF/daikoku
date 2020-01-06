@@ -27,9 +27,12 @@ export class LoginPage extends Component {
       <div>
         <div className="jumbotron text-center">
           <h3 className="mb-5">
-            <Translation language={this.props.tenant.defaultLanguage} i18nkey="login.to.tenant" replacements={[this.props.tenant.name]} >
+            <Translation
+              language={this.props.tenant.defaultLanguage}
+              i18nkey="login.to.tenant"
+              replacements={[this.props.tenant.name]}>
               Login to {this.props.tenant.name}
-              </Translation>
+            </Translation>
           </h3>
           <form
             className="form-horizontal text-left"
@@ -38,7 +41,10 @@ export class LoginPage extends Component {
             <input type="hidden" name="token" className="form-control" value={this.props.token} />
             <div className="form-group">
               <label className="col-sm-2 control-label">
-                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Username">Username</Translation></label>
+                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Username">
+                  Username
+                </Translation>
+              </label>
               <div className="col-sm-10">
                 <input
                   type="text"
@@ -51,7 +57,9 @@ export class LoginPage extends Component {
             </div>
             <div className="form-group">
               <label className="col-sm-2 control-label">
-                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Password">Password</Translation>
+                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Password">
+                  Password
+                </Translation>
               </label>
               <div className="col-sm-10">
                 <input
@@ -77,7 +85,9 @@ export class LoginPage extends Component {
               <label className="col-sm-2 control-label" />
               <div className="col-sm-10">
                 <a href="/reset">
-                  <Translation language={this.props.tenant.defaultLanguage} i18nkey="Forgot your password ?">
+                  <Translation
+                    language={this.props.tenant.defaultLanguage}
+                    i18nkey="Forgot your password ?">
                     Forgot your password ?
                   </Translation>
                 </a>

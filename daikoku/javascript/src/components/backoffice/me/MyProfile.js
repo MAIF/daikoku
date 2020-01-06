@@ -17,19 +17,17 @@ class SetPassword extends Component {
   genAndSetPassword = () => {
     window.prompt(t('Type the password', this.props.currentLanguage), undefined, true).then(pw1 => {
       if (pw1) {
-        window.prompt(t('Re-type the password', this.props.currentLanguage), undefined, true).then(pw2 => {
-          const validation = validatePassword(
-            pw1,
-            pw2,
-            this.props.currentLanguage
-          );
-          if (validation.ok) {
-            const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-            this.props.changeValue('password', hashed);
-          } else {
-            this.props.displayError(validation.error);
-          }
-        });
+        window
+          .prompt(t('Re-type the password', this.props.currentLanguage), undefined, true)
+          .then(pw2 => {
+            const validation = validatePassword(pw1, pw2, this.props.currentLanguage);
+            if (validation.ok) {
+              const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
+              this.props.changeValue('password', hashed);
+            } else {
+              this.props.displayError(validation.error);
+            }
+          });
       }
     });
   };
@@ -245,7 +243,7 @@ class MyProfileComponent extends Component {
       type: SetPassword,
       props: {
         currentLanguage: this.props.currentLanguage,
-        displayError: error => toastr.error(error)
+        displayError: error => toastr.error(error),
       },
     },
     gravatar: {
@@ -303,11 +301,7 @@ class MyProfileComponent extends Component {
   }
 
   save = () => {
-    if (
-      this.state.user.name &&
-      this.state.user.email &&
-      this.state.user.picture
-    ) {
+    if (this.state.user.name && this.state.user.email && this.state.user.picture) {
       const emailValidation = ValidateEmail(this.state.user.email);
       if (emailValidation.ok) {
         Services.updateUserById(this.state.user).then(user => {

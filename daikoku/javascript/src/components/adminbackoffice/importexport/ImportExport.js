@@ -35,7 +35,10 @@ export class ImportExportComponent extends Component {
                   Import / Export
                 </Translation>
               </h1>
-              <a href="/api/state/export?download=true" target="_blank" className="btn btn-outline-primary">
+              <a
+                href="/api/state/export?download=true"
+                target="_blank"
+                className="btn btn-outline-primary">
                 <i className="fas fa-download mr-1" />
                 <Translation i18nkey="download state" language={this.props.currentLanguage}>
                   download state

@@ -205,16 +205,18 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
           </div>
           <div>{this.injectButtons()}</div>
           <div style={{ width: 250 }}>
-            {this.props.assertChooserActive && <AssetChooserByModal
-              currentLanguage={this.props.currentLanguage}
-              tenantMode={this.props.tenantMode}
-              team={team}
-              label={t('Set from asset', this.props.currentLanguage)}
-              onSelect={asset => {
-                this.editor.session.insert(this.editor.getCursorPosition(), asset.link);
-                this.editor.focus();
-              }}
-            />}
+            {this.props.assertChooserActive && (
+              <AssetChooserByModal
+                currentLanguage={this.props.currentLanguage}
+                tenantMode={this.props.tenantMode}
+                team={team}
+                label={t('Set from asset', this.props.currentLanguage)}
+                onSelect={asset => {
+                  this.editor.session.insert(this.editor.getCursorPosition(), asset.link);
+                  this.editor.focus();
+                }}
+              />
+            )}
           </div>
         </div>
         {!this.state.preview && (

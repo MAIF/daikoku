@@ -95,7 +95,8 @@ export class TenantListComponent extends Component {
                           tooltip: t('Remove tenant', this.props.currentLanguage),
                         },
                         {
-                          redirect: () =>  this.props.history.push(`/settings/tenants/${tenant._humanReadableId}`),
+                          redirect: () =>
+                            this.props.history.push(`/settings/tenants/${tenant._humanReadableId}`),
                           iconClass: 'fas fa-pen',
                           tooltip: t('Edit tenant', this.props.currentLanguage),
                         },

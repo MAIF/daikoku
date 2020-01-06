@@ -18,19 +18,17 @@ class SetPassword extends Component {
   genAndSetPassword = () => {
     window.prompt(t('Type the password', this.props.currentLanguage), undefined, true).then(pw1 => {
       if (pw1) {
-        window.prompt(t('Re-type the password', this.props.currentLanguage), undefined, true).then(pw2 => {
-          const validation = validatePassword(
-            pw1,
-            pw2,
-            this.props.currentLanguage
-          );
-          if (validation.ok) {
-            const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-            this.props.changeValue('password', hashed);
-          } else {
-            this.props.displayError(validation.error);
-          }
-        });
+        window
+          .prompt(t('Re-type the password', this.props.currentLanguage), undefined, true)
+          .then(pw2 => {
+            const validation = validatePassword(pw1, pw2, this.props.currentLanguage);
+            if (validation.ok) {
+              const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
+              this.props.changeValue('password', hashed);
+            } else {
+              this.props.displayError(validation.error);
+            }
+          });
       }
     });
   };
@@ -197,7 +195,7 @@ export class UserEditComponent extends Component {
       type: SetPassword,
       props: {
         currentLanguage: this.props.currentLanguage,
-        displayError: error => toastr.error(error)
+        displayError: error => toastr.error(error),
       },
     },
     avatarFromAsset: {
@@ -225,24 +223,39 @@ export class UserEditComponent extends Component {
 
   componentDidMount() {
     if (this.props.location && this.props.location.state && this.props.location.state.newUser) {
-      this.setState({ user: { ...this.props.location.state.newUser, personalToken: faker.random.alphaNumeric(32)}, create: true });
+      this.setState({
+        user: {
+          ...this.props.location.state.newUser,
+          personalToken: faker.random.alphaNumeric(32),
+        },
+        create: true,
+      });
     } else {
       Services.findUserById(this.props.match.params.userId).then(user => this.setState({ user }));
     }
   }
 
   removeUser = () => {
-    window.confirm(
-      t(
-        'remove.user.confirm',
-        this.props.currentLanguage,
-        'Are you sure you want to delete this user ?'
+    window
+      .confirm(
+        t(
+          'remove.user.confirm',
+          this.props.currentLanguage,
+          'Are you sure you want to delete this user ?'
+        )
       )
-    )
       .then(ok => {
         if (ok) {
           Services.deleteUserById(this.state.user._id).then(() => {
-            toastr.info(t('remove.user.success', this.props.currentLanguage, false, `user ${this.state.user.name} is successfully deleted`, this.state.user.name));
+            toastr.info(
+              t(
+                'remove.user.success',
+                this.props.currentLanguage,
+                false,
+                `user ${this.state.user.name} is successfully deleted`,
+                this.state.user.name
+              )
+            );
             this.props.history.push('/settings/users');
           });
         }

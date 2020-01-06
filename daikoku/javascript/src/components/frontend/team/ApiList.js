@@ -7,13 +7,7 @@ import _ from 'lodash';
 import faker from 'faker';
 
 import { ApiCard } from '../api';
-import {
-  ActionWithTeamSelector,
-  Can,
-  CanIDoAction,
-  manage,
-  api
-} from '../../utils';
+import { ActionWithTeamSelector, Can, CanIDoAction, manage, api } from '../../utils';
 import { updateTeamPromise } from '../../../core';
 import { Translation, t } from '../../../locales';
 

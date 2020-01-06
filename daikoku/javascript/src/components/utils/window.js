@@ -167,7 +167,10 @@ class Prompt extends Component {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-outline-danger" onClick={this.props.cancel}>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger"
+                  onClick={this.props.cancel}>
                   Cancel
                 </button>
                 <button

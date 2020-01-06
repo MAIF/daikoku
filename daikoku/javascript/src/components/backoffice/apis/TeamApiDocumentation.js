@@ -123,9 +123,9 @@ export class TeamApiDocumentation extends Component {
       type: 'string',
       props: { label: t('Content URL', this.props.currentLanguage) },
     },
-    assetButton: { 
-      type: AssetButton, 
-      props: { label: '', parentProps: () => this.props } 
+    assetButton: {
+      type: AssetButton,
+      props: { label: '', parentProps: () => this.props },
     },
     remoteContentHeaders: {
       type: 'object',

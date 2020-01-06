@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import faker from 'faker';
 import _ from 'lodash';
-import {toastr} from 'react-redux-toastr';
+import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
@@ -51,9 +51,16 @@ class UserListComponent extends Component {
       )
       .then(ok => {
         if (ok) {
-          Services.deleteUserById(user._id)
-          .then(() => {
-            toastr.info(t('remove.user.success', this.props.currentLanguage, false, `user ${user.name} is successfully deleted`, user.name));
+          Services.deleteUserById(user._id).then(() => {
+            toastr.info(
+              t(
+                'remove.user.success',
+                this.props.currentLanguage,
+                false,
+                `user ${user.name} is successfully deleted`,
+                user.name
+              )
+            );
             this.updateUsers();
           });
         }
@@ -66,7 +73,7 @@ class UserListComponent extends Component {
         t(
           'toggle.admin.alert',
           this.props.currentLanguage,
-          'You can\'t remove your admin status, ask another admin.'
+          "You can't remove your admin status, ask another admin."
         )
       );
     } else {
@@ -132,7 +139,8 @@ class UserListComponent extends Component {
                           tooltip: t('Remove user', this.props.currentLanguage),
                         },
                         {
-                          redirect: () => this.props.history.push(`/settings/users/${user._humanReadableId}`),
+                          redirect: () =>
+                            this.props.history.push(`/settings/users/${user._humanReadableId}`),
                           iconClass: 'fas fa-pen',
                           tooltip: t('Edit user', this.props.currentLanguage),
                         },

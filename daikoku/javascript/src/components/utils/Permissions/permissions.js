@@ -1,5 +1,5 @@
 import { read, manage } from './actions';
-import { api, apikey, asset, stat, team, backoffice} from './subjects';
+import { api, apikey, asset, stat, team, backoffice } from './subjects';
 import { Option } from '../';
 
 export const administrator = 'Administrator';

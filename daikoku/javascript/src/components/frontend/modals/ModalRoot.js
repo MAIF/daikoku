@@ -8,7 +8,7 @@ import { TeamSelectorModal, AssetSelectorModal, WysiwygModal } from './';
 const MODAL_TYPES = {
   teamSelector: TeamSelectorModal,
   assetSelector: AssetSelectorModal,
-  wysywygModal: WysiwygModal
+  wysywygModal: WysiwygModal,
 };
 
 class ModalContainer extends Component {

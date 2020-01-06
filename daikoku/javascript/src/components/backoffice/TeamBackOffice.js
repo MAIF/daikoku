@@ -470,9 +470,7 @@ class UserBackOfficeComponent extends Component {
                         <Link
                           className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
                           to={'/settings/assets'}>
-                          <i
-                            className="fas fa-copy mr-1"
-                          />
+                          <i className="fas fa-copy mr-1" />
                           <Translation
                             i18nkey="Tenant assets"
                             language={this.props.currentLanguage}>

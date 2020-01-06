@@ -23,16 +23,16 @@ class GenerateApiKeyModal extends Component {
 
   otoroshiForm = _found => {
     if (!_found.otoroshiSettings) {
-      return ({
+      return {
         otoroshiSettings: {
           type: 'select',
           props: {
             label: t('Otoroshi instance', this.props.currentLanguage),
             possibleValues: this.state.tenant
               ? this.state.tenant.otoroshiSettings.map(s => ({
-                label: s.url,
-                value: s._id,
-              }))
+                  label: s.url,
+                  value: s._id,
+                }))
               : [],
           },
         },
@@ -40,12 +40,12 @@ class GenerateApiKeyModal extends Component {
           type: 'select',
           disabled: true,
           props: {
-            label: t('Otoroshi instance', this.props.currentLanguage)
-          }
-        }
-      });
+            label: t('Otoroshi instance', this.props.currentLanguage),
+          },
+        },
+      };
     }
-    const form =  {
+    const form = {
       otoroshiSettings: {
         type: 'select',
         props: {
@@ -63,7 +63,7 @@ class GenerateApiKeyModal extends Component {
         props: {
           label: t('Service group', this.props.currentLanguage),
           valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${_found.otoroshiSettings}/groups`,
-          transformer: s => ({ label: s.name, value: s.id })
+          transformer: s => ({ label: s.name, value: s.id }),
         },
       },
     };

@@ -71,7 +71,11 @@ export const AssetSelectorModal = ({
                         setSelectedAsset(asset);
                         selectAssetAndCloseModal();
                       }}
-                      src={asset.contentType.includes('svg') ? asset.link : `/asset-thumbnails/${asset.value}`}
+                      src={
+                        asset.contentType.includes('svg')
+                          ? asset.link
+                          : `/asset-thumbnails/${asset.value}`
+                      }
                       alt={t('Thumbnail', currentLanguage)}
                     />
                   </div>
@@ -104,11 +108,11 @@ export const AssetSelectorModal = ({
         </div>
       </div>
       <div className="modal-footer">
-          <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-              <Translation i18nkey="Close" language={currentLanguage}>
-                  Close
-              </Translation>
-          </button>
+        <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
+          <Translation i18nkey="Close" language={currentLanguage}>
+            Close
+          </Translation>
+        </button>
         <button
           type="button"
           className="btn btn-outline-success"

@@ -34,7 +34,11 @@ const mimeTypes = [
   { label: '.png	fichier Portable Network Graphics', value: 'image/png' },
   { label: '.pdf	Adobe Portable Document Format (PDF)', value: 'application/pdf' },
   { label: '.webm fichier vidéo WEBM', value: 'video/webm' },
-  { label: '.html	fichier HyperText Markup Language (HTML)', value: 'text/html', tenantModeOnly: true },
+  {
+    label: '.html	fichier HyperText Markup Language (HTML)',
+    value: 'text/html',
+    tenantModeOnly: true,
+  },
   { label: '.js fichier javascript', value: 'text/javascript', tenantModeOnly: true },
   { label: '.css fichier css', value: 'text/css', tenantModeOnly: true },
 ];
@@ -50,9 +54,9 @@ const maybeCreateThumbnail = (id, file) => {
       const reader = new FileReader();
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      reader.onload = function (event) {
+      reader.onload = function(event) {
         var img = new Image();
-        img.onload = function () {
+        img.onload = function() {
           canvas.width = 128; //img.width;
           canvas.height = 128; //img.height;
           ctx.drawImage(img, 0, 0, 128, 128);
@@ -73,7 +77,7 @@ const maybeCreateThumbnail = (id, file) => {
 };
 
 const handleAssetType = (tenantMode, type, currentLanguage) => {
-  return new Promise(function (resolve, reject) {
+  return new Promise(function(resolve, reject) {
     if (tenantMode) {
       return resolve(true);
     } else if (
@@ -94,15 +98,11 @@ const ReplaceButton = props => {
   const [input, setInput] = useState();
 
   useEffect(() => {
-    if(file) {
+    if (file) {
       maybeCreateThumbnail(props.asset.meta.asset, file)
         .then(() => {
           if (props.tenantMode) {
-            Services.updateTenantAsset(
-              props.asset.meta.asset,
-              props.asset.contentType,
-              file
-            );
+            Services.updateTenantAsset(props.asset.meta.asset, props.asset.contentType, file);
           } else {
             Services.updateAsset(
               props.teamId,
@@ -110,11 +110,12 @@ const ReplaceButton = props => {
               props.asset.contentType,
               file
             );
-          }})
+          }
+        })
         .then(() => props.postAction());
     }
   }, [file]);
-  
+
   const trigger = () => {
     input.click();
   };
@@ -137,10 +138,7 @@ const ReplaceButton = props => {
           }
         }}
       />
-      <button
-        type="button"
-        onClick={trigger}
-        className="btn btn-sm btn-outline-primary">
+      <button type="button" onClick={trigger} className="btn btn-sm btn-outline-primary">
         <i className="fas fa-retweet" />
       </button>
     </>
@@ -226,9 +224,11 @@ class AssetsListComponent extends Component {
     description: { type: 'string', props: { label: t('Description', this.props.currentLanguage) } },
     contentType: {
       type: 'select',
-      props: { 
-        label: t('Content-Type', this.props.currentLanguage), 
-        possibleValues: mimeTypes.filter(mt => !!mt.tenantModeOnly === this.props.tenantMode).map(({label, value}) => ({label, value})) 
+      props: {
+        label: t('Content-Type', this.props.currentLanguage),
+        possibleValues: mimeTypes
+          .filter(mt => !!mt.tenantModeOnly === this.props.tenantMode)
+          .map(({ label, value }) => ({ label, value })),
       },
     },
     input: {
@@ -239,7 +239,7 @@ class AssetsListComponent extends Component {
       type: AddAsset,
       props: { addAsset: () => this.addAsset(), currentLanguage: this.props.currentLanguage },
     },
-  };  
+  };
 
   columns = [
     {
@@ -279,13 +279,16 @@ class AssetsListComponent extends Component {
         } else if (type === 'image/svg+xml') {
           return (
             <img
-              src={`/team-assets/${this.props.currentTeam._id}/${item.meta.asset}?${new Date().getTime()}`}
+              src={`/team-assets/${this.props.currentTeam._id}/${
+                item.meta.asset
+              }?${new Date().getTime()}`}
               width="64"
               height="64"
               alt="thumbnail"
             />
           );
-        } {
+        }
+        {
           return null;
         }
       },
@@ -300,17 +303,19 @@ class AssetsListComponent extends Component {
       style: { justifyContent: 'flex-end', alignItems: 'center', display: 'flex', width: 150 },
       content: item => (
         <div className="btn-group">
-          {item.contentType.startsWith('text') && <button
-            type="button"
-            onClick={() => this.readAndUpdate(item)}
-            className="btn btn-sm btn-outline-primary">
-            <i className="fas fa-pen" />
-          </button>}
-          <ReplaceButton 
-            asset={item} 
-            tenantMode={this.props.tenantMode} 
+          {item.contentType.startsWith('text') && (
+            <button
+              type="button"
+              onClick={() => this.readAndUpdate(item)}
+              className="btn btn-sm btn-outline-primary">
+              <i className="fas fa-pen" />
+            </button>
+          )}
+          <ReplaceButton
+            asset={item}
+            tenantMode={this.props.tenantMode}
             teamId={this.props.currentTeam ? this.props.currentTeam._id : undefined}
-            displayError={error => toastr.error(error)} 
+            displayError={error => toastr.error(error)}
             currentLanguage={this.props.currentLanguage}
             postAction={() => {
               if (this.table) {
@@ -346,40 +351,38 @@ class AssetsListComponent extends Component {
 
     fetch(link, {
       method: 'GET',
-      credentials: 'include'
-    }).then(response => response.text())
-      .then(value => this.props.openModal(
-        {
-          open: true,
-          action: value => {
-            const textFileAsBlob = new Blob([value], { type: 'text/plain' });
-            const file = new File([textFileAsBlob], asset.filename);
+      credentials: 'include',
+    })
+      .then(response => response.text())
+      .then(value =>
+        this.props.openModal(
+          {
+            open: true,
+            action: value => {
+              const textFileAsBlob = new Blob([value], { type: 'text/plain' });
+              const file = new File([textFileAsBlob], asset.filename);
 
-
-            if (this.props.tenantMode) {
-              Services.updateTenantAsset(
-                asset.meta.asset,
-                asset.contentType,
-                file
-              );
-            } else {
-              Services.updateAsset(
-                this.props.currentTeam._id,
-                asset.meta.asset,
-                asset.contentType,
-                file
-              );
-            }
+              if (this.props.tenantMode) {
+                Services.updateTenantAsset(asset.meta.asset, asset.contentType, file);
+              } else {
+                Services.updateAsset(
+                  this.props.currentTeam._id,
+                  asset.meta.asset,
+                  asset.contentType,
+                  file
+                );
+              }
+            },
+            closeModal: this.props.closeModal,
+            title: asset.meta.filename,
+            value,
+            team: this.props.currentTeam,
+            currentLanguage: this.props.currentLanguage,
           },
-          closeModal: this.props.closeModal,
-          title: asset.meta.filename,
-          value,
-          team: this.props.currentTeam,
-          currentLanguage: this.props.currentLanguage
-        },
-        'wysywygModal'
-      ));
-  }
+          'wysywygModal'
+        )
+      );
+  };
 
   assetLink = asset => {
     if (this.props.tenantMode) {
@@ -475,23 +478,25 @@ class AssetsListComponent extends Component {
           });
         } else {
           return handleAssetType(this.props.tenantMode, file.type, this.props.currentLanguage)
-            .then(() => Services.storeAsset(
-              this.props.currentTeam._id,
-              multiple ? file.name : this.state.newAsset.filename || '--',
-              multiple
-                ? file.name.slice(0, file.name.lastIndexOf('.'))
-                : this.state.newAsset.title || '--',
-              this.state.newAsset.description || '--',
-              multiple ? file.type : this.state.newAsset.contentType,
-              formData
-            ).then(asset => {
-              return maybeCreateThumbnail(asset.id, formData).then(() => {
-                this.setState({ newAsset: {} });
-                if (this.table) {
-                  this.table.update();
-                }
-              });
-            }))
+            .then(() =>
+              Services.storeAsset(
+                this.props.currentTeam._id,
+                multiple ? file.name : this.state.newAsset.filename || '--',
+                multiple
+                  ? file.name.slice(0, file.name.lastIndexOf('.'))
+                  : this.state.newAsset.title || '--',
+                this.state.newAsset.description || '--',
+                multiple ? file.type : this.state.newAsset.contentType,
+                formData
+              ).then(asset => {
+                return maybeCreateThumbnail(asset.id, formData).then(() => {
+                  this.setState({ newAsset: {} });
+                  if (this.table) {
+                    this.table.update();
+                  }
+                });
+              })
+            )
             .catch(error => toastr.error(error));
         }
       } else {
@@ -506,7 +511,7 @@ class AssetsListComponent extends Component {
       .then(() => {
         this.setState({ loading: false });
       })
-      .catch(() => this.setState({ loading: false}));
+      .catch(() => this.setState({ loading: false }));
   };
 
   setFiles = assets =>

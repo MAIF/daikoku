@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import {Spinner} from '../utils';
+import { Spinner } from '../utils';
 
 import {
   ArrayInput,
@@ -97,11 +97,7 @@ export default class Form extends Component {
         delete this.collapsedState;
         delete this.collapsedLabel;
         return (
-          <Collapse
-            key={idx}
-            label={collapsedLabel}
-            collapsed={collapsedState}
-            lineEnd={true}>
+          <Collapse key={idx} label={collapsedLabel} collapsed={collapsedState} lineEnd={true}>
             {collapsed}
           </Collapse>
         );

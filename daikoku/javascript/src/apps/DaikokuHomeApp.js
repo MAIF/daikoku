@@ -9,7 +9,7 @@ import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/fronte
 import { t, Translation } from '../locales/Translation';
 import { udpateLanguage } from '../core/context/actions';
 import { Spinner } from '../components/utils/Spinner';
-import {validatePassword, ValidateEmail} from '../components/utils/validation';
+import { validatePassword, ValidateEmail } from '../components/utils/validation';
 
 const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 
@@ -55,7 +55,7 @@ export class SignupComponent extends Component {
       type: 'string',
       props: {
         type: 'email',
-        label: t('Email address', currentLanguage)
+        label: t('Email address', currentLanguage),
       },
     },
     avatar: {
@@ -137,7 +137,7 @@ export class SignupComponent extends Component {
               this.setState({ state: 'done' });
             }
           });
-      } else if(validationPassword.error){
+      } else if (validationPassword.error) {
         this.setState({ state: 'error', error: validationPassword.error });
       } else {
         this.setState({ state: 'error', error: validationEmail.error });
@@ -158,7 +158,7 @@ export class SignupComponent extends Component {
         error: t(
           'account.creation.error',
           this.props.currentLanguage,
-          'Your account creation request is not valid anymore (it\'s only valid for 15 minutes). Please creates a new request.'
+          "Your account creation request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
         ),
       });
     }
@@ -284,7 +284,11 @@ export class ResetPasswordComponent extends Component {
 
   resetPassword = () => {
     if (this.state.user.email && this.state.user.password1 && this.state.user.password2) {
-      const validation = validatePassword(this.state.user.password1, this.state.user.password2, this.props.currentLanguage);
+      const validation = validatePassword(
+        this.state.user.password1,
+        this.state.user.password2,
+        this.props.currentLanguage
+      );
       if (validation.ok) {
         return fetch('/account/reset', {
           method: 'POST',
@@ -321,7 +325,7 @@ export class ResetPasswordComponent extends Component {
         error: t(
           'account.reset.error',
           this.props.currentLanguage,
-          'Your password reset request is not valid anymore (it\'s only valid for 15 minutes). Please creates a new request.'
+          "Your password reset request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
         ),
       });
     }

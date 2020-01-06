@@ -300,11 +300,10 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
             Seq.empty
         }
     }.recover {
-        case e =>
-          Logger.error("[apikey stats job] Error during sync consumptions", e)
-          Seq.empty
-      })
-      .getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption]))
+      case e =>
+        Logger.error("[apikey stats job] Error during sync consumptions", e)
+        Seq.empty
+    }).getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption]))
   }
 
   def computeBilling(tenant: TenantId,

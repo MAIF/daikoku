@@ -63,11 +63,15 @@ class TeamListComponent extends Component {
         return basicActions;
       }
 
-      return [...basicActions, {
-        redirect: () => this.props.history.push(`/settings/teams/${team._humanReadableId}/members`),
-        iconClass: 'fas fa-users',
-        tooltip: t('Team members', this.props.currentLanguage),
-      }];
+      return [
+        ...basicActions,
+        {
+          redirect: () =>
+            this.props.history.push(`/settings/teams/${team._humanReadableId}/members`),
+          iconClass: 'fas fa-users',
+          tooltip: t('Team members', this.props.currentLanguage),
+        },
+      ];
     };
 
     return (
