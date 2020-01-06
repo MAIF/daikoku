@@ -1,11 +1,11 @@
 import React, { Component } from 'react';
 
-import { t, Translation } from '../../../locales';
-import { SingleJsonInput, TextInput, BooleanInput, ObjectInput } from '../../inputs';
+import { t } from '../../../locales';
+import { TextInput, BooleanInput, ObjectInput } from '../../inputs';
 
 export class TeamApiSwagger extends Component {
   componentDidMount() {
-    if (!!this.props.value.swagger.content) {
+    if (this.props.value.swagger.content) {
       this.initSwaggerEditor(this.props.value.swagger.content);
     }
   }

@@ -96,7 +96,7 @@ export class TeamMembersSimpleComponent extends Component {
           'remove.member.alert',
           this.props.currentLanguage,
           false,
-          "You can't delete this user, it must remain an admin in a team."
+          'You can\'t delete this user, it must remain an admin in a team.'
         )
       );
     } else {
@@ -167,7 +167,7 @@ export class TeamMembersSimpleComponent extends Component {
           t(
             'remove.admin.alert',
             this.props.currentLanguage,
-            "You can't remove this admin status, it must remain an admin in a team."
+            'You can\'t remove this admin status, it must remain an admin in a team.'
           )
         );
       } else {
@@ -178,7 +178,7 @@ export class TeamMembersSimpleComponent extends Component {
               ? toastr.success(
                   'Success',
                   t(
-                    `member.new.permission.success`,
+                    'member.new.permission.success',
                     this.props.currentLanguage,
                     false,
                     `${member.name} is now ${newPermission}`,
@@ -196,7 +196,7 @@ export class TeamMembersSimpleComponent extends Component {
         t(
           'not.admin.alert',
           this.props.currentLanguage,
-          "Your are not an administrator. You can't do that."
+          'Your are not an administrator. You can\'t do that.'
         )
       );
     }

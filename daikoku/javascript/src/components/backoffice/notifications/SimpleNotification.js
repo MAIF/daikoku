@@ -166,7 +166,7 @@ export class SimpleNotification extends Component {
                   <Translation
                     i18nkey="notif.api.subscription"
                     language={this.props.currentLanguage}
-                    replacements={[info.api.name, info.api.plan]}>
+                    replacements={[infos.api.name, infos.api.plan]}>
                     Request subscription to {infos.api.name} for plan {infos.plan.type}
                   </Translation>
                 </div>

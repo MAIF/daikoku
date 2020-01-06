@@ -6,7 +6,7 @@ import { connect } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
-import { TopBar, Spinner, Error, LoginPage } from '../components/utils';
+import { TopBar, Spinner, Error } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise } from '../core';
 import { history } from '../core';
@@ -21,6 +21,7 @@ import {
   MaybeHomePage,
   ApiHome,
   UnauthenticatedHome,
+  UnauthenticatedTopBar,
   FrontOffice,
 } from '../components/frontend';
 
@@ -555,7 +556,7 @@ const UnauthenticatedRouteComponent = ({
   connectedUser,
   ...rest
 }) => {
-  if (!!connectedUser._humanReadableId) {
+  if (connectedUser._humanReadableId) {
     return <Redirect to="/" />;
   }
   return (

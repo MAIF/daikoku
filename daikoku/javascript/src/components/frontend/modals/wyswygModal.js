@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PropTypes } from 'prop-types';
-import {Spinner} from '../../utils'
+import {Spinner} from '../../utils';
 
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
@@ -14,7 +14,7 @@ export const WysiwygModal = ({
   title
 }) => {
 
-  const [newValue, setNewValue] = useState(value)
+  const [newValue, setNewValue] = useState(value);
 
   const actionAndClose = () => {
     if (action instanceof Promise) {

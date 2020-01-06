@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { Spinner } from '../../../inputs';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 

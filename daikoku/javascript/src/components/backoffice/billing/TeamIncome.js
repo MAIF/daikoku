@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment';
+import _ from 'lodash';
 
 import { TeamBackOffice } from '../TeamBackOffice';
 import * as Services from '../../../services';

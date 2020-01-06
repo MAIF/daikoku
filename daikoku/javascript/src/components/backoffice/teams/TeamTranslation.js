@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
-import _ from 'lodash';
 
 import { TextInput } from '../../inputs';
 import { Option, manage, Can, daikoku } from '../../utils';
-import * as Services from '../../../services';
 import { languages } from '../../../locales';
 
 export const TeamTranslationForm = ({ team, t, onTranslationChange }) => {

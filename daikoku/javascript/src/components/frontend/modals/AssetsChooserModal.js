@@ -68,8 +68,8 @@ export const AssetSelectorModal = ({
                     <img
                       onClick={() => setSelectedAsset(asset)}
                       onDoubleClick={() => {
-                        setSelectedAsset(asset)
-                        selectAssetAndCloseModal()
+                        setSelectedAsset(asset);
+                        selectAssetAndCloseModal();
                       }}
                       src={asset.contentType.includes('svg') ? asset.link : `/asset-thumbnails/${asset.value}`}
                       alt={t('Thumbnail', currentLanguage)}

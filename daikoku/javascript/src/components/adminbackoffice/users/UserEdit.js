@@ -105,10 +105,7 @@ class AssetButton extends Component {
         onlyPreview
         tenantMode
         label={t('Set avatar from asset', this.props.currentLanguage)}
-        onSelect={asset => {
-          console.debug({asset})
-          this.props.changeValue('picture', asset.link)}
-        }
+        onSelect={asset => this.props.changeValue('picture', asset.link)}
       />
     );
   }
@@ -245,7 +242,7 @@ export class UserEditComponent extends Component {
       .then(ok => {
         if (ok) {
           Services.deleteUserById(this.state.user._id).then(() => {
-            toastr.info(t('remove.user.success', this.props.currentLanguage, false, `user ${this.state.user.name} is successfully deleted`, this.state.user.name))
+            toastr.info(t('remove.user.success', this.props.currentLanguage, false, `user ${this.state.user.name} is successfully deleted`, this.state.user.name));
             this.props.history.push('/settings/users');
           });
         }
@@ -257,13 +254,13 @@ export class UserEditComponent extends Component {
     if (validation.ok) {
       if (this.state.create) {
         Services.createUser(this.state.user).then(() => {
-          toastr.success(`user ${this.state.user.name} created`)
+          toastr.success(`user ${this.state.user.name} created`);
           this.props.history.push('/settings/users');
         });
       } else {
         Services.updateUserById(this.state.user).then(user => {
           this.setState({ user, create: false }, () => {
-            toastr.success(`user ${this.state.user.name} updated`)
+            toastr.success(`user ${this.state.user.name} updated`);
             this.props.history.push('/settings/users');
           });
         });

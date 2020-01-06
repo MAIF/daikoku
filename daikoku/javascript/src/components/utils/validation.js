@@ -5,13 +5,13 @@ export function validatePassword(pwd1 = '', pwd2 = '', currentLanguage) {
     if (pwd1.trim().length === 0) {
       return {
         ok: false,
-        error: t('password.empty.error', currentLanguage, false, "Your password can't be empty"),
+        error: t('password.empty.error', currentLanguage, false, 'Your password can\'t be empty'),
       };
     }
     if (pwd2.trim().length === 0) {
       return {
         ok: false,
-        error: t('password.empty.error', currentLanguage, false, "Your password can't be empty"),
+        error: t('password.empty.error', currentLanguage, false, 'Your password can\'t be empty'),
       };
     }
     if (/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/.test(pwd1)) {
@@ -39,12 +39,12 @@ export function validateUser(user, currentLanguage) {
   if(!user.password.trim()) {
     return {
       ok: false,
-      error: t('password.empty.error', currentLanguage, false, "Your password can't be empty"),
+      error: t('password.empty.error', currentLanguage, false, 'Your password can\'t be empty'),
     };
   } else if(!user.personalToken.trim()) {
     return {
       ok: false,
-      error: t('personal.token.empty.error', currentLanguage, false, "Your personal token can't be empty"),
+      error: t('personal.token.empty.error', currentLanguage, false, 'Your personal token can\'t be empty'),
     };
   } else {
     return ValidateEmail(user.email);
@@ -57,7 +57,7 @@ export function ValidateEmail(email, currentLanguage) {
   } else {
     return {
       ok: false,
-      error: t('email.validity.error', currentLanguage, false, "You have entered an invalid email address"),
+      error: t('email.validity.error', currentLanguage, false, 'You have entered an invalid email address'),
     };
   }
 }

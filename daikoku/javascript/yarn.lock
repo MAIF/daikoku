@@ -4547,11 +4547,6 @@ fbjs@^0.8.15, fbjs@^0.8.16, fbjs@^0.8.9:
     setimmediate "^1.0.5"
     ua-parser-js "^0.7.18"
 
-fetch-readablestream@0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/fetch-readablestream/-/fetch-readablestream-0.2.0.tgz#eaa6d1a76b12de2d4731a343393c6ccdcfe2c795"
-  integrity sha512-qu4mXWf4wus4idBIN/kVH+XSer8IZ9CwHP+Pd7DL7TuKNC1hP7ykon4kkBjwJF3EMX2WsFp4hH7gU7CyL7ucXw==
-
 figgy-pudding@^3.5.1:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/figgy-pudding/-/figgy-pudding-3.5.1.tgz#862470112901c727a0e495a80744bd5baa1d6790"

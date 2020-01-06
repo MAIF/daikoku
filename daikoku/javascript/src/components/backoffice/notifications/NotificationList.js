@@ -8,7 +8,7 @@ import { UserBackOffice } from '../';
 import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
 import { updateNotications } from '../../../core';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 
 class NotificationListComponent extends Component {
   state = {

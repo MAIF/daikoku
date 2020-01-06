@@ -33,7 +33,7 @@ const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
         </div>
 
         <div>
-          <a className="btn btn-access-negative my-2 ml-2" href={`/apis`}>
+          <a className="btn btn-access-negative my-2 ml-2" href={'/apis'}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"

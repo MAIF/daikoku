@@ -4,6 +4,7 @@ import { Histogram, RoundChart } from './Recharts';
 import { converterBase2 } from 'byte-converter';
 import moment from 'moment';
 import Select from 'react-select';
+import _ from 'lodash';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Spinner } from './Spinner';
 

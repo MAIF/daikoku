@@ -19,7 +19,7 @@ import { LoginPage } from './components';
 import { registerAlert, registerConfirm, registerPrompt } from './components/utils/window';
 import { customizeFetch } from './services/customize';
 import { Option } from './components/utils';
-import { t, Translation } from './locales';
+import { Translation } from './locales';
 
 window.$ = jQuery;
 window.jQuery = jQuery;

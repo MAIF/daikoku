@@ -158,7 +158,7 @@ class Prompt extends Component {
                 <div className="modal-description">
                   <p>{this.props.message}</p>
                   <input
-                    type={!!this.props.isPassword ? "password" : "text"}
+                    type={this.props.isPassword ? 'password' : 'text'}
                     className="form-control"
                     value={this.state.text}
                     ref={r => (this.ref = r)}

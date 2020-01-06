@@ -2,7 +2,6 @@ import React, { Component, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import Pagination from 'react-paginate';
 import classNames from 'classnames';
 
 import * as Services from '../../../services';
@@ -51,7 +50,7 @@ class TeamApiKeysForApiComponent extends Component {
       .confirm(
         t(
           'delete.apikey.confirm',
-          thsi.prosp.currentLanguage,
+          this.props.currentLanguage,
           'Are you sure to delete this apikey ?'
         )
       )
@@ -115,11 +114,6 @@ class TeamApiKeysForApiComponent extends Component {
                 .includes(searched);
             }
           });
-
-    const paginateApiKeys = filteredApiKeys.slice(
-      this.state.offset,
-      this.state.offset + this.state.pageNumber
-    );
 
     return (
       <TeamBackOffice
@@ -285,7 +279,6 @@ const ApiKeyCard = ({
                   disabled={!subscription.enabled}
                   className="form-control input-sm"
                   id={`client-id-${_id}`}
-                  disabled
                   value={apiKey.clientId}
                 />
               </div>
@@ -302,7 +295,6 @@ const ApiKeyCard = ({
                   type={hide ? 'password' : ''}
                   className="form-control input-sm"
                   id={`client-secret-${_id}`}
-                  disabled
                   value={apiKey.clientSecret}
                   aria-describedby={`client-secret-addon-${_id}`}
                 />

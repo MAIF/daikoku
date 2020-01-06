@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'antd';
 import uuidv4 from 'uuid/v4';
-import { t } from '../../locales';
 
 const placements = ['topRight', 'topLeft', 'bottomRight', 'bottomLeft'];
 

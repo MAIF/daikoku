@@ -4,7 +4,6 @@ import { TextInput, CodeInput, Collapse } from '../../inputs';
 import { languages } from '../../../locales';
 
 import Select from 'react-select';
-import _ from 'lodash';
 
 export const TeamApiTranslation = ({ value, onChange }) => {
   const getTranslatedValue = (key, lng, orElse = value[key]) => {

@@ -314,10 +314,10 @@ class MyProfileComponent extends Component {
           this.setState({ user });
         });
       } else {
-        toastr.error(emailValidation.error)
+        toastr.error(emailValidation.error);
       }
     } else {
-      toastr.error(t('Missing informations ...', this.props.currentLanguage))
+      toastr.error(t('Missing informations ...', this.props.currentLanguage));
     }
   };
 

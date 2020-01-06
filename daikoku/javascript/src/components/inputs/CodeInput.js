@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import { Help } from './Help';
 import AceEditor from 'react-ace';
-import _ from 'lodash';
 import 'brace/mode/html';
 import 'brace/mode/json';
 import 'brace/mode/javascript';

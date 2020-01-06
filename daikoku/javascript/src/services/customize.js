@@ -2,16 +2,6 @@ import { toastr } from 'react-redux-toastr';
 import { SET_ERROR } from '../core';
 import queryString from 'query-string';
 
-function redirect() {
-  toastr.error(
-    'Not Authorized',
-    'You are not authorized here anymore. You will be redirected in 5 seconds'
-  );
-  setTimeout(() => {
-    window.location = '/';
-  }, 5000);
-}
-
 export function customizeFetch(store) {
   let willRedirect = false;
   window.old_fetch = window.fetch;

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
-import _ from 'lodash';
 
 import { UserBackOffice } from '../../backoffice';
 import { TextInput } from '../../inputs';

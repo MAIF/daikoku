@@ -70,7 +70,7 @@ const maybeCreateThumbnail = (id, file) => {
       s('data:image/png;base64,');
     }
   });
-}
+};
 
 const handleAssetType = (tenantMode, type, currentLanguage) => {
   return new Promise(function (resolve, reject) {
@@ -82,19 +82,19 @@ const handleAssetType = (tenantMode, type, currentLanguage) => {
       type === 'text/javascript' ||
       type === 'application/x-javascript'
     ) {
-      return reject(t("content type is not allowed", currentLanguage));
+      return reject(t('content type is not allowed', currentLanguage));
     } else {
       return resolve(true);
     }
   });
-}
+};
 
 const ReplaceButton = props => {
-  const [file, setFile] = useState()
+  const [file, setFile] = useState();
   const [input, setInput] = useState();
 
   useEffect(() => {
-    if(!!file) {
+    if(file) {
       maybeCreateThumbnail(props.asset.meta.asset, file)
         .then(() => {
           if (props.tenantMode) {
@@ -102,18 +102,18 @@ const ReplaceButton = props => {
               props.asset.meta.asset,
               props.asset.contentType,
               file
-            )
+            );
           } else {
             Services.updateAsset(
               props.teamId,
               props.asset.meta.asset,
               props.asset.contentType,
               file
-            )
+            );
           }})
         .then(() => props.postAction());
     }
-  }, [file])
+  }, [file]);
   
   const trigger = () => {
     input.click();
@@ -129,12 +129,13 @@ const ReplaceButton = props => {
         onChange={e => {
           const file = e.target.files[0];
           if (e.target.files.length > 1) {
-            props.displayError(t('error.replace.files.multi', props.currentLanguage))
+            props.displayError(t('error.replace.files.multi', props.currentLanguage));
           } else if (props.asset.contentType !== file.type) {
-            props.displayError(t('error.replace.files.content.type', props.currentLanguage))
+            props.displayError(t('error.replace.files.content.type', props.currentLanguage));
           } else {
-            setFile(file)}}
+            setFile(file);
           }
+        }}
       />
       <button
         type="button"
@@ -143,8 +144,8 @@ const ReplaceButton = props => {
         <i className="fas fa-retweet" />
       </button>
     </>
-  )
-}
+  );
+};
 
 class FileInput extends Component {
   state = { uploading: false };
@@ -283,7 +284,7 @@ class AssetsListComponent extends Component {
               height="64"
               alt="thumbnail"
             />
-          )
+          );
         } {
           return null;
         }
@@ -360,14 +361,14 @@ class AssetsListComponent extends Component {
                 asset.meta.asset,
                 asset.contentType,
                 file
-              )
+              );
             } else {
               Services.updateAsset(
                 this.props.currentTeam._id,
                 asset.meta.asset,
                 asset.contentType,
                 file
-              )
+              );
             }
           },
           closeModal: this.props.closeModal,
@@ -377,7 +378,7 @@ class AssetsListComponent extends Component {
           currentLanguage: this.props.currentLanguage
         },
         'wysywygModal'
-      ))
+      ));
   }
 
   assetLink = asset => {
@@ -491,7 +492,7 @@ class AssetsListComponent extends Component {
                 }
               });
             }))
-            .catch(error => toastr.error(error))
+            .catch(error => toastr.error(error));
         }
       } else {
         toastr.error(

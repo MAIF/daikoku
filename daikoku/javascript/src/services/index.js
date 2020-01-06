@@ -430,7 +430,7 @@ export function addableUsersForTeam(teamId) {
 }
 
 export function allOtoroshis() {
-  return fetch(`/api/teams/otoroshis`, {
+  return fetch('/api/teams/otoroshis', {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -474,7 +474,7 @@ export function saveOtoroshiSettings(oto) {
 }
 
 export function createOtoroshiSettings(oto) {
-  return fetch(`/api/teams/otoroshis`, {
+  return fetch('/api/teams/otoroshis', {
     method: 'POST',
     credentials: 'include',
     headers: {

@@ -53,8 +53,8 @@ class UserListComponent extends Component {
         if (ok) {
           Services.deleteUserById(user._id)
           .then(() => {
-            toastr.info(t('remove.user.success', this.props.currentLanguage, false, `user ${user.name} is successfully deleted`, user.name))
-            this.updateUsers()
+            toastr.info(t('remove.user.success', this.props.currentLanguage, false, `user ${user.name} is successfully deleted`, user.name));
+            this.updateUsers();
           });
         }
       });
@@ -66,7 +66,7 @@ class UserListComponent extends Component {
         t(
           'toggle.admin.alert',
           this.props.currentLanguage,
-          "You can't remove your admin status, ask another admin."
+          'You can\'t remove your admin status, ask another admin.'
         )
       );
     } else {

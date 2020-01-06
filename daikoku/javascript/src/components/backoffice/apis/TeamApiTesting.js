@@ -17,7 +17,7 @@ class GenerateApiKeyModal extends Component {
     Services.currentTenant(this.props.teamId).then(tenant => this.setState({ tenant }));
   }
 
-  otoroshiFlow = _found => {
+  otoroshiFlow = () => {
     return ['otoroshiSettings', 'serviceGroup'];
   };
 
@@ -43,7 +43,7 @@ class GenerateApiKeyModal extends Component {
             label: t('Otoroshi instance', this.props.currentLanguage)
           }
         }
-      })
+      });
     }
     const form =  {
       otoroshiSettings: {
@@ -85,7 +85,7 @@ class GenerateApiKeyModal extends Component {
       <div style={{ fontWeight: 'normal' }}>
         <React.Suspense fallback={<Spinner />}>
           <LazyForm
-            flow={this.otoroshiFlow(config)}
+            flow={this.otoroshiFlow()}
             schema={this.otoroshiForm(config)}
             value={config}
             onChange={config => this.setState({ config })}

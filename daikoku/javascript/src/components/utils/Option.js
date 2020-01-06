@@ -4,12 +4,12 @@ export const Some = x => ({
   map: f => Option(f(x)),
   flatMap: f => f(x),
   fold: (ifEmpty, f) => f(x),
-  getOrElse: ifEmpty => x,
+  getOrElse: () => x,
 });
 
 export const None = {
   map: () => None,
-  flatMap: f => None,
+  flatMap: () => None,
   fold: (ifEmpty, f) => ifEmpty(),
   getOrElse: ifEmpty => ifEmpty,
 };

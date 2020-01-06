@@ -12,9 +12,7 @@ import {
   Can,
   CanIDoAction,
   manage,
-  api,
-  read,
-  backoffice,
+  api
 } from '../../utils';
 import { updateTeamPromise } from '../../../core';
 import { Translation, t } from '../../../locales';

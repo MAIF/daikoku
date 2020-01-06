@@ -124,7 +124,7 @@ export class ApiPricingCard extends Component {
       t =>
         this.props.api.visibility === 'Public' ||
         this.props.api.authorizedTeams.includes(t._id) ||
-        team._id === this.props.ownerTeam._id
+        t._id === this.props.ownerTeam._id
     );
 
     const allPossibleTeams = _.difference(

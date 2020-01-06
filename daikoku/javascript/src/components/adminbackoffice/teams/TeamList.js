@@ -57,7 +57,7 @@ class TeamListComponent extends Component {
           iconClass: 'fas fa-pen',
           tooltip: t('Edit team', this.props.currentLanguage),
         },
-      ]
+      ];
 
       if (team.type === 'Personal') {
         return basicActions;
@@ -68,7 +68,7 @@ class TeamListComponent extends Component {
         iconClass: 'fas fa-users',
         tooltip: t('Team members', this.props.currentLanguage),
       }];
-    }
+    };
 
     return (
       <UserBackOffice tab="Teams">
