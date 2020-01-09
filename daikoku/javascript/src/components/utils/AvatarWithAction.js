@@ -65,7 +65,9 @@ export const AvatarWithAction = props => {
     <div className="avatar-with-action">
       <div className="container">
         <div className="overlay" />
-        <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />
+        <div className="avatar-with-action__container">
+          <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />
+        </div>
         <div className="avatar-with-action__infos">{props.infos}</div>
         {!secondaryActions.length && props.actions.map((action, idx) => getAction(action, idx))}
         {!!secondaryActions.length && secondaryActions.map((action, idx) => getAction(action, idx))}

@@ -101,7 +101,11 @@ class TeamApisComponent extends Component {
   };
 
   delete = id => {
-    window.confirm('Are you sure you want to delete this api ?').then(ok => {
+    window.confirm(t(
+      'delete.api.confirm',
+      this.props.currentLanguage,
+      'Are you sure you want to delete this api ?'
+    )).then(ok => {
       if (ok) {
         Services.deleteTeamApi(this.props.currentTeam._id, id).then(() => {
           toastr.success('deletion successful');

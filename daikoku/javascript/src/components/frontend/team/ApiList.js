@@ -275,8 +275,8 @@ class ApiListComponent extends Component {
           )}
           {!this.props.team && !this.props.connectedUser.isGuest && (
             <ActionWithTeamSelector
-              title="Select the team for which to create new api"
-              description="You are going to create an api. For which team do you want to create it ?"
+              title={t("api.creation.title.modal", this.props.currentLanguage, false, "Select the team for which to create new api")}
+              description={t("api.creation.description.modal", this.props.currentLanguage, false, "You are going to create an api. For which team do you want to create it ?")}
               teams={this.props.myTeams.filter(t =>
                 CanIDoAction(this.props.connectedUser, manage, api, t)
               )}

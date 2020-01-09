@@ -157,6 +157,13 @@ img:hover+.changePicture,.changePicture:hover{
   width: 150px;
 }
 
+.nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+
+    color: $menu-text-color;
+    background-color: $menu-text-hover-bg-color;
+
+}
+
 /* rwd */
 @media screen and (min-width: 768px) {
   .col-form-label {

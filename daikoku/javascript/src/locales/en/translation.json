@@ -521,5 +521,7 @@
     "error.replace.files.multi": "You can't replace a file with more than one",
     "error.replace.files.content.type": "You cannot replace a file with another of a different content-type",
     "Email address does not exist": "Email address does not exist",
-    "login.to.tenant": "Login to %s"
+    "login.to.tenant": "Login to %s",
+    "api.creation.title.modal": "Select the team for which to create new api",
+    "api.creation.description.modal": "You are going to create an api. For which team do you want to create it ?"
 }

@@ -142,7 +142,7 @@ export class ApiPricingCard extends Component {
         <div className="card-img-top card-link card-skin" data-holder-rendered="true">
           <span>{formatPlanType(plan)}</span>
         </div>
-        <div className="card-body">
+        <div className="card-body plan-body">
           <p className="card-text text-justify">
             {customDescription && <span>{customDescription}</span>}
             {!customDescription && type === 'FreeWithoutQuotas' && this.renderFreeWithoutQuotas()}

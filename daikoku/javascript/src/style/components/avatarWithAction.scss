@@ -33,13 +33,22 @@
             justify-content: center;
         }
 
-        .avatar-with-action__avatar {
+        .avatar-with-action__container {
             width: 100px;
             height: 100px;
             border-radius: 50px;
             border: 3px solid #fff;
             box-shadow: 0px 0px 0px 3px lightgrey;
             transition: all .2s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .avatar-with-action__avatar {
+            width: 100%;
+            height: auto;
         }
 
         .avatar-with-action__infos {

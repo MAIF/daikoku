@@ -50,7 +50,7 @@
   "Tenant administration": "Administration du tenant",
   "Audit trail": "Piste d'audit",
   "Tenant assets": "Tenant assets",
-  "Daikoku administration": "Administartion Daikoku",
+  "Daikoku administration": "Administration Daikoku",
   "Users": "Utilisateurs",
   "User sessions": "Sessions utilisateurs",
   "Import / Export": "Import / Export",
@@ -520,5 +520,7 @@
   "email.validity.error": "Vous avez fourni un courriel invalide",
   "error.replace.files.content.type": "Vous ne pouvez pas remplacer un fichier par un autre de type différent",
   "Email address does not exist": "Le courriel n'existe pas",
-  "login.to.tenant": "Se connecter à %s"
+  "login.to.tenant": "Se connecter à %s",
+  "api.creation.title.modal": "Sélectionnez l'équipe pour laquelle créer une nouvelle API",
+  "api.creation.description.modal": "Vous allez créer une nouvelle API. Pour quelle équipe voulez-vous la créer ?"
 }

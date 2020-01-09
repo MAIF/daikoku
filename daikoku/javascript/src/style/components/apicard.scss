@@ -70,14 +70,22 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  color: rgb(32, 37, 41);
-  background-color: rgb(231, 236, 239);
+  color: $body-text-color;
+  background-color: $navbar-bg-color;
   font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
   font-size: 25pt;
   text-align: center;
   overflow-wrap: break-word;
   word-break: break-word;
   hyphens: auto;
+}
+
+.card .plan-body {
+  border: none;
+  background-color: $menu-bg-color;
+  margin: 0;
+  height: 250px;
+  overflow: scroll;
 }
 
 a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {

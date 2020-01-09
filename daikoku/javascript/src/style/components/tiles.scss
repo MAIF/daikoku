@@ -1,7 +1,6 @@
 
 .home-tiles>a:hover, .home-tiles>a:visited, .home-tiles>a:link, .home-tiles>a:active {
   text-decoration: none;
-  color: #343a40;
 }
 
 .home-tiles .alert {
@@ -17,7 +16,8 @@
 .home-tile{
   width: 400px;
   height: 200px;
-  background-color: #ccc;
+  background-color: $additionalContent-bg-color;
+  color:$additionalContent-text-color;
   margin-top: 5px;
   margin-right: 5px;
   display: flex;
