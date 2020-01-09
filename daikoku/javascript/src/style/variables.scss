@@ -10,6 +10,7 @@ $body-bg-color:#{"var(--body-bg-color, #fff)"};
 $body-text-color:#{"var(--body-text-color, #212529)"};
 $navbar-bg-color: #{"var(--navbar-bg-color, #7f96af)"};
 $navbar-brand-color: #{"var(--navbar-brand-color, #fff)"};
+$navbar-text-color: #{"var(--navbar-text-color, #fff)"};
 $menu-bg-color:#{"var(--menu-bg-color, #fff)"};
 $menu-text-color:#{"var(--menu-text-color, #212529)"};
 $menu-text-hover-bg-color:#{"var(--menu-text-hover-bg-color, #9bb0c5)"};
@@ -22,7 +23,9 @@ $additionalContent-text-color:#{"var(--addContent-text-color, #000)"};
 $sidebar-bg-color: #{"var(--sidebar-bg-color, #f8f9fa)"};
 
 $btn-bg-color: #{"var(--btn-bg-color, #fff)"};
+$btn-bg-hover-color: #{"var(--btn-bg-hover-color, #fff)"};
 $btn-text-color: #{"var(--btn-text-color, #495057)"};
+$btn-text-hover-color: #{"var(--btn-text-hover-color, #495057)"};
 $btn-border-color: #{"var(--btn-border-color, #97b0c7)"};
 
 $badge-tags-bg-color:#{"var(--badge-tags-bg-color, #ffc107)"};

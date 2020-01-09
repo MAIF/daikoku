@@ -259,7 +259,7 @@ export class AssetChooserComponent extends Component {
     return (
       <button
         type="button"
-        className="btn btn-outline-success ml-1"
+        className="btn btn-access-negative ml-1"
         onClick={() =>
           this.props.openModal(
             {

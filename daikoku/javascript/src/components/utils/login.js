@@ -25,15 +25,25 @@ export class LoginPage extends Component {
   render() {
     return (
       <div>
-        <div className="jumbotron text-center">
-          <h3 className="mb-5">
-            <Translation
-              language={this.props.tenant.defaultLanguage}
-              i18nkey="login.to.tenant"
-              replacements={[this.props.tenant.name]}>
-              Login to {this.props.tenant.name}
-            </Translation>
-          </h3>
+        <div className="login__container text-center">
+          <div className="organisation__header d-flex align-items-center">
+            <div className="col-sm-4">
+              <img
+                className="organisation__avatar"
+                src={this.props.tenant.logo || '/assets/images/daikoku.svg'}
+                alt="avatar"
+              />
+            </div>
+            <h3>
+              <Translation
+                language={this.props.tenant.defaultLanguage}
+                i18nkey="login.to.tenant"
+                replacements={[this.props.tenant.name]}>
+                Login to {this.props.tenant.name}
+              </Translation>
+            </h3>
+          </div>
+          
           <form
             className="form-horizontal text-left"
             method={this.props.method}
@@ -98,9 +108,6 @@ export class LoginPage extends Component {
               </div>
             </div>
           </form>
-          <p>
-            <img src={this.props.tenant.logo} alt="logo" className="logo-medium" />
-          </p>
         </div>
       </div>
     );

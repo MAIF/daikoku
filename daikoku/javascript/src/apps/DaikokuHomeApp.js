@@ -90,7 +90,7 @@ export class SignupComponent extends Component {
           <button
             style={{ marginLeft: 5 }}
             type="button"
-            className="btn btn-outline-success"
+            className="btn btn-access-negative"
             onClick={this.createAccount}>
             <span>
               <i className="fas fa-save mr-1" />

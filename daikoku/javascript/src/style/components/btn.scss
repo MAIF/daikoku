@@ -3,14 +3,14 @@ button {
 }
 
 .btn-access {
-  color: #fff;
-  background-color: #97b0c7;
-  border-color: #97b0c7;
+  color: $btn-bg-color;
+  background-color: $btn-text-color;
+  border-color: $btn-bg-color;
 }
 
 .btn-access:hover {
-  color: #fff;
-  background-color: #7f96af;
+  color: $btn-bg-color;
+  background-color: $btn-text-color;
 }
 
 .btn-access-negative {
