@@ -26,7 +26,7 @@ const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
             }}>
             <img
               src={tenant.logo}
-              style={{ width: auto, height: '100%', borderRadius: '50%', backgroundColor: 'white' }}
+              style={{ width: 'auto', height: '100%', borderRadius: '50%', backgroundColor: 'white' }}
               alt="avatar"
             />
           </div>
