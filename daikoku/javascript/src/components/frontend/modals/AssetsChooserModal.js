@@ -11,6 +11,7 @@ export const MimeTypeFilter = {
   image: value => value.startsWith('image'),
   css: value => value.indexOf('css') > -1,
   javascript: value => value.indexOf('javascript') > -1,
+  font: value => value.indexOf('font') > -1
 };
 
 export const AssetSelectorModal = ({
@@ -237,7 +238,7 @@ export class AssetChooserComponent extends Component {
           body={t('No assets found', this.props.currentLanguage)}>
           <button
             type="button"
-            className="btn btn-outline-success ml-1 cursor-help"
+            className="btn btn-access-negative ml-1 cursor-help"
             onMouseEnter={() =>
               this.setState({ popoverIsOpen: true }, () =>
                 setTimeout(() => this.setState({ popoverIsOpen: false }), 2000)

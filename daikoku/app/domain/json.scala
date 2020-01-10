@@ -962,6 +962,7 @@ object json {
             jsUrl = (json \ "jsUrl").asOpt[String],
             cssUrl = (json \ "cssUrl").asOpt[String],
             faviconUrl = (json \ "faviconUrl").asOpt[String],
+            fontFamilyUrl = (json \ "fontFamilyUrl").asOpt[String],
             title = (json \ "title").asOpt[String].getOrElse("New Organization"),
             description = (json \ "description")
               .asOpt[String]
@@ -983,6 +984,10 @@ object json {
       "jsUrl" -> o.jsUrl.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "cssUrl" -> o.cssUrl.map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "faviconUrl" -> o.faviconUrl
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "fontFamilyUrl" -> o.fontFamilyUrl
         .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],

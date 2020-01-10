@@ -80,6 +80,7 @@ case class DaikokuStyle(
     jsUrl: Option[String] = None,
     cssUrl: Option[String] = None,
     faviconUrl: Option[String] = None,
+    fontFamilyUrl: Option[String] = None,
     title: String = "New Organization",
     description: String = "A new organization to host very fine APIs",
     unloggedHome: String = "",
@@ -158,14 +159,25 @@ case class Tenant(
       val moreCss = s.cssUrl
         .map(u => s"""<link rel="stylesheet" media="screen" href="${u}">""")
         .getOrElse("")
+
+      val moreFontFamily = s.fontFamilyUrl
+        .map(u =>
+          s"""<style>
+             |@font-face{
+             |font-family: "custom";
+             |src: url("$u")
+             |}
+             |</style>""".stripMargin)
+        .getOrElse("")
+
       if (s.css.startsWith("http")) {
         Html(
-          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss""")
+          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily""")
       } else if (s.css.startsWith("/")) {
         Html(
-          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss""")
+          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily""")
       } else {
-        Html(s"""<style>${s.css}</style>\n$moreCss""")
+        Html(s"""<style>${s.css}</style>\n$moreCss\n$moreFontFamily""")
       }
     } getOrElse Html("")
   }

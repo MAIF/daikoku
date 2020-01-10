@@ -41,6 +41,9 @@ const mimeTypes = [
   },
   { label: '.js fichier javascript', value: 'text/javascript', tenantModeOnly: true },
   { label: '.css fichier css', value: 'text/css', tenantModeOnly: true },
+  { label: '.woff Web Open Font Format', value: 'application/font-woff', tenantModeOnly: true},
+  { label: '.woff2 Web Open Font Format 2', value: 'application/font-woff', tenantModeOnly: true},
+  { label: '.eot Embedded OpenType ', value: 'application/vnd.ms-fontobject', tenantModeOnly: true},
 ];
 
 const maybeCreateThumbnail = (id, file) => {
@@ -84,7 +87,8 @@ const handleAssetType = (tenantMode, type, currentLanguage) => {
       type === 'text/html' ||
       type === 'text/css' ||
       type === 'text/javascript' ||
-      type === 'application/x-javascript'
+      type === 'application/x-javascript',
+      type === "font/openntype"
     ) {
       return reject(t('content type is not allowed', currentLanguage));
     } else {
@@ -227,7 +231,7 @@ class AssetsListComponent extends Component {
       props: {
         label: t('Content-Type', this.props.currentLanguage),
         possibleValues: mimeTypes
-          .filter(mt => !!mt.tenantModeOnly === this.props.tenantMode)
+          .filter(mt => this.props.tenantMode ? true : !mt.tenantModeOnly)
           .map(({ label, value }) => ({ label, value })),
       },
     },

@@ -153,6 +153,25 @@ class StyleFaviconUrlAssetButton extends Component {
     );
   }
 }
+class StyleFontFamilyUrlAssetButton extends Component {
+  render() {
+    const tenant = this.props.tenant ? this.props.tenant() : { domain: window.location.origin };
+    const domain = tenant.domain;
+    const origin =
+      window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+    return (
+      <div className="form-group row d-flex justify-content-end">
+        <AssetChooserByModal
+          typeFilter={MimeTypeFilter.font}
+          tenantMode
+          label={t('Set font family from asset', this.props.currentLanguage)}
+          currentLanguage={this.props.currentLanguage}
+          onSelect={asset => this.props.changeValue('style.fontFamilyUrl', origin + asset.link)}
+        />
+      </div>
+    );
+  }
+}
 
 class HomePageVisibilitySwitch extends Component {
   render() {
@@ -196,6 +215,8 @@ export class TenantEditComponent extends Component {
     'style.cssUrlFromAssets',
     'style.faviconUrl',
     'style.faviconUrlFromAssets',
+    'style.fontFamilyUrl',
+    'style.fontFamilyUrlFromAssets',
     `>>> ${t('Authentication', this.props.currentLanguage)}`,
     'isPrivate',
     'authProvider',
@@ -354,6 +375,7 @@ export class TenantEditComponent extends Component {
       type: StyleCssUrlAssetButton,
       props: {
         tenant: () => this.state.tenant,
+        currentLanguage: this.props.currentLanguage,
         onChangeLogo: obj => {
           console.log(obj);
         },
@@ -363,6 +385,7 @@ export class TenantEditComponent extends Component {
       type: StyleJsUrlAssetButton,
       props: {
         tenant: () => this.state.tenant,
+        currentLanguage: this.props.currentLanguage,
         onChangeLogo: obj => {
           console.log(obj);
         },
@@ -372,6 +395,7 @@ export class TenantEditComponent extends Component {
       type: StyleFaviconUrlAssetButton,
       props: {
         tenant: () => this.state.tenant,
+        currentLanguage: this.props.currentLanguage,
         onChangeLogo: obj => {
           console.log(obj);
         },
@@ -400,6 +424,20 @@ export class TenantEditComponent extends Component {
     'style.faviconUrl': {
       type: 'string',
       props: { label: t('Favicon URL', this.props.currentLanguage) },
+    },
+    'style.fontFamilyUrl': {
+      type: 'string',
+      props: { label: t('Font family', this.props.currentLanguage) },
+    },
+    'style.fontFamilyUrlFromAssets': {
+      type: StyleFontFamilyUrlAssetButton,
+      props: {
+        tenant: () => this.state.tenant,
+        currentLanguage: this.props.currentLanguage,
+        onChangeFont: obj => {
+          console.log(obj);
+        },
+      },
     },
     isPrivate: {
       type: 'bool',

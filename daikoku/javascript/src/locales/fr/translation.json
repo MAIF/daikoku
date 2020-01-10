@@ -522,5 +522,6 @@
   "Email address does not exist": "Le courriel n'existe pas",
   "login.to.tenant": "Se connecter à %s",
   "api.creation.title.modal": "Sélectionnez l'équipe pour laquelle créer une nouvelle API",
-  "api.creation.description.modal": "Vous allez créer une nouvelle API. Pour quelle équipe voulez-vous la créer ?"
+  "api.creation.description.modal": "Vous allez créer une nouvelle API. Pour quelle équipe voulez-vous la créer ?",
+  "Set font family from asset": "Définir la police de style depuis un asset"
 }
