@@ -20,11 +20,24 @@ export class UnauthenticatedHomeComponent extends Component {
           <div className="container">
             <div className="row text-center">
               <div className="col-sm-4">
-                <img
-                  className="img-fluid"
-                  src={this.props.tenant ? this.props.tenant.logo : '/assets/images/daikoku.svg'}
-                  alt="logo Daikoku"
-                />
+                <div
+                  style={{
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '50px',
+                    border: '3px solid #fff',
+                    boxShadow: '0px 0px 0px 3px lightgrey',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    overflow: "hidden"
+                  }}>
+                  <img
+                    src={this.props.tenant ? this.props.tenant.logo : '/assets/images/daikoku.svg'}
+                    style={{ width: 'auto', height: '100%', borderRadius: '50%', backgroundColor: 'white' }}
+                    alt="avatar"
+                  />
+                </div>
               </div>
               <div className="col-sm-8">
                 {!this.props.tenant.title && (

@@ -25,7 +25,7 @@ class Gravatar extends Component {
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2 col-form-label" />
         <div className="col-sm-10">
-          <button type="button" className="btn btn-outline-success" onClick={this.setGravatarLink}>
+          <button type="button" className="btn btn-access" onClick={this.setGravatarLink}>
             <i className="fas fa-user-circle mr-1" />
             <Translation i18nkey="Set avatar from Gravatar" language={this.props.currentLanguage}>
               Set avatar from Gravatar

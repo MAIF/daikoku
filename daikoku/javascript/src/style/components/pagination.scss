@@ -18,17 +18,17 @@
     align-items: center;
     justify-content: center;
     transition: color .35s ease-in-out;
-    border: 1px solid #586069;
+    border: 1px solid $menu-text-color;
     margin-left: -1px;
     &:hover {
-      color: #4B4B4B;
+      color:$menu-text-color;
       cursor: pointer;
     }
 
     &.active {
-      background-color: #7f96af;
+      background-color: $menu-text-hover-bg-color;
       a {
-        color:#fff;
+        color:$menu-text-hover-color;
       }
     }
 
