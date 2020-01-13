@@ -22,11 +22,16 @@ const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              overflow: "hidden"
+              overflow: 'hidden',
             }}>
             <img
               src={tenant.logo}
-              style={{ width: 'auto', height: '100%', borderRadius: '50%', backgroundColor: 'white' }}
+              style={{
+                width: 'auto',
+                height: '100%',
+                borderRadius: '50%',
+                backgroundColor: 'white',
+              }}
               alt="avatar"
             />
           </div>

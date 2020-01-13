@@ -239,7 +239,7 @@ class TeamBackOfficeComponent extends Component {
                           <Link
                             className={`nav-link ${tab === 'Members' ? 'active' : ''}`}
                             to={`/${currentTeam._humanReadableId}/settings/members`}>
-                            <i className="fas fa-users"/>
+                            <i className="fas fa-users" />
                             <Translation
                               i18nkey="Team members"
                               language={this.props.currentLanguage}>
@@ -254,7 +254,7 @@ class TeamBackOfficeComponent extends Component {
                         <Link
                           className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
                           to={`/${currentTeam._humanReadableId}/settings/assets`}>
-                          <i className="fas fa-tools"/>
+                          <i className="fas fa-tools" />
                           <Translation i18nkey="Team assets" language={this.props.currentLanguage}>
                             Team assets
                           </Translation>

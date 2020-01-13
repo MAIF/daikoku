@@ -30,11 +30,16 @@ export class UnauthenticatedHomeComponent extends Component {
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    overflow: "hidden"
+                    overflow: 'hidden',
                   }}>
                   <img
                     src={this.props.tenant ? this.props.tenant.logo : '/assets/images/daikoku.svg'}
-                    style={{ width: 'auto', height: '100%', borderRadius: '50%', backgroundColor: 'white' }}
+                    style={{
+                      width: 'auto',
+                      height: '100%',
+                      borderRadius: '50%',
+                      backgroundColor: 'white',
+                    }}
                     alt="avatar"
                   />
                 </div>

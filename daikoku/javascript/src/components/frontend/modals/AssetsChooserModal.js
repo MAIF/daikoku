@@ -11,7 +11,7 @@ export const MimeTypeFilter = {
   image: value => value.startsWith('image'),
   css: value => value.indexOf('css') > -1,
   javascript: value => value.indexOf('javascript') > -1,
-  font: value => value.indexOf('font') > -1
+  font: value => value.indexOf('font') > -1,
 };
 
 export const AssetSelectorModal = ({

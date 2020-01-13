@@ -43,7 +43,7 @@ export class LoginPage extends Component {
               </Translation>
             </h3>
           </div>
-          
+
           <form
             className="form-horizontal text-left"
             method={this.props.method}

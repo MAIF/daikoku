@@ -101,18 +101,22 @@ class TeamApisComponent extends Component {
   };
 
   delete = id => {
-    window.confirm(t(
-      'delete.api.confirm',
-      this.props.currentLanguage,
-      'Are you sure you want to delete this api ?'
-    )).then(ok => {
-      if (ok) {
-        Services.deleteTeamApi(this.props.currentTeam._id, id).then(() => {
-          toastr.success('deletion successful');
-          this.table.update();
-        });
-      }
-    });
+    window
+      .confirm(
+        t(
+          'delete.api.confirm',
+          this.props.currentLanguage,
+          'Are you sure you want to delete this api ?'
+        )
+      )
+      .then(ok => {
+        if (ok) {
+          Services.deleteTeamApi(this.props.currentTeam._id, id).then(() => {
+            toastr.success('deletion successful');
+            this.table.update();
+          });
+        }
+      });
   };
 
   createNewApi = () => {

@@ -161,8 +161,7 @@ case class Tenant(
         .getOrElse("")
 
       val moreFontFamily = s.fontFamilyUrl
-        .map(u =>
-          s"""<style>
+        .map(u => s"""<style>
              |@font-face{
              |font-family: "custom";
              |src: url("$u")
