@@ -55,6 +55,7 @@ services:
       - DAIKOKU_TENANT_PROVIDER=Hostname
       - DAIKOKU_INIT_HOST=daikoku.oto.tools
       - DAIKOKU_INIT_DATA_FROM=/daikoku.ndjson
+      - DAIKOKU_API_TYPE=otoroshi
     expose:
       - 8080
     volumes:
