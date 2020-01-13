@@ -370,9 +370,12 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         val newApk = apk.copy(
                                           tags = newTags,
                                           metadata = newMeta,
-                                          constrainedServicesOnly = target.apikeyCustomization.constrainedServicesOnly,
-                                          allowClientIdOnly = target.apikeyCustomization.clientIdOnly,
-                                          restrictions = target.apikeyCustomization.restrictions
+                                          constrainedServicesOnly =
+                                            target.apikeyCustomization.constrainedServicesOnly,
+                                          allowClientIdOnly =
+                                            target.apikeyCustomization.clientIdOnly,
+                                          restrictions =
+                                            target.apikeyCustomization.restrictions
                                         )
 
                                         client
