@@ -104,9 +104,9 @@ export class TeamApiInfo extends Component {
       props: {
         label: t('Visibility', this.props.currentLanguage),
         possibleValues: [
-          { label: 'Public', value: 'Public' },
-          { label: 'Private', value: 'Private' },
-          { label: 'PublicWithAuthorizations', value: 'PublicWithAuthorizations' },
+          { label: t('Public', this.props.currentLanguage, false, 'Public'), value: 'Public' },
+          { label: t('Private', this.props.currentLanguage, false, 'Private'), value: 'Private' },
+          { label: t('Public With Authorizations', this.props.currentLanguage, false, 'Public With Authorizations'), value: 'PublicWithAuthorizations' },
         ],
       },
     },
@@ -115,8 +115,8 @@ export class TeamApiInfo extends Component {
       props: {
         label: t('Subscription', this.props.currentLanguage),
         possibleValues: [
-          { label: 'Automatic', value: 'Automatic' },
-          { label: 'Manual', value: 'Manual' },
+          { label: t('Automatic', this.props.currentLanguage, false, 'Automatic'), value: 'Automatic' },
+          { label: t('Manual', this.props.currentLanguage, false, 'Manual'), value: 'Manual' },
         ],
       },
     },

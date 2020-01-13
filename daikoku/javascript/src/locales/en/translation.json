@@ -524,5 +524,10 @@
     "login.to.tenant": "Login to %s",
     "api.creation.title.modal": "Select the team for which to create new api",
     "api.creation.description.modal": "You are going to create an api. For which team do you want to create it ?",
-    "Set font family from asset": "Set font family from asset"
+    "Set font family from asset": "Set font family from asset",
+    "Public":  "Public",
+    "Private": "Private",
+    "Public With Authorizations": "Public With Authorizations",
+    "Automatic": "Automatic",
+    "Manual": "Manual"
 }

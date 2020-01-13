@@ -36,7 +36,7 @@ export class TenantListComponent extends Component {
       )
       .then(ok => {
         if (ok) {
-          Services.deleteTenant(tenantId).then(() => this.getTenants);
+          Services.deleteTenant(tenantId).then(() => this.getTenants());
         }
       });
   };
