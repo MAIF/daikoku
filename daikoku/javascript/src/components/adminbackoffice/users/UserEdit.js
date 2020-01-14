@@ -267,13 +267,13 @@ export class UserEditComponent extends Component {
     if (validation.ok) {
       if (this.state.create) {
         Services.createUser(this.state.user).then(() => {
-          toastr.success(`user ${this.state.user.name} created`);
+          toastr.success(t('user.created.success',this.props.currentLanguage, false, `user ${this.state.user.name} successfully created`, this.state.user.name));
           this.props.history.push('/settings/users');
         });
       } else {
         Services.updateUserById(this.state.user).then(user => {
           this.setState({ user, create: false }, () => {
-            toastr.success(`user ${this.state.user.name} updated`);
+            toastr.success(t('user.updated.success', this.props.currentLanguage, false, `user ${this.state.user.name} successfully updated`, this.state.user.name));
             this.props.history.push('/settings/users');
           });
         });

@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { toastr } from 'react-redux-toastr';
 
 import { updateTeamPromise } from '../../../core/context';
 import * as Services from '../../../services';
+import {t, Translation} from '../../../locales';
 
 import { TeamBackOffice } from '..';
 import { AvatarChooser, Spinner } from '../../utils';
@@ -23,12 +25,12 @@ export class TeamEditComponent extends Component {
   schema = {
     _id: {
       type: 'string',
-      props: { label: 'Id', disabled: true },
+      props: { label: t('Id', this.props.currentLanguage, false, 'Id'), disabled: true },
     },
     _tenant: {
       type: 'select',
       props: {
-        label: 'Tenant',
+        label: t('Tenant', this.props.currentLanguage, false, 'Id'),
         valuesFrom: '/api/tenants',
         transformer: tenant => ({ label: tenant.name, value: tenant._id }),
       },
@@ -36,28 +38,28 @@ export class TeamEditComponent extends Component {
     type: {
       type: 'select',
       props: {
-        label: 'Type',
+        label: t('Type', this.props.currentLanguage, false, 'Id'),
         possibleValues: [
-          { label: 'Personal', value: 'Personal' },
-          { label: 'Organization', value: 'Organization' },
+          { label: t('Personal', this.props.currentLanguage, false, 'Id'), value: 'Personal' },
+          { label: t('Organization', this.props.currentLanguage, false, 'Id'), value: 'Organization' },
         ],
       },
     },
     name: {
       type: 'string',
-      props: { label: 'Name' },
+      props: { label: t('Name', this.props.currentLanguage, false, 'Id') },
     },
     description: {
       type: 'string',
-      props: { label: 'Description' },
+      props: { label: t('Description', this.props.currentLanguage, false, 'Id') },
     },
     contact: {
       type: 'string',
-      props: { label: 'Team contact' },
+      props: { label: t('Team contact', this.props.currentLanguage, false, 'Id') },
     },
     avatar: {
       type: 'string',
-      props: { label: 'Team avatar' },
+      props: { label: t('Team avatar', this.props.currentLanguage, false, 'Id') },
     },
     avatarFrom: {
       type: AvatarChooser,
@@ -70,7 +72,7 @@ export class TeamEditComponent extends Component {
       type: 'object',
       visible: () => window.location.pathname.indexOf('/edition') === -1,
       props: {
-        label: 'Metadata',
+        label: t('Metadata', this.props.currentLanguage, false, 'Id'),
       },
     },
   };
@@ -82,12 +84,15 @@ export class TeamEditComponent extends Component {
   save = () => {
     if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
       Services.createTeam(this.state.team).then(team => {
-        this.setState({ team });
+        this.setState({ team }, () => toastr.success(t('team.created.success', this.props.currentLanguage, false, `team ${team.name} successfully created`, team.name)));
         window.location.reload();
       });
     } else {
       Services.updateTeam(this.state.team).then(team => {
-        this.setState({ team }, () => this.props.updateTeam(team));
+        this.setState({ team }, () => {
+          toastr.success(t('team.updated.success', this.props.currentLanguage, false, `team ${team.name} successfully updated`, team.name))
+          this.props.updateTeam(team)
+        });
       });
     }
   };
@@ -115,10 +120,11 @@ export class TeamEditComponent extends Component {
                 display: 'flex',
                 justifyContent: 'flex-end',
                 alignItems: 'center',
+                overflow: 'hidden'
               }}>
               <img
+                style={{width: '100%', height: 'auto'}}
                 src={this.state.team.avatar}
-                style={{ width: 200, borderRadius: '50%', backgroundColor: 'white' }}
                 alt="avatar"
               />
             </div>
@@ -141,7 +147,10 @@ export class TeamEditComponent extends Component {
             className="btn btn-outline-primary"
             href="#"
             onClick={() => this.props.history.goBack()}>
-            <i className="fas fa-chevron-left" /> Back
+            <i className="fas fa-chevron-left" />
+            <Translation i18nkey="Back" language={this.props.currentLanguage}>
+              Back
+            </Translation>
           </a>
           <button
             style={{ marginLeft: 5 }}
@@ -150,7 +159,10 @@ export class TeamEditComponent extends Component {
             disabled={this.state.create}
             onClick={this.members}>
             <span>
-              <i className="fas fa-users" /> Members
+              <i className="fas fa-users mr-1" />
+              <Translation i18nkey="Members" language={this.props.currentLanguage}>
+                Members
+              </Translation>
             </span>
           </button>
           <button
@@ -160,12 +172,18 @@ export class TeamEditComponent extends Component {
             onClick={this.save}>
             {!this.state.create && (
               <span>
-                <i className="fas fa-save" /> Save
+                <i className="fas fa-save mr-1" /> 
+                <Translation i18nkey="Save" language={this.props.currentLanguage}>
+                  Save
+                </Translation>
               </span>
             )}
             {this.state.create && (
               <span>
-                <i className="fas fa-save" /> Create
+                <i className="fas fa-save mr-1" />
+                <Translation i18nkey="Create" language={this.props.currentLanguage}>
+                  Create
+                </Translation>
               </span>
             )}
           </button>
