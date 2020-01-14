@@ -19,10 +19,8 @@ export class TeamCard extends Component {
         <div className="col-10">
           <div className="row">
             <div className="col-12 d-flex justify-content-between">
-              <div
-                className="cursor-pointer underline-on-hover"
-                onClick={this.props.redirectToTeamPage}>
-                <h3>
+              <div onClick={this.props.redirectToTeamPage}>
+                <h3 className="cursor-pointer underline-on-hover">
                   {this.props.team.name}
                   <Can I={read} a={TEAM} team={this.props.team}>
                     <a
@@ -33,6 +31,12 @@ export class TeamCard extends Component {
                     </a>
                   </Can>
                 </h3>
+              <Translation
+          language={this.props.currentLanguage}
+          i18nkey={`${team._id}.description`}
+          extraConf={team.translation}>
+              {team.description}
+              </Translation>
               </div>
               <div className="ml-2">
                 <div className="btn_group">
@@ -55,12 +59,7 @@ export class TeamCard extends Component {
                 </div>
               </div>
             </div>
-            <Translation
-              language={this.props.currentLanguage}
-              i18nkey={`${team._id}.description`}
-              extraConf={team.translation}>
-              {team.description}
-            </Translation>
+
           </div>
         </div>
       </div>
