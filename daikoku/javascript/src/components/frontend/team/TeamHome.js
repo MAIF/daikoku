@@ -74,8 +74,8 @@ class TeamHomeComponent extends Component {
     }
 
     return (
-      <main role="main">
-        <section className="organisation__header  mb-4 p-3">
+      <main role="main" className="row">
+        <section className="organisation__header col-12 mb-4 p-3">
           <div className="container">
             <div className="row text-center">
               <div className="col-sm-4">
@@ -85,26 +85,23 @@ class TeamHomeComponent extends Component {
                   alt="avatar"
                 />
               </div>
-              <div className="col-sm-8 d-flex flex-column justify-content-center">
+              <div className="col-sm-7 d-flex flex-column justify-content-center">
                 <h1 className="jumbotron-heading">
                   {this.state.team.name}
-                  <Can I={read} a={team} team={this.state.team}>
-                    <a
-                      href="#"
-                      className="ml-3 team__settings"
-                      onClick={() => this.redirectToTeamSettings(this.state.team)}>
-                      <i className="fas fa-cogs fa-xxs" />
-                    </a>
-                  </Can>
                 </h1>
                 <div className="lead text-muted">{this.state.team.description}</div>
-                <div>
-                  <a
-                    className="btn btn-sm btn-access-negative"
-                    href={`mailto:${this.state.team.contact}`}>
-                    {this.state.team.contact}
-                  </a>
-                </div>
+              </div>
+              <div className="col-sm-1 d-flex flex-column">
+                 <Can I={read} a={team} team={this.state.team}>
+                  <div>
+                    <a
+                      href="#"
+                      className="float-right team__settings btn btn-sm btn-access-negative"
+                      onClick={() => this.redirectToTeamSettings(this.state.team)}>
+                    <i className="fas fa-cogs" />
+                    </a>
+                  </div>
+                 </Can>
               </div>
             </div>
           </div>
