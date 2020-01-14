@@ -40,7 +40,7 @@ const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
 
         <div>
           <a className="btn btn-access-negative my-2 ml-2" href={'/apis'}>
-            <i className="fas fa-atlas" />
+            <i className="fas fa-atlas mr-1" />
             <Translation i18nkey="Apis" language={currentLanguage}>
               Apis
             </Translation>
