@@ -49,6 +49,7 @@ import {
   TenantOtoroshis,
   TenantList,
   TenantEdit,
+  TenantStyleEdit,
   UserList,
   UserEdit,
   AuditTrailList,
@@ -179,6 +180,11 @@ class DaikokuAppComponent extends Component {
               exact
               path="/settings/tenants/:tenantId"
               render={p => <TenantEdit match={p.match} history={p.history} location={p.location} />}
+            />
+            <Route
+              exact
+              path="/settings/tenants/:tenantId/style"
+              render={p => <TenantStyleEdit match={p.match} history={p.history} location={p.location} />}
             />
             <Route
               exact
