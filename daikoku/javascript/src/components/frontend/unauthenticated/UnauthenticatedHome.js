@@ -15,8 +15,8 @@ export class UnauthenticatedHomeComponent extends Component {
   render() {
     const content = this.props.tenant.unloggedHome || '';
     return (
-      <main role="main">
-        <section className="organisation__header  mb-4 p-3">
+      <main role="main" className="row">
+        <section className="organisation__header col-12 mb-4 p-3">
           <div className="container">
             <div className="row text-center">
               <div className="col-sm-4">
