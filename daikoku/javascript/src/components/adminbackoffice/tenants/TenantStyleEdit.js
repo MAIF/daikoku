@@ -87,7 +87,7 @@ export class TenantStyleEditComponent extends Component {
       <UserBackOffice tab="Tenants" isLoading={!this.state.tenant}>
         {this.state.tenant && (
           <Can I={manage} a={daikoku} dispatchError>
-            <button className="btn-access" onClick={() => this.setState({inputView: !this.state.inputView})}>switch</button>
+            <button className="btn btn-access-negative" onClick={() => this.setState({inputView: !this.state.inputView})}>switch</button>
             <div className="row">
               {!this.state.inputView && (
                 <div>
@@ -95,7 +95,7 @@ export class TenantStyleEditComponent extends Component {
                 </div>
               )}
               {this.state.inputView && (
-                <div className="test--style">
+                <div className="test--style col-6">
                   {Object.entries(_.groupBy(variables, 'group')).map((item, idx) => {
                     const [group, colors] = item;
                     return (
@@ -132,6 +132,7 @@ export class TenantStyleEditComponent extends Component {
                   })}
                 </div>
               )}
+              <Preview style={this.state.style} />
             </div>
           </Can>
         )}
@@ -146,3 +147,30 @@ const mapStateToProps = state => ({
 });
 
 export const TenantStyleEdit = connect(mapStateToProps)(TenantStyleEditComponent);
+
+
+class Preview extends Component {
+  getColor(value) {
+    return this.props.style.find(item => item.value === value).color
+  }
+
+  render() {
+    return (
+      <div className="col-6">
+        <button className="btn" style={{
+          color: this.getColor('--btn-bg-color'),
+          backgroundColor: this.getColor('--btn-text-color'),
+          borderColor: this.getColor('--btn-bg-color')
+        }}>Test btn access</button>
+        <button className="btn" style={{
+          backgroundColor: this.getColor('--btn-bg-color'),
+          color: this.getColor('--btn-text-color'),
+          borderColor: this.getColor('--btn-border-color')
+        }}>Test btn access negative</button>
+        <a href="#" style={{
+          color: this.getColor('--link-color'),
+        }}>Test link</a>
+      </div>
+    )
+  }
+}
