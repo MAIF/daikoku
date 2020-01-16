@@ -269,7 +269,7 @@ export class ResetPasswordComponent extends Component {
             className="btn btn-outline-danger"
             onClick={this.resetPassword}>
             <span>
-              <i className="fas fa-bomb" />
+              <i className="fas fa-bomb mr-1" />
               <Translation i18nkey="Reset password" language={currentLanguage}>
                 Reset password
               </Translation>

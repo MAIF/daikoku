@@ -9,8 +9,8 @@ const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
     return <Redirect to="/apis" />;
   }
   return (
-    <main role="main">
-      <section className="organisation__header  mb-4 p-3 d-flex align-items-center justify-content-around">
+    <main role="main" className="row">
+      <section className="organisation__header col-12 mb-4 p-3 d-flex align-items-center justify-content-around">
         <div className="row d-flex justify-content-start align-items-center">
           <div
             style={{

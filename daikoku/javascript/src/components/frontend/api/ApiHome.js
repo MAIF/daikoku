@@ -130,8 +130,8 @@ class ApiHomeComponent extends Component {
     const apiId = api._humanReadableId;
     const teamId = this.props.match.params.teamId;
     return (
-      <main role="main">
-        <section className="organisation__header  mb-4 p-3">
+      <main role="main" className="row">
+        <section className="organisation__header col-12 mb-4 p-3">
           <div className="container">
             <h1 className="jumbotron-heading">
               <Link to={`/${ownerTeam._humanReadableId}`}>{ownerTeam.name}</Link> /{' '}
@@ -234,7 +234,7 @@ class ApiHomeComponent extends Component {
             </div>
           </div>
         </div>
-        <div className="album py-2">
+        <div className="album py-2 col-12">
           <div className="container">
             <div className="row pt-3">
               {['pricing', 'description'].includes(tab) && (

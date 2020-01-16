@@ -5,7 +5,7 @@ import { ApiList } from '../../frontend';
 import { updateTeamPromise } from '../../../core';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { CanIDoAction, manage, api as API } from '../../utils';
+import {CanIDoAction, manage, api as API, Can, read, team} from '../../utils';
 import { t, Translation } from '../../../locales';
 
 class MyHomeComponent extends Component {
@@ -72,8 +72,8 @@ class MyHomeComponent extends Component {
 
   render() {
     return (
-      <main role="main">
-        <section className="organisation__header  mb-4 p-3">
+      <main role="main" className="row">
+        <section className="organisation__header col-12 mb-4 p-3">
           <div className="container">
             <div className="row text-center">
               <div className="col-sm-4">
@@ -83,24 +83,28 @@ class MyHomeComponent extends Component {
                   alt="avatar"
                 />
               </div>
-              <div className="col-sm-8 d-flex flex-column justify-content-center">
+              <div className="col-sm-7 d-flex flex-column justify-content-center">
                 <h1 className="jumbotron-heading">
                   {this.props.tenant.title
                     ? this.props.tenant.title
                     : t('Your APIs center', this.props.currentLanguage)}
-                  {this.props.connectedUser.isDaikokuAdmin && (
-                    <Link
-                      to={`/settings/tenants/${this.props.tenant._humanReadableId}`}
-                      className="ml-3 tenant__settings">
-                      <i className="fas fa-cogs fa-xxs" />
-                    </Link>
-                  )}
-                </h1>
+                    </h1>
                 <Description
                   description={this.props.tenant.description}
                   currentLanguage={this.props.currentLanguage}
                 />
               </div>
+            {this.props.connectedUser.isDaikokuAdmin && (
+            <div className="col-sm-1 d-flex flex-column">
+                  <div>
+                    <Link
+                    to={`/settings/tenants/${this.props.tenant._humanReadableId}`}
+                    className="tenant__settings float-right btn btn-sm btn-access-negative">
+                        <i className="fas fa-cogs" />
+                    </Link>
+                  </div>
+            </div>
+            )}
             </div>
           </div>
         </section>

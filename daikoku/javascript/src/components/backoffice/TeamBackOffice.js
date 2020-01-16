@@ -53,7 +53,11 @@ class TeamBackOfficeHomeComponent extends Component {
       <TeamBackOffice tab="Home">
         <div className="row">
           <div className="col">
-            <h1>{this.props.currentTeam.name} </h1>
+            <h1>{this.props.currentTeam.name}
+                <a className="ml-1 btn btn-sm btn-access-negative" title="View this Team" href={`/${this.props.currentTeam._humanReadableId}`}>
+                <i className="fas fa-eye"></i>
+                </a>
+          </h1>
             <div className="d-flex justify-content-center align-items-center col-12 mt-5">
               <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
                 <Link
