@@ -44,6 +44,9 @@ a.navbar-brand, #teamSelector:hover {
 .general-search>div{
   border-top-left-radius: 0px;
   border-bottom-left-radius: 0px;
+  background-color: $form-bg-color;
+  color:$form-text-color;
+  border-color:$form-border-color;
 }
 
 .full-width-select {

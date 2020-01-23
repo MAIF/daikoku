@@ -138,7 +138,7 @@ export class SimpleNotification extends Component {
     }
     return (
       <div style={style}>
-        <div className="alert alert-secondary" role="alert">
+        <div className="alert section" role="alert">
           <div className="d-flex justify-content-between align-items-center">
             <div className="">{this.typeFormatter(notification.action.type)}</div>
             <h5 className="alert-heading mb-0">

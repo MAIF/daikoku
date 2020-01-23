@@ -33,17 +33,19 @@ export class TenantOtoroshisComponent extends Component {
       cell: (a, otoroshi) => (
         <div className="btn-group">
           {this.isTeamAdmin() && (
-            <Link
-              to={`/settings/otoroshis/${otoroshi._id}`}
-              className="btn btn-sm btn-access-negative"
-              title="Edit this settings">
-              <i className="fas fa-edit" />
-            </Link>
+             <Link to={`/settings/otoroshis/${otoroshi._id}`}>
+                <button
+                type="button"
+                className="btn btn-sm btn-outline-primary"
+                title="Edit this settings">
+                    <i className="fas fa-edit" />
+                </button>
+             </Link>
           )}
           {this.isTeamAdmin() && (
             <button
               type="button"
-              className="btn btn-sm btn-access-negative"
+              className="btn btn-sm btn-outline-danger"
               title="Delete this settings"
               onClick={() => this.delete(otoroshi._id)}>
               <i className="fas fa-trash" />
@@ -103,17 +105,19 @@ export class TenantOtoroshisComponent extends Component {
                   <i className="fas fa-plus-circle" />
                 </a>
               </h1>
-              <Table
-                selfUrl="otoroshis"
-                defaultTitle="Otoroshi instances"
-                defaultValue={() => ({})}
-                itemName="otoroshi"
-                columns={this.columns}
-                fetchItems={() => Services.allOtoroshis()}
-                showActions={false}
-                showLink={false}
-                extractKey={item => item._id}
-              />
+                <div className="section p-2">
+                  <Table
+                    selfUrl="otoroshis"
+                    defaultTitle="Otoroshi instances"
+                    defaultValue={() => ({})}
+                    itemName="otoroshi"
+                    columns={this.columns}
+                    fetchItems={() => Services.allOtoroshis()}
+                    showActions={false}
+                    showLink={false}
+                    extractKey={item => item._id}
+                  />
+              </div>
             </div>
           </div>
         </Can>

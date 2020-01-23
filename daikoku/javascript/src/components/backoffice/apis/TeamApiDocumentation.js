@@ -308,7 +308,7 @@ export class TeamApiDocumentation extends Component {
     return (
       <div className="row">
         <div className="col-3 p-1">
-          <table className="table table-striped table-bordered table-hover table-sm table-plan-name">
+          <table className="table table-striped table-hover table-sm table-plan-name section">
             <thead className="thead-light">
               <tr>
                 <th

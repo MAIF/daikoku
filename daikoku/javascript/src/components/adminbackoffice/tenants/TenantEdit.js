@@ -79,7 +79,7 @@ class StyleLogoAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.image}
           onlyPreview
@@ -100,7 +100,7 @@ class StyleJsUrlAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.javascript}
           tenantMode
@@ -120,7 +120,7 @@ class StyleCssUrlAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.css}
           tenantMode
@@ -140,7 +140,7 @@ class StyleFaviconUrlAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.image}
           onlyPreview
@@ -160,7 +160,7 @@ class StyleFontFamilyUrlAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.font}
           tenantMode
@@ -694,7 +694,7 @@ export class TenantEditComponent extends Component {
                   schema={this.schema}
                   value={this.state.tenant}
                   onChange={tenant => this.setState({ tenant })}
-                  style={{ marginBottom: 100 }}
+                  style={{ marginBottom: 100, paddingTop:20 }}
                 />
               </React.Suspense>
               <div style={{ height: 60 }} />

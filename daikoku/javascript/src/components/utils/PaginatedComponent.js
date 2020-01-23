@@ -31,7 +31,7 @@ export class PaginatedComponent extends Component {
     );
 
     return (
-      <div className="paginated-component">
+      <div className="section">
         <div className="row flex-column">
           <div
             className={classNames('row d-flex', {

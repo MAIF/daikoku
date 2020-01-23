@@ -135,6 +135,7 @@ export class ArrayInput extends Component {
                   options={this.props.options}
                   placeholder="Type something and press enter..."
                   value={this.state.value}
+                  className="input-select"
                 />
               )}
               {!!this.props.valuesFrom && this.props.creatable && (

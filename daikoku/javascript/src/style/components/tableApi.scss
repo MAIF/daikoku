@@ -7,3 +7,8 @@
   background-color: #343a40;
   color:#fff;
 }
+
+.table-hover tbody tr:hover {
+  color: $link-hover-color;
+}
+

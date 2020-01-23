@@ -12,3 +12,18 @@
         color: $success-hover-color;
     }
 }
+
+.input-select, .add-member-select, .filter__select {
+    [class*="-control"]{
+        background-color: $form-bg-color;
+        border-color: $form-border-color;
+    }
+    [class*="-singleValue"]{
+        color:$form-text-color;
+    }
+    [class*="-menu"]{
+        background-color: $form-bg-color;
+        border-color: $form-border-color;
+        color:$form-text-color;
+    }
+}

@@ -4,14 +4,12 @@
   background-color: $navbar-bg-color;
   color: $navbar-text-color;
 }
-.modal-body,.modal-footer{
-  background-color: $body-bg-color;
-}
+
 .modal-content{
-  background-color: initial;
-  color:#fff;
+  background-color: $body-bg-color;
+  color:$body-text-color;
   .btn:hover,.btn:focus {
-    color: #fff;
+    //color: #fff;
   }
 }
 .modal-footer .btn-success,.modal-footer .btn-danger{
@@ -23,18 +21,8 @@
   background-color: rgba(black, 0.8);
 }
 
-//TeamSelectionModal
-
-// .close-modal {
-//   cursor: pointer;
-//
-//   &:hover {
-//     color: black;
-//   }
-// }
 
 .modal-description {
-  color: black;
   margin-bottom: 15px;
   font-weight: 700;
 }

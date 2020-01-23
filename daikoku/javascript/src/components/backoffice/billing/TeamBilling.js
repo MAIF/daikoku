@@ -131,7 +131,7 @@ class TeamBillingComponent extends Component {
                       )}
                     </div>
                   </div>
-                  <div className="row api__billing__card__container">
+                  <div className="row api__billing__card__container section">
                     <TheadBillingContainer
                       language={this.props.currentLanguage}
                       label={t('Subscribed Apis', this.props.currentLanguage)}

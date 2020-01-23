@@ -25,7 +25,7 @@ export class ApiDescription extends Component {
   render() {
     const api = this.props.api;
     return (
-      <div className="d-flex col flex-column p-3">
+      <div className="d-flex col flex-column p-3 section">
         <div
           className="api-description"
           dangerouslySetInnerHTML={{ __html: converter.makeHtml(api.description) }}
@@ -147,7 +147,7 @@ class ApiHomeComponent extends Component {
                 </a>
               </Can>
             </h1>
-            <p className="lead text-muted">{api.smallDescription}</p>
+            <p className="lead">{api.smallDescription}</p>
           </div>
         </section>
         <div className="container">

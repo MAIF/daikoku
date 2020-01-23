@@ -21,7 +21,7 @@ export class NumberInput extends Component {
         <div className="col-sm-10">
           {(this.props.prefix || this.props.suffix) && (
             <div className="input-group">
-              {this.props.prefix && <div className="input-group-addon">{this.props.prefix}</div>}
+              {this.props.prefix && <div className="input-group-text"><span className="input-group-text">{this.props.prefix}</span></div>}
               <input
                 type="number"
                 step={this.props.step}
@@ -34,7 +34,7 @@ export class NumberInput extends Component {
                 value={this.props.value}
                 onChange={this.onChange}
               />
-              {this.props.suffix && <div className="input-group-addon">{this.props.suffix}</div>}
+              {this.props.suffix && <div className="input-group-append"><span className="input-group-text">{this.props.suffix}</span></div>}
             </div>
           )}
           {!(this.props.prefix || this.props.suffix) && (

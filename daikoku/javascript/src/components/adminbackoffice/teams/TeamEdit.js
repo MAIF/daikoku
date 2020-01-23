@@ -107,7 +107,7 @@ class TeamEditForAdministrationComponent extends Component {
     return (
       <UserBackOffice tab="Teams">
         <Can I={manage} a={daikoku} dispatchError>
-          <div className="row d-flex justify-content-start align-items-center">
+          <div className="row d-flex justify-content-start align-items-center mb-2">
             {this.state.team && (
               <div
                 style={{
@@ -136,7 +136,7 @@ class TeamEditForAdministrationComponent extends Component {
                 schema={this.schema}
                 value={this.state.team}
                 onChange={team => this.setState({ team })}
-                style={{ marginBottom: 100 }}
+                style={{ marginBottom: 100, paddingTop:20 }}
               />
             </React.Suspense>
             <div style={{ height: 60 }} />

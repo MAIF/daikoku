@@ -79,30 +79,32 @@ export class TeamApiKeysComponent extends Component {
               </h1>
               <Link
                 to={`/${this.props.currentTeam._humanReadableId}/settings/consumption`}
-                className="btn btn-sm btn-access-negative">
+                className="btn btn-sm btn-access-negative mb-2">
                 <i className="fas fa-chart-bar mr-1" />
                 <Translation i18nkey="See Stats" language={this.props.currentLanguage}>
                   See Stats
                 </Translation>
               </Link>
-              <Table
-                currentLanguage={this.props.currentLanguage}
-                selfUrl="apikeys"
-                defaultTitle="Apikeys"
-                defaultValue={() => ({})}
-                itemName="apikey"
-                columns={this.columns}
-                fetchItems={() => Services.subscribedApis(this.props.currentTeam._id)}
-                showActions={false}
-                showLink={false}
-                extractKey={item => item._id}
-                injectTable={t => (this.table = t)}
-              />
-              <button className="btn btn-sm btn-danger-negative mt-1" onClick={this.cleanSubs}>
-                <Translation i18nkey="clean archived apikeys" language={this.props.currentLanguage}>
-                  clean archived apikeys
-                </Translation>
-              </button>
+                <div className="section p-2">
+                  <Table
+                    currentLanguage={this.props.currentLanguage}
+                    selfUrl="apikeys"
+                    defaultTitle="Apikeys"
+                    defaultValue={() => ({})}
+                    itemName="apikey"
+                    columns={this.columns}
+                    fetchItems={() => Services.subscribedApis(this.props.currentTeam._id)}
+                    showActions={false}
+                    showLink={false}
+                    extractKey={item => item._id}
+                    injectTable={t => (this.table = t)}
+                  />
+                  <button className="btn btn-sm btn-danger-negative mt-1" onClick={this.cleanSubs}>
+                    <Translation i18nkey="clean archived apikeys" language={this.props.currentLanguage}>
+                      clean archived apikeys
+                    </Translation>
+                  </button>
+                </div>
             </div>
           </div>
         </Can>

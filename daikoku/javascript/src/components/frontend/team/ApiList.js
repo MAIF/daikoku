@@ -301,7 +301,7 @@ class ApiListComponent extends Component {
           )}
         </div>
         <div className="row">
-          <div className="d-flex col flex-column p-3">
+          <div className="d-flex col flex-column p-3 section">
             {this.filterPreview(filteredApis.length)}
             {paginateApis.map(api => (
               <ApiCard

@@ -106,34 +106,36 @@ class SessionListComponent extends Component {
                   User sessions
                 </Translation>
               </h1>
-              <Table
-                currentLanguage={this.props.currentLanguage}
-                selfUrl="sessions"
-                defaultTitle="User sessions"
-                defaultValue={() => ({})}
-                itemName="sessions"
-                columns={this.columns}
-                fetchItems={() => Services.getSessions()}
-                showActions={false}
-                showLink={false}
-                injectTable={t => (this.table = t)}
-                extractKey={item => item._id}
-                injectTopBar={() => (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-danger"
-                    title="Delete all session"
-                    style={{ marginLeft: 10 }}
-                    onClick={() => this.deleteSessions()}>
-                    <i className="fas fa-trash mr-1" />
-                    <Translation
-                      i18nkey="Delete all sessions"
-                      language={this.props.currentLanguage}>
-                      Delete all sessions
-                    </Translation>
-                  </button>
-                )}
-              />
+              <div className="section p-2">
+                <Table
+                  currentLanguage={this.props.currentLanguage}
+                  selfUrl="sessions"
+                  defaultTitle="User sessions"
+                  defaultValue={() => ({})}
+                  itemName="sessions"
+                  columns={this.columns}
+                  fetchItems={() => Services.getSessions()}
+                  showActions={false}
+                  showLink={false}
+                  injectTable={t => (this.table = t)}
+                  extractKey={item => item._id}
+                  injectTopBar={() => (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      title="Delete all session"
+                      style={{ marginLeft: 10 }}
+                      onClick={() => this.deleteSessions()}>
+                      <i className="fas fa-trash mr-1" />
+                      <Translation
+                        i18nkey="Delete all sessions"
+                        language={this.props.currentLanguage}>
+                        Delete all sessions
+                      </Translation>
+                    </button>
+                  )}
+                />
+              </div>
             </div>
           </div>
         </Can>

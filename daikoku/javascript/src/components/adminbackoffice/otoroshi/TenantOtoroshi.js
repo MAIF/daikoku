@@ -91,6 +91,7 @@ class TenantOtoroshiComponent extends Component {
                     schema={this.formSchema}
                     value={this.state.otoroshi}
                     onChange={otoroshi => this.setState({ otoroshi })}
+                    style={{ marginBottom: 20, paddingTop:20 }}
                   />
                 </React.Suspense>
               )}

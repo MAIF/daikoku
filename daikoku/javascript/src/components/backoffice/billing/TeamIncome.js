@@ -92,8 +92,8 @@ class TeamIncomeComponent extends Component {
                           }
                           value={this.state.date}
                         />
-                        <button className="btn btn-access-negative" onClick={this.sync}>
-                          <i className="fas fa-sync-alt ml-1" />
+                        <button className="btn btn-sm btn-access-negative" onClick={this.sync}>
+                          <i className="fas fa-sync-alt" />
                         </button>
                         {lastDate && (
                           <i className="ml-1">
@@ -107,7 +107,7 @@ class TeamIncomeComponent extends Component {
                         )}
                       </div>
                     </div>
-                    <div className="row api__billing__card__container">
+                    <div className="row api__billing__card__container section">
                       <TheadBillingContainer
                         language={this.props.currentLanguage}
                         label={t('Apis', this.props.currentLanguage)}
