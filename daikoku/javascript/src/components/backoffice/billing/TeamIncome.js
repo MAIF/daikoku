@@ -150,6 +150,21 @@ class TeamIncomeComponent extends Component {
                         </div>
                         {this.state.consumptions
                           .filter(c => c.api === this.state.selectedApi._id)
+                          .reduce((agg, consumption) => {
+                            const maybeAggCons = agg.find(c => c.plan === consumption.plan)
+                            if (maybeAggCons) {
+                              return [
+                                ...agg.filter(x => x.plan !== consumption.plan), 
+                                {...maybeAggCons, 
+                                  billing: {
+                                    hits: maybeAggCons.billing.hits + consumption.billing.hits, 
+                                    total: maybeAggCons.billing.total + consumption.billing.total
+                                }
+                              }]
+                            } else {
+                              return [...agg, consumption]
+                            }
+                          }, [])
                           .sort((c1, c2) => c2.billing.total - c1.billing.total)
                           .map(({ plan, billing }, idx) => {
                             const usagePlan = this.state.selectedApi.possibleUsagePlans.find(

@@ -90,7 +90,7 @@ services:
     expose:
       - 9200
   otoroshi:
-    image: maif/otoroshi:1.4.16-dev-1578921315
+    image: maif/otoroshi:1.4.19
     environment:
       - APP_STORAGE=redis
       - REDIS_HOST=redis
