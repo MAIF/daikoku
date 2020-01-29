@@ -31,12 +31,12 @@ export class TeamCard extends Component {
                     </a>
                   </Can>
                 </h3>
-              <Translation
-          language={this.props.currentLanguage}
-          i18nkey={`${team._id}.description`}
-          extraConf={team.translation}>
-              {team.description}
-              </Translation>
+                <Translation
+                  language={this.props.currentLanguage}
+                  i18nkey={`${team._id}.description`}
+                  extraConf={team.translation}>
+                  {team.description}
+                </Translation>
               </div>
               <div className="ml-2">
                 <div className="btn_group">
@@ -59,7 +59,6 @@ export class TeamCard extends Component {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>
