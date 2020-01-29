@@ -4,7 +4,7 @@ import { toastr } from 'react-redux-toastr';
 
 import { updateTeamPromise } from '../../../core/context';
 import * as Services from '../../../services';
-import {t, Translation} from '../../../locales';
+import { t, Translation } from '../../../locales';
 
 import { TeamBackOffice } from '..';
 import { AvatarChooser, Spinner } from '../../utils';
@@ -41,7 +41,10 @@ export class TeamEditComponent extends Component {
         label: t('Type', this.props.currentLanguage, false, 'Id'),
         possibleValues: [
           { label: t('Personal', this.props.currentLanguage, false, 'Id'), value: 'Personal' },
-          { label: t('Organization', this.props.currentLanguage, false, 'Id'), value: 'Organization' },
+          {
+            label: t('Organization', this.props.currentLanguage, false, 'Id'),
+            value: 'Organization',
+          },
         ],
       },
     },
@@ -84,14 +87,32 @@ export class TeamEditComponent extends Component {
   save = () => {
     if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
       Services.createTeam(this.state.team).then(team => {
-        this.setState({ team }, () => toastr.success(t('team.created.success', this.props.currentLanguage, false, `team ${team.name} successfully created`, team.name)));
+        this.setState({ team }, () =>
+          toastr.success(
+            t(
+              'team.created.success',
+              this.props.currentLanguage,
+              false,
+              `team ${team.name} successfully created`,
+              team.name
+            )
+          )
+        );
         window.location.reload();
       });
     } else {
       Services.updateTeam(this.state.team).then(team => {
         this.setState({ team }, () => {
-          toastr.success(t('team.updated.success', this.props.currentLanguage, false, `team ${team.name} successfully updated`, team.name))
-          this.props.updateTeam(team)
+          toastr.success(
+            t(
+              'team.updated.success',
+              this.props.currentLanguage,
+              false,
+              `team ${team.name} successfully updated`,
+              team.name
+            )
+          );
+          this.props.updateTeam(team);
         });
       });
     }
@@ -120,10 +141,10 @@ export class TeamEditComponent extends Component {
                 display: 'flex',
                 justifyContent: 'flex-end',
                 alignItems: 'center',
-                overflow: 'hidden'
+                overflow: 'hidden',
               }}>
               <img
-                style={{width: '100%', height: 'auto'}}
+                style={{ width: '100%', height: 'auto' }}
                 src={this.state.team.avatar}
                 alt="avatar"
               />
@@ -172,7 +193,7 @@ export class TeamEditComponent extends Component {
             onClick={this.save}>
             {!this.state.create && (
               <span>
-                <i className="fas fa-save mr-1" /> 
+                <i className="fas fa-save mr-1" />
                 <Translation i18nkey="Save" language={this.props.currentLanguage}>
                   Save
                 </Translation>

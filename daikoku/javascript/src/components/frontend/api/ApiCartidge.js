@@ -19,7 +19,9 @@ export class ApiCartidge extends Component {
     );
     const allPossibleTeams = _.difference(
       authorizedTeams.map(t => t._id),
-      this.props.subscriptions.filter(sub => !defaultPlan || sub.plan === defaultPlan._id).map(s => s.team)
+      this.props.subscriptions
+        .filter(sub => !defaultPlan || sub.plan === defaultPlan._id)
+        .map(s => s.team)
     );
     const isAccepted = !allPossibleTeams.length;
     const isPending =

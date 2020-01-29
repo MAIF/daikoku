@@ -5,7 +5,7 @@ import { ApiList } from '../../frontend';
 import { updateTeamPromise } from '../../../core';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import {CanIDoAction, manage, api as API, Can, read, team} from '../../utils';
+import { CanIDoAction, manage, api as API, Can, read, team } from '../../utils';
 import { t, Translation } from '../../../locales';
 
 class MyHomeComponent extends Component {
@@ -88,23 +88,23 @@ class MyHomeComponent extends Component {
                   {this.props.tenant.title
                     ? this.props.tenant.title
                     : t('Your APIs center', this.props.currentLanguage)}
-                    </h1>
+                </h1>
                 <Description
                   description={this.props.tenant.description}
                   currentLanguage={this.props.currentLanguage}
                 />
               </div>
-            {this.props.connectedUser.isDaikokuAdmin && (
-            <div className="col-sm-1 d-flex flex-column">
+              {this.props.connectedUser.isDaikokuAdmin && (
+                <div className="col-sm-1 d-flex flex-column">
                   <div>
                     <Link
-                    to={`/settings/tenants/${this.props.tenant._humanReadableId}`}
-                    className="tenant__settings float-right btn btn-sm btn-access-negative">
-                        <i className="fas fa-cogs" />
+                      to={`/settings/tenants/${this.props.tenant._humanReadableId}`}
+                      className="tenant__settings float-right btn btn-sm btn-access-negative">
+                      <i className="fas fa-cogs" />
                     </Link>
                   </div>
-            </div>
-            )}
+                </div>
+              )}
             </div>
           </div>
         </section>
