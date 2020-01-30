@@ -133,11 +133,12 @@ export const TeamApiTranslationForm = ({ team, api, t, onTranslationChange }) =>
       <div className="row d-flex flex-column">
         <div>
           <Select
-            className="mb-1 col-4"
+            className="reactSelect mb-1 col-4"
             value={{ label: language, value: language }}
             placeholder="Select a language"
             options={languages.map(l => ({ label: l, value: l }))}
             onChange={e => setLanguage(e.value)}
+            classNamePrefix="reactSelect"
           />
           <TextInput
             label="small description"

@@ -10,8 +10,6 @@ import { formatCurrency, formatPlanType, Can, read, stat } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { t, Translation } from '../../../locales';
 
-import './teamBilling.scss';
-
 class TeamBillingComponent extends Component {
   state = {
     consumptions: [],
@@ -116,7 +114,7 @@ class TeamBillingComponent extends Component {
                   <div className="row month__and__total">
                     <div className="col-12 month__selector d-flex align-items-center">
                       <MonthPicker updateDate={this.getBilling} value={this.state.date} />
-                      <button className="btn btn-access-negative" onClick={this.sync}>
+                      <button className="btn btn-sm btn-access-negative" onClick={this.sync}>
                         <i className="fas fa-sync-alt ml-1" />
                       </button>
                       {lastDate && (
@@ -131,7 +129,7 @@ class TeamBillingComponent extends Component {
                       )}
                     </div>
                   </div>
-                  <div className="row api__billing__card__container section">
+                  <div className="row api__billing__card__container section p-2">
                     <TheadBillingContainer
                       language={this.props.currentLanguage}
                       label={t('Subscribed Apis', this.props.currentLanguage)}
@@ -161,7 +159,7 @@ class TeamBillingComponent extends Component {
                 </div>
                 <div className="col apikeys">
                   {this.state.selectedApi && (
-                    <div className="api-plans-consumptions">
+                    <div className="api-plans-consumptions section p-2">
                       <div className="api__plans__consumption__header">
                         <h3 className="api__name">{this.state.selectedApi.name}</h3>
                         <i

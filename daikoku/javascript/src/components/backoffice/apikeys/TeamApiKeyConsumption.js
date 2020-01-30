@@ -75,32 +75,34 @@ class TeamApiKeyConsumptionComponent extends Component {
     return (
       <TeamBackOffice tab="ApiKeys">
         <Can I={read} a={stat} team={this.props.currentTeam} dispatchError>
-          <div>
-            <div className="row">
-              <div className="col">
-                <h1>Api Consumption</h1>
-                <PlanInformations fetchData={() => this.getInformations()} />
+          <div className="d-flex col flex-column pricing-content">
+              <div className="row">
+                <div className="col-12">
+                    <h1>Api Consumption</h1>
+                    <PlanInformations fetchData={() => this.getInformations()} />
+                </div>
+                <div className="col section p-2">
+                  <OtoroshiStatsVizualization
+                    sync={() =>
+                      Services.syncApiKeyConsumption(
+                        this.props.match.params.clientId,
+                        this.props.currentTeam._id
+                      )
+                    }
+                    fetchData={(from, to) =>
+                      Services.apiKeyConsumption(
+                        this.props.match.params.clientId,
+                        this.props.currentTeam._id,
+                        from.valueOf(),
+                        to.valueOf()
+                      ).then(c => c.consumptions)
+                    }
+                    mappers={this.mappers}
+                    forConsumer={true}
+                  />
+                </div>
               </div>
             </div>
-            <OtoroshiStatsVizualization
-              sync={() =>
-                Services.syncApiKeyConsumption(
-                  this.props.match.params.clientId,
-                  this.props.currentTeam._id
-                )
-              }
-              fetchData={(from, to) =>
-                Services.apiKeyConsumption(
-                  this.props.match.params.clientId,
-                  this.props.currentTeam._id,
-                  from.valueOf(),
-                  to.valueOf()
-                ).then(c => c.consumptions)
-              }
-              mappers={this.mappers}
-              forConsumer={true}
-            />
-          </div>
         </Can>
       </TeamBackOffice>
     );

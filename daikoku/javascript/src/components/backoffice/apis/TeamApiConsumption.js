@@ -119,7 +119,7 @@ class TeamApiConsumptionComponent extends Component {
                 <div className="col-12">
                   <h1>Api Consumption - {this.state.api.name}</h1>
                 </div>
-                <div className="col">
+                <div className="col section p-2">
                   <OtoroshiStatsVizualization
                     sync={() =>
                       Services.syncApiConsumption(

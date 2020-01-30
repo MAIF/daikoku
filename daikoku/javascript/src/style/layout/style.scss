@@ -66,7 +66,7 @@ main {
 .fa-xxs {
   font-size: 0.5em;
 }
-/*  */
+
 .api-description > p {
   text-align: justify;
 }
@@ -164,11 +164,15 @@ img:hover+.changePicture,.changePicture:hover{
 
 .nav-tabs{
   border-color: $btn-border-color;
-}
-.nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+  .nav-link:hover,.nav-link:focus{
+      background-color: $btn-bg-hover-color;
+      color: $btn-text-hover-color;
+  }
+  .nav-link.active, .nav-item.show .nav-link {
     color: $btn-text-color;
     background-color: $btn-bg-color;
     border-color: $btn-border-color;
+  }
 }
 
 /* rwd */
@@ -190,20 +194,21 @@ img:hover+.changePicture,.changePicture:hover{
   }
 }
 @media screen and (max-width: 540px) {
-  .nav-tabs .nav-item {
-    border: 1px solid $btn-border-color;
-  }
+  .nav-tabs {
+    .nav-item {
+      border: 1px solid $btn-border-color;
+    }
 
-  .nav-tabs .nav-item:first-child {
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-  }
+    .nav-tabs .nav-item:first-child {
+      border-top-left-radius: 5px;
+      border-top-right-radius: 5px;
+    }
 
-  .nav-tabs .nav-item.show .nav-link,
-  .nav-tabs .nav-link.active {
+  .nav-item.show .nav-link,
+  .nav-link.active {
     background-color: $btn-bg-color;
   }
-
+}
   .onglets {
     padding-left: 15px;
   }

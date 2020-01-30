@@ -31,10 +31,10 @@ export class PaginatedComponent extends Component {
     );
 
     return (
-      <div className="section">
+      <div className="section p-2">
         <div className="row flex-column">
           <div
-            className={classNames('row d-flex', {
+            className={classNames('d-flex flex-wrap', {
               'flex-wrap': this.props.wrap,
               'flex-column': this.props.columnMode,
               'flex-column-reverse': this.props.columnMode && this.props.reverse,

@@ -330,6 +330,7 @@ export class TopBarComponent extends Component {
                     components={props => <components.Group {...props} />}
                     loadOptions={_.debounce(promiseOptions, 100, { leading: true })}
                     onChange={this.selectSearchedItem}
+                    classNamePrefix="reactSelect"
                   />
                 </div>
               )}
@@ -349,6 +350,7 @@ export class TopBarComponent extends Component {
                   placeholder="Select a language"
                   options={languages}
                   onChange={e => this.props.udpateLanguageProp(e.value)}
+                  classNamePrefix="reactSelect"
                 />
               )}
               {this.props.connectedUser.isGuest && (

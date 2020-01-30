@@ -257,7 +257,7 @@ export class OtoroshiStatsVizualization extends Component {
           )}
         </div>
 
-        <div className="row mt-2">
+        <div className="row mt-4">
           <div className="col">
             <div className="data-vizualisation">
               {this.state.loading && <Spinner />}

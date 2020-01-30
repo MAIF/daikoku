@@ -13,17 +13,26 @@
     }
 }
 
-.input-select, .add-member-select, .filter__select {
-    [class*="-control"]{
-        background-color: $form-bg-color;
-        border-color: $form-border-color;
-    }
-    [class*="-singleValue"]{
-        color:$form-text-color;
-    }
-    [class*="-menu"]{
-        background-color: $form-bg-color;
-        border-color: $form-border-color;
-        color:$form-text-color;
-    }
+
+.reactSelect__control{
+    background-color: $form-bg-color !important;
+    border-color: $form-border-color !important;
+}
+.reactSelect__single-value, .reactSelect__value-container [class*="-Input"]{
+    color:$form-text-color !important;
+}
+.reactSelect__menu{
+    background-color: $form-bg-color !important;
+    border-color: $form-border-color !important;
+    color:$form-text-color !important;
+}
+
+.reactSelect__option--is-focused{
+    background-color: $form-select-hover-color !important;
+    color:$form-select-hover-text-color !important;
+}
+
+.reactSelect__option--is-selected{
+    background-color: $form-select-focused-color !important;
+    color:$form-select-focused-text-color !important;
 }

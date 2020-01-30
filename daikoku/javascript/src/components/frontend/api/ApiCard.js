@@ -84,11 +84,11 @@ export class ApiCard extends Component {
                   </Translation>
                 </button>
               )}
+              {api.visibility === 'Private' && (
+                <button type="button" className="btn btn-sm btn-access-negative ml-1 mr-2 disabled cursor-forbidden" disabled>Private</button>
+              )}
             </div>
           </div>
-          {api.visibility === 'Private' && (
-            <div className="api__visibility api__visibility--private" />
-          )}
         </div>
         <div className="col-12">
           <Translation

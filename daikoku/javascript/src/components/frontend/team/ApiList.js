@@ -244,23 +244,25 @@ class ApiListComponent extends Component {
           </div>
           <Select
             name="tag-selector"
-            className="tag__selector filter__select col-6 col-sm mb-2"
+            className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
             value={this.state.selectedTag}
             clearable={false}
             options={[allTags(this.props.currentLanguage), ...this.state.tags]}
             onChange={e => {
               this.setState({ selectedTag: e, selectedPage: 0, offset: 0 });
             }}
+            classNamePrefix="reactSelect"
           />
           <Select
             name="category-selector"
-            className="category__selector filter__select col-6 col-sm mb-2"
+            className="category__selector filter__select reactSelect col-6 col-sm mb-2"
             value={this.state.selectedCategory}
             clearable={false}
             options={[allCategories(this.props.currentLanguage), ...this.state.categories]}
             onChange={e => {
               this.setState({ selectedCategory: e, selectedPage: 0, offset: 0 });
             }}
+            classNamePrefix="reactSelect"
           />
           {this.props.team && (
             <Can I={manage} a={api} team={this.props.team}>

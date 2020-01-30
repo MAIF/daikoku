@@ -133,6 +133,7 @@ export class SelectInput extends Component {
                     {value.label}
                   </option>
                 ))}
+                  classNamePrefix="reactSelect"
               </select>
             </div>
           </div>
@@ -155,6 +156,8 @@ export class SelectInput extends Component {
               placeholder={this.props.placeholder}
               options={this.state.values}
               onChange={this.onChange}
+              classNamePrefix="reactSelect"
+              className="reactSelect"
             />
           </div>
         </div>
