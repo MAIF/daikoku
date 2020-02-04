@@ -367,7 +367,7 @@ class TeamApiComponent extends Component {
                 </ul>
               </div>
               <div className="row">
-                <div className="container-fluid container-api">
+                <div className="section col container-api">
                   <div className="mt-2">
                     {editedApi && this.state.tab === 'infos' && (
                       <TeamApiInfo
