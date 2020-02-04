@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Redirect } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
@@ -173,6 +173,25 @@ class StyleFontFamilyUrlAssetButton extends Component {
   }
 }
 
+class ThemeUpdatorFromUI extends Component {
+  render() {
+    return (
+      <div className="form-group row d-flex justify-content-end">
+        <button type="button" className="btn btn-access-negative" onClick={() => window.confirm(
+          'do you want to save your modification ?'
+        )
+          .then(ok => {
+            if (ok) {
+              this.props.save().then(() => {
+                this.props.history.push(`/settings/tenants/${this.props.tenant()._id}/style`)
+              });
+            }
+          })}>Set Color Theme from UI</button>
+      </div>
+    )
+  }
+}
+
 class HomePageVisibilitySwitch extends Component {
   render() {
     if (this.props.rawValue.isPrivate) {
@@ -209,6 +228,7 @@ export class TenantEditComponent extends Component {
     'style.js',
     'style.css',
     'style.colorTheme',
+    'style.colorThemeFromUI',
     'style.jsUrl',
     'style.jsUrlFromAssets',
     'style.cssUrl',
@@ -408,6 +428,15 @@ export class TenantEditComponent extends Component {
     'style.colorTheme': {
       type: 'text',
       props: { label: t('CSS color theme', this.props.currentLanguage) },
+    },
+    'style.colorThemeFromUI': {
+      type: ThemeUpdatorFromUI,
+      props: {
+        tenant: () => this.state.tenant,
+        save: () => this.save(),
+        history: this.props.history,
+        currentLanguage: this.props.currentLanguage
+      }
     },
     'style.js': {
       type: 'text',
@@ -651,7 +680,7 @@ export class TenantEditComponent extends Component {
 
   save = () => {
     if (this.state.create) {
-      Services.createTenant(this.state.tenant).then(tenant => {
+      return Services.createTenant(this.state.tenant).then(tenant => {
         this.setState(
           {
             create: false,
@@ -670,7 +699,7 @@ export class TenantEditComponent extends Component {
         );
       });
     } else {
-      Services.saveTenant(this.state.tenant).then(() =>
+      return Services.saveTenant(this.state.tenant).then(() =>
         toastr.success(t('Tenant updated successfully', this.props.currentLanguage))
       );
     }
