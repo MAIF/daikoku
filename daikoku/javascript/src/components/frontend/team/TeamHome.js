@@ -86,22 +86,20 @@ class TeamHomeComponent extends Component {
                 />
               </div>
               <div className="col-sm-7 d-flex flex-column justify-content-center">
-                <h1 className="jumbotron-heading">
-                  {this.state.team.name}
-                </h1>
+                <h1 className="jumbotron-heading">{this.state.team.name}</h1>
                 <div className="lead text-muted">{this.state.team.description}</div>
               </div>
               <div className="col-sm-1 d-flex flex-column">
-                 <Can I={read} a={team} team={this.state.team}>
+                <Can I={read} a={team} team={this.state.team}>
                   <div>
                     <a
                       href="#"
                       className="float-right team__settings btn btn-sm btn-access-negative"
                       onClick={() => this.redirectToTeamSettings(this.state.team)}>
-                    <i className="fas fa-cogs" />
+                      <i className="fas fa-cogs" />
                     </a>
                   </div>
-                 </Can>
+                </Can>
               </div>
             </div>
           </div>

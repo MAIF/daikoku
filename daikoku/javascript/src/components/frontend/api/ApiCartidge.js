@@ -19,7 +19,9 @@ export class ApiCartidge extends Component {
     );
     const allPossibleTeams = _.difference(
       authorizedTeams.map(t => t._id),
-      this.props.subscriptions.filter(sub => sub.plan === defaultPlan._id).map(s => s.team)
+      this.props.subscriptions
+        .filter(sub => !defaultPlan || sub.plan === defaultPlan._id)
+        .map(s => s.team)
     );
     const isAccepted = !allPossibleTeams.length;
     const isPending =
@@ -27,7 +29,7 @@ export class ApiCartidge extends Component {
       !_.difference(
         allPossibleTeams,
         this.props.pendingSubscriptions
-          .filter(sub => sub.action.plan === defaultPlan._id)
+          .filter(sub => !defaultPlan || sub.action.plan === defaultPlan._id)
           .map(s => s.action.team)
       ).length;
 
@@ -113,7 +115,7 @@ export class ApiCartidge extends Component {
           {moment(api.lastUpdate).format(t('moment.date.format.short', this.props.currentLanguage))}
         </small>
 
-        {isAccepted && (
+        {
           <Can I={read} a={apikey}>
             <ActionWithTeamSelector
               title="Select the team to view your api key"
@@ -122,7 +124,7 @@ export class ApiCartidge extends Component {
                 this.props.redirectToApiKeysPage(this.props.myTeams.find(t => t._id === team))
               }
               withAllTeamSelector={false}>
-              <div className="col-12 col-sm-2">
+              <div className="col-12">
                 <button className="btn btn-sm btn-access-negative mt-2">
                   <Translation i18nkey="View your api keys" language={this.props.currentLanguage}>
                     View your api keys
@@ -131,7 +133,7 @@ export class ApiCartidge extends Component {
               </div>
             </ActionWithTeamSelector>
           </Can>
-        )}
+        }
         {defaultPlan && defaultPlan.otoroshiTarget && isPending && (
           <button type="button" className="btn btn-sm btn-access-negative mt-5">
             <Translation i18nkey="Request in progress" language={this.props.currentLanguage}>

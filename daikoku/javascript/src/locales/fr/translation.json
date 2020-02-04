@@ -528,5 +528,9 @@
   "Private": "Privée",
   "Public With Authorizations": "Publique avec autorisation",
   "Automatic": "Automatique",
-  "Manual": "Manuelle"
+  "Manual": "Manuelle",
+  "team.created.success": "L'équipe %s a été créée avec succès",
+  "team.updated.success": "L'équipe %s a été modifiée avec succès",
+  "user.created.success": "L'utilisateur %s a été créé avec succès",
+  "user.updated.success": "L'utilisateur %s a été modifié avec succès"
 }
