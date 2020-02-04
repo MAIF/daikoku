@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import _ from 'lodash';
+import { toastr } from 'react-redux-toastr'
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { Can, daikoku, manage } from '../../utils';
-
-
+import { t } from '../../../locales';
 
 const variables = [
   { group: "status", value: "--error-color", label: "error color", defaultColor: "#fc0d1a" },
@@ -47,8 +47,12 @@ const regex = value => `${value}:\\s*(#.*);`
 export class TenantStyleEditComponent extends Component {
   state = {
     tenant: null,
-    style: variables.map(item => ({value: item.value, color: item.defaultColor})),
-    inputView: true
+    style: variables.map(item => ({ value: item.value, color: item.defaultColor })),
+    inputView: true,
+    preview: false,
+    styles: [
+      'http://daikoku.oto.tools:3000/daikoku.css'
+    ]
   };
 
   componentDidMount() {
@@ -64,16 +68,16 @@ export class TenantStyleEditComponent extends Component {
         const style = this.state.style
           .map(({ value, defaultColor }) => {
             const color = tenant.style.colorTheme.match(`${value}:\\s*(#.*);`)[1]
-            return ({ value, color : color || defaultColor })
+            return ({ value, color: color || defaultColor })
           })
-        this.setState({ tenant: { ...tenant }, style });
+        this.setState({ tenant: { ...tenant }, style, initialStyle: style });
       });
     }
   }
 
   updateStyleProp(value, color) {
-    const style = [...this.state.style.filter(s => s.value !== value), {value, color}];
-    this.setState({style})
+    const style = [...this.state.style.filter(s => s.value !== value), { value, color }];
+    this.setState({ style })
   }
 
   getStyleFromState() {
@@ -82,20 +86,48 @@ export class TenantStyleEditComponent extends Component {
     }, ":root {\n") + "}"
   }
 
+  goBack() {
+    this.props.history.goBack();
+  }
+
+  reset() {
+    this.setState({ style: this.state.initialStyle });
+  }
+
+  save() {
+    Services.saveTenant({ ...this.state.tenant, style: { ...this.state.tenant.style, colorTheme: this.getStyleFromState() } })
+      .then(() => {
+        document.location.href = `/settings/tenants/${this.state.tenant._id}`
+      })
+      .then(() =>
+        toastr.success(t('Tenant updated successfully', this.props.currentLanguage))
+      )
+  }
+
   render() {
     return (
       <UserBackOffice tab="Tenants" isLoading={!this.state.tenant}>
         {this.state.tenant && (
           <Can I={manage} a={daikoku} dispatchError>
-            <button className="btn btn-access-negative" onClick={() => this.setState({inputView: !this.state.inputView})}>switch</button>
-            <div className="row">
-              {!this.state.inputView && (
-                <div>
-                  <textarea className="form-control" value={this.getStyleFromState()}/>
+            <div className="d-flex flex-row justify-content-between">
+              <div>
+                <button className="btn btn-access-negative" onClick={() => this.setState({ inputView: !this.state.inputView })}>switch</button>
+                <button className="btn btn-access-negative" onClick={() => this.setState({ preview: !this.state.preview })}>Preview</button>
+              </div>
+              <div>
+                <button className="btn btn-access-negative" onClick={() => this.goBack()}>Cancel</button>
+                <button className="btn btn-access-negative" onClick={() => this.reset()}>Reset</button>
+                <button className="btn btn-access-negative" onClick={() => this.save()}>Save</button>
+              </div>
+            </div>
+            <div className="flex-row d-flex ">
+              {!this.state.inputView && !this.state.preview && (
+                <div className="flex-grow-0">
+                  <textarea className="form-control" value={this.getStyleFromState()} />
                 </div>
               )}
-              {this.state.inputView && (
-                <div className="test--style col-6">
+              {this.state.inputView && !this.state.preview && (
+                <div className="flex-grow-0">
                   {Object.entries(_.groupBy(variables, 'group')).map((item, idx) => {
                     const [group, colors] = item;
                     return (
@@ -111,16 +143,16 @@ export class TenantStyleEditComponent extends Component {
                                   <div className="input-group-prepend">
                                     <span className="input-group-text">#</span>
                                   </div>
-                                  <input 
-                                    type="text" 
-                                    className="form-control" 
+                                  <input
+                                    type="text"
+                                    className="form-control"
                                     value={property.color.slice(1)}
-                                    onChange={e => this.updateStyleProp(item.value, '#' + e.target.value)}/>
-                                  <input 
-                                    type="color" 
-                                    className="form-control" 
-                                    id={item.value} 
-                                    value={property.color} 
+                                    onChange={e => this.updateStyleProp(item.value, '#' + e.target.value)} />
+                                  <input
+                                    type="color"
+                                    className="form-control"
+                                    id={item.value}
+                                    value={property.color}
                                     onChange={e => this.updateStyleProp(item.value, e.target.value)} />
                                 </div>
                               </div>
@@ -132,7 +164,7 @@ export class TenantStyleEditComponent extends Component {
                   })}
                 </div>
               )}
-              <Preview style={this.state.style} />
+              <Preview className="flex-grow-1" variables={this.state.style} stylesheets={this.state.styles} />
             </div>
           </Can>
         )}
@@ -149,28 +181,46 @@ const mapStateToProps = state => ({
 export const TenantStyleEdit = connect(mapStateToProps)(TenantStyleEditComponent);
 
 
-class Preview extends Component {
-  getColor(value) {
-    return this.props.style.find(item => item.value === value).color
+class Preview extends React.Component {
+
+  componentDidMount() {
+    this._updateIframe();
+  }
+
+  componentDidUpdate() {
+    this._updateIframe();
+  }
+
+  _updateIframe() {
+    const iframe = this.refs.iframe;
+    const document = iframe.contentDocument;
+    const head = document.getElementsByTagName('head')[0];
+    // document.body.innerHTML = this.props.content;
+
+
+
+    window.parent.document.querySelectorAll("link[rel=stylesheet]").forEach(link => {
+      var newLink = document.createElement("link");
+      newLink.rel = link.rel;
+      newLink.href = link.href;
+      head.appendChild(newLink);
+    });
+
+    window.parent.document.querySelectorAll("style").forEach(style => {
+      var newLink = document.createElement("style");
+      newLink.innerHTML = style.innerHTML;
+      head.appendChild(newLink);
+    });
+
+    const styleVariables = this.props.variables.map(variable => `${variable.value}:${variable.color};\n`).join("")
+    const root = `:root {${styleVariables}}`
+
+    const rootVariables = document.createElement('style');
+    rootVariables.innerHTML = root;
+    head.appendChild(rootVariables);
   }
 
   render() {
-    return (
-      <div className="col-6">
-        <button className="btn" style={{
-          color: this.getColor('--btn-bg-color'),
-          backgroundColor: this.getColor('--btn-text-color'),
-          borderColor: this.getColor('--btn-bg-color')
-        }}>Test btn access</button>
-        <button className="btn" style={{
-          backgroundColor: this.getColor('--btn-bg-color'),
-          color: this.getColor('--btn-text-color'),
-          borderColor: this.getColor('--btn-border-color')
-        }}>Test btn access negative</button>
-        <a href="#" style={{
-          color: this.getColor('--link-color'),
-        }}>Test link</a>
-      </div>
-    )
+    return <iframe ref="iframe" style={{ height: "100vh" }} src="/" className={this.props.className} />
   }
 }
