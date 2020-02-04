@@ -1,27 +1,20 @@
-$error-color: #{"var(--error-color, #ff6347)"};
-$error-hover-color: #{"var(--error-color, #ffa494)"};
-$success-color: #{"var(--success-color, #4F8A10)"};
-$success-hover-color: #{"var(--success-color, #76cf18)"};
 
-
-
-$body-bg-color:#{"var(--body-bg-color, #fff)"};
 $body-text-color:#{"var(--body-text-color, #212529)"};
+$body-bg-color:#{"var(--body-bg-color, #fff)"};
+
 $link-color: #{"var(--link-color, #7f96af)"};
 $link-hover-color: #{"var(--link--hover-color, #8fa6bf)"};
+
 $navbar-bg-color: #{"var(--navbar-bg-color, #7f96af)"};
 $navbar-brand-color: #{"var(--navbar-brand-color, #fff)"};
+
+$aside-text-color:#{"var(--sidebar-text-color, #000)"};
+$aside-bg-color: #{"var(--sidebar-bg-color, #f8f9fa)"};
 
 $menu-bg-color:#{"var(--menu-bg-color, #fff)"};
 $menu-text-color:#{"var(--menu-text-color, #212529)"};
 $menu-text-hover-bg-color:#{"var(--menu-text-hover-bg-color, #9bb0c5)"};
 $menu-text-hover-color:#{"var(--menu-text-hover-color, #fff)"};
-
-$section-bg-color:  #{"var(--section-bg-color, #f8f9fa)"};
-$section-text-color:#{"var(--section-text-color, #6c757d)"};
-$section-border-color:  #{"var(--section-bottom-color, #eee)"};
-$aside-text-color:#{"var(--sidebar-text-color, #000)"};
-$aside-bg-color: #{"var(--sidebar-bg-color, #f8f9fa)"};
 
 $btn-bg-color: #{"var(--btn-bg-color, #fff)"};
 $btn-bg-hover-color: #{"var(--btn-bg-hover-color, #fff)"};
@@ -29,17 +22,29 @@ $btn-text-color: #{"var(--btn-text-color, #495057)"};
 $btn-text-hover-color: #{"var(--btn-text-hover-color, #495057)"};
 $btn-border-color: #{"var(--btn-border-color, #97b0c7)"};
 
+
+$section-bg-color:  #{"var(--section-bg-color, #f8f9fa)"};
+$section-text-color:#{"var(--section-text-color, #6c757d)"};
+$section-border-color:  #{"var(--section-bottom-color, #eee)"};
+
 $form-text-color:#{"var(--form-text-color, #000)"};
 $form-border-color:#{"var(--form-border-color, #586069)"};
 $form-bg-color:#{"var(--form-bg-color, #fff)"};
+
 $form-select-focused-color:#{"var(--form-select-focused-color, #fff)"};
 $form-select-focused-text-color:#{"var(--form-select-focused-text-color, #ddd)"};
 $form-select-hover-color:#{"var(--form-select-hover-color, #ccc)"};
 $form-select-hover-text-color:#{"var(--form-select-hover-text-color, #aaa)"};
 
 $badge-tags-bg-color:#{"var(--badge-tags-bg-color, #ffc107)"};
-$badge-tags-bg-hover-color:#{"var(--badge-tags-bg-color, #ffe1a7)"};
+$badge-tags-bg-hover-color:#{"var(--badge-tags-bg-hover-color, #ffe1a7)"};
 $badge-tags-text-color:#{"var(--badge-tags-text-color, #212529)"};
+
+
+$error-color: #{"var(--error-color, #ff6347)"};
+$error-hover-color: #{"var(--error--hover-color, #ffa494)"};
+$success-color: #{"var(--success-color, #4F8A10)"};
+$success-hover-color: #{"var(--success-hover-color, #76cf18)"};
 
 $pagination-text-color:#{"var(--pagination-text-color, #586069)"};
 $pagination-border-color:#{"var(--pagination-border-color, #586069)"};
