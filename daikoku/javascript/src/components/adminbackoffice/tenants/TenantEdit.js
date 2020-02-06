@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Link, Redirect } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
@@ -10,9 +10,9 @@ import * as Services from '../../../services';
 import { LDAPConfig, LocalConfig, OAuth2Config, OtoroshiConfig } from './auth';
 import { ConsoleConfig, MailgunConfig, MailjetConfig } from './mailer';
 import { Can, manage, daikoku, Spinner } from '../../utils';
-import { configuration } from '../../../locales';
-import { t, Translation } from '../../../locales';
+import { t, Translation, configuration } from '../../../locales';
 import { BooleanInput } from '../../inputs/BooleanInput';
+import { openModal, closeModal } from '../../../core/modal/actions';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -177,16 +177,22 @@ class ThemeUpdatorFromUI extends Component {
   render() {
     return (
       <div className="form-group row d-flex justify-content-end">
-        <button type="button" className="btn btn-access-negative" onClick={() => window.confirm(
-          'do you want to save your modification ?'
-        )
-          .then(ok => {
-            if (ok) {
-              this.props.save().then(() => {
-                this.props.history.push(`/settings/tenants/${this.props.tenant()._id}/style`)
-              });
-            }
-          })}>Set Color Theme from UI</button>
+        <button type="button" className="btn btn-access-negative" onClick={() => {
+          const RedirectToUI = () => this.props.history.push(`/settings/tenants/${this.props.tenant()._id}/style`);
+          if (this.props.isTenantUpdated()) {
+            this.props.openModal({
+              open: true,
+              dontsave: () => RedirectToUI(),
+              save: () => this.props.save().then(() => RedirectToUI()),
+              title: t('unsaved.modifications.title', this.props.currentLanguage, false, 'Unsaved modifications'),
+              message: t('unsaved.modifications.message', this.props.currentLanguage, false, 'Your have unsaved modifications, do you want to save it before continue ?')
+            });
+          } else {
+            RedirectToUI();
+          }
+        }}>
+          <Translation i18nkey="Set Color Theme from UI" language={this.props.currentLanguage}>Set Color Theme from UI</Translation>
+        </button>
       </div>
     )
   }
@@ -212,6 +218,7 @@ export class TenantEditComponent extends Component {
   state = {
     tenant: null,
     create: false,
+    updated: false
   };
 
   flow = [
@@ -435,7 +442,9 @@ export class TenantEditComponent extends Component {
         tenant: () => this.state.tenant,
         save: () => this.save(),
         history: this.props.history,
-        currentLanguage: this.props.currentLanguage
+        currentLanguage: this.props.currentLanguage,
+        isTenantUpdated: () => !!this.state.updated,
+        openModal: props => this.props.openModal({ ...props, closeModal: this.props.closeModal }, 'saveOrCancelModal')
       }
     },
     'style.js': {
@@ -722,8 +731,8 @@ export class TenantEditComponent extends Component {
                   flow={this.flow}
                   schema={this.schema}
                   value={this.state.tenant}
-                  onChange={tenant => this.setState({ tenant })}
-                  style={{ marginBottom: 100, paddingTop:20 }}
+                  onChange={tenant => this.setState({ tenant, updated: true })}
+                  style={{ marginBottom: 100, paddingTop: 20 }}
                 />
               </React.Suspense>
               <div style={{ height: 60 }} />
@@ -770,4 +779,9 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TenantEdit = connect(mapStateToProps)(TenantEditComponent);
+const mapDispatchToProps = {
+  closeModal: () => closeModal(),
+  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
+};
+
+export const TenantEdit = connect(mapStateToProps, mapDispatchToProps)(TenantEditComponent);

@@ -7,7 +7,7 @@ import { SketchPicker } from 'react-color';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { Can, daikoku, manage, Option } from '../../utils';
-import { t } from '../../../locales';
+import { t, Translation } from '../../../locales';
 
 import styleVariables from '!!raw-loader!../../../style/variables.scss';
 
@@ -17,11 +17,7 @@ export class TenantStyleEditComponent extends Component {
   state = {
     tenant: null,
     style: [...styleVariables.matchAll(regexp)].map(item => ({ value: item[1], defaultColor: item[2], group: item[3] })),
-    inputView: true,
-    preview: false,
-    styles: [
-      'http://daikoku.oto.tools:3000/daikoku.css'//todo: add real style from server
-    ]
+    preview: false
   };
 
   componentDidMount() {
@@ -36,7 +32,7 @@ export class TenantStyleEditComponent extends Component {
       Services.oneTenant(this.props.match.params.tenantId).then(tenant => {
         const style = this.state.style
           .map(({ value, defaultColor, group }) => {
-            const color = Option(tenant.style.colorTheme.match(`${value}:\\s*(#.*);`)).fold(() => defaultColor, value => value[1])
+            const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(() => defaultColor, value => value[1])
             return ({ value, color: color, group })
           })
         this.setState({ tenant: { ...tenant }, style, initialStyle: style });
@@ -78,24 +74,18 @@ export class TenantStyleEditComponent extends Component {
       <UserBackOffice tab="Tenants" isLoading={!this.state.tenant}>
         {this.state.tenant && (
           <Can I={manage} a={daikoku} dispatchError>
-            <div className="d-flex flex-row justify-content-between">
+            <div className="d-flex flex-row justify-content-between mb-1">
               <div>
-                <button className="btn btn-access-negative" onClick={() => this.setState({ inputView: !this.state.inputView })}>switch</button>
-                <button className="btn btn-access-negative" onClick={() => this.setState({ preview: !this.state.preview })}>Preview</button>
+                <button className="btn btn-access-negative" onClick={() => this.setState({ preview: !this.state.preview })}><Translation i18nkey="Preview" language={this.props.currentLanguage}>Preview</Translation></button>
               </div>
               <div>
-                <button className="btn btn-access-negative" onClick={() => this.goBack()}>Cancel</button>
-                <button className="btn btn-access-negative" onClick={() => this.reset()}>Reset</button>
-                <button className="btn btn-access-negative" onClick={() => this.save()}>Save</button>
+                <button className="btn btn-access-negative" onClick={() => this.goBack()}><Translation i18nkey="Cancel" language={this.props.currentLanguage}>Cancel</Translation></button>
+                <button className="btn btn-access-negative" onClick={() => this.reset()}><Translation i18nkey="Reset" language={this.props.currentLanguage}>Reset</Translation></button>
+                <button className="btn btn-outline-success" onClick={() => this.save()}><Translation i18nkey="Save" language={this.props.currentLanguage}>Save</Translation></button>
               </div>
             </div>
             <div className="flex-row d-flex ">
-              {!this.state.inputView && !this.state.preview && (
-                <div className="flex-grow-0">
-                  <textarea className="form-control" value={this.getStyleFromState()} />
-                </div>
-              )}
-              {this.state.inputView && !this.state.preview && (
+              {!this.state.preview && (
                 <div className="flex-grow-0">
                   {Object.entries(_.groupBy(this.state.style, 'group')).sort((a, b) => b[1] - a[1]).map((item, idx) => {
                     const [group, colors] = item;
@@ -103,12 +93,12 @@ export class TenantStyleEditComponent extends Component {
                       <div key={idx}>
                         <h3>{group}</h3>
                         <div>
-                          {colors.sort((a, b) => b.value - a.value).map((item, idx) => {
+                          {_.sortBy(colors, ['value']).map((item, idx) => {
                             const property = this.state.style.find(c => c.value === item.value);
                             return (
                               <div key={idx}>
                                 <label htmlFor={item.value}>{item.value.replace(/-/gi, ' ').trim()}</label>
-                                <SketchExample initialColor={property.color} handleColorChange={color => this.updateStyleProp(item, color)}/>
+                                <ColorPicker presetColors={this.state.style.map(c => c.color)} initialColor={property.color} handleColorChange={color => this.updateStyleProp(item, color)}/>
                               </div>
                             )
                           })}
@@ -118,7 +108,7 @@ export class TenantStyleEditComponent extends Component {
                   })}
                 </div>
               )}
-              <Preview className="flex-grow-1" variables={this.state.style} stylesheets={this.state.styles} />
+              <Preview className="flex-grow-1" variables={this.state.style} />
             </div>
           </Can>
         )}
@@ -136,7 +126,6 @@ export const TenantStyleEdit = connect(mapStateToProps)(TenantStyleEditComponent
 
 
 class Preview extends React.Component {
-
   componentDidMount() {
     this._updateIframe();
   }
@@ -149,21 +138,18 @@ class Preview extends React.Component {
     const iframe = this.refs.iframe;
     const document = iframe.contentDocument;
     const head = document.getElementsByTagName('head')[0];
-    // document.body.innerHTML = this.props.content;
-
-
 
     window.parent.document.querySelectorAll("link[rel=stylesheet]").forEach(link => {
       var newLink = document.createElement("link");
       newLink.rel = link.rel;
       newLink.href = link.href;
-      head.appendChild(newLink);
+      head && head.appendChild(newLink);
     });
 
     window.parent.document.querySelectorAll("style").forEach(style => {
       var newLink = document.createElement("style");
       newLink.innerHTML = style.innerHTML;
-      head.appendChild(newLink);
+      head && head.appendChild(newLink);
     });
 
     const styleVariables = this.props.variables.map(variable => `${variable.value}:${variable.color};\n`).join("")
@@ -171,15 +157,22 @@ class Preview extends React.Component {
 
     const rootVariables = document.createElement('style');
     rootVariables.innerHTML = root;
-    head.appendChild(rootVariables);
+    head && head.appendChild(rootVariables);
   }
 
   render() {
-    return <iframe ref="iframe" style={{ height: "100vh" }} src="/" className={this.props.className} />
+    return <iframe ref="iframe" style={{ height: "100vh", border: 'none', boxShadow: '0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)', borderRadius: '4px' }} src="/" className={this.props.className} />
   }
 }
 
-const SketchExample = ({initialColor, handleColorChange}) => {
+const ColorPicker = ({initialColor, handleColorChange, presetColors}) => {
+  const sketchColorToReadableColor = c => {
+    if(c.r) {
+      return `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`;
+    } else {
+      return c;
+    }
+  }
 
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
   const [color, setColor] = useState(initialColor)
@@ -224,7 +217,7 @@ const SketchExample = ({initialColor, handleColorChange}) => {
   }, [pickerValue])
 
   useEffect(() => {
-    handleColorChange(color)
+    handleColorChange(sketchColorToReadableColor(color))
   }, [color])
 
   useEffect(() => {
@@ -238,7 +231,7 @@ const SketchExample = ({initialColor, handleColorChange}) => {
       </div>
       {displayColorPicker ? <div style={styles.popover}>
         <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
-        <SketchPicker color={color} onChange={value => setPickerValue(value)} />
+        <SketchPicker presetColors={_.uniq(presetColors).sort()} color={color} onChange={value => setPickerValue(value)} />
       </div> : null}
 
     </div>

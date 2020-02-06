@@ -3,12 +3,13 @@ import { connect } from 'react-redux';
 import ReactModal from 'react-modal';
 import ClasseNames from 'classnames';
 
-import { TeamSelectorModal, AssetSelectorModal, WysiwygModal } from './';
+import { TeamSelectorModal, AssetSelectorModal, WysiwygModal, SaverOrCancelModal } from './';
 
 const MODAL_TYPES = {
   teamSelector: TeamSelectorModal,
   assetSelector: AssetSelectorModal,
   wysywygModal: WysiwygModal,
+  saveOrCancelModal: SaverOrCancelModal
 };
 
 class ModalContainer extends Component {
@@ -35,6 +36,8 @@ class ModalContainer extends Component {
       return null;
     }
     const SpecifiedModal = MODAL_TYPES[modalType];
+
+    console.debug(SpecifiedModal)
 
     return (
       <div>

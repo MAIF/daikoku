@@ -22,7 +22,7 @@
   "All teams": "Toutes les équipes",
   "All organizations": "Toutes les organisations",
   "settings": "paramètres",
-  "reset": "Réinitialiser",
+  "Reset": "Réinitialiser",
   "Logout": "Déconnexion",
   "Your APIs center": "Votre catalogue d'APIs",
   "Daikoku description start": "Daikoku est le parfait companion d'",
@@ -532,5 +532,8 @@
   "team.created.success": "L'équipe %s a été créée avec succès",
   "team.updated.success": "L'équipe %s a été modifiée avec succès",
   "user.created.success": "L'utilisateur %s a été créé avec succès",
-  "user.updated.success": "L'utilisateur %s a été modifié avec succès"
+  "user.updated.success": "L'utilisateur %s a été modifié avec succès",
+  "unsaved.modifications.title": "Modifications en cours",
+  "unsaved.modifications.message": "Vous avez des modifications en cours, voulez-vous les enregistrer avant de continuer ?",
+  "Set Color Theme from UI": "Modifier le thème de couleur depuis l'IHM"
 }
