@@ -237,7 +237,7 @@ export class OtoroshiStatsVizualization extends Component {
         <div className="d-flex justify-content-start align-items-center">
           <Select
             name="period-select"
-            className="col col-sm-3 period-select"
+            className="col col-sm-3 reactSelect period-select"
             value={{ value: this.state.period.value, label: this.state.period.label }}
             clearable={false}
             options={Object.keys(periods).map(k => periods[k])}
@@ -246,6 +246,7 @@ export class OtoroshiStatsVizualization extends Component {
                 this.updateConsumption(period.from, period.to());
               });
             }}
+            classNamePrefix="reactSelect"
           />
           <span className="col period-display">
             {this.state.period.format(this.state.consumptions)}

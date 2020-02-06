@@ -83,8 +83,8 @@
     justify-content: center;
     align-items: flex-start;
 
-    color: $body-text-color;
-    background-color: $navbar-bg-color;
+    color: $section-text-color;
+    background-color: $section-bg-color;
     font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
     //font-size: 25pt;
     text-align: center;
@@ -95,7 +95,7 @@
 
   .card-body {
     border: none;
-    background-color: $menu-bg-color;
+    background-color: $body-bg-color;
     margin: 0;
     height: 250px;
     overflow: scroll;

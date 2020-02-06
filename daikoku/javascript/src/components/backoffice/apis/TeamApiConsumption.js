@@ -82,7 +82,7 @@ class TeamApiConsumptionComponent extends Component {
       formatter: data => (
         <div className="row">
           {this.state.api.possibleUsagePlans.map(plan => (
-            <div key={plan._id} className="col-md-3">
+            <div key={plan._id} className="col-sm-4 col-lg-3">
               <PlanLightConsumption
                 api={this.state.api}
                 team={this.props.currentTeam}
