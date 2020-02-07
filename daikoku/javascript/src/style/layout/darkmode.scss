@@ -1,6 +1,5 @@
 
-@media (prefers-color-scheme: dark) {
-  :root {
+[data-theme="DARK"] {
     --body-text-color: #e2e2e2;
     --body-bg-color: #121212;
 
@@ -55,6 +54,4 @@
     --table-bg-color: #f8f9fa;
 
     --modal-selection-bg-color: rgba(27,31,35,.15);
-
-  }
 }
