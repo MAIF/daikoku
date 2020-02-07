@@ -8,6 +8,7 @@ import * as Services from '../../../services';
 import { Table } from '../../inputs';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, daikoku, administrator } from '../../utils';
+import { t, Translation } from '../../../locales';
 
 export class TenantOtoroshisComponent extends Component {
   state = {
@@ -16,37 +17,37 @@ export class TenantOtoroshisComponent extends Component {
 
   columns = [
     {
-      title: 'Url',
+      title: t('Url', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
       content: item => item.url,
     },
     {
-      title: 'Host',
+      title: t('Host', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
       content: item => item.host,
     },
     {
-      title: 'Actions',
+      title: t('Actions', this.props.currentLanguage),
       style: { textAlign: 'center', width: 100, alignItems: 'center', display: 'flex' },
       notFilterable: true,
       content: item => item._id,
       cell: (a, otoroshi) => (
         <div className="btn-group">
           {this.isTeamAdmin() && (
-             <Link to={`/settings/otoroshis/${otoroshi._id}`}>
-                <button
+            <Link to={`/settings/otoroshis/${otoroshi._id}`}>
+              <button
                 type="button"
                 className="btn btn-sm btn-outline-primary"
-                title="Edit this settings">
-                    <i className="fas fa-edit" />
-                </button>
-             </Link>
+                title={t("Edit this settings", this.props.currentLanguage)}>
+                <i className="fas fa-edit" />
+              </button>
+            </Link>
           )}
           {this.isTeamAdmin() && (
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"
-              title="Delete this settings"
+              title={t("Delete this settings", this.props.currentLanguage)}
               onClick={() => this.delete(otoroshi._id)}>
               <i className="fas fa-trash" />
             </button>
@@ -68,11 +69,12 @@ export class TenantOtoroshisComponent extends Component {
   };
 
   delete = id => {
-    window.confirm('Are you sure you want to delete those otoroshi settings ?').then(ok => {
-      if (ok) {
-        Services.deleteOtoroshiSettings(id);
-      }
-    });
+    window.confirm(t("otoroshi.settings.delete.confirm", this.props.currentLanguage, false, 'Are you sure you want to delete those otoroshi settings ?'))
+      .then(ok => {
+        if (ok) {
+          Services.deleteOtoroshiSettings(id);
+        }
+      });
   };
 
   createNewSettings = () => {
@@ -93,10 +95,10 @@ export class TenantOtoroshisComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                Otoroshi settings
+                <Translation i18nkey="Otoroshi settings" language={this.props.currentLanguage}>Otoroshi settings</Translation>
                 <a
                   className="btn btn-sm btn-access-negative mb-1 ml-1"
-                  title="Create new settings"
+                  title={t("Create new settings", this.props.currentLanguage)}
                   href="#"
                   onClick={e => {
                     e.preventDefault();
@@ -105,18 +107,19 @@ export class TenantOtoroshisComponent extends Component {
                   <i className="fas fa-plus-circle" />
                 </a>
               </h1>
-                <div className="section p-2">
-                  <Table
-                    selfUrl="otoroshis"
-                    defaultTitle="Otoroshi instances"
-                    defaultValue={() => ({})}
-                    itemName="otoroshi"
-                    columns={this.columns}
-                    fetchItems={() => Services.allOtoroshis()}
-                    showActions={false}
-                    showLink={false}
-                    extractKey={item => item._id}
-                  />
+              <div className="section p-2">
+                <Table
+                  currentLanguage={this.props.currentLanguage}
+                  selfUrl="otoroshis"
+                  defaultTitle="Otoroshi instances"
+                  defaultValue={() => ({})}
+                  itemName="otoroshi"
+                  columns={this.columns}
+                  fetchItems={() => Services.allOtoroshis()}
+                  showActions={false}
+                  showLink={false}
+                  extractKey={item => item._id}
+                />
               </div>
             </div>
           </div>

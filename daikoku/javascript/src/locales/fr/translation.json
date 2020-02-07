@@ -535,5 +535,16 @@
   "user.updated.success": "L'utilisateur %s a été modifié avec succès",
   "unsaved.modifications.title": "Modifications en cours",
   "unsaved.modifications.message": "Vous avez des modifications en cours, voulez-vous les enregistrer avant de continuer ?",
-  "Set Color Theme from UI": "Modifier le thème de couleur depuis l'IHM"
+  "Set Color Theme from UI": "Modifier le thème de couleur depuis l'IHM",
+  "Otoroshi Url": "Otoroshi - Url",
+  "Otoroshi Host": "Otoroshi - Hôte",
+  "Otoroshi client id": "Otoroshi - client id",
+  "Otoroshi client secret": "Otoroshi - client secret",
+  "otoroshi.settings.delete.confirm": "Êtes vous certain de vouloir supprimer ces paramètres Otoroshi ?",
+  "Otoroshi settings": "Paramètres Otoroshi",
+  "New otoroshi settings": "Nouveaux paramètres Otoroshi",
+  "Host": "Hôte",
+  "Edit this settings": "Modifier les paramètres",
+  "Delete this settings": "Supprimer les paramèters",
+  "Create new settings": "Créer de nouveaux paramètres"
 }
