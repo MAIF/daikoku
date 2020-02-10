@@ -110,7 +110,7 @@ const DarkModeActivator = ({ initialDark }) => {
   const DARK = 'DARK';
   const LIGHT = 'LIGHT';
 
-  const [theme, setTheme] = useState(initialDark | LIGHT)
+  const [theme, setTheme] = useState(initialDark || localStorage.getItem('theme') || LIGHT)
 
   useEffect(() => {
     if (theme === DARK) {
@@ -388,7 +388,7 @@ export class TopBarComponent extends Component {
               )}
               {!this.props.connectedUser.isGuest && (
                 <div className="d-flex justify-content-end mt-1 mt-lg-0">
-                  <DarkModeActivator initialDark={localStorage.getItem('theme')}/>
+                  <DarkModeActivator />
                   <Link
                     className={classNames({
                       'notification-link': true,
