@@ -1,17 +1,10 @@
 @import '../variables';
 
-.modal-header{
+.modal-header, .modal-content, .modal-body, .modal-footer{
   background-color: $body-bg-color;
   color: $body-text-color;
 }
 
-.modal-content{
-  background-color: $body-bg-color;
-  color:$body-text-color;
-  .btn:hover,.btn:focus {
-    //color: #fff;
-  }
-}
 .modal-footer .btn-success,.modal-footer .btn-danger{
   background: none;
 }
