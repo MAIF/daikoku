@@ -58,3 +58,10 @@ a.navbar-brand, #teamSelector:hover {
       display: none;
   }
 }
+
+.darkmode {
+  color: $navbar-text-color;
+  &:hover{
+    color:$navbar-text-hover-color;
+  }
+}

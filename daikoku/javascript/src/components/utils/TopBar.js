@@ -124,7 +124,7 @@ const DarkModeActivator = ({ initialDark }) => {
   }, [theme])
 
   return (
-    <div className="cursor-pointer d-flex align-items-center" onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
+    <div className="cursor-pointer d-flex align-items-center darkmode" onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
       {theme === DARK ? <Sun /> : <Moon />}
     </div>
   )
