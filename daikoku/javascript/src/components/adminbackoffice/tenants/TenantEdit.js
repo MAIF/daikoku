@@ -176,7 +176,7 @@ class StyleFontFamilyUrlAssetButton extends Component {
 class ThemeUpdatorFromUI extends Component {
   render() {
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <button type="button" className="btn btn-access-negative" onClick={() => {
           const RedirectToUI = () => this.props.history.push(`/settings/tenants/${this.props.tenant()._id}/style`);
           if (this.props.isTenantUpdated()) {
