@@ -85,7 +85,12 @@ export class ApiCard extends Component {
                 </button>
               )}
               {api.visibility === 'Private' && (
-                <button type="button" className="btn btn-sm btn-access-negative ml-1 mr-2 disabled cursor-forbidden" disabled>Private</button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-access-negative ml-1 mr-2 disabled cursor-forbidden"
+                  disabled>
+                  Private
+                </button>
               )}
             </div>
           </div>

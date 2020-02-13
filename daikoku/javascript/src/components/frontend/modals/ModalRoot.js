@@ -9,7 +9,7 @@ const MODAL_TYPES = {
   teamSelector: TeamSelectorModal,
   assetSelector: AssetSelectorModal,
   wysywygModal: WysiwygModal,
-  saveOrCancelModal: SaverOrCancelModal
+  saveOrCancelModal: SaverOrCancelModal,
 };
 
 class ModalContainer extends Component {
@@ -37,7 +37,7 @@ class ModalContainer extends Component {
     }
     const SpecifiedModal = MODAL_TYPES[modalType];
 
-    console.debug(SpecifiedModal)
+    console.debug(SpecifiedModal);
 
     return (
       <div>

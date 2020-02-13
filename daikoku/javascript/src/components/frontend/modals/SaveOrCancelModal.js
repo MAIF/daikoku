@@ -25,22 +25,28 @@ export const SaverOrCancelModal = props => {
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
           Cancel
-          </button>
-        <button type="button" className="btn btn-outline-danger" onClick={() => actionAndClose(props.dontsave)}>
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline-danger"
+          onClick={() => actionAndClose(props.dontsave)}>
           don't save
-          </button>
-        <button type="button" className="btn btn-outline-success" onClick={() => actionAndClose(props.save)}>
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline-success"
+          onClick={() => actionAndClose(props.save)}>
           Save
-          </button>
+        </button>
       </div>
     </div>
   );
-}
+};
 
 SaverOrCancelModal.propTypes = {
   closeModal: PropTypes.func.isRequired,
   dontsave: PropTypes.func.isRequired,
   save: PropTypes.func.isRequired,
   message: PropTypes.string,
-  title: PropTypes.string
+  title: PropTypes.string,
 };

@@ -86,9 +86,7 @@ class TeamHomeComponent extends Component {
                 />
               </div>
               <div className="col-sm-7 d-flex flex-column justify-content-center">
-                <h1 className="jumbotron-heading">
-                  {this.state.team.name}
-                </h1>
+                <h1 className="jumbotron-heading">{this.state.team.name}</h1>
                 <div className="lead">{this.state.team.description}</div>
               </div>
               <div className="col-sm-1 d-flex flex-column">

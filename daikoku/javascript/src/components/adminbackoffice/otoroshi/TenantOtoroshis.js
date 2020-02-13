@@ -38,7 +38,7 @@ export class TenantOtoroshisComponent extends Component {
               <button
                 type="button"
                 className="btn btn-sm btn-outline-primary"
-                title={t("Edit this settings", this.props.currentLanguage)}>
+                title={t('Edit this settings', this.props.currentLanguage)}>
                 <i className="fas fa-edit" />
               </button>
             </Link>
@@ -47,7 +47,7 @@ export class TenantOtoroshisComponent extends Component {
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"
-              title={t("Delete this settings", this.props.currentLanguage)}
+              title={t('Delete this settings', this.props.currentLanguage)}
               onClick={() => this.delete(otoroshi._id)}>
               <i className="fas fa-trash" />
             </button>
@@ -69,7 +69,15 @@ export class TenantOtoroshisComponent extends Component {
   };
 
   delete = id => {
-    window.confirm(t("otoroshi.settings.delete.confirm", this.props.currentLanguage, false, 'Are you sure you want to delete those otoroshi settings ?'))
+    window
+      .confirm(
+        t(
+          'otoroshi.settings.delete.confirm',
+          this.props.currentLanguage,
+          false,
+          'Are you sure you want to delete those otoroshi settings ?'
+        )
+      )
       .then(ok => {
         if (ok) {
           Services.deleteOtoroshiSettings(id);
@@ -95,10 +103,12 @@ export class TenantOtoroshisComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="Otoroshi settings" language={this.props.currentLanguage}>Otoroshi settings</Translation>
+                <Translation i18nkey="Otoroshi settings" language={this.props.currentLanguage}>
+                  Otoroshi settings
+                </Translation>
                 <a
                   className="btn btn-sm btn-access-negative mb-1 ml-1"
-                  title={t("Create new settings", this.props.currentLanguage)}
+                  title={t('Create new settings', this.props.currentLanguage)}
                   href="#"
                   onClick={e => {
                     e.preventDefault();

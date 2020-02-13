@@ -136,7 +136,7 @@ class TeamEditForAdministrationComponent extends Component {
                 schema={this.schema}
                 value={this.state.team}
                 onChange={team => this.setState({ team })}
-                style={{ marginBottom: 100, paddingTop:20 }}
+                style={{ marginBottom: 100, paddingTop: 20 }}
               />
             </React.Suspense>
             <div style={{ height: 60 }} />

@@ -142,7 +142,7 @@ export class SimpleNotification extends Component {
           <div className="d-flex flex-column">
             <div className="d-flex align-items-center">
               {this.typeFormatter(notification.action.type)}
-                <h5 className="alert-heading mb-0">
+              <h5 className="alert-heading mb-0">
                 {notification.action.type === 'ApiAccess' && (
                   <div>
                     <Translation

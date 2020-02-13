@@ -1,7 +1,7 @@
 import React, { Component, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import _ from 'lodash';
-import { toastr } from 'react-redux-toastr'
+import { toastr } from 'react-redux-toastr';
 import { SketchPicker } from 'react-color';
 
 import * as Services from '../../../services';
@@ -16,25 +16,31 @@ const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 export class TenantStyleEditComponent extends Component {
   state = {
     tenant: null,
-    style: [...styleVariables.matchAll(regexp)].map(item => ({ value: item[1], defaultColor: item[2], group: item[3] })),
-    preview: false
+    style: [...styleVariables.matchAll(regexp)].map(item => ({
+      value: item[1],
+      defaultColor: item[2],
+      group: item[3],
+    })),
+    preview: false,
   };
 
   componentDidMount() {
     if (this.props.location && this.props.location.state && this.props.location.state.newTenant) {
       this.setState({
         tenant: {
-          ...this.props.location.state.newTenant
+          ...this.props.location.state.newTenant,
         },
         create: true,
       });
     } else {
       Services.oneTenant(this.props.match.params.tenantId).then(tenant => {
-        const style = this.state.style
-          .map(({ value, defaultColor, group }) => {
-            const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(() => defaultColor, value => value[1])
-            return ({ value, color: color, group })
-          })
+        const style = this.state.style.map(({ value, defaultColor, group }) => {
+          const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
+            () => defaultColor,
+            value => value[1]
+          );
+          return { value, color: color, group };
+        });
         this.setState({ tenant: { ...tenant }, style, initialStyle: style });
       });
     }
@@ -42,13 +48,15 @@ export class TenantStyleEditComponent extends Component {
 
   updateStyleProp(item, color) {
     const style = [...this.state.style.filter(s => s.value !== item.value), { ...item, color }];
-    this.setState({ style })
+    this.setState({ style });
   }
 
   getStyleFromState() {
-    return this.state.style.reduce((acc, curr) => {
-      return `${acc}${curr.value}:${curr.color};\n`
-    }, ":root {\n") + "}"
+    return (
+      this.state.style.reduce((acc, curr) => {
+        return `${acc}${curr.value}:${curr.color};\n`;
+      }, ':root {\n') + '}'
+    );
   }
 
   goBack() {
@@ -60,13 +68,14 @@ export class TenantStyleEditComponent extends Component {
   }
 
   save() {
-    Services.saveTenant({ ...this.state.tenant, style: { ...this.state.tenant.style, colorTheme: this.getStyleFromState() } })
+    Services.saveTenant({
+      ...this.state.tenant,
+      style: { ...this.state.tenant.style, colorTheme: this.getStyleFromState() },
+    })
       .then(() => {
-        document.location.href = `/settings/tenants/${this.state.tenant._id}`
+        document.location.href = `/settings/tenants/${this.state.tenant._id}`;
       })
-      .then(() =>
-        toastr.success(t('Tenant updated successfully', this.props.currentLanguage))
-      )
+      .then(() => toastr.success(t('Tenant updated successfully', this.props.currentLanguage)));
   }
 
   render() {
@@ -76,36 +85,62 @@ export class TenantStyleEditComponent extends Component {
           <Can I={manage} a={daikoku} dispatchError>
             <div className="d-flex flex-row justify-content-between mb-1">
               <div>
-                <button className="btn btn-access-negative" onClick={() => this.setState({ preview: !this.state.preview })}><Translation i18nkey="Preview" language={this.props.currentLanguage}>Preview</Translation></button>
+                <button
+                  className="btn btn-access-negative"
+                  onClick={() => this.setState({ preview: !this.state.preview })}>
+                  <Translation i18nkey="Preview" language={this.props.currentLanguage}>
+                    Preview
+                  </Translation>
+                </button>
               </div>
               <div>
-                <button className="btn btn-access-negative" onClick={() => this.goBack()}><Translation i18nkey="Cancel" language={this.props.currentLanguage}>Cancel</Translation></button>
-                <button className="btn btn-access-negative" onClick={() => this.reset()}><Translation i18nkey="Reset" language={this.props.currentLanguage}>Reset</Translation></button>
-                <button className="btn btn-outline-success" onClick={() => this.save()}><Translation i18nkey="Save" language={this.props.currentLanguage}>Save</Translation></button>
+                <button className="btn btn-access-negative" onClick={() => this.goBack()}>
+                  <Translation i18nkey="Cancel" language={this.props.currentLanguage}>
+                    Cancel
+                  </Translation>
+                </button>
+                <button className="btn btn-access-negative" onClick={() => this.reset()}>
+                  <Translation i18nkey="Reset" language={this.props.currentLanguage}>
+                    Reset
+                  </Translation>
+                </button>
+                <button className="btn btn-outline-success" onClick={() => this.save()}>
+                  <Translation i18nkey="Save" language={this.props.currentLanguage}>
+                    Save
+                  </Translation>
+                </button>
               </div>
             </div>
             <div className="flex-row d-flex ">
               {!this.state.preview && (
                 <div className="flex-grow-0">
-                  {Object.entries(_.groupBy(this.state.style, 'group')).sort((a, b) => b[1] - a[1]).map((item, idx) => {
-                    const [group, colors] = item;
-                    return (
-                      <div key={idx}>
-                        <h3>{group}</h3>
-                        <div>
-                          {_.sortBy(colors, ['value']).map((item, idx) => {
-                            const property = this.state.style.find(c => c.value === item.value);
-                            return (
-                              <div key={idx}>
-                                <label htmlFor={item.value}>{item.value.replace(/-/gi, ' ').trim()}</label>
-                                <ColorPicker presetColors={this.state.style.map(c => c.color)} initialColor={property.color} handleColorChange={color => this.updateStyleProp(item, color)}/>
-                              </div>
-                            )
-                          })}
+                  {Object.entries(_.groupBy(this.state.style, 'group'))
+                    .sort((a, b) => b[1] - a[1])
+                    .map((item, idx) => {
+                      const [group, colors] = item;
+                      return (
+                        <div key={idx}>
+                          <h3>{group}</h3>
+                          <div>
+                            {_.sortBy(colors, ['value']).map((item, idx) => {
+                              const property = this.state.style.find(c => c.value === item.value);
+                              return (
+                                <div key={idx}>
+                                  <label htmlFor={item.value}>
+                                    {item.value.replace(/-/gi, ' ').trim()}
+                                  </label>
+                                  <ColorPicker
+                                    presetColors={this.state.style.map(c => c.color)}
+                                    initialColor={property.color}
+                                    handleColorChange={color => this.updateStyleProp(item, color)}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
+                      );
+                    })}
                 </div>
               )}
               <Preview className="flex-grow-1" variables={this.state.style} />
@@ -113,17 +148,15 @@ export class TenantStyleEditComponent extends Component {
           </Can>
         )}
       </UserBackOffice>
-    )
+    );
   }
 }
-
 
 const mapStateToProps = state => ({
   ...state.context,
 });
 
 export const TenantStyleEdit = connect(mapStateToProps)(TenantStyleEditComponent);
-
 
 class Preview extends React.Component {
   componentDidMount() {
@@ -139,21 +172,23 @@ class Preview extends React.Component {
     const document = iframe.contentDocument;
     const head = document.getElementsByTagName('head')[0];
 
-    window.parent.document.querySelectorAll("link[rel=stylesheet]").forEach(link => {
-      var newLink = document.createElement("link");
+    window.parent.document.querySelectorAll('link[rel=stylesheet]').forEach(link => {
+      var newLink = document.createElement('link');
       newLink.rel = link.rel;
       newLink.href = link.href;
       head && head.appendChild(newLink);
     });
 
-    window.parent.document.querySelectorAll("style").forEach(style => {
-      var newLink = document.createElement("style");
+    window.parent.document.querySelectorAll('style').forEach(style => {
+      var newLink = document.createElement('style');
       newLink.innerHTML = style.innerHTML;
       head && head.appendChild(newLink);
     });
 
-    const styleVariables = this.props.variables.map(variable => `${variable.value}:${variable.color};\n`).join("")
-    const root = `:root {${styleVariables}}`
+    const styleVariables = this.props.variables
+      .map(variable => `${variable.value}:${variable.color};\n`)
+      .join('');
+    const root = `:root {${styleVariables}}`;
 
     const rootVariables = document.createElement('style');
     rootVariables.innerHTML = root;
@@ -161,22 +196,34 @@ class Preview extends React.Component {
   }
 
   render() {
-    return <iframe ref="iframe" style={{ height: "100vh", border: 'none', boxShadow: '0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)', borderRadius: '4px' }} src="/" className={this.props.className} />
+    return (
+      <iframe
+        ref="iframe"
+        style={{
+          height: '100vh',
+          border: 'none',
+          boxShadow: '0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)',
+          borderRadius: '4px',
+        }}
+        src="/"
+        className={this.props.className}
+      />
+    );
   }
 }
 
-const ColorPicker = ({initialColor, handleColorChange, presetColors}) => {
+const ColorPicker = ({ initialColor, handleColorChange, presetColors }) => {
   const sketchColorToReadableColor = c => {
-    if(c.r) {
+    if (c.r) {
       return `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`;
     } else {
       return c;
     }
-  }
+  };
 
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
-  const [color, setColor] = useState(initialColor)
-  const [pickerValue, setPickerValue] = useState(null)
+  const [color, setColor] = useState(initialColor);
+  const [pickerValue, setPickerValue] = useState(null);
 
   const styles = {
     color: {
@@ -209,31 +256,36 @@ const ColorPicker = ({initialColor, handleColorChange, presetColors}) => {
   useEffect(() => {
     if (pickerValue) {
       if (pickerValue.rgb.a === 1) {
-        setColor(pickerValue.hex)
+        setColor(pickerValue.hex);
       } else {
-        setColor(pickerValue.rgb)
+        setColor(pickerValue.rgb);
       }
     }
-  }, [pickerValue])
+  }, [pickerValue]);
 
   useEffect(() => {
-    handleColorChange(sketchColorToReadableColor(color))
-  }, [color])
+    handleColorChange(sketchColorToReadableColor(color));
+  }, [color]);
 
   useEffect(() => {
-    setColor(initialColor)
-  }, [initialColor])
+    setColor(initialColor);
+  }, [initialColor]);
 
   return (
     <div>
       <div style={styles.swatch} onClick={() => setDisplayColorPicker(true)}>
         <div style={styles.color} />
       </div>
-      {displayColorPicker ? <div style={styles.popover}>
-        <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
-        <SketchPicker presetColors={_.uniq(presetColors).sort()} color={color} onChange={value => setPickerValue(value)} />
-      </div> : null}
-
+      {displayColorPicker ? (
+        <div style={styles.popover}>
+          <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
+          <SketchPicker
+            presetColors={_.uniq(presetColors).sort()}
+            color={color}
+            onChange={value => setPickerValue(value)}
+          />
+        </div>
+      ) : null}
     </div>
-  )
-}
+  );
+};

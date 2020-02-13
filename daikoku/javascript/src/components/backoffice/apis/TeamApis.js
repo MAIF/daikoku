@@ -168,20 +168,20 @@ class TeamApisComponent extends Component {
                   </a>
                 </Can>
               </h1>
-                <div className="section p-2">
-                  <Table
-                    currentLanguage={this.props.currentLanguage}
-                    selfUrl="apis"
-                    defaultTitle="Team Apis"
-                    defaultValue={() => ({})}
-                    itemName="api"
-                    columns={this.columns}
-                    fetchItems={() => Services.teamApis(this.props.currentTeam._id)}
-                    showActions={false}
-                    showLink={false}
-                    extractKey={item => item._id}
-                    injectTable={t => (this.table = t)}
-                  />
+              <div className="section p-2">
+                <Table
+                  currentLanguage={this.props.currentLanguage}
+                  selfUrl="apis"
+                  defaultTitle="Team Apis"
+                  defaultValue={() => ({})}
+                  itemName="api"
+                  columns={this.columns}
+                  fetchItems={() => Services.teamApis(this.props.currentTeam._id)}
+                  showActions={false}
+                  showLink={false}
+                  extractKey={item => item._id}
+                  injectTable={t => (this.table = t)}
+                />
               </div>
             </div>
           </div>

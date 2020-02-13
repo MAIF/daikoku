@@ -124,11 +124,11 @@ export class ApiCartidge extends Component {
                 this.props.redirectToApiKeysPage(this.props.myTeams.find(t => t._id === team))
               }
               withAllTeamSelector={false}>
-                <button className="btn btn-sm btn-access-negative mt-2">
-                  <Translation i18nkey="View your api keys" language={this.props.currentLanguage}>
-                    View your api keys
-                  </Translation>
-                </button>
+              <button className="btn btn-sm btn-access-negative mt-2">
+                <Translation i18nkey="View your api keys" language={this.props.currentLanguage}>
+                  View your api keys
+                </Translation>
+              </button>
             </ActionWithTeamSelector>
           </Can>
         }

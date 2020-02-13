@@ -15,14 +15,24 @@ class TenantOtoroshiComponent extends Component {
   };
 
   formSchema = {
-    _id: { type: 'string', disabled: true, props: { label: t('Id', this.props.currentLanguage), placeholder: '---' } },
+    _id: {
+      type: 'string',
+      disabled: true,
+      props: { label: t('Id', this.props.currentLanguage), placeholder: '---' },
+    },
     url: {
       type: 'string',
-      props: { label: t('Otoroshi Url', this.props.currentLanguage), placeholder: 'https://otoroshi-api.foo.bar' },
+      props: {
+        label: t('Otoroshi Url', this.props.currentLanguage),
+        placeholder: 'https://otoroshi-api.foo.bar',
+      },
     },
     host: {
       type: 'string',
-      props: { label: t('Otoroshi Host', this.props.currentLanguage), placeholder: 'otoroshi-api.foo.bar' },
+      props: {
+        label: t('Otoroshi Host', this.props.currentLanguage),
+        placeholder: 'otoroshi-api.foo.bar',
+      },
     },
     clientId: {
       type: 'string',
@@ -68,7 +78,15 @@ class TenantOtoroshiComponent extends Component {
   };
 
   delete = () => {
-    window.confirm(t('otoroshi.settings.delete.confirm', this.props.currentLanguage, false, 'Are you sure you want to delete those otoroshi settings ?'))
+    window
+      .confirm(
+        t(
+          'otoroshi.settings.delete.confirm',
+          this.props.currentLanguage,
+          false,
+          'Are you sure you want to delete those otoroshi settings ?'
+        )
+      )
       .then(ok => {
         if (ok) {
           Services.deleteOtoroshiSettings(this.state.otoroshi._id);
@@ -82,8 +100,22 @@ class TenantOtoroshiComponent extends Component {
         {this.state.otoroshi && (
           <Can I={manage} a={daikoku} dispatchError>
             <div className="row">
-              {!this.state.create && <h1><Translation i18nkey="Otoroshi settings" language={this.props.currentLanguage}>Otoroshi settings</Translation></h1>}
-              {this.state.create && <h1><Translation i18nkey="New otoroshi settings" language={this.props.currentLanguage}>New otoroshi settings</Translation></h1>}
+              {!this.state.create && (
+                <h1>
+                  <Translation i18nkey="Otoroshi settings" language={this.props.currentLanguage}>
+                    Otoroshi settings
+                  </Translation>
+                </h1>
+              )}
+              {this.state.create && (
+                <h1>
+                  <Translation
+                    i18nkey="New otoroshi settings"
+                    language={this.props.currentLanguage}>
+                    New otoroshi settings
+                  </Translation>
+                </h1>
+              )}
             </div>
             <div className="row">
               {this.state.otoroshi && (
@@ -103,8 +135,10 @@ class TenantOtoroshiComponent extends Component {
                 className="btn btn-outline-primary"
                 href="#"
                 onClick={() => this.props.history.goBack()}>
-                <i className="fas fa-chevron-left" /> 
-                <Translation i18nkey="Back" language={this.props.currentLanguage}>Back</Translation>
+                <i className="fas fa-chevron-left" />
+                <Translation i18nkey="Back" language={this.props.currentLanguage}>
+                  Back
+                </Translation>
               </a>
               {!this.state.create && (
                 <button
@@ -112,8 +146,10 @@ class TenantOtoroshiComponent extends Component {
                   type="button"
                   className="btn btn-outline-danger"
                   onClick={this.delete}>
-                  <i className="fas fa-trash" /> 
-                  <Translation i18nkey="Delete" language={this.props.currentLanguage}>Delete</Translation>
+                  <i className="fas fa-trash" />
+                  <Translation i18nkey="Delete" language={this.props.currentLanguage}>
+                    Delete
+                  </Translation>
                 </button>
               )}
               <button
@@ -123,13 +159,17 @@ class TenantOtoroshiComponent extends Component {
                 onClick={this.save}>
                 {!this.state.create && (
                   <span>
-                    <i className="fas fa-save" /> 
-                    <Translation i18nkey="Save" language={this.props.currentLanguage}>Save</Translation>
+                    <i className="fas fa-save" />
+                    <Translation i18nkey="Save" language={this.props.currentLanguage}>
+                      Save
+                    </Translation>
                   </span>
                 )}
                 {this.state.create && (
                   <span>
-                    <Translation i18nkey="Create" language={this.props.currentLanguage}>Create</Translation>
+                    <Translation i18nkey="Create" language={this.props.currentLanguage}>
+                      Create
+                    </Translation>
                   </span>
                 )}
               </button>

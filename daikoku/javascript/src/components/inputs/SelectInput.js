@@ -133,7 +133,7 @@ export class SelectInput extends Component {
                     {value.label}
                   </option>
                 ))}
-                  classNamePrefix="reactSelect"
+                classNamePrefix="reactSelect"
               </select>
             </div>
           </div>

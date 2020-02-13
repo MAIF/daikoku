@@ -177,24 +177,40 @@ class ThemeUpdatorFromUI extends Component {
   render() {
     return (
       <div className="form-group d-flex justify-content-end">
-        <button type="button" className="btn btn-access-negative" onClick={() => {
-          const RedirectToUI = () => this.props.history.push(`/settings/tenants/${this.props.tenant()._id}/style`);
-          if (this.props.isTenantUpdated()) {
-            this.props.openModal({
-              open: true,
-              dontsave: () => RedirectToUI(),
-              save: () => this.props.save().then(() => RedirectToUI()),
-              title: t('unsaved.modifications.title', this.props.currentLanguage, false, 'Unsaved modifications'),
-              message: t('unsaved.modifications.message', this.props.currentLanguage, false, 'Your have unsaved modifications, do you want to save it before continue ?')
-            });
-          } else {
-            RedirectToUI();
-          }
-        }}>
-          <Translation i18nkey="Set Color Theme from UI" language={this.props.currentLanguage}>Set Color Theme from UI</Translation>
+        <button
+          type="button"
+          className="btn btn-access-negative"
+          onClick={() => {
+            const RedirectToUI = () =>
+              this.props.history.push(`/settings/tenants/${this.props.tenant()._id}/style`);
+            if (this.props.isTenantUpdated()) {
+              this.props.openModal({
+                open: true,
+                dontsave: () => RedirectToUI(),
+                save: () => this.props.save().then(() => RedirectToUI()),
+                title: t(
+                  'unsaved.modifications.title',
+                  this.props.currentLanguage,
+                  false,
+                  'Unsaved modifications'
+                ),
+                message: t(
+                  'unsaved.modifications.message',
+                  this.props.currentLanguage,
+                  false,
+                  'Your have unsaved modifications, do you want to save it before continue ?'
+                ),
+              });
+            } else {
+              RedirectToUI();
+            }
+          }}>
+          <Translation i18nkey="Set Color Theme from UI" language={this.props.currentLanguage}>
+            Set Color Theme from UI
+          </Translation>
         </button>
       </div>
-    )
+    );
   }
 }
 
@@ -218,7 +234,7 @@ export class TenantEditComponent extends Component {
   state = {
     tenant: null,
     create: false,
-    updated: false
+    updated: false,
   };
 
   flow = [
@@ -444,8 +460,12 @@ export class TenantEditComponent extends Component {
         history: this.props.history,
         currentLanguage: this.props.currentLanguage,
         isTenantUpdated: () => !!this.state.updated,
-        openModal: props => this.props.openModal({ ...props, closeModal: this.props.closeModal }, 'saveOrCancelModal')
-      }
+        openModal: props =>
+          this.props.openModal(
+            { ...props, closeModal: this.props.closeModal },
+            'saveOrCancelModal'
+          ),
+      },
     },
     'style.js': {
       type: 'text',

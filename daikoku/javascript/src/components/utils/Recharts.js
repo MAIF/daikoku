@@ -78,7 +78,7 @@ export class Histogram extends Component {
           justifyContent: 'center',
           alignItems: 'center',
         }}>
-        <h4 className='recharts'>{this.props.title}</h4>
+        <h4 className="recharts">{this.props.title}</h4>
         <ResponsiveContainer height={this.props.height || 200}>
           <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <XAxis dataKey="name" />
@@ -142,8 +142,8 @@ export class RoundChart extends Component {
           justifyContent: 'center',
           alignItems: 'center',
         }}
-      className='recharts'>
-        <h4 className='recharts'>{this.props.title}</h4>
+        className="recharts">
+        <h4 className="recharts">{this.props.title}</h4>
         <ResponsiveContainer height={this.props.size ? this.props.size + 150 : 200}>
           <PieChart>
             <Pie

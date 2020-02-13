@@ -184,7 +184,9 @@ class DaikokuAppComponent extends Component {
             <Route
               exact
               path="/settings/tenants/:tenantId/style"
-              render={p => <TenantStyleEdit match={p.match} history={p.history} location={p.location} />}
+              render={p => (
+                <TenantStyleEdit match={p.match} history={p.history} location={p.location} />
+              )}
             />
             <Route
               exact

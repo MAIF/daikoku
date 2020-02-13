@@ -85,26 +85,28 @@ export class TeamApiKeysComponent extends Component {
                   See Stats
                 </Translation>
               </Link>
-                <div className="section p-2">
-                  <Table
-                    currentLanguage={this.props.currentLanguage}
-                    selfUrl="apikeys"
-                    defaultTitle="Apikeys"
-                    defaultValue={() => ({})}
-                    itemName="apikey"
-                    columns={this.columns}
-                    fetchItems={() => Services.subscribedApis(this.props.currentTeam._id)}
-                    showActions={false}
-                    showLink={false}
-                    extractKey={item => item._id}
-                    injectTable={t => (this.table = t)}
-                  />
-                  <button className="btn btn-sm btn-danger-negative mt-1" onClick={this.cleanSubs}>
-                    <Translation i18nkey="clean archived apikeys" language={this.props.currentLanguage}>
-                      clean archived apikeys
-                    </Translation>
-                  </button>
-                </div>
+              <div className="section p-2">
+                <Table
+                  currentLanguage={this.props.currentLanguage}
+                  selfUrl="apikeys"
+                  defaultTitle="Apikeys"
+                  defaultValue={() => ({})}
+                  itemName="apikey"
+                  columns={this.columns}
+                  fetchItems={() => Services.subscribedApis(this.props.currentTeam._id)}
+                  showActions={false}
+                  showLink={false}
+                  extractKey={item => item._id}
+                  injectTable={t => (this.table = t)}
+                />
+                <button className="btn btn-sm btn-danger-negative mt-1" onClick={this.cleanSubs}>
+                  <Translation
+                    i18nkey="clean archived apikeys"
+                    language={this.props.currentLanguage}>
+                    clean archived apikeys
+                  </Translation>
+                </button>
+              </div>
             </div>
           </div>
         </Can>

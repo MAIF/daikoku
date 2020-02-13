@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import classNames from 'classnames';
 import Select, { components } from 'react-select';
 import AsyncSelect from 'react-select/async';
-import {Sun, Moon} from 'react-feather';
+import { Sun, Moon } from 'react-feather';
 
 import * as Services from '../../services';
 import { logout, updateNotications, udpateLanguage } from '../../core/context/actions';
@@ -110,25 +110,26 @@ const DarkModeActivator = ({ initialDark }) => {
   const DARK = 'DARK';
   const LIGHT = 'LIGHT';
 
-  const [theme, setTheme] = useState(initialDark || localStorage.getItem('theme') || LIGHT)
+  const [theme, setTheme] = useState(initialDark || localStorage.getItem('theme') || LIGHT);
 
   useEffect(() => {
     if (theme === DARK) {
       document.documentElement.setAttribute('data-theme', DARK);
       localStorage.setItem('theme', DARK);
-    }
-    else {
+    } else {
       document.documentElement.setAttribute('data-theme', LIGHT);
       localStorage.setItem('theme', LIGHT);
     }
-  }, [theme])
+  }, [theme]);
 
   return (
-    <div className="cursor-pointer d-flex align-items-center darkmode" onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
+    <div
+      className="cursor-pointer d-flex align-items-center darkmode"
+      onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
       {theme === DARK ? <Sun /> : <Moon />}
     </div>
-  )
-}
+  );
+};
 export class TopBarComponent extends Component {
   state = {
     error: null,

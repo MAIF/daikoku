@@ -154,8 +154,7 @@ export class AuditTrailList extends Component {
             <div className="col">
               <h1>Audit trail </h1>
               <div className="section">
-                <div
-                  className="d-flex justify-content-end p-2" >
+                <div className="d-flex justify-content-end p-2">
                   <div className="section">
                     <OtoDatePicker
                       updateDateRange={this.updateDateRange}

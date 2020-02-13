@@ -271,7 +271,7 @@ export default class Form extends Component {
 
   render() {
     return (
-      <form style={{ ...this.props.style}} className="col-12 section pt-2 pr-2">
+      <form style={{ ...this.props.style }} className="col-12 section pt-2 pr-2">
         {this.props.flow.map((step, idx) => this.generateStep(step, idx))}
         {this.generateLastStep()}
       </form>
