@@ -1,10 +1,11 @@
-import React, { Component, useState } from 'react';
+import React, { Component, useState, useEffect } from 'react';
 import _ from 'lodash';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
 import Select, { components } from 'react-select';
 import AsyncSelect from 'react-select/async';
+import {Sun, Moon} from 'react-feather';
 
 import * as Services from '../../services';
 import { logout, updateNotications, udpateLanguage } from '../../core/context/actions';
@@ -104,6 +105,30 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
       );
   }
 };
+
+const DarkModeActivator = ({ initialDark }) => {
+  const DARK = 'DARK';
+  const LIGHT = 'LIGHT';
+
+  const [theme, setTheme] = useState(initialDark || localStorage.getItem('theme') || LIGHT)
+
+  useEffect(() => {
+    if (theme === DARK) {
+      document.documentElement.setAttribute('data-theme', DARK);
+      localStorage.setItem('theme', DARK);
+    }
+    else {
+      document.documentElement.setAttribute('data-theme', LIGHT);
+      localStorage.setItem('theme', LIGHT);
+    }
+  }, [theme])
+
+  return (
+    <div className="cursor-pointer d-flex align-items-center darkmode" onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
+      {theme === DARK ? <Sun /> : <Moon />}
+    </div>
+  )
+}
 export class TopBarComponent extends Component {
   state = {
     error: null,
@@ -330,6 +355,7 @@ export class TopBarComponent extends Component {
                     components={props => <components.Group {...props} />}
                     loadOptions={_.debounce(promiseOptions, 100, { leading: true })}
                     onChange={this.selectSearchedItem}
+                    classNamePrefix="reactSelect"
                   />
                 </div>
               )}
@@ -349,6 +375,7 @@ export class TopBarComponent extends Component {
                   placeholder="Select a language"
                   options={languages}
                   onChange={e => this.props.udpateLanguageProp(e.value)}
+                  classNamePrefix="reactSelect"
                 />
               )}
               {this.props.connectedUser.isGuest && (
@@ -361,6 +388,7 @@ export class TopBarComponent extends Component {
               )}
               {!this.props.connectedUser.isGuest && (
                 <div className="d-flex justify-content-end mt-1 mt-lg-0">
+                  <DarkModeActivator />
                   <Link
                     className={classNames({
                       'notification-link': true,

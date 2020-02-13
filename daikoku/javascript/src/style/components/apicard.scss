@@ -10,23 +10,12 @@
   flex-wrap: wrap;
   justify-content: space-between;
 }
-
-/*.card-header {
-  padding: 10px;
-  height: 225px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  color: #eceeef;
-  font-size: 2.1em;
-  text-align: center;
-  !* overflowWrap: break-word; *!
-  word-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
-}*/
+.card {
+  background-color: $aside-bg-color;
+}
+.card-body {
+  border : none !important;
+}
 
 .card-text {
   height: 100px;
@@ -92,26 +81,15 @@ a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {
   text-decoration: none;
 }
 
-
-
-
 .api__name {
   font-size: 1.5rem;
-  cursor: pointer;
+  //cursor: pointer;
 
   &.api--forbidden {
     cursor: not-allowed;
   }
 
   &:hover {
-    text-decoration: underline;
-  }
-}
-
-.api__visibility {
-  @include label();
-
-  &::before {
-    content: 'Private'
+    //text-decoration: underline;
   }
 }

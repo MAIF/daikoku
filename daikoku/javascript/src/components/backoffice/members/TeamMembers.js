@@ -242,12 +242,12 @@ export class TeamMembersSimpleComponent extends Component {
           <div className="col-12 mb-3 d-flex justify-content-start">
             <Select
               placeholder={t('Add new member to the team ...', this.props.currentLanguage)}
-              className="add-member-select mr-2"
-              classNamePrefix="select"
+              className="add-member-select mr-2 reactSelect"
               options={this.state.addableMembers}
               onChange={this.addMember}
               value={this.state.selectedMember}
               filterOption={(data, search) => _.values(data.value).some(v => v.includes(search))}
+              classNamePrefix="reactSelect"
             />
             <input
               placeholder={t('Find a member', this.props.currentLanguage)}

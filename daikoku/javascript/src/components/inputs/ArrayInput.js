@@ -135,6 +135,8 @@ export class ArrayInput extends Component {
                   options={this.props.options}
                   placeholder="Type something and press enter..."
                   value={this.state.value}
+                  className="input-select reactSelect"
+                  classNamePrefix="reactSelect"
                 />
               )}
               {!!this.props.valuesFrom && this.props.creatable && (
@@ -163,6 +165,7 @@ export class ArrayInput extends Component {
                   placeholder={this.props.placeholder}
                   options={this.state.values}
                   onChange={this.changeValue}
+                  classNamePrefix="reactSelect"
                 />
               )}
             </div>

@@ -9,56 +9,12 @@ const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
     return <Redirect to="/apis" />;
   }
   return (
-    <main role="main" className="row">
-      <section className="organisation__header col-12 mb-4 p-3 d-flex align-items-center justify-content-around">
-        <div className="row d-flex justify-content-start align-items-center">
-          <div
-            style={{
-              width: '100px',
-              height: '100px',
-              borderRadius: '50px',
-              border: '3px solid #fff',
-              boxShadow: '0px 0px 0px 3px lightgrey',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              overflow: 'hidden',
-            }}>
-            <img
-              src={tenant.logo}
-              style={{
-                width: 'auto',
-                height: '100%',
-                borderRadius: '50%',
-                backgroundColor: 'white',
-              }}
-              alt="avatar"
-            />
-          </div>
-          <h1 className="h1-rwd-reduce ml-2">{tenant.name}</h1>
-        </div>
-
-        <div>
-          <a className="btn btn-access-negative my-2 ml-2" href={'/apis'}>
-            <i className="fas fa-atlas mr-1" />
-            <Translation i18nkey="Apis" language={currentLanguage}>
-              Apis
-            </Translation>
-          </a>
-        </div>
-      </section>
-
-      <section className="container">
-        <div className="row">
-          <div style={{ width: '100%' }}>
-            <div
-              className="tenant-home-page"
-              dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.unloggedHome || '') }}
-            />
-          </div>
-        </div>
-      </section>
-    </main>
+    <div className="row">
+      <div
+        className="tenant-home-page"
+        dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.unloggedHome || '') }}
+      />
+    </div>
   );
 };
 

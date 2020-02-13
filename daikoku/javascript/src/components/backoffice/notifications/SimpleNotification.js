@@ -138,58 +138,60 @@ export class SimpleNotification extends Component {
     }
     return (
       <div style={style}>
-        <div className="alert alert-secondary" role="alert">
-          <div className="d-flex justify-content-between align-items-center">
-            <div className="">{this.typeFormatter(notification.action.type)}</div>
-            <h5 className="alert-heading mb-0">
-              {notification.action.type === 'ApiAccess' && (
-                <div>
-                  <Translation
-                    i18nkey="notif.api.access"
-                    language={this.props.currentLanguage}
-                    replacements={[infos.api.name]}>
-                    Request access to {infos.api.name}
-                  </Translation>
-                </div>
-              )}
-              {notification.action.type === 'TeamAccess' && (
-                <div>
-                  <Translation
-                    i18nkey="notif.membership.team"
-                    language={this.props.currentLanguage}>
-                    membership request to your team
-                  </Translation>
-                </div>
-              )}
-              {notification.action.type === 'ApiSubscription' && (
-                <div>
-                  <Translation
-                    i18nkey="notif.api.subscription"
-                    language={this.props.currentLanguage}
-                    replacements={[infos.api.name, infos.api.plan]}>
-                    Request subscription to {infos.api.name} for plan {infos.plan.type}
-                  </Translation>
-                </div>
-              )}
-              {notification.action.type === 'ApiKeyDeletionInformation' && (
-                <div>
-                  <Translation
-                    i18nkey="notif.apikey.deletion"
-                    language={this.props.currentLanguage}
-                    replacements={[notification.action.clientId, notification.action.api]}>
-                    Your apiKey with clientId {notification.action.clientId} for api{' '}
-                    {notification.action.api} has been deleted
-                  </Translation>
-                </div>
-              )}
-              {notification.action.type === 'OtoroshiSyncSubscriptionError' && (
-                <div>{notification.action.message}</div>
-              )}
-              {notification.action.type === 'OtoroshiSyncApiError' && (
-                <div>{notification.action.message}</div>
-              )}
-            </h5>
-            <div className="notification-prop">
+        <div className="alert section" role="alert">
+          <div className="d-flex flex-column">
+            <div className="d-flex align-items-center">
+              {this.typeFormatter(notification.action.type)}
+                <h5 className="alert-heading mb-0">
+                {notification.action.type === 'ApiAccess' && (
+                  <div>
+                    <Translation
+                      i18nkey="notif.api.access"
+                      language={this.props.currentLanguage}
+                      replacements={[infos.api.name]}>
+                      Request access to {infos.api.name}
+                    </Translation>
+                  </div>
+                )}
+                {notification.action.type === 'TeamAccess' && (
+                  <div>
+                    <Translation
+                      i18nkey="notif.membership.team"
+                      language={this.props.currentLanguage}>
+                      membership request to your team
+                    </Translation>
+                  </div>
+                )}
+                {notification.action.type === 'ApiSubscription' && (
+                  <div>
+                    <Translation
+                      i18nkey="notif.api.subscription"
+                      language={this.props.currentLanguage}
+                      replacements={[infos.api.name, infos.api.plan]}>
+                      Request subscription to {infos.api.name} for plan {infos.plan.type}
+                    </Translation>
+                  </div>
+                )}
+                {notification.action.type === 'ApiKeyDeletionInformation' && (
+                  <div>
+                    <Translation
+                      i18nkey="notif.apikey.deletion"
+                      language={this.props.currentLanguage}
+                      replacements={[notification.action.clientId, notification.action.api]}>
+                      Your apiKey with clientId {notification.action.clientId} for api{' '}
+                      {notification.action.api} has been deleted
+                    </Translation>
+                  </div>
+                )}
+                {notification.action.type === 'OtoroshiSyncSubscriptionError' && (
+                  <div>{notification.action.message}</div>
+                )}
+                {notification.action.type === 'OtoroshiSyncApiError' && (
+                  <div>{notification.action.message}</div>
+                )}
+              </h5>
+            </div>
+            <div className="d-flex mt-1 justify-content-end">
               {this.actionFormatter(notification.status, notification.notificationType)}
             </div>
           </div>

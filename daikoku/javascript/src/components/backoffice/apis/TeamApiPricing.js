@@ -1066,6 +1066,8 @@ export class TeamApiPricing extends Component {
               placeholder="Select a plan to edit it"
               options={this.props.value.possibleUsagePlans.map(this.planToOption)}
               onChange={e => this.select(e.plan)}
+              classNamePrefix="reactSelect"
+              className="reactSelect"
             />
           </div>
         </div>

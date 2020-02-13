@@ -92,8 +92,8 @@ class TeamIncomeComponent extends Component {
                           }
                           value={this.state.date}
                         />
-                        <button className="btn btn-access-negative" onClick={this.sync}>
-                          <i className="fas fa-sync-alt ml-1" />
+                        <button className="btn btn-sm btn-access-negative" onClick={this.sync}>
+                          <i className="fas fa-sync-alt" />
                         </button>
                         {lastDate && (
                           <i className="ml-1">
@@ -107,7 +107,7 @@ class TeamIncomeComponent extends Component {
                         )}
                       </div>
                     </div>
-                    <div className="row api__billing__card__container">
+                    <div className="row api__billing__card__container section p-2">
                       <TheadBillingContainer
                         language={this.props.currentLanguage}
                         label={t('Apis', this.props.currentLanguage)}
@@ -140,7 +140,7 @@ class TeamIncomeComponent extends Component {
                   </div>
                   <div className="col apikeys">
                     {this.state.selectedApi && !this.state.selectedPlan && (
-                      <div className="api-plans-consumptions">
+                      <div className="api-plans-consumptions section p-2">
                         <div className="api__plans__consumption__header">
                           <h3 className="api__name">{this.state.selectedApi.name}</h3>
                           <i

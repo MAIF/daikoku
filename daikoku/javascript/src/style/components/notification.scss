@@ -1,6 +1,6 @@
 .notification-link {
   width: 50px;
-  color: #6c757d;
+  color: $navbar-text-color;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9,7 +9,7 @@
 }
 
 .notification-link:hover {
-  color: #5a6268;
+  color: $navbar-text-hover-color;
   text-decoration: none;
 }
 

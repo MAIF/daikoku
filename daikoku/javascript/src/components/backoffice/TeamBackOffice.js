@@ -272,7 +272,7 @@ class TeamBackOfficeComponent extends Component {
                   </ul>
                 </div>
               </nav>
-              <main role="main" className="col-md-10 ml-sm-auto px-4 sidebar-next-main">
+              <main role="main" className="col-md-10 ml-sm-auto px-4">
                 <div
                   className={classNames('back-office-overlay', {
                     active: this.props.isLoading && !this.props.error.status,
@@ -453,7 +453,7 @@ class UserBackOfficeComponent extends Component {
                   </Can>
                 </div>
               </nav>
-              <main role="main" className="col-md-10 ml-sm-auto px-4 sidebar-next-main">
+              <main role="main" className="col-md-10 ml-sm-auto px-4">
                 <div
                   className={classNames('back-office-overlay', { active: this.props.isLoading })}
                 />

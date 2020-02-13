@@ -10,9 +10,9 @@ import * as Services from '../../../services';
 import { LDAPConfig, LocalConfig, OAuth2Config, OtoroshiConfig } from './auth';
 import { ConsoleConfig, MailgunConfig, MailjetConfig } from './mailer';
 import { Can, manage, daikoku, Spinner } from '../../utils';
-import { configuration } from '../../../locales';
-import { t, Translation } from '../../../locales';
+import { t, Translation, configuration } from '../../../locales';
 import { BooleanInput } from '../../inputs/BooleanInput';
+import { openModal, closeModal } from '../../../core/modal/actions';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -79,7 +79,7 @@ class StyleLogoAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.image}
           onlyPreview
@@ -100,7 +100,7 @@ class StyleJsUrlAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.javascript}
           tenantMode
@@ -120,7 +120,7 @@ class StyleCssUrlAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.css}
           tenantMode
@@ -140,7 +140,7 @@ class StyleFaviconUrlAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.image}
           onlyPreview
@@ -160,7 +160,7 @@ class StyleFontFamilyUrlAssetButton extends Component {
     const origin =
       window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
     return (
-      <div className="form-group row d-flex justify-content-end">
+      <div className="form-group d-flex justify-content-end">
         <AssetChooserByModal
           typeFilter={MimeTypeFilter.font}
           tenantMode
@@ -170,6 +170,31 @@ class StyleFontFamilyUrlAssetButton extends Component {
         />
       </div>
     );
+  }
+}
+
+class ThemeUpdatorFromUI extends Component {
+  render() {
+    return (
+      <div className="form-group d-flex justify-content-end">
+        <button type="button" className="btn btn-access-negative" onClick={() => {
+          const RedirectToUI = () => this.props.history.push(`/settings/tenants/${this.props.tenant()._id}/style`);
+          if (this.props.isTenantUpdated()) {
+            this.props.openModal({
+              open: true,
+              dontsave: () => RedirectToUI(),
+              save: () => this.props.save().then(() => RedirectToUI()),
+              title: t('unsaved.modifications.title', this.props.currentLanguage, false, 'Unsaved modifications'),
+              message: t('unsaved.modifications.message', this.props.currentLanguage, false, 'Your have unsaved modifications, do you want to save it before continue ?')
+            });
+          } else {
+            RedirectToUI();
+          }
+        }}>
+          <Translation i18nkey="Set Color Theme from UI" language={this.props.currentLanguage}>Set Color Theme from UI</Translation>
+        </button>
+      </div>
+    )
   }
 }
 
@@ -193,6 +218,7 @@ export class TenantEditComponent extends Component {
   state = {
     tenant: null,
     create: false,
+    updated: false
   };
 
   flow = [
@@ -209,6 +235,7 @@ export class TenantEditComponent extends Component {
     'style.js',
     'style.css',
     'style.colorTheme',
+    'style.colorThemeFromUI',
     'style.jsUrl',
     'style.jsUrlFromAssets',
     'style.cssUrl',
@@ -408,6 +435,17 @@ export class TenantEditComponent extends Component {
     'style.colorTheme': {
       type: 'text',
       props: { label: t('CSS color theme', this.props.currentLanguage) },
+    },
+    'style.colorThemeFromUI': {
+      type: ThemeUpdatorFromUI,
+      props: {
+        tenant: () => this.state.tenant,
+        save: () => this.save(),
+        history: this.props.history,
+        currentLanguage: this.props.currentLanguage,
+        isTenantUpdated: () => !!this.state.updated,
+        openModal: props => this.props.openModal({ ...props, closeModal: this.props.closeModal }, 'saveOrCancelModal')
+      }
     },
     'style.js': {
       type: 'text',
@@ -651,7 +689,7 @@ export class TenantEditComponent extends Component {
 
   save = () => {
     if (this.state.create) {
-      Services.createTenant(this.state.tenant).then(tenant => {
+      return Services.createTenant(this.state.tenant).then(tenant => {
         this.setState(
           {
             create: false,
@@ -670,7 +708,7 @@ export class TenantEditComponent extends Component {
         );
       });
     } else {
-      Services.saveTenant(this.state.tenant).then(() =>
+      return Services.saveTenant(this.state.tenant).then(() =>
         toastr.success(t('Tenant updated successfully', this.props.currentLanguage))
       );
     }
@@ -693,8 +731,8 @@ export class TenantEditComponent extends Component {
                   flow={this.flow}
                   schema={this.schema}
                   value={this.state.tenant}
-                  onChange={tenant => this.setState({ tenant })}
-                  style={{ marginBottom: 100 }}
+                  onChange={tenant => this.setState({ tenant, updated: true })}
+                  style={{ marginBottom: 100, paddingTop: 20 }}
                 />
               </React.Suspense>
               <div style={{ height: 60 }} />
@@ -741,4 +779,9 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const TenantEdit = connect(mapStateToProps)(TenantEditComponent);
+const mapDispatchToProps = {
+  closeModal: () => closeModal(),
+  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
+};
+
+export const TenantEdit = connect(mapStateToProps, mapDispatchToProps)(TenantEditComponent);

@@ -43,7 +43,7 @@ class SetPassword extends Component {
           <div className="col-sm-10">
             <button
               type="button"
-              className="btn btn-outline-success"
+              className="btn btn-outline-primary"
               onClick={this.genAndSetPassword}>
               <i className="fas fa-unlock-alt mr-1" />
               <Translation i18nkey="Change my password" language={this.props.currentLanguage}>
@@ -69,7 +69,7 @@ class RefreshToken extends Component {
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2 col-form-label" />
         <div className="col-sm-10">
-          <button type="button" className="btn btn-outline-success" onClick={this.reloadToken}>
+          <button type="button" className="btn btn-outline-primary" onClick={this.reloadToken}>
             <i className="fas fa-sync-alt mr-1" />
             <Translation i18nkey="Reload personal token" language={this.props.currentLanguage}>
               Reload personal token
@@ -93,7 +93,7 @@ class Gravatar extends Component {
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2 col-form-label" />
         <div className="col-sm-10">
-          <button type="button" className="btn btn-access" onClick={this.setGravatarLink}>
+          <button type="button" className="btn btn-outline-primary" onClick={this.setGravatarLink}>
             <i className="fas fa-user-circle mr-1" />
             <Translation i18nkey="Set avatar from Gravatar" language={this.props.currentLanguage}>
               Set avatar from Gravatar
@@ -116,7 +116,7 @@ class TenantList extends Component {
 
   render() {
     return (
-      <div className="form-group row">
+      <div className="form-group row pt-3">
         <label className="col-xs-12 col-sm-2 col-form-label">
           <Translation i18nkey="Tenants" language={this.props.currentLanguage}>
             Tenants

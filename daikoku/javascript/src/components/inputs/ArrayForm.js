@@ -44,6 +44,7 @@ const ArrayForm = props => {
         value={{ label: selectedSelector, value: selectedSelector }}
         options={possibleValues.map(v => ({ label: v, value: v }))}
         onChange={e => setSelectedSelector(e.value)}
+        classNamePrefix="reactSelect"
       />
       <div className="col-sm-10">
         {(props.prefix || props.suffix) && (

@@ -133,6 +133,7 @@ export class SelectInput extends Component {
                     {value.label}
                   </option>
                 ))}
+                  classNamePrefix="reactSelect"
               </select>
             </div>
           </div>
@@ -145,7 +146,7 @@ export class SelectInput extends Component {
           {this.props.label} <Help text={this.props.help} />
         </label>
         <div className="col-sm-10">
-          <div style={{ width: '100%' }}>
+          <div style={{ width: '100%' }} className="input-select">
             <Select
               style={{ width: this.props.more ? '100%' : '100%' }}
               name={`${this.props.label}-search`}
@@ -155,6 +156,8 @@ export class SelectInput extends Component {
               placeholder={this.props.placeholder}
               options={this.state.values}
               onChange={this.onChange}
+              classNamePrefix="reactSelect"
+              className="reactSelect"
             />
           </div>
         </div>

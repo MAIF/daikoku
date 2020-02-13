@@ -82,7 +82,7 @@ class TeamApiConsumptionComponent extends Component {
       formatter: data => (
         <div className="row">
           {this.state.api.possibleUsagePlans.map(plan => (
-            <div key={plan._id} className="col-md-3">
+            <div key={plan._id} className="col-sm-4 col-lg-3">
               <PlanLightConsumption
                 api={this.state.api}
                 team={this.props.currentTeam}
@@ -119,7 +119,7 @@ class TeamApiConsumptionComponent extends Component {
                 <div className="col-12">
                   <h1>Api Consumption - {this.state.api.name}</h1>
                 </div>
-                <div className="col">
+                <div className="col section p-2">
                   <OtoroshiStatsVizualization
                     sync={() =>
                       Services.syncApiConsumption(

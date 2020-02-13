@@ -1,33 +1,37 @@
 @import '../variables.scss';
 
 .data-vizualisation {
-  border: 1px solid lightgray;
-  border-radius: 10px;
+ // border: 1px solid lightgray;
+ // border-radius: 10px;
 
   .data__navbar {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    height: 130px;
+    //height: 130px;
+    border-bottom: 1px solid $btn-border-color;
 
     .data__navbar__tab {
-      width: 200px;
+      //width: 200px;
       display: block;
       cursor: pointer;
       padding: 15px;
-      background-color: $navbar-bg-color;
-      color: $navbar-text-color;
+      //background-color: $navbar-bg-color;
+      //color: $navbar-text-color;
       margin-right: 1px;
-
-      &:nth-of-type(1) {
-        border-radius: 10px 0 0 0;
-      }
+      margin-bottom: -1px;
+      border-top-left-radius: 0.25rem;
+      border-top-right-radius: 0.25rem;
 
       &.data__navbar__tab--active {
-        background-color: $menu-text-hover-bg-color;
-        color: $menu-text-hover-color;
+        color: $btn-text-color;
+        background-color: $btn-bg-color;
+        border: 1px solid $btn-border-color;
       }
-
+      &:hover{
+        background-color: $btn-bg-hover-color;
+        color: $btn-text-hover-color;
+      }
 
       .ant-progress-outer {
         display: inline-block;
@@ -79,8 +83,8 @@
     justify-content: center;
     align-items: flex-start;
 
-    color: $body-text-color;
-    background-color: $navbar-bg-color;
+    color: $section-text-color;
+    background-color: $section-bg-color;
     font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
     //font-size: 25pt;
     text-align: center;
@@ -91,7 +95,7 @@
 
   .card-body {
     border: none;
-    background-color: $menu-bg-color;
+    background-color: $body-bg-color;
     margin: 0;
     height: 250px;
     overflow: scroll;

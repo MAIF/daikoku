@@ -33,6 +33,8 @@ export const TranslationForm = ({ value, onChange, flow, schema, formatter = v =
         placeholder="Select a language"
         options={languages.map(l => ({ label: l, value: l }))}
         onChange={e => setLanguage(e.value)}
+        classNamePrefix="reactSelect"
+        className="reactSelect"
       />
       <React.Suspense fallback={<Spinner />}>
         <LazyForm

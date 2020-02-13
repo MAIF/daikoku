@@ -153,31 +153,34 @@ export class AuditTrailList extends Component {
           <div className="row">
             <div className="col">
               <h1>Audit trail </h1>
-              <div
-                className="row"
-                style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-                <div className="">
-                  <OtoDatePicker
-                    updateDateRange={this.updateDateRange}
-                    from={this.state.from}
-                    to={this.state.to}
+              <div className="section">
+                <div
+                  className="d-flex justify-content-end p-2" >
+                  <div className="section">
+                    <OtoDatePicker
+                      updateDateRange={this.updateDateRange}
+                      from={this.state.from}
+                      to={this.state.to}
+                    />
+                  </div>
+                </div>
+                <div className="p-2">
+                  <Table
+                    selfUrl="audit"
+                    defaultTitle="Audit trail"
+                    defaultValue={() => ({})}
+                    itemName="event"
+                    columns={this.columns}
+                    fetchItems={this.fetchItems}
+                    showActions={false}
+                    showLink={false}
+                    extractKey={item => item._id}
+                    injectTable={t => (this.table = t)}
+                    defaultSortDesc={true}
+                    injectTopBar={this.topBar}
                   />
                 </div>
               </div>
-              <Table
-                selfUrl="audit"
-                defaultTitle="Audit trail"
-                defaultValue={() => ({})}
-                itemName="event"
-                columns={this.columns}
-                fetchItems={this.fetchItems}
-                showActions={false}
-                showLink={false}
-                extractKey={item => item._id}
-                injectTable={t => (this.table = t)}
-                defaultSortDesc={true}
-                injectTopBar={this.topBar}
-              />
             </div>
           </div>
         </Can>

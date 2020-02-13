@@ -141,7 +141,7 @@ const Description = props => {
     );
   }
 
-  return <p className="lead text-muted">{props.description}</p>;
+  return <p className="lead">{props.description}</p>;
 };
 
 const mapStateToProps = state => ({

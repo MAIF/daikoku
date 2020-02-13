@@ -47,7 +47,7 @@ export const NoData = ({ language }) => {
 
 export const TheadBillingContainer = props => {
   return (
-    <div className="col-12 total">
+    <div className="col-12 total ">
       <div className="title__container__bloc">
         <span className="title__container">{props.label}</span>
       </div>

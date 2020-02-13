@@ -22,7 +22,7 @@
     "All teams": "All teams",
     "All organizations": "All organizations",
     "settings": "settings",
-    "reset": "Reset",
+    "Reset": "Reset",
     "Logout": "Logout",
     "Your APIs center": "Your APIs center",
     "Daikoku description start": "Daikoku is the perfect",
@@ -533,5 +533,20 @@
     "team.created.success": "Team %s created successfully",
     "team.updated.success": "Team %s updated successfully",
     "user.created.success": "User %s created successfully",
-    "user.updated.success": "User %s updated successfully"
+    "user.updated.success": "User %s updated successfully",
+    "unsaved.modifications.title": "Unsaved modifications",
+    "unsaved.modifications.message": "Your have unsaved modifications, do you want to save it before continue ?",
+    "Set Color Theme from UI": "Set Color Theme from UI",
+    "Otoroshi Url": "Otoroshi Url",
+    "Otoroshi Host": "Otoroshi Host",
+    "Otoroshi client id": "Otoroshi client id",
+    "Otoroshi client secret": "Otoroshi client secret",
+    "otoroshi.settings.delete.confirm": "Are you sure you want to delete those otoroshi settings ?",
+    "Otoroshi settings": "Otoroshi settings",
+    "New otoroshi settings": "New otoroshi settings",
+    "Host": "Host",
+    "Edit this settings": "Edit this settings",
+    "Delete this settings": "Delete this settings",
+    "Create new settings": "Create new settings"
+
 }
