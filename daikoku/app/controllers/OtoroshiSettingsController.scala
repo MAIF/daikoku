@@ -220,7 +220,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                             "daikoku_created_on_tenant" -> tenant.id.value,
                             "daikoku_testing_only" -> "true",
                             "daikoku_routing" -> clientName
-                          )
+                          ),
+                          rotation = None
                         )
                         otoroshiClient
                           .createApiKey(serviceGroup, apiKey)(settings)

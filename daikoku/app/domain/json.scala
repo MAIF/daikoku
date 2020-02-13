@@ -413,7 +413,9 @@ object json {
               .getOrElse(UsagePlanVisibility.Public),
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            autoRotation = (json \ "autoRotation")
+              .asOpt[Boolean]
           )
         )
       } recover {
@@ -440,7 +442,8 @@ object json {
         .getOrElse(JsBoolean(false))
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams)
+      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
     )
   }
   val FreeWithQuotasFormat = new Format[FreeWithQuotas] {
@@ -465,7 +468,9 @@ object json {
               .getOrElse(UsagePlanVisibility.Public),
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            autoRotation = (json \ "autoRotation")
+              .asOpt[Boolean]
           )
         )
       } recover {
@@ -495,7 +500,8 @@ object json {
         .getOrElse(JsBoolean(false))
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams)
+      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
     )
   }
   val QuotasWithLimitsFormat = new Format[QuotasWithLimits] {
@@ -522,7 +528,9 @@ object json {
               .getOrElse(UsagePlanVisibility.Public),
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            autoRotation = (json \ "autoRotation")
+              .asOpt[Boolean]
           )
         )
       } recover {
@@ -557,7 +565,8 @@ object json {
         .getOrElse(JsBoolean(false))
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams)
+      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
     )
   }
   val QuotasWithoutLimitsFormat = new Format[QuotasWithoutLimits] {
@@ -586,7 +595,9 @@ object json {
               .getOrElse(UsagePlanVisibility.Public),
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            autoRotation = (json \ "autoRotation")
+              .asOpt[Boolean]
           )
         )
       } recover {
@@ -622,7 +633,8 @@ object json {
         .getOrElse(JsBoolean(false))
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams)
+      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
     )
   }
   val PayPerUseFormat = new Format[PayPerUse] {
@@ -647,7 +659,9 @@ object json {
               .getOrElse(UsagePlanVisibility.Public),
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            autoRotation = (json \ "autoRotation")
+              .asOpt[Boolean]
           )
         )
       } recover {
@@ -680,7 +694,8 @@ object json {
         .getOrElse(JsBoolean(false))
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams)
+      "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
     )
   }
   val OtoroshiApiKeyFormat = new Format[OtoroshiApiKey] {
@@ -1356,6 +1371,52 @@ object json {
     )
   }
 
+  val ApiKeyRotationFormat: Format[ApiKeyRotation] = new Format[ApiKeyRotation] {
+    override def reads(json: JsValue): JsResult[ApiKeyRotation] =
+      Try {
+        JsSuccess(
+          ApiKeyRotation(
+            enabled = (json \ "enabled").as[Boolean],
+            rotationEvery = (json \ "rotationEvery").as[Long],
+            gracePeriod = (json \ "gracePeriod").as[Long],
+            nextSecret = (json \ "nextSecret").asOpt[String]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiKeyRotation): JsValue = Json.obj(
+      "enabled" -> o.enabled,
+      "rotationEvery" -> o.rotationEvery,
+      "gracePeriod" -> o.gracePeriod,
+      "nextSecret" -> o.nextSecret
+    )
+  }
+
+  val ApiSubscriptionyRotationFormat = new Format[ApiSubscriptionRotation] {
+    override def reads(json: JsValue): JsResult[ApiSubscriptionRotation] =
+      Try {
+        JsSuccess(
+          ApiSubscriptionRotation(
+            enabled = (json \ "enabled").as[Boolean],
+            rotationEvery = (json \ "rotationEvery").as[Long],
+            gracePeriod = (json \ "gracePeriod").as[Long],
+            pendingRotation = (json \ "pendingRotation").as[Boolean]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiSubscriptionRotation): JsValue = Json.obj(
+      "enabled" -> o.enabled,
+      "rotationEvery" -> o.rotationEvery,
+      "gracePeriod" -> o.gracePeriod,
+      "pendingRotation" -> o.pendingRotation
+    )
+  }
+
   val ApiSubscriptionFormat = new Format[ApiSubscription] {
     override def reads(json: JsValue): JsResult[ApiSubscription] =
       Try {
@@ -1371,7 +1432,8 @@ object json {
             createdAt = (json \ "createdAt").as(DateTimeFormat),
             by = (json \ "by").as(UserIdFormat),
             customName = (json \ "customName").asOpt[String],
-            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true)
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+            rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat)
           )
         )
       } recover {
@@ -1391,7 +1453,11 @@ object json {
         .map(id => JsString(id))
         .getOrElse(JsNull)
         .as[JsValue],
-      "enabled" -> o.enabled
+      "enabled" -> o.enabled,
+      "rotation" -> o.rotation
+        .map(ApiSubscriptionyRotationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
 
@@ -1411,7 +1477,11 @@ object json {
         "monthlyQuota" -> apk.monthlyQuota,
         "metadata" -> JsObject(apk.metadata.mapValues(JsString.apply)),
         "tags" -> JsArray(apk.tags.map(JsString.apply)),
-        "restrictions" -> apk.restrictions.asJson
+        "restrictions" -> apk.restrictions.asJson,
+        "rotation" -> apk.rotation
+          .map(ApiKeyRotationFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue]
       )
       override def reads(json: JsValue): JsResult[ActualOtoroshiApiKey] =
         Try {
@@ -1444,6 +1514,7 @@ object json {
               .map(_.value.map(_.as[String]))
               .getOrElse(Seq.empty[String]),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
+            rotation = (json \ "rotation").asOpt(ApiKeyRotationFormat)
           )
         } map {
           case sd => JsSuccess(sd)
@@ -1484,6 +1555,8 @@ object json {
         case "OtoroshiSyncApiError" => OtoroshiSyncApiErrorFormat.reads(json)
         case "ApiKeyDeletionInformation" =>
           ApiKeyDeletionInformationFormat.reads(json)
+        case "ApiKeyRotationInProgress" => ApiKeyRotationInProgressFormat.reads(json)
+        case "ApiKeyRotationEnded" => ApiKeyRotationEndedFormat.reads(json)
         case str => JsError(s"Bad notification value: $str")
       }
       override def writes(o: NotificationAction) = o match {
@@ -1505,6 +1578,12 @@ object json {
         case p: ApiKeyDeletionInformation =>
           ApiKeyDeletionInformationFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "ApiKeyDeletionInformation")
+        case p: ApiKeyRotationInProgress =>
+          ApiKeyRotationInProgressFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "ApiKeyRotationInProgress")
+        case p: ApiKeyRotationEnded =>
+          ApiKeyRotationEndedFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "ApiKeyRotationEnded")
       }
     }
 
@@ -1612,6 +1691,36 @@ object json {
     override def writes(o: OtoroshiSyncApiError): JsValue = Json.obj(
       "api" -> ApiFormat.writes(o.api),
       "message" -> o.message
+    )
+  }
+  val ApiKeyRotationInProgressFormat = new Format[ApiKeyRotationInProgress] {
+    override def reads(json: JsValue): JsResult[ApiKeyRotationInProgress]  = Try {
+      JsSuccess(
+        ApiKeyRotationInProgress(
+          subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+        )
+      )
+    } recover {
+      case e => JsError(e.getMessage)
+    } get
+
+    override def writes(o: ApiKeyRotationInProgress): JsValue = Json.obj(
+      "subscription" -> ApiSubscriptionIdFormat.writes(o.subscription)
+    )
+  }
+  val ApiKeyRotationEndedFormat = new Format[ApiKeyRotationEnded] {
+    override def reads(json: JsValue): JsResult[ApiKeyRotationEnded]  = Try {
+      JsSuccess(
+        ApiKeyRotationEnded(
+          subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+        )
+      )
+    } recover {
+      case e => JsError(e.getMessage)
+    } get
+
+    override def writes(o: ApiKeyRotationEnded): JsValue = Json.obj(
+      "subscription" -> ApiSubscriptionIdFormat.writes(o.subscription)
     )
   }
 

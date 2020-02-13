@@ -57,7 +57,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
         team = team.id,
         api = api.id,
         by = user.id,
-        customName = None
+        customName = None,
+        rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation())
       )
       val ctx = Map(
         "user.id" -> user.id.value,
@@ -107,7 +108,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
           "daikoku_created_on_tenant" -> tenant.id.value
         ) ++ plan.otoroshiTarget
           .map(_.processedMetadata(ctx))
-          .getOrElse(Map.empty[String, String])
+          .getOrElse(Map.empty[String, String]),
+        rotation = plan.autoRotation.map(_ => ApiKeyRotation())
       )
       val tunedApiKey = plan match {
         case _: FreeWithoutQuotas => apiKey

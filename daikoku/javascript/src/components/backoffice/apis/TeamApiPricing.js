@@ -8,6 +8,7 @@ import classNames from 'classnames';
 
 import { Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { ThumbsDown } from 'react-feather';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -206,6 +207,24 @@ export class TeamApiPricing extends Component {
     };
   };
 
+  securityFlow = _found => {
+    return [
+      `>>> Security`,
+      'autoRotation',
+    ]
+  }
+
+  securityForm = _found => {
+    return {
+      'autoRotation': {
+        type: 'bool',
+        props: {
+          label: 'force apikey auto-rotation'
+        }
+      }
+    }
+  }
+
   componentDidMount() {
     Services.currentTenant(this.props.teamId)
       .then(tenant => this.setState({ tenant }))
@@ -269,6 +288,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.value',
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
+      ...this.securityFlow(found)
     ];
     const schema = {
       _id: {
@@ -331,6 +351,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
+      ...this.securityForm(found)
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -361,6 +382,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.value',
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
+      ...this.securityFlow(found)
     ];
     const schema = {
       _id: {
@@ -444,6 +466,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
+      ...this.securityForm(found)
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -479,6 +502,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.value',
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
+      ...this.securityFlow(found)
     ];
     const schema = {
       _id: {
@@ -598,6 +622,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
+      ...this.securityForm(found)
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -634,6 +659,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.value',
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
+      ...this.securityFlow(found)
     ];
     const schema = {
       _id: {
@@ -760,6 +786,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
+      ...this.securityForm(found)
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -792,6 +819,7 @@ export class TeamApiPricing extends Component {
       'trialPeriod.value',
       'trialPeriod.unit',
       ...this.otoroshiFlow(found),
+      ...this.securityFlow(found)
     ];
     const schema = {
       _id: {
@@ -897,6 +925,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
+      ...this.securityForm(found)
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -925,6 +954,7 @@ export class TeamApiPricing extends Component {
         unit: 'month',
       },
       visibility: PUBLIC,
+      rotation: false,
       otoroshiTarget: {
         otoroshiSettings: null,
         serviceGroup: null,
