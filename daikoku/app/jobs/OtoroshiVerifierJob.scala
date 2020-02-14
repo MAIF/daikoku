@@ -409,9 +409,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
   }
 
   def verifyRotation(): Future[Unit] = {
-    env.dataStore.apiSubscriptionRepo.forAllTenant().find(Json.obj("rotation.enabled" -> true)).map(
+    env.dataStore.apiSubscriptionRepo.forAllTenant().find(Json.obj("enabled" -> true, "rotation.enabled" -> true)).map(
       subscriptions => {
-        Logger.debug(s"${subscriptions.map(_.id.toString).mkString(", ")}")
         subscriptions.map { subscription =>
           env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant).map {
             case None =>
@@ -466,8 +465,6 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                     case Failure(e) => Logger.debug(e.getLocalizedMessage)
                                     case Success(Left(e)) => Logger.debug(Json.stringify(JsError.toJson(e)))
                                     case Success(Right(apk)) if !apk.rotation.exists(r => r.enabled) =>
-                                      Logger.debug("apk rotation iis disabled")
-                                      Logger.debug(s"id: ${apk.clientId} \\n otoroshi ==> ${Json.prettyPrint(apk.asJson)} \\n daikoku ==> ${Json.prettyPrint(subscription.asJson)}")
                                       env.dataStore.apiSubscriptionRepo.forTenant(subscription.tenant)
                                         .save(Json.obj("_id" -> subscription.id.asJson), subscription.copy(rotation = subscription.rotation.map(_.copy(enabled = false))).asJson.as[JsObject])
                                     case Success(Right(apk)) =>
@@ -476,7 +473,6 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                       val daikokuActualSecret: String = subscription.apiKey.clientSecret
                                       val pendingRotation: Boolean = subscription.rotation.exists(_.pendingRotation)
 
-                                      Logger.debug(s"id: ${apk.clientId} \\n otoroshi ==> ${Json.prettyPrint(apk.asJson)} \\n daikoku ==> ${Json.prettyPrint(subscription.asJson)}")
 
                                       //                                      if (!pendingRotation && otoroshiNextSecret.isEmpty && otoroshiActualSecret == daikokuActualSecret) {
                                       //                                        //todo: rien a faire

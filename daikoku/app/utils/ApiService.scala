@@ -36,7 +36,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
       .getOrElse(api.possibleUsagePlans.head)
 
     def createKey(api: Api, plan: UsagePlan, team: Team, group: JsObject)(
-        implicit otoroshiSettings: OtoroshiSettings
+      implicit otoroshiSettings: OtoroshiSettings
     ): Future[Either[AppError, JsObject]] = {
       import cats.implicits._
       // TODO: verify if group is in authorized groups (if some)
@@ -45,9 +45,11 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
       val clientId = IdGenerator.token(32)
       val clientSecret = IdGenerator.token(64)
       val clientName =
-        s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-          .getOrElse(plan.typeName)
-          .urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"
+        s"daikoku-api-key-${api.humanReadableId}-${
+          plan.customName
+            .getOrElse(plan.typeName)
+            .urlPathSegmentSanitized
+        }-${team.humanReadableId}-${System.currentTimeMillis()}"
       val apiSubscription = ApiSubscription(
         id = ApiSubscriptionId(BSONObjectID.generate().stringify),
         tenant = tenant.id,
@@ -115,16 +117,16 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
         case _: FreeWithoutQuotas => apiKey
         case p: FreeWithQuotas =>
           apiKey.copy(throttlingQuota = p.maxPerSecond,
-                      dailyQuota = p.maxPerDay,
-                      monthlyQuota = p.maxPerMonth)
+            dailyQuota = p.maxPerDay,
+            monthlyQuota = p.maxPerMonth)
         case p: QuotasWithLimits =>
           apiKey.copy(throttlingQuota = p.maxPerSecond,
-                      dailyQuota = p.maxPerDay,
-                      monthlyQuota = p.maxPerMonth)
+            dailyQuota = p.maxPerDay,
+            monthlyQuota = p.maxPerMonth)
         case p: QuotasWithoutLimits =>
           apiKey.copy(throttlingQuota = p.maxPerSecond,
-                      dailyQuota = p.maxPerDay,
-                      monthlyQuota = p.maxPerMonth)
+            dailyQuota = p.maxPerDay,
+            monthlyQuota = p.maxPerMonth)
         case _: PayPerUse => apiKey
       }
       val r: EitherT[Future, AppError, JsObject] = for {
@@ -174,7 +176,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                    api: Api,
                    team: Team): Future[Either[AppError, JsObject]] = {
     def deleteKey(api: Api, team: Team, group: JsObject)(
-        implicit otoroshiSettings: OtoroshiSettings
+      implicit otoroshiSettings: OtoroshiSettings
     ): Future[Either[AppError, JsObject]] = {
       import cats.implicits._
 
@@ -195,7 +197,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
         )
       } yield {
         Json.obj("archive" -> "done",
-                 "subscriptionId" -> subscription.id.asJson)
+          "subscriptionId" -> subscription.id.asJson)
       }
 
       r.value
@@ -242,21 +244,118 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                 val r: EitherT[Future, AppError, JsObject] = for {
                   apiKey <- EitherT(
                     otoroshiClient.getApikey(groupId,
-                                             subscription.apiKey.clientId))
+                      subscription.apiKey.clientId))
                     .leftMap(err => OtoroshiError(JsError.toJson(err)))
                   _ <- EitherT.liftF(
                     otoroshiClient.updateApiKey(groupId,
-                                                apiKey.copy(enabled = enabled)))
+                      apiKey.copy(enabled = enabled)))
                   _ <- EitherT.liftF(
                     env.dataStore.apiSubscriptionRepo
                       .forTenant(tenant.id)
                       .save(subscription.copy(enabled = enabled))
                   )
                 } yield {
-                  Json.obj("enabled" -> enabled,
-                           "subscriptionId" -> subscription.id.asJson)
+                  Json.obj("done" -> true,
+                    "subscription" -> subscription.copy(enabled = enabled).asJson)
                 }
 
+                r.value
+              })
+        }
+    }
+  }
+
+  def regenerateApiKeySecret(tenant: Tenant,
+                             subscription: ApiSubscription,
+                             plan: UsagePlan,
+                             api: Api,
+                             team: Team): Future[Either[AppError, JsObject]] = {
+    import cats.implicits._
+
+    plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+      tenant.otoroshiSettings.find(_.id == id)
+    } match {
+      case None => Future.successful(Left(OtoroshiSettingsNotFound))
+      case Some(otoSettings) =>
+        implicit val otoroshiSettings: OtoroshiSettings = otoSettings
+        plan.otoroshiTarget.map(_.serviceGroup) match {
+          case None => Future.successful(Left(ApiNotLinked))
+          case Some(groupId) =>
+            otoroshiClient
+              .getServiceGroup(groupId.value)
+              .flatMap(group => {
+                val groupId = (group \ "id").as[String]
+                val newClientSecret = IdGenerator.token(64)
+                val updatedSubscription = subscription.copy(apiKey = subscription.apiKey.copy(clientSecret = newClientSecret))
+
+                val r: EitherT[Future, AppError, JsObject] = for {
+                  apiKey <- EitherT(
+                    otoroshiClient.getApikey(groupId,
+                      subscription.apiKey.clientId))
+                    .leftMap(err => OtoroshiError(JsError.toJson(err)))
+                  _ <- EitherT.liftF(
+                    otoroshiClient.updateApiKey(groupId,
+                      apiKey.copy(clientSecret = newClientSecret)))
+                  _ <- EitherT.liftF(
+                    env.dataStore.apiSubscriptionRepo
+                      .forTenant(tenant.id)
+                      .save(updatedSubscription)
+                  )
+                } yield {
+                  Json.obj("done" -> true,
+                    "subscription" -> updatedSubscription.asJson)
+                }
+                r.value
+              })
+        }
+    }
+  }
+
+  def toggleApiKeyRotation(tenant: Tenant,
+                           subscription: ApiSubscription,
+                           plan: UsagePlan,
+                           api: Api,
+                           team: Team): Future[Either[AppError, JsObject]] = {
+    import cats.implicits._
+
+    plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+      tenant.otoroshiSettings.find(_.id == id)
+    } match {
+      case None => Future.successful(Left(OtoroshiSettingsNotFound))
+      case Some(otoSettings) =>
+        implicit val otoroshiSettings: OtoroshiSettings = otoSettings
+        plan.otoroshiTarget.map(_.serviceGroup) match {
+          case None => Future.successful(Left(ApiNotLinked))
+          case Some(groupId) =>
+            otoroshiClient
+              .getServiceGroup(groupId.value)
+              .flatMap(group => {
+                val groupId = (group \ "id").as[String]
+                val defaultSubscriptionRotation = ApiSubscriptionRotation()
+
+                val r: EitherT[Future, AppError, JsObject] = for {
+                  apiKey <- EitherT(
+                    otoroshiClient.getApikey(groupId,
+                      subscription.apiKey.clientId))
+                    .leftMap(err => OtoroshiError(JsError.toJson(err)))
+                  _ <- EitherT.liftF(
+                    otoroshiClient.updateApiKey(groupId,
+                      apiKey.copy(rotation = apiKey.rotation.map(r => r.copy(enabled = !r.enabled)).orElse(Some(ApiKeyRotation())))))
+                  _ <- EitherT.liftF(
+                    env.dataStore.apiSubscriptionRepo
+                      .forTenant(tenant.id)
+                      .save(subscription.copy(rotation = subscription.rotation.map(r => r.copy(enabled = !r.enabled)).orElse(Some(ApiSubscriptionRotation()))))
+                  )
+                  updatedSubscription <- EitherT.liftF(
+                    env.dataStore.apiSubscriptionRepo
+                      .forTenant(tenant.id)
+                      .findById(subscription.id)
+                  )
+
+                } yield {
+                  Json.obj("done" -> true,
+                    "subscription" -> updatedSubscription.get.asJson)
+                }
                 r.value
               })
         }

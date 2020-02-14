@@ -546,5 +546,11 @@
   "Host": "Hôte",
   "Edit this settings": "Modifier les paramètres",
   "Delete this settings": "Supprimer les paramèters",
-  "Create new settings": "Créer de nouveaux paramètres"
+  "Create new settings": "Créer de nouveaux paramètres",
+  "ApiKey settings": "Paramètres clef d'API",
+  "Custom Name": "Nom perso.",
+  "Rotation": "Rotation",
+  "Reset secret": "Réinit. secret",
+  "help.apikey.enabled": "Si l'apikey est désactivée, tout appel effectué avec elle échouera",
+  "help.apikey.rotation": "Si la rotation de secret est activée, celui-ci sera renouvelé tout les mois"
 }
