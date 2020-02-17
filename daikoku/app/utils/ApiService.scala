@@ -2,11 +2,7 @@ package fr.maif.otoroshi.daikoku.utils
 
 import cats.data.EitherT
 import controllers.AppError
-import controllers.AppError.{
-  ApiNotLinked,
-  OtoroshiError,
-  OtoroshiSettingsNotFound
-}
+import controllers.AppError.{ApiKeyRotationConflict, ApiNotLinked, OtoroshiError, OtoroshiSettingsNotFound}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -318,47 +314,54 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                            team: Team): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
-    plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
-      tenant.otoroshiSettings.find(_.id == id)
-    } match {
-      case None => Future.successful(Left(OtoroshiSettingsNotFound))
-      case Some(otoSettings) =>
-        implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        plan.otoroshiTarget.map(_.serviceGroup) match {
-          case None => Future.successful(Left(ApiNotLinked))
-          case Some(groupId) =>
-            otoroshiClient
-              .getServiceGroup(groupId.value)
-              .flatMap(group => {
-                val groupId = (group \ "id").as[String]
-                val defaultSubscriptionRotation = ApiSubscriptionRotation()
+    Logger.debug(plan.autoRotation.get.toString)
+    if (plan.autoRotation.getOrElse(false)) {
+     Future.successful(Left(ApiKeyRotationConflict))
+    } else {
+      plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+        tenant.otoroshiSettings.find(_.id == id)
+      } match {
+        case None => Future.successful(Left(OtoroshiSettingsNotFound))
+        case Some(otoSettings) =>
+          implicit val otoroshiSettings: OtoroshiSettings = otoSettings
+          plan.otoroshiTarget.map(_.serviceGroup) match {
+            case None => Future.successful(Left(ApiNotLinked))
+            case Some(groupId) =>
+              otoroshiClient
+                .getServiceGroup(groupId.value)
+                .flatMap(group => {
+                  val groupId = (group \ "id").as[String]
+                  val defaultSubscriptionRotation = ApiSubscriptionRotation()
 
-                val r: EitherT[Future, AppError, JsObject] = for {
-                  apiKey <- EitherT(
-                    otoroshiClient.getApikey(groupId,
-                      subscription.apiKey.clientId))
-                    .leftMap(err => OtoroshiError(JsError.toJson(err)))
-                  _ <- EitherT.liftF(
-                    otoroshiClient.updateApiKey(groupId,
-                      apiKey.copy(rotation = apiKey.rotation.map(r => r.copy(enabled = !r.enabled)).orElse(Some(ApiKeyRotation())))))
-                  _ <- EitherT.liftF(
-                    env.dataStore.apiSubscriptionRepo
-                      .forTenant(tenant.id)
-                      .save(subscription.copy(rotation = subscription.rotation.map(r => r.copy(enabled = !r.enabled)).orElse(Some(ApiSubscriptionRotation()))))
-                  )
-                  updatedSubscription <- EitherT.liftF(
-                    env.dataStore.apiSubscriptionRepo
-                      .forTenant(tenant.id)
-                      .findById(subscription.id)
-                  )
+                  val r: EitherT[Future, AppError, JsObject] = for {
+                    apiKey <- EitherT(
+                      otoroshiClient.getApikey(groupId,
+                        subscription.apiKey.clientId))
+                      .leftMap(err => OtoroshiError(JsError.toJson(err)))
+                    _ <- EitherT.liftF(
+                      otoroshiClient.updateApiKey(groupId,
+                        apiKey.copy(rotation = apiKey.rotation.map(r => r.copy(enabled = !r.enabled)).orElse(Some(ApiKeyRotation())))))
+                    _ <- EitherT.liftF(
+                      env.dataStore.apiSubscriptionRepo
+                        .forTenant(tenant.id)
+                        .save(subscription.copy(rotation = subscription.rotation.map(r => r.copy(enabled = !r.enabled)).orElse(Some(ApiSubscriptionRotation()))))
+                    )
+                    updatedSubscription <- EitherT.liftF(
+                      env.dataStore.apiSubscriptionRepo
+                        .forTenant(tenant.id)
+                        .findById(subscription.id)
+                    )
 
-                } yield {
-                  Json.obj("done" -> true,
-                    "subscription" -> updatedSubscription.get.asJson)
-                }
-                r.value
-              })
-        }
+                  } yield {
+                    Json.obj("done" -> true,
+                      "subscription" -> updatedSubscription.get.asJson)
+                  }
+                  r.value
+                })
+          }
+      }
     }
+
+
   }
 }

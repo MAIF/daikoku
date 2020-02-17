@@ -553,6 +553,6 @@
     "Rotation": "Rotation",
     "Reset secret": "Reset Secret",
     "help.apikey.enabled": "If this ApiKey is disabled, any call using it will fail",
-    "help.apikey.rotation": "If rotation is enabled then secret will be reseted every months"
-
+    "help.apikey.rotation": "If rotation is enabled then secret will be reseted every months",
+    "rotation.error.message": "You can't toggle rotation because of plan rotation is forced to enabled"
 }

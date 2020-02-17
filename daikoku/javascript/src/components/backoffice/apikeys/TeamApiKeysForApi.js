@@ -77,7 +77,11 @@ class TeamApiKeysForApiComponent extends Component {
       .then(subscriptions => this.setState({ subscriptions }));
   };
 
-  toggleApiKeyRotation = subscription => {
+  toggleApiKeyRotation = (subscription, plan) => {
+    if (plan.autoRotation) {
+      return toastr.error(t("Error", this.props.currentLanguage, false, "Error"), t("rotation.error.message", this.props.currentLanguage, false, "You can't toggle rotation because of plan rotation is forced to enabled"))
+    }
+
     return Services.toggleApiKeyRotation(this.props.currentTeam._id, subscription._id)
       .then(result =>
         Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id)
@@ -186,7 +190,7 @@ class TeamApiKeysForApiComponent extends Component {
                         updateCustomName={name => this.updateCustomName(subscription, name)}
                         deleteApiKey={() => this.deleteApiKey(subscription)}
                         archiveApiKey={() => this.archiveApiKey(subscription)}
-                        toggleRotation={() => this.toggleApiKeyRotation(subscription)}
+                        toggleRotation={() => this.toggleApiKeyRotation(subscription, plan)}
                         regenerateSecret={() => this.regenerateApiKeySecret(subscription)}
                       />
                     );
@@ -224,8 +228,6 @@ const ApiKeyCard = ({
   const [settingMode, setSettingMode] = useState(false)
   const [customName, setCustomName] = useState(subscription.customName || plan.type);
   const [rotation, setRotation] = useState(subscription.rotation.enabled)
-
-  console.debug({subscription})
 
   const { _id, apiKey } = subscription;
 
@@ -366,13 +368,13 @@ const ApiKeyCard = ({
                   <div className="col-6"><Translation i18nkey="Custom Name" language={currentLanguage}>Custom Name</Translation></div>
                   <input type="text" className="form-control col-6" disabled={!subscription.enabled} defaultValue={customName} onChange={e => setCustomName(e.target.value)}/>
                 </div>
-                <div className="d-flex flex-row align-items-start mb-3">
+                {!plan.autoRotation && <div className="d-flex flex-row align-items-start mb-3">
                   <div className="col-6">
                     <Translation i18nkey="Rotation" language={currentLanguage}>Rotation</Translation>
                     <Help message={t("help.apikey.rotation", currentLanguage, false, "If rotation is enabled then secret will be reseted every months")} />
                   </div>
                   <SwitchButton className="col-6" disabled={!subscription.enabled} checked={rotation} onSwitch={v => setRotation(v)} />
-                </div>
+                </div>}
               </form>
               <div className="d-flex justify-content-around">
                 <button type="button" className="btn btn-outline-danger" disabled={!subscription.enabled} onClick={regenerateSecret}>
