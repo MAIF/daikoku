@@ -1697,7 +1697,9 @@ object json {
     override def reads(json: JsValue): JsResult[ApiKeyRotationInProgress]  = Try {
       JsSuccess(
         ApiKeyRotationInProgress(
-          subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+          clientId = (json \ "clientId").as[String],
+          api = (json \ "api").as[String],
+          plan = (json \ "plan").as[String],
         )
       )
     } recover {
@@ -1705,14 +1707,18 @@ object json {
     } get
 
     override def writes(o: ApiKeyRotationInProgress): JsValue = Json.obj(
-      "subscription" -> ApiSubscriptionIdFormat.writes(o.subscription)
+      "clientId" -> o.clientId,
+      "api" -> o.api,
+      "plan" -> o.plan,
     )
   }
   val ApiKeyRotationEndedFormat = new Format[ApiKeyRotationEnded] {
     override def reads(json: JsValue): JsResult[ApiKeyRotationEnded]  = Try {
       JsSuccess(
         ApiKeyRotationEnded(
-          subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+          clientId = (json \ "clientId").as[String],
+          api = (json \ "api").as[String],
+          plan = (json \ "plan").as[String],
         )
       )
     } recover {
@@ -1720,7 +1726,9 @@ object json {
     } get
 
     override def writes(o: ApiKeyRotationEnded): JsValue = Json.obj(
-      "subscription" -> ApiSubscriptionIdFormat.writes(o.subscription)
+      "clientId" -> o.clientId,
+      "api" -> o.api,
+      "plan" -> o.plan
     )
   }
 

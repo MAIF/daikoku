@@ -255,7 +255,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         Some(settings.host)
                                       )
                                     case Success(Right(apk))
-                                        if apk.clientId != subscription.apiKey.clientId || apk.clientSecret != subscription.apiKey.clientSecret => {
+                                        if apk.clientId != subscription.apiKey.clientId || (!subscription.rotation.exists(_.enabled) && apk.clientSecret != subscription.apiKey.clientSecret) => {
                                       sendErrorNotification(
                                         NotificationAction
                                           .OtoroshiSyncSubscriptionError(
@@ -378,6 +378,24 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                             target.apikeyCustomization.restrictions
                                         )
 
+                                        if (subscription.rotation.exists(_.enabled) && apk.clientSecret != subscription.apiKey.clientSecret) {
+                                          val newSubscription = subscription.copy(rotation = subscription.rotation.map(_.copy(pendingRotation = true)), apiKey = subscription.apiKey.copy(clientSecret = apk.clientSecret))
+                                          val notification = Notification(
+                                            id = NotificationId(BSONObjectID.generate().stringify),
+                                            tenant = tenant.id,
+                                            team = subscription.team,
+                                            sender = jobUser,
+                                            action = NotificationAction.ApiKeyRotationEnded(apk.clientId, api.name, plan.customName.getOrElse(plan.typeName)),
+                                            notificationType = NotificationType.AcceptOnly
+                                          )
+
+                                          for {
+                                            _ <- env.dataStore.apiSubscriptionRepo.forTenant(subscription.tenant)
+                                              .save(Json.obj("_id" -> subscription.id.asJson), newSubscription.asJson.as[JsObject])
+                                            _ <- env.dataStore.notificationRepo.forTenant(subscription.tenant).save(notification)
+                                          } yield ()
+                                        }
+
                                         client
                                           .updateApiKey(
                                             target.serviceGroup.value,
@@ -482,9 +500,10 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         val notification = Notification(
                                           id = NotificationId(BSONObjectID.generate().stringify),
                                           tenant = tenant.id,
-                                          team = api.team,
+                                          team = subscription.team,
                                           sender = jobUser,
-                                          action = NotificationAction.ApiKeyRotationInProgress(subscription.id)
+                                          action = NotificationAction.ApiKeyRotationInProgress(apk.clientId, api.name, plan.customName.getOrElse(plan.typeName)),
+                                          notificationType = NotificationType.AcceptOnly
                                         )
 
                                         for {
@@ -498,9 +517,10 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         val notification = Notification(
                                           id = NotificationId(BSONObjectID.generate().stringify),
                                           tenant = tenant.id,
-                                          team = api.team,
+                                          team = subscription.team,
                                           sender = jobUser,
-                                          action = NotificationAction.ApiKeyRotationEnded(subscription.id)
+                                          action = NotificationAction.ApiKeyRotationEnded(apk.clientId, api.name, plan.customName.getOrElse(plan.typeName)),
+                                          notificationType = NotificationType.AcceptOnly
                                         )
                                         val newSubscription = subscription.copy(rotation = subscription.rotation.map(_.copy(pendingRotation = false)))
 
@@ -531,9 +551,9 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
     Future
       .sequence(
         Seq(
+          verifyRotation(),
           verifyIfOtoroshiGroupsStillExists(),
           verifyIfOtoroshiApiKeysStillExists(),
-          verifyRotation()
         ))
       .map(_ => ())
   }

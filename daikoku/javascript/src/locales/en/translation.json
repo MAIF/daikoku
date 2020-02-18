@@ -554,5 +554,7 @@
     "Reset secret": "Reset Secret",
     "help.apikey.enabled": "If this ApiKey is disabled, any call using it will fail",
     "help.apikey.rotation": "If rotation is enabled then secret will be reseted every months",
-    "rotation.error.message": "You can't toggle rotation because of plan rotation is forced to enabled"
+    "rotation.error.message": "You can't toggle rotation because of plan rotation is forced to enabled",
+    "notif.apikey.rotation.inprogress": "Your apiKey with clientId %s (%s/%s) begin his rotation. Its clientSecret hab been updated.",
+    "notif.apikey.rotation.ended": "Your apiKey with clientId %s (%s/%s) has ended his rotation."
 }

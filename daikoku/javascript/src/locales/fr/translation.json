@@ -553,5 +553,7 @@
   "Reset secret": "Réinit. secret",
   "help.apikey.enabled": "Si l'apikey est désactivée, tout appel effectué avec elle échouera",
   "help.apikey.rotation": "Si la rotation de secret est activée, celui-ci sera renouvelé tout les mois",
-  "rotation.error.message": "Vous ne pouvez par activer/désactiver la rotation automatique de la clef d'api car le plan force celle-ci."
+  "rotation.error.message": "Vous ne pouvez par activer/désactiver la rotation automatique de la clef d'api car le plan force celle-ci.",
+  "notif.apikey.rotation.inprogress": "Votre clef d'api avec le clientId %s a débuté sa rotation. Son clientSecret a été modifié.",
+  "notif.apikey.rotation.ended": "Votre clef d'api avec le clientId %s a terminé sa rotation."
 }

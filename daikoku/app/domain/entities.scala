@@ -1159,9 +1159,9 @@ object NotificationAction {
   case class ApiKeyDeletionInformation(api: String, clientId: String)
       extends NotificationAction
 
-  case class ApiKeyRotationInProgress(subscription: ApiSubscriptionId) extends NotificationAction
+  case class ApiKeyRotationInProgress(clientId: String, api: String, plan: String) extends NotificationAction
 
-  case class ApiKeyRotationEnded(subscription: ApiSubscriptionId) extends NotificationAction
+  case class ApiKeyRotationEnded(clientId: String, api: String, plan: String) extends NotificationAction
 }
 
 sealed trait NotificationType {
