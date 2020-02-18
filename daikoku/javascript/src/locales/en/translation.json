@@ -142,6 +142,7 @@
     "Subscribe": "Subscribe",
     "team.selection.title": "Select the team of the subscription",
     "team.selection.desc": "You are going to subscribe to the api. On which team do you want to make this subscriptions ?",
+    "teamapi.select.title": "Select the team to view your api key",
     "free.without.quotas.desc": "You'll pay nothing and do whatever you want :)",
     "free.with.quotas.desc": "You'll pay nothing but you'll have %s authorized requests per month",
     "quotas.with.limits.desc": "You'll pay %s %s and you'll have %s authorized requests per month",
