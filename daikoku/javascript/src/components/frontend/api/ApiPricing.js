@@ -180,7 +180,7 @@ export class ApiPricingCard extends Component {
                         this.props.currentLanguage,
                         'You are going to subscribe to the api. On which team do you want to make this subscriptions ?'
                       )}
-                      buttonLabel="subscribe"
+                      currentLanguage={this.props.currentLanguage}
                       teams={
                         authorizedTeams.filter(
                           team =>
@@ -194,7 +194,11 @@ export class ApiPricingCard extends Component {
                       action={teams => this.props.askForApikeys(teams)}
                       withAllTeamSelector={true}>
                       <button type="button" className="btn btn-sm btn-access-negative">
-                        Subscribe
+                          {t(
+                              'Subscribe',
+                              this.props.currentLanguage,
+                              'Subscribe'
+                          )}
                       </button>
                     </ActionWithTeamSelector>
                   )}
