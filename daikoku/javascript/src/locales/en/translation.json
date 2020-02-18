@@ -193,6 +193,8 @@
     "Select an asset": "Select an asset",
     "Find an assets": "Find an assets",
     "Select": "Select",
+    "SelectAll": "Select all",
+    "UnselectAll": "Unselect all",
     "Close": "Close",
     "loading": "loading...",
     "No assets found": "No assets found",
