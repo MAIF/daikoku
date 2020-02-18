@@ -732,13 +732,13 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def toggleApiKeyRotation(teamId: String, subscriptionId: String) = DaikokuAction.async { ctx =>
+  def toggleApiKeyRotation(teamId: String, subscriptionId: String) = DaikokuAction.async(parse.json) { ctx =>
     TeamAdminOnly(
       AuditTrailEvent(s"@{user.name} has toggle api subscription rotation @{subscription.id} of @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
         ctx.setCtxValue("subscription", subscription)
-        apiService.toggleApiKeyRotation(ctx.tenant, subscription, plan, api, team)
+        apiService.toggleApiKeyRotation(ctx.tenant, subscription, plan, api, team, (ctx.request.body.as[JsObject] \ "rotationEvery").as[Long], (ctx.request.body.as[JsObject] \ "gracePeriod").as[Long])
       })
     }
   }

@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
 import Popover from 'react-popover';
+import Select from 'react-select';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
@@ -77,15 +78,13 @@ class TeamApiKeysForApiComponent extends Component {
       .then(subscriptions => this.setState({ subscriptions }));
   };
 
-  toggleApiKeyRotation = (subscription, plan) => {
+  toggleApiKeyRotation = (subscription, plan, rotationEvery, gracePeriod) => {
     if (plan.autoRotation) {
       return toastr.error(t("Error", this.props.currentLanguage, false, "Error"), t("rotation.error.message", this.props.currentLanguage, false, "You can't toggle rotation because of plan rotation is forced to enabled"))
     }
-
-    return Services.toggleApiKeyRotation(this.props.currentTeam._id, subscription._id)
-      .then(result =>
-        Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id)
-      )
+    
+    return Services.toggleApiKeyRotation(this.props.currentTeam._id, subscription._id, rotationEvery, gracePeriod)
+      .then(() => Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id))
       .then(subscriptions => this.setState({ subscriptions }));
   };
 
@@ -190,7 +189,7 @@ class TeamApiKeysForApiComponent extends Component {
                         updateCustomName={name => this.updateCustomName(subscription, name)}
                         deleteApiKey={() => this.deleteApiKey(subscription)}
                         archiveApiKey={() => this.archiveApiKey(subscription)}
-                        toggleRotation={() => this.toggleApiKeyRotation(subscription, plan)}
+                        toggleRotation={(rotationEvery, gracePeriod) => this.toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)}
                         regenerateSecret={() => this.regenerateApiKeySecret(subscription)}
                       />
                     );
@@ -227,31 +226,65 @@ const ApiKeyCard = ({
   const [hide, setHide] = useState(true);
   const [settingMode, setSettingMode] = useState(false)
   const [customName, setCustomName] = useState(subscription.customName || plan.type);
-  const [rotation, setRotation] = useState(subscription.rotation.enabled)
+  const [rotation, setRotation] = useState(subscription.rotation.enabled);
+  const [editMode, setEditMode] = useState(false);
+  const [rotationEvery, setRotationEvery] = useState(subscription.rotation.rotationEvery || 744);
+  const [gracePeriod, setGracePeriod] = useState(subscription.rotation.gracePeriod ||168);
+  const [error, setError] = useState({})
 
   const { _id, apiKey } = subscription;
 
+  let inputRef = React.createRef();
   let clipboard = React.createRef();
 
+  useEffect(() => {
+    if (editMode) {
+      inputRef.current.focus();
+    }
+  }, [editMode]);
+
+
+  useEffect(() => {
+    
+    if (rotationEvery < 0) {
+      setError({...error, rotationEvery: "value can't be negative"})
+    } else {
+      delete error.rotationEvery
+      setError(error)
+    }
+  }, [rotationEvery]);
+
+
+  useEffect(() => {
+    if (gracePeriod < 0) {
+      setError({ ...error, gracePeriod: "value can't be negative" })
+    } else if (gracePeriod > rotationEvery) {
+      setError({...error, gracePeriod: "value can't be bigger than rotationEvery"})
+    } else {
+      delete error.gracePeriod
+      setError(error)
+    }
+  }, [gracePeriod]);
+
+  const handleCustomNameChange = () => {
+    updateCustomName(customName.trim()).then(() => setEditMode(false));
+  };
+
   const abort = () => {
-    setCustomName(subscription.customName || plan.type);
     setRotation(subscription.rotation.enabled)
     setSettingMode(false);
   };
 
+  const abortCustomNameEdit = () => {
+    setCustomName(subscription.customName || plan.type);
+    setEditMode(false);
+  };
+
   const handleChanges = () => {
-    const promises = [];
-
-    if (customName !== subscription.customName) {
-      promises.push(updateCustomName(customName.trim()))
+    if (subscription.enabled && !Object.keys(error).length) {
+      toggleRotation(rotationEvery, gracePeriod)
+        .then(() => setSettingMode(false))
     }
-
-    if (rotation !== rotation.enabled) {
-      promises.push(toggleRotation())
-    }
-
-    Promise.all(promises)
-      .then(() => setSettingMode(false))
   }
 
   return (
@@ -261,10 +294,41 @@ const ApiKeyCard = ({
         <div className="card-header">
           <div className="d-flex align-items-center justify-content-between">
             {!settingMode && (
-              <h3 style={{ wordBreak: 'break-all', marginBlockEnd: '0' }}>{customName}</h3>
+              !editMode ? (
+                <>
+                  <h3 style={{ wordBreak: 'break-all', marginBlockEnd: '0' }}>{customName}</h3>
+                  <button
+                    disabled={!subscription.enabled}
+                    type="button"
+                    className="btn btn-sm btn-access-negative ml-2"
+                    onClick={() => setEditMode(true)}>
+                    <i className="fas fa-pen cursor-pointer a-fake" />
+                  </button>
+                </>
+              ) : (
+                  <div className="input-group">
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={customName}
+                      ref={inputRef}
+                      onChange={e => setCustomName(e.target.value)}
+                    />
+                    <div className="input-group-append">
+                      <span
+                        className="input-group-text cursor-pointer"
+                        onClick={handleCustomNameChange}>
+                        <i className="fas fa-check accept" />
+                      </span>
+                      <span className="input-group-text cursor-pointer" onClick={abortCustomNameEdit}>
+                        <i className="fas fa-times escape a-fake" />
+                      </span>
+                    </div>
+                  </div>
+                )
             )}
             {settingMode && (
-              <h3><Translation i18nkey="ApiKey settings" language={currentLanguage}>ApiKey settings</Translation></h3>
+              <h3><Translation i18nkey="ApiKey rotation" language={currentLanguage}>ApiKey rotation</Translation></h3>
             )}
           </div>
         </div>
@@ -275,7 +339,14 @@ const ApiKeyCard = ({
                 <span className="badge badge-secondary">{formatPlanType(plan)}</span>
               </div>
               <div className="d-flex justify-content-around">
-                <Link to={statsLink} className="btn btn-sm btn-access-negative">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger ml-1"
+                  disabled={!subscription.enabled}
+                  onClick={regenerateSecret}>
+                  <i className="fas fa-sync-alt" />
+                </button>
+                <Link to={statsLink} className="btn btn-sm btn-access-negative ml-1">
                   <i className="fas fa-chart-bar" />
                 </Link>
                 <button
@@ -293,7 +364,16 @@ const ApiKeyCard = ({
                   type="button"
                   className="btn btn-sm btn-access-negative ml-1"
                   onClick={() => setSettingMode(true)}>
-                  <i className="fas fa-cog" />
+                  <i className="fas fa-history" />
+                </button>
+                <button
+                  type="button"
+                  className={classNames("btn btn-sm ml-1", {
+                    "btn-outline-danger": subscription.enabled,
+                    "btn-outline-success": !subscription.enabled
+                  })}
+                  onClick={archiveApiKey}>
+                  <i className="fas fa-power-off" />
                 </button>
               </div>
             </div>
@@ -356,34 +436,49 @@ const ApiKeyCard = ({
           </div>}
           {settingMode && (
             <div className="d-flex flex-column flex-grow-0">
-              <div className="d-flex flex-row align-items-start mb-3 pb-3 border-bottom">
-                <div className="col-6">
-                  <Translation i18nkey="Enabled" language={currentLanguage}>Enabled</Translation>
-                  <Help message={t("help.apikey.enabled", currentLanguage, false, "If this ApiKey is disabled, any call using it will fail")} />
-                </div>
-                <SwitchButton className="col-6" checked={subscription.enabled} onSwitch={archiveApiKey} />
-              </div>
-              <form>
+              {!plan.autoRotation && <form>
                 <div className="d-flex flex-row align-items-start mb-3">
-                  <div className="col-6"><Translation i18nkey="Custom Name" language={currentLanguage}>Custom Name</Translation></div>
-                  <input type="text" className="form-control col-6" disabled={!subscription.enabled} defaultValue={customName} onChange={e => setCustomName(e.target.value)}/>
-                </div>
-                {!plan.autoRotation && <div className="d-flex flex-row align-items-start mb-3">
                   <div className="col-6">
-                    <Translation i18nkey="Rotation" language={currentLanguage}>Rotation</Translation>
+                    <Translation i18nkey="Enabled" language={currentLanguage}>Enabled</Translation>
                     <Help message={t("help.apikey.rotation", currentLanguage, false, "If rotation is enabled then secret will be reseted every months")} />
                   </div>
                   <SwitchButton className="col-6" disabled={!subscription.enabled} checked={rotation} onSwitch={v => setRotation(v)} />
-                </div>}
-              </form>
+                </div>
+                <div className="d-flex flex-row align-items-start mb-3">
+                  <div className="col-6">
+                    <Translation i18nkey="Period" language={currentLanguage}>Rotation Every</Translation>
+                    <Help message={t("help.apikey.rotation", currentLanguage, false, "If rotation is enabled then secret will be reseted every months")} />
+                  </div>
+                  <input 
+                    type="number" min="0" step="1" 
+                    className={classNames("form-control col-6", { "on-error": !!error.rotationEvery})} 
+                    value={rotationEvery} 
+                    disabled={!subscription.enabled || !subscription.rotation.enabled ? 'disabled' : undefined} 
+                    onChange={e => setRotationEvery(Number(e.target.value))}/>
+                  {error.rotationEvery && <small class="invalid-input-info">{error.rotationEvery}</small>}
+                </div> 
+                <div className="d-flex flex-row align-items-start mb-3">
+                  <div className="col-6">
+                    <Translation i18nkey="Period" language={currentLanguage}>Grace Period</Translation>
+                    <Help message={t("help.apikey.rotation", currentLanguage, false, "If rotation is enabled then secret will be reseted every months")} />
+                  </div>
+                  <input 
+                    type="number" min="0" step="1" 
+                    className={classNames("form-control col-6", {"on-error": !!error.gracePeriod})} 
+                    value={gracePeriod}
+                    disabled={!subscription.enabled || !subscription.rotation.enabled ? 'disabled' : undefined} 
+                    onChange={e => setGracePeriod(Number(e.target.value))}/>
+                  {error.gracePeriod && <small class="invalid-info">{error.gracePeriod}</small>}
+                </div>
+              </form>}
               <div className="d-flex justify-content-around">
-                <button type="button" className="btn btn-outline-danger" disabled={!subscription.enabled} onClick={regenerateSecret}>
-                  <Translation i18nkey="Reset secret" language={currentLanguage}>Reset secret</Translation>
-                </button>
                 <button className="btn btn-access-negative" onClick={abort}>
                   <Translation i18nkey="Back" language={currentLanguage}>Back</Translation>
                 </button>
-                <button className="btn btn-access" disabled={!subscription.enabled} onClick={handleChanges}>
+                <button 
+                  className="btn btn-access" 
+                  disabled={!subscription.enabled || Object.keys(error).length ? 'disabled' : undefined} 
+                  onClick={handleChanges}>
                   <Translation i18nkey="Save" language={currentLanguage}>Save</Translation>
                 </button>
               </div>
@@ -395,16 +490,16 @@ const ApiKeyCard = ({
   );
 };
 
-const Help = ({message}) => {
+const Help = ({ message }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Popover isOpen={isOpen} style={{width: "250px", zIndex:100, backgroundColor: "#000", color: "#fff", borderRadius: "4px", padding: "2px 10px"}} body={message}>
-        <i
-          onMouseEnter={() => setIsOpen(true)}
-          onMouseLeave={() => setIsOpen(false)}
-          className="ml-4 far fa-question-circle"
-        />
+    <Popover isOpen={isOpen} style={{ width: "250px", zIndex: 100, backgroundColor: "#000", color: "#fff", borderRadius: "4px", padding: "2px 10px" }} body={message}>
+      <i
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => setIsOpen(false)}
+        className="ml-4 far fa-question-circle"
+      />
     </Popover>
   )
 }

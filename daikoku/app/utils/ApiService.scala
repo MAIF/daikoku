@@ -1,14 +1,14 @@
 package fr.maif.otoroshi.daikoku.utils
 
+import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import controllers.AppError
-import controllers.AppError.{ApiKeyRotationConflict, ApiNotLinked, OtoroshiError, OtoroshiSettingsNotFound}
+import controllers.AppError.{ApiKeyRotationConflict, ApiKeyRotationError, ApiNotLinked, OtoroshiError, OtoroshiSettingsNotFound}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
-import play.api.Logger
 import play.api.libs.json.{JsError, JsObject, Json}
 import reactivemongo.bson.BSONObjectID
 
@@ -311,12 +311,19 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                            subscription: ApiSubscription,
                            plan: UsagePlan,
                            api: Api,
-                           team: Team): Future[Either[AppError, JsObject]] = {
+                           team: Team,
+                           rotationEvery: Long,
+                           gracePeriod: Long): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
-    Logger.debug(plan.autoRotation.get.toString)
     if (plan.autoRotation.getOrElse(false)) {
      Future.successful(Left(ApiKeyRotationConflict))
+    } else if (rotationEvery <= gracePeriod) {
+      FastFuture.successful(Left(ApiKeyRotationError(Json.obj("error" -> "Rotation period can't ben less or equal to grace period"))))
+    } else if (rotationEvery <= 0) {
+      FastFuture.successful(Left(ApiKeyRotationError(Json.obj("error" -> "Rotation period can't be less or equal to zero"))))
+    } else if (gracePeriod <= 0) {
+      FastFuture.successful(Left(ApiKeyRotationError(Json.obj("error" -> "Grace period can't be less or equal to zero"))))
     } else {
       plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
         tenant.otoroshiSettings.find(_.id == id)
@@ -344,7 +351,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                     _ <- EitherT.liftF(
                       env.dataStore.apiSubscriptionRepo
                         .forTenant(tenant.id)
-                        .save(subscription.copy(rotation = subscription.rotation.map(r => r.copy(enabled = !r.enabled)).orElse(Some(ApiSubscriptionRotation()))))
+                        .save(subscription.copy(rotation = subscription.rotation.map(r => r.copy(enabled = !r.enabled, rotationEvery = rotationEvery, gracePeriod = gracePeriod))
+                          .orElse(Some(ApiSubscriptionRotation(rotationEvery = rotationEvery, gracePeriod = gracePeriod)))))
                     )
                     updatedSubscription <- EitherT.liftF(
                       env.dataStore.apiSubscriptionRepo

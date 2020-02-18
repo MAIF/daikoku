@@ -292,7 +292,7 @@ export function archiveApiKey(teamId, subscriptionId, enable) {
     },
   }).then(r => r.json());
 }
-export function toggleApiKeyRotation(teamId, subscriptionId) {
+export function toggleApiKeyRotation(teamId, subscriptionId, rotationEvery, gracePeriod) {
   return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
     method: 'POST',
     credentials: 'include',
@@ -300,6 +300,7 @@ export function toggleApiKeyRotation(teamId, subscriptionId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ rotationEvery, gracePeriod }),
   }).then(r => r.json());
 }
 export function regenerateApiKeySecret(teamId, subscriptionId) {

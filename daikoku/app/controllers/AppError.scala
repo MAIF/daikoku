@@ -18,6 +18,7 @@ object AppError {
   case class OtoroshiError(message: JsObject) extends AppError
   case object SubscriptionConflict extends AppError
   case object ApiKeyRotationConflict extends AppError
+  case class ApiKeyRotationError(message: JsObject) extends AppError
 
   def render(error: AppError): mvc.Result = error match {
     case ApiNotFound  => NotFound(Json.obj("error" -> "Api not found"))
@@ -40,6 +41,8 @@ object AppError {
     case SubscriptionConflict =>
       Conflict(Json.obj("error" -> "conflict with subscription request"))
     case ApiKeyRotationConflict => Conflict(Json.obj("error" -> "Api have already setup apikey rotation"))
+    case ApiKeyRotationError(e) => BadRequest(e)
+
   }
 
   def toJson(error: AppError) = error match {
@@ -60,5 +63,6 @@ object AppError {
     case SubscriptionConflict =>
       Json.obj("error" -> "conflict with subscription request")
     case ApiKeyRotationConflict => Json.obj("error" -> "conflict, Api have already setup apikey rotation")
+    case ApiKeyRotationError(e) => e
   }
 }
