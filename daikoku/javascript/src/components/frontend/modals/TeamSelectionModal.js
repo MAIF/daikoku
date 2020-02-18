@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { PropTypes } from 'prop-types';
 import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
+import {t, Translation} from "../../../locales";
 
 export const TeamSelectorModal = ({
   closeModal,
   title,
   description,
-  buttonLabel = 'Ok',
+  currentLanguage,
   teams,
   pendingTeams = [],
   acceptedTeams = [],
@@ -100,7 +101,18 @@ export const TeamSelectorModal = ({
               onClick={() => toggleAllTeam()}>
               {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
               <span className="ml-2">
-                {selectedTeams.length === allTeams.length ? 'Unselect' : 'Select'} All
+                  {selectedTeams.length === allTeams.length
+                     ? <Translation
+                          i18nkey="UnselectAll"
+                          language={currentLanguage}
+                          >Unselect all
+                      </Translation>
+                      :<Translation
+                          i18nkey="SelectAll"
+                          language={currentLanguage}
+                        >Select all
+                      </Translation>
+                  }
               </span>
             </div>
           )}
@@ -123,7 +135,11 @@ export const TeamSelectorModal = ({
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          Close
+          {t(
+              'Close',
+              currentLanguage,
+              'Close'
+          )}
         </button>
         {!!allTeamSelector && (
           <button
@@ -132,7 +148,11 @@ export const TeamSelectorModal = ({
               disabled: !selectedTeams.length,
             })}
             onClick={() => finalAction()}>
-            {buttonLabel}
+            {t(
+                'Subscribe',
+                currentLanguage,
+                'Subscribe'
+            )}
           </button>
         )}
       </div>
@@ -144,7 +164,7 @@ TeamSelectorModal.propTypes = {
   closeModal: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   description: PropTypes.string,
-  buttonLabel: PropTypes.string,
+  currentLanguage: PropTypes.string,
   teams: PropTypes.array.isRequired,
   pendingTeams: PropTypes.array,
   acceptedTeams: PropTypes.array,
