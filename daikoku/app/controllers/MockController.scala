@@ -176,7 +176,8 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = None,
-        allowMultipleKeys = Some(false)
+        allowMultipleKeys = Some(false),
+        autoRotation = None
       ),
       FreeWithQuotas(
         UsagePlanId("2"),
@@ -188,7 +189,8 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = None,
-        allowMultipleKeys = Some(false)
+        allowMultipleKeys = Some(false),
+        autoRotation = None
       ),
       QuotasWithLimits(
         id = UsagePlanId("3"),
@@ -202,7 +204,8 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = None,
-        allowMultipleKeys = Some(false)
+        allowMultipleKeys = Some(false),
+        autoRotation = None
       ),
       QuotasWithoutLimits(
         UsagePlanId("4"),
@@ -217,7 +220,8 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = None,
-        allowMultipleKeys = Some(false)
+        allowMultipleKeys = Some(false),
+        autoRotation = None
       ),
       PayPerUse(
         UsagePlanId("5"),
@@ -229,7 +233,8 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = None,
-        allowMultipleKeys = Some(false)
+        allowMultipleKeys = Some(false),
+        autoRotation = None
       )
     ),
     defaultUsagePlan = UsagePlanId("1")
@@ -303,7 +308,8 @@ class MockController(DaikokuAction: DaikokuAction,
                          OtoroshiServiceGroupId("12345"))
         ),
         allowMultipleKeys = Some(false),
-        authorizedTeams = authorizedTeams
+        authorizedTeams = authorizedTeams,
+        autoRotation = None
       ),
       FreeWithQuotas(
         UsagePlanId("2"),
@@ -319,7 +325,8 @@ class MockController(DaikokuAction: DaikokuAction,
                          OtoroshiServiceGroupId("12345"))
         ),
         allowMultipleKeys = Some(false),
-        authorizedTeams = authorizedTeams
+        authorizedTeams = authorizedTeams,
+        autoRotation = None
       ),
       QuotasWithLimits(
         UsagePlanId("3"),
@@ -337,7 +344,8 @@ class MockController(DaikokuAction: DaikokuAction,
                          OtoroshiServiceGroupId("12345"))
         ),
         allowMultipleKeys = Some(false),
-        authorizedTeams = authorizedTeams
+        authorizedTeams = authorizedTeams,
+        autoRotation = None
       ),
       QuotasWithoutLimits(
         UsagePlanId("4"),
@@ -356,7 +364,8 @@ class MockController(DaikokuAction: DaikokuAction,
                          OtoroshiServiceGroupId("12345"))
         ),
         allowMultipleKeys = Some(false),
-        authorizedTeams = authorizedTeams
+        authorizedTeams = authorizedTeams,
+        autoRotation = None
       ),
       PayPerUse(
         UsagePlanId("5"),
@@ -372,7 +381,8 @@ class MockController(DaikokuAction: DaikokuAction,
                          OtoroshiServiceGroupId("12345"))
         ),
         allowMultipleKeys = Some(false),
-        authorizedTeams = authorizedTeams
+        authorizedTeams = authorizedTeams,
+        autoRotation = None
       )
     ),
     defaultUsagePlan = UsagePlanId("1")
@@ -491,7 +501,8 @@ class MockController(DaikokuAction: DaikokuAction,
           customName = None,
           customDescription = None,
           otoroshiTarget = None,
-          allowMultipleKeys = Some(false)
+          allowMultipleKeys = Some(false),
+          autoRotation = None
         ),
         FreeWithQuotas(
           UsagePlanId("2"),
@@ -503,7 +514,8 @@ class MockController(DaikokuAction: DaikokuAction,
           customName = None,
           customDescription = None,
           otoroshiTarget = None,
-          allowMultipleKeys = Some(false)
+          allowMultipleKeys = Some(false),
+          autoRotation = None
         ),
         QuotasWithLimits(
           id = UsagePlanId("3"),
@@ -517,7 +529,8 @@ class MockController(DaikokuAction: DaikokuAction,
           customName = None,
           customDescription = None,
           otoroshiTarget = None,
-          allowMultipleKeys = Some(false)
+          allowMultipleKeys = Some(false),
+          autoRotation = None
         ),
         QuotasWithoutLimits(
           UsagePlanId("4"),
@@ -532,7 +545,8 @@ class MockController(DaikokuAction: DaikokuAction,
           customName = None,
           customDescription = None,
           otoroshiTarget = None,
-          allowMultipleKeys = Some(false)
+          allowMultipleKeys = Some(false),
+          autoRotation = None
         ),
         PayPerUse(
           UsagePlanId("5"),
@@ -544,7 +558,8 @@ class MockController(DaikokuAction: DaikokuAction,
           customName = None,
           customDescription = None,
           otoroshiTarget = None,
-          allowMultipleKeys = Some(false)
+          allowMultipleKeys = Some(false),
+          autoRotation = None
         )
       ),
       defaultUsagePlan = UsagePlanId("1"),
@@ -1047,7 +1062,8 @@ class MockController(DaikokuAction: DaikokuAction,
           team = TeamId(team3Id),
           api = ApiId(s"my-toy-api-${tenantId.value}-$version"),
           by = user5.id,
-          customName = None
+          customName = None,
+          rotation = None
         )
         val api = ToyApi(version.toString, tenantId, TeamId(team1Id), ids)
         val plan = api.possibleUsagePlans.filter(_.id == subPlanId).head
@@ -1072,7 +1088,8 @@ class MockController(DaikokuAction: DaikokuAction,
             team = TeamId(team3Id),
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
-            customName = None
+            customName = None,
+            rotation = None
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("2"),
@@ -1087,7 +1104,8 @@ class MockController(DaikokuAction: DaikokuAction,
             team = TeamId(team3Id),
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
-            customName = None
+            customName = None,
+            rotation = None
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("3"),
@@ -1102,7 +1120,8 @@ class MockController(DaikokuAction: DaikokuAction,
             team = TeamId(team3Id),
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
-            customName = None
+            customName = None,
+            rotation = None
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("4"),
@@ -1118,7 +1137,8 @@ class MockController(DaikokuAction: DaikokuAction,
             team = TeamId(team3Id),
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
-            customName = None
+            customName = None,
+            rotation = None
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("5"),
@@ -1133,7 +1153,8 @@ class MockController(DaikokuAction: DaikokuAction,
             team = TeamId(team3Id),
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
-            customName = None
+            customName = None,
+            rotation = None
           ))
         ))
     } yield {
@@ -1211,7 +1232,8 @@ class MockController(DaikokuAction: DaikokuAction,
         constrainedServicesOnly = true,
         tags = Seq(),
         restrictions = ApiKeyRestrictions(),
-        metadata = Map()
+        metadata = Map(),
+        rotation = None
       ).asJson)
   }
 

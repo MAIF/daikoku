@@ -552,6 +552,7 @@ sealed trait UsagePlan {
   def maxRequestPerDay: Option[Long]
   def maxRequestPerMonth: Option[Long]
   def allowMultipleKeys: Option[Boolean]
+  def autoRotation: Option[Boolean]
   def costFor(requests: Long): BigDecimal
   def currency: Currency
   def customName: Option[String]
@@ -578,6 +579,7 @@ case object UsagePlan {
       customDescription: Option[String],
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -608,6 +610,7 @@ case object UsagePlan {
       customDescription: Option[String],
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -640,6 +643,7 @@ case object UsagePlan {
       customDescription: Option[String],
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -671,6 +675,7 @@ case object UsagePlan {
       customDescription: Option[String],
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -700,6 +705,7 @@ case object UsagePlan {
       customDescription: Option[String],
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
+      autoRotation: Option[Boolean],
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -1038,6 +1044,20 @@ case class Api(
   }
 }
 
+case class ApiKeyRotation(
+  enabled: Boolean = true,
+  rotationEvery: Long = 31 * 24,
+  gracePeriod: Long = 7 * 24,
+  nextSecret: Option[String] = None
+)
+
+case class ApiSubscriptionRotation(
+  enabled: Boolean = true,
+  rotationEvery: Long = 31 * 24,
+  gracePeriod: Long = 7 * 24,
+  pendingRotation: Boolean = false
+)
+
 case class ApiSubscription(
     id: ApiSubscriptionId,
     tenant: TenantId,
@@ -1049,7 +1069,8 @@ case class ApiSubscription(
     api: ApiId,
     by: UserId,
     customName: Option[String],
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    rotation: Option[ApiSubscriptionRotation]
 ) extends CanJson[User] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asSimpleJson: JsValue = Json.obj(
@@ -1086,7 +1107,8 @@ case class ActualOtoroshiApiKey(
     monthlyQuota: Long = RemainingQuotas.MaxValue,
     tags: Seq[String] = Seq.empty[String],
     metadata: Map[String, String] = Map.empty[String, String],
-    restrictions: ApiKeyRestrictions = ApiKeyRestrictions())
+    restrictions: ApiKeyRestrictions = ApiKeyRestrictions(),
+    rotation: Option[ApiKeyRotation])
     extends CanJson[OtoroshiApiKey] {
   override def asJson: JsValue = json.ActualOtoroshiApiKeyFormat.writes(this)
 }
@@ -1136,6 +1158,10 @@ object NotificationAction {
   }
   case class ApiKeyDeletionInformation(api: String, clientId: String)
       extends NotificationAction
+
+  case class ApiKeyRotationInProgress(clientId: String, api: String, plan: String) extends NotificationAction
+
+  case class ApiKeyRotationEnded(clientId: String, api: String, plan: String) extends NotificationAction
 }
 
 sealed trait NotificationType {

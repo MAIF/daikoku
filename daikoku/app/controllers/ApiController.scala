@@ -731,6 +731,29 @@ class ApiController(DaikokuAction: DaikokuAction,
       })
     }
   }
+
+  def toggleApiKeyRotation(teamId: String, subscriptionId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamAdminOnly(
+      AuditTrailEvent(s"@{user.name} has toggle api subscription rotation @{subscription.id} of @{team.name} - @{team.id}")
+    )(teamId, ctx) { team =>
+      apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
+        ctx.setCtxValue("subscription", subscription)
+        apiService.toggleApiKeyRotation(ctx.tenant, subscription, plan, api, team, (ctx.request.body.as[JsObject] \ "rotationEvery").as[Long], (ctx.request.body.as[JsObject] \ "gracePeriod").as[Long])
+      })
+    }
+  }
+
+  def regenerateApiKeySecret(teamId: String, subscriptionId: String) = DaikokuAction.async { ctx =>
+    TeamAdminOnly(
+      AuditTrailEvent(s"@{user.name} has regenerate apikey secret @{subscription.id} of @{team.name} - @{team.id}")
+    )(teamId, ctx) { team =>
+      apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
+        ctx.setCtxValue("subscription", subscription)
+        apiService.regenerateApiKeySecret(ctx.tenant, subscription, plan, api, team)
+      })
+    }
+  }
+
   def deleteApiSubscription(teamId: String, subscriptionId: String) = DaikokuAction.async { ctx =>
 
     TeamAdminOnly(
@@ -789,7 +812,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                          team: Team,
                           enabled: Boolean): Future[Either[AppError, JsObject]] = {
     for {
-      _      <- apiKeyStatsJob.syncForSubscription(subscription, tenant).map(seq => Ok(JsArray(seq.map(_.asJson))))
+      _      <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
       delete <- apiService.archiveApiKey(tenant, subscription, plan, api, team, enabled)
     } yield delete
   }

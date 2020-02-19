@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
+import Popover from 'react-popover';
+import Select from 'react-select';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
@@ -14,6 +16,7 @@ import {
   isUserIsTeamAdmin,
   CanIDoAction,
   PaginatedComponent,
+  BeautifulTitle
 } from '../../utils';
 import { SwitchButton } from '../../inputs';
 import { t, Translation } from '../../../locales';
@@ -69,11 +72,34 @@ class TeamApiKeysForApiComponent extends Component {
   };
 
   archiveApiKey = subscription => {
-    Services.archiveApiKey(this.props.currentTeam._id, subscription._id, !subscription.enabled)
+    return Services.archiveApiKey(this.props.currentTeam._id, subscription._id, !subscription.enabled)
       .then(() =>
         Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id)
       )
       .then(subscriptions => this.setState({ subscriptions }));
+  };
+
+  toggleApiKeyRotation = (subscription, plan, rotationEvery, gracePeriod) => {
+    if (plan.autoRotation) {
+      return toastr.error(t("Error", this.props.currentLanguage, false, "Error"), t("rotation.error.message", this.props.currentLanguage, false, "You can't toggle rotation because of plan rotation is forced to enabled"))
+    }
+
+    return Services.toggleApiKeyRotation(this.props.currentTeam._id, subscription._id, rotationEvery, gracePeriod)
+      .then(() => Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id))
+      .then(subscriptions => this.setState({ subscriptions }));
+  };
+
+  regenerateApiKeySecret = subscription => {
+    return window.confirm(t('reset.secret.confirm', this.props.currentLanguage, false, 'Are you sure you want to reset this secret ?')).then(ok => {
+      if (ok) {
+        Services.regenerateApiKeySecret(this.props.currentTeam._id, subscription._id)
+          .then(() =>
+            Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id)
+          )
+          .then(subscriptions => this.setState({ subscriptions }))
+          .then(() => toastr.success("secret reseted successfully"));
+      }
+    });
   };
 
   currentPlan = subscription => {
@@ -104,16 +130,16 @@ class TeamApiKeysForApiComponent extends Component {
       searched === ''
         ? this.state.subscriptions
         : this.state.subscriptions.filter(subs => {
-            if (subs.customName && subs.customName.toLowerCase().includes(searched)) {
-              return true;
-            } else if (subs.apiKey.clientId.toLowerCase().includes(searched)) {
-              return true;
-            } else {
-              return formatPlanType(this.currentPlan(subs))
-                .toLowerCase()
-                .includes(searched);
-            }
-          });
+          if (subs.customName && subs.customName.toLowerCase().includes(searched)) {
+            return true;
+          } else if (subs.apiKey.clientId.toLowerCase().includes(searched)) {
+            return true;
+          } else {
+            return formatPlanType(this.currentPlan(subs))
+              .toLowerCase()
+              .includes(searched);
+          }
+        });
 
     return (
       <TeamBackOffice
@@ -168,6 +194,8 @@ class TeamApiKeysForApiComponent extends Component {
                         updateCustomName={name => this.updateCustomName(subscription, name)}
                         deleteApiKey={() => this.deleteApiKey(subscription)}
                         archiveApiKey={() => this.archiveApiKey(subscription)}
+                        toggleRotation={(rotationEvery, gracePeriod) => this.toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)}
+                        regenerateSecret={() => this.regenerateApiKeySecret(subscription)}
                       />
                     );
                   }}
@@ -196,12 +224,21 @@ const ApiKeyCard = ({
   deleteApiKey,
   archiveApiKey,
   currentLanguage,
+  toggleRotation,
+  regenerateSecret
 }) => {
   //todo: maybe use showApikey props somewhere
   const [hide, setHide] = useState(true);
-  const [editMode, setEditMode] = useState(false);
+  const [settingMode, setSettingMode] = useState(false)
   const [customName, setCustomName] = useState(subscription.customName || plan.type);
+  const [rotation, setRotation] = useState(subscription.rotation.enabled);
+  const [editMode, setEditMode] = useState(false);
+  const [rotationEvery, setRotationEvery] = useState(subscription.rotation.rotationEvery || 744);
+  const [gracePeriod, setGracePeriod] = useState(subscription.rotation.gracePeriod || 168);
+  const [error, setError] = useState({})
+
   const { _id, apiKey } = subscription;
+
   let inputRef = React.createRef();
   let clipboard = React.createRef();
 
@@ -211,62 +248,151 @@ const ApiKeyCard = ({
     }
   }, [editMode]);
 
+
+  useEffect(() => {
+
+    if (rotationEvery < 0) {
+      setError({ ...error, rotationEvery: "value can't be negative" })
+    } else {
+      delete error.rotationEvery
+      setError(error)
+    }
+  }, [rotationEvery]);
+
+
+  useEffect(() => {
+    if (gracePeriod < 0) {
+      setError({ ...error, gracePeriod: "value can't be negative" })
+    } else if (gracePeriod > rotationEvery) {
+      setError({ ...error, gracePeriod: "value can't be bigger than rotationEvery" })
+    } else {
+      delete error.gracePeriod
+      setError(error)
+    }
+  }, [gracePeriod]);
+
   const handleCustomNameChange = () => {
     updateCustomName(customName.trim()).then(() => setEditMode(false));
   };
 
   const abort = () => {
+    setRotation(subscription.rotation.enabled)
+    setSettingMode(false);
+  };
+
+  const abortCustomNameEdit = () => {
     setCustomName(subscription.customName || plan.type);
     setEditMode(false);
   };
 
+  const handleChanges = () => {
+    if (subscription.enabled && !Object.keys(error).length) {
+      toggleRotation(rotationEvery, gracePeriod)
+        .then(() => setSettingMode(false))
+    }
+  }
+
   return (
     <div className="col-12 col-sm-6 col-md-4 mb-2">
       <div className="card">
+
         <div className="card-header">
           <div className="d-flex align-items-center justify-content-between">
-            {!editMode && (
-              <>
-                <h3 style={{ wordBreak: 'break-all', marginBlockEnd: '0' }}>{customName}</h3>
-                <button
-                  disabled={!subscription.enabled}
-                  type="button"
-                  className="btn btn-sm btn-access-negative ml-2"
-                  onClick={() => setEditMode(true)}>
-                  <i className="fas fa-pen cursor-pointer a-fake" />
-                </button>
-              </>
+            {!settingMode && (
+              !editMode ? (
+                <>
+                  <h3 style={{ wordBreak: 'break-all', marginBlockEnd: '0' }}>{customName}</h3>
+                  <button
+                    disabled={!subscription.enabled}
+                    type="button"
+                    className="btn btn-sm btn-access-negative ml-2"
+                    onClick={() => setEditMode(true)}>
+                    <i className="fas fa-pen cursor-pointer a-fake" />
+                  </button>
+                </>
+              ) : (
+                  <div className="input-group">
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={customName}
+                      ref={inputRef}
+                      onChange={e => setCustomName(e.target.value)}
+                    />
+                    <div className="input-group-append">
+                      <span
+                        className="input-group-text cursor-pointer"
+                        onClick={handleCustomNameChange}>
+                        <i className="fas fa-check accept" />
+                      </span>
+                      <span className="input-group-text cursor-pointer" onClick={abortCustomNameEdit}>
+                        <i className="fas fa-times escape a-fake" />
+                      </span>
+                    </div>
+                  </div>
+                )
             )}
-            {editMode && (
-              <div className="input-group">
-                <input
-                  type="text"
-                  className="form-control"
-                  value={customName}
-                  ref={inputRef}
-                  onChange={e => setCustomName(e.target.value)}
-                />
-                <div className="input-group-append">
-                  <span
-                    className="input-group-text cursor-pointer"
-                    onClick={handleCustomNameChange}>
-                    <i className="fas fa-check accept" />
-                  </span>
-                  <span className="input-group-text cursor-pointer" onClick={() => abort()}>
-                    <i className="fas fa-times escape a-fake" />
-                  </span>
-                </div>
-              </div>
+            {settingMode && (
+              <h3><Translation i18nkey="ApiKey rotation" language={currentLanguage}>ApiKey rotation</Translation></h3>
             )}
           </div>
         </div>
         <div className="card-body">
-          <div>
+          {!settingMode && <div>
             <div className="d-flex justify-content-between mb-3">
-              <Link to={statsLink} className="btn btn-sm btn-access-negative">
-                <i className="fas fa-chart-bar" />
-              </Link>
-              <span className="badge badge-secondary">{formatPlanType(plan)}</span>
+              <div className="flex-grow-1 justify-content-around">
+                <span className="badge badge-secondary">{formatPlanType(plan)}</span>
+              </div>
+              <div className="d-flex justify-content-around">
+                <BeautifulTitle title={t("Reset secret", currentLanguage, false, "Reset secret")}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger ml-1"
+                    disabled={!subscription.enabled}
+                    onClick={regenerateSecret}>
+                    <i className="fas fa-sync-alt" />
+                  </button>
+                </BeautifulTitle>
+                <BeautifulTitle title={t("View usage statistics", currentLanguage, false, "View usage statistics")}>
+                  <Link
+                    to={statsLink}
+                    className="btn btn-sm btn-access-negative ml-1">
+                    <i className="fas fa-chart-bar" />
+                  </Link>
+                </BeautifulTitle>
+                <BeautifulTitle title={t("Copy to clipboard", currentLanguage, false, "Copy to clipboard")}>
+                  <button
+                    type="button"
+                    disabled={!subscription.enabled}
+                    className="btn btn-sm btn-access-negative ml-1"
+                    onClick={() => {
+                      clipboard.current.select();
+                      document.execCommand('Copy');
+                      openInfoNotif(t('Credientials copied', currentLanguage));
+                    }}>
+                    <i className="fas fa-copy" />
+                  </button>
+                </BeautifulTitle>
+                <BeautifulTitle title={t("Setup rotation", currentLanguage, false, "Setup rotation")}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-access-negative ml-1"
+                    onClick={() => setSettingMode(true)}>
+                    <i className="fas fa-history" />
+                  </button>
+                </BeautifulTitle>
+                <BeautifulTitle title={t("Enable/Disable", currentLanguage, false, "Enable/Disable")}>
+                  <button
+                    type="button"
+                    className={classNames("btn btn-sm ml-1", {
+                      "btn-outline-danger": subscription.enabled,
+                      "btn-outline-success": !subscription.enabled
+                    })}
+                    onClick={archiveApiKey}>
+                    <i className="fas fa-power-off" />
+                  </button>
+                </BeautifulTitle>
+              </div>
             </div>
             <div className="form-group">
               <label htmlFor={`client-id-${_id}`} className="">
@@ -276,6 +402,7 @@ const ApiKeyCard = ({
               </label>
               <div className="">
                 <input
+                  readOnly
                   disabled={!subscription.enabled}
                   className="form-control input-sm"
                   id={`client-id-${_id}`}
@@ -291,6 +418,7 @@ const ApiKeyCard = ({
               </label>
               <div className="input-group">
                 <input
+                  readOnly
                   disabled={!subscription.enabled}
                   type={hide ? 'password' : ''}
                   className="form-control input-sm"
@@ -322,24 +450,78 @@ const ApiKeyCard = ({
               readOnly
               value={apiKey.clientId + ':' + apiKey.clientSecret}
             />
-
-            <div className="d-flex justify-content-between">
-              <SwitchButton onSwitch={archiveApiKey} checked={subscription.enabled} large />
-              <button
-                type="button"
-                disabled={!subscription.enabled}
-                className="btn btn-sm btn-access-negative mb-1 float-right"
-                onClick={() => {
-                  clipboard.current.select();
-                  document.execCommand('Copy');
-                  openInfoNotif(t('Credientials copied', currentLanguage));
-                }}>
-                <i className="fas fa-copy" />
-              </button>
+          </div>}
+          {settingMode && (
+            <div className="d-flex flex-column flex-grow-0">
+              {!plan.autoRotation && <form>
+                <div className="d-flex flex-row align-items-start mb-3">
+                  <div className="col-6">
+                    <Translation i18nkey="Enabled" language={currentLanguage}>Enabled</Translation>
+                    <Help message={t("help.apikey.rotation", currentLanguage, false, "If rotation is enabled then secret will be reseted every months")} />
+                  </div>
+                  <SwitchButton className="col-6" disabled={!subscription.enabled} checked={rotation} onSwitch={v => setRotation(v)} />
+                </div>
+                <div className="d-flex flex-row align-items-start mb-3">
+                  <div className="col-9">
+                    <Translation i18nkey="Rotation Period" language={currentLanguage}>Rotation Every</Translation>
+                    <Help message={t("help.apikey.rotation.period", currentLanguage, false, "Period after which the client secret will be automatically changed")} />
+                  </div>
+                  <input
+                    type="number" min="0" step="1"
+                    className={classNames("form-control col-3", { "on-error": !!error.rotationEvery })}
+                    value={rotationEvery}
+                    disabled={!subscription.enabled || !rotation ? 'disabled' : undefined}
+                    onChange={e => setRotationEvery(Number(e.target.value))} />
+                  {error.rotationEvery && <small class="invalid-input-info">{error.rotationEvery}</small>}
+                </div>
+                <div className="d-flex flex-row align-items-start mb-3">
+                  <div className="col-9">
+                    <Translation i18nkey="Grace Period" language={currentLanguage}>Grace Period</Translation>
+                    <Help message={t("help.apikey.grace.period", currentLanguage, false, "Period during which the new client secret and the old are both active. The rotation period includes this period.")} />
+                  </div>
+                  <input
+                    type="number" min="0" step="1"
+                    className={classNames("form-control col-3", { "on-error": !!error.gracePeriod })}
+                    value={gracePeriod}
+                    disabled={!subscription.enabled || !rotation ? 'disabled' : undefined}
+                    onChange={e => setGracePeriod(Number(e.target.value))} />
+                  {error.gracePeriod && <small class="invalid-info">{error.gracePeriod}</small>}
+                </div>
+              </form>}
+              <div className="d-flex justify-content-around">
+                <button className="btn btn-access-negative" onClick={abort}>
+                  <Translation i18nkey="Back" language={currentLanguage}>Back</Translation>
+                </button>
+                <button
+                  className="btn btn-access"
+                  disabled={!subscription.enabled || Object.keys(error).length ? 'disabled' : undefined}
+                  onClick={handleChanges}>
+                  <Translation i18nkey="Save" language={currentLanguage}>Save</Translation>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+const Help = ({ message }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Popover 
+      isOpen={isOpen} 
+      preferPlace='below'
+      place='below' 
+      className="beautiful-popover"
+      body={message}>
+      <i
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => setIsOpen(false)}
+        className="ml-4 far fa-question-circle"
+      />
+    </Popover>
+  )
+}

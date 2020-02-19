@@ -30,13 +30,14 @@ export class SwitchButton extends Component {
         className={classNames({
           'switch--loading': this.state.loading,
           'switch--loaded': !this.state.loading,
+          'switch--disabled': this.props.disabled
         })}>
         <label
           className={classNames('switch--item', {
             ...className,
           })}
           htmlFor={id}>
-          <div className="switch__label">{label}</div>
+          {label && <div className="switch__label">{label}</div>}
           <input
             type="checkbox"
             id={id}
@@ -44,6 +45,7 @@ export class SwitchButton extends Component {
             checked={this.props.checked}
             style={{ display: 'none' }}
             onChange={() => this.notifySwitch()}
+            disabled={this.props.disabled}
           />
           <span className="slider round" />
         </label>
@@ -57,4 +59,5 @@ SwitchButton.propTypes = {
   label: PropTypes.string,
   onSwitch: PropTypes.func,
   checked: PropTypes.bool,
+  disabled: PropTypes.bool
 };

@@ -175,6 +175,28 @@ img:hover+.changePicture,.changePicture:hover{
   }
 }
 
+.beautiful-popover {
+  z-index: 100;
+  max-width: 250px;
+}
+
+.Popover-body {
+  display: flex;
+  padding: 5px 10px;
+  background: hsl(0, 0%, 27%);
+  color: white;
+  border-radius: 4px;
+  justify-content: center;
+  align-items: center;
+
+}
+
+.Popover-tipShape {
+  fill: hsl(0, 0%, 27%)
+}
+
+
+
 /* rwd */
 @media screen and (min-width: 576px) {
   .col-form-label {

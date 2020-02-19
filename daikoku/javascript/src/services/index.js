@@ -292,6 +292,29 @@ export function archiveApiKey(teamId, subscriptionId, enable) {
     },
   }).then(r => r.json());
 }
+export function toggleApiKeyRotation(teamId, subscriptionId, rotationEvery, gracePeriod) {
+  return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ rotationEvery, gracePeriod }),
+  }).then(r => r.json());
+}
+export function regenerateApiKeySecret(teamId, subscriptionId) {
+  return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+
 
 export function cleanArchivedSubscriptions(teamId) {
   return fetch(`/api/teams/${teamId}/subscriptions/_clean`, {

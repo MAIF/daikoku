@@ -547,6 +547,23 @@
     "Host": "Host",
     "Edit this settings": "Edit this settings",
     "Delete this settings": "Delete this settings",
-    "Create new settings": "Create new settings"
-
+    "Create new settings": "Create new settings",
+    "ApiKey settings": "ApiKey settings",
+    "Custom Name": "Custom Name",
+    "Rotation": "Rotation",
+    "Reset secret": "Reset Secret",
+    "help.apikey.enabled": "If this ApiKey is disabled, any call using it will fail",
+    "help.apikey.rotation": "If rotation is enabled then secret will be reseted every months",
+    "rotation.error.message": "You can't toggle rotation because of plan rotation is forced to enabled",
+    "notif.apikey.rotation.inprogress": "Your apiKey with clientId %s (%s/%s) begin his rotation. Its clientSecret hab been updated.",
+    "notif.apikey.rotation.ended": "Your apiKey with clientId %s (%s/%s) has ended his rotation.",
+    "Rotation period": "Rotation Period",
+    "Grace Period": "Grace Period",
+    "help.apikey.rotation.period": "Period after which the client secret will be automatically changed",
+    "help.apikey.grace.period": "Period during which the new client secret and the old are both active. The rotation period includes this period.",
+    "reset.secret.confirm": "Are you sure you want to reset this secret ?",
+    "View usage statistics": "View usage statistics",
+    "Copy to clipboard": "Copy to clipboard",
+    "Setup rotation": "Setup rotation",
+    "Enable/Disable": "Enable/Disable"
 }

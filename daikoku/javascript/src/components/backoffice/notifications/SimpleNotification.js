@@ -54,6 +54,20 @@ export class SimpleNotification extends Component {
             title={t('ApiKey deletion information', this.props.currentLanguage)}
           />
         );
+      case 'ApiKeyRotationInProgress': return (
+        <i
+          className="fas fa-sync-alt"
+          style={{ marginRight: 5 }}
+          title={t('ApiKey rotation in progress', this.props.currentLanguage)}
+        />
+      );
+      case 'ApiKeyRotationEnded': return (
+        <i
+          className="fas fa-sync-alt"
+          style={{ marginRight: 5 }}
+          title={t('ApiKey rotation ended', this.props.currentLanguage)}
+        />
+      );
     }
   };
 
@@ -119,6 +133,8 @@ export class SimpleNotification extends Component {
         return 'Otoroshi verifier job';
       case 'ApiKeyDeletionInformation':
         return `${sender.name}`;
+      case 'ApiKeyRotationInProgress': return 'Otoroshi verifier job';
+      case 'ApiKeyRotationEnded': return 'Otoroshi verifier job';
     }
   }
 
@@ -188,6 +204,28 @@ export class SimpleNotification extends Component {
                 )}
                 {notification.action.type === 'OtoroshiSyncApiError' && (
                   <div>{notification.action.message}</div>
+                )}
+                {notification.action.type === 'ApiKeyRotationInProgress' && (
+                  <div>
+                    <Translation
+                      i18nkey="notif.apikey.rotation.inprogress"
+                      language={this.props.currentLanguage}
+                      replacements={[notification.action.clientId, notification.action.api, notification.action.plan]}>
+                      Your apiKey with clientId {notification.action.clientId} ({notification.action.api}/{notification.action.plan}) 
+                      has started its rotation. Its clientSecret hab been updated.
+                    </Translation>
+                  </div>
+                )}
+                {notification.action.type === 'ApiKeyRotationEnded' && (
+                  <div>
+                    <Translation
+                      i18nkey="notif.apikey.rotation.ended"
+                      language={this.props.currentLanguage}
+                      replacements={[notification.action.clientId, notification.action.api, notification.action.plan]}>
+                      Your apiKey with clientId {notification.action.clientId} ({notification.action.api}/{notification.action.plan}) 
+                      has ended its rotation.
+                    </Translation>
+                  </div>
                 )}
               </h5>
             </div>
