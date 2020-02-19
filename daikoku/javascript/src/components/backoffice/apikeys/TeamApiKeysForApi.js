@@ -16,6 +16,7 @@ import {
   isUserIsTeamAdmin,
   CanIDoAction,
   PaginatedComponent,
+  BeautifulTitle
 } from '../../utils';
 import { SwitchButton } from '../../inputs';
 import { t, Translation } from '../../../locales';
@@ -82,19 +83,23 @@ class TeamApiKeysForApiComponent extends Component {
     if (plan.autoRotation) {
       return toastr.error(t("Error", this.props.currentLanguage, false, "Error"), t("rotation.error.message", this.props.currentLanguage, false, "You can't toggle rotation because of plan rotation is forced to enabled"))
     }
-    
+
     return Services.toggleApiKeyRotation(this.props.currentTeam._id, subscription._id, rotationEvery, gracePeriod)
       .then(() => Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id))
       .then(subscriptions => this.setState({ subscriptions }));
   };
 
   regenerateApiKeySecret = subscription => {
-    return Services.regenerateApiKeySecret(this.props.currentTeam._id, subscription._id)
-      .then(() =>
-        Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id)
-      )
-      .then(subscriptions => this.setState({ subscriptions }))
-      .then(() => toastr.success("secret reseted successfully"));
+    return window.confirm(t('reset.secret.confirm', this.props.currentLanguage, false, 'Are you sure you want to reset this secret ?')).then(ok => {
+      if (ok) {
+        Services.regenerateApiKeySecret(this.props.currentTeam._id, subscription._id)
+          .then(() =>
+            Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id)
+          )
+          .then(subscriptions => this.setState({ subscriptions }))
+          .then(() => toastr.success("secret reseted successfully"));
+      }
+    });
   };
 
   currentPlan = subscription => {
@@ -228,8 +233,8 @@ const ApiKeyCard = ({
   const [customName, setCustomName] = useState(subscription.customName || plan.type);
   const [rotation, setRotation] = useState(subscription.rotation.enabled);
   const [editMode, setEditMode] = useState(false);
-  const [rotationEvery, setRotationEvery] = useState(subscription.rotation.rotationEvery || 744);
-  const [gracePeriod, setGracePeriod] = useState(subscription.rotation.gracePeriod ||168);
+  const [rotationEvery, setRotationEvery] = useState(subscription.rotation.rotationEvery || 744);
+  const [gracePeriod, setGracePeriod] = useState(subscription.rotation.gracePeriod || 168);
   const [error, setError] = useState({})
 
   const { _id, apiKey } = subscription;
@@ -245,9 +250,9 @@ const ApiKeyCard = ({
 
 
   useEffect(() => {
-    
+
     if (rotationEvery < 0) {
-      setError({...error, rotationEvery: "value can't be negative"})
+      setError({ ...error, rotationEvery: "value can't be negative" })
     } else {
       delete error.rotationEvery
       setError(error)
@@ -259,7 +264,7 @@ const ApiKeyCard = ({
     if (gracePeriod < 0) {
       setError({ ...error, gracePeriod: "value can't be negative" })
     } else if (gracePeriod > rotationEvery) {
-      setError({...error, gracePeriod: "value can't be bigger than rotationEvery"})
+      setError({ ...error, gracePeriod: "value can't be bigger than rotationEvery" })
     } else {
       delete error.gracePeriod
       setError(error)
@@ -339,42 +344,54 @@ const ApiKeyCard = ({
                 <span className="badge badge-secondary">{formatPlanType(plan)}</span>
               </div>
               <div className="d-flex justify-content-around">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-danger ml-1"
-                  disabled={!subscription.enabled}
-                  onClick={regenerateSecret}>
-                  <i className="fas fa-sync-alt" />
-                </button>
-                <Link to={statsLink} className="btn btn-sm btn-access-negative ml-1">
-                  <i className="fas fa-chart-bar" />
-                </Link>
-                <button
-                  type="button"
-                  disabled={!subscription.enabled}
-                  className="btn btn-sm btn-access-negative ml-1"
-                  onClick={() => {
-                    clipboard.current.select();
-                    document.execCommand('Copy');
-                    openInfoNotif(t('Credientials copied', currentLanguage));
-                  }}>
-                  <i className="fas fa-copy" />
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-access-negative ml-1"
-                  onClick={() => setSettingMode(true)}>
-                  <i className="fas fa-history" />
-                </button>
-                <button
-                  type="button"
-                  className={classNames("btn btn-sm ml-1", {
-                    "btn-outline-danger": subscription.enabled,
-                    "btn-outline-success": !subscription.enabled
-                  })}
-                  onClick={archiveApiKey}>
-                  <i className="fas fa-power-off" />
-                </button>
+                <BeautifulTitle title={t("Reset secret", currentLanguage, false, "Reset secret")}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger ml-1"
+                    disabled={!subscription.enabled}
+                    onClick={regenerateSecret}>
+                    <i className="fas fa-sync-alt" />
+                  </button>
+                </BeautifulTitle>
+                <BeautifulTitle title={t("View usage statistics", currentLanguage, false, "View usage statistics")}>
+                  <Link
+                    to={statsLink}
+                    className="btn btn-sm btn-access-negative ml-1">
+                    <i className="fas fa-chart-bar" />
+                  </Link>
+                </BeautifulTitle>
+                <BeautifulTitle title={t("Copy to clipboard", currentLanguage, false, "Copy to clipboard")}>
+                  <button
+                    type="button"
+                    disabled={!subscription.enabled}
+                    className="btn btn-sm btn-access-negative ml-1"
+                    onClick={() => {
+                      clipboard.current.select();
+                      document.execCommand('Copy');
+                      openInfoNotif(t('Credientials copied', currentLanguage));
+                    }}>
+                    <i className="fas fa-copy" />
+                  </button>
+                </BeautifulTitle>
+                <BeautifulTitle title={t("Setup rotation", currentLanguage, false, "Setup rotation")}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-access-negative ml-1"
+                    onClick={() => setSettingMode(true)}>
+                    <i className="fas fa-history" />
+                  </button>
+                </BeautifulTitle>
+                <BeautifulTitle title={t("Enable/Disable", currentLanguage, false, "Enable/Disable")}>
+                  <button
+                    type="button"
+                    className={classNames("btn btn-sm ml-1", {
+                      "btn-outline-danger": subscription.enabled,
+                      "btn-outline-success": !subscription.enabled
+                    })}
+                    onClick={archiveApiKey}>
+                    <i className="fas fa-power-off" />
+                  </button>
+                </BeautifulTitle>
               </div>
             </div>
             <div className="form-group">
@@ -445,29 +462,29 @@ const ApiKeyCard = ({
                   <SwitchButton className="col-6" disabled={!subscription.enabled} checked={rotation} onSwitch={v => setRotation(v)} />
                 </div>
                 <div className="d-flex flex-row align-items-start mb-3">
-                  <div className="col-6">
-                    <Translation i18nkey="Period" language={currentLanguage}>Rotation Every</Translation>
-                    <Help message={t("help.apikey.rotation", currentLanguage, false, "If rotation is enabled then secret will be reseted every months")} />
+                  <div className="col-9">
+                    <Translation i18nkey="Rotation Period" language={currentLanguage}>Rotation Every</Translation>
+                    <Help message={t("help.apikey.rotation.period", currentLanguage, false, "Period after which the client secret will be automatically changed")} />
                   </div>
-                  <input 
-                    type="number" min="0" step="1" 
-                    className={classNames("form-control col-6", { "on-error": !!error.rotationEvery})} 
-                    value={rotationEvery} 
-                    disabled={!subscription.enabled || !subscription.rotation.enabled ? 'disabled' : undefined} 
-                    onChange={e => setRotationEvery(Number(e.target.value))}/>
+                  <input
+                    type="number" min="0" step="1"
+                    className={classNames("form-control col-3", { "on-error": !!error.rotationEvery })}
+                    value={rotationEvery}
+                    disabled={!subscription.enabled || !rotation ? 'disabled' : undefined}
+                    onChange={e => setRotationEvery(Number(e.target.value))} />
                   {error.rotationEvery && <small class="invalid-input-info">{error.rotationEvery}</small>}
-                </div> 
+                </div>
                 <div className="d-flex flex-row align-items-start mb-3">
-                  <div className="col-6">
-                    <Translation i18nkey="Period" language={currentLanguage}>Grace Period</Translation>
-                    <Help message={t("help.apikey.rotation", currentLanguage, false, "If rotation is enabled then secret will be reseted every months")} />
+                  <div className="col-9">
+                    <Translation i18nkey="Grace Period" language={currentLanguage}>Grace Period</Translation>
+                    <Help message={t("help.apikey.grace.period", currentLanguage, false, "Period during which the new client secret and the old are both active. The rotation period includes this period.")} />
                   </div>
-                  <input 
-                    type="number" min="0" step="1" 
-                    className={classNames("form-control col-6", {"on-error": !!error.gracePeriod})} 
+                  <input
+                    type="number" min="0" step="1"
+                    className={classNames("form-control col-3", { "on-error": !!error.gracePeriod })}
                     value={gracePeriod}
-                    disabled={!subscription.enabled || !subscription.rotation.enabled ? 'disabled' : undefined} 
-                    onChange={e => setGracePeriod(Number(e.target.value))}/>
+                    disabled={!subscription.enabled || !rotation ? 'disabled' : undefined}
+                    onChange={e => setGracePeriod(Number(e.target.value))} />
                   {error.gracePeriod && <small class="invalid-info">{error.gracePeriod}</small>}
                 </div>
               </form>}
@@ -475,9 +492,9 @@ const ApiKeyCard = ({
                 <button className="btn btn-access-negative" onClick={abort}>
                   <Translation i18nkey="Back" language={currentLanguage}>Back</Translation>
                 </button>
-                <button 
-                  className="btn btn-access" 
-                  disabled={!subscription.enabled || Object.keys(error).length ? 'disabled' : undefined} 
+                <button
+                  className="btn btn-access"
+                  disabled={!subscription.enabled || Object.keys(error).length ? 'disabled' : undefined}
                   onClick={handleChanges}>
                   <Translation i18nkey="Save" language={currentLanguage}>Save</Translation>
                 </button>
