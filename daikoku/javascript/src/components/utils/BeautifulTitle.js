@@ -10,7 +10,7 @@ export const BeautifulTitle = ({ title, children }) => {
       preferPlace='below'
       place='below'
       onOuterAction={() => setIsOpen(false)}
-      className="beautiful-title"
+      className="beautiful-popover"
       body={title}>
       <span
         onMouseEnter={() => setIsOpen(true)}

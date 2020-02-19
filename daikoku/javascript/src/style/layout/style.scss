@@ -175,6 +175,10 @@ img:hover+.changePicture,.changePicture:hover{
   }
 }
 
+.beautiful-popover {
+  z-index: 100;
+  max-width: 250px;
+}
 
 .Popover-body {
   display: flex;

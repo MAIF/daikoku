@@ -511,7 +511,12 @@ const Help = ({ message }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Popover isOpen={isOpen} style={{ width: "250px", zIndex: 100, backgroundColor: "#000", color: "#fff", borderRadius: "4px", padding: "2px 10px" }} body={message}>
+    <Popover 
+      isOpen={isOpen} 
+      preferPlace='below'
+      place='below' 
+      className="beautiful-popover"
+      body={message}>
       <i
         onMouseEnter={() => setIsOpen(true)}
         onMouseLeave={() => setIsOpen(false)}
