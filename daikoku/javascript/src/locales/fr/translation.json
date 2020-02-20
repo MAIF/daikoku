@@ -181,8 +181,8 @@
     "s": "asset",
     "p": "assets"
   },
-  "Asset filename": "Nom de fichier de l'Asset",
-  "Asset title": "Titre de l'Asset",
+  "Asset filename": "Nom de fichier de l'asset",
+  "Asset title": "Titre de l'asset",
   "Search ...": "Rechercher ...",
   "delete.tenant.confirm": "Êtes-vous sûr de vouloir supprimer ce tenant?",
   "Create a new tenant": "Créer un nouveau tenant",

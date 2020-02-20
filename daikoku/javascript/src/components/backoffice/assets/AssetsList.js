@@ -130,25 +130,25 @@ const ReplaceButton = props => {
 
   return (
     <>
-      <input
-        ref={r => setInput(r)}
-        type="file"
-        multiple
-        className="form-control hide"
-        onChange={e => {
-          const file = e.target.files[0];
-          if (e.target.files.length > 1) {
-            props.displayError(t('error.replace.files.multi', props.currentLanguage));
-          } else if (props.asset.contentType !== file.type) {
-            props.displayError(t('error.replace.files.content.type', props.currentLanguage));
-          } else {
-            setFile(file);
-          }
-        }}
-      />
       <button type="button" onClick={trigger} className="btn btn-sm btn-outline-primary">
         <i className="fas fa-retweet" />
       </button>
+      <input
+          ref={r => setInput(r)}
+          type="file"
+          multiple
+          className="form-control hide"
+          onChange={e => {
+            const file = e.target.files[0];
+            if (e.target.files.length > 1) {
+              props.displayError(t('error.replace.files.multi', props.currentLanguage));
+            } else if (props.asset.contentType !== file.type) {
+              props.displayError(t('error.replace.files.content.type', props.currentLanguage));
+            } else {
+              setFile(file);
+            }
+          }}
+      />
     </>
   );
 };
@@ -334,9 +334,10 @@ class AssetsListComponent extends Component {
           <a
             href={this.assetLink(item.meta.asset)}
             target="_blank"
-            rel="noreferrer noopener"
-            className="btn btn-sm btn-outline-primary">
-            <i className="fas fa-eye" />
+            rel="noreferrer noopener">
+            <button className="btn btn-sm btn-outline-primary mr-1" style={{borderRadius:'0px', marginLeft:'0.15rem'}}>
+              <i className="fas fa-eye" />
+            </button>
           </a>
           <button
             type="button"
