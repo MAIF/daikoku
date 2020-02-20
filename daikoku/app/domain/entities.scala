@@ -726,9 +726,13 @@ case object UsagePlan {
   }
 }
 
-case class OtoroshiApiKey(clientName: String,
-                          clientId: String,
-                          clientSecret: String)
+case class OtoroshiApiKey(
+    clientName: String,
+    clientId: String,
+    clientSecret: String
+) extends CanJson[OtoroshiApiKey] {
+  override def asJson: JsValue = json.OtoroshiApiKeyFormat.writes(this)
+}
 
 case class SwaggerAccess(url: String,
                          content: Option[String] = None,
@@ -1070,8 +1074,9 @@ case class ApiSubscription(
     by: UserId,
     customName: Option[String],
     enabled: Boolean = true,
-    rotation: Option[ApiSubscriptionRotation]
-) extends CanJson[User] {
+    rotation: Option[ApiSubscriptionRotation],
+    integrationToken: String
+) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asSimpleJson: JsValue = Json.obj(
     "_id" -> json.ApiSubscriptionIdFormat.writes(id),

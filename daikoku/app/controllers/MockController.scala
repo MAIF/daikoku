@@ -1063,7 +1063,8 @@ class MockController(DaikokuAction: DaikokuAction,
           api = ApiId(s"my-toy-api-${tenantId.value}-$version"),
           by = user5.id,
           customName = None,
-          rotation = None
+          rotation = None,
+          integrationToken = s"token-$version"
         )
         val api = ToyApi(version.toString, tenantId, TeamId(team1Id), ids)
         val plan = api.possibleUsagePlans.filter(_.id == subPlanId).head
@@ -1089,7 +1090,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-free"
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("2"),
@@ -1105,7 +1107,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-free-quota"
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("3"),
@@ -1121,7 +1124,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-quota-only"
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("4"),
@@ -1138,7 +1142,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-quota-without-limit"
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("5"),
@@ -1154,7 +1159,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-pay-per-use"
           ))
         ))
     } yield {

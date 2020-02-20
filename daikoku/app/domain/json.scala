@@ -1433,7 +1433,8 @@ object json {
             by = (json \ "by").as(UserIdFormat),
             customName = (json \ "customName").asOpt[String],
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-            rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat)
+            rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
+            integrationToken = (json \ "integrationToken").as[String]
           )
         )
       } recover {
@@ -1457,7 +1458,8 @@ object json {
       "rotation" -> o.rotation
         .map(ApiSubscriptionyRotationFormat.writes)
         .getOrElse(JsNull)
-        .as[JsValue]
+        .as[JsValue],
+      "integrationToken" -> o.integrationToken
     )
   }
 
