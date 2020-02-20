@@ -177,7 +177,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       FreeWithQuotas(
         UsagePlanId("2"),
@@ -190,7 +192,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithLimits(
         id = UsagePlanId("3"),
@@ -205,7 +209,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithoutLimits(
         UsagePlanId("4"),
@@ -221,7 +227,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       PayPerUse(
         UsagePlanId("5"),
@@ -234,7 +242,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       )
     ),
     defaultUsagePlan = UsagePlanId("1")
@@ -309,7 +319,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       FreeWithQuotas(
         UsagePlanId("2"),
@@ -326,7 +338,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithLimits(
         UsagePlanId("3"),
@@ -345,7 +359,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithoutLimits(
         UsagePlanId("4"),
@@ -365,7 +381,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       PayPerUse(
         UsagePlanId("5"),
@@ -382,7 +400,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       )
     ),
     defaultUsagePlan = UsagePlanId("1")
@@ -502,7 +522,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         ),
         FreeWithQuotas(
           UsagePlanId("2"),
@@ -515,7 +537,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         ),
         QuotasWithLimits(
           id = UsagePlanId("3"),
@@ -530,7 +554,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         ),
         QuotasWithoutLimits(
           UsagePlanId("4"),
@@ -546,7 +572,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         ),
         PayPerUse(
           UsagePlanId("5"),
@@ -559,7 +587,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         )
       ),
       defaultUsagePlan = UsagePlanId("1"),

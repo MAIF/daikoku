@@ -202,7 +202,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                               .findNotDeleted(Json.obj("api" -> api.id.value, "team" -> team.id.value))
                           )
         } yield {
-          val betterApis = api.asJson.as[JsObject] ++ Json.obj(
+          val betterApis = api.asSimpleJson.as[JsObject] ++ Json.obj(
             "possibleUsagePlans" -> JsArray(
               api.possibleUsagePlans
                 .map(p => p.asJson.as[JsObject] ++ Json.obj("otoroshiTarget" -> p.otoroshiTarget.isDefined))
@@ -504,6 +504,8 @@ class ApiController(DaikokuAction: DaikokuAction,
       api.subscriptionProcess match {
         case SubscriptionProcess.Manual    => EitherT(notifyApiSubscription(tenant, user, api, planId, team))
         case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team))
+        //todo: !!!!! gerer le niveau de private/user.team !!!!!!
+        case SubscriptionProcess.Private   => EitherT.leftT[Future, JsObject](PlanUnauthorized)
       }
   }
 
@@ -656,11 +658,18 @@ class ApiController(DaikokuAction: DaikokuAction,
             .forTenant(ctx.tenant.id)
             .findNotDeleted(Json.obj("api" -> api.id.value, "team" -> team.id.value))
             .map { subscriptions =>
+              val teamPermission = team.users
+                .find(u => u.userId == ctx.user.id)
+                .map(_.teamPermission).getOrElse(TeamPermission.TeamUser)
               Ok(
                 JsArray(
                   subscriptions
                     .filter(s => team.subscriptions.contains(s.id))
-                    .map(_.asJson)
+                    .map(sub => {
+                      val planIntegrationProcess = api.possibleUsagePlans.find(p => p.id == sub.plan).map(_.integrationProcess).getOrElse(IntegrationProcess.Automatic)
+                      sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin)
+                    }
+                    )
                 )
               )
             }
@@ -693,17 +702,18 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getPlanInformations(teamId: String, clientId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has accessed to plan informations for clientId @{clientId}"))(teamId,
+  def getSubscriptionInformations(teamId: String, subscriptionId: String) = DaikokuAction.async { ctx =>
+    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has accessed to plan informations for subscription @{subscriptionId}"))(teamId,
                                                                                                                ctx) {
       team =>
-        ctx.setCtxValue("clientId", clientId)
+        ctx.setCtxValue("subscriptionId", subscriptionId)
 
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
-          .findOneNotDeleted(Json.obj("team" -> team.id.value, "apiKey.clientId" -> clientId))
+          .findById(subscriptionId)
           .flatMap {
-            case None => FastFuture.successful(NotFound(Json.obj("error" -> "Subcription not found")))
+            case None => FastFuture.successful(NotFound(Json.obj("error" -> "Subscription not found")))
+            case Some(subscription) if subscription.team != team.id => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this subscription")))
             case Some(subscription) =>
               env.dataStore.apiRepo
                 .forTenant(ctx.tenant.id)
@@ -714,7 +724,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                     api.possibleUsagePlans.find(pp => pp.id == subscription.plan) match {
                       case None => NotFound(Json.obj("error" -> "plan not found"))
                       case Some(plan) =>
-                        Ok(Json.obj("api" -> api.asJson, "subscription" -> subscription.asJson, "plan" -> plan.asJson))
+                        Ok(Json.obj("api" -> api.asSimpleJson, "subscription" -> subscription.asSimpleJson, "plan" -> plan.asJson))
                     }
                 }
           }

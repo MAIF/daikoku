@@ -116,7 +116,9 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               "Free plan with limited number of calls per day and per month"),
             otoroshiTarget = None,
             allowMultipleKeys = Some(false),
-            autoRotation = None
+            autoRotation = None,
+            subscriptionProcess = SubscriptionProcess.Automatic,
+            integrationProcess = IntegrationProcess.Automatic
           )),
           defaultUsagePlan = UsagePlanId("default")
         ).asJson)

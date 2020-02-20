@@ -65,8 +65,8 @@ class TeamApiKeyConsumptionComponent extends Component {
   };
 
   getInformations = () => {
-    return Services.getPlanInformations(
-      this.props.match.params.clientId,
+    return Services.getSubscriptionInformations(
+      this.props.match.params.subscription,
       this.props.currentTeam._id
     );
   };
@@ -84,14 +84,14 @@ class TeamApiKeyConsumptionComponent extends Component {
               <div className="col section p-2">
                 <OtoroshiStatsVizualization
                   sync={() =>
-                    Services.syncApiKeyConsumption(
-                      this.props.match.params.clientId,
+                    Services.syncSubscriptionConsumption(
+                      this.props.match.params.subscription,
                       this.props.currentTeam._id
                     )
                   }
                   fetchData={(from, to) =>
-                    Services.apiKeyConsumption(
-                      this.props.match.params.clientId,
+                    Services.subscriptionConsumption(
+                      this.props.match.params.subscription,
                       this.props.currentTeam._id,
                       from.valueOf(),
                       to.valueOf()

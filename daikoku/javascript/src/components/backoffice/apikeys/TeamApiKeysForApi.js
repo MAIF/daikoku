@@ -13,6 +13,7 @@ import {
   Can,
   read,
   apikey,
+  stat,
   isUserIsTeamAdmin,
   CanIDoAction,
   PaginatedComponent,
@@ -182,11 +183,13 @@ class TeamApiKeysForApiComponent extends Component {
                   count={5}
                   formatter={subscription => {
                     const plan = this.currentPlan(subscription);
+
                     return (
                       <ApiKeyCard
                         currentLanguage={this.props.currentLanguage}
+                        currentTeam={this.props.currentTeam}
                         openInfoNotif={message => toastr.info(message)}
-                        statsLink={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${this.props.match.params.apiId}/apikey/${subscription.apiKey.clientId}/consumptions`}
+                        statsLink={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${this.props.match.params.apiId}/subscription/${subscription._id}/consumptions`}
                         key={subscription._id}
                         subscription={subscription}
                         showApiKey={showApiKey}
@@ -225,7 +228,8 @@ const ApiKeyCard = ({
   archiveApiKey,
   currentLanguage,
   toggleRotation,
-  regenerateSecret
+  regenerateSecret,
+  currentTeam
 }) => {
   //todo: maybe use showApikey props somewhere
   const [hide, setHide] = useState(true);
@@ -236,8 +240,9 @@ const ApiKeyCard = ({
   const [rotationEvery, setRotationEvery] = useState(subscription.rotation.rotationEvery || 744);
   const [gracePeriod, setGracePeriod] = useState(subscription.rotation.gracePeriod || 168);
   const [error, setError] = useState({})
+  const [activeTab, setActiveTab] = useState(plan.integrationProcess === "Automatic" ? "token" : "apikey")
 
-  const { _id, apiKey } = subscription;
+  const { _id, integrationToken } = subscription;
 
   let inputRef = React.createRef();
   let clipboard = React.createRef();
@@ -353,13 +358,15 @@ const ApiKeyCard = ({
                     <i className="fas fa-sync-alt" />
                   </button>
                 </BeautifulTitle>
-                <BeautifulTitle title={t("View usage statistics", currentLanguage, false, "View usage statistics")}>
-                  <Link
-                    to={statsLink}
-                    className="btn btn-sm btn-access-negative ml-1">
-                    <i className="fas fa-chart-bar" />
-                  </Link>
-                </BeautifulTitle>
+                <Can I={read} a={stat} team={currentTeam}>
+                  <BeautifulTitle title={t("View usage statistics", currentLanguage, false, "View usage statistics")}>
+                    <Link
+                      to={statsLink}
+                      className="btn btn-sm btn-access-negative ml-1">
+                      <i className="fas fa-chart-bar" />
+                    </Link>
+                  </BeautifulTitle>
+                </Can>
                 <BeautifulTitle title={t("Copy to clipboard", currentLanguage, false, "Copy to clipboard")}>
                   <button
                     type="button"
@@ -394,63 +401,114 @@ const ApiKeyCard = ({
                 </BeautifulTitle>
               </div>
             </div>
-            <div className="form-group">
-              <label htmlFor={`client-id-${_id}`} className="">
-                <Translation i18nkey="Client Id" language={currentLanguage}>
-                  Client Id
-                </Translation>
-              </label>
-              <div className="">
-                <input
-                  readOnly
-                  disabled={!subscription.enabled}
-                  className="form-control input-sm"
-                  id={`client-id-${_id}`}
-                  value={apiKey.clientId}
-                />
+            {subscription.apiKey && (
+              <div className="row">
+                <ul className="nav nav-tabs flex-column flex-sm-row mb-2 col-12">
+                  <li className="nav-item cursor-pointer">
+                    <span
+                      className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('apikey')}>
+                      <Translation i18nkey="ApiKey" language={currentLanguage}>
+                        ApiKey
+                    </Translation>
+                    </span>
+                  </li>
+                  <li className="nav-item  cursor-pointer">
+                    <span
+                      className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('token')}>
+                      <Translation i18nkey="Integration token" language={currentLanguage}>
+                        Integration token
+                    </Translation>
+                    </span>
+                  </li>
+                </ul>
               </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor={`client-secret-${_id}`} className="">
-                <Translation i18nkey="Client secret" language={currentLanguage}>
-                  Client secret
-                </Translation>
-              </label>
-              <div className="input-group">
-                <input
-                  readOnly
-                  disabled={!subscription.enabled}
-                  type={hide ? 'password' : ''}
-                  className="form-control input-sm"
-                  id={`client-secret-${_id}`}
-                  value={apiKey.clientSecret}
-                  aria-describedby={`client-secret-addon-${_id}`}
-                />
-                <div className="input-group-append">
-                  <span
-                    onClick={() => {
-                      if (subscription.enabled) {
-                        setHide(!hide);
-                      }
-                    }}
-                    className={classNames('input-group-text', {
-                      'cursor-pointer': subscription.enabled,
-                      'cursor-forbidden': !subscription.enabled,
-                    })}
-                    id={`client-secret-addon-${_id}`}>
-                    {hide ? <i className="fas fa-eye" /> : <i className="fas fa-eye-slash" />}
-                  </span>
+            )}
+            {activeTab == 'apikey' && (
+              <>
+                <div className="form-group">
+                  <label htmlFor={`client-id-${_id}`} className="">
+                    <Translation i18nkey="Client Id" language={currentLanguage}>
+                      Client Id
+                    </Translation>
+                  </label>
+                  <div className="">
+                    <input
+                      readOnly
+                      disabled={!subscription.enabled}
+                      className="form-control input-sm"
+                      id={`client-id-${_id}`}
+                      value={subscription.apiKey.clientId}
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
-            <input
-              ref={clipboard}
-              style={{ position: 'fixed', left: 0, top: -250 }}
-              type="text"
-              readOnly
-              value={apiKey.clientId + ':' + apiKey.clientSecret}
-            />
-          </div>}
+                <div className="form-group">
+                  <label htmlFor={`client-secret-${_id}`} className="">
+                    <Translation i18nkey="Client secret" language={currentLanguage}>
+                      Client secret
+                </Translation>
+                  </label>
+                  <div className="input-group">
+                    <input
+                      readOnly
+                      disabled={!subscription.enabled}
+                      type={hide ? 'password' : ''}
+                      className="form-control input-sm"
+                      id={`client-secret-${_id}`}
+                      value={subscription.apiKey.clientSecret}
+                      aria-describedby={`client-secret-addon-${_id}`}
+                    />
+                    <div className="input-group-append">
+                      <span
+                        onClick={() => {
+                          if (subscription.enabled) {
+                            setHide(!hide);
+                          }
+                        }}
+                        className={classNames('input-group-text', {
+                          'cursor-pointer': subscription.enabled,
+                          'cursor-forbidden': !subscription.enabled,
+                        })}
+                        id={`client-secret-addon-${_id}`}>
+                        {hide ? <i className="fas fa-eye" /> : <i className="fas fa-eye-slash" />}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            {activeTab == 'token' && (
+              <>
+                <div className="form-group">
+                  <label htmlFor={`token-${_id}`} className="">
+                    <Translation i18nkey="Integration token" language={currentLanguage}>
+                      Integration token
+                    </Translation>
+                  </label>
+                  <div className="">
+                    <textarea
+                      readOnly
+                      rows="4"
+                      className="form-control input-sm"
+                      id={`token-${_id}`}
+                      value={integrationToken}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          }
+
+
+          <input
+            ref={clipboard}
+            style={{ position: 'fixed', left: 0, top: -250 }}
+            type="text"
+            readOnly
+            value={activeTab === 'apikey' ? subscription.apiKey.clientId + ':' + subscription.apiKey.clientSecret : integrationToken}
+          />
           {settingMode && (
             <div className="d-flex flex-column flex-grow-0">
               {!plan.autoRotation && <form>
@@ -511,10 +569,10 @@ const Help = ({ message }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Popover 
-      isOpen={isOpen} 
+    <Popover
+      isOpen={isOpen}
       preferPlace='below'
-      place='below' 
+      place='below'
       className="beautiful-popover"
       body={message}>
       <i

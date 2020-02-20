@@ -211,6 +211,8 @@ export class TeamApiPricing extends Component {
     return [
       `>>> Security`,
       'autoRotation',
+      'subscriptionProcess',
+      'integrationProcess'
     ]
   }
 
@@ -219,8 +221,40 @@ export class TeamApiPricing extends Component {
       'autoRotation': {
         type: 'bool',
         props: {
-          label: 'force apikey auto-rotation'
+          label: t('Force apikey auto-rotation', this.props.currentLanguage)
         }
+      },
+      'subscriptionProcess': {
+        type: 'select',
+        props: {
+          label: t('Subscription', this.props.currentLanguage),
+          possibleValues: [
+            {
+              label: t('Automatic', this.props.currentLanguage, false, 'Automatic'),
+              value: 'Automatic',
+            },
+            { label: t('Manual', this.props.currentLanguage, false, 'Manual'), 
+              value: 'Manual' 
+            },
+            { label: t('Private', this.props.currentLanguage, false, 'Private'), 
+              value: 'Private' 
+            }
+          ],
+        },
+      },
+      'integrationProcess': {
+        type: 'select',
+        props: {
+          label: t('Integration', this.props.currentLanguage),
+          possibleValues: [
+            {
+              label: t('Automatic', this.props.currentLanguage, false, 'Automatic'),
+              value: 'Automatic',
+            },
+            { label: t('ApiKey', this.props.currentLanguage, false, 'ApiKey'), 
+              value: 'ApiKey' },
+          ],
+        },
       }
     }
   }

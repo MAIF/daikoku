@@ -8,7 +8,7 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.Public
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -533,10 +533,33 @@ object SubscriptionProcess {
   case object Manual extends SubscriptionProcess {
     def name: String = "Manual"
   }
-  val values: Seq[SubscriptionProcess] = Seq(Automatic, Manual)
+  case object Private extends SubscriptionProcess {
+    def name: String = "Private"
+  }
+  val values: Seq[SubscriptionProcess] = Seq(Automatic, Manual, Private)
   def apply(name: String): Option[SubscriptionProcess] = name match {
     case "Automatic" => Automatic.some
     case "Manual"    => Manual.some
+    case "Private"    => Private.some
+    case _           => None
+  }
+}
+
+sealed trait IntegrationProcess {
+  def name: String
+}
+
+object IntegrationProcess {
+  case object Automatic extends IntegrationProcess {
+    def name: String = "Automatic"
+  }
+  case object ApiKey extends IntegrationProcess {
+    def name: String = "ApiKey"
+  }
+  val values: Seq[IntegrationProcess] = Seq(Automatic, ApiKey)
+  def apply(name: String): Option[IntegrationProcess] = name match {
+    case "Automatic" => Automatic.some
+    case "ApiKey"    => ApiKey.some
     case _           => None
   }
 }
@@ -568,6 +591,8 @@ sealed trait UsagePlan {
   def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan
   def removeAuthorizedTeam(teamId: TeamId): UsagePlan
   def removeAllAuthorizedTeams(): UsagePlan
+  def subscriptionProcess: SubscriptionProcess
+  def integrationProcess: IntegrationProcess
 }
 
 case object UsagePlan {
@@ -580,6 +605,8 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -611,6 +638,8 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -644,6 +673,8 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -676,6 +707,8 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -706,6 +739,8 @@ case object UsagePlan {
       otoroshiTarget: Option[OtoroshiTarget],
       allowMultipleKeys: Option[Boolean],
       autoRotation: Option[Boolean],
+      subscriptionProcess: SubscriptionProcess,
+      integrationProcess: IntegrationProcess,
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -1078,6 +1113,12 @@ case class ApiSubscription(
     integrationToken: String
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
+  def asAuthorizedJson(permission: TeamPermission, planIntegration: IntegrationProcess, isDaikokuAdmin: Boolean): JsValue = (permission, planIntegration) match {
+    case (_, _) if isDaikokuAdmin => json.ApiSubscriptionFormat.writes(this)
+    case (Administrator, _) => json.ApiSubscriptionFormat.writes(this)
+    case (_, IntegrationProcess.ApiKey) => json.ApiSubscriptionFormat.writes(this)
+    case (_, IntegrationProcess.Automatic) => json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
+  }
   def asSimpleJson: JsValue = Json.obj(
     "_id" -> json.ApiSubscriptionIdFormat.writes(id),
     "_tenant" -> json.TenantIdFormat.writes(tenant),

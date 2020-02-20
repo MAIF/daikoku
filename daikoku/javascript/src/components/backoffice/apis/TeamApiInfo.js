@@ -118,19 +118,6 @@ export class TeamApiInfo extends Component {
         ],
       },
     },
-    subscriptionProcess: {
-      type: 'select',
-      props: {
-        label: t('Subscription', this.props.currentLanguage),
-        possibleValues: [
-          {
-            label: t('Automatic', this.props.currentLanguage, false, 'Automatic'),
-            value: 'Automatic',
-          },
-          { label: t('Manual', this.props.currentLanguage, false, 'Manual'), value: 'Manual' },
-        ],
-      },
-    },
     authorizedTeams: {
       type: 'array',
       props: {
@@ -153,9 +140,8 @@ export class TeamApiInfo extends Component {
     'supportedVersions',
     'tags',
     'categories',
-    `>>> ${t('Visibility and subscription', this.props.currentLanguage)}`,
+    `>>> ${t('Visibility', this.props.currentLanguage)}`,
     'visibility',
-    'subscriptionProcess',
     `>>> ${t('Authorizations', this.props.currentLanguage)}`,
     'authorizedTeams',
   ];
