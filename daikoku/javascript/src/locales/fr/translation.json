@@ -147,7 +147,6 @@
   "free.with.quotas.desc": "Vous ne payez rien mais vous n'avez que %s requêtes autorisées par mois",
   "quotas.with.limits.desc": "Vous payez %s %s et vous avez %s requêtes autorisées par mois",
   "quotas.without.limits.desc": "Vous payez %s %s pour %s requêtes autorisées par mois et vous payez %s %s par requêtes additionnelles",
-  "teamapi.select.title": "Choisissez l'équipe qui peut voir votre clé d'api",
   "pay.per.use.desc.default": "Vous payez %s %s par mois et vous payez %s %s par requête",
   "pay.per.use.desc.alt": "Vous payez %s %s par requête",
   "Loading page ...": "Chargement ...",
