@@ -478,6 +478,21 @@ GET     /admin-api/audit-events/:id                     fr.maif.otoroshi.daikoku
 POST    /admin-api/audit-events                         fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.createEntity()
 GET     /admin-api/audit-events                         fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.findAll()
 
+
+###
+#  summary: get apikey from integration token
+#  tags:
+#    - Integration ApiKey
+#  responses:
+#    200:
+#      description: success
+#      content:
+#        application/json:
+#          schema:
+#            type: object
+#            items:
+#              $ref: '#/components/schemas/fr.maif.otoroshi.daikoku.domain.OtoroshiApiKey'
+###
 GET     /admin-api/credentials/:token                   fr.maif.otoroshi.daikoku.ctrls.CredentialsAdminApiController.getCredentials(token)
 
 
