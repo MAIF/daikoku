@@ -454,14 +454,16 @@ const ApiKeyCard = ({
           {settingMode && (
             <div className="d-flex flex-column flex-grow-0">
               {!plan.autoRotation && <form>
-                <div className="d-flex flex-row align-items-start mb-3">
+                <div className="d-flex flex-row align-items-center mb-3">
                   <div className="col-6">
                     <Translation i18nkey="Enabled" language={currentLanguage}>Enabled</Translation>
                     <Help message={t("help.apikey.rotation", currentLanguage, false, "If rotation is enabled then secret will be reseted every months")} />
                   </div>
-                  <SwitchButton className="col-6" disabled={!subscription.enabled} checked={rotation} onSwitch={v => setRotation(v)} />
+                  <div className="col-6 d-flex justify-content-end">
+                    <SwitchButton disabled={!subscription.enabled} checked={rotation} onSwitch={v => setRotation(v)} />
+                  </div>
                 </div>
-                <div className="d-flex flex-row align-items-start mb-3">
+                <div className="d-flex flex-row align-items-center mb-3">
                   <div className="col-9">
                     <Translation i18nkey="Rotation Period" language={currentLanguage}>Rotation Every</Translation>
                     <Help message={t("help.apikey.rotation.period", currentLanguage, false, "Period after which the client secret will be automatically changed")} />
@@ -474,7 +476,7 @@ const ApiKeyCard = ({
                     onChange={e => setRotationEvery(Number(e.target.value))} />
                   {error.rotationEvery && <small class="invalid-input-info">{error.rotationEvery}</small>}
                 </div>
-                <div className="d-flex flex-row align-items-start mb-3">
+                <div className="d-flex flex-row align-items-center mb-3">
                   <div className="col-9">
                     <Translation i18nkey="Grace Period" language={currentLanguage}>Grace Period</Translation>
                     <Help message={t("help.apikey.grace.period", currentLanguage, false, "Period during which the new client secret and the old are both active. The rotation period includes this period.")} />
@@ -488,14 +490,14 @@ const ApiKeyCard = ({
                   {error.gracePeriod && <small class="invalid-info">{error.gracePeriod}</small>}
                 </div>
               </form>}
-              <div className="d-flex justify-content-around">
-                <button className="btn btn-access-negative" onClick={abort}>
+              <div className="d-flex justify-content-end">
+                <button className="btn btn-outline-danger" onClick={abort}>
                   <Translation i18nkey="Back" language={currentLanguage}>Back</Translation>
                 </button>
                 <button
-                  className="btn btn-access"
+                  className="btn btn-outline-success ml-2"
                   disabled={!subscription.enabled || Object.keys(error).length ? 'disabled' : undefined}
-                  onClick={handleChanges}>
+                  onClick={handleChanges}><i className="fas fa-save mr-1"></i>
                   <Translation i18nkey="Save" language={currentLanguage}>Save</Translation>
                 </button>
               </div>
