@@ -381,7 +381,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                             notificationType = NotificationType.AcceptOnly
                                           )
 
-                                          ApiKeyRotationEvent("").logJobEvent(
+                                          ApiKeyRotationEvent(subscription = subscription.id).logJobEvent(
                                             tenant,
                                             jobUser,
                                             Json.obj("token" -> subscription.integrationToken)
@@ -520,7 +520,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                           notificationType = NotificationType.AcceptOnly
                                         )
 
-                                        ApiKeyRotationEvent("").logJobEvent(
+                                        ApiKeyRotationEvent(subscription = subscription.id).logJobEvent(
                                           tenant,
                                           jobUser,
                                           Json.obj("token" -> subscription.integrationToken)

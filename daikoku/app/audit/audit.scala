@@ -3,44 +3,35 @@ package fr.maif.otoroshi.daikoku.audit
 import java.util.Base64
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 
-import akka.Done
 import akka.actor.{Actor, ActorSystem, PoisonPill, Props, Terminated}
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.kafka.ProducerSettings
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{OverflowStrategy, QueueOfferResult}
+import akka.{Done, NotUsed}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
-import fr.maif.otoroshi.daikoku.domain.{Tenant, User, UserSession}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
-import org.joda.time.DateTime
-import org.joda.time.format.ISODateTimeFormat
-import play.api.{Environment, Logger}
-import play.api.libs.json._
-import play.api.libs.ws.{WSClient, WSRequest}
-import play.api.mvc.RequestHeader
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.producer.{
-  Callback,
-  KafkaProducer,
-  ProducerRecord,
-  RecordMetadata
-}
-import org.apache.kafka.common.serialization.{
-  ByteArraySerializer,
-  StringSerializer
-}
-import akka.kafka.ProducerSettings
+import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.config.internals.BrokerSecurityConfigs
+import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
+import org.joda.time.DateTime
+import org.joda.time.format.ISODateTimeFormat
+import play.api.Logger
+import play.api.libs.json._
+import play.api.libs.ws.WSRequest
+import play.api.mvc.RequestHeader
 import reactivemongo.bson.BSONObjectID
 
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
+import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 sealed trait AuthorizationLevel {
   def value: String
@@ -117,7 +108,7 @@ sealed trait AuditEvent {
 case class AuditTrailEvent(message: String) extends AuditEvent
 case class JobEvent(message: String) extends AuditEvent
 case class AlertEvent(message: String) extends AuditEvent
-case class ApiKeyRotationEvent(message: String) extends AuditEvent
+case class ApiKeyRotationEvent(message: String = "", subscription: ApiSubscriptionId) extends AuditEvent
 
 case class TenantAuditEvent(evt: AuditEvent,
                             tenant: Tenant,
@@ -207,16 +198,17 @@ class AuditActor(implicit env: Env) extends Actor {
   lazy val kafkaWrapperAudit =
     new KafkaWrapper(env.defaultActorSystem, env, _.auditTopic)
 
-  def sendEmails(tenant: Tenant,
-                 rawEvts: Seq[TenantAuditEvent]): Future[Unit] = {
+  def sendAlertsEmails(tenant: Tenant,
+                       rawEvts: Seq[TenantAuditEvent]): Future[Unit] = {
     tenant.auditTrailConfig.alertsEmails match {
       case e if e.isEmpty => FastFuture.successful(())
       case emails => {
         val evts = rawEvts.filter { te =>
           te.evt match {
-            case _: AuditTrailEvent => false
-            case _: JobEvent        => false
-            case _: AlertEvent      => true
+            case _: AuditTrailEvent     => false
+            case _: JobEvent            => false
+            case _: AlertEvent          => true
+            case _: ApiKeyRotationEvent => false
           }
         }
         val titles = evts
@@ -257,6 +249,40 @@ class AuditActor(implicit env: Env) extends Actor {
     }
   }
 
+  def sendRotationEmails(tenant: Tenant,
+                       rawEvts: Seq[TenantAuditEvent]): Future[Done] = {
+    import cats.data.OptionT
+    import cats.implicits._
+
+    Source(rawEvts.toList)
+      .filter { te =>
+        te.evt match {
+          case _: AuditTrailEvent     => false
+          case _: JobEvent            => false
+          case _: AlertEvent          => true
+          case _: ApiKeyRotationEvent => false
+        }
+      }
+      .mapAsync(10) { event =>
+        val mailSend: OptionT[Future, Future[Unit]] = for {
+          subscription <- OptionT(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(event.asInstanceOf[ApiKeyRotationEvent].subscription))
+          api <- OptionT(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api))
+          team <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team))
+          admins <- OptionT.liftF(env.dataStore.userRepo.find(
+            Json.obj("_id" -> Json.obj("$in" -> JsArray(team.users.filter(_.teamPermission == TeamPermission.Administrator).map(_.userId.asJson).toSeq)))))
+        } yield {
+          val title = "Your apikey have been unpdated";
+          val plan = api.possibleUsagePlans.find(p => p.id == subscription.plan).map(p => p.customName.getOrElse(p.typeName))
+          val body = s"Your apikey for api ${api.name} and plan ${plan.get} have been rotated. If you dan't work with an integration system, please update it usage."
+
+          tenant.mailer.send(title, admins.map(_.email), body)
+        }
+        mailSend.value
+      }
+      .runWith(Sink.ignore)(env.defaultMaterializer)
+
+  }
+
   lazy val stream = Source
     .queue[TenantAuditEvent](50000, OverflowStrategy.dropHead)
     .groupedWithin(100, FiniteDuration(10, TimeUnit.SECONDS))
@@ -281,7 +307,8 @@ class AuditActor(implicit env: Env) extends Actor {
             env.dataStore.auditTrailRepo
               .forTenant(tenant)
               .insertMany(evts.map(_.toJson))) ++
-            Seq(sendEmails(tenant, evts)) ++
+            Seq(sendRotationEmails(tenant, evts)) ++
+            Seq(sendAlertsEmails(tenant, evts)) ++
             config.auditWebhooks
               .map(c => new WebHookAnalytics(c).publish(evts)) ++
             config.elasticConfigs.map(c =>
