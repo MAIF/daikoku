@@ -568,5 +568,6 @@
   "Integration": "Intégration",
   "Force apikey auto-rotation": "Forcer la rotation auto. des secrets",
   "ApiKey": "Clef d'api",
-  "Integration token": "Jeton d'intégration"
+  "Integration token": "Jeton d'intégration",
+  "Security": "Sécurité"
 }

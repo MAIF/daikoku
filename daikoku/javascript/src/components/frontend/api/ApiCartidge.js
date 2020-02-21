@@ -164,7 +164,10 @@ export class ApiCartidge extends Component {
                   'You are going to subscribe to the api. On which team do you want to make this subscriptions ?'
                 )}
                 buttonLabel="subscribe"
-                teams={this.props.myTeams}
+                teams={this.props.myTeams.filter(
+                  team =>
+                    defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                )}
                 pendingTeams={this.props.pendingSubscriptions.map(s => s.action.team)}
                 authorizedTeams={this.props.subscriptions
                   .filter(subs => subs.plan === defaultPlan._id)

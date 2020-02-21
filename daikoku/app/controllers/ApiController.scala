@@ -255,7 +255,9 @@ class ApiController(DaikokuAction: DaikokuAction,
         if (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
               .intersect(myTeams.map(_.id))
               .nonEmpty) {
-          val betterApis = api.asJson.as[JsObject] ++ Json.obj(
+          val betterApis = api
+            .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team)))
+            .asJson.as[JsObject] ++ Json.obj(
             "pendingRequests" -> JsArray(
               pendingRequests.map(_.asJson)
             )
@@ -498,15 +500,17 @@ class ApiController(DaikokuAction: DaikokuAction,
                                      planId: String,
                                      team: Team): EitherT[Future, AppError, JsObject] = {
     import cats.implicits._
-    if (api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id))
-      EitherT.leftT[Future, JsObject](ApiUnauthorized)
-    else
-      api.subscriptionProcess match {
+
+    api.possibleUsagePlans.find(_.id.value == planId) match {
+      case None => EitherT.leftT[Future, JsObject](PlanNotFound)
+      case Some(_)
+        if api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id) => EitherT.leftT[Future, JsObject](ApiUnauthorized)
+      case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id =>  EitherT.leftT[Future, JsObject](PlanUnauthorized)
+      case Some(plan) => plan.subscriptionProcess match {
         case SubscriptionProcess.Manual    => EitherT(notifyApiSubscription(tenant, user, api, planId, team))
         case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team))
-        //todo: !!!!! gerer le niveau de private/user.team !!!!!!
-        case SubscriptionProcess.Private   => EitherT.leftT[Future, JsObject](PlanUnauthorized)
       }
+    }
   }
 
   def notifyApiSubscription(tenant: Tenant,
@@ -968,7 +972,9 @@ class ApiController(DaikokuAction: DaikokuAction,
             case (k, v) => Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
           }.fold(Json.obj())(_ deepMerge _)
         val translation = Json.obj("translation" -> translationAsJsObject)
-        val json = api.asSimpleJson.as[JsObject] ++ translation
+        val json = api
+          .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team)))
+          .asSimpleJson.as[JsObject] ++ translation
         val authorizations = teams
           .map(
             team =>

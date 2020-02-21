@@ -569,5 +569,6 @@
     "Integration": "Integration",
     "Force apikey auto-rotation": "Force apikey auto-rotation",
     "ApiKey": "ApiKey",
-    "Integration token": "Integration token"
+    "Integration token": "Integration token",
+    "Security": "Security"
 }

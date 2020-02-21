@@ -18,6 +18,7 @@ class ActionWithTeamSelectorComponent extends Component {
         action: teams => this.props.action(teams),
         closeModal: this.props.closeModal,
         allowMultipleDemand: this.props.allowMultipleDemand,
+        currentLanguage: this.props.currentLanguage
       },
       'teamSelector'
     );
@@ -37,7 +38,7 @@ class ActionWithTeamSelectorComponent extends Component {
         {React.cloneElement(this.props.children, { onClick: () => this.openTeamSelectorModal() })}
       </>
     );
-  }
+  } 
 }
 
 ActionWithTeamSelectorComponent.defaultProps = {
@@ -56,7 +57,12 @@ ActionWithTeamSelectorComponent.propTypes = {
   closeOnSelect: PropTypes.bool,
   buttonLabel: PropTypes.string,
   allowMultipleDemand: PropTypes.bool,
+  currentLanguage: PropTypes.string
 };
+
+const mapStateToProps = state => ({
+  ...state.context
+});
 
 const mapDispatchToProps = {
   closeModal: () => closeModal(),
@@ -64,6 +70,6 @@ const mapDispatchToProps = {
 };
 
 export const ActionWithTeamSelector = connect(
-  null,
+  mapStateToProps,
   mapDispatchToProps
 )(ActionWithTeamSelectorComponent);

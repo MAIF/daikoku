@@ -186,7 +186,6 @@ export class ApiPricingCard extends Component {
                           team =>
                             plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
                         )
-                        // .filter(team => plan.allowMultipleKeys || (this.props.subscriptions.every(s => s.team !== team._id) && this.props.pendingSubscriptions.every(s => s.action.team !== team._id)))
                       }
                       pendingTeams={this.props.pendingSubscriptions.map(s => s.action.team)}
                       authorizedTeams={this.props.subscriptions.map(subs => subs.team)}
@@ -194,7 +193,9 @@ export class ApiPricingCard extends Component {
                       action={teams => this.props.askForApikeys(teams)}
                       withAllTeamSelector={true}>
                       <button type="button" className="btn btn-sm btn-access-negative">
-                        Subscribe
+                        <Translation i18nkey="Subscribe" language={this.props.currentLanguage}>
+                          Subscribe
+                        </Translation>
                       </button>
                     </ActionWithTeamSelector>
                   )}

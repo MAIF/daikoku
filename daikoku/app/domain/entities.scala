@@ -533,14 +533,10 @@ object SubscriptionProcess {
   case object Manual extends SubscriptionProcess {
     def name: String = "Manual"
   }
-  case object Private extends SubscriptionProcess {
-    def name: String = "Private"
-  }
-  val values: Seq[SubscriptionProcess] = Seq(Automatic, Manual, Private)
+  val values: Seq[SubscriptionProcess] = Seq(Automatic, Manual)
   def apply(name: String): Option[SubscriptionProcess] = name match {
     case "Automatic" => Automatic.some
     case "Manual"    => Manual.some
-    case "Private"    => Private.some
     case _           => None
   }
 }
@@ -1041,7 +1037,6 @@ case class Api(
     tags: Set[String] = Set.empty,
     categories: Set[String] = Set.empty,
     visibility: ApiVisibility,
-    subscriptionProcess: SubscriptionProcess,
     possibleUsagePlans: Seq[UsagePlan],
     defaultUsagePlan: UsagePlanId,
     subscriptions: Seq[ApiSubscriptionId] = Seq.empty,
@@ -1063,8 +1058,7 @@ case class Api(
     "tags" -> JsArray(tags.map(JsString.apply).toSeq),
     "categories" -> JsArray(categories.map(JsString.apply).toSeq),
     "visibility" -> visibility.name,
-    "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
-    "subscriptionProcess" -> subscriptionProcess.name
+    "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq)
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
@@ -1077,8 +1071,7 @@ case class Api(
       "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
       "tags" -> JsArray(tags.map(JsString.apply).toSeq),
       "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "visibility" -> visibility.name,
-      "subscriptionProcess" -> subscriptionProcess.name
+      "visibility" -> visibility.name
     )
   }
 }

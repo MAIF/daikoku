@@ -319,7 +319,6 @@ object json {
     override def reads(json: JsValue) = json.as[String] match {
       case "Automatic" => JsSuccess(SubscriptionProcess.Automatic)
       case "Manual"    => JsSuccess(SubscriptionProcess.Manual)
-      case "Private"    => JsSuccess(SubscriptionProcess.Private)
       case str         => JsError(s"Bad SubscriptionProcess value: $str")
     }
     override def writes(o: SubscriptionProcess) = JsString(o.name)
@@ -1368,12 +1367,8 @@ object json {
               .map(_.toSet)
               .getOrElse(Set.empty),
             visibility = (json \ "visibility").as(ApiVisibilityFormat),
-            subscriptionProcess =
-              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             possibleUsagePlans = (json \ "possibleUsagePlans")
               .as(SeqUsagePlanFormat),
-            //.asOpt(SeqUsagePlanFormat)
-            //.getOrElse(Seq.empty),
             defaultUsagePlan = (json \ "defaultUsagePlan").as(UsagePlanIdFormat),
             subscriptions = (json \ "subscriptions")
               .asOpt(SeqApiSubscriptionIdFormat)
@@ -1409,8 +1404,6 @@ object json {
       "tags" -> JsArray(o.tags.map(JsString.apply).toSeq),
       "categories" -> JsArray(o.categories.map(JsString.apply).toSeq),
       "visibility" -> ApiVisibilityFormat.writes(o.visibility),
-      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
-        o.subscriptionProcess),
       "possibleUsagePlans" -> JsArray(
         o.possibleUsagePlans.map(UsagePlanFormat.writes)),
       "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),

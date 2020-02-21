@@ -34,6 +34,8 @@ const SUBSCRIPTION_PLAN_TYPES = {
 
 const PUBLIC = 'Public';
 const PRIVATE = 'Private';
+const APIKEY = 'ApiKey';
+const AUTOMATIC = 'Automatic';
 
 export class TeamApiPricing extends Component {
   state = {
@@ -209,7 +211,9 @@ export class TeamApiPricing extends Component {
 
   securityFlow = _found => {
     return [
-      `>>> Security`,
+      `>>> ${t('Visibility', this.props.currentLanguage)}`,
+      'visibility',
+      `>>> ${t('Security', this.props.currentLanguage)}`,
       'autoRotation',
       'subscriptionProcess',
       'integrationProcess'
@@ -218,6 +222,22 @@ export class TeamApiPricing extends Component {
 
   securityForm = _found => {
     return {
+      'visibility': {
+        type: 'select',
+        props: {
+          label: t('Visibility', this.props.currentLanguage),
+          possibleValues: [
+            {
+              label: t('Public', this.props.currentLanguage),
+              value: 'Public'
+            },
+            {
+              label: t('Private', this.props.currentLanguage),
+              value: 'Private'
+            }
+          ]
+        }
+      },
       'autoRotation': {
         type: 'bool',
         props: {
@@ -230,14 +250,11 @@ export class TeamApiPricing extends Component {
           label: t('Subscription', this.props.currentLanguage),
           possibleValues: [
             {
-              label: t('Automatic', this.props.currentLanguage, false, 'Automatic'),
+              label: t('Automatic', this.props.currentLanguage),
               value: 'Automatic',
             },
-            { label: t('Manual', this.props.currentLanguage, false, 'Manual'), 
+            { label: t('Manual', this.props.currentLanguage), 
               value: 'Manual' 
-            },
-            { label: t('Private', this.props.currentLanguage, false, 'Private'), 
-              value: 'Private' 
             }
           ],
         },
@@ -248,10 +265,10 @@ export class TeamApiPricing extends Component {
           label: t('Integration', this.props.currentLanguage),
           possibleValues: [
             {
-              label: t('Automatic', this.props.currentLanguage, false, 'Automatic'),
+              label: t('Automatic', this.props.currentLanguage),
               value: 'Automatic',
             },
-            { label: t('ApiKey', this.props.currentLanguage, false, 'ApiKey'), 
+            { label: t('ApiKey', this.props.currentLanguage), 
               value: 'ApiKey' },
           ],
         },
@@ -988,6 +1005,8 @@ export class TeamApiPricing extends Component {
         unit: 'month',
       },
       visibility: PUBLIC,
+      subscriptionProcess: AUTOMATIC,
+      integrationProcess: APIKEY,
       rotation: false,
       otoroshiTarget: {
         otoroshiSettings: null,

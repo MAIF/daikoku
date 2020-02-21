@@ -98,7 +98,6 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             pages = Seq.empty
           ),
           visibility = ApiVisibility.Public,
-          subscriptionProcess = SubscriptionProcess.Automatic,
           possibleUsagePlans = Seq(FreeWithQuotas(
             id = UsagePlanId("default"),
             maxPerSecond = 10,
