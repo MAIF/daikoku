@@ -117,6 +117,7 @@ sealed trait AuditEvent {
 case class AuditTrailEvent(message: String) extends AuditEvent
 case class JobEvent(message: String) extends AuditEvent
 case class AlertEvent(message: String) extends AuditEvent
+case class ApiKeyRotationEvent(message: String) extends AuditEvent
 
 case class TenantAuditEvent(evt: AuditEvent,
                             tenant: Tenant,
@@ -129,9 +130,10 @@ case class TenantAuditEvent(evt: AuditEvent,
                             details: JsObject = Json.obj()) {
 
   private def theType: String = evt match {
-    case _: AuditTrailEvent => "AuditTrailEvent"
-    case _: AlertEvent      => "AlertEvent"
-    case _: JobEvent        => "JobEvent"
+    case _: AuditTrailEvent     => "AuditTrailEvent"
+    case _: AlertEvent          => "AlertEvent"
+    case _: JobEvent            => "JobEvent"
+    case _: ApiKeyRotationEvent => "ApiKeyRotationEvent"
   }
 
   def computedMessage(): String = {
