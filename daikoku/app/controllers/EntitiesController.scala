@@ -42,7 +42,8 @@ class EntitiesController(DaikokuAction: DaikokuAction,
           authProviderSettings = Json.obj(
             "sessionMaxAge" -> 86400
           ),
-          otoroshiSettings = Set()
+          otoroshiSettings = Set(),
+          adminApi = None
         ).asJson)
     }
   }

@@ -9,7 +9,8 @@ import { permissions } from './permissions';
 
 export const CanIDoAction = (user, action, what, team) => {
   const realPerm = Option(team)
-    .flatMap(t => Option(t.users.find(u => u.userId === user._id)))
+    .map(t => t.users)
+    .flatMap(users => Option(users.find(u => u.userId === user._id)))
     .map(userWithPermission => userWithPermission.teamPermission)
     .map(ability => permissions[ability])
     .flatMap(perms => Option(perms.find(p => p.what === what)))

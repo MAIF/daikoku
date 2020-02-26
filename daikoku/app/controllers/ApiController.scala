@@ -256,7 +256,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               .intersect(myTeams.map(_.id))
               .nonEmpty) {
           val betterApis = api
-            .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team)))
+            .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || p.typeName == "Admin" || myTeams.exists(_.id == api.team)))
             .asJson.as[JsObject] ++ Json.obj(
             "pendingRequests" -> JsArray(
               pendingRequests.map(_.asJson)
@@ -504,7 +504,8 @@ class ApiController(DaikokuAction: DaikokuAction,
     api.possibleUsagePlans.find(_.id.value == planId) match {
       case None => EitherT.leftT[Future, JsObject](PlanNotFound)
       case Some(_)
-        if api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id) => EitherT.leftT[Future, JsObject](ApiUnauthorized)
+        if api.visibility == ApiVisibility.Private && !api.authorizedTeams.contains(team.id) => EitherT.leftT[Future, JsObject](ApiUnauthorized)
+      case Some(_) if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id =>  EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) => plan.subscriptionProcess match {
         case SubscriptionProcess.Manual    => EitherT(notifyApiSubscription(tenant, user, api, planId, team))
@@ -952,11 +953,17 @@ class ApiController(DaikokuAction: DaikokuAction,
           )
         )
       )
+      adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
+        Json.obj(
+          "visibility" -> ApiVisibility.AdminOnly.name
+        )
+      )
       translations <- env.dataStore.translationRepo.forTenant(tenant)
         .find(Json.obj(
           "element.id" -> Json.obj(
             "$in" -> JsArray(publicApis.map(_.id.asJson) ++ almostPublicApis.map(_.id.asJson) ++ privateApis.map(_.id.asJson)))))
     } yield {
+
       val apis = (publicApis ++ almostPublicApis ++ privateApis).filter(api => api.published || myTeams.exists(api.team == _.id))
 
       val sortedApis = apis.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
@@ -995,7 +1002,15 @@ class ApiController(DaikokuAction: DaikokuAction,
           case _ => json
         }
       }
-      JsArray(jsons)
+
+      val result = if (user.isDaikokuAdmin) adminApis.map( api => api.asJson.as[JsObject] ++ Json.obj("authorizations" -> teams.map( team =>
+        Json.obj(
+          "team" -> team.id.asJson,
+          "authorized" -> (user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id)),
+          "pending" -> false
+        )
+      ))) ++ jsons else jsons
+      JsArray(result)
     }
   }
 

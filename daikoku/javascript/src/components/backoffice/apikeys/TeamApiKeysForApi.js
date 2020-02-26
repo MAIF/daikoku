@@ -194,11 +194,13 @@ class TeamApiKeysForApiComponent extends Component {
                         subscription={subscription}
                         showApiKey={showApiKey}
                         plan={plan}
+                        api={this.state.api}
                         updateCustomName={name => this.updateCustomName(subscription, name)}
                         deleteApiKey={() => this.deleteApiKey(subscription)}
                         archiveApiKey={() => this.archiveApiKey(subscription)}
                         toggleRotation={(rotationEvery, gracePeriod) => this.toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)}
                         regenerateSecret={() => this.regenerateApiKeySecret(subscription)}
+                        disableRotation={this.state.api.visibility === "AdminOnly"}
                       />
                     );
                   }}
@@ -229,7 +231,8 @@ const ApiKeyCard = ({
   currentLanguage,
   toggleRotation,
   regenerateSecret,
-  currentTeam
+  currentTeam,
+  disableRotation
 }) => {
   //todo: maybe use showApikey props somewhere
   const [hide, setHide] = useState(true);
@@ -380,14 +383,14 @@ const ApiKeyCard = ({
                     <i className="fas fa-copy" />
                   </button>
                 </BeautifulTitle>
-                <BeautifulTitle title={t("Setup rotation", currentLanguage, false, "Setup rotation")}>
+                {!disableRotation && <BeautifulTitle title={t("Setup rotation", currentLanguage, false, "Setup rotation")}>
                   <button
                     type="button"
                     className="btn btn-sm btn-access-negative ml-1"
                     onClick={() => setSettingMode(true)}>
                     <i className="fas fa-history" />
                   </button>
-                </BeautifulTitle>
+                </BeautifulTitle>}
                 <BeautifulTitle title={t("Enable/Disable", currentLanguage, false, "Enable/Disable")}>
                   <button
                     type="button"
@@ -413,7 +416,7 @@ const ApiKeyCard = ({
                     </Translation>
                     </span>
                   </li>
-                  <li className="nav-item  cursor-pointer">
+                  {!disableRotation && <li className="nav-item  cursor-pointer">
                     <span
                       className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
                       onClick={() => setActiveTab('token')}>
@@ -421,7 +424,7 @@ const ApiKeyCard = ({
                         Integration token
                     </Translation>
                     </span>
-                  </li>
+                  </li>}
                 </ul>
               </div>
             )}

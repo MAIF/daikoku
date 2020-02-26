@@ -5,17 +5,9 @@ import java.util.concurrent.TimeUnit
 import com.auth0.jwt.JWT
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
-import fr.maif.otoroshi.daikoku.domain.ApiVisibility.{
-  Private,
-  Public,
-  PublicWithAuthorizations
-}
+import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.SubscriptionProcess.{Automatic, Manual}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
@@ -294,6 +286,7 @@ object json {
     override def reads(json: JsValue) = json.as[String] match {
       case "Personal"     => JsSuccess(Personal)
       case "Organization" => JsSuccess(Organization)
+      case "Admin"        => JsSuccess(TeamType.Admin)
       case str            => JsError(s"Bad TeamType value: $str")
     }
     override def writes(o: TeamType) = JsString(o.name)
@@ -303,6 +296,7 @@ object json {
       case "Public"                   => JsSuccess(Public)
       case "Private"                  => JsSuccess(Private)
       case "PublicWithAuthorizations" => JsSuccess(PublicWithAuthorizations)
+      case "AdminOnly"                => JsSuccess(AdminOnly)
       case str                        => JsError(s"Bad ApiVisibility value: $str")
     }
     override def writes(o: ApiVisibility) = JsString(o.name)
@@ -338,9 +332,13 @@ object json {
       case "QuotasWithLimits"    => QuotasWithLimitsFormat.reads(json)
       case "QuotasWithoutLimits" => QuotasWithoutLimitsFormat.reads(json)
       case "PayPerUse"           => PayPerUseFormat.reads(json)
+      case "Admin"               => AdminFormat.reads(json)
       case str                   => JsError(s"Bad UsagePlan value: $str")
     }
     override def writes(o: UsagePlan) = o match {
+      case p: Admin =>
+        AdminFormat.writes(p).as[JsObject] ++ Json.obj(
+          "type" -> "Admin")
       case p: FreeWithoutQuotas =>
         FreeWithoutQuotasFormat.writes(p).as[JsObject] ++ Json.obj(
           "type" -> "FreeWithoutQuotas")
@@ -400,6 +398,27 @@ object json {
       "apiKeyPrivate" -> o.apiKeyPrivate,
       "fromTitle" -> o.fromTitle,
       "fromEmail" -> o.fromEmail
+    )
+  }
+  val AdminFormat = new Format[Admin] {
+    override def reads(json: JsValue): JsResult[Admin] =
+      Try {
+        JsSuccess(
+          Admin(
+            id = (json \ "_id").as(UsagePlanIdFormat)
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: Admin): JsValue = Json.obj(
+      "_id" -> UsagePlanIdFormat.writes(o.id),
+      "customDescription" -> o.customDescription,
+      "customName" -> o.customName,
+      "allowMultipleKeys" -> o.allowMultipleKeys
+        .map(JsBoolean.apply)
+        .getOrElse(JsBoolean(false))
+        .as[JsValue],
     )
   }
   val FreeWithoutQuotasFormat = new Format[FreeWithoutQuotas] {
@@ -1111,7 +1130,11 @@ object json {
                     .asInstanceOf[String]
                 )
               ),
-            isPrivate = (json \ "isPrivate").asOpt[Boolean].getOrElse(true)
+            isPrivate = (json \ "isPrivate").asOpt[Boolean].getOrElse(true),
+            adminApi = (json \ "adminApi").asOpt(ApiIdFormat),
+            adminSubscriptions = (json \ "adminSubscriptions")
+              .asOpt(SeqApiSubscriptionIdFormat)
+              .getOrElse(Seq.empty)
           )
         )
       } recover {
@@ -1139,7 +1162,9 @@ object json {
       "authProvider" -> o.authProvider.name,
       "authProviderSettings" -> o.authProviderSettings,
       "auditTrailConfig" -> o.auditTrailConfig.asJson,
-      "isPrivate" -> o.isPrivate
+      "isPrivate" -> o.isPrivate,
+      "adminApi" -> o.adminApi.map(_.asJson).getOrElse(JsNull).as[JsValue],
+      "adminSubscriptions" -> JsArray(o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes))
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {

@@ -168,7 +168,7 @@ export class ApiPricingCard extends Component {
                   teams={authorizedTeams.filter(
                     team => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
                   )}>
-                  {plan.otoroshiTarget && !isAccepted && !isPending && (
+                  {(this.props.api.visibility === 'AdminOnly' || (plan.otoroshiTarget && !isAccepted && !isPending)) && (
                     <ActionWithTeamSelector
                       title={t(
                         'team.selection.title',
@@ -269,6 +269,7 @@ export class ApiPricing extends Component {
 }
 
 ApiPricing.propTypes = {
+  userIsTenantAdmin: PropTypes.bool.isRequired,
   api: PropTypes.object.isRequired,
   myTeams: PropTypes.array.isRequired,
   ownerTeam: PropTypes.object.isRequired,

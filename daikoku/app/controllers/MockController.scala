@@ -604,7 +604,75 @@ class MockController(DaikokuAction: DaikokuAction,
     val (user5, userTeam5) =
       createUserAndTeam("fifou", "fifou@foo.bar", tenantId, false)
 
+    val defaultAdminTeam = Team(
+      id = TeamId(IdGenerator.token),
+      tenant = Tenant.Default,
+      `type` = TeamType.Admin,
+      name = s"default-admin-team",
+      description = s"The admin team for the default tenant",
+      avatar = Some(
+        s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
+      users = Set(
+        UserWithPermission(user1.id, TeamPermission.Administrator),
+        UserWithPermission(user2.id, TeamPermission.Administrator),
+        UserWithPermission(user3.id, TeamPermission.Administrator),
+        UserWithPermission(user4.id, TeamPermission.Administrator)),
+      subscriptions = Seq.empty,
+      authorizedOtoroshiGroups = Set.empty
+    )
+    val tenant2adminTeam = defaultAdminTeam.copy(
+      id = TeamId(IdGenerator.token),
+      tenant = tenant2Id,
+      name = s"Johnny-be-good-admin-team",
+      description = s"The admin team for the Johnny be good tenant",
+      avatar = Some(
+        s"https://www.gravatar.com/avatar/${"Johnny-be-good".md5}?size=128&d=robohash"),
+    )
+
     val sender = user5
+
+    val adminApiDefaultTenant = Api(
+      id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
+      tenant = Tenant.Default,
+      team = defaultAdminTeam.id,
+      name = s"admin-api-tenant-${Tenant.Default.value}",
+      lastUpdate = DateTime.now(),
+      smallDescription = "admin api",
+      description = "admin api",
+      currentVersion = Version("1.0.0"),
+      published = true,
+      documentation = ApiDocumentation(
+        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        tenant = Tenant.Default,
+        pages = Seq.empty[ApiDocumentationPageId],
+        lastModificationAt = DateTime.now()
+      ),
+      swagger = None,
+      possibleUsagePlans = Seq(
+        Admin(
+          id = UsagePlanId("admin"),
+          customName = Some("admin"),
+          customDescription = None,
+        )
+      ),
+      tags = Set("Administration"),
+      visibility = ApiVisibility.AdminOnly,
+      defaultUsagePlan = UsagePlanId("1"),
+      authorizedTeams = Seq.empty
+    )
+    val adminApiTenant2 = adminApiDefaultTenant.copy(
+      id = ApiId(s"admin-api-tenant-${tenant2Id.value}"),
+      tenant = tenant2Id,
+      name = s"admin-api-tenant-${tenant2Id.value}",
+      team = tenant2adminTeam.id,
+      tags = Set("Administration"),
+      documentation = ApiDocumentation(
+        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        tenant = tenant2Id,
+        pages = Seq.empty[ApiDocumentationPageId],
+        lastModificationAt = DateTime.now()
+      ),
+    )
 
     for {
       teamRepo1 <- env.dataStore.teamRepo.forTenantF(tenantId)
@@ -653,7 +721,8 @@ class MockController(DaikokuAction: DaikokuAction,
               clientId = "admin-api-apikey-id",
               clientSecret = "admin-api-apikey-id"
             )
-          )
+          ),
+          adminApi = Some(adminApiDefaultTenant.id)
         )
       )
       _ <- env.dataStore.tenantRepo.save(
@@ -888,9 +957,12 @@ class MockController(DaikokuAction: DaikokuAction,
               clientId = "admin-api-apikey-id",
               clientSecret = "admin-api-apikey-id"
             )
-          )
+          ),
+          adminApi = Some(adminApiTenant2.id)
         )
       )
+      _ <- env.dataStore.apiRepo.forTenant(Tenant.Default).save(adminApiDefaultTenant)
+      _ <- env.dataStore.apiRepo.forTenant(tenant2Id).save(adminApiTenant2)
       _ <- teamRepo1.save(
         Team(
           id = TeamId(team3Id),
@@ -967,6 +1039,8 @@ class MockController(DaikokuAction: DaikokuAction,
       _ <- teamRepo1.save(userTeam3)
       _ <- teamRepo1.save(userTeam4)
       _ <- teamRepo1.save(userTeam5)
+      _ <- teamRepo1.save(defaultAdminTeam)
+      _ <- teamRepo1.save(tenant2adminTeam)
       ids <- saveApiDocPages(tenantId)
       ids2 <- saveApiDocPages(tenant2Id)
       _ <- Future.sequence(

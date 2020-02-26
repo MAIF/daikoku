@@ -81,7 +81,6 @@ class ApiHomeComponent extends Component {
           return toastr.error(t('Error', this.props.currentLanguage), results.error);
         }
         return results.forEach(result => {
-          console.debug({ result });
           const team = this.state.myTeams.find(t => t._id === result.subscription.team);
 
           if (result.error) {
@@ -262,6 +261,7 @@ class ApiHomeComponent extends Component {
               )}
               {tab === 'pricing' && (
                 <ApiPricing
+                  userIsTenantAdmin={this.props.connectedUser.isDaikokuAdmin}
                   api={api}
                   myTeams={this.state.myTeams}
                   ownerTeam={this.state.ownerTeam}

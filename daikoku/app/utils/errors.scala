@@ -29,7 +29,8 @@ object Errors {
       "sessionMaxAge" -> 86400
     ),
     bucketSettings = None,
-    otoroshiSettings = Set.empty
+    otoroshiSettings = Set.empty,
+    adminApi = None
   )
 
   val messages = Map(

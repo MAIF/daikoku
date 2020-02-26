@@ -291,6 +291,8 @@ GET     /api/admin/users/:id                            fr.maif.otoroshi.daikoku
 ### NoDocs ###
 PUT     /api/admin/users/:id                            fr.maif.otoroshi.daikoku.ctrls.UsersController.updateUserById(id)
 ### NoDocs ###
+PUT     /api/admin/users/:id/_admin                     fr.maif.otoroshi.daikoku.ctrls.UsersController.setAdminStatus(id)
+### NoDocs ###
 DELETE  /api/admin/users/:id                            fr.maif.otoroshi.daikoku.ctrls.UsersController.deleteUserById(id)
 ### NoDocs ###
 POST    /api/admin/users                                fr.maif.otoroshi.daikoku.ctrls.UsersController.createUser()

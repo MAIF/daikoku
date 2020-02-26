@@ -761,6 +761,17 @@ export function deleteSelfUserById() {
   }).then(r => r.json());
 }
 
+export function setAdminStatus(user, isDaikokuAdmin) {
+  return fetch(`/api/admin/users/${user._id}/_admin`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({isDaikokuAdmin}),
+  }).then(r => r.json());
+}
 export function updateUserById(user) {
   return fetch(`/api/admin/users/${user._id}`, {
     method: 'PUT',

@@ -8,22 +8,15 @@ import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain.json.TenantFormat
-import fr.maif.otoroshi.daikoku.domain.{
-  Team,
-  TeamId,
-  TeamType,
-  UserWithPermission
-}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.OAuth2Config
+import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.jwt.JWKSAlgoSettings
-import fr.maif.otoroshi.daikoku.utils.{
-  ApiService,
-  Errors,
-  IdGenerator,
-  OtoroshiClient
-}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, IdGenerator, OtoroshiClient}
+import org.joda.time.DateTime
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Results}
 import reactivemongo.bson.BSONObjectID
@@ -202,9 +195,62 @@ class TenantController(DaikokuAction: DaikokuAction,
             BadRequest(Json.obj("error" -> "Error while parsing payload",
                                 "msg" -> e.toString)))
         case JsSuccess(tenant, _) => {
+          //todo: create admin api
           ctx.setCtxValue("tenant.name", tenant.name)
           ctx.setCtxValue("tenant.id", tenant.id)
-          env.dataStore.tenantRepo.save(tenant).map { _ =>
+          val adminTeam = Team(
+            id = TeamId(IdGenerator.token),
+            tenant = tenant.id,
+            `type` = TeamType.Admin,
+            name = s"${tenant.humanReadableId}-admin-team",
+            description = s"The admin team for the default tenant",
+            avatar = Some(
+              s"https://www.gravatar.com/avatar/${tenant.humanReadableId.md5}?size=128&d=robohash"),
+            users = Set.empty,
+            subscriptions = Seq.empty,
+            authorizedOtoroshiGroups = Set.empty
+          )
+          val adminApi = Api(
+            id = ApiId(s"admin-api-tenant-${tenant.humanReadableId}"),
+            tenant = tenant.id,
+            team = adminTeam.id,
+            name = s"admin-api-tenant-${tenant.humanReadableId}",
+            lastUpdate = DateTime.now(),
+            smallDescription = "admin api",
+            description = "admin api",
+            currentVersion = Version("1.0.0"),
+            published = true,
+            visibility = ApiVisibility.AdminOnly,
+            documentation = ApiDocumentation(
+              id = ApiDocumentationId(BSONObjectID.generate().stringify),
+              tenant = tenant.id,
+              pages = Seq.empty[ApiDocumentationPageId],
+              lastModificationAt = DateTime.now()
+            ),
+            swagger = None,
+            possibleUsagePlans = Seq(
+              FreeWithoutQuotas(
+                id = UsagePlanId("admin"),
+                billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                currency = Currency("EUR"),
+                customName = Some("admin"),
+                customDescription = None,
+                otoroshiTarget = None,
+                allowMultipleKeys = Some(true),
+                autoRotation = None,
+                subscriptionProcess = SubscriptionProcess.Automatic,
+                integrationProcess = IntegrationProcess.ApiKey
+              )
+            ),
+            defaultUsagePlan = UsagePlanId("admin"),
+            authorizedTeams = Seq.empty
+          )
+
+          for {
+            _ <- env.dataStore.tenantRepo.save(tenant.copy(adminApi = Some(adminApi.id)))
+            _ <- env.dataStore.teamRepo.forTenant(tenant).save(adminTeam)
+            _ <- env.dataStore.apiRepo.forTenant(tenant).save(adminApi)
+          } yield {
             Created(tenant.asJsonWithJwt)
           }
         }

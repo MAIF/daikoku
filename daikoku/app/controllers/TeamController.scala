@@ -321,6 +321,9 @@ class TeamController(DaikokuAction: DaikokuAction,
             FastFuture.successful(
               Conflict(Json.obj(
                 "error" -> "Team type doesn't accept to remove members")))
+          case TeamType.Admin =>
+            FastFuture.successful(
+              Forbidden(Json.obj("error" -> "Team type doesn't accept to remove members from this way")))
           case TeamType.Organization =>
             for {
               teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)
@@ -352,6 +355,9 @@ class TeamController(DaikokuAction: DaikokuAction,
             FastFuture.successful(
               Conflict(
                 Json.obj("error" -> "Team type doesn't accept to add members")))
+          case TeamType.Admin =>
+            FastFuture.successful(
+              Forbidden(Json.obj("error" -> "Team type doesn't accept to add members from this way")))
           case TeamType.Organization =>
             for {
               teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)
@@ -392,6 +398,9 @@ class TeamController(DaikokuAction: DaikokuAction,
             FastFuture.successful(
               Conflict(Json.obj(
                 "error" -> "Team type doesn't accept to update permission")))
+          case TeamType.Admin =>
+            FastFuture.successful(
+              Conflict(Json.obj("error" -> "Team type doesn't accept to update permission")))
           case TeamType.Organization =>
             for {
               teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)
@@ -458,6 +467,9 @@ class TeamController(DaikokuAction: DaikokuAction,
         ctx) { team =>
         team.`type` match {
           case TeamType.Personal =>
+            FastFuture.successful(Conflict(Json.obj(
+              "error" -> "Team type doesn't accept to update apikey visibility")))
+          case TeamType.Admin =>
             FastFuture.successful(Conflict(Json.obj(
               "error" -> "Team type doesn't accept to update apikey visibility")))
           case TeamType.Organization =>

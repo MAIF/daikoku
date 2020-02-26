@@ -114,7 +114,9 @@ case class Tenant(
     authProvider: AuthProvider,
     authProviderSettings: JsObject,
     auditTrailConfig: AuditTrailConfig = AuditTrailConfig(),
-    isPrivate: Boolean = true
+    isPrivate: Boolean = true,
+    adminApi: Option[ApiId],
+    adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -468,11 +470,15 @@ object TeamType {
   case object Organization extends TeamType {
     def name: String = "Organization"
   }
+  case object Admin extends TeamType {
+    def name: String = "Admin"
+  }
   val values: Seq[TeamType] =
-    Seq(Personal, Organization)
+    Seq(Personal, Organization, Admin)
   def apply(name: String): Option[TeamType] = name match {
     case "Organization" => Organization.some
     case "Personal"     => Personal.some
+  case "Admin"          => Admin.some
     case _              => None
   }
 }
@@ -491,12 +497,16 @@ object ApiVisibility {
   case object Private extends ApiVisibility {
     def name: String = "Private"
   }
+  case object AdminOnly extends ApiVisibility {
+    def name: String = "AdminOnly"
+  }
   val values: Seq[ApiVisibility] =
     Seq(Public, Private, PublicWithAuthorizations)
   def apply(name: String): Option[ApiVisibility] = name match {
     case "Public"                   => Public.some
     case "Private"                  => Private.some
     case "PublicWithAuthorizations" => PublicWithAuthorizations.some
+    case "AdminOnly"                => AdminOnly.some
     case _                          => None
   }
 }
@@ -592,6 +602,36 @@ sealed trait UsagePlan {
 }
 
 case object UsagePlan {
+  case class Admin(
+    id: UsagePlanId,
+    customName: Option[String] = Some("Administration plan"),
+    customDescription: Option[String] = Some("access to admin api"),
+    override val authorizedTeams: Seq[TeamId] = Seq.empty
+  ) extends UsagePlan {
+    override def costPerMonth: BigDecimal = BigDecimal(0)
+    override def maxRequestPerSecond: Option[Long] = None
+    override def maxRequestPerDay: Option[Long] = None
+    override def maxRequestPerMonth: Option[Long] = None
+    override def allowMultipleKeys: Option[Boolean] = Some(true)
+    override def autoRotation: Option[Boolean] = Some(false)
+    override def costFor(requests: Long): BigDecimal = BigDecimal(0)
+    override def currency: Currency = Currency(code = "Eur")
+    override def otoroshiTarget: Option[OtoroshiTarget] = None
+    override def trialPeriod: Option[BillingDuration] = None
+    override def billingDuration: BillingDuration = BillingDuration(1, BillingTimeUnit.Year)
+    override def typeName: String = "Admin"
+    override def visibility: UsagePlanVisibility = UsagePlanVisibility.Private
+    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams :+ teamId)
+    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
+      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
+    override def removeAllAuthorizedTeams(): UsagePlan =
+      this.copy(authorizedTeams = Seq.empty)
+    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
+      this.copy(authorizedTeams = teamIds)
+    override def subscriptionProcess: SubscriptionProcess = SubscriptionProcess.Automatic
+    override def integrationProcess: IntegrationProcess = IntegrationProcess.ApiKey
+  }
   case class FreeWithoutQuotas(
       id: UsagePlanId,
       currency: Currency,

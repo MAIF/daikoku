@@ -13,8 +13,10 @@ import com.auth0.jwt.algorithms.Algorithm
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.Tenant
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
+import org.joda.time.DateTime
 import play.api.libs.ws.WSClient
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -305,6 +307,41 @@ class DaikokuEnv(ws: WSClient,
               logger.warn(
                 "Main dataStore seems to be empty, generating initial data ...")
               val userId = UserId(BSONObjectID.generate().stringify)
+              val adminApiDefaultTenant = Api(
+                id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
+                tenant = Tenant.Default,
+                team = TeamId("administration"),
+                name = s"admin-api-tenant-${Tenant.Default.value}",
+                lastUpdate = DateTime.now(),
+                smallDescription = "admin api",
+                description = "admin api",
+                currentVersion = Version("1.0.0"),
+                published = true,
+                documentation = ApiDocumentation(
+                  id = ApiDocumentationId(BSONObjectID.generate().stringify),
+                  tenant = Tenant.Default,
+                  pages = Seq.empty[ApiDocumentationPageId],
+                  lastModificationAt = DateTime.now()
+                ),
+                swagger = None,
+                possibleUsagePlans = Seq(
+                  FreeWithoutQuotas(
+                    id = UsagePlanId("1"),
+                    billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                    currency = Currency("EUR"),
+                    customName = Some("admin"),
+                    customDescription = None,
+                    otoroshiTarget = None,
+                    allowMultipleKeys = Some(true),
+                    autoRotation = None,
+                    subscriptionProcess = SubscriptionProcess.Automatic,
+                    integrationProcess = IntegrationProcess.ApiKey
+                  )
+                ),
+                visibility = ApiVisibility.AdminOnly,
+                defaultUsagePlan = UsagePlanId("1"),
+                authorizedTeams = Seq.empty
+              )
               val tenant = Tenant(
                 id = Tenant.Default,
                 deleted = false,
@@ -322,7 +359,20 @@ class DaikokuEnv(ws: WSClient,
                   "sessionMaxAge" -> 86400
                 ),
                 bucketSettings = None,
-                otoroshiSettings = Set()
+                otoroshiSettings = Set(),
+                adminApi = Some(ApiId(s"admin-api-tenant-${Tenant.Default.value}"))
+              )
+              val defaultAdminTeam = Team(
+                id = TeamId(IdGenerator.token),
+                tenant = Tenant.Default,
+                `type` = TeamType.Admin,
+                name = s"default-admin-team",
+                description = s"The admin team for the default tenant",
+                avatar = Some(
+                  s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
+                users = Set(UserWithPermission(userId, Administrator)),
+                subscriptions = Seq.empty,
+                authorizedOtoroshiGroups = Set.empty
               )
               val team = Team(
                 id = TeamId(BSONObjectID.generate().stringify),
@@ -348,10 +398,11 @@ class DaikokuEnv(ws: WSClient,
                 personalToken = Some(IdGenerator.token(32)),
                 defaultLanguage = None
               )
-
               val initialDataFu = for {
                 _ <- dataStore.tenantRepo.save(tenant)
                 _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
+                _ <- dataStore.teamRepo.forTenant(tenant.id).save(defaultAdminTeam)
+                _ <- dataStore.apiRepo.forTenant(tenant.id).save(adminApiDefaultTenant)
                 _ <- dataStore.userRepo.save(user)
               } yield ()
 

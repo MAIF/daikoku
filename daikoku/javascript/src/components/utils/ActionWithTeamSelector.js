@@ -25,6 +25,12 @@ class ActionWithTeamSelectorComponent extends Component {
   };
 
   render() {
+    // console.debug({
+    //   1: !this.props.allowMultipleDemand,
+    //   2: this.props.teams.length === 1,
+    //   3: this.props.pendingTeams.includes(this.props.teams[0]._id),
+    //   4: this.props.authorizedTeams.includes(this.props.teams[0]._id)
+    // })
     if (
       !this.props.allowMultipleDemand &&
       this.props.teams.length === 1 &&
