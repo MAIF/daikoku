@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'antd';
 import uuidv4 from 'uuid/v4';
@@ -22,9 +23,9 @@ export const AvatarWithAction = props => {
     if (Array.isArray(action.action)) {
       ActionComponent = (
         <span className="avatar-with-action__action" key={uuid}>
-          <a href={action.link}>
+          <Link to={action.link}>
             <i className={action.iconClass} onClick={() => setSecondaryActions(action.action)} />
-          </a>
+          </Link>
         </span>
       );
     } else if (action.link) {
