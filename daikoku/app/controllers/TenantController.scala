@@ -195,7 +195,6 @@ class TenantController(DaikokuAction: DaikokuAction,
             BadRequest(Json.obj("error" -> "Error while parsing payload",
                                 "msg" -> e.toString)))
         case JsSuccess(tenant, _) => {
-          //todo: create admin api
           ctx.setCtxValue("tenant.name", tenant.name)
           ctx.setCtxValue("tenant.id", tenant.id)
           val adminTeam = Team(
@@ -245,13 +244,15 @@ class TenantController(DaikokuAction: DaikokuAction,
             defaultUsagePlan = UsagePlanId("admin"),
             authorizedTeams = Seq.empty
           )
+          val tenantForCreation = tenant.copy(adminApi = Some(adminApi.id))
 
           for {
-            _ <- env.dataStore.tenantRepo.save(tenant.copy(adminApi = Some(adminApi.id)))
-            _ <- env.dataStore.teamRepo.forTenant(tenant).save(adminTeam)
-            _ <- env.dataStore.apiRepo.forTenant(tenant).save(adminApi)
+            admins  <-  env.dataStore.userRepo.findNotDeleted(Json.obj("isDaikokuAdmin" -> true))
+            _       <- env.dataStore.tenantRepo.save(tenantForCreation)
+            _       <- env.dataStore.teamRepo.forTenant(tenantForCreation).save(adminTeam.copy(users = admins.map(u => UserWithPermission(u.id, TeamPermission.Administrator)).toSet))
+            _       <- env.dataStore.apiRepo.forTenant(tenantForCreation).save(adminApi)
           } yield {
-            Created(tenant.asJsonWithJwt)
+            Created(tenantForCreation.asJsonWithJwt)
           }
         }
       }

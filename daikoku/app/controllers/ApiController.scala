@@ -504,7 +504,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     api.possibleUsagePlans.find(_.id.value == planId) match {
       case None => EitherT.leftT[Future, JsObject](PlanNotFound)
       case Some(_)
-        if api.visibility == ApiVisibility.Private && !api.authorizedTeams.contains(team.id) => EitherT.leftT[Future, JsObject](ApiUnauthorized)
+        if api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id) => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(_) if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id =>  EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) => plan.subscriptionProcess match {
@@ -1089,6 +1089,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
         .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson)) flatMap {
+          case Some(api) if api.visibility == ApiVisibility.AdminOnly => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to delete this api")))
           case Some(api) =>
             Source(api.possibleUsagePlans.toList)
               .mapAsync(1)(plan => {
@@ -1153,6 +1154,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         .forTenant(ctx.tenant.id)
         .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson)) flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
+        case Some(api) if api.visibility == ApiVisibility.AdminOnly => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to update this api")))
         case Some(oldApi) =>
           ApiFormat.reads(finalBody) match {
             case JsError(e) =>

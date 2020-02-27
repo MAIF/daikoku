@@ -2,16 +2,9 @@ package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
-  Administrator,
-  ApiEditor,
-  TeamUser
-}
-import fr.maif.otoroshi.daikoku.domain.UserWithPermission
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.{TeamType, UserWithPermission}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.Configuration
@@ -519,6 +512,76 @@ class TeamControllerSpec(configurationSpec: => Configuration)
           body = Some(Json.obj("showApiKeyOnlyToAdmins" -> false))
         )(tenant, session)
       resp.status mustBe 409
+    }
+  }
+
+  "an tenant admin team" can {
+    "not be deleted" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+
+      val respDelete = httpJsonCallBlocking(
+        path = s"/api/teams/${defaultAdminTeam.id.value}",
+        method = "DELETE"
+      )(tenant, session)
+      respDelete.status mustBe 403
+    }
+
+    "not be updated" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+
+      val respUpdateNotFound = httpJsonCallBlocking(
+        path = s"/api/teams/${defaultAdminTeam.id.value}",
+        method = "PUT",
+        body = Some(defaultAdminTeam.copy(`type` = TeamType.Personal).asJson)
+      )(tenant, session)
+      respUpdateNotFound.status mustBe 403
+    }
+
+    "not be join by anyone" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, user),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(user, tenant)
+
+      val respUser = httpJsonCallBlocking(
+        path = s"/api/teams/${defaultAdminTeam.id.value}/join",
+        method = "POST"
+      )(tenant, session)
+      respUser.status mustBe 403
+    }
+
+    "not be visible by user which is not member" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, user),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(user, tenant)
+
+      val respUser = httpJsonCallBlocking(
+        path = s"/api/teams/${defaultAdminTeam.id.value}/_full"
+      )(tenant, session)
+      respUser.status mustBe 403
     }
   }
 }

@@ -53,7 +53,9 @@ class BasicUsageSpec(configurationSpec: => Configuration)
         ),
         bucketSettings = None,
         otoroshiSettings = Set.empty,
-        defaultLanguage = Some("En")
+        defaultLanguage = Some("En"),
+        adminApi = None,
+        adminSubscriptions = Seq.empty
       )
 
       val user = User(
@@ -95,7 +97,9 @@ class BasicUsageSpec(configurationSpec: => Configuration)
         ),
         bucketSettings = None,
         otoroshiSettings = Set.empty,
-        defaultLanguage = Some("En")
+        defaultLanguage = Some("En"),
+        adminApi = None,
+        adminSubscriptions = Seq.empty
       )
 
       val user = User(

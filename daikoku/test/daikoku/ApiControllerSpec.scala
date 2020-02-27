@@ -5,14 +5,13 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import com.typesafe.config.ConfigFactory
+import controllers.AppError
+import controllers.AppError.PlanUnauthorized
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.PayPerUse
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.{PayPerUse, QuotasWithLimits}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -27,7 +26,7 @@ class ApiControllerSpec(configurationSpec: => Configuration)
     with IntegrationPatience
     with BeforeAndAfterEach {
 
-  override def getConfiguration(configuration: Configuration) =
+  override def getConfiguration(configuration: Configuration): Configuration =
     configuration ++ configurationSpec ++ Configuration(
       ConfigFactory.parseString(s"""
 									  |{
@@ -81,7 +80,7 @@ class ApiControllerSpec(configurationSpec: => Configuration)
       result.get.id mustBe teamOwnerId
     }
 
-    "no see another teams" in {
+    "not see another teams" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
@@ -305,7 +304,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = daikokuAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -433,7 +434,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = userTeamAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -462,7 +465,8 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         constrainedServicesOnly = true,
         tags = Seq(),
         restrictions = ApiKeyRestrictions(),
-        metadata = Map()
+        metadata = Map(),
+        rotation = None
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -591,7 +595,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = userTeamAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
       )
       val sub2 = ApiSubscription(
         id = ApiSubscriptionId("test2"),
@@ -603,7 +609,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         api = defaultApi.id,
         by = userTeamAdminId,
         customName = None,
-        enabled = false
+        enabled = false,
+        rotation = None,
+        integrationToken = "test2"
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -927,7 +935,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = daikokuAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1037,7 +1047,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = userTeamAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
       )
       val sub2 = ApiSubscription(
         id = ApiSubscriptionId("test2"),
@@ -1049,7 +1061,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         api = defaultApi.id,
         by = userTeamAdminId,
         customName = None,
-        enabled = false
+        enabled = false,
+        rotation = None,
+        integrationToken = "test2"
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1255,7 +1269,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = daikokuAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1365,7 +1381,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = userTeamAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
       )
       val sub2 = ApiSubscription(
         id = ApiSubscriptionId("test2"),
@@ -1377,7 +1395,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         api = defaultApi.id,
         by = userTeamAdminId,
         customName = None,
-        enabled = false
+        enabled = false,
+        rotation = None,
+        integrationToken = "test2"
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1399,13 +1419,31 @@ class ApiControllerSpec(configurationSpec: => Configuration)
   }
 
   "a subscription" should {
-    "be not available right now if subscription process is manual" in {
+    "be not available right now if plan's subscription process is manual" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis =
-          Seq(defaultApi.copy(subscriptionProcess = SubscriptionProcess.Manual))
+        apis = Seq(defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+          UsagePlanId("1"),
+          10000,
+          10000,
+          10000,
+          BigDecimal(10.0),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              OtoroshiServiceGroupId("12345"))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = SubscriptionProcess.Manual,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        ))))
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1724,7 +1762,10 @@ class ApiControllerSpec(configurationSpec: => Configuration)
                              OtoroshiServiceGroupId("12345"))
             ),
             allowMultipleKeys = Some(false),
-            visibility = Private
+            visibility = Private,
+            autoRotation = Some(false),
+            subscriptionProcess = SubscriptionProcess.Automatic,
+            integrationProcess = IntegrationProcess.ApiKey
           ))))
       )
 
@@ -1771,7 +1812,10 @@ class ApiControllerSpec(configurationSpec: => Configuration)
                              OtoroshiServiceGroupId("12345"))
             ),
             allowMultipleKeys = Some(false),
-            visibility = Private
+            visibility = Private,
+            autoRotation = Some(false),
+            subscriptionProcess = SubscriptionProcess.Automatic,
+            integrationProcess = IntegrationProcess.ApiKey
           ))))
       )
 
@@ -1850,7 +1894,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = daikokuAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test-removal"
       )
 
       val api = defaultApi.copy(
@@ -1869,7 +1915,10 @@ class ApiControllerSpec(configurationSpec: => Configuration)
           ),
           allowMultipleKeys = Some(false),
           visibility = Public,
-          authorizedTeams = Seq.empty
+          authorizedTeams = Seq.empty,
+          autoRotation = Some(false),
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.ApiKey
         )))
 
       setupEnvBlocking(
@@ -1912,7 +1961,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = daikokuAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
       )
 
       val payPerPlan = PayPerUse(
@@ -1930,7 +1981,10 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         ),
         allowMultipleKeys = Some(false),
         visibility = Private,
-        authorizedTeams = Seq(teamConsumerId)
+        authorizedTeams = Seq(teamConsumerId),
+        autoRotation = Some(false),
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.ApiKey
       )
       val payPerApi = defaultApi.copy(possibleUsagePlans = Seq(payPerPlan))
 
@@ -2061,7 +2115,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = daikokuAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test-removal"
       )
 
       setupEnvBlocking(
@@ -2085,7 +2141,10 @@ class ApiControllerSpec(configurationSpec: => Configuration)
             ),
             allowMultipleKeys = Some(false),
             visibility = Private,
-            authorizedTeams = Seq(teamConsumerId)
+            authorizedTeams = Seq(teamConsumerId),
+            autoRotation = Some(false),
+            subscriptionProcess = SubscriptionProcess.Automatic,
+            integrationProcess = IntegrationProcess.ApiKey
           )))),
         subscriptions = Seq(payperUseSub)
       )
@@ -2133,7 +2192,9 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = daikokuAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "test-removal"
       )
 
       setupEnvBlocking(
@@ -2157,7 +2218,10 @@ class ApiControllerSpec(configurationSpec: => Configuration)
             ),
             allowMultipleKeys = Some(false),
             visibility = Private,
-            authorizedTeams = Seq(teamConsumerId)
+            authorizedTeams = Seq(teamConsumerId),
+            autoRotation = Some(false),
+            subscriptionProcess = SubscriptionProcess.Automatic,
+            integrationProcess = IntegrationProcess.ApiKey
           )))),
         subscriptions = Seq(payperUseSub)
       )
@@ -2193,6 +2257,86 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGetTeam.json)
       result.isSuccess mustBe true
       result.get.subscriptions.length mustBe 0
+    }
+  }
+
+  "an admin api" must {
+    "not be available for non daikoku admin user" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, userAdmin),
+        teams = Seq(defaultAdminTeam, teamConsumer),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/api/apis/${adminApi.id.value}/subscriptions",
+        method = "POST",
+        body = Some(
+          Json.obj("plan" -> "admin", "teams" -> Json.arr(teamConsumer.id.asJson)))
+      )(tenant, session)
+
+      resp.status mustBe 200
+      val result = (resp.json \ 0).as[JsObject]
+      result mustBe  AppError.toJson(PlanUnauthorized)
+    }
+
+    "be available for daikoku admin" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/api/apis/${adminApi.id.value}/subscriptions",
+        method = "POST",
+        body = Some(
+          Json.obj("plan" -> "admin", "teams" -> Json.arr(defaultAdminTeam.id.asJson)))
+      )(tenant, session)
+
+      resp.status mustBe 200
+      val result = (resp.json \ 0).as[JsObject]
+      (result \ "creation").as[String] mustBe "done"
+    }
+
+    "cannot be deleted" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${defaultAdminTeam.id.value}/apis/${adminApi.id.value}",
+        method = "DELETE")(tenant, session)
+      resp.status mustBe 403
+    }
+
+    "cannot be updated" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val updatedAdminApi = adminApi.copy(description = "new description")
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${defaultAdminTeam.id.value}/apis/${adminApi.id.value}",
+        method = "PUT",
+        body = Some(updatedAdminApi.asJson))(tenant, session)
+
+      resp.status mustBe 403
     }
   }
 }
