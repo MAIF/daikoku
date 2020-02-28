@@ -175,7 +175,7 @@ class TeamIncomeComponent extends Component {
                             return (
                               <PriceCartridge
                                 key={idx}
-                                label={formatPlanType(usagePlan)}
+                                label={usagePlan.customName || formatPlanType(usagePlan)}
                                 total={billing.total}
                                 currency={usagePlan.currency}
                                 handleClick={() => this.setState({ selectedPlan: usagePlan })}
@@ -189,7 +189,7 @@ class TeamIncomeComponent extends Component {
                         <div className="api__plans__consumption__header">
                           <h3 className="api__name">
                             {this.state.selectedApi.name} -{' '}
-                            {formatPlanType(this.state.selectedPlan)}
+                            {this.state.selectedPlan.customName || formatPlanType(this.state.selectedPlan)}
                           </h3>
                           <i
                             className="far fa-arrow-alt-circle-left quit"

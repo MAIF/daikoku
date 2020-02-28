@@ -140,7 +140,7 @@ export class ApiPricingCard extends Component {
     return (
       <div className="card mb-4 shadow-sm">
         <div className="card-img-top card-link card-skin" data-holder-rendered="true">
-          <span>{formatPlanType(plan)}</span>
+          <span>{plan.customName || formatPlanType(plan)}</span>
         </div>
         <div className="card-body plan-body">
           <p className="card-text text-justify">

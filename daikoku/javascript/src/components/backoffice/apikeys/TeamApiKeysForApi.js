@@ -237,7 +237,7 @@ const ApiKeyCard = ({
   //todo: maybe use showApikey props somewhere
   const [hide, setHide] = useState(true);
   const [settingMode, setSettingMode] = useState(false)
-  const [customName, setCustomName] = useState(subscription.customName || plan.type);
+  const [customName, setCustomName] = useState(subscription.customName || plan.customName || plan.type);
   const [rotation, setRotation] = useState(subscription.rotation.enabled);
   const [editMode, setEditMode] = useState(false);
   const [rotationEvery, setRotationEvery] = useState(subscription.rotation.rotationEvery || 744);
@@ -309,7 +309,13 @@ const ApiKeyCard = ({
             {!settingMode && (
               !editMode ? (
                 <>
-                  <h3 style={{ wordBreak: 'break-all', marginBlockEnd: '0' }}>{customName}</h3>
+                  <h3 style={{ 
+                    wordBreak: 'break-all', 
+                    marginBlockEnd: '0',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '85%',
+                    overflow: 'hidden', textOverflow: 'ellipsis'
+                     }}>{customName}</h3>
                   <button
                     disabled={!subscription.enabled}
                     type="button"

@@ -177,7 +177,7 @@ class TeamBillingComponent extends Component {
                           return (
                             <PriceCartridge
                               key={idx}
-                              label={formatPlanType(usagePlan)}
+                              label={usagePlan.customName || formatPlanType(usagePlan)}
                               total={billing.total}
                               currency={usagePlan.currency}
                             />
