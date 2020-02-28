@@ -118,7 +118,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             allowMultipleKeys = Some(false),
             autoRotation = None,
             subscriptionProcess = SubscriptionProcess.Automatic,
-            integrationProcess = IntegrationProcess.Automatic
+            integrationProcess = IntegrationProcess.ApiKey
           )),
           defaultUsagePlan = UsagePlanId("default")
         ).asJson)
