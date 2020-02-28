@@ -4,11 +4,16 @@ And you should see the list of existing `APIkeys`
 
 ## View APIkeys
 On the right of the API line, click on the `API Keys` button.
-All subscribed plan for the API are displayed. To copy credentials, click on the `copy` button at the bottom right of the component.
-
-APIkey usage statistics are avalaible after clicking on the `stats` button.
+All subscribed plan for the API are displayed.
+ - Secret can be reseted for an APIkey
+ - APIkey usage statistics are avalaible after clicking on the `stats` button.
 Stats are avalaible for `today`, `yesterday`, `last week`, `last month` or `the billing period`.
 You can see a graph to see usage or some global informations likes hits count, average duration or average overhead.
+ - To copy credentials, click on the `copy` button at the bottom right of the component.
+ - APIkey Rotation can be enabled and setup (by choosing rotation period and grace period)
+ - APIkey can be enabled or disabled
+ 
+Every subscription have an integration token, which make credentials accessible by admin api. This token is visible in integration token tab.
 
 ## View global statistics
 After clicking on the `see stats` button, global statistics are displayed.
