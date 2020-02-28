@@ -211,8 +211,6 @@ export class TeamApiPricing extends Component {
 
   securityFlow = _found => {
     return [
-      `>>> ${t('Visibility', this.props.currentLanguage)}`,
-      'visibility',
       `>>> ${t('Security', this.props.currentLanguage)}`,
       'autoRotation',
       'subscriptionProcess',
@@ -222,22 +220,6 @@ export class TeamApiPricing extends Component {
 
   securityForm = _found => {
     return {
-      'visibility': {
-        type: 'select',
-        props: {
-          label: t('Visibility', this.props.currentLanguage),
-          possibleValues: [
-            {
-              label: t('Public', this.props.currentLanguage),
-              value: 'Public'
-            },
-            {
-              label: t('Private', this.props.currentLanguage),
-              value: 'Private'
-            }
-          ]
-        }
-      },
       'autoRotation': {
         type: 'bool',
         props: {
