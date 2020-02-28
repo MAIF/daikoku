@@ -36,9 +36,13 @@ class TeamPlanConsumptionComponent extends Component {
       formatter: data =>
         data.reduce((acc, item) => {
           const value = acc.find(a => a.name === item.clientId) || { count: 0 };
+
+          const team = this.state.teams.find(t => t._id === item.team)
+          const name = team.name
+
           return [
             ...acc.filter(a => a.name !== item.clientId),
-            { name: item.clientId, count: value.count + item.hits },
+            { clientId: item.clientId, name, count: value.count + item.hits },
           ];
         }, []),
       dataKey: 'count',
@@ -79,6 +83,14 @@ class TeamPlanConsumptionComponent extends Component {
       avgOverhead: value.avgOverhead / howManyOverhead,
     };
   };
+
+  componentDidMount() {
+    Promise.all([
+      Services.teams()
+    ]).then(([teams, api]) =>
+      this.setState({ teams })
+    );
+  }
 
   render() {
     return (

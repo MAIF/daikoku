@@ -64,10 +64,16 @@ class TeamApiConsumptionComponent extends Component {
       title: 'Hits by apikey',
       formatter: data =>
         data.reduce((acc, item) => {
-          const value = acc.find(a => a.name === item.clientId) || { count: 0 };
+          const value = acc.find(a => a.clientId === item.clientId) || { count: 0 };
+
+          const team = this.state.teams.find(t => t._id === item.team)
+          const plan = this.state.api.possibleUsagePlans.find(p => p._id == item.plan)
+
+          const name = `${team.name}/${plan.customName || plan.type}`
+
           return [
             ...acc.filter(a => a.name !== item.clientId),
-            { name: item.clientId, count: value.count + item.hits },
+            { clientId:  item.clientId, name, count: value.count + item.hits },
           ];
         }, []),
       dataKey: 'count',
@@ -104,8 +110,11 @@ class TeamApiConsumptionComponent extends Component {
   ];
 
   componentDidMount() {
-    Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId).then(api =>
-      this.setState({ api })
+    Promise.all([
+      Services.teams(),
+      Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId)
+    ]).then(([teams, api]) =>
+      this.setState({ teams, api })
     );
   }
 
