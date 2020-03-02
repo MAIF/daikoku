@@ -653,6 +653,7 @@ class MockController(DaikokuAction: DaikokuAction,
           id = UsagePlanId("admin"),
           customName = Some("admin"),
           customDescription = None,
+          otoroshiTarget = None
         )
       ),
       tags = Set("Administration"),

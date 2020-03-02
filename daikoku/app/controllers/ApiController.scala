@@ -1154,12 +1154,23 @@ class ApiController(DaikokuAction: DaikokuAction,
         .forTenant(ctx.tenant.id)
         .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson)) flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-        case Some(api) if api.visibility == ApiVisibility.AdminOnly => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to update this api")))
         case Some(oldApi) =>
           ApiFormat.reads(finalBody) match {
             case JsError(e) =>
               FastFuture
                 .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
+            case JsSuccess(api, _) if api.visibility == ApiVisibility.AdminOnly =>
+              val oldAdminPlan = oldApi.possibleUsagePlans.head
+              val planToSave = api.possibleUsagePlans.find(_.id == oldAdminPlan.id)
+              planToSave match {
+                case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api Plan not found")))
+                case Some(plan) =>
+                  val apiToSave = oldApi.copy(possibleUsagePlans = Seq(plan))
+                  env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+                  .save(apiToSave)
+                  .map(_ => Ok(apiToSave.asJson))
+
+              }
             case JsSuccess(api, _) =>
               val flippedPlans = api.possibleUsagePlans.filter(pp => oldApi.possibleUsagePlans.exists(oldPp => pp.id == oldPp.id && oldPp.visibility != pp.visibility))
               val untouchedPlans = api.possibleUsagePlans.diff(flippedPlans)

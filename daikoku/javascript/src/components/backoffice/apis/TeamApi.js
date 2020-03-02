@@ -432,7 +432,7 @@ class TeamApiComponent extends Component {
                         hookSavePage={savePage => this.setState({ savePage })}
                       />
                     )}
-                    {editedApi && this.state.tab === 'testing' && (
+                    {editedApi && editedApi.visibility !== 'AdminOnly' && this.state.tab === 'testing' && (
                       <TeamApiTesting
                         currentLanguage={this.props.currentLanguage}
                         creationInProgress={this.state.create}

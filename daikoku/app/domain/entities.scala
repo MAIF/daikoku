@@ -606,6 +606,7 @@ case object UsagePlan {
     id: UsagePlanId,
     customName: Option[String] = Some("Administration plan"),
     customDescription: Option[String] = Some("access to admin api"),
+    otoroshiTarget: Option[OtoroshiTarget],
     override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def costPerMonth: BigDecimal = BigDecimal(0)
@@ -616,7 +617,6 @@ case object UsagePlan {
     override def autoRotation: Option[Boolean] = Some(false)
     override def costFor(requests: Long): BigDecimal = BigDecimal(0)
     override def currency: Currency = Currency(code = "Eur")
-    override def otoroshiTarget: Option[OtoroshiTarget] = None
     override def trialPeriod: Option[BillingDuration] = None
     override def billingDuration: BillingDuration = BillingDuration(1, BillingTimeUnit.Year)
     override def typeName: String = "Admin"

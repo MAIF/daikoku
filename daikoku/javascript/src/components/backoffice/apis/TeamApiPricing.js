@@ -303,6 +303,69 @@ export class TeamApiPricing extends Component {
     this.setState({ selected: v });
   };
 
+  renderAdmin = plan => {
+    const found = _.find(this.props.value.possibleUsagePlans, p => p._id === plan._id);
+    if (!found.otoroshiTarget) {
+      found.otoroshiTarget = {
+        otoroshiSettings: null,
+        serviceGroup: null,
+      };
+    }
+    const flow = [
+      '_id',
+      'type',
+      'customName',
+      'customDescription',
+      ...this.otoroshiFlow(found)
+    ];
+    const schema = {
+      _id: {
+        type: 'string',
+        disabled: true,
+        props: {
+          label: t('Id', this.props.currentLanguage),
+          placeholder: '---',
+        },
+      },
+      type: {
+        type: 'select',
+        disabled: true,
+        props: {
+          label: t('Type', this.props.currentLanguage),
+          possibleValues: [
+            { label: 'FreeWithoutQuotas', value: 'FreeWithoutQuotas' },
+            { label: 'FreeWithQuotas', value: 'FreeWithQuotas' },
+            { label: 'QuotasWithLimits', value: 'QuotasWithLimits' },
+            { label: 'QuotasWithoutLimits', value: 'QuotasWithoutLimits' },
+            { label: 'PayPerUse', value: 'PayPerUse' },
+          ],
+        },
+      },
+      customName: {
+        type: 'string',
+        disabled: true,
+        props: {
+          label: t('Name', this.props.currentLanguage),
+          placeholder: t('Plan name', this.props.currentLanguage),
+        },
+      },
+      customDescription: {
+        type: 'string',
+        disabled: true,
+        props: {
+          label: t('Description', this.props.currentLanguage),
+          placeholder: t('Plan description', this.props.currentLanguage),
+        },
+      },
+      ...this.otoroshiForm(found)
+    };
+    return (
+      <React.Suspense fallback={<Spinner />}>
+        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
+      </React.Suspense>
+    );
+  };
+
   renderFreeWithoutQuotas = plan => {
     const found = _.find(this.props.value.possibleUsagePlans, p => p._id === plan._id);
     if (!found.otoroshiTarget) {
@@ -1112,7 +1175,7 @@ export class TeamApiPricing extends Component {
             paddingBottom: 20,
             borderBottom: '1px solid #DFDFDF',
           }}>
-          <button
+          {this.props.value.visibility !== 'AdminOnly' && <button
             onClick={this.addNewPlan}
             type="button"
             className="btn btn-sm btn-outline-primary float-right">
@@ -1120,7 +1183,7 @@ export class TeamApiPricing extends Component {
             <Translation i18nkey="add a new plan" language={this.props.currentLanguage}>
               add a new plan
             </Translation>
-          </button>
+          </button>}
           <div style={{ width: '100%', marginLeft: 10 }}>
             <Select
               clearable={false}
@@ -1177,7 +1240,7 @@ export class TeamApiPricing extends Component {
                     )}
                   </button>
                 )}
-                <button
+                {this.props.value.visibility !== 'AdminOnly' && <button
                   onClick={this.deletePlan}
                   type="button"
                   className="btn btn-sm btn-outline-danger mb-2">
@@ -1185,8 +1248,10 @@ export class TeamApiPricing extends Component {
                   <Translation i18nkey="Delete plan" language={this.props.currentLanguage}>
                     Delete plan
                   </Translation>
-                </button>
+                </button>}
               </div>
+              {this.state.selected.type === 'Admin' &&
+                this.renderAdmin(this.state.selected)}
               {this.state.selected.type === 'FreeWithoutQuotas' &&
                 this.renderFreeWithoutQuotas(this.state.selected)}
               {this.state.selected.type === 'FreeWithQuotas' &&

@@ -146,7 +146,43 @@ export class TeamApiInfo extends Component {
     'authorizedTeams',
   ];
 
+  adminFormFlow = [
+    '_id',
+    'name',
+    'smallDescription'
+  ];
+
+  adminFormSchema = {
+    _id: {
+      type: 'string',
+      disabled: true,
+      props: { label: t('Id', this.props.currentLanguage), placeholder: '---' },
+    },
+    name: {
+      type: 'string',
+      disabled: true,
+      props: { label: t('Name', this.props.currentLanguage), placeholder: 'New Api' },
+    },
+    smallDescription: {
+      type: 'text',
+      disabled: true,
+      props: { label: t('Small desc.', this.props.currentLanguage) },
+    }
+  }
+
   render() {
+    if (this.props.value.visibility === 'AdminOnly') {
+      return (
+        <React.Suspense fallback={<Spinner />}>
+          <LazyForm
+            flow={this.adminFormFlow}
+            schema={this.adminFormSchema}
+            value={this.props.value}
+            onChange={this.props.onChange}
+          />
+        </React.Suspense>
+      );
+    }
     return (
       <React.Suspense fallback={<Spinner />}>
         <LazyForm

@@ -3,7 +3,7 @@ package fr.maif.otoroshi.daikoku.utils
 import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import controllers.AppError
-import controllers.AppError.{ApiKeyRotationConflict, ApiKeyRotationError, ApiNotLinked, OtoroshiError, OtoroshiSettingsNotFound}
+import controllers.AppError._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -156,7 +156,6 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
       import cats.implicits._
       // TODO: verify if group is in authorized groups (if some)
 
-      val createdAt = DateTime.now().toString()
       val clientId = IdGenerator.token(32)
       val clientSecret = IdGenerator.token(64)
       val clientName =

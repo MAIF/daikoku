@@ -405,7 +405,9 @@ object json {
       Try {
         JsSuccess(
           Admin(
-            id = (json \ "_id").as(UsagePlanIdFormat)
+            id = (json \ "_id").as(UsagePlanIdFormat),
+            otoroshiTarget =
+              (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
           )
         )
       } recover {
@@ -418,6 +420,10 @@ object json {
       "allowMultipleKeys" -> o.allowMultipleKeys
         .map(JsBoolean.apply)
         .getOrElse(JsBoolean(false))
+        .as[JsValue],
+      "otoroshiTarget" -> o.otoroshiTarget
+        .map(_.asJson)
+        .getOrElse(JsNull)
         .as[JsValue],
     )
   }
