@@ -14,10 +14,6 @@ export const getCurrencySymbol = code => {
 };
 
 export const formatPlanType = (plan, language) => {
-  if (plan.customName) {
-    return plan.customName;
-  }
-
   switch (plan.type) {
     case 'FreeWithoutQuotas':
       return t('FreeWithoutQuotas', language, false, 'Free without quotas');
