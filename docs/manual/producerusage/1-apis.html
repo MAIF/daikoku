@@ -205,24 +205,20 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p>An API needs a name to be created. Then, you can add a small description, which will be displayed in the corresponding catalog&rsquo;s page. The API can be published or not. In the latter case, you can consider this as a draft.</p>
 <h3><a href="#versions-and-tags" name="versions-and-tags" class="anchor"><span class="anchor-link"></span></a>Versions and tags</h3>
 <p>These are pure informations like current version of the API and supported versions. Tags and categories are array of item, mostly used to filter APIs.</p>
-<h3><a href="#visibililty-and-subscription" name="visibililty-and-subscription" class="anchor"><span class="anchor-link"></span></a>Visibililty and subscription</h3>
+<h3><a href="#visibililty" name="visibililty" class="anchor"><span class="anchor-link"></span></a>Visibililty</h3>
 <p>Visibility can be:</p>
 <ul>
   <li>public: everybody can see the complete API.</li>
   <li>public with authorization: everybody sees just a part of the API, on the catalog&rsquo;s page (name, tags, categories and small desc.). Everybody can ask access to an admin of owner team.</li>
   <li>private: Just authorized teams have access to the API.</li>
 </ul>
-<p>Subscription can be: </p>
-<ul>
-  <li>Automatic: API subscriptions will be granted automatically.</li>
-  <li>Manual: API subscriptions will require an acceptance by a team admin.</li>
-</ul>
 <h3><a href="#authorizations" name="authorizations" class="anchor"><span class="anchor-link"></span></a>Authorizations</h3>
 <p>The teams which have access to the API, in the case of visibility is private.</p>
 <h3><a href="#description" name="description" class="anchor"><span class="anchor-link"></span></a>Description</h3>
 <p>API description. Basically it can be written in markdown. The description can be set from team asset.</p>
 <h3><a href="#plans" name="plans" class="anchor"><span class="anchor-link"></span></a>Plans</h3>
-<p>An API needs a plan to be subscribed. Plan needs a name, possibly a description and an <a href="../tenantusage/1-otoroshi.html">otoroshi instance</a>. It&rsquo;s possible to allow multiple APIkeys for a plan.</p>
+<p>An API needs a plan to be subscribed. Plan needs a name, possibly a description and an <a href="../tenantusage/1-otoroshi.html">otoroshi instance</a>.</p>
+<p>You can define a plan as <strong>default plan</strong> as it&rsquo;s possible to <strong>make it private</strong> (only accessible by the producer team) It&rsquo;s possible to <strong>allow multiple APIkeys</strong> for a plan.</p>
 <p>It&rsquo;s important to choose a type of plan :</p>
 <ul>
   <li>free without quotas: a plan with an unlimited number of calls per day and per month.</li>
@@ -230,6 +226,20 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li>quotas with limit: a priced plan with a limited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set.</li>
   <li>quotas without limit: a priced plan with unlimited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. The cost per additional requests can be set.</li>
   <li>pay per use: a plan priced on usage. A fixed cost by month can be set. The cost per additional requests can be set.</li>
+</ul>
+<h4><a href="#otoroshi-billing-and-security" name="otoroshi-billing-and-security" class="anchor"><span class="anchor-link"></span></a>Otoroshi, billing and security</h4>
+<p>Depending on chosen plan type, certain custom properties may be accessibles.</p>
+<ul>
+  <li>Plan needs an Otoroshi instance to allow users to subscribe. After choosing an instance, a list of Otoroshi service groups is accessible to link daikoku api/plan with an Otoroshi service group.</li>
+  <li>As it&rsquo;s Otoroshi which manages apis, apikey quotas can be define.</li>
+  <li>Daikoku side, billing informations can be filled (billing period, cost per month, currency &hellip;)</li>
+  <li>For security, you can force apikey rotation. it&rsquo;s an Otoroshi feature that will reset clientSecret every month with a grace period of 1 week (during this week both secrets works)</li>
+  <li>Subscription can be:</li>
+  <li>Automatic: subscriptions will be granted automatically.</li>
+  <li>Manual: subscriptions will require an acceptance by a team admin.</li>
+  <li>You can force the integration process :</li>
+  <li>ApiKey: subscribers have access to an apikey to call api</li>
+  <li>Automatic: Subscribers have just access to a token, which link to a real apikey, accessible by admin api. It&rsquo;s a perfect solution to integrate automatically your apikey in your prod environment if rotation is activated.</li>
 </ul>
 <h3><a href="#swagger" name="swagger" class="anchor"><span class="anchor-link"></span></a>Swagger</h3>
 <p>The swagger can be provided as a url or just some content paste on the UI.</p>
