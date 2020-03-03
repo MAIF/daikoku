@@ -11,7 +11,7 @@ class ActionWithTeamSelectorComponent extends Component {
         allTeamSelector: this.props.withAllTeamSelector,
         title: this.props.title,
         description: this.props.description,
-        buttonLabel: this.props.buttonLabel,
+        currentLanguage:this.props.currentLanguage,
         teams: this.props.teams,
         pendingTeams: this.props.pendingTeams,
         acceptedTeams: this.props.authorizedTeams,
@@ -55,13 +55,13 @@ ActionWithTeamSelectorComponent.defaultProps = {
 ActionWithTeamSelectorComponent.propTypes = {
   title: PropTypes.string,
   description: PropTypes.string,
+  currentLanguage: PropTypes.string,
   teams: PropTypes.array.isRequired,
   pendingTeams: PropTypes.array,
   authorizedTeams: PropTypes.array,
   action: PropTypes.func.isRequired,
   withAllTeamSelector: PropTypes.bool,
   closeOnSelect: PropTypes.bool,
-  buttonLabel: PropTypes.string,
   allowMultipleDemand: PropTypes.bool,
   currentLanguage: PropTypes.string
 };

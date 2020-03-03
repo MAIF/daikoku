@@ -101,7 +101,7 @@ export class ApiCartidge extends Component {
           <Translation i18nkey="Default pricing" language={this.props.currentLanguage}>
             Default pricing
           </Translation>
-          <span className="badge badge-primary word-break" style={{ whiteSpace: 'normal' }}>
+          <span className="badge badge-primary word-break ml-1" style={{ whiteSpace: 'normal' }}>
             {pricing}
           </span>
         </span>
@@ -118,11 +118,16 @@ export class ApiCartidge extends Component {
         {
           <Can I={read} a={apikey}>
             <ActionWithTeamSelector
-              title="Select the team to view your api key"
+              title={t(
+                  'teamapi.select.title',
+                  this.props.currentLanguage,
+                  'Select the team to view your api key'
+              )}
               teams={subscribingTeams}
               action={team =>
                 this.props.redirectToApiKeysPage(this.props.myTeams.find(t => t._id === team))
               }
+              currentLanguage={this.props.currentLanguage}
               withAllTeamSelector={false}>
               <button className="btn btn-sm btn-access-negative mt-2">
                 <Translation i18nkey="View your api keys" language={this.props.currentLanguage}>
@@ -164,6 +169,7 @@ export class ApiCartidge extends Component {
                   'You are going to subscribe to the api. On which team do you want to make this subscriptions ?'
                 )}
                 buttonLabel="subscribe"
+                currentLanguage={this.props.currentLanguage}
                 teams={this.props.myTeams.filter(
                   team =>
                     defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id

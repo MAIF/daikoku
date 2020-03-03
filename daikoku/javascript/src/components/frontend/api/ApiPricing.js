@@ -180,7 +180,7 @@ export class ApiPricingCard extends Component {
                         this.props.currentLanguage,
                         'You are going to subscribe to the api. On which team do you want to make this subscriptions ?'
                       )}
-                      buttonLabel="subscribe"
+                      currentLanguage={this.props.currentLanguage}
                       teams={
                         authorizedTeams.filter(
                           team =>

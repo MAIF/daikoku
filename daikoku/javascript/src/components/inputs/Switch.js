@@ -23,7 +23,7 @@ export class SwitchButton extends Component {
   };
 
   render() {
-    const { className, label } = this.props;
+    const { label } = this.props;
     const id = label ? label.replace(/\s/gi, '') : uuidv4();
     return (
       <div
