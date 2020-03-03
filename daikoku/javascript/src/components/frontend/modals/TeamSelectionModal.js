@@ -14,8 +14,7 @@ export const TeamSelectorModal = ({
   acceptedTeams = [],
   action,
   allTeamSelector,
-  allowMultipleDemand,
-  currentLanguage
+  allowMultipleDemand
 }) => {
   const [selectedTeams, setSelectedTeams] = useState([]);
   const allTeams = teams.filter(
