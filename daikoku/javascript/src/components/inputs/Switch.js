@@ -23,7 +23,7 @@ export class SwitchButton extends Component {
   };
 
   render() {
-    const { className, label } = this.props;
+    const { label } = this.props;
     const id = label ? label.replace(/\s/gi, '') : uuidv4();
     return (
       <div
@@ -33,9 +33,7 @@ export class SwitchButton extends Component {
           'switch--disabled': this.props.disabled
         })}>
         <label
-          className={classNames('switch--item', {
-            ...className,
-          })}
+          className='switch--item'
           htmlFor={id}>
           {label && <div className="switch__label">{label}</div>}
           <input
