@@ -342,7 +342,7 @@ class TeamApiComponent extends Component {
                       </Translation>
                     </Link>
                   </li>
-                  <li className="nav-item">
+                  {editedApi.visibility !== 'AdminOnly' && <li className="nav-item">
                     <Link
                       className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
                       to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/testing`}
@@ -352,7 +352,7 @@ class TeamApiComponent extends Component {
                         Testing
                       </Translation>
                     </Link>
-                  </li>
+                  </li>}
                   <li className="nav-item">
                     <Link
                       className={`nav-link ${tab === 'documentation' ? 'active' : ''}`}
@@ -432,7 +432,7 @@ class TeamApiComponent extends Component {
                         hookSavePage={savePage => this.setState({ savePage })}
                       />
                     )}
-                    {editedApi && editedApi.visibility !== 'AdminOnly' && this.state.tab === 'testing' && (
+                    {editedApi && this.state.tab === 'testing' && (
                       <TeamApiTesting
                         currentLanguage={this.props.currentLanguage}
                         creationInProgress={this.state.create}
