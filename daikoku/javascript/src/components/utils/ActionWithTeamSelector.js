@@ -18,12 +18,19 @@ class ActionWithTeamSelectorComponent extends Component {
         action: teams => this.props.action(teams),
         closeModal: this.props.closeModal,
         allowMultipleDemand: this.props.allowMultipleDemand,
+        currentLanguage: this.props.currentLanguage
       },
       'teamSelector'
     );
   };
 
   render() {
+    // console.debug({
+    //   1: !this.props.allowMultipleDemand,
+    //   2: this.props.teams.length === 1,
+    //   3: this.props.pendingTeams.includes(this.props.teams[0]._id),
+    //   4: this.props.authorizedTeams.includes(this.props.teams[0]._id)
+    // })
     if (
       !this.props.allowMultipleDemand &&
       this.props.teams.length === 1 &&
@@ -37,7 +44,7 @@ class ActionWithTeamSelectorComponent extends Component {
         {React.cloneElement(this.props.children, { onClick: () => this.openTeamSelectorModal() })}
       </>
     );
-  }
+  } 
 }
 
 ActionWithTeamSelectorComponent.defaultProps = {
@@ -56,7 +63,12 @@ ActionWithTeamSelectorComponent.propTypes = {
   withAllTeamSelector: PropTypes.bool,
   closeOnSelect: PropTypes.bool,
   allowMultipleDemand: PropTypes.bool,
+  currentLanguage: PropTypes.string
 };
+
+const mapStateToProps = state => ({
+  ...state.context
+});
 
 const mapDispatchToProps = {
   closeModal: () => closeModal(),
@@ -64,6 +76,6 @@ const mapDispatchToProps = {
 };
 
 export const ActionWithTeamSelector = connect(
-  null,
+  mapStateToProps,
   mapDispatchToProps
 )(ActionWithTeamSelectorComponent);

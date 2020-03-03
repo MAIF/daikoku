@@ -38,23 +38,6 @@ class BasicUsageSpec(configurationSpec: => Configuration)
   s"Daikoku basics" should {
 
     "deny unlogged connections" in {
-      val tenant = Tenant(
-        id = Tenant.Default,
-        name = "Test Corp.",
-        domain = "localhost",
-        style = Some(
-          DaikokuStyle(
-            title = "Test Corp."
-          )),
-        mailerSettings = Some(ConsoleMailerSettings()),
-        authProvider = AuthProvider.Local,
-        authProviderSettings = Json.obj(
-          "sessionMaxAge" -> 86400
-        ),
-        bucketSettings = None,
-        otoroshiSettings = Set.empty,
-        defaultLanguage = Some("En")
-      )
 
       val user = User(
         id = UserId(BSONObjectID.generate().stringify),
@@ -80,24 +63,6 @@ class BasicUsageSpec(configurationSpec: => Configuration)
     }
 
     "show your profile" in {
-      val tenant = Tenant(
-        id = Tenant.Default,
-        name = "Test Corp.",
-        domain = "localhost",
-        style = Some(
-          DaikokuStyle(
-            title = "Test Corp."
-          )),
-        mailerSettings = Some(ConsoleMailerSettings()),
-        authProvider = AuthProvider.Local,
-        authProviderSettings = Json.obj(
-          "sessionMaxAge" -> 86400
-        ),
-        bucketSettings = None,
-        otoroshiSettings = Set.empty,
-        defaultLanguage = Some("En")
-      )
-
       val user = User(
         id = UserId(BSONObjectID.generate().stringify),
         tenants = Set(tenant.id),

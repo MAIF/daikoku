@@ -2,20 +2,14 @@ package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand,
-  TeamAccess
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.SubscriptionProcess.Manual
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.QuotasWithLimits
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -277,7 +271,26 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamConsumer, teamOwner),
-        apis = Seq(defaultApi.copy(subscriptionProcess = Manual)),
+        apis = Seq(defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+          UsagePlanId("3"),
+          10000,
+          10000,
+          10000,
+          BigDecimal(10.0),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              OtoroshiServiceGroupId("12345"))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = SubscriptionProcess.Manual,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )))),
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
@@ -309,7 +322,26 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamConsumer, teamOwner),
-        apis = Seq(defaultApi.copy(subscriptionProcess = Manual)),
+        apis = Seq(defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+          UsagePlanId("3"),
+          10000,
+          10000,
+          10000,
+          BigDecimal(10.0),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              OtoroshiServiceGroupId("12345"))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = SubscriptionProcess.Manual,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )))),
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
@@ -511,7 +543,26 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
         teams = Seq(teamConsumer, teamOwner),
-        apis = Seq(defaultApi.copy(subscriptionProcess = Manual)),
+        apis = Seq(defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+          UsagePlanId("3"),
+          10000,
+          10000,
+          10000,
+          BigDecimal(10.0),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              OtoroshiServiceGroupId("12345"))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = SubscriptionProcess.Manual,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )))),
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
@@ -543,7 +594,26 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
         teams = Seq(teamConsumer, teamOwner),
-        apis = Seq(defaultApi.copy(subscriptionProcess = Manual)),
+        apis = Seq(defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+          UsagePlanId("3"),
+          10000,
+          10000,
+          10000,
+          BigDecimal(10.0),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              OtoroshiServiceGroupId("12345"))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = SubscriptionProcess.Manual,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )))),
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,

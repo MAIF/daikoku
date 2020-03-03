@@ -5,17 +5,9 @@ import java.util.concurrent.TimeUnit
 import com.auth0.jwt.JWT
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
-import fr.maif.otoroshi.daikoku.domain.ApiVisibility.{
-  Private,
-  Public,
-  PublicWithAuthorizations
-}
+import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.SubscriptionProcess.{Automatic, Manual}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
@@ -294,6 +286,7 @@ object json {
     override def reads(json: JsValue) = json.as[String] match {
       case "Personal"     => JsSuccess(Personal)
       case "Organization" => JsSuccess(Organization)
+      case "Admin"        => JsSuccess(TeamType.Admin)
       case str            => JsError(s"Bad TeamType value: $str")
     }
     override def writes(o: TeamType) = JsString(o.name)
@@ -303,6 +296,7 @@ object json {
       case "Public"                   => JsSuccess(Public)
       case "Private"                  => JsSuccess(Private)
       case "PublicWithAuthorizations" => JsSuccess(PublicWithAuthorizations)
+      case "AdminOnly"                => JsSuccess(AdminOnly)
       case str                        => JsError(s"Bad ApiVisibility value: $str")
     }
     override def writes(o: ApiVisibility) = JsString(o.name)
@@ -317,11 +311,19 @@ object json {
   }
   val SubscriptionProcessFormat = new Format[SubscriptionProcess] {
     override def reads(json: JsValue) = json.as[String] match {
-      case "Automatic" => JsSuccess(Automatic)
-      case "Manual"    => JsSuccess(Manual)
+      case "Automatic" => JsSuccess(SubscriptionProcess.Automatic)
+      case "Manual"    => JsSuccess(SubscriptionProcess.Manual)
       case str         => JsError(s"Bad SubscriptionProcess value: $str")
     }
     override def writes(o: SubscriptionProcess) = JsString(o.name)
+  }
+  val IntegrationProcessFormat = new Format[IntegrationProcess] {
+    override def reads(json: JsValue) = json.as[String] match {
+      case "Automatic" => JsSuccess(IntegrationProcess.Automatic)
+      case "ApiKey"    => JsSuccess(IntegrationProcess.ApiKey)
+      case str         => JsError(s"Bad SubscriptionProcess value: $str")
+    }
+    override def writes(o: IntegrationProcess) = JsString(o.name)
   }
   val UsagePlanFormat = new Format[UsagePlan] {
     override def reads(json: JsValue) = (json \ "type").as[String] match {
@@ -330,9 +332,13 @@ object json {
       case "QuotasWithLimits"    => QuotasWithLimitsFormat.reads(json)
       case "QuotasWithoutLimits" => QuotasWithoutLimitsFormat.reads(json)
       case "PayPerUse"           => PayPerUseFormat.reads(json)
+      case "Admin"               => AdminFormat.reads(json)
       case str                   => JsError(s"Bad UsagePlan value: $str")
     }
     override def writes(o: UsagePlan) = o match {
+      case p: Admin =>
+        AdminFormat.writes(p).as[JsObject] ++ Json.obj(
+          "type" -> "Admin")
       case p: FreeWithoutQuotas =>
         FreeWithoutQuotasFormat.writes(p).as[JsObject] ++ Json.obj(
           "type" -> "FreeWithoutQuotas")
@@ -394,6 +400,33 @@ object json {
       "fromEmail" -> o.fromEmail
     )
   }
+  val AdminFormat = new Format[Admin] {
+    override def reads(json: JsValue): JsResult[Admin] =
+      Try {
+        JsSuccess(
+          Admin(
+            id = (json \ "_id").as(UsagePlanIdFormat),
+            otoroshiTarget =
+              (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: Admin): JsValue = Json.obj(
+      "_id" -> UsagePlanIdFormat.writes(o.id),
+      "customDescription" -> o.customDescription,
+      "customName" -> o.customName,
+      "allowMultipleKeys" -> o.allowMultipleKeys
+        .map(JsBoolean.apply)
+        .getOrElse(JsBoolean(false))
+        .as[JsValue],
+      "otoroshiTarget" -> o.otoroshiTarget
+        .map(_.asJson)
+        .getOrElse(JsNull)
+        .as[JsValue],
+    )
+  }
   val FreeWithoutQuotasFormat = new Format[FreeWithoutQuotas] {
     override def reads(json: JsValue): JsResult[FreeWithoutQuotas] =
       Try {
@@ -415,7 +448,11 @@ object json {
               .asOpt(SeqTeamIdFormat)
               .getOrElse(Seq.empty),
             autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean]
+              .asOpt[Boolean],
+            subscriptionProcess =
+              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+            integrationProcess =
+              (json \ "integrationProcess").as(IntegrationProcessFormat),
           )
         )
       } recover {
@@ -443,7 +480,11 @@ object json {
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
       "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue],
+      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+        o.subscriptionProcess),
+      "integrationProcess" -> IntegrationProcessFormat.writes(
+        o.integrationProcess)
     )
   }
   val FreeWithQuotasFormat = new Format[FreeWithQuotas] {
@@ -470,7 +511,11 @@ object json {
               .asOpt(SeqTeamIdFormat)
               .getOrElse(Seq.empty),
             autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean]
+              .asOpt[Boolean],
+            subscriptionProcess =
+              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+            integrationProcess =
+              (json \ "integrationProcess").as(IntegrationProcessFormat)
           )
         )
       } recover {
@@ -501,7 +546,11 @@ object json {
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
       "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue],
+      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+        o.subscriptionProcess),
+      "integrationProcess" -> IntegrationProcessFormat.writes(
+        o.integrationProcess)
     )
   }
   val QuotasWithLimitsFormat = new Format[QuotasWithLimits] {
@@ -530,7 +579,11 @@ object json {
               .asOpt(SeqTeamIdFormat)
               .getOrElse(Seq.empty),
             autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean]
+              .asOpt[Boolean],
+            subscriptionProcess =
+              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+            integrationProcess =
+              (json \ "integrationProcess").as(IntegrationProcessFormat)
           )
         )
       } recover {
@@ -566,7 +619,11 @@ object json {
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
       "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue],
+      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+        o.subscriptionProcess),
+      "integrationProcess" -> IntegrationProcessFormat.writes(
+        o.integrationProcess)
     )
   }
   val QuotasWithoutLimitsFormat = new Format[QuotasWithoutLimits] {
@@ -597,7 +654,11 @@ object json {
               .asOpt(SeqTeamIdFormat)
               .getOrElse(Seq.empty),
             autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean]
+              .asOpt[Boolean],
+            subscriptionProcess =
+              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+            integrationProcess =
+              (json \ "integrationProcess").as(IntegrationProcessFormat)
           )
         )
       } recover {
@@ -634,7 +695,11 @@ object json {
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
       "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue],
+      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+        o.subscriptionProcess),
+      "integrationProcess" -> IntegrationProcessFormat.writes(
+        o.integrationProcess)
     )
   }
   val PayPerUseFormat = new Format[PayPerUse] {
@@ -661,7 +726,11 @@ object json {
               .asOpt(SeqTeamIdFormat)
               .getOrElse(Seq.empty),
             autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean]
+              .asOpt[Boolean],
+            subscriptionProcess =
+              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
+            integrationProcess =
+              (json \ "integrationProcess").as(IntegrationProcessFormat)
           )
         )
       } recover {
@@ -695,7 +764,11 @@ object json {
         .as[JsValue],
       "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
       "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue]
+      "autoRotation" -> o.autoRotation.map(JsBoolean.apply).getOrElse(JsBoolean(false)).as[JsValue],
+      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
+        o.subscriptionProcess),
+      "integrationProcess" -> IntegrationProcessFormat.writes(
+        o.integrationProcess)
     )
   }
   val OtoroshiApiKeyFormat = new Format[OtoroshiApiKey] {
@@ -1063,7 +1136,11 @@ object json {
                     .asInstanceOf[String]
                 )
               ),
-            isPrivate = (json \ "isPrivate").asOpt[Boolean].getOrElse(true)
+            isPrivate = (json \ "isPrivate").asOpt[Boolean].getOrElse(true),
+            adminApi = (json \ "adminApi").as(ApiIdFormat),
+            adminSubscriptions = (json \ "adminSubscriptions")
+              .asOpt(SeqApiSubscriptionIdFormat)
+              .getOrElse(Seq.empty)
           )
         )
       } recover {
@@ -1091,7 +1168,9 @@ object json {
       "authProvider" -> o.authProvider.name,
       "authProviderSettings" -> o.authProviderSettings,
       "auditTrailConfig" -> o.auditTrailConfig.asJson,
-      "isPrivate" -> o.isPrivate
+      "isPrivate" -> o.isPrivate,
+      "adminApi" -> o.adminApi.asJson,
+      "adminSubscriptions" -> JsArray(o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes))
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -1319,12 +1398,8 @@ object json {
               .map(_.toSet)
               .getOrElse(Set.empty),
             visibility = (json \ "visibility").as(ApiVisibilityFormat),
-            subscriptionProcess =
-              (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             possibleUsagePlans = (json \ "possibleUsagePlans")
               .as(SeqUsagePlanFormat),
-            //.asOpt(SeqUsagePlanFormat)
-            //.getOrElse(Seq.empty),
             defaultUsagePlan = (json \ "defaultUsagePlan").as(UsagePlanIdFormat),
             subscriptions = (json \ "subscriptions")
               .asOpt(SeqApiSubscriptionIdFormat)
@@ -1360,8 +1435,6 @@ object json {
       "tags" -> JsArray(o.tags.map(JsString.apply).toSeq),
       "categories" -> JsArray(o.categories.map(JsString.apply).toSeq),
       "visibility" -> ApiVisibilityFormat.writes(o.visibility),
-      "subscriptionProcess" -> SubscriptionProcessFormat.writes(
-        o.subscriptionProcess),
       "possibleUsagePlans" -> JsArray(
         o.possibleUsagePlans.map(UsagePlanFormat.writes)),
       "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),
@@ -1433,7 +1506,8 @@ object json {
             by = (json \ "by").as(UserIdFormat),
             customName = (json \ "customName").asOpt[String],
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-            rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat)
+            rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
+            integrationToken = (json \ "integrationToken").as[String]
           )
         )
       } recover {
@@ -1457,7 +1531,8 @@ object json {
       "rotation" -> o.rotation
         .map(ApiSubscriptionyRotationFormat.writes)
         .getOrElse(JsNull)
-        .as[JsValue]
+        .as[JsValue],
+      "integrationToken" -> o.integrationToken
     )
   }
 

@@ -13,6 +13,8 @@ object AppError {
   case object NotificationNotFound extends AppError
   case object TeamUnauthorized extends AppError
   case object ApiUnauthorized extends AppError with Product with Serializable
+  case object PlanUnauthorized extends AppError with Product with Serializable
+  case object PlanNotFound extends AppError with Product with Serializable
   case object ApiNotLinked extends AppError
   case class UserNotTeamAdmin(userId: String, teamId: String) extends AppError
   case class OtoroshiError(message: JsObject) extends AppError
@@ -31,6 +33,10 @@ object AppError {
       Unauthorized(Json.obj("error" -> "You're not authorized on this team"))
     case ApiUnauthorized =>
       Unauthorized(Json.obj("error" -> "You're not authorized on this api"))
+    case PlanUnauthorized =>
+      Unauthorized(Json.obj("error" -> "You're not authorized on this plan"))
+    case PlanNotFound =>
+      NotFound(Json.obj("error" -> "Plan not found"))
     case ApiNotLinked =>
       BadRequest(
         Json.obj("error" -> "Api is not linked to an Otoroshi descriptor"))
@@ -55,6 +61,10 @@ object AppError {
       Json.obj("error" -> "You're not authorized on this team")
     case ApiUnauthorized =>
       Json.obj("error" -> "You're not authorized on this api")
+    case PlanUnauthorized =>
+      Json.obj("error" -> "You're not authorized on this plan")
+    case PlanNotFound =>
+      Json.obj("error" -> "Plan not found")
     case ApiNotLinked =>
       Json.obj("error" -> "Api is not linked to an Otoroshi descriptor")
     case UserNotTeamAdmin(userId, teamId) =>

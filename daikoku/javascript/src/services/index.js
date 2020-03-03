@@ -761,6 +761,17 @@ export function deleteSelfUserById() {
   }).then(r => r.json());
 }
 
+export function setAdminStatus(user, isDaikokuAdmin) {
+  return fetch(`/api/admin/users/${user._id}/_admin`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({isDaikokuAdmin}),
+  }).then(r => r.json());
+}
 export function updateUserById(user) {
   return fetch(`/api/admin/users/${user._id}`, {
     method: 'PUT',
@@ -893,8 +904,8 @@ export function search(search) {
   }).then(r => r.json());
 }
 
-export function apiKeyConsumption(clientId, teamId, from, to) {
-  return fetch(`/api/teams/${teamId}/apiKey/${clientId}/consumption?from=${from}&to=${to}`, {
+export function subscriptionConsumption(subscriptionId, teamId, from, to) {
+  return fetch(`/api/teams/${teamId}/subscription/${subscriptionId}/consumption?from=${from}&to=${to}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -904,8 +915,8 @@ export function apiKeyConsumption(clientId, teamId, from, to) {
   }).then(r => r.json());
 }
 
-export function syncApiKeyConsumption(clientId, teamId) {
-  return fetch(`/api/teams/${teamId}/apiKey/${clientId}/consumption/_sync`, {
+export function syncSubscriptionConsumption(subscriptionId, teamId) {
+  return fetch(`/api/teams/${teamId}/subscription/${subscriptionId}/consumption/_sync`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -973,8 +984,8 @@ export function apiGlobalConsumption(apiId, teamId, from, to) {
   }).then(r => r.json());
 }
 
-export function getPlanInformations(clientId, teamId) {
-  return fetch(`/api/teams/${teamId}/apiKey/${clientId}/informations`, {
+export function getSubscriptionInformations(subscription, teamId) {
+  return fetch(`/api/teams/${teamId}/subscription/${subscription}/informations`, {
     method: 'GET',
     credentials: 'include',
     headers: {

@@ -14,8 +14,6 @@ object Errors {
 
   val defaultTenant = Tenant(
     id = Tenant.Default,
-    deleted = false,
-    enabled = true,
     name = "Daikoky",
     domain = "localhost",
     defaultLanguage = Some("En"),
@@ -29,7 +27,8 @@ object Errors {
       "sessionMaxAge" -> 86400
     ),
     bucketSettings = None,
-    otoroshiSettings = Set.empty
+    otoroshiSettings = Set.empty,
+    adminApi = ApiId("no-api")
   )
 
   val messages = Map(

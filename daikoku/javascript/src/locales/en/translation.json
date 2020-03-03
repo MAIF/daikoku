@@ -568,5 +568,10 @@
     "View usage statistics": "View usage statistics",
     "Copy to clipboard": "Copy to clipboard",
     "Setup rotation": "Setup rotation",
-    "Enable/Disable": "Enable/Disable"
+    "Enable/Disable": "Enable/Disable",
+    "Integration": "Integration",
+    "Force apikey auto-rotation": "Force apikey auto-rotation",
+    "ApiKey": "ApiKey",
+    "Integration token": "Integration token",
+    "Security": "Security"
 }

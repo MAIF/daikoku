@@ -342,7 +342,7 @@ class TeamApiComponent extends Component {
                       </Translation>
                     </Link>
                   </li>
-                  <li className="nav-item">
+                  {editedApi.visibility !== 'AdminOnly' && <li className="nav-item">
                     <Link
                       className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
                       to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/testing`}
@@ -352,7 +352,7 @@ class TeamApiComponent extends Component {
                         Testing
                       </Translation>
                     </Link>
-                  </li>
+                  </li>}
                   <li className="nav-item">
                     <Link
                       className={`nav-link ${tab === 'documentation' ? 'active' : ''}`}

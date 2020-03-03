@@ -18,7 +18,7 @@ jobs:
   build_dev_manual:
     name: Build developer documentation
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.head_ref == 'master'
     steps:
       - uses: actions/checkout@v2.0.0
       - name: Generate dev documentation website
@@ -31,11 +31,12 @@ jobs:
       - name: Push documentation
         uses: ad-m/github-push-action@master
         with:
+          branch: ${{ github.head_ref }}
           github_token: ${{ secrets.GITHUB_TOKEN}}
   build_manual:
     name: Build documentation
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
+    if: github.head_ref != 'master'
     steps:
       - uses: actions/checkout@v2.0.0
       - name: Generate documentation website
@@ -45,10 +46,13 @@ jobs:
         run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
       - name: Commit files
         run: |
+          git status
           git config --local user.email "daikoku-github-actions@users.noreply.github.com"
           git config --local user.name "daikoku-github-actions"
-          git commit -m "Update documentations for release ${{ steps.get_version.outputs.VERSION }}" -a
+          git commit -am "Update documentations for release ${{ steps.get_version.outputs.VERSION }}"
+          git status
       - name: Push documentation
         uses: ad-m/github-push-action@master
         with:
+          branch: ${{ github.head_ref }}
           github_token: ${{ secrets.GITHUB_TOKEN}}

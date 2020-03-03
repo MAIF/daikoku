@@ -53,10 +53,11 @@ class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
     Seq(
 //      new BasicUsageSpec(defaultTestConfig),
       new ApiControllerSpec(defaultTestConfig),
-      new TeamControllerSpec(defaultTestConfig),
-      new UserControllerSpec(defaultTestConfig),
-      new NotificationControllerSpec(defaultTestConfig),
-      new ConsumptionControllerSpec(defaultTestConfig)
+//      new TeamControllerSpec(defaultTestConfig),
+//      new UserControllerSpec(defaultTestConfig),
+//      new NotificationControllerSpec(defaultTestConfig),
+//      new ConsumptionControllerSpec(defaultTestConfig),
+//      new TenantControllerSpec(defaultTestConfig)
     )
   }
 
@@ -566,6 +567,47 @@ object utils {
     val stubPort = 11112
     val stubHost = "localhost"
 
+    val defaultAdminTeam = Team(
+      id = TeamId(IdGenerator.token),
+      tenant = Tenant.Default,
+      `type` = TeamType.Admin,
+      name = s"default-admin-team",
+      description = s"The admin team for the default tenant",
+      avatar = None,
+      users = Set(),
+      subscriptions = Seq.empty,
+      authorizedOtoroshiGroups = Set.empty
+    )
+    val adminApi = Api(
+      id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
+      tenant = Tenant.Default,
+      team = defaultAdminTeam.id,
+      name = s"admin-api-tenant-${Tenant.Default.value}",
+      lastUpdate = DateTime.now(),
+      smallDescription = "admin api",
+      description = "admin api",
+      currentVersion = Version("1.0.0"),
+      published = true,
+      documentation = ApiDocumentation(
+        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        tenant = Tenant.Default,
+        pages = Seq.empty[ApiDocumentationPageId],
+        lastModificationAt = DateTime.now()
+      ),
+      swagger = None,
+      possibleUsagePlans = Seq(
+        Admin(
+          id = UsagePlanId("admin"),
+          customName = Some("admin"),
+          customDescription = None,
+          otoroshiTarget = None
+        )
+      ),
+      tags = Set("Administration"),
+      visibility = ApiVisibility.AdminOnly,
+      defaultUsagePlan = UsagePlanId("1"),
+      authorizedTeams = Seq(defaultAdminTeam.id)
+    )
     val tenant = Tenant(
       id = Tenant.Default,
       name = "Test Corp.",
@@ -594,11 +636,14 @@ object utils {
           clientSecret = "admin-api-apikey-id"
         )
       ),
-      defaultLanguage = Some("En")
+      defaultLanguage = Some("En"),
+      adminApi = adminApi.id,
+      adminSubscriptions = Seq.empty
     )
 
     val teamOwnerId = TeamId("team-owner")
     val teamConsumerId = TeamId("team-consumer")
+    val teamAdminId = TeamId("team-admin")
 
     val daikokuAdminId = UserId("daikoku-admin")
     val userTeamAdminId = UserId("team-admin")
@@ -720,7 +765,6 @@ object utils {
       supportedVersions = Set(Version("1.0.0")),
       published = true,
       visibility = ApiVisibility.Public,
-      subscriptionProcess = SubscriptionProcess.Automatic,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = tenant,
@@ -740,7 +784,10 @@ object utils {
             OtoroshiTarget(OtoroshiSettingsId("default"),
                            OtoroshiServiceGroupId("12345"))
           ),
-          allowMultipleKeys = Some(false)
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
         ),
         FreeWithQuotas(
           UsagePlanId("2"),
@@ -755,7 +802,10 @@ object utils {
             OtoroshiTarget(OtoroshiSettingsId("default"),
                            OtoroshiServiceGroupId("12345"))
           ),
-          allowMultipleKeys = Some(false)
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
         ),
         QuotasWithLimits(
           UsagePlanId("3"),
@@ -772,7 +822,10 @@ object utils {
             OtoroshiTarget(OtoroshiSettingsId("default"),
                            OtoroshiServiceGroupId("12345"))
           ),
-          allowMultipleKeys = Some(false)
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
         ),
         QuotasWithoutLimits(
           UsagePlanId("4"),
@@ -790,7 +843,10 @@ object utils {
             OtoroshiTarget(OtoroshiSettingsId("default"),
                            OtoroshiServiceGroupId("12345"))
           ),
-          allowMultipleKeys = Some(true)
+          allowMultipleKeys = Some(true),
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
         ),
         PayPerUse(
           UsagePlanId("5"),
@@ -805,7 +861,10 @@ object utils {
             OtoroshiTarget(OtoroshiSettingsId("wiremock"),
                            OtoroshiServiceGroupId("12345"))
           ),
-          allowMultipleKeys = Some(false)
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
         )
       ),
       defaultUsagePlan = UsagePlanId("1")

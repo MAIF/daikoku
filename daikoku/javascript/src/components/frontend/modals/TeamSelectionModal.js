@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PropTypes } from 'prop-types';
 import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
-import {t, Translation} from "../../../locales";
+import {Translation} from '../../../locales';
 
 export const TeamSelectorModal = ({
   closeModal,
@@ -15,6 +15,7 @@ export const TeamSelectorModal = ({
   action,
   allTeamSelector,
   allowMultipleDemand,
+  currentLanguage
 }) => {
   const [selectedTeams, setSelectedTeams] = useState([]);
   const allTeams = teams.filter(
@@ -101,18 +102,9 @@ export const TeamSelectorModal = ({
               onClick={() => toggleAllTeam()}>
               {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
               <span className="ml-2">
-                  {selectedTeams.length === allTeams.length
-                     ? <Translation
-                          i18nkey="UnselectAll"
-                          language={currentLanguage}
-                          >Unselect all
-                      </Translation>
-                      :<Translation
-                          i18nkey="SelectAll"
-                          language={currentLanguage}
-                        >Select all
-                      </Translation>
-                  }
+                <Translation i18nkey="All" language={currentLanguage}>
+                  All
+                </Translation>
               </span>
             </div>
           )}

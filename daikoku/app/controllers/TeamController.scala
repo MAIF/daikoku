@@ -145,6 +145,7 @@ class TeamController(DaikokuAction: DaikokuAction,
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(teamId)
               .flatMap {
+                case Some(team) if team.`type` == TeamType.Admin => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to update this team")))
                 case Some(team) =>
                   ctx.setCtxValue("team.id", team.id)
                   ctx.setCtxValue("team.name", team.name)
@@ -172,6 +173,7 @@ class TeamController(DaikokuAction: DaikokuAction,
       AuditTrailEvent(
         s"@{user.name} has deleted team @{team.name} - @{team.id}"))(ctx) {
       env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId) flatMap {
+        case Some(team) if team.`type` == TeamType.Admin => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to delete this team")))
         case Some(team) =>
           ctx.setCtxValue("team.id", team.id)
           ctx.setCtxValue("team.name", team.name)
@@ -254,6 +256,9 @@ class TeamController(DaikokuAction: DaikokuAction,
         case Some(team) if team.`type` == TeamType.Personal =>
           FastFuture.successful(Forbidden(
             Json.obj("error" -> "Team type doesn't accept to be join")))
+        case Some(team) if team.`type` == TeamType.Admin =>
+          FastFuture.successful(Forbidden(
+            Json.obj("error" -> "Team type doesn't accept to be join")))
         case Some(team) =>
           val notification = Notification(
             id = NotificationId(BSONObjectID.generate().stringify),
@@ -321,6 +326,9 @@ class TeamController(DaikokuAction: DaikokuAction,
             FastFuture.successful(
               Conflict(Json.obj(
                 "error" -> "Team type doesn't accept to remove members")))
+          case TeamType.Admin =>
+            FastFuture.successful(
+              Forbidden(Json.obj("error" -> "Team type doesn't accept to remove members from this way")))
           case TeamType.Organization =>
             for {
               teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)
@@ -352,6 +360,9 @@ class TeamController(DaikokuAction: DaikokuAction,
             FastFuture.successful(
               Conflict(
                 Json.obj("error" -> "Team type doesn't accept to add members")))
+          case TeamType.Admin =>
+            FastFuture.successful(
+              Forbidden(Json.obj("error" -> "Team type doesn't accept to add members from this way")))
           case TeamType.Organization =>
             for {
               teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)
@@ -392,6 +403,9 @@ class TeamController(DaikokuAction: DaikokuAction,
             FastFuture.successful(
               Conflict(Json.obj(
                 "error" -> "Team type doesn't accept to update permission")))
+          case TeamType.Admin =>
+            FastFuture.successful(
+              Conflict(Json.obj("error" -> "Team type doesn't accept to update permission")))
           case TeamType.Organization =>
             for {
               teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)
@@ -458,6 +472,9 @@ class TeamController(DaikokuAction: DaikokuAction,
         ctx) { team =>
         team.`type` match {
           case TeamType.Personal =>
+            FastFuture.successful(Conflict(Json.obj(
+              "error" -> "Team type doesn't accept to update apikey visibility")))
+          case TeamType.Admin =>
             FastFuture.successful(Conflict(Json.obj(
               "error" -> "Team type doesn't accept to update apikey visibility")))
           case TeamType.Organization =>

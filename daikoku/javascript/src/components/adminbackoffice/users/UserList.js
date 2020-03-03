@@ -77,7 +77,7 @@ class UserListComponent extends Component {
         )
       );
     } else {
-      Services.updateUserById({ ...member, isDaikokuAdmin: !member.isDaikokuAdmin }).then(() =>
+      Services.setAdminStatus(member, !member.isDaikokuAdmin ).then(() =>
         this.updateUsers()
       );
     }

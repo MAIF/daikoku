@@ -118,19 +118,6 @@ export class TeamApiInfo extends Component {
         ],
       },
     },
-    subscriptionProcess: {
-      type: 'select',
-      props: {
-        label: t('Subscription', this.props.currentLanguage),
-        possibleValues: [
-          {
-            label: t('Automatic', this.props.currentLanguage, false, 'Automatic'),
-            value: 'Automatic',
-          },
-          { label: t('Manual', this.props.currentLanguage, false, 'Manual'), value: 'Manual' },
-        ],
-      },
-    },
     authorizedTeams: {
       type: 'array',
       props: {
@@ -153,14 +140,49 @@ export class TeamApiInfo extends Component {
     'supportedVersions',
     'tags',
     'categories',
-    `>>> ${t('Visibility and subscription', this.props.currentLanguage)}`,
+    `>>> ${t('Visibility', this.props.currentLanguage)}`,
     'visibility',
-    'subscriptionProcess',
     `>>> ${t('Authorizations', this.props.currentLanguage)}`,
     'authorizedTeams',
   ];
 
+  adminFormFlow = [
+    '_id',
+    'name',
+    'smallDescription'
+  ];
+
+  adminFormSchema = {
+    _id: {
+      type: 'string',
+      disabled: true,
+      props: { label: t('Id', this.props.currentLanguage), placeholder: '---' },
+    },
+    name: {
+      type: 'string',
+      disabled: true,
+      props: { label: t('Name', this.props.currentLanguage), placeholder: 'New Api' },
+    },
+    smallDescription: {
+      type: 'text',
+      disabled: true,
+      props: { label: t('Small desc.', this.props.currentLanguage) },
+    }
+  }
+
   render() {
+    if (this.props.value.visibility === 'AdminOnly') {
+      return (
+        <React.Suspense fallback={<Spinner />}>
+          <LazyForm
+            flow={this.adminFormFlow}
+            schema={this.adminFormSchema}
+            value={this.props.value}
+            onChange={this.props.onChange}
+          />
+        </React.Suspense>
+      );
+    }
     return (
       <React.Suspense fallback={<Spinner />}>
         <LazyForm

@@ -29,29 +29,29 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  def getApiKeyConsumption(clientId: String,
+  def getSubscriptionConsumption(subscriptionId: String,
                            teamId: String,
                            from: Option[Long],
                            to: Option[Long]): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accessed to apikey consumption for clientId @{clientId}"))(
+        s"@{user.name} has accessed to apikey consumption for subscription @{subscriptionId}"))(
         teamId,
         ctx
       ) { team =>
-        ctx.setCtxValue("clientId", clientId)
+        ctx.setCtxValue("subscriptionId", subscriptionId)
 
         val fromTimestamp = from.getOrElse(
           DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
-          .findOneNotDeleted(
-            Json.obj("team" -> team.id.value, "apiKey.clientId" -> clientId))
-          .flatMap {
+          .findById(subscriptionId)
+            .flatMap {
             case None =>
               FastFuture.successful(NotFound(Json.obj(
                 "error" -> "subscription not found for the given clientId")))
+            case Some(subscription) if team.id != subscription.team => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this subscription")))
             case Some(subscription) =>
               env.dataStore.apiRepo
                 .forTenant(ctx.tenant.id)
@@ -64,7 +64,7 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                     env.dataStore.consumptionRepo
                       .forTenant(ctx.tenant.id)
                       .find(
-                        Json.obj("clientId" -> clientId,
+                        Json.obj("clientId" -> subscription.apiKey.clientId,
                                  "from" -> Json.obj("$gte" -> fromTimestamp),
                                  "to" -> Json.obj("$lte" -> toTimestamp)),
                         Some(Json.obj("from" -> 1))
@@ -87,22 +87,22 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def syncApiKeyConsumption(clientId: String, teamId: String) =
+  def syncSubscriptionConsumption(subscriptionId: String, teamId: String) =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has sync apikey consumption for clientId @{clientId}"))(
+        s"@{user.name} has sync apikey consumption for subscription @{subscriptionId}"))(
         teamId,
         ctx) { team =>
-        ctx.setCtxValue("clientId", clientId);
+        ctx.setCtxValue("subscriptionId", subscriptionId);
 
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
-          .findOneNotDeleted(
-            Json.obj("team" -> team.id.value, "apiKey.clientId" -> clientId))
+          .findById(subscriptionId)
           .flatMap {
             case None =>
               FastFuture.successful(NotFound(Json.obj(
                 "error" -> "subscription not found for the given clientId")))
+            case Some(subscription) if team.id != subscription.team => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this subscription")))
             case Some(subscription) =>
               apiKeyStatsJob
                 .syncForSubscription(subscription, ctx.tenant)

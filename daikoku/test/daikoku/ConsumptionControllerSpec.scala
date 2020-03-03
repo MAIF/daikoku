@@ -46,8 +46,8 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
     wireMockServer.stop()
   }
 
-  val payPerUsePlanId = UsagePlanId("5")
-  val payperUserSub = ApiSubscription(
+  val payPerUsePlanId: UsagePlanId = UsagePlanId("5")
+  val payperUserSub: ApiSubscription = ApiSubscription(
     id = ApiSubscriptionId("test"),
     tenant = tenant.id,
     apiKey = OtoroshiApiKey("name", "id", "secret"),
@@ -56,10 +56,12 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
     team = teamConsumerId,
     api = defaultApi.id,
     by = userTeamAdminId,
-    customName = None
+    customName = None,
+    rotation = None,
+    integrationToken = "token"
   )
 
-  val yesterdayConsumption = ApiKeyConsumption(
+  val yesterdayConsumption: ApiKeyConsumption = ApiKeyConsumption(
     id = MongoId("test"),
     tenant = tenant.id,
     team = teamConsumerId,
@@ -107,8 +109,10 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
       val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$from&to=$to"
+          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$from&to=$to"
       )(tenant, session)
+
+      Logger.debug(Json.stringify(resp.json))
       resp.status mustBe 200
       val eventualPlan = fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat
         .reads((resp.json \ "plan").as[JsObject])
@@ -286,7 +290,8 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         constrainedServicesOnly = true,
         tags = Seq(),
         restrictions = ApiKeyRestrictions(),
-        metadata = Map()
+        metadata = Map(),
+        rotation = None
       )
 
       wireMockServer.isRunning mustBe true
@@ -355,16 +360,16 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption/_sync",
+          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption/_sync",
         method = "POST"
       )(tenant, session)
 
-      Logger.debug(resp.body)
+      Logger.debug(Json.stringify(resp.json))
       resp.status mustBe 200
 
       val respConsumption = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
+          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$threeDayAgo&to=$to"
       )(tenant, session)
       respConsumption.status mustBe 200
 
@@ -454,8 +459,9 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
 
       val respConsumption = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
+          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$threeDayAgo&to=$to"
       )(tenant, session)
+      Logger.debug(Json.stringify(resp.json))
       respConsumption.status mustBe 200
 
       (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
@@ -542,7 +548,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
 
       val respConsumption = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
+          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$threeDayAgo&to=$to"
       )(tenant, session)
       respConsumption.status mustBe 200
 
@@ -630,8 +636,9 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
 
       val respConsumption = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption?from=$threeDayAgo&to=$to"
+          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$threeDayAgo&to=$to"
       )(tenant, session)
+      Logger.debug(Json.stringify(resp.json))
       respConsumption.status mustBe 200
 
       (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
@@ -653,7 +660,9 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         team = teamConsumerId,
         api = defaultApi.id,
         by = userTeamAdminId,
-        customName = None
+        customName = None,
+        rotation = None,
+        integrationToken = "token"
       )
 
       setupEnvBlocking(
@@ -671,7 +680,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
       val to = DateTime.now().withTimeAtStartOfDay().getMillis
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/apiKey/${sub.apiKey.clientId}/consumption?from=$from&to=$to"
+          s"/api/teams/${teamConsumerId.value}/subscription/${sub.id.value}/consumption?from=$from&to=$to"
       )(tenant, session)
       resp.status mustBe 403
     }
@@ -848,7 +857,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/apiKey/${payperUserSub.apiKey.clientId}/consumption/_sync",
+          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption/_sync",
         method = "POST"
       )(tenant, session)
 

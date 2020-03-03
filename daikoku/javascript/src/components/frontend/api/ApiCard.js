@@ -50,7 +50,7 @@ export class ApiCard extends Component {
                   <i className="fas fa-edit" />
                 </button>
               </Can>
-              {!allTeamsAreAuthorized && !isPending && api.visibility !== 'Private' && (
+              {!allTeamsAreAuthorized && !isPending && !["Private", "AdminOnly"].includes(api.visibility) && (
                 <ActionWithTeamSelector
                   title="Api access"
                   description={t(

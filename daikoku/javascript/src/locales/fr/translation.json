@@ -567,5 +567,10 @@
   "View usage statistics": "Voir les statistiques d'usage",
   "Copy to clipboard": "Copier dans le presse-papier",
   "Setup rotation": "Paramètrer la rotation",
-  "Enable/Disable": "Activer/Désactiver"
+  "Enable/Disable": "Activer/Désactiver",
+  "Integration": "Intégration",
+  "Force apikey auto-rotation": "Forcer la rotation auto. des secrets",
+  "ApiKey": "Clef d'api",
+  "Integration token": "Jeton d'intégration",
+  "Security": "Sécurité"
 }

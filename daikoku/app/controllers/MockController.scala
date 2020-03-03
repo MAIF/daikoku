@@ -160,7 +160,6 @@ class MockController(DaikokuAction: DaikokuAction,
     currentVersion = Version("1.0.0"),
     published = true,
     visibility = visibility,
-    subscriptionProcess = SubscriptionProcess.Automatic,
     documentation = ApiDocumentation(
       id = ApiDocumentationId(BSONObjectID.generate().stringify),
       tenant = tenant,
@@ -177,7 +176,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       FreeWithQuotas(
         UsagePlanId("2"),
@@ -190,7 +191,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithLimits(
         id = UsagePlanId("3"),
@@ -205,7 +208,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithoutLimits(
         UsagePlanId("4"),
@@ -221,7 +226,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       PayPerUse(
         UsagePlanId("5"),
@@ -234,7 +241,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       )
     ),
     defaultUsagePlan = UsagePlanId("1")
@@ -287,7 +296,6 @@ class MockController(DaikokuAction: DaikokuAction,
     supportedVersions = Set(Version("1.1.0"), Version("1.0.0")),
     published = true,
     visibility = ApiVisibility.Public,
-    subscriptionProcess = SubscriptionProcess.Automatic,
     documentation = ApiDocumentation(
       id = ApiDocumentationId(BSONObjectID.generate().stringify),
       tenant = tenant,
@@ -309,7 +317,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       FreeWithQuotas(
         UsagePlanId("2"),
@@ -326,7 +336,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithLimits(
         UsagePlanId("3"),
@@ -345,7 +357,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       QuotasWithoutLimits(
         UsagePlanId("4"),
@@ -365,7 +379,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       ),
       PayPerUse(
         UsagePlanId("5"),
@@ -382,7 +398,9 @@ class MockController(DaikokuAction: DaikokuAction,
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
-        autoRotation = None
+        autoRotation = None,
+        subscriptionProcess = SubscriptionProcess.Automatic,
+        integrationProcess = IntegrationProcess.Automatic
       )
     ),
     defaultUsagePlan = UsagePlanId("1")
@@ -485,7 +503,6 @@ class MockController(DaikokuAction: DaikokuAction,
       currentVersion = Version("1.0.0"),
       published = true,
       visibility = ApiVisibility.PublicWithAuthorizations,
-      subscriptionProcess = SubscriptionProcess.Automatic,
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = Tenant.Default,
@@ -502,7 +519,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         ),
         FreeWithQuotas(
           UsagePlanId("2"),
@@ -515,7 +534,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         ),
         QuotasWithLimits(
           id = UsagePlanId("3"),
@@ -530,7 +551,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         ),
         QuotasWithoutLimits(
           UsagePlanId("4"),
@@ -546,7 +569,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         ),
         PayPerUse(
           UsagePlanId("5"),
@@ -559,7 +584,9 @@ class MockController(DaikokuAction: DaikokuAction,
           customDescription = None,
           otoroshiTarget = None,
           allowMultipleKeys = Some(false),
-          autoRotation = None
+          autoRotation = None,
+          subscriptionProcess = SubscriptionProcess.Automatic,
+          integrationProcess = IntegrationProcess.Automatic
         )
       ),
       defaultUsagePlan = UsagePlanId("1"),
@@ -577,7 +604,76 @@ class MockController(DaikokuAction: DaikokuAction,
     val (user5, userTeam5) =
       createUserAndTeam("fifou", "fifou@foo.bar", tenantId, false)
 
+    val defaultAdminTeam = Team(
+      id = TeamId(IdGenerator.token),
+      tenant = Tenant.Default,
+      `type` = TeamType.Admin,
+      name = s"default-admin-team",
+      description = s"The admin team for the default tenant",
+      avatar = Some(
+        s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
+      users = Set(
+        UserWithPermission(user1.id, TeamPermission.Administrator),
+        UserWithPermission(user2.id, TeamPermission.Administrator),
+        UserWithPermission(user3.id, TeamPermission.Administrator),
+        UserWithPermission(user4.id, TeamPermission.Administrator)),
+      subscriptions = Seq.empty,
+      authorizedOtoroshiGroups = Set.empty
+    )
+    val tenant2adminTeam = defaultAdminTeam.copy(
+      id = TeamId(IdGenerator.token),
+      tenant = tenant2Id,
+      name = s"Johnny-be-good-admin-team",
+      description = s"The admin team for the Johnny be good tenant",
+      avatar = Some(
+        s"https://www.gravatar.com/avatar/${"Johnny-be-good".md5}?size=128&d=robohash"),
+    )
+
     val sender = user5
+
+    val adminApiDefaultTenant = Api(
+      id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
+      tenant = Tenant.Default,
+      team = defaultAdminTeam.id,
+      name = s"admin-api-tenant-${Tenant.Default.value}",
+      lastUpdate = DateTime.now(),
+      smallDescription = "admin api",
+      description = "admin api",
+      currentVersion = Version("1.0.0"),
+      published = true,
+      documentation = ApiDocumentation(
+        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        tenant = Tenant.Default,
+        pages = Seq.empty[ApiDocumentationPageId],
+        lastModificationAt = DateTime.now()
+      ),
+      swagger = None,
+      possibleUsagePlans = Seq(
+        Admin(
+          id = UsagePlanId("admin"),
+          customName = Some("admin"),
+          customDescription = None,
+          otoroshiTarget = None
+        )
+      ),
+      tags = Set("Administration"),
+      visibility = ApiVisibility.AdminOnly,
+      defaultUsagePlan = UsagePlanId("1"),
+      authorizedTeams = Seq.empty
+    )
+    val adminApiTenant2 = adminApiDefaultTenant.copy(
+      id = ApiId(s"admin-api-tenant-${tenant2Id.value}"),
+      tenant = tenant2Id,
+      name = s"admin-api-tenant-${tenant2Id.value}",
+      team = tenant2adminTeam.id,
+      tags = Set("Administration"),
+      documentation = ApiDocumentation(
+        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        tenant = tenant2Id,
+        pages = Seq.empty[ApiDocumentationPageId],
+        lastModificationAt = DateTime.now()
+      ),
+    )
 
     for {
       teamRepo1 <- env.dataStore.teamRepo.forTenantF(tenantId)
@@ -626,7 +722,8 @@ class MockController(DaikokuAction: DaikokuAction,
               clientId = "admin-api-apikey-id",
               clientSecret = "admin-api-apikey-id"
             )
-          )
+          ),
+          adminApi = adminApiDefaultTenant.id
         )
       )
       _ <- env.dataStore.tenantRepo.save(
@@ -861,9 +958,12 @@ class MockController(DaikokuAction: DaikokuAction,
               clientId = "admin-api-apikey-id",
               clientSecret = "admin-api-apikey-id"
             )
-          )
+          ),
+          adminApi = adminApiTenant2.id
         )
       )
+      _ <- env.dataStore.apiRepo.forTenant(Tenant.Default).save(adminApiDefaultTenant)
+      _ <- env.dataStore.apiRepo.forTenant(tenant2Id).save(adminApiTenant2)
       _ <- teamRepo1.save(
         Team(
           id = TeamId(team3Id),
@@ -940,6 +1040,8 @@ class MockController(DaikokuAction: DaikokuAction,
       _ <- teamRepo1.save(userTeam3)
       _ <- teamRepo1.save(userTeam4)
       _ <- teamRepo1.save(userTeam5)
+      _ <- teamRepo1.save(defaultAdminTeam)
+      _ <- teamRepo1.save(tenant2adminTeam)
       ids <- saveApiDocPages(tenantId)
       ids2 <- saveApiDocPages(tenant2Id)
       _ <- Future.sequence(
@@ -1063,7 +1165,8 @@ class MockController(DaikokuAction: DaikokuAction,
           api = ApiId(s"my-toy-api-${tenantId.value}-$version"),
           by = user5.id,
           customName = None,
-          rotation = None
+          rotation = None,
+          integrationToken = s"token-$version"
         )
         val api = ToyApi(version.toString, tenantId, TeamId(team1Id), ids)
         val plan = api.possibleUsagePlans.filter(_.id == subPlanId).head
@@ -1089,7 +1192,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-free"
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("2"),
@@ -1105,7 +1209,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-free-quota"
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("3"),
@@ -1121,7 +1226,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-quota-only"
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("4"),
@@ -1138,7 +1244,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-quota-without-limit"
           )),
           apiSubscriptionRepo.save(ApiSubscription(
             ApiSubscriptionId("5"),
@@ -1154,7 +1261,8 @@ class MockController(DaikokuAction: DaikokuAction,
             api = ApiId(s"my-toy-api-${tenantId.value}-0"),
             by = user5.id,
             customName = None,
-            rotation = None
+            rotation = None,
+            integrationToken = "token-pay-per-use"
           ))
         ))
     } yield {

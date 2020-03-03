@@ -3,19 +3,11 @@ package jobs
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.Cancellable
-import fr.maif.otoroshi.daikoku.audit.JobEvent
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  OtoroshiSyncApiError,
-  OtoroshiSyncSubscriptionError
-}
+import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{OtoroshiSyncApiError, OtoroshiSyncSubscriptionError}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{
-  ConsoleMailer,
-  IdGenerator,
-  Mailer,
-  OtoroshiClient
-}
+import fr.maif.otoroshi.daikoku.utils.{ConsoleMailer, IdGenerator, Mailer, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
@@ -389,6 +381,12 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                             notificationType = NotificationType.AcceptOnly
                                           )
 
+                                          ApiKeyRotationEvent(subscription = subscription.id).logJobEvent(
+                                            tenant,
+                                            jobUser,
+                                            Json.obj("token" -> subscription.integrationToken)
+                                          )
+
                                           for {
                                             _ <- env.dataStore.apiSubscriptionRepo.forTenant(subscription.tenant)
                                               .save(Json.obj("_id" -> subscription.id.asJson), newSubscription.asJson.as[JsObject])
@@ -480,8 +478,27 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                     target.serviceGroup.value,
                                     subscription.apiKey.clientId)(settings)
                                   .andThen {
-                                    case Failure(e) => Logger.debug(e.getLocalizedMessage)
-                                    case Success(Left(e)) => Logger.debug(Json.stringify(JsError.toJson(e)))
+                                    case Failure(e) =>
+                                      sendErrorNotification(
+                                        NotificationAction
+                                          .OtoroshiSyncSubscriptionError(
+                                            subscription,
+                                            s"Unable to fetch apikey from otoroshi: ${e.getMessage}"),
+                                        subscription.team,
+                                        subscription.tenant,
+                                        Some(settings.host)
+                                      )
+                                    case Success(Left(e)) =>
+                                      sendErrorNotification(
+                                        NotificationAction
+                                          .OtoroshiSyncSubscriptionError(
+                                            subscription,
+                                            s"Unable to fetch apikey from otoroshi: ${Json
+                                              .stringify(JsError.toJson(e))}"),
+                                        subscription.team,
+                                        subscription.tenant,
+                                        Some(settings.host)
+                                      )
                                     case Success(Right(apk)) if !apk.rotation.exists(r => r.enabled) =>
                                       env.dataStore.apiSubscriptionRepo.forTenant(subscription.tenant)
                                         .save(Json.obj("_id" -> subscription.id.asJson), subscription.copy(rotation = subscription.rotation.map(_.copy(enabled = false))).asJson.as[JsObject])
@@ -492,9 +509,6 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                       val pendingRotation: Boolean = subscription.rotation.exists(_.pendingRotation)
 
 
-                                      //                                      if (!pendingRotation && otoroshiNextSecret.isEmpty && otoroshiActualSecret == daikokuActualSecret) {
-                                      //                                        //todo: rien a faire
-                                      //                                      }
                                       if (!pendingRotation && otoroshiNextSecret.isDefined && otoroshiActualSecret == daikokuActualSecret) {
                                         val newSubscription = subscription.copy(rotation = subscription.rotation.map(_.copy(pendingRotation = true)), apiKey = subscription.apiKey.copy(clientSecret = otoroshiNextSecret.get))
                                         val notification = Notification(
@@ -506,13 +520,17 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                           notificationType = NotificationType.AcceptOnly
                                         )
 
+                                        ApiKeyRotationEvent(subscription = subscription.id).logJobEvent(
+                                          tenant,
+                                          jobUser,
+                                          Json.obj("token" -> subscription.integrationToken)
+                                        )
+
                                         for {
                                           _ <- env.dataStore.apiSubscriptionRepo.forTenant(subscription.tenant)
                                             .save(Json.obj("_id" -> subscription.id.asJson), newSubscription.asJson.as[JsObject])
                                           _ <- env.dataStore.notificationRepo.forTenant(subscription.tenant).save(notification)
                                         } yield ()
-                                        //                                      } else if (pendingRotation && otoroshiActualSecret != daikokuActualSecret) {
-                                        //                                        // todo: rien a faire
                                       } else if (pendingRotation && otoroshiActualSecret == daikokuActualSecret) {
                                         val notification = Notification(
                                           id = NotificationId(BSONObjectID.generate().stringify),

@@ -42,7 +42,8 @@ class EntitiesController(DaikokuAction: DaikokuAction,
           authProviderSettings = Json.obj(
             "sessionMaxAge" -> 86400
           ),
-          otoroshiSettings = Set()
+          otoroshiSettings = Set(),
+          adminApi = ApiId("no-api")
         ).asJson)
     }
   }
@@ -98,7 +99,6 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             pages = Seq.empty
           ),
           visibility = ApiVisibility.Public,
-          subscriptionProcess = SubscriptionProcess.Automatic,
           possibleUsagePlans = Seq(FreeWithQuotas(
             id = UsagePlanId("default"),
             maxPerSecond = 10,
@@ -116,7 +116,9 @@ class EntitiesController(DaikokuAction: DaikokuAction,
               "Free plan with limited number of calls per day and per month"),
             otoroshiTarget = None,
             allowMultipleKeys = Some(false),
-            autoRotation = None
+            autoRotation = None,
+            subscriptionProcess = SubscriptionProcess.Automatic,
+            integrationProcess = IntegrationProcess.ApiKey
           )),
           defaultUsagePlan = UsagePlanId("default")
         ).asJson)

@@ -376,6 +376,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                   hits + consumptions.map(_.hits).sum,
                   p.costPerRequest)
               )
+            case p:Admin => ApiKeyBilling(0, 0)
           }
         }
       )

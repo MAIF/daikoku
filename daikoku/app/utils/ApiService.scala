@@ -3,7 +3,7 @@ package fr.maif.otoroshi.daikoku.utils
 import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import controllers.AppError
-import controllers.AppError.{ApiKeyRotationConflict, ApiKeyRotationError, ApiNotLinked, OtoroshiError, OtoroshiSettingsNotFound}
+import controllers.AppError._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -56,7 +56,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation())
+        rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
+        integrationToken = IdGenerator.token(64)
       )
       val ctx = Map(
         "user.id" -> user.id.value,
@@ -124,6 +125,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
             dailyQuota = p.maxPerDay,
             monthlyQuota = p.maxPerMonth)
         case _: PayPerUse => apiKey
+        case _: Admin => apiKey
       }
       val r: EitherT[Future, AppError, JsObject] = for {
         _ <- EitherT(otoroshiClient.createApiKey(groupId, tunedApiKey))
@@ -150,9 +152,63 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
       r.value
     }
 
+    def createAdminKey(api: Api, plan: UsagePlan): Future[Either[AppError, JsObject]] = {
+      import cats.implicits._
+      // TODO: verify if group is in authorized groups (if some)
+
+      val clientId = IdGenerator.token(32)
+      val clientSecret = IdGenerator.token(64)
+      val clientName =
+        s"daikoku-api-key-${api.humanReadableId}-${
+          plan.customName
+            .getOrElse(plan.typeName)
+            .urlPathSegmentSanitized
+        }-${team.humanReadableId}-${System.currentTimeMillis()}"
+      val apiSubscription = ApiSubscription(
+        id = ApiSubscriptionId(BSONObjectID.generate().stringify),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey(clientName, clientId, clientSecret),
+        plan = plan.id,
+        createdAt = DateTime.now(),
+        team = team.id,
+        api = api.id,
+        by = user.id,
+        customName = None,
+        rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
+        integrationToken = IdGenerator.token(64)
+      )
+
+      val r: EitherT[Future, AppError, JsObject] = for {
+        _ <- EitherT.liftF(
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant.id)
+            .save(apiSubscription))
+        _ <- EitherT.liftF(
+          env.dataStore.teamRepo
+            .forTenant(tenant.id)
+            .save(team.copy(
+              subscriptions = team.subscriptions :+ apiSubscription.id))
+        )
+        _ <- EitherT.liftF(
+          env.dataStore.apiRepo
+            .forTenant(tenant.id)
+            .save(
+              api.copy(subscriptions = api.subscriptions :+ apiSubscription.id))
+        )
+        _ <- EitherT.liftF(
+          env.dataStore.tenantRepo.save(tenant.copy(adminSubscriptions = tenant.adminSubscriptions :+ apiSubscription.id ))
+        )
+      } yield {
+        Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson)
+      }
+
+      r.value
+    }
+
     plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
       tenant.otoroshiSettings.find(_.id == id)
     } match {
+      case None if api.visibility == ApiVisibility.AdminOnly => createAdminKey(api, plan)
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
@@ -271,6 +327,13 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
     plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
       tenant.otoroshiSettings.find(_.id == id)
     } match {
+      case None if api.visibility == ApiVisibility.AdminOnly =>
+        val newClientSecret = IdGenerator.token(64)
+        val updatedSubscription = subscription.copy(apiKey = subscription.apiKey.copy(clientSecret = newClientSecret))
+        env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant.id)
+          .save(updatedSubscription)
+          .map(_ => Right(Json.obj("done" -> true, "subscription" -> updatedSubscription.asJson)))
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
@@ -316,7 +379,9 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                            gracePeriod: Long): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
-    if (plan.autoRotation.getOrElse(false)) {
+    if (api.visibility == ApiVisibility.AdminOnly) {
+      Future.successful(Left(ApiKeyRotationConflict))
+    } else if (plan.autoRotation.getOrElse(false)) {
      Future.successful(Left(ApiKeyRotationConflict))
     } else if (rotationEvery <= gracePeriod) {
       FastFuture.successful(Left(ApiKeyRotationError(Json.obj("error" -> "Rotation period can't ben less or equal to grace period"))))

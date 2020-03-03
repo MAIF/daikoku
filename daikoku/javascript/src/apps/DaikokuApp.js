@@ -315,8 +315,8 @@ class DaikokuAppComponent extends Component {
             <TeamBackOfficeRoute
               exact
               path={[
-                '/teams/:teamId/settings/apikeys/:apiId/apikey/:clientId/consumptions',
-                '/:teamId/settings/apikeys/:apiId/apikey/:clientId/consumptions',
+                '/teams/:teamId/settings/apikeys/:apiId/subscription/:subscription/consumptions',
+                '/:teamId/settings/apikeys/:apiId/subscription/:subscription/consumptions',
               ]}
               render={smartRedirect(p => (
                 <TeamApiKeyConsumption match={p.match} history={p.history} location={p.location} />
