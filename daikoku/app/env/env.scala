@@ -307,8 +307,9 @@ class DaikokuEnv(ws: WSClient,
               logger.warn(
                 "Main dataStore seems to be empty, generating initial data ...")
               val userId = UserId(BSONObjectID.generate().stringify)
+              val adminApiDefaultTenantId = ApiId(s"admin-api-tenant-${Tenant.Default.value}")
               val adminApiDefaultTenant = Api(
-                id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
+                id = adminApiDefaultTenantId,
                 tenant = Tenant.Default,
                 team = TeamId("administration"),
                 name = s"admin-api-tenant-${Tenant.Default.value}",
@@ -344,8 +345,6 @@ class DaikokuEnv(ws: WSClient,
               )
               val tenant = Tenant(
                 id = Tenant.Default,
-                deleted = false,
-                enabled = true,
                 name = "Daikoku Default Tenant",
                 domain = config.init.host,
                 defaultLanguage = Some("En"),
@@ -360,7 +359,7 @@ class DaikokuEnv(ws: WSClient,
                 ),
                 bucketSettings = None,
                 otoroshiSettings = Set(),
-                adminApi = Some(ApiId(s"admin-api-tenant-${Tenant.Default.value}"))
+                adminApi = adminApiDefaultTenantId
               )
               val defaultAdminTeam = Team(
                 id = TeamId(IdGenerator.token),

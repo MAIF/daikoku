@@ -723,7 +723,7 @@ class MockController(DaikokuAction: DaikokuAction,
               clientSecret = "admin-api-apikey-id"
             )
           ),
-          adminApi = Some(adminApiDefaultTenant.id)
+          adminApi = adminApiDefaultTenant.id
         )
       )
       _ <- env.dataStore.tenantRepo.save(
@@ -959,7 +959,7 @@ class MockController(DaikokuAction: DaikokuAction,
               clientSecret = "admin-api-apikey-id"
             )
           ),
-          adminApi = Some(adminApiTenant2.id)
+          adminApi = adminApiTenant2.id
         )
       )
       _ <- env.dataStore.apiRepo.forTenant(Tenant.Default).save(adminApiDefaultTenant)

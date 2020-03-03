@@ -1137,7 +1137,7 @@ object json {
                 )
               ),
             isPrivate = (json \ "isPrivate").asOpt[Boolean].getOrElse(true),
-            adminApi = (json \ "adminApi").asOpt(ApiIdFormat),
+            adminApi = (json \ "adminApi").as(ApiIdFormat),
             adminSubscriptions = (json \ "adminSubscriptions")
               .asOpt(SeqApiSubscriptionIdFormat)
               .getOrElse(Seq.empty)
@@ -1169,7 +1169,7 @@ object json {
       "authProviderSettings" -> o.authProviderSettings,
       "auditTrailConfig" -> o.auditTrailConfig.asJson,
       "isPrivate" -> o.isPrivate,
-      "adminApi" -> o.adminApi.map(_.asJson).getOrElse(JsNull).as[JsValue],
+      "adminApi" -> o.adminApi.asJson,
       "adminSubscriptions" -> JsArray(o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes))
     )
   }

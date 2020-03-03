@@ -53,11 +53,11 @@ class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
     Seq(
 //      new BasicUsageSpec(defaultTestConfig),
       new ApiControllerSpec(defaultTestConfig),
-      new TeamControllerSpec(defaultTestConfig),
-      new UserControllerSpec(defaultTestConfig),
-      new NotificationControllerSpec(defaultTestConfig),
-      new ConsumptionControllerSpec(defaultTestConfig),
-      new TenantControllerSpec(defaultTestConfig)
+//      new TeamControllerSpec(defaultTestConfig),
+//      new UserControllerSpec(defaultTestConfig),
+//      new NotificationControllerSpec(defaultTestConfig),
+//      new ConsumptionControllerSpec(defaultTestConfig),
+//      new TenantControllerSpec(defaultTestConfig)
     )
   }
 
@@ -600,6 +600,7 @@ object utils {
           id = UsagePlanId("admin"),
           customName = Some("admin"),
           customDescription = None,
+          otoroshiTarget = None
         )
       ),
       tags = Set("Administration"),
@@ -636,7 +637,7 @@ object utils {
         )
       ),
       defaultLanguage = Some("En"),
-      adminApi = Some(adminApi.id) ,
+      adminApi = adminApi.id,
       adminSubscriptions = Seq.empty
     )
 

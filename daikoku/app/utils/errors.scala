@@ -14,8 +14,6 @@ object Errors {
 
   val defaultTenant = Tenant(
     id = Tenant.Default,
-    deleted = false,
-    enabled = true,
     name = "Daikoky",
     domain = "localhost",
     defaultLanguage = Some("En"),
@@ -30,7 +28,7 @@ object Errors {
     ),
     bucketSettings = None,
     otoroshiSettings = Set.empty,
-    adminApi = None
+    adminApi = ApiId("no-api")
   )
 
   val messages = Map(

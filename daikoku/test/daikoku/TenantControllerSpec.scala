@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
-import fr.maif.otoroshi.daikoku.domain.{ApiVisibility, ConsoleMailerSettings, DaikokuStyle, TeamPermission, TeamType, Tenant, TenantId}
+import fr.maif.otoroshi.daikoku.domain.{ApiId, ApiVisibility, ConsoleMailerSettings, DaikokuStyle, TeamPermission, TeamType, Tenant, TenantId}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
@@ -50,7 +50,7 @@ class TenantControllerSpec(configurationSpec: => Configuration)
           "sessionMaxAge" -> 86400
         ),
         otoroshiSettings = Set(),
-        adminApi = None
+        adminApi = ApiId("no-api")
       )
 
       val respCreation = httpJsonCallBlocking(
@@ -64,8 +64,7 @@ class TenantControllerSpec(configurationSpec: => Configuration)
         fr.maif.otoroshi.daikoku.domain.json.TenantFormat.reads(respCreation.json)
       tryCreatedTenant.isSuccess mustBe true
       val createdTenant = tryCreatedTenant.get
-      createdTenant.adminApi.isDefined mustBe true
-      val createdAdminApiId = createdTenant.adminApi.get
+      val createdAdminApiId = createdTenant.adminApi
 
       val sessionNewTenant = loginWithBlocking(daikokuAdmin, testTenant)
       val respTeams =
@@ -121,7 +120,7 @@ class TenantControllerSpec(configurationSpec: => Configuration)
           "sessionMaxAge" -> 86400
         ),
         otoroshiSettings = Set(),
-        adminApi = None
+        adminApi = ApiId("no-api")
       )
 
       val respCreation = httpJsonCallBlocking(
@@ -135,8 +134,7 @@ class TenantControllerSpec(configurationSpec: => Configuration)
         fr.maif.otoroshi.daikoku.domain.json.TenantFormat.reads(respCreation.json)
       tryCreatedTenant.isSuccess mustBe true
       val createdTenant = tryCreatedTenant.get
-      createdTenant.adminApi.isDefined mustBe true
-      val createdAdminApiId = createdTenant.adminApi.get
+      val createdAdminApiId = createdTenant.adminApi
 
       val respDelete = httpJsonCallBlocking(
         path = s"/api/tenants/${testTenant.id.value}",

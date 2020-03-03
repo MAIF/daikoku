@@ -244,7 +244,7 @@ class TenantController(DaikokuAction: DaikokuAction,
             defaultUsagePlan = UsagePlanId("admin"),
             authorizedTeams = Seq.empty
           )
-          val tenantForCreation = tenant.copy(adminApi = Some(adminApi.id))
+          val tenantForCreation = tenant.copy(adminApi = adminApi.id)
 
           for {
             admins  <-  env.dataStore.userRepo.findNotDeleted(Json.obj("isDaikokuAdmin" -> true))

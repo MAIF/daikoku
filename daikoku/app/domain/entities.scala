@@ -115,7 +115,7 @@ case class Tenant(
     authProviderSettings: JsObject,
     auditTrailConfig: AuditTrailConfig = AuditTrailConfig(),
     isPrivate: Boolean = true,
-    adminApi: Option[ApiId],
+    adminApi: ApiId,
     adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty
 ) extends CanJson[Tenant] {
 

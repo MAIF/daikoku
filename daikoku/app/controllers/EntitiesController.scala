@@ -43,7 +43,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             "sessionMaxAge" -> 86400
           ),
           otoroshiSettings = Set(),
-          adminApi = None
+          adminApi = ApiId("no-api")
         ).asJson)
     }
   }

@@ -1159,7 +1159,7 @@ class ApiController(DaikokuAction: DaikokuAction,
             case JsError(e) =>
               FastFuture
                 .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
-            case JsSuccess(api, _) if api.visibility == ApiVisibility.AdminOnly =>
+            case JsSuccess(api, _) if oldApi.visibility == ApiVisibility.AdminOnly =>
               val oldAdminPlan = oldApi.possibleUsagePlans.head
               val planToSave = api.possibleUsagePlans.find(_.id == oldAdminPlan.id)
               planToSave match {
