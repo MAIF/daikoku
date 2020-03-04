@@ -287,6 +287,8 @@ export class TenantEditComponent extends Component {
     'bucketSettings.secret',
     'bucketSettings.chunkSize',
     'bucketSettings.v4auth',
+    '>>> footer',
+    'style.footer',
     `>>> ${t('Unlogged home description', this.props.currentLanguage)}`,
     'style.homePageVisible',
     'style.unloggedHome',
@@ -496,6 +498,10 @@ export class TenantEditComponent extends Component {
           console.log(obj);
         },
       },
+    },
+    'style.footer': {
+      type: 'markdown',
+      props: { label: t('Footer', this.props.currentLanguage) }
     },
     isPrivate: {
       type: 'bool',

@@ -53,11 +53,11 @@ class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
     Seq(
 //      new BasicUsageSpec(defaultTestConfig),
       new ApiControllerSpec(defaultTestConfig),
-//      new TeamControllerSpec(defaultTestConfig),
-//      new UserControllerSpec(defaultTestConfig),
-//      new NotificationControllerSpec(defaultTestConfig),
-//      new ConsumptionControllerSpec(defaultTestConfig),
-//      new TenantControllerSpec(defaultTestConfig)
+      new TeamControllerSpec(defaultTestConfig),
+      new UserControllerSpec(defaultTestConfig),
+      new NotificationControllerSpec(defaultTestConfig),
+      new ConsumptionControllerSpec(defaultTestConfig),
+      new TenantControllerSpec(defaultTestConfig)
     )
   }
 

@@ -1060,7 +1060,9 @@ object json {
               (json \ "homePageVisible").asOpt[Boolean].getOrElse(false),
             logo = (json \ "logo")
               .asOpt[String]
-              .getOrElse("/assets/images/daikoku.svg")
+              .getOrElse("/assets/images/daikoku.svg"),
+            footer = (json \ "footer")
+                .asOpt[String]
           ))
       } recover {
         case e => JsError(e.getMessage)
@@ -1083,7 +1085,11 @@ object json {
       "description" -> o.description,
       "unloggedHome" -> o.unloggedHome,
       "homePageVisible" -> o.homePageVisible,
-      "logo" -> o.logo
+      "logo" -> o.logo,
+      "footer" -> o.footer
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
     )
   }
   val TenantFormat = new Format[Tenant] {

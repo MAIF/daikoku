@@ -86,6 +86,7 @@ case class DaikokuStyle(
     unloggedHome: String = "",
     homePageVisible: Boolean = false,
     logo: String = "/assets/images/daikoku.svg",
+    footer: Option[String] = None
 ) extends CanJson[DaikokuStyle] {
   override def asJson: JsValue = json.DaikokuStyleFormat.writes(this)
 }
@@ -143,6 +144,7 @@ case class Tenant(
         .map(a => JsString(a.unloggedHome))
         .getOrElse(JsNull)
         .as[JsValue],
+      "footer" -> style.flatMap(_.footer).map(f => JsString(f)).getOrElse(JsNull).as[JsValue],
       "logo" -> style.map(a => JsString(a.logo)).getOrElse(JsNull).as[JsValue],
       "mode" -> env.config.mode.name,
       "authProvider" -> authProvider.name,

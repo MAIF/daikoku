@@ -25,6 +25,7 @@ export class TenantStyleEditComponent extends Component {
   };
 
   componentDidMount() {
+    console.debug(styleVariables)
     if (this.props.location && this.props.location.state && this.props.location.state.newTenant) {
       this.setState({
         tenant: {

@@ -6,7 +6,7 @@ import { connect } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
-import { TopBar, Spinner, Error } from '../components/utils';
+import { TopBar, Spinner, Error, Footer } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise } from '../core';
 import { history } from '../core';
@@ -22,6 +22,7 @@ import {
   ApiHome,
   UnauthenticatedHome,
   UnauthenticatedTopBar,
+  UnauthenticatedFooter,
   FrontOffice,
 } from '../components/frontend';
 
@@ -69,7 +70,11 @@ class DaikokuAppComponent extends Component {
     if (!user) {
       return (
         <Router>
-          <div role="root-container" className="container-fluid">
+          <div role="root-container" className="container-fluid" style={{
+            minHeight: '100vh',
+            position: 'relative',
+            paddingBottom: '6rem'
+          }}>
             <Route
               exact
               path="/"
@@ -89,13 +94,20 @@ class DaikokuAppComponent extends Component {
                 <UnauthenticatedHome tenant={tenant} match={p.match} history={p.history} />
               )}
             />
+            <Route
+              exact
+              path="/"
+              render={p => (
+                <UnauthenticatedFooter tenant={tenant} match={p.match} history={p.history} />
+              )}
+            />
           </div>
         </Router>
       );
     }
     return (
       <ConnectedRouter history={history}>
-        <div role="root-container" className="container-fluid">
+        <div role="root-container" className="container-fluid main-content-container">
           <ModalRoot />
           <ReduxToastr
             timeOut={4000}
@@ -471,6 +483,25 @@ class DaikokuAppComponent extends Component {
               ))}
             />
           </Switch>
+          <Route
+            path={[
+              '/teams',
+              '/organizations',
+              '/teams/:teamId/apis/:apiId',
+              '/:teamId/:apiId',
+              '/teams/:teamId',
+              '/:teamId',
+              '/',
+            ]}
+            render={smartMatch(p => (
+              <Footer
+                isBackOffice={false}
+                location={p.location}
+                history={p.history}
+                match={p.match}
+              />
+            ))}
+          />
         </div>
       </ConnectedRouter>
     );
