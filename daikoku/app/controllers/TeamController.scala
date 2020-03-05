@@ -113,6 +113,9 @@ class TeamController(DaikokuAction: DaikokuAction,
         case JsSuccess(team, _) =>
           ctx.setCtxValue("team.id", team.id)
           ctx.setCtxValue("team.name", team.name)
+
+          val teamToSave = team.copy(users = Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator)))
+
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
             .findOneNotDeleted(
@@ -124,12 +127,12 @@ class TeamController(DaikokuAction: DaikokuAction,
             .flatMap {
               case Some(_) =>
                 FastFuture.successful(Conflict(
-                  Json.obj("error" -> "Team with id or hrid already exist")))
+                  Json.obj("error" -> "Team with id or name already exist")))
               case None =>
                 env.dataStore.teamRepo
                   .forTenant(ctx.tenant.id)
-                  .save(team)
-                  .map(_ => Created(team.asJson))
+                  .save(teamToSave)
+                  .map(_ => Created(teamToSave.asJson))
             }
       }
     }
