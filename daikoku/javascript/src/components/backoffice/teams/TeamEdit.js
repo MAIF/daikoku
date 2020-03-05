@@ -93,7 +93,9 @@ export class TeamEditForm extends Component {
               />
             </div>
           )}
-          <h1 className="h1-rwd-reduce ml-2">Team - {this.props.team.name}</h1>
+          <h1 className="h1-rwd-reduce ml-2">
+            {this.props.team.name}
+          </h1>
         </div>
         <div className="row">
           <React.Suspense fallback={<Spinner />}>

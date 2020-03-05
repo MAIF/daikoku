@@ -573,5 +573,9 @@
     "Force apikey auto-rotation": "Force apikey auto-rotation",
     "ApiKey": "ApiKey",
     "Integration token": "Integration token",
-    "Security": "Security"
+    "Security": "Security",
+    "Team with id or name already exist": "Sorry, a team with this name already exists.",
+    "Create team": "Create team",
+    "Team": "Team",
+    "New team": "New team"
 }

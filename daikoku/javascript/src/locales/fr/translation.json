@@ -572,5 +572,9 @@
   "Force apikey auto-rotation": "Forcer la rotation auto. des secrets",
   "ApiKey": "Clef d'api",
   "Integration token": "Jeton d'intégration",
-  "Security": "Sécurité"
+  "Security": "Sécurité",
+  "Team with id or name already exist": "Désolé, une équipe avec ce nom existe déjà.",
+  "Create team": "Créer une équipe",
+  "Team": "Équipe",
+  "New team": "Nouvelle équipe"
 }

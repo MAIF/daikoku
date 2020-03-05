@@ -485,8 +485,11 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
         <button
           className="btn btn-access-negative mb-2"
           onClick={() => createNewTeam()}>
-          <i className="fas fa-plus-square" /> Create team
-                </button>
+          <i className="fas fa-plus-square mr-1" /> 
+          <Translation i18nkey="Create team" language={language}>
+            Create team
+          </Translation>
+        </button>
       </div>
     </div>
   );

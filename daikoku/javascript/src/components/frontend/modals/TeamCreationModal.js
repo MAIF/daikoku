@@ -24,21 +24,27 @@ export const TeamCreationModal = props => {
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">Team creation</h5>
+        <h5 className="modal-title">
+          <Translation i18nkey="New team" language={props.currentLanguage}>
+            New team
+          </Translation>
+        </h5>
         <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div className="modal-body">
         {!!error && <div class="alert alert-danger" role="alert">
-          {error}
+          {t(error, props.currentLanguage)}
         </div>}
         <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={props.currentLanguage} />
         
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={props.closeModal}>
-          Close
+          <Translation i18nkey="Close" language={props.currentLanguage}>
+            Close
+          </Translation>
         </button>
         {!created && <button
           type="button"
@@ -58,7 +64,9 @@ export const TeamCreationModal = props => {
               setError(e.error)
             }
               )}>
-          Create
+          <Translation i18nkey="Create" language={props.currentLanguage}>
+            Create
+          </Translation>
         </button>}
       </div>
     </div>
