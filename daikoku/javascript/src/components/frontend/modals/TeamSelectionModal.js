@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PropTypes } from 'prop-types';
 import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
-import {Translation} from '../../../locales';
+import {t, Translation} from '../../../locales';
 
 export const TeamSelectorModal = ({
   closeModal,
