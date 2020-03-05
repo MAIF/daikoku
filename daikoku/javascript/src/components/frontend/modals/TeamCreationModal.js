@@ -14,14 +14,12 @@ export const TeamCreationModal = props => {
 
   useEffect(() => {
     if (created) {
-      setError(undefined);
+      props.closeModal();
+      props.history.push(`/${team._humanReadableId}/settings/members`);
     }
   }, [created])
 
-  const members = () => {
-    props.closeModal();
-    props.history.push(`/${team._humanReadableId}/settings/members`);
-  };
+
 
   return (
     <div className="modal-content">
@@ -35,24 +33,8 @@ export const TeamCreationModal = props => {
         {!!error && <div class="alert alert-danger" role="alert">
           {error}
         </div>}
-        {!created && <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={props.currentLanguage} />}
-        {created && (
-          <>
-            <div>Team {team.name} created successfully</div>
-            <div>Would you want to add some members to your new team ?</div>
-            <button
-              type="button"
-              className="btn btn-outline-primary"
-              onClick={members}>
-              <span>
-                <i className="fas fa-users mr-1" />
-                <Translation i18nkey="Members" language={props.currentLanguage}>
-                  Add Members
-                </Translation>
-              </span>
-            </button>
-          </>
-        )}
+        <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={props.currentLanguage} />
+        
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={props.closeModal}>
@@ -73,7 +55,6 @@ export const TeamCreationModal = props => {
             .then(() => setCreated(true))
             .then(() => props.postAction())
             .catch(e => {
-              console.debug({e})
               setError(e.error)
             }
               )}>
