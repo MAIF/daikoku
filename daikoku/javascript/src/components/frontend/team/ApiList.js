@@ -8,10 +8,11 @@ import faker from 'faker';
 
 import { ApiCard } from '../api';
 import { ActionWithTeamSelector, Can, CanIDoAction, manage, api } from '../../utils';
-import { updateTeamPromise } from '../../../core';
+import { updateTeamPromise, openModal, closeModal } from '../../../core';
 import { Translation, t } from '../../../locales';
 
 import * as Services from '../../../services';
+import { toastr } from 'react-redux-toastr';
 
 const all = { value: 'All', label: 'All' };
 const allCategories = language => ({ value: 'All', label: t('All categories', language) });
@@ -100,7 +101,26 @@ class ApiListComponent extends Component {
 
   createNewteam = () => {
     Services.fetchNewTeam()
-      .then(newTeam => console.debug({newTeam})) //todo: display creation form
+      .then(team => this.props.openModal(
+        {
+          open: true,
+          currentLanguage: this.props.currentLanguage,
+          closeModal: this.props.closeModal,
+          createTeam: team => Services.createTeam(team)
+            .then(() => toastr.success(
+              t(
+                'team.created.success',
+                this.props.currentLanguage,
+                false,
+                `team ${team.name} successfully created`,
+                team.name
+              )
+            ))
+            .then(() => this.props.refreshTeams()),
+          team
+        },
+        'teamCreation'
+      ))
   }
 
   redirectToTeam = team => {
@@ -393,6 +413,8 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   updateTeam: team => updateTeamPromise(team),
+  closeModal: () => closeModal(),
+  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
 };
 
 export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
@@ -404,6 +426,7 @@ ApiListComponent.propTypes = {
   teams: PropTypes.array.isRequired,
   teamVisible: PropTypes.bool,
   team: PropTypes.object,
+  refreshTeams: PropTypes.func.isRequired,
 
   askForApiAccess: PropTypes.func.isRequired,
   redirectToTeamPage: PropTypes.func.isRequired,
