@@ -12,7 +12,6 @@ import { updateTeamPromise, openModal, closeModal } from '../../../core';
 import { Translation, t } from '../../../locales';
 
 import * as Services from '../../../services';
-import { toastr } from 'react-redux-toastr';
 
 const all = { value: 'All', label: 'All' };
 const allCategories = language => ({ value: 'All', label: t('All categories', language) });
@@ -106,17 +105,9 @@ class ApiListComponent extends Component {
           open: true,
           currentLanguage: this.props.currentLanguage,
           closeModal: this.props.closeModal,
-          createTeam: team => Services.createTeam(team)
-            .then(() => toastr.success(
-              t(
-                'team.created.success',
-                this.props.currentLanguage,
-                false,
-                `team ${team.name} successfully created`,
-                team.name
-              )
-            ))
-            .then(() => this.props.refreshTeams()),
+          updateMembers: this.props.history,
+          postAction: this.props.refreshTeams,
+          history: this.props.history,
           team
         },
         'teamCreation'

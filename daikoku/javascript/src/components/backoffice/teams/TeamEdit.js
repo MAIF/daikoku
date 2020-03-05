@@ -12,7 +12,7 @@ import { AvatarChooser, Spinner } from '../../utils';
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 export class TeamEditForm extends Component {
-  flow = ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom'];
+  flow = ['name', 'description', 'contact', 'avatar', 'avatarFrom'];
 
   schema = {
     _id: {
@@ -102,7 +102,6 @@ export class TeamEditForm extends Component {
               schema={this.schema}
               value={this.props.team}
               onChange={team => this.props.updateTeam(team)}
-              style={{ marginBottom: 100 }}
             />
           </React.Suspense>
         </div>
