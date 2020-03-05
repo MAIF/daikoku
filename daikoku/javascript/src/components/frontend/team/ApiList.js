@@ -462,11 +462,20 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
           {t('your teams', language)}
         </h5>
       </div>
-      <input
-        placeholder={t('find team', language)}
-        className="form-control"
-        onChange={e => setSearchedTeam(e.target.value)}
-      />
+    <div className="input-group">
+        <input
+            placeholder={t('find team', language)}
+            className="form-control"
+            onChange={e => setSearchedTeam(e.target.value)}
+        />
+        <div className="input-group-append">
+            <button
+                className="btn btn-access-negative"
+                onClick={() => createNewTeam()}>
+                <i className="fas fa-plus-square" />
+            </button>
+        </div>
+    </div>
       <div className="d-flex flex-column">
         {_.sortBy(maybeTeams, team => team.name.toLowerCase())
           .slice(0, 5)
@@ -480,13 +489,6 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
               </span>
             );
           })}
-      </div>
-      <div className="col-12">
-        <button
-          className="btn btn-access-negative mb-2"
-          onClick={() => createNewTeam()}>
-          <i className="fas fa-plus-square" /> Create team
-                </button>
       </div>
     </div>
   );
