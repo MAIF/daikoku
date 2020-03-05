@@ -98,6 +98,11 @@ class ApiListComponent extends Component {
     });
   };
 
+  createNewteam = () => {
+    Services.fetchNewTeam()
+      .then(newTeam => console.debug({newTeam})) //todo: display creation form
+  }
+
   redirectToTeam = team => {
     this.props.history.push(`/${team._humanReadableId}/settings`);
   };
@@ -352,6 +357,7 @@ class ApiListComponent extends Component {
                 teams={this.props.myTeams}
                 redirectToTeam={this.redirectToTeam}
                 currentlanguage={this.props.currentLanguage}
+                createNewTeam={this.createNewteam}
               />
             )}
             {!!this.state.tags.length && (
@@ -428,7 +434,7 @@ const Top = props => {
   );
 };
 
-const YourTeams = ({ teams, redirectToTeam, ...props }) => {
+const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
   const [searchedTeam, setSearchedTeam] = useState();
   const maybeTeams = searchedTeam
     ? teams.filter(team => team.name.toLowerCase().includes(searchedTeam))
@@ -460,6 +466,13 @@ const YourTeams = ({ teams, redirectToTeam, ...props }) => {
               </span>
             );
           })}
+      </div>
+      <div className="col-12">
+        <button
+          className="btn btn-access-negative mb-2"
+          onClick={() => createNewTeam()}>
+          <i className="fas fa-plus-square" /> Create team
+                </button>
       </div>
     </div>
   );

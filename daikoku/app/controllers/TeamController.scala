@@ -102,9 +102,9 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def createTeam() = DaikokuAction.async(parse.json) { ctx =>
-    DaikokuAdminOnly(
+    PublicUserAccess(
       AuditTrailEvent(
-        s"@{user.name} try to create team @{team.name} - @{team.id}"))(ctx) {
+        s"@{user.name} have create team @{team.name} - @{team.id}"))(ctx) {
       TeamFormat.reads(ctx.request.body) match {
         case JsError(e) =>
           FastFuture.successful(
