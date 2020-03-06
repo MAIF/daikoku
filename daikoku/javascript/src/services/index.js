@@ -177,8 +177,8 @@ export function myUnreadNotificationsCount() {
   );
 }
 
-export function acceptNotificationOfTeam(teamId, NotificationId) {
-  return fetch(`/api/teams/${teamId}/notifications/${NotificationId}/accept`, {
+export function acceptNotificationOfTeam(NotificationId) {
+  return fetch(`/api/notifications/${NotificationId}/accept`, {
     method: 'PUT',
     credentials: 'include',
     headers: {
@@ -187,8 +187,8 @@ export function acceptNotificationOfTeam(teamId, NotificationId) {
   }).then(r => r.json());
 }
 
-export function rejectNotificationOfTeam(teamId, NotificationId) {
-  return fetch(`/api/teams/${teamId}/notifications/${NotificationId}/reject`, {
+export function rejectNotificationOfTeam(NotificationId) {
+  return fetch(`/api/notifications/${NotificationId}/reject`, {
     method: 'PUT',
     credentials: 'include',
     headers: {

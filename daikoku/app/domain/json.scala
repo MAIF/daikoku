@@ -1638,6 +1638,7 @@ object json {
           ApiKeyDeletionInformationFormat.reads(json)
         case "ApiKeyRotationInProgress" => ApiKeyRotationInProgressFormat.reads(json)
         case "ApiKeyRotationEnded" => ApiKeyRotationEndedFormat.reads(json)
+        case "TeamInvitation" => TeamInvitationFormat.reads(json)
         case str => JsError(s"Bad notification value: $str")
       }
       override def writes(o: NotificationAction) = o match {
@@ -1665,6 +1666,9 @@ object json {
         case p: ApiKeyRotationEnded =>
           ApiKeyRotationEndedFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "ApiKeyRotationEnded")
+        case p: TeamInvitation =>
+          TeamInvitationFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "TeamInvitation")
       }
     }
 
@@ -1812,6 +1816,24 @@ object json {
       "plan" -> o.plan
     )
   }
+  val TeamInvitationFormat = new Format[TeamInvitation] {
+    override def reads(json: JsValue): JsResult[TeamInvitation]  = Try {
+      JsSuccess(
+        TeamInvitation(
+          team = (json \ "team").as(TeamIdFormat),
+          user = (json \ "user").as(UserIdFormat)
+        )
+      )
+    } recover {
+      case e =>
+        JsError(e.getMessage)
+    } get
+
+    override def writes(o: TeamInvitation): JsValue = Json.obj(
+      "team" -> TeamIdFormat.writes(o.team),
+      "user" -> UserIdFormat.writes(o.user),
+    )
+  }
 
   val NotificationStatusFormat: Format[NotificationStatus] =
     new Format[NotificationStatus] {
@@ -1893,7 +1915,7 @@ object json {
             id = (json \ "_id").as(NotificationIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            team = (json \ "team").as(TeamIdFormat),
+            team = (json \ "team").asOpt(TeamIdFormat),
             sender = (json \ "sender").as(UserFormat),
             date =
               (json \ "date").asOpt(DateTimeFormat).getOrElse(DateTime.now()),
@@ -1912,7 +1934,10 @@ object json {
       "_id" -> NotificationIdFormat.writes(o.id),
       "_tenant" -> TenantIdFormat.writes(o.tenant),
       "_deleted" -> o.deleted,
-      "team" -> TeamIdFormat.writes(o.team),
+      "team" -> o.team
+        .map(id => JsString(id.value))
+        .getOrElse(JsNull)
+        .as[JsValue],
       "sender" -> UserFormat.writes(o.sender),
       "date" -> DateTimeFormat.writes(o.date),
       "action" -> NotificationActionFormat.writes(o.action),

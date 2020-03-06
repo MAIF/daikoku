@@ -9,6 +9,8 @@ sealed trait AppError
 object AppError {
   case object ApiNotFound extends AppError
   case object TeamNotFound extends AppError
+  case object UserNotFound extends AppError
+  case object ForbiddenAction extends AppError
   case object OtoroshiSettingsNotFound extends AppError
   case object NotificationNotFound extends AppError
   case object TeamUnauthorized extends AppError
@@ -25,6 +27,7 @@ object AppError {
   def render(error: AppError): mvc.Result = error match {
     case ApiNotFound  => NotFound(Json.obj("error" -> "Api not found"))
     case TeamNotFound => NotFound(Json.obj("error" -> "Team not found"))
+    case UserNotFound => NotFound(Json.obj("error" -> "User not found"))
     case NotificationNotFound =>
       NotFound(Json.obj("error" -> "Notification not found"))
     case OtoroshiSettingsNotFound =>
@@ -48,12 +51,14 @@ object AppError {
       Conflict(Json.obj("error" -> "conflict with subscription request"))
     case ApiKeyRotationConflict => Conflict(Json.obj("error" -> "Api have already setup apikey rotation"))
     case ApiKeyRotationError(e) => BadRequest(e)
+    case ForbiddenAction => Forbidden(Json.obj("error" -> "You're not authorized to do this action"))
 
   }
 
   def toJson(error: AppError) = error match {
     case ApiNotFound          => Json.obj("error" -> "Api not found")
     case TeamNotFound         => Json.obj("error" -> "Team not found")
+    case UserNotFound         => Json.obj("error" -> "User not found")
     case NotificationNotFound => Json.obj("error" -> "Notification not found")
     case OtoroshiSettingsNotFound =>
       Json.obj("error" -> "Otoroshi settings not found")
@@ -74,5 +79,6 @@ object AppError {
       Json.obj("error" -> "conflict with subscription request")
     case ApiKeyRotationConflict => Json.obj("error" -> "conflict, Api have already setup apikey rotation")
     case ApiKeyRotationError(e) => e
+    case ForbiddenAction => Json.obj("error" -> "You're not authorized to do this action")
   }
 }

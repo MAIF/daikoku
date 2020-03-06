@@ -1,28 +1,21 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.TeamUser
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import play.api.libs.json._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class TeamController(DaikokuAction: DaikokuAction,
                      DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
@@ -31,8 +24,9 @@ class TeamController(DaikokuAction: DaikokuAction,
                      cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
+  implicit val mat: ActorMaterializer = env.defaultMaterializer
 
   def team(teamId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
@@ -267,7 +261,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             id = NotificationId(BSONObjectID.generate().stringify),
             tenant = ctx.tenant.id,
             deleted = false,
-            team = team.id,
+            team = Some(team.id),
             sender = ctx.user,
             action = NotificationAction.TeamAccess(team.id)
           )
@@ -351,6 +345,8 @@ class TeamController(DaikokuAction: DaikokuAction,
     }
 
   def addMembersToTeam(teamId: String) = DaikokuAction.async(parse.json) {
+    import cats.implicits._
+
     ctx =>
       val members = (ctx.request.body \ "members").as[JsArray]
       TeamAdminOnly(
@@ -367,19 +363,35 @@ class TeamController(DaikokuAction: DaikokuAction,
             FastFuture.successful(
               Forbidden(Json.obj("error" -> "Team type doesn't accept to add members from this way")))
           case TeamType.Organization =>
-            for {
-              teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)
-              done <- teamRepo.save(
-                team.copy(users = team.users ++ members.value.map(i =>
-                  UserWithPermission(UserId(i.as[String]), TeamUser))))
-              maybeTeam <- teamRepo.findById(team.id)
-            } yield {
-              maybeTeam match {
-                case Some(updatedTeam) =>
-                  Ok(Json.obj("done" -> done, "team" -> updatedTeam.asJson))
-                case None => BadRequest
-              }
-            }
+
+          Source(members.value.toList)
+              .mapAsync(5)(member => {
+                val userId =  UserId(member.as[String])
+
+                val notification = Notification(
+                  id = NotificationId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
+                  team = None,
+                  sender = ctx.user,
+                  action = NotificationAction.TeamInvitation(team.id, userId)
+                )
+
+                for {
+                  maybeUser <- env.dataStore.userRepo.findByIdNotDeleted(userId)
+                  _ <- env.dataStore.notificationRepo.forTenant(ctx.tenant).save(notification)
+                  _ <- maybeUser.traverse(user => ctx.tenant.mailer.send(
+                    s"Somebody want to invit you in his team",
+                    Seq(user.email),
+                    s"${ctx.user.name}, as admin of ${team.name}, wants to invit you in his team. please connect too your profile to accept or reject the invitation."
+                  ))
+                } yield (userId)
+
+              })
+            .runWith(Sink.seq[UserId])
+            .map(users => Ok(Json.obj(
+              "done" -> true,
+              "team" -> team.asJson,
+              "pendingUsers" -> JsArray(users.map(_.asJson)))))
         }
       }
   }

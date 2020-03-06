@@ -64,8 +64,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
       .save(Notification(
         id = NotificationId(BSONObjectID.generate().stringify),
         tenant = tenantId,
-        team = teamId,
-        deleted = false,
+        team = Some(teamId),
         sender = jobUser,
         date = DateTime.now(),
         notificationType = NotificationType.AcceptOnly,
@@ -375,7 +374,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                           val notification = Notification(
                                             id = NotificationId(BSONObjectID.generate().stringify),
                                             tenant = tenant.id,
-                                            team = subscription.team,
+                                            team = Some(subscription.team),
                                             sender = jobUser,
                                             action = NotificationAction.ApiKeyRotationEnded(apk.clientId, api.name, plan.customName.getOrElse(plan.typeName)),
                                             notificationType = NotificationType.AcceptOnly
@@ -514,7 +513,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         val notification = Notification(
                                           id = NotificationId(BSONObjectID.generate().stringify),
                                           tenant = tenant.id,
-                                          team = subscription.team,
+                                          team = Some(subscription.team),
                                           sender = jobUser,
                                           action = NotificationAction.ApiKeyRotationInProgress(apk.clientId, api.name, plan.customName.getOrElse(plan.typeName)),
                                           notificationType = NotificationType.AcceptOnly
@@ -535,7 +534,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         val notification = Notification(
                                           id = NotificationId(BSONObjectID.generate().stringify),
                                           tenant = tenant.id,
-                                          team = subscription.team,
+                                          team = Some(subscription.team),
                                           sender = jobUser,
                                           action = NotificationAction.ApiKeyRotationEnded(apk.clientId, api.name, plan.customName.getOrElse(plan.typeName)),
                                           notificationType = NotificationType.AcceptOnly

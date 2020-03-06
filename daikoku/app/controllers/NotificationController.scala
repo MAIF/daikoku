@@ -2,42 +2,30 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
-import controllers.AppError.{
-  ApiNotFound,
-  NotificationNotFound,
-  TeamNotFound,
-  UserNotTeamAdmin
-}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import controllers.AppError.{ApiNotFound, ForbiddenAction, NotificationNotFound, TeamNotFound, UserNotFound}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
+import fr.maif.otoroshi.daikoku.audit.AuthorizationLevel.NotAuthorized
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand,
-  TeamAccess
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.TeamUser
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.NotificationFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, OtoroshiClient}
 import play.api.Logger
-import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{AbstractController, ControllerComponents, Result}
+import play.api.libs.json.{JsArray, Json}
+import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
 
 import scala.concurrent.Future
 
 class NotificationController(
-    DaikokuAction: DaikokuAction,
-    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
-    env: Env,
-    apiService: ApiService,
-    otoroshiClient: OtoroshiClient,
-    cc: ControllerComponents)
-    extends AbstractController(cc) {
+                              DaikokuAction: DaikokuAction,
+                              DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+                              env: Env,
+                              apiService: ApiService,
+                              otoroshiClient: OtoroshiClient,
+                              cc: ControllerComponents)
+  extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -117,9 +105,9 @@ class NotificationController(
             )))
         Ok(
           Json.obj("notifications" -> notifications._1.map(_.asJson),
-                   "count" -> notifications._2,
-                   "page" -> page,
-                   "pageSize" -> pageSize))
+            "count" -> notifications._2,
+            "page" -> page,
+            "pageSize" -> pageSize))
       }
     }
   }
@@ -136,11 +124,13 @@ class NotificationController(
             .forTenantF(ctx.tenant.id)
           notifications <- notificationRepo.findWithPagination(
             Json.obj(
-              "team" -> Json.obj(
-                "$in" -> JsArray(
-                  myTeams
-                    .filter(t => t.admins().contains(ctx.user.id))
-                    .map(_.id.asJson))),
+              "$or" -> Json.arr(
+                Json.obj("team" -> Json.obj(
+                  "$in" -> JsArray(
+                    myTeams
+                      .filter(t => t.admins().contains(ctx.user.id))
+                      .map(_.id.asJson)))),
+                Json.obj("action.user" -> ctx.user.id.asJson)),
               "status.status" -> NotificationStatus.Pending.toString
             ),
             page,
@@ -149,9 +139,9 @@ class NotificationController(
         } yield {
           Ok(
             Json.obj("notifications" -> notifications._1.map(_.asJson),
-                     "count" -> notifications._2,
-                     "page" -> page,
-                     "pageSize" -> pageSize))
+              "count" -> notifications._2,
+              "page" -> page,
+              "pageSize" -> pageSize))
         }
       }
   }
@@ -175,9 +165,9 @@ class NotificationController(
         } yield {
           Ok(
             Json.obj("notifications" -> notifications._1.map(_.asJson),
-                     "count" -> notifications._2,
-                     "page" -> page,
-                     "pageSize" -> pageSize))
+              "count" -> notifications._2,
+              "page" -> page,
+              "pageSize" -> pageSize))
         }
       }
     }
@@ -201,128 +191,187 @@ class NotificationController(
         } yield {
           Ok(
             Json.obj("notifications" -> notifications._1.map(_.asJson),
-                     "count" -> notifications._2,
-                     "page" -> page,
-                     "pageSize" -> pageSize))
+              "count" -> notifications._2,
+              "page" -> page,
+              "pageSize" -> pageSize))
         }
       }
     }
 
   private def nothing(): Future[Either[AppError, Unit]] =
     FastFuture.successful(Right[AppError, Unit](()))
+
   private def nothingNone[A](): Future[Either[AppError, Option[A]]] =
     FastFuture.successful(Right[AppError, Option[A]](None))
 
-  def acceptNotificationOfTeam(teamId: String, notificationId: String) =
+  def acceptNotification(notificationId: String) =
     DaikokuAction.async { ctx =>
       import cats.data._
       import cats.implicits._
 
-      TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accepted a notification ($notificationId) for team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { team =>
-        val r: EitherT[Future, AppError, Result] = for {
-          notification <- EitherT.fromOptionF(
-            env.dataStore.notificationRepo
-              .forTenant(ctx.tenant.id)
-              .findByIdNotDeleted(notificationId),
-            NotificationNotFound
-          )
-          _ <- notification.action match {
-            case ApiAccess(apiId, teamRequestId) =>
-              EitherT(acceptApiAccess(ctx.tenant, apiId, teamRequestId))
-            case TeamAccess(_) =>
-              EitherT(acceptTeamAccess(ctx.tenant, team, notification.sender))
-            case ApiSubscriptionDemand(apiId, planId, requestedteamId) =>
-              EitherT(
-                acceptApiSubscription(requestedteamId,
-                                      apiId,
-                                      planId,
-                                      ctx.tenant,
-                                      ctx.user))
-            case _ => EitherT(nothing())
-          }
-          acceptedNotification <- EitherT.liftF(
-            env.dataStore.notificationRepo
-              .forTenant(ctx.tenant.id)
-              .save(notification.copy(status = NotificationStatus.Accepted()))
-          )
-        } yield Ok(Json.obj("done" -> acceptedNotification))
+      PublicUserAccess(AuditTrailEvent(
+        s"@{user.name} has accepted a notification ($notificationId)"))(
+        ctx) {
 
-        r.leftMap(AppError.render).value.map(_.merge)
+
+        def accept(notification: Notification, team: Option[Team]): Future[Result] = {
+          val r: EitherT[Future, AppError, Result] = for {
+            _ <- notification.action match {
+              case ApiAccess(apiId, teamRequestId) =>
+                EitherT(acceptApiAccess(ctx.tenant, apiId, teamRequestId))
+              case TeamAccess(_) =>
+                EitherT(acceptTeamAccess(ctx.tenant, team.get, notification.sender))
+              case ApiSubscriptionDemand(apiId, planId, requestedteamId) =>
+                EitherT(
+                  acceptApiSubscription(requestedteamId,
+                    apiId,
+                    planId,
+                    ctx.tenant,
+                    ctx.user))
+              case TeamInvitation(_, user) if user != ctx.user.id => EitherT.leftT[Future, Unit](ForbiddenAction)
+              case TeamInvitation(team, user) => EitherT(acceptTeamInvitation(ctx.tenant, team, user, notification.sender))
+              case _ => EitherT(nothing())
+            }
+            acceptedNotification <- EitherT.liftF(
+              env.dataStore.notificationRepo
+                .forTenant(ctx.tenant.id)
+                .save(notification.copy(status = NotificationStatus.Accepted()))
+            )
+          } yield Ok(Json.obj("done" -> acceptedNotification))
+
+          r.leftMap(AppError.render).value.map(_.merge)
+        }
+
+
+        env.dataStore.notificationRepo
+          .forTenant(ctx.tenant.id)
+          .findByIdNotDeleted(notificationId).flatMap {
+          case None => FastFuture.successful(AppError.render(NotificationNotFound))
+          case Some(notification) => notification.team match {
+            case None => accept(notification, None)
+            case Some(teamId) =>
+              env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(teamId).flatMap {
+                case None => FastFuture.successful(AppError.render(TeamNotFound))
+                case Some(team) =>
+                  team.users.find(u => u.userId == ctx.user.id && u.teamPermission == TeamPermission.Administrator) match {
+                    case None => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not a team admin")))
+                    case Some(_) => accept(notification, Some(team))
+                  }
+              }
+          }
+        }
       }
     }
 
-  def rejectNotificationOfTeam(teamId: String, notificationId: String) =
-    DaikokuAction.async { ctx =>
+  def rejectNotificationOfTeam(teamId: TeamId, notification: Notification)(implicit ctx: DaikokuActionContext[AnyContent]) =
+    TeamAdminOnly(AuditTrailEvent(
+      s"@{user.name} has accessed number of unread notifications for team @{team.name} - @{team.id} => @{notifications}"))(teamId.value, ctx) {
+      team => {
+        val message = notification.action match {
+          case ApiAccess(api, _) =>
+            env.dataStore.apiRepo
+              .forTenant(ctx.tenant.id)
+              .findByIdNotDeleted(api)
+              .map {
+                case None => s"Your request to access to an unrecognized api has been rejected."
+                case Some(api) => s"Your request to access to api ${api.name} has been rejected."
+              }
+          case TeamAccess(team) =>
+            env.dataStore.teamRepo
+              .forTenant(ctx.tenant.id)
+              .findByIdNotDeleted(team)
+              .map {
+                case None => s"Your request to join an unrecognize team has been rejected."
+                case Some(team) => s"Your request to join the ${team.name} has been rejected."
+              }
+          case TeamInvitation(team, user) =>
+            env.dataStore.teamRepo
+              .forTenant(ctx.tenant.id)
+              .findByIdNotDeleted(team)
+              .flatMap {
+                case None => FastFuture.successful(s"Your request to invit an unrecognize user in your team has been rejected.")
+                case Some(team) => env.dataStore.userRepo
+                  .findByIdNotDeleted(user)
+                  .map {
+                    case None => s"Your request to invit an unrecognize user in your team - ${team.name} has been rejected."
+                    case Some(user) => s"Your request to invit ${user.name} in your team - ${team.name} has been rejected."
+                  }
+              }
+          case ApiSubscriptionDemand(apiId, _, _) =>
+            env.dataStore.apiRepo
+              .forTenant(ctx.tenant.id)
+              .findByIdNotDeleted(apiId)
+              .map {
+                case None => s"Your request for an apikey for an unrecognized api has been rejected."
+                case Some(api) => s"Your request for an apikey for ${api.name} has been rejected."
+              }
+          case _ => FastFuture.successful("")
+        }
+
+        for {
+          mailBody <- message
+          _ <- env.dataStore.notificationRepo
+            .forTenant(ctx.tenant.id)
+            .save(notification.copy(status = NotificationStatus.Rejected()))
+          _ <- ctx.tenant.mailer.send(
+            "Your Daikoku request has been rejected.",
+            Seq(notification.sender.email),
+            mailBody)
+        } yield Ok(Json.obj("done" -> true))
+      }
+    }
+
+  def rejectNotificationOfMe(notification: Notification)(implicit ctx: DaikokuActionContext[AnyContent]) =
+    PublicUserAccess(AuditTrailEvent(
+      s"@{user.name} has accessed number of unread notifications for team @{team.name} - @{team.id} => @{notifications}"))(ctx) {
       import cats.data._
       import cats.implicits._
 
-      TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has rejected a notification ($notificationId) for team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { team =>
-        val r: EitherT[Future, AppError, Result] = for {
-          notification <- EitherT.fromOptionF(
-            env.dataStore.notificationRepo
-              .forTenant(ctx.tenant.id)
-              .findByIdNotDeleted(notificationId),
-            NotificationNotFound
-          )
-          mailBodyOpt <- notification.action match {
-            case TeamAccess(_) =>
-              EitherT.rightT[Future, AppError](
-                Some(
-                  s"Your request to join the ${team.name} has been rejected."))
-            case ApiAccess(apiId, _) =>
-              EitherT.liftF(
-                env.dataStore.apiRepo
-                  .forTenant(ctx.tenant.id)
-                  .findByIdNotDeleted(apiId)
-                  .map(
-                    _.fold(Some(
-                      s"Your request to access to an unrecognized api has been rejected."))(
-                      api =>
-                        Some(
-                          s"Your request to access to api ${api.name} has been rejected.")
-                    )
-                  )
-              )
-            case ApiSubscriptionDemand(apiId, _, _) =>
-              EitherT.liftF(
-                env.dataStore.apiRepo
-                  .forTenant(ctx.tenant.id)
-                  .findByIdNotDeleted(apiId)
-                  .map(
-                    _.fold(Some(
-                      s"Your request for an apikey for an unrecognized api has been rejected."))(
-                      api =>
-                        Some(
-                          s"Your request for an apikey for ${api.name} has been rejected.")
-                    )
-                  )
-              )
-            case _ => EitherT(nothingNone[String]())
-          }
-          _ <- mailBodyOpt match {
-            case Some(mailBody) =>
-              EitherT.liftF(
-                ctx.tenant.mailer.send(
-                  "Your Daikoku request has been rejected.",
-                  Seq(notification.sender.email),
-                  mailBody)
-              )
-            case None => EitherT.liftF(FastFuture.successful(()))
-          }
-          _ <- EitherT.liftF(
-            env.dataStore.notificationRepo
-              .forTenant(ctx.tenant.id)
-              .save(notification.copy(status = NotificationStatus.Rejected()))
-          )
-        } yield Ok(Json.obj("done" -> true))
 
-        r.leftMap(AppError.render).value.map(_.merge)
+      val value: EitherT[Future, AppError, String] = notification.action match {
+        case TeamInvitation(team, user) if user == ctx.user.id =>
+          EitherT.liftF(env.dataStore.teamRepo
+            .forTenant(ctx.tenant.id)
+            .findByIdNotDeleted(team)
+            .flatMap {
+              case None => FastFuture.successful(s"Your request to invit an unrecognize user in your team has been rejected.")
+              case Some(team) => env.dataStore.userRepo
+                .findByIdNotDeleted(user)
+                .map {
+                  case None => s"Your request to invit an unrecognize user in your team - ${team.name} has been rejected."
+                  case Some(user) => s"Your request to invit ${user.name} in your team - ${team.name} has been rejected."
+                }
+            })
+        case _ => EitherT.leftT[Future, String](ForbiddenAction)
+      }
+
+      value.map(mailBody => for {
+        _ <- env.dataStore.notificationRepo
+          .forTenant(ctx.tenant.id)
+          .save(notification.copy(status = NotificationStatus.Rejected()))
+        _ <- ctx.tenant.mailer.send(
+          "Your Daikoku request has been rejected.",
+          Seq(notification.sender.email),
+          mailBody)
+      } yield Ok(Json.obj("done" -> true)))
+          .leftMap(t => FastFuture.successful(AppError.render(t)))
+          .value
+          .map(_.merge)
+          .flatten
+    }
+
+  def rejectNotification(notificationId: String) =
+    DaikokuAction.async { ctx =>
+      implicit val context: DaikokuActionContext[AnyContent] = ctx
+
+      env.dataStore.notificationRepo
+        .forTenant(ctx.tenant.id)
+        .findByIdNotDeleted(notificationId).flatMap {
+        case None => FastFuture.successful(AppError.render(NotificationNotFound))
+        case Some(notification) => notification.team match {
+          case None => rejectNotificationOfMe(notification)
+          case Some(team) => rejectNotificationOfTeam(team, notification)
+        }
       }
     }
 
@@ -333,20 +382,20 @@ class NotificationController(
     import cats.implicits._
     val result: EitherT[Future, AppError, Unit] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo
-                                   .forTenant(tenant.id)
-                                   .findByIdNotDeleted(apiId.value),
-                                 ApiNotFound)
+        .forTenant(tenant.id)
+        .findByIdNotDeleted(apiId.value),
+        ApiNotFound)
       team <- EitherT.fromOptionF(env.dataStore.teamRepo
-                                    .forTenant(tenant.id)
-                                    .findByIdNotDeleted(teamRequestId.value),
-                                  TeamNotFound)
+        .forTenant(tenant.id)
+        .findByIdNotDeleted(teamRequestId.value),
+        TeamNotFound)
 
       recipients <- EitherT.liftF(
         env.dataStore.userRepo
           .find(
             Json.obj("_deleted" -> false,
-                     "_id" -> Json.obj(
-                       "$in" -> JsArray(team.users.map(_.asJson).toSeq))))
+              "_id" -> Json.obj(
+                "$in" -> JsArray(team.users.map(_.asJson).toSeq))))
       )
 
       _ <- EitherT.liftF(
@@ -381,6 +430,29 @@ class NotificationController(
     } yield Right(())
   }
 
+  def acceptTeamInvitation(tenant: Tenant,
+                           team: TeamId,
+                           invitedUserId: UserId,
+                           sender: User): Future[Either[AppError, Unit]] = {
+    import cats.data._
+    import cats.implicits._
+
+    val r: EitherT[Future, AppError, Unit] = for {
+      invitedUser <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(invitedUserId), UserNotFound)
+      team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(team), TeamNotFound)
+      _ <- EitherT.liftF(env.dataStore.teamRepo
+        .forTenant(tenant.id)
+        .save(team.copy(
+          users = team.users ++ Set(UserWithPermission(invitedUser.id, TeamUser)))))
+      _ <- EitherT.liftF(tenant.mailer.send(
+        "Your Daikoku request has been accepted.",
+        Seq(sender.email),
+        s"Your request to invit ${invitedUser.name} in the team ${team.name} has been accepted."))
+    } yield Right(Unit)
+
+    r.value
+  }
+
   def acceptApiSubscription(teamRequestId: TeamId,
                             apiId: ApiId,
                             plan: UsagePlanId,
@@ -391,20 +463,20 @@ class NotificationController(
 
     val r: EitherT[Future, AppError, Unit] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo
-                                   .forTenant(tenant.id)
-                                   .findByIdNotDeleted(apiId.value),
-                                 ApiNotFound)
+        .forTenant(tenant.id)
+        .findByIdNotDeleted(apiId.value),
+        ApiNotFound)
       team <- EitherT.fromOptionF(env.dataStore.teamRepo
-                                    .forTenant(tenant.id)
-                                    .findByIdNotDeleted(teamRequestId.value),
-                                  TeamNotFound)
+        .forTenant(tenant.id)
+        .findByIdNotDeleted(teamRequestId.value),
+        TeamNotFound)
 
       recipients <- EitherT.liftF(
         env.dataStore.userRepo
           .find(
             Json.obj("_deleted" -> false,
-                     "_id" -> Json.obj(
-                       "$in" -> JsArray(team.users.map(_.asJson).toSeq))))
+              "_id" -> Json.obj(
+                "$in" -> JsArray(team.users.map(_.asJson).toSeq))))
       )
       //todo: get plan "name" for mail body
       _ <- EitherT(
