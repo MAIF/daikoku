@@ -62,11 +62,13 @@ class NotificationController(
         youHaveUnreadNotifications <- notificationRepo.findNotDeleted(
           Json.obj(
             "status.status" -> "Pending",
-            "team" -> Json.obj(
-              "$in" -> JsArray(
-                myTeams
-                  .filter(t => t.admins().contains(ctx.user.id))
-                  .map(_.id.asJson)))
+            "$or" -> Json.arr(
+              Json.obj("team" -> Json.obj(
+                "$in" -> JsArray(
+                  myTeams
+                    .filter(t => t.admins().contains(ctx.user.id))
+                    .map(_.id.asJson)))),
+              Json.obj("action.user" -> ctx.user.id.asJson))
           )
         )
       } yield {
@@ -86,23 +88,17 @@ class NotificationController(
         notifications <- notificationRepo.findWithPagination(
           Json.obj(
             "_deleted" -> false,
-            "team" -> Json.obj(
-              "$in" -> JsArray(
-                myTeams
-                  .filter(t => t.admins().contains(ctx.user.id))
-                  .map(_.id.asJson)))
+            "$or" -> Json.arr(
+              Json.obj("team" -> Json.obj(
+                "$in" -> JsArray(
+                  myTeams
+                    .filter(t => t.admins().contains(ctx.user.id))
+                    .map(_.id.asJson)))),
+              Json.obj("action.user" -> ctx.user.id.asJson))
           ),
           page,
           pageSize)
       } yield {
-        Logger.debug(
-          Json.prettyPrint(
-            Json.obj(
-              "_deleted" -> false,
-              "team" -> Json.obj("$in" -> JsArray(myTeams
-                .filter(t => t.admins().contains(ctx.user.id))
-                .map(_.id.asJson)))
-            )))
         Ok(
           Json.obj("notifications" -> notifications._1.map(_.asJson),
             "count" -> notifications._2,
