@@ -27,6 +27,7 @@ import 'antd/lib/tooltip/style/index.css';
 export class TeamMembersSimpleComponent extends Component {
   state = {
     addableMembers: [],
+    pendingUsers: [],
     selectedMember: null,
     loading: true,
   };
@@ -37,9 +38,10 @@ export class TeamMembersSimpleComponent extends Component {
 
   updateMembers = team => {
     Promise.all([Services.members(team._id), Services.addableUsersForTeam(team._id)]).then(
-      ([members, addableMembers]) => {
+      ([members, users]) => {
         this.setState({
-          addableMembers: addableMembers.map(m => ({
+          pendingUsers: users.pendingUsers,
+          addableMembers: users.addableUsers.map(m => ({
             label: (
               <div
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -136,23 +138,24 @@ export class TeamMembersSimpleComponent extends Component {
     const member = slug.value;
     this.setState({ selectedMember: member }, () => {
       const teamId = this.props.currentTeam._id;
-      Services.addMembersToTeam(teamId, [member._id]).then(({ done, team }) => {
-        this.setState({ selectedMember: null }, () => {
-          done
-            ? toastr.success(
+      Services.addMembersToTeam(teamId, [member._id])
+        .then(({ done, team }) => {
+          this.setState({ selectedMember: null }, () => {
+            done
+              ? toastr.success(
                 'Success',
                 t(
-                  'member.now.member',
+                  'member.now.invited',
                   this.props.currentLanguage,
                   false,
-                  `${member.name} is now member of your team`,
+                  `${member.name} has been invited as new member of your team`,
                   member.name
                 )
               )
-            : toastr.error('Failure');
-          this.props.updateTeam(team).then(() => this.updateMembers(this.props.currentTeam));
-        });
-      });
+              : toastr.error('Failure');
+          });
+        })
+        .then(() => this.updateMembers(this.props.currentTeam));
     });
   };
 
@@ -218,12 +221,12 @@ export class TeamMembersSimpleComponent extends Component {
       return null;
     }
 
+    const membersAndPendingUsers = [...this.state.members, ...this.state.pendingUsers.map(u => ({...u, isPending: true}))]
     const filteredMembers = this.state.search
-      ? this.state.members.filter(({ name, email }) =>
+      ? membersAndPendingUsers.filter(({ name, email }) =>
           [name, email].some(value => value.toLowerCase().includes(this.state.search))
         )
-      : this.state.members;
-
+      : membersAndPendingUsers;
     return (
       <Can I={manage} a={team} team={this.props.currentTeam} dispatchError={true}>
         <div className="row">
@@ -271,11 +274,24 @@ export class TeamMembersSimpleComponent extends Component {
         </div>
         <PaginatedComponent
           currentLanguage={this.props.currentLanguage}
-          items={_.sortBy(filteredMembers, [member => member.name.toLowerCase()])}
+          items={_.sortBy(filteredMembers, [member => !member.isPending, member => member.name.toLowerCase()])}
           count={15}
           formatter={member => {
             const isAdmin = this.userHavePemission(member, administrator);
             const isApiEditor = this.userHavePemission(member, apiEditor);
+            if (member.isPending) {
+              return <AvatarWithAction
+                key={member._id}
+                avatar={member.picture}
+                infos={
+                  <>
+                    <i className="fas fa-question mr-2" />
+                    <span className="team-member__name">{member.name}</span>
+                  </>
+                }
+                actions={[]}
+              />
+            }
             return (
               <AvatarWithAction
                 key={member._id}

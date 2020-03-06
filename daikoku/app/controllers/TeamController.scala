@@ -290,25 +290,29 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def addableUsersForTeam(teamId: String) = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(
+    TeamAdminOnly(AuditTrailEvent(
       s"@{user.name} has accessed list of addable members to team @{team.name} - @{team.id}"))(
-      ctx) {
-      env.dataStore.teamRepo
-        .forTenant(ctx.tenant.id)
-        .findByIdOrHrId(teamId)
-        .flatMap {
-          case Some(team) =>
-            env.dataStore.userRepo.findAllNotDeleted().map { users =>
-              Ok(
-                JsArray(users
-                  .filterNot(u => team.includeUser(u.id))
-                  .map(_.asSimpleJson)))
-            }
-          case _ =>
-            env.dataStore.userRepo.findAllNotDeleted().map { users =>
-              Ok(JsArray(users.map(_.asSimpleJson)))
-            }
-        }
+      teamId, ctx) { team =>
+
+      val teamUserId = team.users.map(_.userId).toSeq
+
+      for {
+        pendingNotif <- env.dataStore.notificationRepo.forTenant(ctx.tenant).find(Json.obj(
+          "status.status" -> NotificationStatus.Pending.toString,
+          "action.type" -> "TeamInvitation"
+        ))
+        pendingUsersId = pendingNotif
+          .map(_.action)
+          .map(_.asInstanceOf[NotificationAction.TeamInvitation])
+          .map(_.user)
+        pendingUsers <- env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(pendingUsersId.map(_.asJson)))))
+        addableUsers <- env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$nin" -> JsArray(teamUserId.map(_.asJson)))))
+      } yield {
+        Ok(Json.obj(
+          "addableUsers" ->  JsArray(addableUsers.diff(pendingUsers).map(_.asSimpleJson)),
+          "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
+        ))
+      }
     }
   }
 
