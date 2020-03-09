@@ -249,9 +249,10 @@ class NotificationController(
               env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(teamId).flatMap {
                 case None => FastFuture.successful(AppError.render(TeamNotFound))
                 case Some(team) =>
-                  team.users.find(u => u.userId == ctx.user.id && u.teamPermission == TeamPermission.Administrator) match {
-                    case None => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not a team admin")))
-                    case Some(_) => accept(notification, Some(team))
+                  if (ctx.user.isDaikokuAdmin || team.users.exists(u => u.userId == ctx.user.id && u.teamPermission == TeamPermission.Administrator)) {
+                    accept(notification, Some(team))
+                  } else {
+                    FastFuture.successful(Forbidden(Json.obj("error" -> "You're not a team admin")))
                   }
               }
           }

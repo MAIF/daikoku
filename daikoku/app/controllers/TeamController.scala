@@ -389,7 +389,6 @@ class TeamController(DaikokuAction: DaikokuAction,
                     s"${ctx.user.name}, as admin of ${team.name}, wants to invit you in his team. please connect too your profile to accept or reject the invitation."
                   ))
                 } yield (userId)
-
               })
             .runWith(Sink.seq[UserId])
             .map(users => Ok(Json.obj(
