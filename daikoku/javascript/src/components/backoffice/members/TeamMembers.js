@@ -4,6 +4,7 @@ import Select from 'react-select';
 import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
+import classnames from 'classnames';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
@@ -23,6 +24,12 @@ import {
 import { t, Translation } from '../../../locales';
 
 import 'antd/lib/tooltip/style/index.css';
+import { Tabs } from 'antd';
+
+const TABS = {
+  members: "MEMBERS",
+  pending: "PENDING"
+}
 
 export class TeamMembersSimpleComponent extends Component {
   state = {
@@ -30,6 +37,7 @@ export class TeamMembersSimpleComponent extends Component {
     pendingUsers: [],
     selectedMember: null,
     loading: true,
+    tab: TABS.members
   };
 
   componentDidMount() {
@@ -221,12 +229,17 @@ export class TeamMembersSimpleComponent extends Component {
       return null;
     }
 
-    const membersAndPendingUsers = [...this.state.members, ...this.state.pendingUsers.map(u => ({...u, isPending: true}))]
     const filteredMembers = this.state.search
-      ? membersAndPendingUsers.filter(({ name, email }) =>
+      ? this.state.members.filter(({ name, email }) =>
           [name, email].some(value => value.toLowerCase().includes(this.state.search))
         )
-      : membersAndPendingUsers;
+      : this.state.members;
+
+    const filteredPending = this.state.search
+      ? this.state.pendingUsers.filter(({ name, email }) =>
+        [name, email].some(value => value.toLowerCase().includes(this.state.search))
+      )
+      : this.state.pendingUsers;
     return (
       <Can I={manage} a={team} team={this.props.currentTeam} dispatchError={true}>
         <div className="row">
@@ -272,9 +285,40 @@ export class TeamMembersSimpleComponent extends Component {
             </div>
           </Can>
         </div>
-        <PaginatedComponent
+        <div className="container">
+          <div className="row">
+            <div className="col mt-3 onglets">
+              <ul className="nav nav-tabs flex-column flex-sm-row">
+                <li className="nav-item">
+                  <span
+                    className={`nav-link cursor-pointer ${this.state.tab === TABS.members ? 'active' : ''}`}
+                    onClick={() => this.setState({ tab: TABS.members })}>
+                    <Translation i18nkey="Member" language={this.props.currentLanguage} isPlural={true}>
+                      Member
+                    </Translation>
+                  </span>
+                </li>
+                <li className="nav-item">
+                  <span
+                    className={classnames('nav-link cursor-pointer', {
+                      active: this.state.tab === TABS.pending,
+                      disabled: filteredPending.length === 0
+                    })}
+                    onClick={() => this.state.pendingUsers.length > 0 && this.setState({tab: TABS.pending})}>
+                    <Translation
+                      i18nkey="pending"
+                      language={this.props.currentLanguage}>
+                      Pending ({this.state.pendingUsers.length})
+                    </Translation>
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        {this.state.tab === TABS.members && <PaginatedComponent
           currentLanguage={this.props.currentLanguage}
-          items={_.sortBy(filteredMembers, [member => !member.isPending, member => member.name.toLowerCase()])}
+          items={_.sortBy(filteredMembers, [member => member.name.toLowerCase()])}
           count={15}
           formatter={member => {
             const isAdmin = this.userHavePemission(member, administrator);
@@ -345,7 +389,23 @@ export class TeamMembersSimpleComponent extends Component {
               />
             );
           }}
-        />
+        />}
+        {this.state.tab === TABS.pending && <PaginatedComponent
+          currentLanguage={this.props.currentLanguage}
+          items={_.sortBy(filteredPending, [member => member.name.toLowerCase()])}
+          count={15}
+          formatter={member => {
+              return <AvatarWithAction
+                key={member._id}
+                avatar={member.picture}
+                infos={
+                  <span className="team-member__name">{member.name}</span>
+                }
+                actions={[]}
+              />
+            }
+          }
+        />}
       </Can>
     );
   }

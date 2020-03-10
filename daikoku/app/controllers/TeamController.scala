@@ -299,6 +299,7 @@ class TeamController(DaikokuAction: DaikokuAction,
       for {
         pendingNotif <- env.dataStore.notificationRepo.forTenant(ctx.tenant).find(Json.obj(
           "status.status" -> NotificationStatus.Pending.toString,
+          "action.team" -> teamId,
           "action.type" -> "TeamInvitation"
         ))
         pendingUsersId = pendingNotif
