@@ -7,7 +7,7 @@ import { TeamBackOffice, UserBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, asset, daikoku, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
-import { closeModal, openModal } from '../../../core/modal';
+import { openWysywygModal } from '../../../core/modal';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -364,9 +364,8 @@ class AssetsListComponent extends Component {
     })
       .then(response => response.text())
       .then(value =>
-        this.props.openModal(
+        this.props.openWysywygModal(
           {
-            open: true,
             action: value => {
               const textFileAsBlob = new Blob([value], { type: 'text/plain' });
               const file = new File([textFileAsBlob], asset.filename);
@@ -382,13 +381,11 @@ class AssetsListComponent extends Component {
                 );
               }
             },
-            closeModal: this.props.closeModal,
             title: asset.meta.filename,
             value,
             team: this.props.currentTeam,
             currentLanguage: this.props.currentLanguage,
-          },
-          'wysywygModal'
+          }
         )
       );
   };
@@ -603,7 +600,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   closeModal: () => closeModal(),
-  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
+  openWysywygModal: (modalProps) => openWysywygModal(modalProps),
 };
 
 export const AssetsList = connect(mapStateToProps, mapDispatchToProps)(AssetsListComponent);

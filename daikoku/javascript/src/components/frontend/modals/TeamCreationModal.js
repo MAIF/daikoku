@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { PropTypes } from 'prop-types';
 
 import { TeamEditForm } from '../../backoffice/teams/TeamEdit';
-import {t, Translation} from '../../../locales';
+import { t, Translation } from '../../../locales';
 import * as Services from '../../../services';
-import { setError } from '../../../core';
 
 export const TeamCreationModal = props => {
 
@@ -18,8 +17,6 @@ export const TeamCreationModal = props => {
       props.history.push(`/${team._humanReadableId}/settings/members`);
     }
   }, [created])
-
-
 
   return (
     <div className="modal-content">
@@ -38,7 +35,7 @@ export const TeamCreationModal = props => {
           {t(error, props.currentLanguage)}
         </div>}
         <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={props.currentLanguage} />
-        
+
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={props.closeModal}>
@@ -51,7 +48,7 @@ export const TeamCreationModal = props => {
           className="btn btn-outline-success"
           onClick={() => Services.createTeam(team)
             .then(r => {
-              if(r.error) {
+              if (r.error) {
                 return Promise.reject(r)
               } else {
                 return r
@@ -63,7 +60,7 @@ export const TeamCreationModal = props => {
             .catch(e => {
               setError(e.error)
             }
-              )}>
+            )}>
           <Translation i18nkey="Create" language={props.currentLanguage}>
             Create
           </Translation>

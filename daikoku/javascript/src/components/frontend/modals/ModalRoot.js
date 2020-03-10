@@ -1,11 +1,12 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import ReactModal from 'react-modal';
 import ClasseNames from 'classnames';
 
 import * as Modals from './';
+import {closeModal} from '../../../core/modal/actions'
 
-const MODAL_TYPES = {
+export const MODAL_TYPES = {
   teamSelector: Modals.TeamSelectorModal,
   assetSelector: Modals.AssetSelectorModal,
   wysywygModal: Modals.WysiwygModal,
@@ -13,52 +14,42 @@ const MODAL_TYPES = {
   teamCreation: Modals.TeamCreationModal
 };
 
-class ModalContainer extends Component {
-  state = {
-    modalIsOpen: false,
-  };
+const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
+  const [modalIsOpen, setModalIsOpen] = useState(open)
+  const SpecifiedModal = MODAL_TYPES[modalType]
 
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    if (nextProps !== this.props) {
-      this.setState({
-        modalIsOpen: nextProps.modalProps.open,
-      });
-    }
+  useEffect(() => {
+    setModalIsOpen(open)
+  }, [open])
+
+  if (!modalType) {
+    return null;
   }
 
-  closeModal = () => {
-    this.setState({ modalIsOpen: false });
-  };
 
-  render() {
-    const { modalType, modalProps } = this.props;
 
-    if (!this.props.modalType) {
-      return null;
-    }
-    const SpecifiedModal = MODAL_TYPES[modalType];
-
-    console.debug(SpecifiedModal);
-
-    return (
-      <div>
-        <ReactModal
-          isOpen={this.state.modalIsOpen}
-          onRequestClose={this.closeModal}
-          contentLabel="Example Modal"
-          ariaHideApp={false}
-          overlayClassName={ClasseNames('modal fade in show', { right: modalProps.panelView })}
-          bodyOpenClassName="modal-open"
-          className="modal-dialog modal-lg">
-          <SpecifiedModal closeModal={this.closeModal} {...modalProps} />
-        </ReactModal>
-      </div>
-    );
-  }
+  return (
+    <div>
+      <ReactModal
+        isOpen={modalIsOpen}
+        onRequestClose={closeModal}
+        contentLabel="Example Modal"
+        ariaHideApp={false}
+        overlayClassName={ClasseNames('modal fade in show', { right: modalProps.panelView })}
+        bodyOpenClassName="modal-open"
+        className="modal-dialog modal-lg">
+        <SpecifiedModal toto="tata" closeModal={closeModal} {...modalProps} />
+      </ReactModal>
+    </div>
+  );
 }
 
 const mapStateToProps = state => ({
   ...state.modal,
 });
 
-export const ModalRoot = connect(mapStateToProps, null)(ModalContainer);
+const mapDispatchToProps = {
+  closeModal: () => closeModal(),
+}
+
+export const ModalRoot = connect(mapStateToProps, mapDispatchToProps)(ModalContainer);

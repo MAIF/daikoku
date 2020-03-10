@@ -8,7 +8,7 @@ import faker from 'faker';
 
 import { ApiCard } from '../api';
 import { ActionWithTeamSelector, Can, CanIDoAction, manage, api } from '../../utils';
-import { updateTeamPromise, openModal, closeModal } from '../../../core';
+import { updateTeamPromise, openCreationTeamModal } from '../../../core';
 import { Translation, t } from '../../../locales';
 
 import * as Services from '../../../services';
@@ -100,17 +100,14 @@ class ApiListComponent extends Component {
 
   createNewteam = () => {
     Services.fetchNewTeam()
-      .then(team => this.props.openModal(
+      .then(team => this.props.openCreationTeamModal(
         {
-          open: true,
           currentLanguage: this.props.currentLanguage,
-          closeModal: this.props.closeModal,
           updateMembers: this.props.history,
           postAction: this.props.refreshTeams,
           history: this.props.history,
           team
-        },
-        'teamCreation'
+        }
       ))
   }
 
@@ -404,8 +401,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   updateTeam: team => updateTeamPromise(team),
-  closeModal: () => closeModal(),
-  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
+  openCreationTeamModal: (modalProps) => openCreationTeamModal(modalProps),
 };
 
 export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
