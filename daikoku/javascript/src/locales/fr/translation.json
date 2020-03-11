@@ -576,5 +576,12 @@
   "Team with id or name already exist": "Désolé, une équipe avec ce nom existe déjà.",
   "Create team": "Créer une équipe",
   "Team": "Équipe",
-  "New team": "Nouvelle équipe"
+  "New team": "Nouvelle équipe",
+  "Member": {
+    "s": "Membre",
+    "p": "Membres"
+  },
+  "pending members": "En attente (%s)",
+  "team.created": "L'équipe %s à correctement été créée",
+  "team.updated": "L'équipe à correctement été modifiée"
 }

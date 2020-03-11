@@ -78,12 +78,13 @@ class TeamEditForAdministrationComponent extends Component {
   save = () => {
     if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
       Services.createTeam(this.state.team)
-        .then(() => toastr.success("cool"))
+        .then(team => toastr.success(t("team.created", this.props.currentLanguage, false, `Team ${team.name} successfully created`, team.name)))
         .then(() => {
           this.props.history.push(`/settings/teams/${this.state.team._humanReadableId}/members`);
         })
     } else {
-      Services.updateTeam(this.state.team).then(team => this.setState({ team }));
+      Services.updateTeam(this.state.team)
+        .then(team => this.setState({ team }, () => toastr.success(t("team.updated", this.props.currentLanguage, false, "Team successfully updated"))));
     }
   };
 

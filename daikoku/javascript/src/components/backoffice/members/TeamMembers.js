@@ -293,7 +293,7 @@ export class TeamMembersSimpleComponent extends Component {
                   <span
                     className={`nav-link cursor-pointer ${this.state.tab === TABS.members ? 'active' : ''}`}
                     onClick={() => this.setState({ tab: TABS.members })}>
-                    <Translation i18nkey="Member" language={this.props.currentLanguage} isPlural={true}>
+                    <Translation i18nkey="Member" language={this.props.currentLanguage} isPlural={this.state.members.length > 1}>
                       Member
                     </Translation>
                   </span>
@@ -306,8 +306,9 @@ export class TeamMembersSimpleComponent extends Component {
                     })}
                     onClick={() => this.state.pendingUsers.length > 0 && this.setState({tab: TABS.pending})}>
                     <Translation
-                      i18nkey="pending"
-                      language={this.props.currentLanguage}>
+                      i18nkey="pending members"
+                      language={this.props.currentLanguage}
+                      replacements={[this.state.pendingUsers.length]}>
                       Pending ({this.state.pendingUsers.length})
                     </Translation>
                   </span>
