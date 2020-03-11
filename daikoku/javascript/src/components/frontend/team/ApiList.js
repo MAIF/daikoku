@@ -8,7 +8,7 @@ import faker from 'faker';
 
 import { ApiCard } from '../api';
 import { ActionWithTeamSelector, Can, CanIDoAction, manage, api } from '../../utils';
-import { updateTeamPromise } from '../../../core';
+import { updateTeamPromise, openCreationTeamModal } from '../../../core';
 import { Translation, t } from '../../../locales';
 
 import * as Services from '../../../services';
@@ -97,6 +97,17 @@ class ApiListComponent extends Component {
       );
     });
   };
+
+  createNewteam = () => {
+    Services.fetchNewTeam()
+      .then(team => this.props.openCreationTeamModal(
+        {
+          currentLanguage: this.props.currentLanguage,
+          history: this.props.history,
+          team
+        }
+      ))
+  }
 
   redirectToTeam = team => {
     this.props.history.push(`/${team._humanReadableId}/settings`);
@@ -187,7 +198,9 @@ class ApiListComponent extends Component {
   }
 
   handlePageClick = data => {
-    this.setState({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected });
+    debugger
+    this.setState({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected }, 
+      () => console.debug({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected}));
   };
 
   render() {
@@ -352,6 +365,7 @@ class ApiListComponent extends Component {
                 teams={this.props.myTeams}
                 redirectToTeam={this.redirectToTeam}
                 currentlanguage={this.props.currentLanguage}
+                createNewTeam={this.createNewteam}
               />
             )}
             {!!this.state.tags.length && (
@@ -387,6 +401,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   updateTeam: team => updateTeamPromise(team),
+  openCreationTeamModal: (modalProps) => openCreationTeamModal(modalProps),
 };
 
 export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
@@ -398,6 +413,7 @@ ApiListComponent.propTypes = {
   teams: PropTypes.array.isRequired,
   teamVisible: PropTypes.bool,
   team: PropTypes.object,
+  refreshTeams: PropTypes.func.isRequired,
 
   askForApiAccess: PropTypes.func.isRequired,
   redirectToTeamPage: PropTypes.func.isRequired,
@@ -428,7 +444,7 @@ const Top = props => {
   );
 };
 
-const YourTeams = ({ teams, redirectToTeam, ...props }) => {
+const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
   const [searchedTeam, setSearchedTeam] = useState();
   const maybeTeams = searchedTeam
     ? teams.filter(team => team.name.toLowerCase().includes(searchedTeam))
@@ -442,11 +458,20 @@ const YourTeams = ({ teams, redirectToTeam, ...props }) => {
           {t('your teams', language)}
         </h5>
       </div>
-      <input
-        placeholder={t('find team', language)}
-        className="form-control"
-        onChange={e => setSearchedTeam(e.target.value)}
-      />
+    <div className="input-group">
+        <input
+            placeholder={t('find team', language)}
+            className="form-control"
+            onChange={e => setSearchedTeam(e.target.value)}
+        />
+        <div className="input-group-append">
+            <button
+                className="btn btn-access-negative"
+                onClick={() => createNewTeam()}>
+                <i className="fas fa-plus-square" />
+            </button>
+        </div>
+    </div>
       <div className="d-flex flex-column">
         {_.sortBy(maybeTeams, team => team.name.toLowerCase())
           .slice(0, 5)

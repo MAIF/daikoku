@@ -1278,7 +1278,7 @@ class MockController(DaikokuAction: DaikokuAction,
     Notification(
       id = NotificationId(BSONObjectID.generate().stringify),
       tenant = Tenant.Default,
-      team = TeamId(teamId),
+      team = Some(TeamId(teamId)),
       sender = sender,
       date = date,
       notificationType = NotificationType.AcceptOrReject,

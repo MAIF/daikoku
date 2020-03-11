@@ -45,14 +45,14 @@ class NotificationListComponent extends Component {
     );
   }
 
-  acceptNotification(teamId, notificationId) {
+  acceptNotification(notificationId) {
     this.setState({
       notifications: this.state.notifications.map(n => {
         n.fade = n._id === notificationId;
         return n;
       }),
     });
-    Services.acceptNotificationOfTeam(teamId, notificationId)
+    Services.acceptNotificationOfTeam(notificationId)
       .then(() => Services.myNotifications(0, this.state.notifications.length))
       .then(({ notifications, count }) =>
         this.setState(
@@ -67,14 +67,14 @@ class NotificationListComponent extends Component {
       );
   }
 
-  rejectNotification(teamId, notificationId) {
+  rejectNotification(notificationId) {
     this.setState({
       notifications: this.state.notifications.map(n => {
         n.fade = n._id === notificationId;
         return n;
       }),
     });
-    Services.rejectNotificationOfTeam(teamId, notificationId)
+    Services.rejectNotificationOfTeam(notificationId)
       .then(() => Services.myNotifications(0, this.state.notifications.length))
       .then(({ notifications, count }) =>
         this.setState(
@@ -216,7 +216,7 @@ class NotificationListComponent extends Component {
 
                   return (
                     <div key={key}>
-                      <h2>{team.name}</h2>
+                      <h2>{team ? team.name : 'For you'}</h2>
                       {notifs
                         .sort((a, b) => {
                           return b.date - a.date;
@@ -226,8 +226,8 @@ class NotificationListComponent extends Component {
                             key={notification._id}
                             notification={notification}
                             fade={notification.fade}
-                            accept={() => this.acceptNotification(team._id, notification._id)}
-                            reject={() => this.rejectNotification(team._id, notification._id)}
+                            accept={() => this.acceptNotification(notification._id)}
+                            reject={() => this.rejectNotification(notification._id)}
                             getTeam={id => this.state.teams.find(team => team._id === id)}
                             getApi={id => this.state.apis.find(a => a._id === id)}
                             currentLanguage={this.props.currentLanguage}

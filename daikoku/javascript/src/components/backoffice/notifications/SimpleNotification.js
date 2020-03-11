@@ -68,6 +68,14 @@ export class SimpleNotification extends Component {
           title={t('ApiKey rotation ended', this.props.currentLanguage)}
         />
       );
+      case 'TeamInvitation':
+        return (
+          <i
+            className="fas fa-envelope-alt"
+            style={{ marginRight: 5 }}
+            title={t('Team invitation', this.props.currentLanguage)}
+          />
+        )
     }
   };
 
@@ -125,6 +133,8 @@ export class SimpleNotification extends Component {
         return `${sender.name}/${this.props.getTeam(action.team).name}`;
       case 'TeamAccess':
         return sender.name;
+      case 'TeamInvitation': 
+        return this.props.getTeam(action.team).name
       case 'ApiSubscription':
         return `${sender.name}/${this.props.getTeam(action.team).name}`;
       case 'OtoroshiSyncSubscriptionError':
@@ -224,6 +234,16 @@ export class SimpleNotification extends Component {
                       replacements={[notification.action.clientId, notification.action.api, notification.action.plan]}>
                       Your apiKey with clientId {notification.action.clientId} ({notification.action.api}/{notification.action.plan}) 
                       has ended its rotation.
+                    </Translation>
+                  </div>
+                )}
+                {notification.action.type === 'TeamInvitation' && (
+                  <div>
+                    <Translation
+                      i18nkey="team.invitation"
+                      language={this.props.currentLanguage}
+                      replacements={[notification.sender.name, this.props.getTeam(notification.action.team).name]}>
+                      {notification.sender.name}, as admin of {this.props.getTeam(notification.action.team).name}, invit you in his team.
                     </Translation>
                   </div>
                 )}

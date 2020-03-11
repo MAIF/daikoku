@@ -1,13 +1,13 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
 import fr.maif.otoroshi.daikoku.domain.{TeamType, UserWithPermission}
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.Configuration
+import play.api.{Configuration, Logger}
 import play.api.libs.json._
 
 import scala.util.Random
@@ -87,7 +87,7 @@ class TeamControllerSpec(configurationSpec: => Configuration)
   }
 
   "a team administrator" can {
-    "not create or delete a team" in {
+    "create or delete a team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
@@ -97,9 +97,26 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       val respCreation = httpJsonCallBlocking(
         path = "/api/teams",
         method = "POST",
-        body = Some(teamOwner.asJson)
+        body = Some(teamConsumer.asJson)
       )(tenant, session)
-      respCreation.status mustBe 401
+      respCreation.status mustBe 201
+
+      //todo: verifier  qu'il en est l'administrateur
+
+      val respDelete = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumerId.value}",
+        method = "DELETE"
+      )(tenant, session)
+      respDelete.status mustBe 401
+    }
+
+    "delete a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
 
       val respDelete = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}",
@@ -146,7 +163,7 @@ class TeamControllerSpec(configurationSpec: => Configuration)
         "translation" -> Json.obj())
     }
 
-    "add members to his team" in {
+    "invit members to his team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
@@ -165,11 +182,23 @@ class TeamControllerSpec(configurationSpec: => Configuration)
           session)
       respUpdate.status mustBe 200
       (respUpdate.json \ "done").as[Boolean] mustBe true
-      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
-        .reads((respUpdate.json \ "team").as[JsObject])
-      updatedTeam.isSuccess mustBe true
-      updatedTeam.get.users.size mustBe 2
-      updatedTeam.get.users.exists(u => u.userId == userTeamUserId) mustBe true
+
+      //todo: test invit is ok
+      val userSession = loginWithBlocking(user, tenant)
+      val respNotification =
+        httpJsonCallBlocking(
+          path = s"/api/me/notifications")(
+          tenant,
+          userSession)
+      respNotification.status mustBe 200
+
+      val notifications = fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
+        .reads((respNotification.json \ "notifications").as[JsArray])
+      notifications.isSuccess mustBe true
+      notifications.get.size mustBe 1
+      notifications.get.head.action.isInstanceOf[TeamInvitation] mustBe true
+      val action = notifications.get.head.action.asInstanceOf[TeamInvitation]
+      action.team mustBe teamOwnerId
     }
 
     "remove members to his team" in {
@@ -302,6 +331,69 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.showApiKeyOnlyToAdmins mustBe false
     }
+
+    "get addable and pending user for his team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user, userApiEditor),
+        teams = Seq(
+          teamOwner.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))))
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      var respGet =
+        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant, session)
+      respGet.status mustBe 200
+      var addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "addableUsers").as[JsArray])
+      var pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "pendingUsers").as[JsArray])
+
+      pendingUsers.get.size mustBe 0
+      addableUsers.get.size mustBe 2
+
+      var respInvit =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(userTeamUserId.asJson))))(
+          tenant,
+          session)
+      respInvit.status mustBe 200
+
+      respGet =
+        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant, session)
+      respGet.status mustBe 200
+      addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "addableUsers").as[JsArray])
+      pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "pendingUsers").as[JsArray])
+//
+      pendingUsers.get.size mustBe 1
+      addableUsers.get.size mustBe 1
+
+      respInvit =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(userApiEditorId.asJson))))(
+          tenant,
+          session)
+      respInvit.status mustBe 200
+
+      respGet =
+        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant, session)
+      respGet.status mustBe 200
+      addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "addableUsers").as[JsArray])
+      pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "pendingUsers").as[JsArray])
+
+      pendingUsers.get.size mustBe 2
+      addableUsers.get.size mustBe 0
+
+    }
   }
 
   "a user or api editor" can {
@@ -362,7 +454,7 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       val notif = notifications.get.head
       notif.action mustBe TeamAccess(teamConsumerId)
       notif.sender.id mustBe randomUser.id
-      notif.team mustBe teamConsumerId
+      notif.team.get mustBe teamConsumerId
     }
 
     "not add or delete user" in {
@@ -515,7 +607,7 @@ class TeamControllerSpec(configurationSpec: => Configuration)
     }
   }
 
-  "an tenant admin team" can {
+  "a tenant admin team" can {
     "not be deleted" in {
       setupEnvBlocking(
         tenants = Seq(tenant),

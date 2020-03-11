@@ -6,6 +6,7 @@ import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { AvatarChooser, Can, manage, daikoku, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { toastr } from 'react-redux-toastr';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -76,17 +77,19 @@ class TeamEditForAdministrationComponent extends Component {
 
   save = () => {
     if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
-      Services.createTeam(this.state.team).then(team => {
-        this.setState({ team });
-        window.location.reload();
-      });
+      Services.createTeam(this.state.team)
+        .then(team => toastr.success(t("team.created", this.props.currentLanguage, false, `Team ${team.name} successfully created`, team.name)))
+        .then(() => {
+          this.props.history.push(`/settings/teams/${this.state.team._humanReadableId}/members`);
+        })
     } else {
-      Services.updateTeam(this.state.team).then(team => this.setState({ team }));
+      Services.updateTeam(this.state.team)
+        .then(team => this.setState({ team }, () => toastr.success(t("team.updated", this.props.currentLanguage, false, "Team successfully updated"))));
     }
   };
 
   members = () => {
-    this.props.history.push(`/${this.state.team._humanReadableId}/settings/members`);
+    this.props.history.push(`/setting/teams/${this.state.team._humanReadableId}/members`);
   };
 
   componentDidMount() {

@@ -1,28 +1,21 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.TeamUser
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import play.api.libs.json._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class TeamController(DaikokuAction: DaikokuAction,
                      DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
@@ -31,8 +24,9 @@ class TeamController(DaikokuAction: DaikokuAction,
                      cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
+  implicit val mat: ActorMaterializer = env.defaultMaterializer
 
   def team(teamId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
@@ -102,9 +96,9 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def createTeam() = DaikokuAction.async(parse.json) { ctx =>
-    DaikokuAdminOnly(
+    PublicUserAccess(
       AuditTrailEvent(
-        s"@{user.name} try to create team @{team.name} - @{team.id}"))(ctx) {
+        s"@{user.name} have create team @{team.name} - @{team.id}"))(ctx) {
       TeamFormat.reads(ctx.request.body) match {
         case JsError(e) =>
           FastFuture.successful(
@@ -113,6 +107,9 @@ class TeamController(DaikokuAction: DaikokuAction,
         case JsSuccess(team, _) =>
           ctx.setCtxValue("team.id", team.id)
           ctx.setCtxValue("team.name", team.name)
+
+          val teamToSave = team.copy(users = Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator)))
+
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
             .findOneNotDeleted(
@@ -124,12 +121,12 @@ class TeamController(DaikokuAction: DaikokuAction,
             .flatMap {
               case Some(_) =>
                 FastFuture.successful(Conflict(
-                  Json.obj("error" -> "Team with id or hrid already exist")))
+                  Json.obj("error" -> "Team with id or name already exist")))
               case None =>
                 env.dataStore.teamRepo
                   .forTenant(ctx.tenant.id)
-                  .save(team)
-                  .map(_ => Created(team.asJson))
+                  .save(teamToSave)
+                  .map(_ => Created(teamToSave.asJson))
             }
       }
     }
@@ -264,7 +261,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             id = NotificationId(BSONObjectID.generate().stringify),
             tenant = ctx.tenant.id,
             deleted = false,
-            team = team.id,
+            team = Some(team.id),
             sender = ctx.user,
             action = NotificationAction.TeamAccess(team.id)
           )
@@ -293,25 +290,30 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def addableUsersForTeam(teamId: String) = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(
+    TeamAdminOnly(AuditTrailEvent(
       s"@{user.name} has accessed list of addable members to team @{team.name} - @{team.id}"))(
-      ctx) {
-      env.dataStore.teamRepo
-        .forTenant(ctx.tenant.id)
-        .findByIdOrHrId(teamId)
-        .flatMap {
-          case Some(team) =>
-            env.dataStore.userRepo.findAllNotDeleted().map { users =>
-              Ok(
-                JsArray(users
-                  .filterNot(u => team.includeUser(u.id))
-                  .map(_.asSimpleJson)))
-            }
-          case _ =>
-            env.dataStore.userRepo.findAllNotDeleted().map { users =>
-              Ok(JsArray(users.map(_.asSimpleJson)))
-            }
-        }
+      teamId, ctx) { team =>
+
+      val teamUserId = team.users.map(_.userId).toSeq
+
+      for {
+        pendingNotif <- env.dataStore.notificationRepo.forTenant(ctx.tenant).find(Json.obj(
+          "status.status" -> NotificationStatus.Pending.toString,
+          "action.team" -> teamId,
+          "action.type" -> "TeamInvitation"
+        ))
+        pendingUsersId = pendingNotif
+          .map(_.action)
+          .map(_.asInstanceOf[NotificationAction.TeamInvitation])
+          .map(_.user)
+        pendingUsers <- env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(pendingUsersId.map(_.asJson)))))
+        addableUsers <- env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$nin" -> JsArray(teamUserId.map(_.asJson)))))
+      } yield {
+        Ok(Json.obj(
+          "addableUsers" ->  JsArray(addableUsers.diff(pendingUsers).map(_.asSimpleJson)),
+          "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
+        ))
+      }
     }
   }
 
@@ -348,6 +350,8 @@ class TeamController(DaikokuAction: DaikokuAction,
     }
 
   def addMembersToTeam(teamId: String) = DaikokuAction.async(parse.json) {
+    import cats.implicits._
+
     ctx =>
       val members = (ctx.request.body \ "members").as[JsArray]
       TeamAdminOnly(
@@ -364,19 +368,34 @@ class TeamController(DaikokuAction: DaikokuAction,
             FastFuture.successful(
               Forbidden(Json.obj("error" -> "Team type doesn't accept to add members from this way")))
           case TeamType.Organization =>
-            for {
-              teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)
-              done <- teamRepo.save(
-                team.copy(users = team.users ++ members.value.map(i =>
-                  UserWithPermission(UserId(i.as[String]), TeamUser))))
-              maybeTeam <- teamRepo.findById(team.id)
-            } yield {
-              maybeTeam match {
-                case Some(updatedTeam) =>
-                  Ok(Json.obj("done" -> done, "team" -> updatedTeam.asJson))
-                case None => BadRequest
-              }
-            }
+
+          Source(members.value.toList)
+              .mapAsync(5)(member => {
+                val userId =  UserId(member.as[String])
+
+                val notification = Notification(
+                  id = NotificationId(BSONObjectID.generate().stringify),
+                  tenant = ctx.tenant.id,
+                  team = None,
+                  sender = ctx.user,
+                  action = NotificationAction.TeamInvitation(team.id, userId)
+                )
+
+                for {
+                  maybeUser <- env.dataStore.userRepo.findByIdNotDeleted(userId)
+                  _ <- env.dataStore.notificationRepo.forTenant(ctx.tenant).save(notification)
+                  _ <- maybeUser.traverse(user => ctx.tenant.mailer.send(
+                    s"Somebody want to invit you in his team",
+                    Seq(user.email),
+                    s"${ctx.user.name}, as admin of ${team.name}, wants to invit you in his team. please connect too your profile to accept or reject the invitation."
+                  ))
+                } yield (userId)
+              })
+            .runWith(Sink.seq[UserId])
+            .map(users => Ok(Json.obj(
+              "done" -> true,
+              "team" -> team.asJson,
+              "pendingUsers" -> JsArray(users.map(_.asJson)))))
         }
       }
   }

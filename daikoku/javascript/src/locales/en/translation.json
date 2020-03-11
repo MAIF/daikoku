@@ -573,5 +573,16 @@
     "Force apikey auto-rotation": "Force apikey auto-rotation",
     "ApiKey": "ApiKey",
     "Integration token": "Integration token",
-    "Security": "Security"
+    "Security": "Security",
+    "Team with id or name already exist": "Sorry, a team with this name already exists.",
+    "Create team": "Create team",
+    "Team": "Team",
+    "New team": "New team",
+    "Member": {
+        "s": "Member",
+        "p": "Members"
+    },
+    "Pending members": "Pending (%s)",
+    "team.created": "Team %s successfully created",
+    "team.updated": "Team successfully updated"
 }

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useState } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
@@ -11,26 +11,18 @@ import { AvatarChooser, Spinner } from '../../utils';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-export class TeamEditComponent extends Component {
-  state = {
-    team: null,
-    tab: 'infos',
-  };
-
-  flow =
-    window.location.pathname.indexOf('/edition') === -1
-      ? ['_id', '_tenant', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata']
-      : ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'];
+export class TeamEditForm extends Component {
+  flow = ['name', 'description', 'contact', 'avatar', 'avatarFrom'];
 
   schema = {
     _id: {
       type: 'string',
-      props: { label: t('Id', this.props.currentLanguage, false, 'Id'), disabled: true },
+      props: { label: t('Id', this.props.currentLanguage), disabled: true },
     },
     _tenant: {
       type: 'select',
       props: {
-        label: t('Tenant', this.props.currentLanguage, false, 'Id'),
+        label: t('Tenant', this.props.currentLanguage),
         valuesFrom: '/api/tenants',
         transformer: tenant => ({ label: tenant.name, value: tenant._id }),
       },
@@ -38,11 +30,11 @@ export class TeamEditComponent extends Component {
     type: {
       type: 'select',
       props: {
-        label: t('Type', this.props.currentLanguage, false, 'Id'),
+        label: t('Type', this.props.currentLanguage),
         possibleValues: [
-          { label: t('Personal', this.props.currentLanguage, false, 'Id'), value: 'Personal' },
+          { label: t('Personal', this.props.currentLanguage), value: 'Personal' },
           {
-            label: t('Organization', this.props.currentLanguage, false, 'Id'),
+            label: t('Organization', this.props.currentLanguage),
             value: 'Organization',
           },
         ],
@@ -50,87 +42,38 @@ export class TeamEditComponent extends Component {
     },
     name: {
       type: 'string',
-      props: { label: t('Name', this.props.currentLanguage, false, 'Id') },
+      props: { label: t('Name', this.props.currentLanguage) },
     },
     description: {
       type: 'string',
-      props: { label: t('Description', this.props.currentLanguage, false, 'Id') },
+      props: { label: t('Description', this.props.currentLanguage) },
     },
     contact: {
       type: 'string',
-      props: { label: t('Team contact', this.props.currentLanguage, false, 'Id') },
+      props: { label: t('Team contact', this.props.currentLanguage) },
     },
     avatar: {
       type: 'string',
-      props: { label: t('Team avatar', this.props.currentLanguage, false, 'Id') },
+      props: { label: t('Team avatar', this.props.currentLanguage) },
     },
     avatarFrom: {
       type: AvatarChooser,
       props: {
-        team: () => this.state.team,
+        team: () => this.props.team,
         currentLanguage: this.props.currentLanguage,
       },
-    },
-    metadata: {
-      type: 'object',
-      visible: () => window.location.pathname.indexOf('/edition') === -1,
-      props: {
-        label: t('Metadata', this.props.currentLanguage, false, 'Id'),
-      },
-    },
-  };
-
-  componentDidMount() {
-    this.setState({ team: { ...this.props.currentTeam } });
-  }
-
-  save = () => {
-    if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
-      Services.createTeam(this.state.team).then(team => {
-        this.setState({ team }, () =>
-          toastr.success(
-            t(
-              'team.created.success',
-              this.props.currentLanguage,
-              false,
-              `team ${team.name} successfully created`,
-              team.name
-            )
-          )
-        );
-        window.location.reload();
-      });
-    } else {
-      Services.updateTeam(this.state.team).then(team => {
-        this.setState({ team }, () => {
-          toastr.success(
-            t(
-              'team.updated.success',
-              this.props.currentLanguage,
-              false,
-              `team ${team.name} successfully updated`,
-              team.name
-            )
-          );
-          this.props.updateTeam(team);
-        });
-      });
     }
   };
 
-  members = () => {
-    this.props.history.push(`/${this.state.team._humanReadableId}/settings/members`);
-  };
-
   render() {
-    if (!this.state.team) {
+    if (!this.props.team) {
       return null;
     }
 
     return (
-      <TeamBackOffice>
+      <>
         <div className="row d-flex justify-content-start align-items-center">
-          {this.state.team && (
+          {this.props.team && (
             <div
               style={{
                 width: '100px',
@@ -145,73 +88,95 @@ export class TeamEditComponent extends Component {
               }}>
               <img
                 style={{ width: '100%', height: 'auto' }}
-                src={this.state.team.avatar}
+                src={this.props.team.avatar}
                 alt="avatar"
               />
             </div>
           )}
-          <h1 className="h1-rwd-reduce ml-2">Team - {this.state.team.name}</h1>
+          <h1 className="h1-rwd-reduce ml-2">
+            {this.props.team.name}
+          </h1>
         </div>
         <div className="row">
           <React.Suspense fallback={<Spinner />}>
             <LazyForm
               flow={this.flow}
               schema={this.schema}
-              value={this.state.team}
-              onChange={team => this.setState({ team })}
-              style={{ marginBottom: 100 }}
+              value={this.props.team}
+              onChange={team => this.props.updateTeam(team)}
             />
           </React.Suspense>
         </div>
-        <div className="row form-back-fixedBtns">
-          <a
-            className="btn btn-outline-primary"
-            href="#"
-            onClick={() => this.props.history.goBack()}>
-            <i className="fas fa-chevron-left" />
-            <Translation i18nkey="Back" language={this.props.currentLanguage}>
-              Back
-            </Translation>
-          </a>
-          <button
-            style={{ marginLeft: 5 }}
-            type="button"
-            className="btn btn-outline-primary"
-            disabled={this.state.create}
-            onClick={this.members}>
-            <span>
-              <i className="fas fa-users mr-1" />
-              <Translation i18nkey="Members" language={this.props.currentLanguage}>
-                Members
-              </Translation>
-            </span>
-          </button>
-          <button
-            style={{ marginLeft: 5 }}
-            type="button"
-            className="btn btn-outline-success"
-            onClick={this.save}>
-            {!this.state.create && (
-              <span>
-                <i className="fas fa-save mr-1" />
-                <Translation i18nkey="Save" language={this.props.currentLanguage}>
-                  Save
-                </Translation>
-              </span>
-            )}
-            {this.state.create && (
-              <span>
-                <i className="fas fa-save mr-1" />
-                <Translation i18nkey="Create" language={this.props.currentLanguage}>
-                  Create
-                </Translation>
-              </span>
-            )}
-          </button>
-        </div>
-      </TeamBackOffice>
+      </>
     );
   }
+}
+
+
+
+
+
+const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
+  const [team, setTeam] = useState(currentTeam)
+
+
+  const members = () => {
+    history.push(`/${team._humanReadableId}/settings/members`);
+  };
+
+  const save = () => {
+    Services.updateTeam(team)
+      .then(() => toastr.success(
+        t(
+          'team.updated.success',
+          currentLanguage,
+          false,
+          `team ${team.name} successfully updated`,
+          team.name
+        )
+      ));
+  };
+
+  return (
+    <TeamBackOffice>
+      <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={currentLanguage} />
+      <div className="row form-back-fixedBtns">
+        <a
+          className="btn btn-outline-primary"
+          href="#"
+          onClick={() => history.goBack()}>
+          <i className="fas fa-chevron-left" />
+          <Translation i18nkey="Back" language={currentLanguage}>
+            Back
+            </Translation>
+        </a>
+        <button
+          style={{ marginLeft: 5 }}
+          type="button"
+          className="btn btn-outline-primary"
+          onClick={members}>
+          <span>
+            <i className="fas fa-users mr-1" />
+            <Translation i18nkey="Members" language={currentLanguage}>
+              Members
+              </Translation>
+          </span>
+        </button>
+        <button
+          style={{ marginLeft: 5 }}
+          type="button"
+          className="btn btn-outline-success"
+          onClick={save}>
+          <span>
+            <i className="fas fa-save mr-1" />
+            <Translation i18nkey="Save" language={currentLanguage}>
+              Save
+            </Translation>
+          </span>
+        </button>
+      </div>
+    </TeamBackOffice>
+  )
 }
 
 const mapStateToProps = state => ({

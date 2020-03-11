@@ -1,13 +1,12 @@
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
-import { closeModal, openModal } from '../../core/modal';
+import { openTeamSelectorModal } from '../../core/modal';
 import { connect } from 'react-redux';
 
 class ActionWithTeamSelectorComponent extends Component {
   openTeamSelectorModal = () => {
-    this.props.openModal(
+    this.props.openTeamSelectorModal(
       {
-        open: true,
         allTeamSelector: this.props.withAllTeamSelector,
         title: this.props.title,
         description: this.props.description,
@@ -16,21 +15,13 @@ class ActionWithTeamSelectorComponent extends Component {
         pendingTeams: this.props.pendingTeams,
         acceptedTeams: this.props.authorizedTeams,
         action: teams => this.props.action(teams),
-        closeModal: this.props.closeModal,
         allowMultipleDemand: this.props.allowMultipleDemand,
         currentLanguage: this.props.currentLanguage
-      },
-      'teamSelector'
+      }
     );
   };
 
   render() {
-    // console.debug({
-    //   1: !this.props.allowMultipleDemand,
-    //   2: this.props.teams.length === 1,
-    //   3: this.props.pendingTeams.includes(this.props.teams[0]._id),
-    //   4: this.props.authorizedTeams.includes(this.props.teams[0]._id)
-    // })
     if (
       !this.props.allowMultipleDemand &&
       this.props.teams.length === 1 &&
@@ -71,8 +62,7 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = {
-  closeModal: () => closeModal(),
-  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
+  openTeamSelectorModal: (modalProps) => openTeamSelectorModal(modalProps),
 };
 
 export const ActionWithTeamSelector = connect(

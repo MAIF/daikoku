@@ -246,10 +246,11 @@ GET     /api/teams/:teamId/notifications/unread-count   fr.maif.otoroshi.daikoku
 GET     /api/teams/:teamId/notifications/all            fr.maif.otoroshi.daikoku.ctrls.NotificationController.notificationOfTeam(teamId, page: Int ?= 0, pageSize: Int ?= 10)
 ### NoDocs ###
 GET     /api/teams/:teamId/notifications                fr.maif.otoroshi.daikoku.ctrls.NotificationController.untreatedNotificationOfTeam(teamId, page: Int ?= 0, pageSize: Int ?= 10)
+
 ### NoDocs ###
-PUT     /api/teams/:teamId/notifications/:id/accept     fr.maif.otoroshi.daikoku.ctrls.NotificationController.acceptNotificationOfTeam(teamId, id)
+PUT     /api/notifications/:id/accept                   fr.maif.otoroshi.daikoku.ctrls.NotificationController.acceptNotification(id)
 ### NoDocs ###
-PUT     /api/teams/:teamId/notifications/:id/reject     fr.maif.otoroshi.daikoku.ctrls.NotificationController.rejectNotificationOfTeam(teamId, id)
+PUT     /api/notifications/:id/reject                   fr.maif.otoroshi.daikoku.ctrls.NotificationController.rejectNotification(id)
 
 ### NoDocs ###
 POST    /api/oidc/_fetchConfig                          fr.maif.otoroshi.daikoku.ctrls.TenantController.fetchOpenIdConfiguration()

@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import Popover from 'react-popover';
 
 import * as Services from '../../../services';
-import { openModal, closeModal } from '../../../core/modal/actions';
+import { openAssetSelectorModal } from '../../../core/modal/actions';
 import { t, Translation } from '../../../locales';
 
 export const MimeTypeFilter = {
@@ -262,18 +262,15 @@ export class AssetChooserComponent extends Component {
         type="button"
         className="btn btn-access-negative ml-1"
         onClick={() =>
-          this.props.openModal(
+          this.props.openAssetSelectorModal(
             {
               open: true,
               assets: this.state.assets,
               onSelect: asset => this.props.onSelect(asset),
-              closeModal: this.props.closeModal,
               onlyPreview: this.props.onlyPreview,
               panelView: true,
               currentLanguage: this.props.currentLanguage,
-            },
-            'assetSelector',
-            true
+            }
           )
         }>
         <i
@@ -293,8 +290,7 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = {
-  closeModal: () => closeModal(),
-  openModal: (modalProps, modalType) => openModal({ modalProps, modalType }),
+  openAssetSelectorModal: (modalProps) => openAssetSelectorModal(modalProps),
 };
 
 export const AssetChooserByModal = connect(

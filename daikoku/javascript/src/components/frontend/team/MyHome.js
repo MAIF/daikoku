@@ -118,6 +118,7 @@ class MyHomeComponent extends Component {
           redirectToApiPage={this.redirectToApiPage}
           redirectToEditPage={this.redirectToEditPage}
           redirectToTeamPage={this.redirectToTeamPage}
+          refreshTeams={() => Services.myTeams().then(myTeams => this.setState({ myTeams}))}
           showTeam={true}
         />
       </main>

@@ -2,7 +2,7 @@ package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.SubscriptionProcess.Manual
@@ -36,7 +36,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
   val treatedNotification = Notification(
     id = NotificationId("treated-notification"),
     tenant = tenant.id,
-    team = teamOwnerId,
+    team = Some(teamOwnerId),
     sender = user,
     notificationType = AcceptOrReject,
     action = ApiAccess(defaultApi.id, teamConsumerId),
@@ -45,7 +45,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
   val untreatedNotification = Notification(
     id = NotificationId("untreated-notification"),
     tenant = tenant.id,
-    team = teamOwnerId,
+    team = Some(teamOwnerId),
     sender = user,
     notificationType = AcceptOrReject,
     action = ApiAccess(defaultApi.id, teamConsumerId)
@@ -162,7 +162,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/accept",
+          s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -191,7 +191,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/reject",
+          s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -219,7 +219,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/accept",
+          s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -249,7 +249,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/reject",
+          s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -301,7 +301,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/accept",
+          s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -352,7 +352,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/reject",
+          s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -423,7 +423,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
     "accept notification - team access" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(daikokuAdmin),
+        users = Seq(daikokuAdmin, userAdmin),
         teams = Seq(
           teamOwner.copy(
             users = Set(UserWithPermission(userTeamAdminId, Administrator)))),
@@ -434,7 +434,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/accept",
+          s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -463,7 +463,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/reject",
+          s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -491,7 +491,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/accept",
+          s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -521,7 +521,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/reject",
+          s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -573,7 +573,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/accept",
+          s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -624,7 +624,7 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/reject",
+          s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -725,43 +725,104 @@ class NotificationControllerSpec(configurationSpec: => Configuration)
       resp.status mustBe 200
       (resp.json \ "count").as[Long] mustBe 0
     }
-    "not accept any notification" in {
+    "not accept any \"team\" notification except teamInvitation" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(user),
+        users = Seq(user, userAdmin),
         teams = Seq(
+          teamConsumer.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
           teamOwner.copy(
             users = Set(UserWithPermission(userTeamAdminId, Administrator)))),
         apis = Seq(defaultApi),
         notifications =
-          Seq(untreatedNotification.copy(action = TeamAccess(teamOwnerId)))
+          Seq(
+            untreatedNotification.copy(action = TeamAccess(teamOwnerId)),
+            Notification(
+              id = NotificationId("untreated-team-invitation"),
+              tenant = tenant.id,
+              team = None,
+              sender = userAdmin,
+              notificationType = AcceptOrReject,
+              action = TeamInvitation(teamConsumerId, user.id)
+            ))
       )
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/accept",
+          s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 403
+
+      val respInvit = httpJsonCallBlocking(
+        path =
+          s"/api/notifications/untreated-team-invitation/accept",
+        method = "PUT"
+      )(tenant, session)
+      respInvit.status mustBe 200
+
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+      val getTeam = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/_full"
+      )(tenant, adminSession)
+      getTeam.status mustBe 200
+      val maybeUsers = fr.maif.otoroshi.daikoku.domain.json.SetUserWithPermissionFormat
+        .reads((getTeam.json \ "users").as[JsArray])
+
+      maybeUsers.isSuccess mustBe true
+      maybeUsers.get.size mustBe 2
+      maybeUsers.get.exists(value => value.userId == user.id) mustBe true
     }
-    "not reject any notification" in {
+    "not reject any notification exept teamInvitation" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(user),
+        users = Seq(user, userAdmin),
         teams = Seq(
+          teamConsumer.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
           teamOwner.copy(
             users = Set(UserWithPermission(userTeamAdminId, Administrator)))),
         apis = Seq(defaultApi),
         notifications =
-          Seq(untreatedNotification.copy(action = TeamAccess(teamOwnerId)))
+          Seq(
+            untreatedNotification.copy(action = TeamAccess(teamOwnerId)),
+            Notification(
+              id = NotificationId("untreated-team-invitation"),
+              tenant = tenant.id,
+              team = None,
+              sender = userAdmin,
+              notificationType = AcceptOrReject,
+              action = TeamInvitation(teamConsumerId, user.id)
+            )
+          )
       )
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/notifications/${untreatedNotification.id.value}/reject",
+          s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 403
+
+      val respInvit = httpJsonCallBlocking(
+        path =
+          s"/api/notifications/untreated-team-invitation/reject",
+        method = "PUT"
+      )(tenant, session)
+      respInvit.status mustBe 200
+
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+      val getTeam = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/_full"
+      )(tenant, adminSession)
+      getTeam.status mustBe 200
+      val maybeUsers = fr.maif.otoroshi.daikoku.domain.json.SetUserWithPermissionFormat
+        .reads((getTeam.json \ "users").as[JsArray])
+
+      maybeUsers.isSuccess mustBe true
+      maybeUsers.get.size mustBe 1
+      maybeUsers.get.exists(value => value.userId == user.id) mustBe false
     }
 
   }

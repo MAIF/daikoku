@@ -1219,6 +1219,8 @@ object NotificationAction {
 
   case class TeamAccess(team: TeamId) extends NotificationAction
 
+  case class TeamInvitation(team: TeamId, user: UserId) extends NotificationAction
+
   case class ApiSubscriptionDemand(api: ApiId, plan: UsagePlanId, team: TeamId)
       extends NotificationAction
 
@@ -1237,8 +1239,7 @@ object NotificationAction {
                "errMessage" -> message,
                "api" -> api.asJson)
   }
-  case class ApiKeyDeletionInformation(api: String, clientId: String)
-      extends NotificationAction
+  case class ApiKeyDeletionInformation(api: String, clientId: String) extends NotificationAction
 
   case class ApiKeyRotationInProgress(clientId: String, api: String, plan: String) extends NotificationAction
 
@@ -1262,7 +1263,7 @@ case class Notification(
     id: NotificationId,
     tenant: TenantId,
     deleted: Boolean = false,
-    team: TeamId,
+    team: Option[TeamId],
     sender: User,
     date: DateTime = DateTime.now(),
     notificationType: NotificationType = NotificationType.AcceptOrReject,

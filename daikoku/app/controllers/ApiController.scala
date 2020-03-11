@@ -528,7 +528,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     val notification = Notification(
       id = NotificationId(BSONObjectID.generate().stringify),
       tenant = tenant.id,
-      team = api.team,
+      team = Some(api.team),
       deleted = false,
       sender = user,
       action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id)
@@ -1047,7 +1047,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     val notification = Notification(
       id = NotificationId(BSONObjectID.generate().stringify),
       tenant = ctx.tenant.id,
-      team = api.team,
+      team = Some(api.team),
       sender = ctx.user,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
@@ -1385,7 +1385,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         (tuple._1, subscription, Notification(
           id = NotificationId(BSONObjectID.generate().stringify),
           tenant = tenant.id,
-          team = subscription.team,
+          team = Some(subscription.team),
           sender = user,
           notificationType = NotificationType.AcceptOnly,
           action = NotificationAction.ApiKeyDeletionInformation(api.name, subscription.apiKey.clientId)

@@ -1,74 +1,68 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Pagination from 'react-paginate';
 import classNames from 'classnames';
 import { t } from '../../locales';
 
-export class PaginatedComponent extends Component {
-  state = {
-    selectedPage: 0,
-    offset: 0,
-    pageNumber: this.props.count || 10,
-    itemsCount: this.props.items.length,
+export const PaginatedComponent = (props) => {
+
+  const [selectedPage, setSelectedPage] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [pageNumber, setPageNumber] = useState(props.count || 10);
+  const [itemCount, setItemCount] = useState(props.items.length)
+
+  useEffect(() => {
+    setOffset(selectedPage * pageNumber)
+  }, [selectedPage])
+
+
+  const handlePageClick = data => {
+    setSelectedPage(data.selected)
   };
 
-  static getDerivedStateFromProps(props, state) {
-    if (state.itemsCount !== props.items.length) {
-      return { selectedPage: 0, offset: 0 };
-    } else {
-      return null;
-    }
-  }
+  const pagedItems = props.items.slice(
+    offset,
+    offset + pageNumber
+  );
 
-  handlePageClick = data => {
-    this.setState({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected });
-  };
+  return (
+    <div className="section p-2">
+      <div className="row flex-column">
+        <div
+          className={classNames('d-flex flex-wrap', {
+            'flex-wrap': props.wrap,
+            'flex-column': props.columnMode,
+            'flex-column-reverse': props.columnMode && props.reverse,
+            'flex-row': !props.columnMode,
+            'flex-row-reverse': !props.columnMode && props.reverse,
+          })}>
+          {pagedItems.map(item => {
+            if (React.isValidElement(item)) {
+              return item;
+            }
 
-  render() {
-    const pagedItems = this.props.items.slice(
-      this.state.offset,
-      this.state.offset + this.state.pageNumber
-    );
-
-    return (
-      <div className="section p-2">
-        <div className="row flex-column">
-          <div
-            className={classNames('d-flex flex-wrap', {
-              'flex-wrap': this.props.wrap,
-              'flex-column': this.props.columnMode,
-              'flex-column-reverse': this.props.columnMode && this.props.reverse,
-              'flex-row': !this.props.columnMode,
-              'flex-row-reverse': !this.props.columnMode && this.props.reverse,
-            })}>
-            {pagedItems.map(item => {
-              if (React.isValidElement(item)) {
-                return item;
-              }
-
-              return this.props.formatter(item);
-            })}
-          </div>
-          <div className="apis__pagination d-flex justify-content-center" style={{ width: '100%' }}>
-            <Pagination
-              previousLabel={this.props.previousLabel || t('Previous', this.props.currentLanguage)}
-              nextLabel={this.props.nextLabel || t('Next', this.props.currentLanguage)}
-              breakLabel={this.props.breakLabel || '...'}
-              breakClassName={'break'}
-              pageCount={Math.ceil(this.props.items.length / this.state.pageNumber)}
-              marginPagesDisplayed={1}
-              pageRangeDisplayed={5}
-              onPageChange={this.handlePageClick}
-              containerClassName={'pagination'}
-              pageClassName={'page-selector'}
-              forcePage={this.state.selectedPage}
-              activeClassName={'active'}
-            />
-          </div>
+            return props.formatter(item);
+          })}
+        </div>
+        <div className="apis__pagination d-flex justify-content-center" style={{ width: '100%' }}>
+          <Pagination
+            previousLabel={props.previousLabel || t('Previous', props.currentLanguage)}
+            nextLabel={props.nextLabel || t('Next', props.currentLanguage)}
+            breakLabel={props.breakLabel || '...'}
+            breakClassName={'break'}
+            pageCount={Math.ceil(props.items.length / pageNumber)}
+            marginPagesDisplayed={1}
+            pageRangeDisplayed={5}
+            onPageChange={data => handlePageClick(data)}
+            containerClassName={'pagination'}
+            pageClassName={'page-selector'}
+            forcePage={selectedPage}
+            activeClassName={'active'}
+          />
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 PaginatedComponent.propTypes = {

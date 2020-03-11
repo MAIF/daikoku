@@ -4,6 +4,7 @@ import Select from 'react-select';
 import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
+import classnames from 'classnames';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
@@ -23,12 +24,20 @@ import {
 import { t, Translation } from '../../../locales';
 
 import 'antd/lib/tooltip/style/index.css';
+import { Tabs } from 'antd';
+
+const TABS = {
+  members: "MEMBERS",
+  pending: "PENDING"
+}
 
 export class TeamMembersSimpleComponent extends Component {
   state = {
     addableMembers: [],
+    pendingUsers: [],
     selectedMember: null,
     loading: true,
+    tab: TABS.members
   };
 
   componentDidMount() {
@@ -37,9 +46,10 @@ export class TeamMembersSimpleComponent extends Component {
 
   updateMembers = team => {
     Promise.all([Services.members(team._id), Services.addableUsersForTeam(team._id)]).then(
-      ([members, addableMembers]) => {
+      ([members, users]) => {
         this.setState({
-          addableMembers: addableMembers.map(m => ({
+          pendingUsers: users.pendingUsers,
+          addableMembers: users.addableUsers.map(m => ({
             label: (
               <div
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -136,23 +146,24 @@ export class TeamMembersSimpleComponent extends Component {
     const member = slug.value;
     this.setState({ selectedMember: member }, () => {
       const teamId = this.props.currentTeam._id;
-      Services.addMembersToTeam(teamId, [member._id]).then(({ done, team }) => {
-        this.setState({ selectedMember: null }, () => {
-          done
-            ? toastr.success(
+      Services.addMembersToTeam(teamId, [member._id])
+        .then(({ done, team }) => {
+          this.setState({ selectedMember: null }, () => {
+            done
+              ? toastr.success(
                 'Success',
                 t(
-                  'member.now.member',
+                  'member.now.invited',
                   this.props.currentLanguage,
                   false,
-                  `${member.name} is now member of your team`,
+                  `${member.name} has been invited as new member of your team`,
                   member.name
                 )
               )
-            : toastr.error('Failure');
-          this.props.updateTeam(team).then(() => this.updateMembers(this.props.currentTeam));
-        });
-      });
+              : toastr.error('Failure');
+          });
+        })
+        .then(() => this.updateMembers(this.props.currentTeam));
     });
   };
 
@@ -224,6 +235,11 @@ export class TeamMembersSimpleComponent extends Component {
         )
       : this.state.members;
 
+    const filteredPending = this.state.search
+      ? this.state.pendingUsers.filter(({ name, email }) =>
+        [name, email].some(value => value.toLowerCase().includes(this.state.search))
+      )
+      : this.state.pendingUsers;
     return (
       <Can I={manage} a={team} team={this.props.currentTeam} dispatchError={true}>
         <div className="row">
@@ -269,13 +285,58 @@ export class TeamMembersSimpleComponent extends Component {
             </div>
           </Can>
         </div>
-        <PaginatedComponent
+        <div className="container">
+          <div className="row">
+            <div className="col mt-3 onglets">
+              <ul className="nav nav-tabs flex-column flex-sm-row">
+                <li className="nav-item">
+                  <span
+                    className={`nav-link cursor-pointer ${this.state.tab === TABS.members ? 'active' : ''}`}
+                    onClick={() => this.setState({ tab: TABS.members })}>
+                    <Translation i18nkey="Member" language={this.props.currentLanguage} isPlural={this.state.members.length > 1}>
+                      Member
+                    </Translation>
+                  </span>
+                </li>
+                <li className="nav-item">
+                  <span
+                    className={classnames('nav-link cursor-pointer', {
+                      active: this.state.tab === TABS.pending,
+                      disabled: filteredPending.length === 0
+                    })}
+                    onClick={() => this.state.pendingUsers.length > 0 && this.setState({tab: TABS.pending})}>
+                    <Translation
+                      i18nkey="pending members"
+                      language={this.props.currentLanguage}
+                      replacements={[this.state.pendingUsers.length]}>
+                      Pending ({this.state.pendingUsers.length})
+                    </Translation>
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        {this.state.tab === TABS.members && <PaginatedComponent
           currentLanguage={this.props.currentLanguage}
           items={_.sortBy(filteredMembers, [member => member.name.toLowerCase()])}
           count={15}
           formatter={member => {
             const isAdmin = this.userHavePemission(member, administrator);
             const isApiEditor = this.userHavePemission(member, apiEditor);
+            if (member.isPending) {
+              return <AvatarWithAction
+                key={member._id}
+                avatar={member.picture}
+                infos={
+                  <>
+                    <i className="fas fa-question mr-2" />
+                    <span className="team-member__name">{member.name}</span>
+                  </>
+                }
+                actions={[]}
+              />
+            }
             return (
               <AvatarWithAction
                 key={member._id}
@@ -329,7 +390,23 @@ export class TeamMembersSimpleComponent extends Component {
               />
             );
           }}
-        />
+        />}
+        {this.state.tab === TABS.pending && <PaginatedComponent
+          currentLanguage={this.props.currentLanguage}
+          items={_.sortBy(filteredPending, [member => member.name.toLowerCase()])}
+          count={15}
+          formatter={member => {
+              return <AvatarWithAction
+                key={member._id}
+                avatar={member.picture}
+                infos={
+                  <span className="team-member__name">{member.name}</span>
+                }
+                actions={[]}
+              />
+            }
+          }
+        />}
       </Can>
     );
   }
