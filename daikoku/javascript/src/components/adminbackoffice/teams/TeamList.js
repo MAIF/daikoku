@@ -105,7 +105,7 @@ class TeamListComponent extends Component {
               </div>
               <PaginatedComponent
                 items={_.sortBy(filteredTeams, [team => team.name.toLowerCase()])}
-                count={15}
+                count={8}
                 formatter={team => {
                   return (
                     <AvatarWithAction

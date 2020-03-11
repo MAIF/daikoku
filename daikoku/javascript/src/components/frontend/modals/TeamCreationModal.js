@@ -56,7 +56,6 @@ export const TeamCreationModal = props => {
             })
             .then(newteam => setTeam(newteam))
             .then(() => setCreated(true))
-            .then(() => props.postAction())
             .catch(e => {
               setError(e.error)
             }
@@ -74,5 +73,4 @@ TeamCreationModal.propTypes = {
   closeModal: PropTypes.func.isRequired,
   team: PropTypes.object.isRequired,
   currentLanguage: PropTypes.string,
-  postAction: PropTypes.func
 };
