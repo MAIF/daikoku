@@ -185,8 +185,8 @@
     "name": "2-members.md",
     "id": "/producerusage/2-members.md",
     "url": "/producerusage/2-members.html",
-    "title": "#Managing team members",
-    "content": "#Managing team members\nIn the backoffice team, click on the `Team members` entry, on the left.\n\n### Add a new member\nSimply select a user in the selector in the top left of the page.\n\n### Remove a member\nHover over member's avatar and click on the `delete` button (bin icon).\n\n### Update member permission\nHover over member's avatar  and click on the `manage permissions` button (user/cog icon).\nThen, choose:\n\n* admin: member can access everything.\n* api editor: member can't manage team but can create an api.\n* nothing: member can just subscribe another team api.\n\n### Update apikeys visibility\nA switch button allow to team admins to set apikey visibility. If it is set on `on`, only team admins are able to see APIkeys."
+    "title": "#Managing teams",
+    "content": "#Managing teams\n\n###Create a new Team\nIn the home page, on the \"Your Teams\" component, click on the \"+\" button tio open a modal to create a new Team.\nIt's necessary to fill in the following fields :\n* Name: the public name of the the new team (it must be unique for the tenant)\n* Description: A quick description for the new team (Display in the all team page)\n* Team contact: the mail to contact the team\n* Team avatar: a link to the team avatar. It's possible to use gravatar (or an asset, once the team is created)\n\nAfter creation, you will be redirected to the members page to managing them \n\n#Managing team members\nIn the backoffice team, click on the `Team members` entry, on the left.\n\n### Add a new member\nSimply select a user in the selector in the top left of the page. He will be notified that you want to add him to your team. You can see him in the \"pending\" tab, once he accept the invitation he'll appear on the members tab.\nYou will be notified as soon as he accepts or refuses the invitation.\n\n### Remove a member\nHover over member's avatar and click on the `delete` button (bin icon).\n\n### Update member permission\nHover over member's avatar  and click on the `manage permissions` button (user/cog icon).\nThen, choose:\n\n* admin: member can access everything.\n* api editor: member can't manage team but can create an api.\n* nothing: member can just subscribe another team api.\n\n### Update apikeys visibility\nA switch button allow to team admins to set apikey visibility. If it is set on `on`, only team admins are able to see APIkeys."
   },
   {
     "name": "3-assets.md",
@@ -207,7 +207,7 @@
     "id": "/producerusage/index.md",
     "url": "/producerusage/index.html",
     "title": "Using Daikoku as api producer",
-    "content": "# Using Daikoku as api producer\n\nNow we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku.\n\n\n@@@ index\n\n* [managing apis](./1-apis.md)\n* [managing teams members](./2-members.md)\n* [managing assets](./3-assets.md)\n* [team income](./4-income.md)\n\n@@@\n"
+    "content": "# Using Daikoku as api producer\n\nNow we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku.\n\n\n@@@ index\n\n* [managing apis](./1-apis.md)\n* [managing teams and members](./2-members.md)\n* [managing assets](./3-assets.md)\n* [team income](./4-income.md)\n\n@@@\n"
   },
   {
     "name": "quickstart.md",
