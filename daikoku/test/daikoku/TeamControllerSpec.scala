@@ -331,6 +331,69 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       updatedTeam.isSuccess mustBe true
       updatedTeam.get.showApiKeyOnlyToAdmins mustBe false
     }
+
+    "get addable and pending user for his team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user, userApiEditor),
+        teams = Seq(
+          teamOwner.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))))
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      var respGet =
+        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant, session)
+      respGet.status mustBe 200
+      var addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "addableUsers").as[JsArray])
+      var pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "pendingUsers").as[JsArray])
+
+      pendingUsers.get.size mustBe 0
+      addableUsers.get.size mustBe 2
+
+      var respInvit =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(userTeamUserId.asJson))))(
+          tenant,
+          session)
+      respInvit.status mustBe 200
+
+      respGet =
+        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant, session)
+      respGet.status mustBe 200
+      addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "addableUsers").as[JsArray])
+      pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "pendingUsers").as[JsArray])
+//
+      pendingUsers.get.size mustBe 1
+      addableUsers.get.size mustBe 1
+
+      respInvit =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(userApiEditorId.asJson))))(
+          tenant,
+          session)
+      respInvit.status mustBe 200
+
+      respGet =
+        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant, session)
+      respGet.status mustBe 200
+      addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "addableUsers").as[JsArray])
+      pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "pendingUsers").as[JsArray])
+
+      pendingUsers.get.size mustBe 2
+      addableUsers.get.size mustBe 0
+
+    }
   }
 
   "a user or api editor" can {
@@ -544,7 +607,7 @@ class TeamControllerSpec(configurationSpec: => Configuration)
     }
   }
 
-  "an tenant admin team" can {
+  "a tenant admin team" can {
     "not be deleted" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
