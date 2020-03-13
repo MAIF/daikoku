@@ -10,6 +10,7 @@ import 'brace/theme/monokai';
 import 'brace/ext/searchbox';
 import 'brace/ext/language_tools';
 
+import { Help } from './Help';
 import { AssetChooserByModal } from '../frontend/modals/AssetsChooserModal';
 import { t, Translation } from '../../locales';
 
@@ -176,6 +177,9 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
     const team = _.isFunction(this.props.team) ? this.props.team() : this.props.team;
     return (
       <div className="d-flex flex-column">
+        <label htmlFor={`input-${this.props.label}`} className="col-form-label d-flex align-items-center">
+          {this.props.label} <Help place="right" text={this.props.help} />
+        </label>
         <div
           style={{
             marginBottom: 10,

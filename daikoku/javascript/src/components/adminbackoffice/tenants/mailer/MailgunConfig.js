@@ -35,7 +35,10 @@ export class MailgunConfig extends Component {
     }, 
     template: {
       type: 'markdown',
-      props: { label: t('Mail template', this.props.currentLanguage) }
+      props: { 
+        label: t('Mail template', this.props.currentLanguage),
+        help: t("mail.template.help", this.props.currentLanguage) 
+      }
     },
   };
 

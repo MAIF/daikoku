@@ -591,5 +591,6 @@
   "Email title": "Nom de l'expéditeur",
   "Email from": "Email de l'expéditeur",
   "Mailjet apikey public": "Clef d'api publique",
-  "Mailjet apikey private": "Clef d'api publique"
+  "Mailjet apikey private": "Clef d'api publique",
+  "mail.template.help": "Placez {{email}} dans votre modèle là où le texte doit être placé"
 }

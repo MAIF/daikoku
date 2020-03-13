@@ -592,5 +592,6 @@
     "Email title": "Sender name",
     "Email from": "Sender email",
     "Mailjet apikey public": "Public apikey",
-    "Mailjet apikey private": "Private apikey"
+    "Mailjet apikey private": "Private apikey",
+    "mail.template.help": "Place {{email}} in your template where the text should be placed"
 }
