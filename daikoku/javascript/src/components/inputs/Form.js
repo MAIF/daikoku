@@ -193,6 +193,7 @@ export default class Form extends Component {
           component = (
             <React.Suspense key={name} fallback={<div>loading...</div>}>
               <LazySingleMarkdownInput
+                currentLanguage={this.props.currentLanguage}
                 disabled={disabled}
                 key={name}
                 value={this.getValue(name, '')}

@@ -287,7 +287,7 @@ export class TenantEditComponent extends Component {
     'bucketSettings.secret',
     'bucketSettings.chunkSize',
     'bucketSettings.v4auth',
-    '>>> footer',
+    `>>> ${t('Footer', this.props.currentLanguage)}`,
     'style.footer',
     `>>> ${t('Unlogged home description', this.props.currentLanguage)}`,
     'style.homePageVisible',
@@ -538,7 +538,10 @@ export class TenantEditComponent extends Component {
     },
     mailerSettings: {
       type: MailerConfig,
-      props: { label: t('Mailer', this.props.currentLanguage) },
+      props: { 
+        label: t('Mailer', this.props.currentLanguage),
+        currentLanguage: this.props.currentLanguage
+      },
     },
     'daikokuHeader.name': {
       type: 'string',
@@ -752,6 +755,7 @@ export class TenantEditComponent extends Component {
               <h1>Tenant - {this.state.tenant.name}</h1>
               <React.Suspense fallback={<Spinner />}>
                 <LazyForm
+                  currentLanguage={this.props.currentLanguage}
                   flow={this.flow}
                   schema={this.schema}
                   value={this.state.tenant}

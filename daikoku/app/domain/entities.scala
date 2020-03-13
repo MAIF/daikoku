@@ -229,7 +229,8 @@ case class ConsoleMailerSettings()
 case class MailgunSettings(domain: String,
                            key: String,
                            fromTitle: String,
-                           fromEmail: String)
+                           fromEmail: String,
+                           template: Option[String])
     extends MailerSettings
     with CanJson[MailgunSettings] {
   def mailerType: String = "mailgun"
@@ -242,7 +243,8 @@ case class MailgunSettings(domain: String,
 case class MailjetSettings(apiKeyPublic: String,
                            apiKeyPrivate: String,
                            fromTitle: String,
-                           fromEmail: String)
+                           fromEmail: String,
+                           template: Option[String])
     extends MailerSettings
     with CanJson[MailjetSettings] {
   def mailerType: String = "mailjet"

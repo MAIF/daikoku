@@ -364,7 +364,8 @@ object json {
             domain = (json \ "domain").as[String],
             key = (json \ "key").as[String],
             fromTitle = (json \ "fromTitle").as[String],
-            fromEmail = (json \ "fromEmail").as[String]
+            fromEmail = (json \ "fromEmail").as[String],
+            template = (json \ "template").asOpt[String]
           )
         )
       } recover {
@@ -375,7 +376,11 @@ object json {
       "domain" -> o.domain,
       "key" -> o.key,
       "fromTitle" -> o.fromTitle,
-      "fromEmail" -> o.fromEmail
+      "fromEmail" -> o.fromEmail,
+      "template" -> o.template
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val MailjetSettingsFormat = new Format[MailjetSettings] {
@@ -386,7 +391,8 @@ object json {
             apiKeyPublic = (json \ "apiKeyPublic").as[String],
             apiKeyPrivate = (json \ "apiKeyPrivate").as[String],
             fromTitle = (json \ "fromTitle").as[String],
-            fromEmail = (json \ "fromEmail").as[String]
+            fromEmail = (json \ "fromEmail").as[String],
+            template = (json \ "template").asOpt[String]
           )
         )
       } recover {
@@ -397,7 +403,11 @@ object json {
       "apiKeyPublic" -> o.apiKeyPublic,
       "apiKeyPrivate" -> o.apiKeyPrivate,
       "fromTitle" -> o.fromTitle,
-      "fromEmail" -> o.fromEmail
+      "fromEmail" -> o.fromEmail,
+      "template" -> o.template
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val AdminFormat = new Format[Admin] {

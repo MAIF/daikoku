@@ -584,5 +584,13 @@
     },
     "Pending members": "Pending (%s)",
     "team.created": "Team %s successfully created",
-    "team.updated": "Team successfully updated"
+    "team.updated": "Team successfully updated",
+    "Footer": "Footer",
+    "Mail template": "Mail template",
+    "Mailgun domain": "Domain",
+    "Mailgun key": "Api key",
+    "Email title": "Sender name",
+    "Email from": "Sender email",
+    "Mailjet apikey public": "Public apikey",
+    "Mailjet apikey private": "Private apikey"
 }

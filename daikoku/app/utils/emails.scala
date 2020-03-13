@@ -24,6 +24,7 @@ class ConsoleMailer() extends Mailer {
 
   def send(title: String, to: Seq[String], body: String)(
       implicit ec: ExecutionContext): Future[Unit] = {
+
     val email = Json.prettyPrint(
       Json.obj(
         "from" -> s"Daikoku <daikoku@foo.bar>",
@@ -44,6 +45,9 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
 
   def send(title: String, to: Seq[String], body: String)(
       implicit ec: ExecutionContext): Future[Unit] = {
+
+    val templatedBody = settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
+
     wsClient
       .url(s"https://api.mailgun.net/v3/${settings.domain}/messages")
       .withAuth("api", settings.key, WSAuthScheme.BASIC)
@@ -52,11 +56,11 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
           "from" -> Seq(s"${settings.fromTitle} <${settings.fromEmail}>"),
           "to" -> Seq(to.mkString(", ")),
           "subject" -> Seq(title),
-          "html" -> Seq(body)
+          "html" -> Seq(templatedBody)
         )
       )
       .andThen {
-        case Success(res) => logger.info("Alert email sent")
+        case Success(res) => logger.info(s"Alert email sent \r\n ${res.json}")
         case Failure(e)   => logger.error("Error while sending alert email", e)
       }
       .map(_ => ())
@@ -70,6 +74,8 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
 
   def send(title: String, to: Seq[String], body: String)(
       implicit ec: ExecutionContext): Future[Unit] = {
+
+    val templatedBody = settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
     wsClient
       .url(s"https://api.mailjet.com/v3.1/send")
       .withAuth(settings.apiKeyPublic,
@@ -94,7 +100,7 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
                 )
               ),
               "Subject" -> title,
-              "HTMLPart" -> body,
+              "HTMLPart" -> templatedBody,
               // TextPart
             )
           )

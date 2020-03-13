@@ -583,5 +583,13 @@
   },
   "pending members": "En attente (%s)",
   "team.created": "L'équipe %s à correctement été créée",
-  "team.updated": "L'équipe à correctement été modifiée"
+  "team.updated": "L'équipe à correctement été modifiée",
+  "Footer": "Pied de page",
+  "Mail template": "Modèle de courriel",
+  "Mailgun domain": "Domaine",
+  "Mailgun key": "Clef d'api ",
+  "Email title": "Nom de l'expéditeur",
+  "Email from": "Email de l'expéditeur",
+  "Mailjet apikey public": "Clef d'api publique",
+  "Mailjet apikey private": "Clef d'api publique"
 }
