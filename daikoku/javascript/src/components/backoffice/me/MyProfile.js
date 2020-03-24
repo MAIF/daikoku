@@ -305,7 +305,7 @@ class MyProfileComponent extends Component {
       const emailValidation = ValidateEmail(this.state.user.email);
       if (emailValidation.ok) {
         Services.updateUserById(this.state.user).then(user => {
-          this.setState({ user });
+          this.setState({ user }, () => toastr.success(t('user.updated.success', this.props.currentLanguage, false, "user successfully updated", user.name)));
         });
       } else {
         toastr.error(emailValidation.error);
