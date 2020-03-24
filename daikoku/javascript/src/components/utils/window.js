@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import _ from 'lodash';
 
+import { OPEN_MODAL } from '../../core/modal';
+
 class Alert extends Component {
   defaultButton = e => {
     if (e.keyCode === 13) {
@@ -275,4 +277,12 @@ export function registerPrompt() {
       );
     });
   };
+}
+
+export function registerContact(store) {
+  window.contact = modalProps => store.dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: "contactModal"
+  })
 }

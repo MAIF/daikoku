@@ -17,6 +17,7 @@ object Errors {
     name = "Daikoky",
     domain = "localhost",
     defaultLanguage = Some("En"),
+    contact = "contact@foo.bar",
     style = Some(
       DaikokuStyle(
         title = "Daikoku"

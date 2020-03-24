@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.util.FastFuture
 import com.nimbusds.jose.jwk.KeyType
-import fr.maif.otoroshi.daikoku.actions.DaikokuAction
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -15,7 +15,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.OAuth2Config
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.jwt.JWKSAlgoSettings
-import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, IdGenerator, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, HtmlSanitizer, IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Results}
@@ -25,6 +25,7 @@ import scala.concurrent.Future
 import scala.util.Try
 
 class TenantController(DaikokuAction: DaikokuAction,
+                       DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                        apiService: ApiService,
                        env: Env,
                        otoroshiClient: OtoroshiClient,
@@ -403,6 +404,84 @@ class TenantController(DaikokuAction: DaikokuAction,
               }
           }
         }
+      }
+    }
+  }
+
+  def contact(tenantId: String) = DaikokuActionMaybeWithGuest.async(parse.json) {ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{name} - @{email} send a contact email to @{contact}"))(ctx) {
+
+      val body = ctx.request.body
+
+      val name = (body \ "name").as[String]
+      val email = (body \ "email").as[String]
+      val subject = (body \ "subject").as[String]
+      val mailBody = (body \ "body").as[String]
+      val teamId = (body \ "teamId").asOpt[String]
+      val apiId = (body \ "apiId").asOpt[String]
+
+      ctx.setCtxValue("email", email)
+      ctx.setCtxValue("name", name)
+
+      val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
+
+      val mailToSender =  raw"""
+        <div>Here is the data you sent us as part of your contact request:</div>
+        <div>name: <strong>$name</strong></div>
+        <div>contact email: $email</div>
+        <div>title: <strong>$subject<strong></div>
+        </br>
+        $sanitizeBody
+        </br>
+        <small>This e-mail is sent to you automatically, please do not reply.</small></br>
+        <small>Your request has been taken into account. It will be processed as soon as possible.</small>
+      """
+      val mailToContact = raw"""
+        <div>Somebody send you a contact request:</div>
+        <div>name: <strong>$name</strong></div>
+        <div>contact email: $email</div>
+        <div>title: <strong>$subject<strong></div>
+        </br>
+        $sanitizeBody
+      """
+
+      (teamId, apiId) match {
+        case (Some(id), _) => env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)
+          .flatMap {
+            case Some(team) =>
+              for {
+                _ <- ctx.tenant.mailer.send("Contact request", Seq(email), mailToSender)
+                _ <- ctx.tenant.mailer.send("Contact request", Seq(team.contact), mailToContact)
+              } yield {
+                ctx.setCtxValue("contact", team.contact)
+                Ok(Json.obj("send" -> true))
+              }
+            case None => FastFuture.successful(NotFound(Json.obj("error" -> "team not found")))
+          }
+        case (_, Some(id)) => env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)
+          .flatMap {
+            case Some(api) =>  env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(api.team)
+              .flatMap {
+                case Some(team) =>
+                  for {
+                    _ <- ctx.tenant.mailer.send("Contact request", Seq(email), mailToSender)
+                    _ <- ctx.tenant.mailer.send("Contact request", Seq(team.contact), mailToContact)
+                  } yield {
+                    ctx.setCtxValue("contact", team.contact)
+                    Ok(Json.obj("send" -> true))
+                  }
+                case None => FastFuture.successful(NotFound(Json.obj("error" -> "team not found")))
+              }
+            case None => FastFuture.successful(NotFound(Json.obj("error" -> "api not found")))
+          }
+        case (None, None) =>
+          for {
+            _ <- ctx.tenant.mailer.send("Contact request", Seq(email), mailToSender)
+            _ <- ctx.tenant.mailer.send("Contact request", Seq(ctx.tenant.contact), mailToContact)
+          } yield {
+            ctx.setCtxValue("contact", ctx.tenant.contact)
+            Ok(Json.obj("send" -> true))
+          }
       }
     }
   }

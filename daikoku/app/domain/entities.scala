@@ -107,6 +107,7 @@ case class Tenant(
     deleted: Boolean = false,
     name: String,
     domain: String, // = "localhost",
+    contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
     otoroshiSettings: Set[OtoroshiSettings],
@@ -117,7 +118,7 @@ case class Tenant(
     auditTrailConfig: AuditTrailConfig = AuditTrailConfig(),
     isPrivate: Boolean = true,
     adminApi: ApiId,
-    adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty
+    adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty,
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -140,6 +141,7 @@ case class Tenant(
         .map(a => JsString(a.description))
         .getOrElse(JsNull)
         .as[JsValue],
+      "contact" -> contact,
       "unloggedHome" -> style
         .map(a => JsString(a.unloggedHome))
         .getOrElse(JsNull)

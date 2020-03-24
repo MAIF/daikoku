@@ -1113,6 +1113,7 @@ object json {
             name = (json \ "name").as[String],
             domain = (json \ "domain").asOpt[String].getOrElse("localhost"),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
+            contact = (json \ "contact").as[String],
             style = (json \ "style").asOpt(DaikokuStyleFormat),
             otoroshiSettings = (json \ "otoroshiSettings")
               .asOpt(SeqOtoroshiSettingsFormat)
@@ -1171,6 +1172,7 @@ object json {
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "enabled" -> o.enabled,
+      "contact" -> o.contact,
       "style" -> o.style.map(_.asJson).getOrElse(JsNull).as[JsValue],
       "otoroshiSettings" -> JsArray(o.otoroshiSettings.map(_.asJson).toSeq),
       "mailerSettings" -> o.mailerSettings

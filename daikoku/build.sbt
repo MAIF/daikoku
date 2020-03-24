@@ -34,7 +34,9 @@ libraryDependencies ++= Seq(
   "de.svenkubiak" % "jBCrypt" % "0.4.1",
   "com.propensive" %% "kaleidoscope" % "0.1.0",
   "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "1.0.1",
-  "com.github.tomakehurst" % "wiremock" % "1.33" % "test"
+  "com.github.tomakehurst" % "wiremock" % "1.33" % "test",
+  "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1"
+
 )
 
 scalacOptions ++= Seq(

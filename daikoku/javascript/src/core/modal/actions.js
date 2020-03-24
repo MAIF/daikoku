@@ -40,6 +40,14 @@ export const openSaveOrCancelModal = (modalProps) => dispatch => {
   });
 };
 
+export const openContactModal = (name = undefined, email = undefined, tenant, team = undefined, api = undefined) => dispatch => {
+  return dispatch({
+    type: OPEN_MODAL,
+    modalProps: {name, email, tenant, team, api},
+    modalType: "contactModal"
+  });
+}
+
 export const closeModal = () => dispatch => {
   return dispatch({
     type: CLOSE_MODAL

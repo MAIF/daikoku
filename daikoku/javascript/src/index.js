@@ -16,7 +16,7 @@ import 'bootstrap';
 import { store } from './core';
 import { DaikokuApp, DaikokuHomeApp } from './apps';
 import { LoginPage } from './components';
-import { registerAlert, registerConfirm, registerPrompt } from './components/utils/window';
+import { registerAlert, registerConfirm, registerPrompt, registerContact } from './components/utils/window';
 import { customizeFetch } from './services/customize';
 import { Option } from './components/utils';
 import { Translation } from './locales';
@@ -106,6 +106,10 @@ export function init(user, tenant, impersonator, session, loginCallback) {
     };
 
     setupTimeouts(session);
+    registerAlert(); // Hell Yeah !!!!
+    registerConfirm();
+    registerPrompt();
+    registerContact(storeInst)
   }
 }
 
@@ -118,6 +122,10 @@ export function login(provider, callback, tenant) {
     </Provider>,
     document.getElementById('app')
   );
+  registerAlert(); // Hell Yeah !!!!
+  registerConfirm();
+  registerPrompt();
+  registerContact(storeInst)
 }
 
 export function initNotLogged(tenant) {
@@ -129,10 +137,8 @@ export function initNotLogged(tenant) {
     </Provider>,
     document.getElementById('app')
   );
-}
-
-{
   registerAlert(); // Hell Yeah !!!!
   registerConfirm();
   registerPrompt();
+  registerContact(storeInst)
 }

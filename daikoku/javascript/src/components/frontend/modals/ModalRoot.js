@@ -11,7 +11,8 @@ export const MODAL_TYPES = {
   assetSelector: Modals.AssetSelectorModal,
   wysywygModal: Modals.WysiwygModal,
   saveOrCancelModal: Modals.SaverOrCancelModal,
-  teamCreation: Modals.TeamCreationModal
+  teamCreation: Modals.TeamCreationModal,
+  contactModal: Modals.ContactModal
 };
 
 const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
@@ -38,7 +39,7 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
         overlayClassName={ClasseNames('modal fade in show', { right: modalProps.panelView })}
         bodyOpenClassName="modal-open"
         className="modal-dialog modal-lg">
-        <SpecifiedModal toto="tata" closeModal={closeModal} {...modalProps} />
+        <SpecifiedModal closeModal={closeModal} {...modalProps} />
       </ReactModal>
     </div>
   );

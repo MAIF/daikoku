@@ -592,5 +592,13 @@
   "Email from": "Email de l'expéditeur",
   "Mailjet apikey public": "Clef d'api publique",
   "Mailjet apikey private": "Clef d'api publique",
-  "mail.template.help": "Placez {{email}} dans votre modèle là où le texte doit être placé"
+  "mail.template.help": "Placez {{email}} dans votre modèle là où le texte doit être placé",
+  "Contact us": "Contactez-nous",
+  "Contact request": "Demande de contact",
+  "Subject": "Objet",
+  "Message": "Message",
+  "Enter your name": "Renseigner votre nom",
+  "Enter email": "Renseigner votre courriel",
+  "Your message": "Votre message",
+  "Send": "Envoyer"
 }

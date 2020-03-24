@@ -48,12 +48,12 @@ export class ApiCartidge extends Component {
           <Link to={`/${ownerTeam._humanReadableId}`}>{ownerTeam.name}</Link>
         </small>
         <div>
-          <a
-            className="btn btn-xs btn-access-negative word-break"
-            style={{ whiteSpace: 'normal', lineHeight: 1 }}
-            href={`mailto:${ownerTeam.contact}`}>
-            {ownerTeam.contact}
-          </a>
+          <button 
+            className="btn btn-xs btn-access-negative" 
+            onClick={this.props.openContactModal}>
+            <i className="far fa-envelope mr-1"/>
+            <Translation i18nkey="Contact us" language={this.props.currentLanguage}>Contact us</Translation>
+          </button>
         </div>
         <Separator />
         <span>

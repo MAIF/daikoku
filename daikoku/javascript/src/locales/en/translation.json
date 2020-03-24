@@ -593,5 +593,13 @@
     "Email from": "Sender email",
     "Mailjet apikey public": "Public apikey",
     "Mailjet apikey private": "Private apikey",
-    "mail.template.help": "Place {{email}} in your template where the text should be placed"
+    "mail.template.help": "Place {{email}} in your template where the text should be placed",
+    "Contact us": "Contact us",
+    "Contact request": "Contact request",
+    "Subject": "Subject",
+    "Message": "Message",
+    "Enter your name": "Enter your name",
+    "Enter email": "Enter email",
+    "Your message": "Your message",
+    "Send": "Send"
 }

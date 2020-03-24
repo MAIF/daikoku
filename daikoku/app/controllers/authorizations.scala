@@ -27,7 +27,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object authorizations {
   object sync {
-    def UberPublucAccess[T](audit: AuditEvent)(ctx: DaikokuActionContext[T])(
+    def UberPublicAccess[T](audit: AuditEvent)(ctx: DaikokuActionContext[T])(
         f: => Result)(implicit ec: ExecutionContext,
                       env: Env): Future[Result] = {
       async.UberPublicUserAccess(audit)(ctx) {

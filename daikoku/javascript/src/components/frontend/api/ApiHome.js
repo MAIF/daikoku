@@ -9,7 +9,7 @@ import { ApiCartidge, ApiConsole, ApiDocumentation, ApiPricing, ApiSwagger, ApiR
 import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, access, backoffice } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
-import { setError } from '../../../core';
+import { setError, openContactModal } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
 import { Translation, t } from '../../../locales';
@@ -128,6 +128,13 @@ class ApiHomeComponent extends Component {
     const tab = this.props.tab;
     const apiId = api._humanReadableId;
     const teamId = this.props.match.params.teamId;
+
+    //for contact modal
+    const {isGuest, name, email} = this.props.connectedUser;
+    const userName = isGuest ? undefined : name;
+    const userEmail = isGuest ? undefined : email;
+
+
     return (
       <main role="main" className="row">
         <section className="organisation__header col-12 mb-4 p-3">
@@ -245,6 +252,7 @@ class ApiHomeComponent extends Component {
                   askForApikeys={(teams, plan) => this.askForApikeys(teams, plan)}
                   pendingSubscriptions={this.state.pendingSubscriptions}
                   currentLanguage={this.props.currentLanguage}
+                  openContactModal={() => this.props.openContactModal(userName, userEmail, this.props.tenant._id, api.team, api._id)}
                   redirectToApiKeysPage={team => {
                     this.props.history.push(
                       `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}`
@@ -329,6 +337,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   setError,
+  openContactModal
 };
 
 export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);

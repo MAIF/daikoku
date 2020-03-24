@@ -1272,3 +1272,22 @@ export function saveTeamTranslations(teamId, translations) {
     body: JSON.stringify(translations),
   }).then(r => r.json());
 }
+
+export function sendEmails(name, email, subject, body, tenantId, teamId, apiId) {
+  return fetch(`/api/tenants/${tenantId}/_contact`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name,
+      email,
+      subject,
+      body,
+      teamId,
+      apiId
+    }),
+  }).then(r => r.json());
+}

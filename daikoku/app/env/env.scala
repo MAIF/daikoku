@@ -352,6 +352,7 @@ class DaikokuEnv(ws: WSClient,
                   DaikokuStyle(
                     title = "Daikoku Default Tenant"
                   )),
+                contact = "contact@foo.bar",
                 mailerSettings = Some(ConsoleMailerSettings()),
                 authProvider = AuthProvider.Local,
                 authProviderSettings = Json.obj(

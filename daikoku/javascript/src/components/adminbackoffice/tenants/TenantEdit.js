@@ -243,6 +243,7 @@ export class TenantEditComponent extends Component {
     'name',
     'domain',
     'defaultLanguage',
+    'contact',
     `>>> ${t('Tenant Style', this.props.currentLanguage)}`,
     'style.logo',
     'style.logoFromAssets',
@@ -380,6 +381,12 @@ export class TenantEditComponent extends Component {
           value: key,
         })),
       },
+    },
+    contact: {
+      type: 'string',
+      props: {
+        label: t('Contact', this.props.currentLanguage)
+      }
     },
     'style.title': {
       type: 'string',

@@ -260,6 +260,8 @@ GET     /api/tenants/simplified                         fr.maif.otoroshi.daikoku
 GET     /api/tenants/:id/_redirect                      fr.maif.otoroshi.daikoku.ctrls.TenantController.redirectToTenant(id)
 
 ### NoDocs ###
+POST    /api/tenants/:tenantId/_contact                 fr.maif.otoroshi.daikoku.ctrls.TenantController.contact(tenantId)
+### NoDocs ###
 POST    /api/tenants/_names                             fr.maif.otoroshi.daikoku.ctrls.TenantController.namesOfTenants()
 ### NoDocs ###
 GET     /api/teams/:teamId/tenant                       fr.maif.otoroshi.daikoku.ctrls.TenantController.currentTenant(teamId)

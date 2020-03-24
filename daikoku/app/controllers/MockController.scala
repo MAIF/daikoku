@@ -708,6 +708,7 @@ class MockController(DaikokuAction: DaikokuAction,
             DaikokuStyle(
               title = "Evil Corp."
             )),
+          contact = "contact@foo.bar",
           mailerSettings = Some(ConsoleMailerSettings()),
           authProvider = AuthProvider.Local,
           authProviderSettings = Json.obj(
@@ -734,6 +735,7 @@ class MockController(DaikokuAction: DaikokuAction,
           name = "Johnny be good",
           domain = "localhost",
           defaultLanguage = Some("fr"),
+          contact = "contact@foo.bar",
           style = Some(
             DaikokuStyle(
               title = "North American Johnny Look Alike Association",

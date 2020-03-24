@@ -2,12 +2,27 @@ package fr.maif.otoroshi.daikoku.utils
 
 import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.domain._
+import org.owasp.html.HtmlPolicyBuilder
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSClient}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
+
+object HtmlSanitizer {
+
+  //First define your policy for allowed elements
+  private lazy val policy = new HtmlPolicyBuilder()
+    .allowElements("p")
+    .allowElements("a")
+    .allowUrlProtocols("https")
+    .allowAttributes("href").onElements("a")
+    .requireRelNofollowOnLinks()
+    .toFactory()
+
+  def sanitize(unsafeHTML: String) = policy.sanitize(unsafeHTML)
+}
 
 trait Mailer {
   def send(title: String, to: Seq[String], body: String)(

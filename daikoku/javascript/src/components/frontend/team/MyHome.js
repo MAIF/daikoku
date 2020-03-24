@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 
 import * as Services from '../../../services';
 import { ApiList } from '../../frontend';
-import { updateTeamPromise } from '../../../core';
+import { updateTeamPromise, openContactModal } from '../../../core';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { CanIDoAction, manage, api as API, Can, read, team } from '../../utils';
@@ -151,6 +151,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   updateTeam: team => updateTeamPromise(team),
+  openContactModal: props => openContactModal(props)
 };
 
 export const MyHome = connect(mapStateToProps, mapDispatchToProps)(MyHomeComponent);
