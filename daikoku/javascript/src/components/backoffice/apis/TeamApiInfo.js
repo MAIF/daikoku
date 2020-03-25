@@ -108,7 +108,7 @@ export class TeamApiInfo extends Component {
           { label: t('Private', this.props.currentLanguage, false, 'Private'), value: 'Private' },
           {
             label: t(
-              'Public With Authorizations',
+              'PublicWithAuthorizations',
               this.props.currentLanguage,
               false,
               'Public With Authorizations'

@@ -93,7 +93,7 @@ export class ApiCartidge extends Component {
             className={`badge ml-1 ${
               api.visibility === 'Public' ? 'badge-success' : 'badge-danger'
             }`}>
-            {api.visibility}
+            {t(api.visibility, this.props.currentLanguage)}
           </span>
         </span>
         <Separator />
@@ -102,7 +102,7 @@ export class ApiCartidge extends Component {
             Default pricing
           </Translation>
           <span className="badge badge-primary word-break ml-1" style={{ whiteSpace: 'normal' }}>
-            {pricing}
+            {t(pricing, this.props.currentLanguage)}
           </span>
         </span>
         <Separator />
