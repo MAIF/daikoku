@@ -75,7 +75,7 @@ class TeamApisComponent extends Component {
               type="button"
               className="btn btn-sm btn-access-negative"
               title="Delete this Api"
-              onClick={() => this.delete(api._id)}>
+              onClick={() => this.delete(api)}>
               <i className="fas fa-trash" />
             </button>
           </Can>
@@ -100,21 +100,21 @@ class TeamApisComponent extends Component {
       );
   };
 
-  delete = id => {
-    window
-      .confirm(
-        t(
-          'delete.api.confirm',
-          this.props.currentLanguage,
-          'Are you sure you want to delete this api ?'
-        )
+  delete = api => {
+    window.confirm(
+      t(
+        'delete.api.confirm',
+        this.props.currentLanguage,
+        'Are you sure you want to delete this api ?'
       )
+    )
       .then(ok => {
         if (ok) {
-          Services.deleteTeamApi(this.props.currentTeam._id, id).then(() => {
-            toastr.success('deletion successful');
-            this.table.update();
-          });
+          Services.deleteTeamApi(this.props.currentTeam._id, api._id)
+            .then(() => {
+              toastr.success(t('delete.api.success', this.props.currentLanguage, false, 'API deleted successfully', api.name));
+              this.table.update();
+            });
         }
       });
   };

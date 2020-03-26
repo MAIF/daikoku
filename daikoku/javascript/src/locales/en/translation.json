@@ -601,5 +601,9 @@
     "Enter your name": "Enter your name",
     "Enter email": "Enter email",
     "Your message": "Your message",
-    "Send": "Send"
+    "Send": "Send",
+    "delete.api.success": "Api %s deleted successfuly",
+    "otoroshi.settings.deleted.success": "Otoroshi settings successfully deleted",
+    "otoroshi.settings.created.success": "Otoroshi settings successfully created",
+    "otoroshi.settings.updated.success": "Otoroshi settings successfully updated"
 }

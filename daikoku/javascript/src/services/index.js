@@ -452,30 +452,30 @@ export function addableUsersForTeam(teamId) {
   }).then(r => r.json());
 }
 
-export function allOtoroshis() {
-  return fetch('/api/teams/otoroshis', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then(r => r.json());
-}
-
-export function oneOtoroshi(id) {
-  return fetch(`/api/teams/otoroshis/${id}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then(r => r.json());
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deleteOtoroshiSettings(id) {
-  return fetch(`/api/teams/otoroshis/${id}`, {
+export function allOtoroshis(tenantId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function oneOtoroshi(tenantId, id) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${id}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function deleteOtoroshiSettings(tenantId, id) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${id}`, {
     method: 'DELETE',
     credentials: 'include',
     headers: {
@@ -484,8 +484,8 @@ export function deleteOtoroshiSettings(id) {
   }).then(r => r.json());
 }
 
-export function saveOtoroshiSettings(oto) {
-  return fetch(`/api/teams/otoroshis/${oto._id}`, {
+export function saveOtoroshiSettings(tenantId, oto) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${oto._id}`, {
     method: 'PUT',
     credentials: 'include',
     headers: {
@@ -496,8 +496,8 @@ export function saveOtoroshiSettings(oto) {
   }).then(r => r.json());
 }
 
-export function createOtoroshiSettings(oto) {
-  return fetch('/api/teams/otoroshis', {
+export function createOtoroshiSettings(tenantId, oto) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis`, {
     method: 'POST',
     credentials: 'include',
     headers: {

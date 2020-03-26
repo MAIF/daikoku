@@ -8,7 +8,6 @@ import { daikoku, api, apikey, asset, stat, team, backoffice, tenant } from './s
 import { permissions } from './permissions';
 
 export const CanIDoAction = (user, action, what, team, currentTenant) => {
-  console.debug({currentTenant})
   if (what === tenant) {
     return currentTenant.admins.includes(user._id) || user.isDaikokuAdmin
   }

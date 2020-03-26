@@ -9,6 +9,7 @@ import { Table } from '../../inputs';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, daikoku, administrator } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { toastr } from 'react-redux-toastr';
 
 export class TenantOtoroshisComponent extends Component {
   state = {
@@ -33,7 +34,7 @@ export class TenantOtoroshisComponent extends Component {
       content: item => item._id,
       cell: (a, otoroshi) => (
         <div className="btn-group">
-          {this.isTeamAdmin() && (
+          {this.isTenantAdmin() && (
             <Link to={`/settings/otoroshis/${otoroshi._id}`}>
               <button
                 type="button"
@@ -43,7 +44,7 @@ export class TenantOtoroshisComponent extends Component {
               </button>
             </Link>
           )}
-          {this.isTeamAdmin() && (
+          {this.isTenantAdmin() && (
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"
@@ -57,20 +58,18 @@ export class TenantOtoroshisComponent extends Component {
     },
   ];
 
-  isTeamAdmin = () => {
+  isTenantAdmin = () => {
     if (this.props.connectedUser.isDaikokuAdmin) {
       return true;
     }
     return (
-      this.props.currentTeam.users
-        .filter(u => u.teamPermission === administrator)
+      this.props.tenant.admins
         .indexOf(this.props.connectedUser._id) > -1
     );
   };
 
   delete = id => {
-    window
-      .confirm(
+    window.confirm(
         t(
           'otoroshi.settings.delete.confirm',
           this.props.currentLanguage,
@@ -80,7 +79,16 @@ export class TenantOtoroshisComponent extends Component {
       )
       .then(ok => {
         if (ok) {
-          Services.deleteOtoroshiSettings(id);
+          Services.deleteOtoroshiSettings(this.props.tenant._id, id)
+          .then(() => {
+            toastr.success(t(
+              'otoroshi.settings.deleted.success',
+              this.props.currentLanguage,
+              false,
+              'Otoroshi settings successfuly deleted'
+            ));
+            this.table.update();
+          })
         }
       });
   };
@@ -125,10 +133,11 @@ export class TenantOtoroshisComponent extends Component {
                   defaultValue={() => ({})}
                   itemName="otoroshi"
                   columns={this.columns}
-                  fetchItems={() => Services.allOtoroshis()}
+                  fetchItems={() => Services.allOtoroshis(this.props.tenant._id)}
                   showActions={false}
                   showLink={false}
                   extractKey={item => item._id}
+                  injectTable={t => (this.table = t)}
                 />
               </div>
             </div>

@@ -75,6 +75,15 @@ object authorizations {
         FastFuture.successful(f(team))
       }
     }
+    def TenantAdminOnly[T](audit: AuditEvent)(
+        tenantId: String,
+        ctx: DaikokuActionContext[T])(f: Tenant => Result)(
+        implicit ec: ExecutionContext,
+        env: Env): Future[Result] = {
+      async.TenantAdminOnly(audit)(tenantId, ctx) { tenant =>
+        FastFuture.successful(f(tenant))
+      }
+    }
   }
   object async {
     def UberPublicUserAccess[T](audit: AuditEvent)(
@@ -287,6 +296,63 @@ object authorizations {
                 Json.obj("error" -> "You're not a Daikoku admin")))
           }
       }
+    }
+    def TenantAdminOnly[T](audit: AuditEvent)(
+      tenantId: String,
+      ctx: DaikokuActionContext[T])(f: Tenant => Future[Result])(
+                           implicit ec: ExecutionContext,
+                           env: Env): Future[Result] = {
+      env.dataStore.tenantRepo
+        .findByIdOrHrId(tenantId)
+        .flatMap {
+          case Some(tenant) if ctx.user.isDaikokuAdmin =>
+            ctx.setCtxValue("tenant.id", tenant.id)
+            ctx.setCtxValue("tenant.name", tenant.name)
+            f(tenant).andThen {
+              case _ =>
+                audit.logTenantAuditEvent(
+                  ctx.tenant,
+                  ctx.user,
+                  ctx.session,
+                  ctx.request,
+                  ctx.ctx,
+                  AuthorizationLevel.AuthorizedDaikokuAdmin)
+            }
+          case Some(tenant) if tenant.admins.contains(ctx.user.id) =>
+            ctx.setCtxValue("team.id", tenant.id)
+            ctx.setCtxValue("team.name", tenant.name)
+            f(tenant).andThen {
+              case _ =>
+                audit.logTenantAuditEvent(
+                  ctx.tenant,
+                  ctx.user,
+                  ctx.session,
+                  ctx.request,
+                  ctx.ctx,
+                  AuthorizationLevel.AuthorizedTeamMember)
+            }
+          case Some(tenant) if !tenant.admins.contains(ctx.user.id) =>
+            ctx.setCtxValue("team.id", tenant.id)
+            ctx.setCtxValue("team.name", tenant.name)
+            audit.logTenantAuditEvent(ctx.tenant,
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized)
+            FastFuture.successful(
+              Results.Forbidden(
+                Json.obj("error" -> "You're not admin for this tenant")))
+          case _ =>
+            audit.logTenantAuditEvent(ctx.tenant,
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized)
+            FastFuture.successful(
+              Results.NotFound(Json.obj("error" -> "Tenant not found")))
+        }
     }
     def TeamMemberOnly[T](audit: AuditEvent)(
         teamId: String,

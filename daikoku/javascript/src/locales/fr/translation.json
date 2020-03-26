@@ -600,5 +600,9 @@
   "Enter your name": "Renseigner votre nom",
   "Enter email": "Renseigner votre courriel",
   "Your message": "Votre message",
-  "Send": "Envoyer"
+  "Send": "Envoyer",
+  "delete.api.success": "L'api %s a été correctement supprimée",
+  "otoroshi.settings.deleted.success": "Les paramètres Otoroshi ont été correctement supprimés",
+  "otoroshi.settings.created.success": "Les paramètres Otoroshi ont été correctement créés",
+  "otoroshi.settings.updated.success": "Les paramètres Otoroshi ont été correctement modifiés"
 }

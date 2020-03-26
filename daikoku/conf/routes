@@ -191,15 +191,15 @@ GET     /asset-thumbnails/:assetId                      fr.maif.otoroshi.daikoku
 POST    /asset-thumbnails/:assetId                      fr.maif.otoroshi.daikoku.ctrls.AssetsThumbnailController.storeAsset(assetId)
 
 ### NoDocs ###
-DELETE  /api/teams/otoroshis/:id                        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.deleteOtoroshiSettings(id)
+DELETE  /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.deleteOtoroshiSettings(tenantId, id)
 ### NoDocs ###
-PUT     /api/teams/otoroshis/:id                        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.saveOtoroshiSettings(id)
+PUT     /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.saveOtoroshiSettings(tenantId, id)
 ### NoDocs ###
-GET     /api/teams/otoroshis/:id                        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiSettings(id)
+GET     /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiSettings(tenantId, id)
 ### NoDocs ###
-POST    /api/teams/otoroshis                            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createOtoroshiSettings()
+POST    /api/tenants/:tenantId/otoroshis                fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createOtoroshiSettings(tenantId)
 ### NoDocs ###
-GET     /api/teams/otoroshis                            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshisSettings()
+GET     /api/tenants/:tenantId/otoroshis                fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshisSettings(tenantId)
 ### NoDocs ###
 POST    /api/teams/:teamId/testing/apikeys              fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createTestingApiKey(teamId)
 ### NoDocs ###
