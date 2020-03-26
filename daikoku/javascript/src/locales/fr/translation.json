@@ -604,5 +604,13 @@
   "delete.api.success": "L'api %s a été correctement supprimée",
   "otoroshi.settings.deleted.success": "Les paramètres Otoroshi ont été correctement supprimés",
   "otoroshi.settings.created.success": "Les paramètres Otoroshi ont été correctement créés",
-  "otoroshi.settings.updated.success": "Les paramètres Otoroshi ont été correctement modifiés"
+  "otoroshi.settings.updated.success": "Les paramètres Otoroshi ont été correctement modifiés",
+  "Admins": "admins",
+  "Add new admin": "Ajouter un admin",
+  "Find an admin": "Trouver un admin",
+  "Remove admin rights": "Supprimer les droits d'admin",
+  "admin.added.successfully": "%s a été ajouté comme nouvel admin du tenant",
+  "remove.admin.tenant.confirm": "Êtes vous certain de vouloir supprimer cette admin du tenant ?",
+  "remove.admin.tenant.alert": "Vous ne pouvez pas supprimer cette admin, il doit rester au moins un admin.",
+  "remove.admin.tenant.success": "%s n'est plus admin du tenant"
 }

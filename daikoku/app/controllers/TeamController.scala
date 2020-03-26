@@ -49,7 +49,7 @@ class TeamController(DaikokuAction: DaikokuAction,
 
   def teamFull(teamId: String): Action[AnyContent] = DaikokuAction.async {
     ctx =>
-      TeamAdminOnly(
+      TeamAdminOrTenantAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed the team @{team.name} - @{team.id}"))(
         teamId,
@@ -290,7 +290,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def addableUsersForTeam(teamId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(AuditTrailEvent(
+    TeamAdminOrTenantAdminOnly(AuditTrailEvent(
       s"@{user.name} has accessed list of addable members to team @{team.name} - @{team.id}"))(
       teamId, ctx) { team =>
 
@@ -319,7 +319,7 @@ class TeamController(DaikokuAction: DaikokuAction,
 
   def removeMemberFromTeam(teamId: String, memberId: String) =
     DaikokuAction.async { ctx =>
-      TeamAdminOnly(AuditTrailEvent(
+      TeamAdminOrTenantAdminOnly(AuditTrailEvent(
         s"@{user.name} has removed members from team @{team.name} - @{team.id}"))(
         teamId,
         ctx) { team =>
@@ -354,7 +354,7 @@ class TeamController(DaikokuAction: DaikokuAction,
 
     ctx =>
       val members = (ctx.request.body \ "members").as[JsArray]
-      TeamAdminOnly(
+      TeamAdminOrTenantAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has added members to team @{team.name} - @{team.id}"))(
         teamId,
@@ -461,7 +461,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def membersOfTeam(teamId: String) = DaikokuAction.async { ctx =>
-    TeamMemberOnly(AuditTrailEvent(
+    TeamAdminOrTenantAdminOnly(AuditTrailEvent(
       s"@{user.name} has accessed the member list of team @{team.name} - @{team.id}"))(
       teamId,
       ctx) { team =>

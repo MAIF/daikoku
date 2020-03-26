@@ -339,13 +339,17 @@ class UserBackOfficeComponent extends Component {
                   
                   <Can I={manage} a={tenant}>
                     <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                      <span>
-                        <Translation
-                          i18nkey="Tenant administration"
-                          language={this.props.currentLanguage}>
-                          Tenant administration
-                        </Translation>
-                      </span>
+                      <Translation
+                        i18nkey="Tenant administration"
+                        language={this.props.currentLanguage}>
+                        Tenant administration
+                      </Translation>
+                      <Link
+                        to={`/settings/tenants/${this.props.tenant._humanReadableId}`}
+                        className=""
+                        title={t('Update tenant', this.props.currentLanguage)}>
+                        <i className="fas fa-pen" />
+                      </Link>
                     </h6>
                     <ul className="nav flex-column mb-2">
                       <li className="nav-item">

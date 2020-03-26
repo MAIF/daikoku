@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, daikoku, Spinner } from '../../utils';
+import { Can, manage, tenant, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
 
@@ -129,7 +129,7 @@ class TenantOtoroshiComponent extends Component {
     return (
       <UserBackOffice tab="Otoroshi" isLoading={!this.state.otoroshi}>
         {this.state.otoroshi && (
-          <Can I={manage} a={daikoku} dispatchError>
+          <Can I={manage} a={tenant} dispatchError>
             <div className="row">
               {!this.state.create && (
                 <h1>

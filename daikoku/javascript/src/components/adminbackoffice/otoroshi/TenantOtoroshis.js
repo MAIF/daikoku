@@ -7,7 +7,7 @@ import faker from 'faker';
 import * as Services from '../../../services';
 import { Table } from '../../inputs';
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, daikoku, administrator } from '../../utils';
+import { Can, manage, tenant } from '../../utils';
 import { t, Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
 
@@ -107,7 +107,7 @@ export class TenantOtoroshisComponent extends Component {
   render() {
     return (
       <UserBackOffice tab="Otoroshi">
-        <Can I={manage} a={daikoku} dispatchError>
+        <Can I={manage} a={tenant} dispatchError>
           <div className="row">
             <div className="col">
               <h1>

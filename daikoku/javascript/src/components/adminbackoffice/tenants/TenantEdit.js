@@ -9,7 +9,7 @@ import * as Services from '../../../services';
 
 import { LDAPConfig, LocalConfig, OAuth2Config, OtoroshiConfig } from './auth';
 import { ConsoleConfig, MailgunConfig, MailjetConfig } from './mailer';
-import { Can, manage, daikoku, Spinner } from '../../utils';
+import { Can, manage, tenant, Spinner } from '../../utils';
 import { t, Translation, configuration } from '../../../locales';
 import { BooleanInput } from '../../inputs/BooleanInput';
 import { openSaveOrCancelModal } from '../../../core/modal/actions';
@@ -757,7 +757,7 @@ export class TenantEditComponent extends Component {
     return (
       <UserBackOffice tab="Tenants" isLoading={!this.state.tenant}>
         {this.state.tenant && (
-          <Can I={manage} a={daikoku} dispatchError>
+          <Can I={manage} a={tenant} dispatchError>
             <div className="row">
               <div className="col-12 d-flex justify-content-start align-items-center mb-2">
                   <div

@@ -605,5 +605,13 @@
     "delete.api.success": "Api %s deleted successfuly",
     "otoroshi.settings.deleted.success": "Otoroshi settings successfully deleted",
     "otoroshi.settings.created.success": "Otoroshi settings successfully created",
-    "otoroshi.settings.updated.success": "Otoroshi settings successfully updated"
+    "otoroshi.settings.updated.success": "Otoroshi settings successfully updated",
+    "Admins": "admins",
+    "Add new admin": "Add new admin",
+    "Find an admin": "Find an admin",
+    "Remove admin rights": "Remove admin rights",
+    "admin.added.successfully": "%s has been added as new admin of the tenant",
+    "remove.admin.tenant.confirm": "Are you sure you want to remove this admin from the tenant ?",
+    "remove.admin.tenant.alert": "You can't delete this admin, it must remain one admin in a tenant.",
+    "remove.admin.tenant.success": "%s is no lonoger admin of the tenant"
 }

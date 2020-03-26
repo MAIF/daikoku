@@ -58,22 +58,21 @@ class TenantAdminListComponent extends Component {
     ) {
       alert(
         t(
-          'remove.admin.alert',
+          'remove.admin.tenant.alert',
           this.props.currentLanguage,
           false,
           "You can't delete this admin, it must remain an admin in a tenant."
         )
       );
     } else {
-      window
-        .confirm(
-          t(
-            'remove.admin.confirm',
-            this.props.currentLanguage,
-            false,
-            'Are you sure you want to remove this admin from the tenant ?'
-          )
+      window.confirm(
+        t(
+          'remove.admin.tenant.confirm',
+          this.props.currentLanguage,
+          false,
+          'Are you sure you want to remove this admin from the tenant ?'
         )
+      )
         .then(ok => {
           if (ok) {
             const admins = this.props.tenant.admins.filter(a => a !== admin._id)
@@ -81,10 +80,17 @@ class TenantAdminListComponent extends Component {
             const updatedTenant = { ...this.state.tenant, admins }
 
             Services.saveTenant(updatedTenant)
-              .then(tenant => this.setState({ tenant }))
-              .then(() => this.props.updateTenant(updatedUiTenant))
-              .then(() => Services.findUserById(admin._id))
-              .then(user => this.setState({ addableAdmins: [...this.state.addableAdmins, user], admins: this.state.admins.filter(a => a._id !== admin._id) }))
+              .then(result => {
+                if (result.error) {
+                  toastr.error(t("Failure", this.props.currentLanguage), result.error)
+                } else {
+                  this.setState({ tenant: result }, () => {
+                    toastr.success(t('remove.admin.tenant.success', this.props.currentLanguage, false, 'Admin deleted successfully', admin.name))
+                    this.props.updateTenant(updatedUiTenant)
+                    this.setState({ addableAdmins: [...this.state.addableAdmins, admin], admins: this.state.admins.filter(a => a._id !== admin._id) })
+                  })
+                }
+              })
           }
         });
     }
@@ -141,10 +147,9 @@ class TenantAdminListComponent extends Component {
             <div className="col">
               <h1>
                 <Translation
-                  i18nkey="tenant.admins.title"
-                  language={this.props.currentLanguage}
-                  replacements={[this.props.tenant.name]}>
-                  {this.props.tenant.name} admins
+                  i18nkey="Admins"
+                  language={this.props.currentLanguage}>
+                  Admins
               </Translation>
               </h1>
             </div>
@@ -152,7 +157,7 @@ class TenantAdminListComponent extends Component {
           <div className="row">
             <div className="col-12 mb-3 d-flex justify-content-start">
               <Select
-                placeholder={t('Add new admin to the tenant ...', this.props.currentLanguage)}
+                placeholder={t('Add new admin', this.props.currentLanguage)}
                 className="add-member-select mr-2 reactSelect"
                 options={this.state.addableAdmins.map(this.adminToSelector)}
                 onChange={this.addAdmin}
@@ -185,7 +190,7 @@ class TenantAdminListComponent extends Component {
                     {
                       action: () => this.removeAdmin(admin),
                       iconClass: 'fas fa-trash delete-icon',
-                      tooltip: t('Remove admin right', this.props.currentLanguage),
+                      tooltip: t('Remove admin rights', this.props.currentLanguage),
                     },
                   ]}
                 />
