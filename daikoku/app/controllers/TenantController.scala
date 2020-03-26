@@ -485,4 +485,26 @@ class TenantController(DaikokuAction: DaikokuAction,
       }
     }
   }
+
+  def admins(tenantId: String) = DaikokuAction.async {ctx =>
+    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(ctx) {
+      env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).flatMap {
+        case Some(tenant) =>
+          env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(tenant.admins.map(_.asJson).toList))))
+            .map(admins => Ok(JsArray(admins.map(_.asSimpleJson).toList)))
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Tenant not found")))
+      }
+    }
+  }
+
+  def addableAdmins(tenantId: String) = DaikokuAction.async { ctx =>
+    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(ctx) {
+      env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).flatMap {
+        case Some(tenant) =>
+          env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$nin" -> JsArray(tenant.admins.map(_.asJson).toSeq))))
+            .map(admins => Ok(JsArray(admins.map(_.asSimpleJson).toList)))
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Tenant not found")))
+      }
+    }
+  }
 }

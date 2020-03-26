@@ -759,7 +759,29 @@ export class TenantEditComponent extends Component {
         {this.state.tenant && (
           <Can I={manage} a={daikoku} dispatchError>
             <div className="row">
-              <h1>Tenant - {this.state.tenant.name}</h1>
+              <div className="col-12 d-flex justify-content-start align-items-center mb-2">
+                  <div
+                    style={{
+                      width: '100px',
+                      height: '100px',
+                      borderRadius: '50px',
+                      border: '3px solid #fff',
+                      boxShadow: '0px 0px 0px 3px lightgrey',
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      alignItems: 'center',
+                      overflow: 'hidden',
+                    }}>
+                    <img
+                      style={{ width: '100%', height: 'auto' }}
+                    src={this.state.tenant.style.logo}
+                      alt="avatar"
+                    />
+                  </div>
+                <h1 className="h1-rwd-reduce ml-2">
+                  {this.state.tenant.name}
+                </h1>
+              </div>
               <React.Suspense fallback={<Spinner />}>
                 <LazyForm
                   currentLanguage={this.props.currentLanguage}

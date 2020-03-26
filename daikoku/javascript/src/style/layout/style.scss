@@ -165,6 +165,7 @@ img:hover+.changePicture,.changePicture:hover{
 .nav-tabs{
   border-color: $btn-border-color;
   .nav-link:hover,.nav-link:focus{
+      cursor: pointer;
       background-color: $btn-bg-hover-color;
       color: $btn-text-hover-color;
   }

@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { connect } from 'react-redux';
 
 import * as Services from '../../services';
-import { Error, Can, manage, read, api, apikey, stat, team, asset, daikoku } from '../utils';
+import { Error, Can, manage, read, api, apikey, stat, team, asset, daikoku, tenant } from '../utils';
 import { t, Translation } from '../../locales';
 
 function elvis(value, f) {
@@ -336,8 +336,8 @@ class UserBackOfficeComponent extends Component {
                       {this.props.notificationSubMenu || null}
                     </li>
                   </ul>
-
-                  <Can I={manage} a={daikoku}>
+                  
+                  <Can I={manage} a={tenant}>
                     <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                       <span>
                         <Translation
@@ -358,6 +358,18 @@ class UserBackOfficeComponent extends Component {
                             language={this.props.currentLanguage}
                             isPlural>
                             Otoroshi instances
+                          </Translation>
+                        </Link>
+                      </li>
+                      <li className="nav-item">
+                        <Link
+                          className={`nav-link ${tab === 'Admins' ? 'active' : ''}`}
+                          to={'/settings/admins'}>
+                          <i className="fas fa-user-shield" />
+                          <Translation
+                            i18nkey="Admins"
+                            language={this.props.currentLanguage}>
+                            Admins
                           </Translation>
                         </Link>
                       </li>
@@ -394,6 +406,9 @@ class UserBackOfficeComponent extends Component {
                         </Link>
                       </li>
                     </ul>
+                  </Can>
+
+                  <Can I={manage} a={daikoku}>
                     <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                       <span>
                         <Translation

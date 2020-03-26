@@ -59,6 +59,7 @@ import {
   TeamEditForAdmin,
   TeamMembersForAdmin,
   TeamList,
+  TenantAdminList
 } from '../components/adminbackoffice';
 
 import { smartRedirect, smartMatch } from '../services/path';
@@ -265,6 +266,18 @@ class DaikokuAppComponent extends Component {
               path="/settings/assets"
               render={p => (
                 <AssetsList
+                  match={p.match}
+                  history={p.history}
+                  location={p.location}
+                  tenantMode={true}
+                />
+              )}
+            />
+            <Route
+              exact
+              path="/settings/admins"
+              render={p => (
+                <TenantAdminList
                   match={p.match}
                   history={p.history}
                   location={p.location}

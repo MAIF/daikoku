@@ -5,6 +5,7 @@ import {
   UPDATE_TEAM,
   UPDATE_NOTIFS,
   UPDATE_LANGUAGE,
+  UPDATE_TENANT,
 } from './action-types';
 
 const initialState = {
@@ -46,6 +47,9 @@ export function contextReducer(state = initialState, action) {
 
     case UPDATE_LANGUAGE:
       return { ...state, currentLanguage: action.language };
+
+    case UPDATE_TENANT:
+      return { ...state, tenant: action.tenant };
 
     default:
       return state;

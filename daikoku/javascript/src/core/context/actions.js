@@ -1,4 +1,4 @@
-import { IMPERSONATE, LOGIN, LOGOUT, UPDATE_NOTIFS, UPDATE_TEAM, UPDATE_LANGUAGE } from './';
+import { IMPERSONATE, LOGIN, LOGOUT, UPDATE_NOTIFS, UPDATE_TEAM, UPDATE_LANGUAGE, UPDATE_TENANT } from './';
 
 export const login = ({ user, team, tenant, language }) => dispatch => {
   return dispatch({
@@ -52,3 +52,10 @@ export const udpateLanguage = language => dispatch => {
     language,
   });
 };
+
+export const updateTenant = tenant => dispatch => {
+  return dispatch({
+    type: UPDATE_TENANT,
+    tenant
+  })
+}

@@ -1291,3 +1291,25 @@ export function sendEmails(name, email, subject, body, tenantId, teamId, apiId) 
     }),
   }).then(r => r.json());
 }
+
+export function tenantAdmins(tenantId) {
+  return fetch(`/api/tenants/${tenantId}/admins`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function addableAdminsForTenant(tenantId) {
+  return fetch(`/api/tenants/${tenantId}/addable-admins`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then(r => r.json());
+}

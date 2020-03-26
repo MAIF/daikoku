@@ -1157,7 +1157,8 @@ object json {
             adminApi = (json \ "adminApi").as(ApiIdFormat),
             adminSubscriptions = (json \ "adminSubscriptions")
               .asOpt(SeqApiSubscriptionIdFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            admins = (json \ "admins").as(SetUserIdFormat)
           )
         )
       } recover {
@@ -1188,7 +1189,8 @@ object json {
       "auditTrailConfig" -> o.auditTrailConfig.asJson,
       "isPrivate" -> o.isPrivate,
       "adminApi" -> o.adminApi.asJson,
-      "adminSubscriptions" -> JsArray(o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes))
+      "adminSubscriptions" -> JsArray(o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes)),
+      "admins" -> SetUserIdFormat.writes(o.admins)
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -2350,6 +2352,8 @@ object json {
   val SeqUserFormat = Format(Reads.seq(UserFormat), Writes.seq(UserFormat))
   val SeqUserIdFormat =
     Format(Reads.seq(UserIdFormat), Writes.seq(UserIdFormat))
+  val SetUserIdFormat =
+    Format(Reads.set(UserIdFormat), Writes.set(UserIdFormat))
   val SeqApiSubscriptionIdFormat = Format(Reads.seq(ApiSubscriptionIdFormat),
                                           Writes.seq(ApiSubscriptionIdFormat))
   val SeqApiDocumentationPageIdFormat =
