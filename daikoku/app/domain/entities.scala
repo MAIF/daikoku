@@ -484,7 +484,7 @@ object TeamType {
   def apply(name: String): Option[TeamType] = name match {
     case "Organization" => Organization.some
     case "Personal"     => Personal.some
-  case "Admin"          => Admin.some
+    case "Admin"        => Admin.some
     case _              => None
   }
 }

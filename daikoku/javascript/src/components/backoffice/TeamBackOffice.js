@@ -180,14 +180,14 @@ class TeamBackOfficeComponent extends Component {
                     <Link to={`/${currentTeam._humanReadableId}/settings`}>
                       {this.props.currentTeam.name}
                     </Link>
-                    <Can I={manage} a={team} team={this.props.currentTeam}>
+                    {this.props.currentTeam.type !== 'Admin' && <Can I={manage} a={team} team={this.props.currentTeam}>
                       <Link
                         to={`/${this.props.currentTeam._humanReadableId}/settings/edition`}
                         className=""
                         title={t('Update team', this.props.currentLanguage)}>
                         <i className="fas fa-pen" />
                       </Link>
-                    </Can>
+                    </Can>}
                   </h6>
                   <ul className="nav flex-column mt-3">
                     <Can I={read} a={api} team={this.props.currentTeam}>
@@ -241,7 +241,7 @@ class TeamBackOfficeComponent extends Component {
                       </li>
                     </Can>
 
-                    {this.props.currentTeam.type !== 'Personal' && (
+                    {this.props.currentTeam.type === 'Organisation' && (
                       <Can I={manage} a={team} team={this.props.currentTeam}>
                         <li className="nav-item">
                           <Link
@@ -257,7 +257,7 @@ class TeamBackOfficeComponent extends Component {
                         </li>
                       </Can>
                     )}
-                    <Can I={manage} a={asset} team={this.props.currentTeam}>
+                    {this.props.currentTeam.type !== 'Admin' && <Can I={manage} a={asset} team={this.props.currentTeam}>
                       <li className="nav-item">
                         <Link
                           className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
@@ -268,7 +268,7 @@ class TeamBackOfficeComponent extends Component {
                           </Translation>
                         </Link>
                       </li>
-                    </Can>
+                    </Can>}
                   </ul>
                 </div>
               </nav>

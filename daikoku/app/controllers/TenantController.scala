@@ -194,11 +194,11 @@ class TenantController(DaikokuAction: DaikokuAction,
             `type` = TeamType.Admin,
             name = s"${tenant.humanReadableId}-admin-team",
             description = s"The admin team for the default tenant",
-            avatar = Some(
-              s"https://www.gravatar.com/avatar/${tenant.humanReadableId.md5}?size=128&d=robohash"),
+            avatar = tenant.style.map(_.logo),
             users = Set.empty,
             subscriptions = Seq.empty,
-            authorizedOtoroshiGroups = Set.empty
+            authorizedOtoroshiGroups = Set.empty,
+            contact = tenant.contact
           )
           val adminApi = Api(
             id = ApiId(s"admin-api-tenant-${tenant.humanReadableId}"),
@@ -284,7 +284,7 @@ class TenantController(DaikokuAction: DaikokuAction,
 
   def saveTenant(tenantId: String) = DaikokuAction.async(parse.json) { ctx =>
     TenantAdminOnly(AuditTrailEvent(
-      s"@{user.name} has updated tenant @{tenant.name} - @{tenant.id}"))(tenantId, ctx) { (_, _) =>
+      s"@{user.name} has updated tenant @{tenant.name} - @{tenant.id}"))(tenantId, ctx) { (_, adminTeam) =>
       TenantFormat.reads(ctx.request.body) match {
         case JsError(e) =>
           FastFuture.successful(
@@ -293,7 +293,15 @@ class TenantController(DaikokuAction: DaikokuAction,
         case JsSuccess(tenant, _) => {
           ctx.setCtxValue("tenant.name", tenant.name)
           ctx.setCtxValue("tenant.id", tenant.id)
-          env.dataStore.tenantRepo.save(tenant).map { _ =>
+          for {
+            _ <- env.dataStore.tenantRepo.save(tenant)
+            _ <- env.dataStore.teamRepo.forTenant(tenant)
+              .save(adminTeam.copy(
+                name = s"${tenant.humanReadableId}-admin-team",
+                contact = tenant.contact,
+                avatar = tenant.style.map(_.logo)
+              ))
+          } yield {
             Ok(tenant.asJsonWithJwt)
           }
         }
