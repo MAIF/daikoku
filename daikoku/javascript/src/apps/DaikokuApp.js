@@ -206,6 +206,18 @@ class DaikokuAppComponent extends Component {
               path="/settings/tenants"
               render={p => <TenantList match={p.match} history={p.history} location={p.location} />}
             />
+            <Route 
+              exact
+              path="/settings/tenants/:tenantId/admins"
+              render={p =>
+                <TenantAdminList
+                  match={p.match}
+                  history={p.history}
+                  location={p.location}
+                  tenantMode={false}
+                />
+              }
+            />
             <Route
               exact
               path="/settings/users/:userId"

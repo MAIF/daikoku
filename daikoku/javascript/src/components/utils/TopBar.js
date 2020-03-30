@@ -240,7 +240,7 @@ export class TopBarComponent extends Component {
         </Can>
         <Can I={manage} a={daikoku}>
           <Link className="dropdown-item" to={'/settings/tenants'}>
-            <i className="fas fa-cogs" /> {t('Organizations settings', this.props.currentLanguage)}
+            <i className="fas fa-cogs" /> {t('Daikoku settings', this.props.currentLanguage)}
           </Link>
         </Can>
         <Can I={manage} a={tenant}>
