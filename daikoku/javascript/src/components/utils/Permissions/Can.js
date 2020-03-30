@@ -7,9 +7,9 @@ import { doNothing, read, manage } from './actions';
 import { daikoku, api, apikey, asset, stat, team, backoffice, tenant } from './subjects';
 import { permissions } from './permissions';
 
-export const CanIDoAction = (user, action, what, team, currentTenant) => {
+export const CanIDoAction = (user, action, what, team, isTenantAdmin) => {
   if (what === tenant) {
-    return currentTenant.admins.includes(user._id) || user.isDaikokuAdmin
+    return isTenantAdmin || user.isDaikokuAdmin
   }
 
   const realPerm = Option(team)
@@ -33,7 +33,7 @@ export const CanIDoAction = (user, action, what, team, currentTenant) => {
 };
 
 export const CanIDoActionForOneOfTeams = (user, action, what, teams) => {
-  return teams.some(team => CanIDoAction(user, action, what, team));
+  return teams.some(team => CanIDoAction(user, action, what, team, false));
 };
 
 const CanComponent = ({
@@ -46,11 +46,11 @@ const CanComponent = ({
   children,
   setError,
   orElse = null,
-  tenant
+  isTenantAdmin
 }) => {
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams)
-    : CanIDoAction(connectedUser, I, a, team, tenant);
+    : CanIDoAction(connectedUser, I, a, team, isTenantAdmin);
 
   if (!authorized) {
     if (dispatchError) {
@@ -75,8 +75,8 @@ CanComponent.propTypes = {
   a: PropTypes.oneOf([apikey, api, asset, stat, team, daikoku, backoffice, tenant]).isRequired,
   team: PropTypes.object,
   connectedUser: PropTypes.object.isRequired,
-  tenant: PropTypes.object,
   dispatchError: PropTypes.bool,
   setError: PropTypes.func.isRequired,
   orElse: PropTypes.element,
+  isTenantAdmin: PropTypes.bool
 };

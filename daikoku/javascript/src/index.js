@@ -24,10 +24,10 @@ import { Translation } from './locales';
 window.$ = jQuery;
 window.jQuery = jQuery;
 
-export function init(user, tenant, impersonator, session, loginCallback) {
+export function init(user, tenant, impersonator, session, loginCallback, isTenantAdmin) {
   const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse('En');
   const currentLanguage = Option(user.defaultLanguage).getOrElse(tenantDefaultLanguage);
-  const storeInst = store({ connectedUser: user, tenant, impersonator, currentLanguage });
+  const storeInst = store({ connectedUser: user, tenant, impersonator, currentLanguage, isTenantAdmin });
 
   // history.listen(location => console.log(location))
   customizeFetch(storeInst);
