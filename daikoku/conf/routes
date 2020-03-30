@@ -279,6 +279,10 @@ POST    /api/tenants                                    fr.maif.otoroshi.daikoku
 GET     /api/tenants/:tenantId/admins                   fr.maif.otoroshi.daikoku.ctrls.TenantController.admins(tenantId)
 ### NoDocs ###
 GET     /api/tenants/:tenantId/addable-admins           fr.maif.otoroshi.daikoku.ctrls.TenantController.addableAdmins(tenantId)
+### NoDocs ###
+POST    /api/tenants/:tenantId/admins                   fr.maif.otoroshi.daikoku.ctrls.TenantController.addAdminsToTenant(tenantId)
+### NoDocs ###
+DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.otoroshi.daikoku.ctrls.TenantController.removeAdminFromTenant(tenantId, adminId)
 
 ### NoDocs ###
 POST    /api/teams/:teamId/apis/:apiId/_translate       fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveApiTranslation(teamId, apiId)

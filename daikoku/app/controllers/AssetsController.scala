@@ -289,7 +289,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
 
   def storeAsset() = DaikokuAction.async(bodyParser) { ctx =>
     TenantAdminOnly(
-      AuditTrailEvent(s"@{user.name} stores asset in team @{team.id}"))(ctx.tenant.id.value, ctx) { tenant =>
+      AuditTrailEvent(s"@{user.name} stores asset in team @{team.id}"))(ctx.tenant.id.value, ctx) { (_, _) =>
       val contentType = ctx.request.headers
         .get("Asset-Content-Type")
         .orElse(ctx.request.contentType)
@@ -325,7 +325,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
 
   def replaceAsset(assetId: String) = DaikokuAction.async(bodyParser) { ctx =>
     TenantAdminOnly(
-      AuditTrailEvent(s"@{user.name} replace asset in team @{team.id}"))(ctx.tenant.id.value, ctx) { tenant =>
+      AuditTrailEvent(s"@{user.name} replace asset in team @{team.id}"))(ctx.tenant.id.value, ctx) { (_, _) =>
 
       def getMetaHeaderValue(metadata: ObjectMetadata,
                              headerName: String): Option[String] = {
@@ -396,7 +396,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
       }
       case None => {
         TenantAdminOnly(
-          AuditTrailEvent(s"@{user.name} listed assets of team @{team.id}"))(ctx.tenant.id.value, ctx) { tenant =>
+          AuditTrailEvent(s"@{user.name} listed assets of team @{team.id}"))(ctx.tenant.id.value, ctx) { (_, _) =>
           ctx.tenant.bucketSettings match {
             case None =>
               FastFuture.successful(
@@ -412,7 +412,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
   }
 
   def deleteAsset(assetId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} deleted asset @{assetId} of @{team.id}"))(ctx.tenant.id.value, ctx) { tenant =>
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} deleted asset @{assetId} of @{team.id}"))(ctx.tenant.id.value, ctx) { (_, _) =>
       ctx.setCtxValue("assetId", assetId)
       ctx.tenant.bucketSettings match {
         case None =>

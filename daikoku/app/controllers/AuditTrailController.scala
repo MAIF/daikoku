@@ -35,7 +35,7 @@ class AuditTrailController(DaikokuAction: DaikokuAction,
     TenantAdminOnly(
       AuditTrailEvent(
         s"@{user.name} has accessed audit trail from ${new DateTime(from)
-          .toString()} to ${new DateTime(to).toString()}"))(ctx.tenant.id.value, ctx) { tenant =>
+          .toString()} to ${new DateTime(to).toString()}"))(ctx.tenant.id.value, ctx) { (tenant, _) =>
       env.dataStore.auditTrailRepo
         .forTenant(tenant.id)
         .find(Json.obj(

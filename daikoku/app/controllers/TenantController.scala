@@ -17,6 +17,7 @@ import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.jwt.JWKSAlgoSettings
 import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, HtmlSanitizer, IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
+import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Results}
 import reactivemongo.bson.BSONObjectID
@@ -155,7 +156,7 @@ class TenantController(DaikokuAction: DaikokuAction,
 
   def oneTenant(tenantId: String) = DaikokuAction.async { ctx =>
     TenantAdminOnly(
-      AuditTrailEvent( s"@{user.name} has accessed one tenant @{tenant.name} - @{tenant.id}"))(tenantId, ctx) { tenant =>
+      AuditTrailEvent( s"@{user.name} has accessed one tenant @{tenant.name} - @{tenant.id}"))(tenantId, ctx) { (tenant, _) =>
       env.dataStore.translationRepo
         .forTenant(ctx.tenant)
         .find(Json.obj("element.id" -> tenant.id.asJson))
@@ -283,7 +284,7 @@ class TenantController(DaikokuAction: DaikokuAction,
 
   def saveTenant(tenantId: String) = DaikokuAction.async(parse.json) { ctx =>
     TenantAdminOnly(AuditTrailEvent(
-      s"@{user.name} has updated tenant @{tenant.name} - @{tenant.id}"))(tenantId, ctx) { _ =>
+      s"@{user.name} has updated tenant @{tenant.name} - @{tenant.id}"))(tenantId, ctx) { (_, _) =>
       TenantFormat.reads(ctx.request.body) match {
         case JsError(e) =>
           FastFuture.successful(
@@ -468,17 +469,57 @@ class TenantController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def admins(tenantId: String) = DaikokuAction.async {ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(tenantId, ctx) { tenant =>
-      env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(tenant.admins.map(_.asJson).toList))))
-        .map(admins => Ok(JsArray(admins.map(_.asSimpleJson).toList)))
+  def admins(tenantId: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(tenantId, ctx) { (tenant, adminTeam) =>
+      env.dataStore.userRepo
+        .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(adminTeam.users.map(_.userId.asJson).toList))))
+        .map(admins => Ok(Json.obj("team" -> adminTeam.asSimpleJson, "admins" -> JsArray(admins.map(_.asSimpleJson).toList))))
     }
   }
 
   def addableAdmins(tenantId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(tenantId, ctx) { tenant =>
-      env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$nin" -> JsArray(tenant.admins.map(_.asJson).toSeq))))
-        .map(admins => Ok(JsArray(admins.map(_.asSimpleJson).toList)))
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(tenantId, ctx) { (tenant, adminTeam) =>
+      env.dataStore.userRepo
+        .findNotDeleted(Json.obj("_id" -> Json.obj("$nin" -> JsArray(adminTeam.users.map(_.userId.asJson).toSeq))))
+        .map(addableAdmins => Ok(JsArray(addableAdmins.map(_.asSimpleJson).toList)))
+    }
+  }
+
+  def addAdminsToTenant(tenantId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has added a new tenant admin - @{ids}"))(tenantId, ctx) { (tenant, adminTeam) =>
+      val admins = (ctx.request.body).as[JsArray].value.map(id => UserWithPermission(UserId(id.as[String]), TeamPermission.Administrator))
+      val updatedTeam = adminTeam.copy(users = adminTeam.users ++ admins)
+
+      env.dataStore.teamRepo.forTenant(tenant).save(updatedTeam)
+        .map(done => {
+          if(done) {
+            Ok(updatedTeam.asSimpleJson)
+          } else {
+            BadRequest(Json.obj("error" -> "Failure"))
+          }
+        })
+
+    }
+  }
+
+  def removeAdminFromTenant(tenantId: String, adminId: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has added a new tenant admins - @{admin.id}"))(tenantId, ctx) { (tenant, adminTeam) =>
+      Logger.debug("*******************HERE")
+      if(adminTeam.users.size < 1 && adminTeam.users.exists(u => u.userId.value == adminId)) {
+        FastFuture.successful(Conflict(Json.obj("error" -> "There must be at least one administrator on the team")))
+      } else if (adminId == ctx.user.id.value) {
+        FastFuture.successful(Conflict(Json.obj("error" -> "You can't remove yourself your tenant admin rights")))
+      } else {
+        val updatedTeam = adminTeam.copy(users = adminTeam.users.filterNot(_.userId.value == adminId))
+        env.dataStore.teamRepo.forTenant(tenant).save(updatedTeam)
+          .map(done => {
+            if(done) {
+              Ok(updatedTeam.asSimpleJson)
+            } else {
+              BadRequest(Json.obj("error" -> "Failure"))
+            }
+          })
+      }
     }
   }
 }

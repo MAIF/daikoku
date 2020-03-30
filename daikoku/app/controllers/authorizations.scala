@@ -88,11 +88,11 @@ object authorizations {
 
     def TenantAdminOnly[T](audit: AuditEvent)(
       tenantId: String,
-      ctx: DaikokuActionContext[T])(f: Tenant => Result)(
+      ctx: DaikokuActionContext[T])(f: (Tenant, Team) => Result)(
                             implicit ec: ExecutionContext,
                             env: Env): Future[Result] = {
-      async.TenantAdminOnly(audit)(tenantId, ctx) { tenant =>
-        FastFuture.successful(f(tenant))
+      async.TenantAdminOnly(audit)(tenantId, ctx) { (tenant, team) =>
+        FastFuture.successful(f(tenant, team))
       }
     }
   }
@@ -317,7 +317,7 @@ object authorizations {
 
     def TenantAdminOnly[T](audit: AuditEvent)(
       tenantId: String,
-      ctx: DaikokuActionContext[T])(f: Tenant => Future[Result])(
+      ctx: DaikokuActionContext[T])(f: (Tenant, Team) => Future[Result])(
                             implicit ec: ExecutionContext,
                             env: Env): Future[Result] = {
       env.dataStore.tenantRepo
@@ -326,10 +326,10 @@ object authorizations {
           case Some(tenant) => env.dataStore.teamRepo.forTenant(tenant)
             .findOneNotDeleted(Json.obj("type" -> "Admin"))
             .flatMap {
-              case Some(_) if ctx.user.isDaikokuAdmin =>
+              case Some(team) if ctx.user.isDaikokuAdmin =>
                 ctx.setCtxValue("tenant.id", tenant.id)
                 ctx.setCtxValue("tenant.name", tenant.name)
-                f(tenant).andThen {
+                f(tenant, team).andThen {
                   case _ =>
                     audit.logTenantAuditEvent(
                       ctx.tenant,
@@ -342,7 +342,7 @@ object authorizations {
               case Some(team) if team.users.exists(u => u.userId == ctx.user.id && u.teamPermission == Administrator) =>
                 ctx.setCtxValue("tenant.id", tenant.id)
                 ctx.setCtxValue("tenant.name", tenant.name)
-                f(tenant).andThen {
+                f(tenant, team).andThen {
                   case _ =>
                     audit.logTenantAuditEvent(
                       ctx.tenant,

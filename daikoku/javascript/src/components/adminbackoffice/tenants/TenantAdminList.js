@@ -6,7 +6,6 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant, PaginatedComponent, AvatarWithAction } from '../../utils';
-import { updateTenant } from '../../../core';
 import { Translation, t } from '../../../locales';
 
 class TenantAdminListComponent extends Component {
@@ -24,8 +23,9 @@ class TenantAdminListComponent extends Component {
       Services.oneTenant(this.props.tenant._id)
     ])
       .then(
-        ([admins, addableAdmins, tenant]) => {
+        ([{ team, admins }, addableAdmins, tenant]) => {
           this.setState({
+            team,
             tenant,
             addableAdmins,
             admins,
@@ -54,7 +54,7 @@ class TenantAdminListComponent extends Component {
 
   removeAdmin = admin => {
     if (
-      this.props.tenant.admins.length === 1
+      this.state.team.users.length === 1
     ) {
       alert(
         t(
@@ -75,19 +75,18 @@ class TenantAdminListComponent extends Component {
       )
         .then(ok => {
           if (ok) {
-            const admins = this.props.tenant.admins.filter(a => a !== admin._id)
-            const updatedUiTenant = { ...this.props.tenant, admins }
-            const updatedTenant = { ...this.state.tenant, admins }
-
-            Services.saveTenant(updatedTenant)
-              .then(result => {
-                if (result.error) {
-                  toastr.error(t("Failure", this.props.currentLanguage), result.error)
+            Services.removeAdminFromTenant(this.state.tenant._id, admin._id)
+              .then(team => {
+                console.debug({ team })
+                if (team.error) {
+                  toastr.error(t("Failure", this.props.currentLanguage), team.error)
                 } else {
-                  this.setState({ tenant: result }, () => {
+                  this.setState({
+                    team,
+                    addableAdmins: [...this.state.addableAdmins, admin],
+                    admins: this.state.admins.filter(a => a._id !== admin._id)
+                  }, () => {
                     toastr.success(t('remove.admin.tenant.success', this.props.currentLanguage, false, 'Admin deleted successfully', admin.name))
-                    this.props.updateTenant(updatedUiTenant)
-                    this.setState({ addableAdmins: [...this.state.addableAdmins, admin], admins: this.state.admins.filter(a => a._id !== admin._id) })
                   })
                 }
               })
@@ -99,33 +98,24 @@ class TenantAdminListComponent extends Component {
   addAdmin = slug => {
     const admin = slug.value;
     this.setState({ selectedAdmin: admin }, () => {
-      const admins = [...this.state.tenant.admins, admin._id]
-      const updatedUiTenant = { ...this.props.tenant, admins }
-      const updatedTenant = { ...this.state.tenant, admins }
-
-      Services.saveTenant(updatedTenant)
-        .then(tenant => {
-          if (tenant.error) {
-            toastr.error('Failure', tenant.error)
+      Services.addAdminsToTenant(this.state.tenant._id, [admin._id])
+        .then(team => {
+          if (team.error) {
+            toastr.error('Failure', team.error)
           } else {
             this.setState({
               selectedAdmin: null,
-              tenant,
+              team,
               admins: [...this.state.admins, admin],
               addableAdmins: this.state.addableAdmins.filter(u => u._id !== admin._id)
             }, () => {
-              toastr.success(
-                'Success',
-                t(
-                  'admin.added.successfully',
-                  this.props.currentLanguage,
-                  false,
-                  `${admin.name} has been added as new admin of the tenant`,
-                  admin.name
-                )
-              )
-
-              this.props.updateTenant(updatedUiTenant)
+              toastr.success(t(
+                'admin.added.successfully',
+                this.props.currentLanguage,
+                false,
+                `${admin.name} has been added as new admin of the tenant`,
+                admin.name
+              ))
             })
           }
         }
@@ -207,8 +197,4 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-const mapDispatchToProps = {
-  updateTenant
-}
-
-export const TenantAdminList = connect(mapStateToProps, mapDispatchToProps)(TenantAdminListComponent);
+export const TenantAdminList = connect(mapStateToProps)(TenantAdminListComponent);

@@ -1315,3 +1315,26 @@ export function addableAdminsForTenant(tenantId) {
     },
   }).then(r => r.json());
 }
+
+export function addAdminsToTenant(tenantId, adminIds) {
+  return fetch(`/api/tenants/${tenantId}/admins`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(adminIds)
+  }).then(r => r.json());
+}
+
+export function removeAdminFromTenant(tenantId, adminId) {
+  return fetch(`/api/tenants/${tenantId}/admins/${adminId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }
+  }).then(r => r.json());
+}
