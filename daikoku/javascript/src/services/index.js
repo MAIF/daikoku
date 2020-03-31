@@ -1308,7 +1308,6 @@ export function tenantAdmins(tenantId) {
 export function addableAdminsForTenant(tenantId) {
   return fetch(`/api/tenants/${tenantId}/addable-admins`, {
     method: 'GET',
-    credentials: 'include',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',

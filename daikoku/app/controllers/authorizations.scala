@@ -11,6 +11,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
+import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.{Result, Results}
 import reactivemongo.bson.BSONObjectID
@@ -352,7 +353,7 @@ object authorizations {
                       ctx.ctx,
                       AuthorizationLevel.AuthorizedTenantAdmin)
                 }
-              case Some(team) if team.users.exists(u => u.userId != ctx.user.id || u.teamPermission != Administrator) =>
+              case Some(team) if !team.users.exists(u => u.userId == ctx.user.id && u.teamPermission == Administrator) =>
                 ctx.setCtxValue("team.id", tenant.id)
                 ctx.setCtxValue("team.name", tenant.name)
                 audit.logTenantAuditEvent(ctx.tenant,

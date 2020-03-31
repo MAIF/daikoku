@@ -511,7 +511,7 @@ class TenantController(DaikokuAction: DaikokuAction,
 
   def removeAdminFromTenant(tenantId: String, adminId: String) = DaikokuAction.async { ctx =>
     TenantAdminOnly(AuditTrailEvent(s"@{user.name} has added a new tenant admins - @{admin.id}"))(tenantId, ctx) { (tenant, adminTeam) =>
-      if(adminTeam.users.size < 1 && adminTeam.users.exists(u => u.userId.value == adminId)) {
+      if(adminTeam.users.size == 1 && adminTeam.users.exists(u => u.userId.value == adminId)) {
         FastFuture.successful(Conflict(Json.obj("error" -> "There must be at least one administrator on the team")))
       } else if (adminId == ctx.user.id.value) {
         FastFuture.successful(Conflict(Json.obj("error" -> "You can't remove yourself your tenant admin rights")))

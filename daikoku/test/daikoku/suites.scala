@@ -52,11 +52,11 @@ class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
   def getSuites(): Seq[Suite] = {
     Seq(
 //      new BasicUsageSpec(defaultTestConfig),
-      new ApiControllerSpec(defaultTestConfig),
-      new TeamControllerSpec(defaultTestConfig),
-      new UserControllerSpec(defaultTestConfig),
-      new NotificationControllerSpec(defaultTestConfig),
-      new ConsumptionControllerSpec(defaultTestConfig),
+//      new ApiControllerSpec(defaultTestConfig),
+//      new TeamControllerSpec(defaultTestConfig),
+//      new UserControllerSpec(defaultTestConfig),
+//      new NotificationControllerSpec(defaultTestConfig),
+//      new ConsumptionControllerSpec(defaultTestConfig),
       new TenantControllerSpec(defaultTestConfig)
     )
   }
@@ -567,6 +567,99 @@ object utils {
     val stubPort = 11112
     val stubHost = "localhost"
 
+
+
+    val teamOwnerId = TeamId("team-owner")
+    val teamConsumerId = TeamId("team-consumer")
+    val teamAdminId = TeamId("team-admin")
+
+    val daikokuAdminId = UserId("daikoku-admin")
+    val tenantAdminId = UserId("tenant-admin")
+    val userTeamAdminId = UserId("team-admin")
+    val userApiEditorId = UserId("team-api-editor")
+    val userTeamUserId = UserId("team-user")
+
+    val teamOwner = Team(
+      id = teamOwnerId,
+      tenant = Tenant.Default,
+      `type` = TeamType.Organization,
+      name = s"Owner Team",
+      description = s"The team who present api",
+      users = Set(
+        UserWithPermission(userTeamAdminId, Administrator),
+        UserWithPermission(userApiEditorId, ApiEditor),
+        UserWithPermission(userTeamUserId, TeamUser),
+      ),
+    )
+    val teamConsumer = Team(
+      id = teamConsumerId,
+      tenant = Tenant.Default,
+      `type` = TeamType.Organization,
+      name = s"Consumer Team",
+      description = s"The team who consume api",
+      users = Set(
+        UserWithPermission(userTeamAdminId, Administrator),
+        UserWithPermission(userApiEditorId, ApiEditor),
+        UserWithPermission(userTeamUserId, TeamUser),
+      ),
+    )
+    val daikokuAdmin = User(
+      id = daikokuAdminId,
+      tenants = Set(Tenant.Default),
+      origins = Set(AuthProvider.Local),
+      name = "Bobby daikoku Admin",
+      email = "bobby.daikoku.admin@gmail.com",
+      lastTenant = None,
+      personalToken = Some(IdGenerator.token(32)),
+      password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
+      isDaikokuAdmin = true,
+      defaultLanguage = None
+    )
+    val tenantAdmin = User(
+      id = tenantAdminId,
+      tenants = Set(Tenant.Default),
+      origins = Set(AuthProvider.Local),
+      name = "Bobby tenant Admin",
+      email = "bobby.tenant.admin@gmail.com",
+      lastTenant = None,
+      personalToken = Some(IdGenerator.token(32)),
+      password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
+      isDaikokuAdmin = false,
+      defaultLanguage = None
+    )
+    val userAdmin = User(
+      id = userTeamAdminId,
+      tenants = Set(Tenant.Default),
+      origins = Set(AuthProvider.Local),
+      name = "Bobby Admin",
+      email = "bobby.admin@gmail.com",
+      lastTenant = None,
+      personalToken = Some(IdGenerator.token(32)),
+      password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
+      defaultLanguage = None
+    )
+    val userApiEditor = User(
+      id = userApiEditorId,
+      tenants = Set(Tenant.Default),
+      origins = Set(AuthProvider.Local),
+      name = "Bobby Editor",
+      email = "bobby.editor@gmail.com",
+      lastTenant = None,
+      personalToken = Some(IdGenerator.token(32)),
+      password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
+      defaultLanguage = None
+    )
+    val user = User(
+      id = userTeamUserId,
+      tenants = Set(Tenant.Default),
+      origins = Set(AuthProvider.Local),
+      name = "Bobby",
+      email = "bobby@gmail.com",
+      lastTenant = None,
+      personalToken = Some(IdGenerator.token(32)),
+      password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
+      defaultLanguage = None
+    )
     val defaultAdminTeam = Team(
       id = TeamId(IdGenerator.token),
       tenant = Tenant.Default,
@@ -574,7 +667,7 @@ object utils {
       name = s"default-admin-team",
       description = s"The admin team for the default tenant",
       avatar = None,
-      users = Set(),
+      users = Set(UserWithPermission(tenantAdminId, Administrator)),
       subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
@@ -638,86 +731,8 @@ object utils {
       ),
       defaultLanguage = Some("En"),
       adminApi = adminApi.id,
-      adminSubscriptions = Seq.empty
-    )
-
-    val teamOwnerId = TeamId("team-owner")
-    val teamConsumerId = TeamId("team-consumer")
-    val teamAdminId = TeamId("team-admin")
-
-    val daikokuAdminId = UserId("daikoku-admin")
-    val userTeamAdminId = UserId("team-admin")
-    val userApiEditorId = UserId("team-api-editor")
-    val userTeamUserId = UserId("team-user")
-
-    val teamOwner = Team(
-      id = teamOwnerId,
-      tenant = Tenant.Default,
-      `type` = TeamType.Organization,
-      name = s"Owner Team",
-      description = s"The team who present api",
-      users = Set(
-        UserWithPermission(userTeamAdminId, Administrator),
-        UserWithPermission(userApiEditorId, ApiEditor),
-        UserWithPermission(userTeamUserId, TeamUser),
-      ),
-    )
-    val teamConsumer = Team(
-      id = teamConsumerId,
-      tenant = Tenant.Default,
-      `type` = TeamType.Organization,
-      name = s"Consumer Team",
-      description = s"The team who consume api",
-      users = Set(
-        UserWithPermission(userTeamAdminId, Administrator),
-        UserWithPermission(userApiEditorId, ApiEditor),
-        UserWithPermission(userTeamUserId, TeamUser),
-      ),
-    )
-    val daikokuAdmin = User(
-      id = daikokuAdminId,
-      tenants = Set(tenant.id),
-      origins = Set(AuthProvider.Local),
-      name = "Bobby daikoku Admin",
-      email = "bobby.daikoku.admin@gmail.com",
-      lastTenant = Some(tenant.id),
-      personalToken = Some(IdGenerator.token(32)),
-      password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
-      isDaikokuAdmin = true,
-      defaultLanguage = None
-    )
-    val userAdmin = User(
-      id = userTeamAdminId,
-      tenants = Set(tenant.id),
-      origins = Set(AuthProvider.Local),
-      name = "Bobby Admin",
-      email = "bobby.admin@gmail.com",
-      lastTenant = Some(tenant.id),
-      personalToken = Some(IdGenerator.token(32)),
-      password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
-      defaultLanguage = None
-    )
-    val userApiEditor = User(
-      id = userApiEditorId,
-      tenants = Set(tenant.id),
-      origins = Set(AuthProvider.Local),
-      name = "Bobby Editor",
-      email = "bobby.editor@gmail.com",
-      lastTenant = Some(tenant.id),
-      personalToken = Some(IdGenerator.token(32)),
-      password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
-      defaultLanguage = None
-    )
-    val user = User(
-      id = userTeamUserId,
-      tenants = Set(tenant.id),
-      origins = Set(AuthProvider.Local),
-      name = "Bobby",
-      email = "bobby@gmail.com",
-      lastTenant = Some(tenant.id),
-      personalToken = Some(IdGenerator.token(32)),
-      password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
-      defaultLanguage = None
+      adminSubscriptions = Seq.empty,
+      contact = "contact@test-corp.foo.bar"
     )
 
     def generateApi(version: String = "0",
