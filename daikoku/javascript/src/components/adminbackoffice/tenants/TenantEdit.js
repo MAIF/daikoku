@@ -794,14 +794,19 @@ export class TenantEditComponent extends Component {
               </React.Suspense>
               <div style={{ height: 60 }} />
               <div className="row form-back-fixedBtns">
-                <Link className="btn btn-outline-primary" to={'/settings/tenants'}>
+                <Link className="btn btn-outline-primary mr-1" to={'/settings/tenants'}>
                   <i className="fas fa-chevron-left mr-1" />
                   <Translation i18nkey="Back" language={this.props.currentLanguage}>
                     Back
                   </Translation>
                 </Link>
+                {!this.state.create && <Link className="btn btn-outline-primary mr-1" to={`/settings/tenants/${this.state.tenant._humanReadableId}/admins`}>
+                  <i className="fas fa-user-shield" />
+                  <Translation i18nkey="Admins" language={this.props.currentLanguage}>
+                    Admins
+                  </Translation>
+                </Link>}
                 <button
-                  style={{ marginLeft: 5 }}
                   type="button"
                   className="btn btn-outline-success"
                   {...disabled}

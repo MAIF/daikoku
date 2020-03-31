@@ -132,6 +132,7 @@ const TenantAdminListComponent = props => {
         <div className="row">
           <div className="col">
             <h1>
+              {tenant && <>{tenant.name} - </>}
               <Translation
                 i18nkey="Admins"
                 language={props.currentLanguage}>

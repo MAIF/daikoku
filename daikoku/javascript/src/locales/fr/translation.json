@@ -605,7 +605,7 @@
   "otoroshi.settings.deleted.success": "Les paramètres Otoroshi ont été correctement supprimés",
   "otoroshi.settings.created.success": "Les paramètres Otoroshi ont été correctement créés",
   "otoroshi.settings.updated.success": "Les paramètres Otoroshi ont été correctement modifiés",
-  "Admins": "admins",
+  "Admins": "Admins",
   "Add new admin": "Ajouter un admin",
   "Find an admin": "Trouver un admin",
   "Remove admin rights": "Supprimer les droits d'admin",

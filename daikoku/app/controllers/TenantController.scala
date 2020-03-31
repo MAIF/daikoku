@@ -238,9 +238,8 @@ class TenantController(DaikokuAction: DaikokuAction,
           val tenantForCreation = tenant.copy(adminApi = adminApi.id)
 
           for {
-            admins  <-  env.dataStore.userRepo.findNotDeleted(Json.obj("isDaikokuAdmin" -> true))
             _       <- env.dataStore.tenantRepo.save(tenantForCreation)
-            _       <- env.dataStore.teamRepo.forTenant(tenantForCreation).save(adminTeam.copy(users = admins.map(u => UserWithPermission(u.id, TeamPermission.Administrator)).toSet))
+            _       <- env.dataStore.teamRepo.forTenant(tenantForCreation).save(adminTeam)
             _       <- env.dataStore.apiRepo.forTenant(tenantForCreation).save(adminApi)
           } yield {
             Created(tenantForCreation.asJsonWithJwt)
@@ -512,7 +511,6 @@ class TenantController(DaikokuAction: DaikokuAction,
 
   def removeAdminFromTenant(tenantId: String, adminId: String) = DaikokuAction.async { ctx =>
     TenantAdminOnly(AuditTrailEvent(s"@{user.name} has added a new tenant admins - @{admin.id}"))(tenantId, ctx) { (tenant, adminTeam) =>
-      Logger.debug("*******************HERE")
       if(adminTeam.users.size < 1 && adminTeam.users.exists(u => u.userId.value == adminId)) {
         FastFuture.successful(Conflict(Json.obj("error" -> "There must be at least one administrator on the team")))
       } else if (adminId == ctx.user.id.value) {
