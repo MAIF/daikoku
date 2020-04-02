@@ -102,8 +102,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
         if (user.tenants.contains(tenant.id)) {
           block(DaikokuActionContext(request, user, tenant, session, imper, isTenantAdmin))
         } else {
-          logger.info(
-            s"User ${user.email} is not registered on tenant ${tenant.name}")
+          logger.info(s"User ${user.email} is not registered on tenant ${tenant.name}")
           session.invalidate()(ec, env).map { _ =>
             Results.Redirect("/")
           }
@@ -122,7 +121,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
                                GuestUserSession(user, tenant),
                                None,
                                isTenantAdmin))
-      case (Some(tenant), None, _, None, Some(isTenantAdmin)) if !tenant.isPrivate =>
+      case (Some(tenant), None, _, None, _) if !tenant.isPrivate =>
         val guestUser = GuestUser(tenant.id)
         block(
           DaikokuActionContext(request,
@@ -130,7 +129,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
                                tenant,
                                GuestUserSession(guestUser, tenant),
                                None,
-                               isTenantAdmin))
+                               isTenantAdmin = false))
       case _ =>
         Errors.craftResponseResult("User not found :-(",
                                    Results.NotFound,

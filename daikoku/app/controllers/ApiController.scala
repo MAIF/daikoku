@@ -138,7 +138,7 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def myVisibleApis() = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
-      env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+      env.dataStore.teamRepo.forTenant(ctx.tenant).findAllNotDeleted()
         .flatMap(teams => {
           getVisibleApis(teams, ctx.user, ctx.tenant)
             .map(Ok(_))
@@ -928,6 +928,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def getVisibleApis(teams: Seq[Team], user: User, tenant: Tenant): Future[JsArray] = {
+    val teamFilter = Json.obj("team"-> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))))
     for {
       myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
       myCurrentRequests <- if (user.isGuest) FastFuture.successful(Seq.empty) else env.dataStore.notificationRepo
@@ -938,25 +939,21 @@ class ApiController(DaikokuAction: DaikokuAction,
             "status.status" -> "Pending")
         )
       apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
-      publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public"))
+      publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public") ++ teamFilter)
       almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-        Json.obj(
-          "visibility" -> "PublicWithAuthorizations",
-        )
+        Json.obj("visibility" -> "PublicWithAuthorizations") ++ teamFilter
       )
       privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
         Json.obj(
           "visibility" -> "Private",
           "$or" -> Json.arr(
             Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
-            Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))))
+            teamFilter
           )
         )
       )
       adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-        Json.obj(
-          "visibility" -> ApiVisibility.AdminOnly.name
-        )
+        Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ teamFilter
       )
       translations <- env.dataStore.translationRepo.forTenant(tenant)
         .find(Json.obj(

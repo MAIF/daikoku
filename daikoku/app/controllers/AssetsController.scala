@@ -3,8 +3,9 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.alpakka.s3.ObjectMetadata
 import akka.util.ByteString
+
 import scala.collection.JavaConverters._
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuTenantAction}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.AssetId
@@ -41,6 +42,7 @@ trait NormalizeSupport {
 object NormalizeSupport extends NormalizeSupport
 
 class TeamAssetsController(DaikokuAction: DaikokuAction,
+                           DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                            env: Env,
                            cc: ControllerComponents)
     extends AbstractController(cc)
@@ -214,9 +216,9 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
       }
   }
 
-  def getAsset(teamId: String, assetId: String) = DaikokuAction.async { ctx =>
+  def getAsset(teamId: String, assetId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     // TODO: validate if usser has right to see the asset based on team and api
-    PublicUserAccess(
+    UberPublicUserAccess(
       AuditTrailEvent(
         s"@{user.name} accessed asset @{assetId} on team @{teamId}"))(ctx) {
       ctx.setCtxValue("teamId", teamId)
