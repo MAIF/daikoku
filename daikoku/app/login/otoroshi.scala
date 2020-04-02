@@ -152,7 +152,7 @@ object OtoroshiIdentityFilter {
                           rr <- nextFilter(
                             request
                               .addAttr(IdentityAttrs.TeamKey, newTeam)
-                              .addAttr(IdentityAttrs.UserKey, defaultUser)
+                              .addAttr(IdentityAttrs.UserKey, defaultUser) //not tenant admin because new user
                               .addAttr(IdentityAttrs.ImpersonatorKey,
                                        impersonator)
                               .addAttr(IdentityAttrs.TenantKey, tenant)
@@ -202,6 +202,7 @@ object OtoroshiIdentityFilter {
                           isDaikokuAdmin = isDaikokuAdmin
                         )
                         for {
+                          tenantTeam <- env.dataStore.teamRepo.forTenant(tenant).findNotDeleted(Json.obj("type" -> "Admin"))
                           userTeamOpt <- findUserTeam(tenant.id, updatedUser)(
                             ec,
                             env)
@@ -221,6 +222,7 @@ object OtoroshiIdentityFilter {
                             request
                               .addAttr(IdentityAttrs.TeamKey, userTeam)
                               .addAttr(IdentityAttrs.UserKey, updatedUser)
+                              .addAttr(IdentityAttrs.TenantAdminKey, tenantTeam.exists(t => t.users.exists(u => u.userId == updatedUser.id && u.teamPermission == TeamPermission.Administrator)))
                               .addAttr(IdentityAttrs.ImpersonatorKey,
                                        impersonator)
                               .addAttr(IdentityAttrs.TenantKey, tenant)
@@ -271,6 +273,7 @@ object OtoroshiIdentityFilter {
                     isDaikokuAdmin = isDaikokuAdmin
                   )
                   for {
+                    tenantTeam <- env.dataStore.teamRepo.forTenant(tenant).findNotDeleted(Json.obj("type" -> "Admin"))
                     userTeamOpt <- findUserTeam(tenant.id, updatedUser)(ec, env)
                     userTeam <- if (userTeamOpt.isDefined)
                       FastFuture.successful(userTeamOpt.get)
@@ -287,6 +290,7 @@ object OtoroshiIdentityFilter {
                       request
                         .addAttr(IdentityAttrs.TeamKey, userTeam)
                         .addAttr(IdentityAttrs.UserKey, updatedUser)
+                        .addAttr(IdentityAttrs.TenantAdminKey, tenantTeam.exists(t => t.users.exists(u => u.userId == updatedUser.id && u.teamPermission == TeamPermission.Administrator)))
                         .addAttr(IdentityAttrs.ImpersonatorKey, impersonator)
                         .addAttr(IdentityAttrs.TenantKey, tenant)
                         .addAttr(IdentityAttrs.SessionKey, session)
