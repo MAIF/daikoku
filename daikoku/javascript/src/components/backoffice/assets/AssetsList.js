@@ -5,7 +5,7 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { TeamBackOffice, UserBackOffice } from '..';
 import { Table } from '../../inputs';
-import { Can, manage, asset, daikoku, Spinner } from '../../utils';
+import { Can, manage, asset, tenant, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
 import { openWysywygModal } from '../../../core/modal';
 
@@ -546,7 +546,7 @@ class AssetsListComponent extends Component {
       <BackOffice tab="Assets" apiId={this.props.match.params.apiId}>
         <Can
           I={manage}
-          a={this.props.tenantMode ? daikoku : asset}
+          a={this.props.tenantMode ? tenant : asset}
           team={this.props.currentTeam}
           dispatchError>
           <div className="row">

@@ -5,6 +5,7 @@ import {
   UPDATE_TEAM,
   UPDATE_NOTIFS,
   UPDATE_LANGUAGE,
+  UPDATE_TENANT,
 } from './action-types';
 
 const initialState = {
@@ -15,6 +16,7 @@ const initialState = {
   tenant: null,
   history: null,
   currentLanguage: 'En',
+  isTenantAdmin: false
 };
 
 export function contextReducer(state = initialState, action) {
@@ -25,7 +27,7 @@ export function contextReducer(state = initialState, action) {
         connectedUser: action.user,
         currentTeam: action.team,
         tenant: action.tenant,
-        currentLanguage: action.language,
+        currentLanguage: action.language
       };
 
     case LOGOUT:
@@ -46,6 +48,9 @@ export function contextReducer(state = initialState, action) {
 
     case UPDATE_LANGUAGE:
       return { ...state, currentLanguage: action.language };
+
+    case UPDATE_TENANT:
+      return { ...state, tenant: action.tenant };
 
     default:
       return state;

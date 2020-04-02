@@ -10,6 +10,7 @@ import { Sun, Moon } from 'react-feather';
 import * as Services from '../../services';
 import { logout, updateNotications, udpateLanguage } from '../../core/context/actions';
 import { t, Translation, languages } from '../../locales';
+import {Can, manage, daikoku, tenant} from '../utils';
 
 const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) => {
   const [login, setLogin] = useState('');
@@ -231,18 +232,20 @@ export class TopBarComponent extends Component {
           <i className="fas fa-random" /> {t('All organizations', this.props.currentLanguage)}
         </Link>
         <div className="dropdown-divider" />
-        {this.props.connectedUser.isDaikokuAdmin && (
+        <Can I={manage} a={tenant}>
           <Link className="dropdown-item" to={'/settings/teams'}>
             <i className="fas fa-cogs" /> {this.props.tenant.name}{' '}
             {t('settings', this.props.currentLanguage)}
           </Link>
-        )}
-        {this.props.connectedUser.isDaikokuAdmin && (
+        </Can>
+        <Can I={manage} a={daikoku}>
           <Link className="dropdown-item" to={'/settings/tenants'}>
-            <i className="fas fa-cogs" /> {t('Organizations settings', this.props.currentLanguage)}
+            <i className="fas fa-cogs" /> {t('Daikoku settings', this.props.currentLanguage)}
           </Link>
-        )}
-        {this.props.connectedUser.isDaikokuAdmin && <div className="dropdown-divider" />}
+        </Can>
+        <Can I={manage} a={tenant}>
+          <div className="dropdown-divider" />
+        </Can>
         {this.props.tenant.mode === 'Dev' && (
           <a className="dropdown-item" href="#" onClick={this.reset}>
             <i className="fas fa-skull-crossbones" /> {t('Reset', this.props.currentLanguage)}

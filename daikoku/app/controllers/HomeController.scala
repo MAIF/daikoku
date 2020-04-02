@@ -23,7 +23,8 @@ class HomeController(
                            ctx.session.get,
                            ctx.tenant,
                            ctx.request.domain,
-                           env))
+                           env,
+                           ctx.isTenantAdmin))
       case None if ctx.request.uri.startsWith("/signup") =>
         Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
       case None if ctx.request.uri.startsWith("/reset") =>

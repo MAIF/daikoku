@@ -198,7 +198,6 @@ class ApiListComponent extends Component {
   }
 
   handlePageClick = data => {
-    debugger
     this.setState({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected }, 
       () => console.debug({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected}));
   };
@@ -302,9 +301,10 @@ class ApiListComponent extends Component {
                 false,
                 'You are going to create an api. For which team do you want to create it ?'
               )}
-              teams={this.props.myTeams.filter(t =>
-                CanIDoAction(this.props.connectedUser, manage, api, t)
-              )}
+              teams={this.props.myTeams
+                .filter(t => t.type !== "Admin")
+                .filter(t => CanIDoAction(this.props.connectedUser, manage, api, t))
+              }
               action={team => this.createNewApi(team)}
               withAllTeamSelector={false}>
               <div className="col-12 col-sm-2">

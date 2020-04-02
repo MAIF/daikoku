@@ -23,6 +23,7 @@ class TeamApiComponent extends Component {
     create: false,
     tab: this.props.match.params.tab || 'infos',
     error: null,
+    otoroshiSettings: []
   };
 
   formSchema = {
@@ -58,16 +59,21 @@ class TeamApiComponent extends Component {
 
   componentDidMount() {
     if (this.props.location && this.props.location.state && this.props.location.state.newApi) {
-      this.setState({
-        api: this.props.location.state.newApi,
-        originalApi: this.props.location.state.newApi,
-        create: true,
-      });
+      Services.allSimpleOtoroshis(this.props.tenant._id)
+        .then(otoroshiSettings => this.setState({
+          otoroshiSettings,
+          api: this.props.location.state.newApi,
+          originalApi: this.props.location.state.newApi,
+          create: true,
+        }))
+      ;
     } else {
-      console.log('fetch');
-      Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId).then(api => {
-        console.log('done', api);
-        this.setState({ api, originalApi: api });
+      Promise.all([
+        Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId),
+        Services.allSimpleOtoroshis(this.props.tenant._id)
+      ])
+      .then(([api, otoroshiSettings]) => {
+        this.setState({ api, originalApi: api, otoroshiSettings });
       });
     }
   }
@@ -81,7 +87,6 @@ class TeamApiComponent extends Component {
       this.state.savePage();
     }
     const editedApi = this.transformPossiblePlansBack(this.state.api);
-    console.log('save', { editedApi });
     if (this.state.create) {
       return Services.createTeamApi(this.props.currentTeam._id, editedApi)
         .then(api => {
@@ -139,7 +144,6 @@ class TeamApiComponent extends Component {
     if (!api) {
       return api;
     }
-    console.log('transformPossiblePlansBack');
     const def = {
       otoroshiTarget: {
         otoroshiSettings: null,
@@ -403,6 +407,7 @@ class TeamApiComponent extends Component {
                         teamId={teamId}
                         value={editedApi}
                         onChange={api => this.setState({ api })}
+                        otoroshiSettings={this.state.otoroshiSettings}
                       />
                     )}
                     {editedApi && this.state.tab === 'plans' && (
@@ -411,6 +416,7 @@ class TeamApiComponent extends Component {
                         teamId={teamId}
                         value={editedApi}
                         onChange={api => this.setState({ api })}
+                        tenant={this.props.tenant}
                       />
                     )}
                     {false && editedApi && this.state.tab === 'otoroshi' && (
@@ -442,6 +448,7 @@ class TeamApiComponent extends Component {
                         onChange={api => this.setState({ api })}
                         save={this.save}
                         hookSavePage={savePage => this.setState({ savePage })}
+                        otoroshiSettings={this.state.otoroshiSettings}
                       />
                     )}
                   </div>

@@ -39,8 +39,7 @@ const AUTOMATIC = 'Automatic';
 
 export class TeamApiPricing extends Component {
   state = {
-    selected: null,
-    tenant: null,
+    selected: this.props.value.possibleUsagePlans[0]
   };
 
   otoroshiFlow = _found => {
@@ -88,12 +87,10 @@ export class TeamApiPricing extends Component {
           type: 'select',
           props: {
             label: t('Otoroshi instance', this.props.currentLanguage),
-            possibleValues: this.state.tenant
-              ? this.state.tenant.otoroshiSettings.map(s => ({
+            possibleValues: this.props.otoroshiSettings.map(s => ({
                   label: s.url,
                   value: s._id,
-                }))
-              : [],
+                })),
           },
         },
         'otoroshiTarget.serviceGroup': {
@@ -113,12 +110,10 @@ export class TeamApiPricing extends Component {
         type: 'select',
         props: {
           label: t('Otoroshi instance', this.props.currentLanguage),
-          possibleValues: this.state.tenant
-            ? this.state.tenant.otoroshiSettings.map(s => ({
+          possibleValues: this.props.otoroshiSettings.map(s => ({
                 label: s.url,
                 value: s._id,
-              }))
-            : [],
+              })),
         },
       },
       'otoroshiTarget.serviceGroup': {
@@ -256,14 +251,6 @@ export class TeamApiPricing extends Component {
         },
       }
     }
-  }
-
-  componentDidMount() {
-    Services.currentTenant(this.props.teamId)
-      .then(tenant => this.setState({ tenant }))
-      .then(() => {
-        this.setState({ selected: this.props.value.possibleUsagePlans[0] });
-      });
   }
 
   select = selected => {
@@ -1148,9 +1135,6 @@ export class TeamApiPricing extends Component {
 
   render() {
     if (this.props.value === null) return null;
-    if (!this.state.tenant) {
-      return null;
-    }
 
     if (!this.props.value.possibleUsagePlans.length) {
       return (

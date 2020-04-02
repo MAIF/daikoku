@@ -2347,9 +2347,12 @@ object json {
     Format(Reads.seq(OtoroshiGroupFormat), Writes.seq(OtoroshiGroupFormat))
   val SeqTenantIdFormat =
     Format(Reads.seq(TenantIdFormat), Writes.seq(TenantIdFormat))
+  val SeqTenantFormat = Format(Reads.seq(TenantFormat), Writes.seq(TenantFormat))
   val SeqUserFormat = Format(Reads.seq(UserFormat), Writes.seq(UserFormat))
   val SeqUserIdFormat =
     Format(Reads.seq(UserIdFormat), Writes.seq(UserIdFormat))
+  val SetUserIdFormat =
+    Format(Reads.set(UserIdFormat), Writes.set(UserIdFormat))
   val SeqApiSubscriptionIdFormat = Format(Reads.seq(ApiSubscriptionIdFormat),
                                           Writes.seq(ApiSubscriptionIdFormat))
   val SeqApiDocumentationPageIdFormat =

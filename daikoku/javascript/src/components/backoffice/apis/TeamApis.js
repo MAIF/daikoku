@@ -31,6 +31,7 @@ class TeamApisComponent extends Component {
           <SwitchButton
             onSwitch={() => this.togglePublish(api)}
             checked={api.published}
+            disabled={api.visibility === "AdminOnly"}
             large
             noText
           />
@@ -70,14 +71,14 @@ class TeamApisComponent extends Component {
               title="Edit this Api">
               <i className="fas fa-edit" />
             </Link>
-            <button
+            {api.visibility !== 'AdminOnly' && <button
               key={`delete-${api._humanReadableId}`}
               type="button"
               className="btn btn-sm btn-access-negative"
               title="Delete this Api"
-              onClick={() => this.delete(api._id)}>
+              onClick={() => this.delete(api)}>
               <i className="fas fa-trash" />
-            </button>
+            </button>}
           </Can>
         </div>
       ),
@@ -100,21 +101,19 @@ class TeamApisComponent extends Component {
       );
   };
 
-  delete = id => {
-    window
-      .confirm(
-        t(
-          'delete.api.confirm',
-          this.props.currentLanguage,
-          'Are you sure you want to delete this api ?'
-        )
-      )
+  delete = api => {
+    window.confirm(t(
+      'delete.api.confirm',
+      this.props.currentLanguage,
+      'Are you sure you want to delete this api ?'
+    ))
       .then(ok => {
         if (ok) {
-          Services.deleteTeamApi(this.props.currentTeam._id, id).then(() => {
-            toastr.success('deletion successful');
-            this.table.update();
-          });
+          Services.deleteTeamApi(this.props.currentTeam._id, api._id)
+            .then(() => {
+              toastr.success(t('delete.api.success', this.props.currentLanguage, false, 'API deleted successfully', api.name));
+              this.table.update();
+            });
         }
       });
   };
@@ -155,7 +154,7 @@ class TeamApisComponent extends Component {
             <div className="col">
               <h1>
                 Team apis
-                <Can I={manage} a={Api} team={this.props.currentTeam}>
+                {this.props.currentTeam.type !== 'Admin' && <Can I={manage} a={Api} team={this.props.currentTeam}>
                   <a
                     className="btn btn-sm btn-access-negative mb-1 ml-1"
                     title={t('Create a new API', this.props.currentLanguage)}
@@ -166,7 +165,7 @@ class TeamApisComponent extends Component {
                     }}>
                     <i className="fas fa-plus-circle" />
                   </a>
-                </Can>
+                </Can>}
               </h1>
               <div className="section p-2">
                 <Table

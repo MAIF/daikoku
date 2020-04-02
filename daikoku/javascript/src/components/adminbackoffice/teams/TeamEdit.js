@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 
 import { UserBackOffice } from '../../backoffice';
-import { AvatarChooser, Can, manage, daikoku, Spinner } from '../../utils';
+import { AvatarChooser, Can, manage, tenant, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
 
@@ -15,23 +15,12 @@ class TeamEditForAdministrationComponent extends Component {
     team: null,
   };
 
-  flow =
-    window.location.pathname.indexOf('/edition') === -1
-      ? ['_id', '_tenant', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata']
-      : ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'];
+  flow = ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'];
 
   schema = {
     _id: {
       type: 'string',
       props: { label: 'Id', disabled: true },
-    },
-    _tenant: {
-      type: 'select',
-      props: {
-        label: t('Tenant', this.props.currentLanguage),
-        valuesFrom: '/api/tenants',
-        transformer: tenant => ({ label: tenant.name, value: tenant._id }),
-      },
     },
     type: {
       type: 'select',
@@ -89,7 +78,7 @@ class TeamEditForAdministrationComponent extends Component {
   };
 
   members = () => {
-    this.props.history.push(`/setting/teams/${this.state.team._humanReadableId}/members`);
+    this.props.history.push(`/settings/teams/${this.state.team._humanReadableId}/members`);
   };
 
   componentDidMount() {
@@ -109,7 +98,7 @@ class TeamEditForAdministrationComponent extends Component {
 
     return (
       <UserBackOffice tab="Teams">
-        <Can I={manage} a={daikoku} dispatchError>
+        <Can I={manage} a={tenant} dispatchError>
           <div className="row d-flex justify-content-start align-items-center mb-2">
             {this.state.team && (
               <div

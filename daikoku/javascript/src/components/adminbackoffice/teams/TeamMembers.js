@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
 import { UserBackOffice, TeamMembersSimpleComponent } from '../../backoffice';
-import { Can, manage, daikoku } from '../../utils';
+import { Can, manage, tenant } from '../../utils';
 
 class TeamMembersComponent extends Component {
   state = {
@@ -29,7 +29,7 @@ class TeamMembersComponent extends Component {
 
     return (
       <UserBackOffice tab="Teams">
-        <Can I={manage} a={daikoku} dispatchError>
+        <Can I={manage} a={tenant} dispatchError>
           <TeamMembersSimpleComponent
             currentLanguage={this.props.currentLanguage}
             currentTeam={this.state.team}

@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, daikoku, Spinner } from '../../utils';
+import { Can, manage, tenant, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { toastr } from 'react-redux-toastr';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -52,28 +54,48 @@ class TenantOtoroshiComponent extends Component {
     }
   };
 
-  teamIdFromReduxStore() {
-    // TODO: the current team is still needed here !
-    return this.props.currentTeam._id; // this.props.match.params.teamId || '--';
-  }
-
   componentDidMount() {
     if (this.props.location && this.props.location.state && this.props.location.state.newSettings) {
       this.setState({ otoroshi: this.props.location.state.newSettings, create: true });
     } else {
-      Services.oneOtoroshi(this.props.match.params.otoroshiId).then(otoroshi =>
-        this.setState({ otoroshi })
-      );
+      Services.oneOtoroshi(this.props.tenant._id, this.props.match.params.otoroshiId)
+        .then(otoroshi =>
+          this.setState({ otoroshi })
+        );
     }
   }
 
   save = () => {
     if (this.state.create) {
-      Services.createOtoroshiSettings(this.state.otoroshi).then(() => {
-        this.setState({ create: false });
-      });
+      Services.createOtoroshiSettings(this.props.tenant._id, this.state.otoroshi)
+        .then(result => {
+          if (result.error) {
+            toastr.error("Failure", result.error)
+          } else {
+            toastr.success(t(
+              'otoroshi.settings.created.success',
+              this.props.currentLanguage,
+              false,
+              'Otoroshi settings successfuly created'
+            ));
+            this.setState({ create: false })
+          }
+        });
     } else {
-      Services.saveOtoroshiSettings(this.state.otoroshi);
+      Services.saveOtoroshiSettings(this.props.tenant._id, this.state.otoroshi)
+        .then(result => {
+          if (result.error) {
+            toastr.error("Failure", result.error)
+          } else {
+            toastr.success(t(
+              'otoroshi.settings.updated.success',
+              this.props.currentLanguage,
+              false,
+              'Otoroshi settings successfuly updated'
+            ));
+            this.setState({ create: false })
+          }
+        })
     }
   };
 
@@ -89,7 +111,16 @@ class TenantOtoroshiComponent extends Component {
       )
       .then(ok => {
         if (ok) {
-          Services.deleteOtoroshiSettings(this.state.otoroshi._id);
+          Services.deleteOtoroshiSettings(this.props.tenant._id, this.state.otoroshi._id)
+            .then(() => {
+              toastr.success(t(
+                'otoroshi.settings.deleted.success',
+                this.props.currentLanguage,
+                false,
+                'Otoroshi settings successfuly deleted'
+              ));
+              this.props.history.push('/settings/otoroshis');
+            })
         }
       });
   };
@@ -98,7 +129,7 @@ class TenantOtoroshiComponent extends Component {
     return (
       <UserBackOffice tab="Otoroshi" isLoading={!this.state.otoroshi}>
         {this.state.otoroshi && (
-          <Can I={manage} a={daikoku} dispatchError>
+          <Can I={manage} a={tenant} dispatchError>
             <div className="row">
               {!this.state.create && (
                 <h1>
@@ -131,15 +162,14 @@ class TenantOtoroshiComponent extends Component {
               )}
             </div>
             <div className="row" style={{ justifyContent: 'flex-end' }}>
-              <a
+              <Link
                 className="btn btn-outline-primary"
-                href="#"
-                onClick={() => this.props.history.goBack()}>
+                to="/settings/otoroshis">
                 <i className="fas fa-chevron-left" />
                 <Translation i18nkey="Back" language={this.props.currentLanguage}>
                   Back
                 </Translation>
-              </a>
+              </Link>
               {!this.state.create && (
                 <button
                   style={{ marginLeft: 5 }}

@@ -9,7 +9,7 @@ import * as Services from '../../../services';
 
 import { LDAPConfig, LocalConfig, OAuth2Config, OtoroshiConfig } from './auth';
 import { ConsoleConfig, MailgunConfig, MailjetConfig } from './mailer';
-import { Can, manage, daikoku, Spinner } from '../../utils';
+import { Can, manage, tenant, Spinner } from '../../utils';
 import { t, Translation, configuration } from '../../../locales';
 import { BooleanInput } from '../../inputs/BooleanInput';
 import { openSaveOrCancelModal } from '../../../core/modal/actions';
@@ -757,9 +757,31 @@ export class TenantEditComponent extends Component {
     return (
       <UserBackOffice tab="Tenants" isLoading={!this.state.tenant}>
         {this.state.tenant && (
-          <Can I={manage} a={daikoku} dispatchError>
+          <Can I={manage} a={tenant} dispatchError>
             <div className="row">
-              <h1>Tenant - {this.state.tenant.name}</h1>
+              <div className="col-12 d-flex justify-content-start align-items-center mb-2">
+                  <div
+                    style={{
+                      width: '100px',
+                      height: '100px',
+                      borderRadius: '50px',
+                      border: '3px solid #fff',
+                      boxShadow: '0px 0px 0px 3px lightgrey',
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      alignItems: 'center',
+                      overflow: 'hidden',
+                    }}>
+                    <img
+                      style={{ width: '100%', height: 'auto' }}
+                    src={this.state.tenant.style.logo}
+                      alt="avatar"
+                    />
+                  </div>
+                <h1 className="h1-rwd-reduce ml-2">
+                  {this.state.tenant.name}
+                </h1>
+              </div>
               <React.Suspense fallback={<Spinner />}>
                 <LazyForm
                   currentLanguage={this.props.currentLanguage}
@@ -772,14 +794,19 @@ export class TenantEditComponent extends Component {
               </React.Suspense>
               <div style={{ height: 60 }} />
               <div className="row form-back-fixedBtns">
-                <Link className="btn btn-outline-primary" to={'/settings/tenants'}>
+                <Link className="btn btn-outline-primary mr-1" to={'/settings/tenants'}>
                   <i className="fas fa-chevron-left mr-1" />
                   <Translation i18nkey="Back" language={this.props.currentLanguage}>
                     Back
                   </Translation>
                 </Link>
+                {!this.state.create && <Link className="btn btn-outline-primary mr-1" to={`/settings/tenants/${this.state.tenant._humanReadableId}/admins`}>
+                  <i className="fas fa-user-shield" />
+                  <Translation i18nkey="Admins" language={this.props.currentLanguage}>
+                    Admins
+                  </Translation>
+                </Link>}
                 <button
-                  style={{ marginLeft: 5 }}
                   type="button"
                   className="btn btn-outline-success"
                   {...disabled}

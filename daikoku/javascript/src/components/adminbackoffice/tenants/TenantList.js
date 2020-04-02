@@ -105,6 +105,12 @@ export class TenantListComponent extends Component {
                           iconClass: 'fas fa-link',
                           tooltip: t('Go to tenant', this.props.currentLanguage),
                         },
+                        {
+                          redirect: () =>
+                            this.props.history.push(`/settings/tenants/${tenant._humanReadableId}/admins`),
+                          iconClass: 'fas fa-user-shield',
+                          tooltip: t('Admins', this.props.currentLanguage),
+                        },
                       ]}
                     />
                   );

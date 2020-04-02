@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { connect } from 'react-redux';
 
 import * as Services from '../../services';
-import { Error, Can, manage, read, api, apikey, stat, team, asset, daikoku } from '../utils';
+import { Error, Can, manage, read, api, apikey, stat, team, asset, daikoku, tenant } from '../utils';
 import { t, Translation } from '../../locales';
 
 function elvis(value, f) {
@@ -180,14 +180,14 @@ class TeamBackOfficeComponent extends Component {
                     <Link to={`/${currentTeam._humanReadableId}/settings`}>
                       {this.props.currentTeam.name}
                     </Link>
-                    <Can I={manage} a={team} team={this.props.currentTeam}>
+                    {this.props.currentTeam.type !== 'Admin' && <Can I={manage} a={team} team={this.props.currentTeam}>
                       <Link
                         to={`/${this.props.currentTeam._humanReadableId}/settings/edition`}
                         className=""
                         title={t('Update team', this.props.currentLanguage)}>
                         <i className="fas fa-pen" />
                       </Link>
-                    </Can>
+                    </Can>}
                   </h6>
                   <ul className="nav flex-column mt-3">
                     <Can I={read} a={api} team={this.props.currentTeam}>
@@ -241,7 +241,7 @@ class TeamBackOfficeComponent extends Component {
                       </li>
                     </Can>
 
-                    {this.props.currentTeam.type !== 'Personal' && (
+                    {this.props.currentTeam.type === 'Organisation' && (
                       <Can I={manage} a={team} team={this.props.currentTeam}>
                         <li className="nav-item">
                           <Link
@@ -257,7 +257,7 @@ class TeamBackOfficeComponent extends Component {
                         </li>
                       </Can>
                     )}
-                    <Can I={manage} a={asset} team={this.props.currentTeam}>
+                    {this.props.currentTeam.type !== 'Admin' && <Can I={manage} a={asset} team={this.props.currentTeam}>
                       <li className="nav-item">
                         <Link
                           className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
@@ -268,7 +268,7 @@ class TeamBackOfficeComponent extends Component {
                           </Translation>
                         </Link>
                       </li>
-                    </Can>
+                    </Can>}
                   </ul>
                 </div>
               </nav>
@@ -336,16 +336,20 @@ class UserBackOfficeComponent extends Component {
                       {this.props.notificationSubMenu || null}
                     </li>
                   </ul>
-
-                  <Can I={manage} a={daikoku}>
+                  
+                  <Can I={manage} a={tenant}>
                     <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                      <span>
-                        <Translation
-                          i18nkey="Tenant administration"
-                          language={this.props.currentLanguage}>
-                          Tenant administration
-                        </Translation>
-                      </span>
+                      <Translation
+                        i18nkey="Tenant administration"
+                        language={this.props.currentLanguage}>
+                        Tenant administration
+                      </Translation>
+                      <Link
+                        to={`/settings/tenants/${this.props.tenant._humanReadableId}`}
+                        className=""
+                        title={t('Update tenant', this.props.currentLanguage)}>
+                        <i className="fas fa-pen" />
+                      </Link>
                     </h6>
                     <ul className="nav flex-column mb-2">
                       <li className="nav-item">
@@ -358,6 +362,18 @@ class UserBackOfficeComponent extends Component {
                             language={this.props.currentLanguage}
                             isPlural>
                             Otoroshi instances
+                          </Translation>
+                        </Link>
+                      </li>
+                      <li className="nav-item">
+                        <Link
+                          className={`nav-link ${tab === 'Admins' ? 'active' : ''}`}
+                          to={'/settings/admins'}>
+                          <i className="fas fa-user-shield" />
+                          <Translation
+                            i18nkey="Admins"
+                            language={this.props.currentLanguage}>
+                            Admins
                           </Translation>
                         </Link>
                       </li>
@@ -394,6 +410,9 @@ class UserBackOfficeComponent extends Component {
                         </Link>
                       </li>
                     </ul>
+                  </Can>
+
+                  <Can I={manage} a={daikoku}>
                     <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                       <span>
                         <Translation

@@ -5,7 +5,7 @@ import * as Services from '../../../services';
 import moment from 'moment';
 
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, daikoku } from '../../utils';
+import { Can, manage, tenant } from '../../utils';
 
 export class AuditTrailList extends Component {
   state = {
@@ -149,7 +149,7 @@ export class AuditTrailList extends Component {
   render() {
     return (
       <UserBackOffice tab="Audit trail">
-        <Can I={manage} a={daikoku} dispatchError>
+        <Can I={manage} a={tenant} dispatchError>
           <div className="row">
             <div className="col">
               <h1>Audit trail </h1>

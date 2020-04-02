@@ -4,7 +4,7 @@ import * as Services from '../../../services';
 import _ from 'lodash';
 
 import { UserBackOffice } from '../../backoffice';
-import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
+import { PaginatedComponent, AvatarWithAction, Can, manage, tenant } from '../../utils';
 import { t, Translation } from '../../../locales';
 
 class TeamListComponent extends Component {
@@ -76,7 +76,7 @@ class TeamListComponent extends Component {
 
     return (
       <UserBackOffice tab="Teams">
-        <Can I={manage} a={daikoku} dispatchError>
+        <Can I={manage} a={tenant} dispatchError>
           <div className="row">
             <div className="col">
               <div className="d-flex justify-content-between align-items-center">

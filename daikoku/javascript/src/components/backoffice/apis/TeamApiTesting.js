@@ -13,10 +13,6 @@ class GenerateApiKeyModal extends Component {
     config: this.props.config,
   };
 
-  componentDidMount() {
-    Services.currentTenant(this.props.teamId).then(tenant => this.setState({ tenant }));
-  }
-
   otoroshiFlow = () => {
     return ['otoroshiSettings', 'serviceGroup'];
   };
@@ -28,12 +24,10 @@ class GenerateApiKeyModal extends Component {
           type: 'select',
           props: {
             label: t('Otoroshi instance', this.props.currentLanguage),
-            possibleValues: this.state.tenant
-              ? this.state.tenant.otoroshiSettings.map(s => ({
+            possibleValues: this.props.otoroshiSettings.map(s => ({
                   label: s.url,
                   value: s._id,
-                }))
-              : [],
+                })),
           },
         },
         serviceGroup: {
@@ -50,12 +44,10 @@ class GenerateApiKeyModal extends Component {
         type: 'select',
         props: {
           label: t('Otoroshi instance', this.props.currentLanguage),
-          possibleValues: this.state.tenant
-            ? this.state.tenant.otoroshiSettings.map(s => ({
+          possibleValues: this.props.otoroshiSettings.map(s => ({
                 label: s.url,
                 value: s._id,
-              }))
-            : [],
+              })),
         },
       },
       serviceGroup: {
@@ -187,6 +179,7 @@ class GenerateApiKey extends Component {
           close={close}
           teamId={this.props.teamId()}
           config={config}
+          otoroshiSettings={this.props.otoroshiSettings}
         />
       ),
       t('Generate an apikey for testing', this.props.currentLanguage)
@@ -262,6 +255,7 @@ export class TeamApiTesting extends Component {
         api: () => this.props.value.id || this.props.value._id,
         changeValue: this.props.changeValue,
         currentLanguage: this.props.currentLanguage,
+        otoroshiSettings: this.props.otoroshiSettings
       },
     },
   };

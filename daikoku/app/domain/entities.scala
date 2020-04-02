@@ -118,7 +118,7 @@ case class Tenant(
     auditTrailConfig: AuditTrailConfig = AuditTrailConfig(),
     isPrivate: Boolean = true,
     adminApi: ApiId,
-    adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty,
+    adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -273,6 +273,13 @@ case class OtoroshiSettings(id: OtoroshiSettingsId,
                             clientSecret: String = "admin-api-apikey-secret")
     extends CanJson[OtoroshiSettings] {
   def asJson: JsValue = json.OtoroshiSettingsFormat.writes(this)
+  def toUiPayload(): JsValue = {
+    Json.obj(
+      "_id" -> id.value,
+      "url" -> url,
+      "host" -> host
+    )
+  }
 }
 
 case class ApiKeyRestrictionPath(method: String, path: String)
@@ -484,7 +491,7 @@ object TeamType {
   def apply(name: String): Option[TeamType] = name match {
     case "Organization" => Organization.some
     case "Personal"     => Personal.some
-  case "Admin"          => Admin.some
+    case "Admin"        => Admin.some
     case _              => None
   }
 }

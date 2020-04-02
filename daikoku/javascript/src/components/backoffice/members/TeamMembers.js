@@ -241,7 +241,7 @@ export class TeamMembersSimpleComponent extends Component {
       )
       : this.state.pendingUsers;
     return (
-      <Can I={manage} a={team} team={this.props.currentTeam} dispatchError={true}>
+      <>
         <div className="row">
           <div className="col">
             <h1>
@@ -407,7 +407,7 @@ export class TeamMembersSimpleComponent extends Component {
             }
           }
         />}
-      </Can>
+      </>
     );
   }
 }
@@ -416,7 +416,9 @@ class TeamMembersComponent extends Component {
   render() {
     return (
       <TeamBackOffice tab="Members" apiId={this.props.match.params.apiId}>
-        <TeamMembersSimpleComponent {...this.props} />
+        <Can I={manage} a={team} team={this.props.currentTeam} dispatchError={true}>
+          <TeamMembersSimpleComponent {...this.props} />
+        </Can>
       </TeamBackOffice>
     );
   }

@@ -42,6 +42,9 @@ object AuthorizationLevel {
     override def value: String = "NotAuthorized"
   }
 
+  case object AuthorizedUberPublic extends AuthorizationLevel {
+    override def value: String = "AuthorizedUberPublic"
+  }
   case object AuthorizedPublic extends AuthorizationLevel {
     override def value: String = "AuthorizedPublic"
   }
@@ -50,12 +53,24 @@ object AuthorizationLevel {
     override def value: String = "AuthorizedTeamMember"
   }
 
+  case object AuthorizedTeamApiEditor extends AuthorizationLevel {
+    override def value: String = "AuthorizedTeamApiEditor"
+  }
+
   case object AuthorizedTeamAdmin extends AuthorizationLevel {
     override def value: String = "AuthorizedTeamAdmin"
   }
 
+  case object AuthorizedTenantAdmin extends  AuthorizationLevel {
+    override def value: String = "AuthorizedTenantAdmin"
+  }
+
   case object AuthorizedDaikokuAdmin extends AuthorizationLevel {
     override def value: String = "AuthorizedDaikokuAdmin"
+  }
+
+  case object AuthorizedSelf extends AuthorizationLevel {
+    override def value: String = "AuthorizedSelf"
   }
 
   case object AuthorizedJob extends AuthorizationLevel {

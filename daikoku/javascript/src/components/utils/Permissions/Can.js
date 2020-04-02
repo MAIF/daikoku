@@ -4,10 +4,14 @@ import { connect } from 'react-redux';
 import { Option } from '../';
 import { setError } from '../../../core';
 import { doNothing, read, manage } from './actions';
-import { daikoku, api, apikey, asset, stat, team, backoffice } from './subjects';
+import { daikoku, api, apikey, asset, stat, team, backoffice, tenant } from './subjects';
 import { permissions } from './permissions';
 
-export const CanIDoAction = (user, action, what, team) => {
+export const CanIDoAction = (user, action, what, team, isTenantAdmin, whichOne, currentTenant) => {
+  if (what === tenant) {
+    return isTenantAdmin && whichOne._id === currentTenant._id || user.isDaikokuAdmin
+  }
+
   const realPerm = Option(team)
     .map(t => t.users)
     .flatMap(users => Option(users.find(u => u.userId === user._id)))
@@ -29,7 +33,7 @@ export const CanIDoAction = (user, action, what, team) => {
 };
 
 export const CanIDoActionForOneOfTeams = (user, action, what, teams) => {
-  return teams.some(team => CanIDoAction(user, action, what, team));
+  return teams.some(team => CanIDoAction(user, action, what, team, false));
 };
 
 const CanComponent = ({
@@ -42,10 +46,13 @@ const CanComponent = ({
   children,
   setError,
   orElse = null,
+  isTenantAdmin,
+  tenant,
+  whichOne = tenant
 }) => {
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams)
-    : CanIDoAction(connectedUser, I, a, team);
+    : CanIDoAction(connectedUser, I, a, team, isTenantAdmin, whichOne, tenant);
 
   if (!authorized) {
     if (dispatchError) {
@@ -67,10 +74,12 @@ const mapDispatchToProps = {
 export const Can = connect(mapStateToProps, mapDispatchToProps)(CanComponent);
 CanComponent.propTypes = {
   I: PropTypes.oneOf([read, manage]).isRequired,
-  a: PropTypes.oneOf([apikey, api, asset, stat, team, daikoku, backoffice]).isRequired,
+  a: PropTypes.oneOf([apikey, api, asset, stat, team, daikoku, backoffice, tenant]).isRequired,
   team: PropTypes.object,
+  whichOne: PropTypes.object,
   connectedUser: PropTypes.object.isRequired,
   dispatchError: PropTypes.bool,
   setError: PropTypes.func.isRequired,
   orElse: PropTypes.element,
+  isTenantAdmin: PropTypes.bool
 };

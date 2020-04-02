@@ -18,6 +18,7 @@ case class DaikokuActionMaybeWithoutUserContext[A](
     tenant: Tenant,
     session: Option[UserSession],
     impersonator: Option[User],
+    isTenantAdmin: Boolean,
     ctx: TrieMap[String, String] = new TrieMap[String, String]()) {
   def setCtxValue(key: String, value: Any): Unit = {
     if (value != null) {
@@ -31,6 +32,7 @@ case class DaikokuActionContext[A](request: Request[A],
                                    tenant: Tenant,
                                    session: UserSession,
                                    impersonator: Option[User],
+                                   isTenantAdmin: Boolean,
                                    ctx: TrieMap[String, String] =
                                      new TrieMap[String, String]()) {
   def setCtxValue(key: String, value: Any): Unit = {
@@ -54,11 +56,12 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.TenantKey),
       request.attrs.get(IdentityAttrs.SessionKey),
       request.attrs.get(IdentityAttrs.ImpersonatorKey),
-      request.attrs.get(IdentityAttrs.UserKey)
+      request.attrs.get(IdentityAttrs.UserKey),
+      request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), Some(session), Some(imper), Some(user)) =>
+      case (Some(tenant), Some(session), Some(imper), Some(user), Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          block(DaikokuActionContext(request, user, tenant, session, imper))
+          block(DaikokuActionContext(request, user, tenant, session, imper, isTenantAdmin))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -66,7 +69,7 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
             Results.Redirect("/")
           }
         }
-      case (_, _, _, _) =>
+      case _ =>
         Errors.craftResponseResult("User not found :-(",
                                    Results.NotFound,
                                    request,
@@ -92,11 +95,12 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.TenantKey),
       request.attrs.get(IdentityAttrs.SessionKey),
       request.attrs.get(IdentityAttrs.ImpersonatorKey),
-      request.attrs.get(IdentityAttrs.UserKey)
+      request.attrs.get(IdentityAttrs.UserKey),
+      request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), Some(session), Some(imper), Some(user)) =>
+      case (Some(tenant), Some(session), Some(imper), Some(user), Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          block(DaikokuActionContext(request, user, tenant, session, imper))
+          block(DaikokuActionContext(request, user, tenant, session, imper, isTenantAdmin))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -104,34 +108,35 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
             Results.Redirect("/")
           }
         }
-      case (Some(tenant), _, _, _) if tenant.isPrivate =>
+      case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
         Errors.craftResponseResult("This tenant is private, bye bye.",
                                    Results.Unauthorized,
                                    request,
                                    None,
                                    env)
-      case (Some(tenant), None, _, Some(user)) =>
+      case (Some(tenant), None, _, Some(user), Some(isTenantAdmin)) =>
         block(
           DaikokuActionContext(request,
                                user,
                                tenant,
                                GuestUserSession(user, tenant),
-                               None))
-      case (Some(tenant), None, _, None) if !tenant.isPrivate =>
+                               None,
+                               isTenantAdmin))
+      case (Some(tenant), None, _, None, Some(isTenantAdmin)) if !tenant.isPrivate =>
         val guestUser = GuestUser(tenant.id)
         block(
           DaikokuActionContext(request,
                                guestUser,
                                tenant,
                                GuestUserSession(guestUser, tenant),
-                               None))
-      case (_, _, _, _) => {
+                               None,
+                               isTenantAdmin))
+      case _ =>
         Errors.craftResponseResult("User not found :-(",
                                    Results.NotFound,
                                    request,
                                    None,
                                    env)
-      }
     }
   }
 
@@ -154,16 +159,18 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
       request.attrs.get(IdentityAttrs.TenantKey),
       request.attrs.get(IdentityAttrs.SessionKey),
       request.attrs.get(IdentityAttrs.ImpersonatorKey),
-      request.attrs.get(IdentityAttrs.UserKey)
+      request.attrs.get(IdentityAttrs.UserKey),
+      request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), Some(session), Some(imper), Some(user)) =>
+      case (Some(tenant), Some(session), Some(imper), Some(user), Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
           block(
             DaikokuActionMaybeWithoutUserContext(request,
                                                  Some(user),
                                                  tenant,
                                                  Some(session),
-                                                 imper))
+                                                 imper,
+                                                 isTenantAdmin))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -171,14 +178,15 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
             Results.Redirect("/")
           }
         }
-      case (Some(tenant), _, _, _) if tenant.isPrivate =>
+      case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
         block(
           DaikokuActionMaybeWithoutUserContext(request,
                                                None,
                                                tenant,
                                                None,
-                                               None))
-      case (Some(tenant), _, _, _) =>
+                                               None,
+                                               isTenantAdmin = false))
+      case (Some(tenant), _, _, _, _) =>
         val user = GuestUser(tenant.id)
         block(
           DaikokuActionMaybeWithoutUserContext(
@@ -186,8 +194,9 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
             Some(user),
             tenant,
             Some(GuestUserSession(user, tenant)),
-            None))
-      case (_, _, _, _) =>
+            None,
+            isTenantAdmin = false))
+      case _ =>
         Errors.craftResponseResult("Tenant not found :-(",
                                    Results.NotFound,
                                    request,

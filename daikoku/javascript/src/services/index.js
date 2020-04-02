@@ -1,13 +1,3 @@
-export function currentTenant(team) {
-  return fetch(`/api/teams/${team}/tenant`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then(r => r.json());
-}
-
 export function me() {
   return fetch('/api/me', {
     method: 'GET',
@@ -452,30 +442,39 @@ export function addableUsersForTeam(teamId) {
   }).then(r => r.json());
 }
 
-export function allOtoroshis() {
-  return fetch('/api/teams/otoroshis', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then(r => r.json());
-}
-
-export function oneOtoroshi(id) {
-  return fetch(`/api/teams/otoroshis/${id}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then(r => r.json());
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export function deleteOtoroshiSettings(id) {
-  return fetch(`/api/teams/otoroshis/${id}`, {
+export function allOtoroshis(tenantId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+export function allSimpleOtoroshis(tenantId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/simplified`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function oneOtoroshi(tenantId, id) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${id}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function deleteOtoroshiSettings(tenantId, id) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${id}`, {
     method: 'DELETE',
     credentials: 'include',
     headers: {
@@ -484,8 +483,8 @@ export function deleteOtoroshiSettings(id) {
   }).then(r => r.json());
 }
 
-export function saveOtoroshiSettings(oto) {
-  return fetch(`/api/teams/otoroshis/${oto._id}`, {
+export function saveOtoroshiSettings(tenantId, oto) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${oto._id}`, {
     method: 'PUT',
     credentials: 'include',
     headers: {
@@ -496,8 +495,8 @@ export function saveOtoroshiSettings(oto) {
   }).then(r => r.json());
 }
 
-export function createOtoroshiSettings(oto) {
-  return fetch('/api/teams/otoroshis', {
+export function createOtoroshiSettings(tenantId, oto) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -1167,6 +1166,8 @@ export function storeTenantAsset(filename, title, desc, contentType, formData) {
   }).then(r => r.json());
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+
 export function uploadExportFile(file) {
   return fetch('/api/state/import', {
     method: 'POST',
@@ -1289,5 +1290,49 @@ export function sendEmails(name, email, subject, body, tenantId, teamId, apiId) 
       teamId,
       apiId
     }),
+  }).then(r => r.json());
+}
+
+export function tenantAdmins(tenantId) {
+  return fetch(`/api/tenants/${tenantId}/admins`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function addableAdminsForTenant(tenantId) {
+  return fetch(`/api/tenants/${tenantId}/addable-admins`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function addAdminsToTenant(tenantId, adminIds) {
+  return fetch(`/api/tenants/${tenantId}/admins`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(adminIds)
+  }).then(r => r.json());
+}
+
+export function removeAdminFromTenant(tenantId, adminId) {
+  return fetch(`/api/tenants/${tenantId}/admins/${adminId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }
   }).then(r => r.json());
 }

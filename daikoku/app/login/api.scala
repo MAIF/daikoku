@@ -65,6 +65,7 @@ object IdentityAttrs {
   val SessionKey: TypedKey[UserSession] =
     TypedKey.apply[UserSession]("daikoku-session")
   val TeamKey: TypedKey[Team] = TypedKey.apply[Team]("daikoku-team")
+  val TenantAdminKey: TypedKey[Boolean] = TypedKey.apply[Boolean]("daikoku-tenant-admin")
 }
 
 object TenantHelper {
@@ -356,20 +357,23 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                       )
                                   )
                                 case Some(team) => {
-                                  env.dataStore.userRepo.save(user).flatMap {
-                                    _ =>
-                                      nextFilter(
-                                        request
-                                          .addAttr(IdentityAttrs.TeamKey, team)
-                                          .addAttr(IdentityAttrs.UserKey, user)
-                                          .addAttr(
-                                            IdentityAttrs.ImpersonatorKey,
-                                            None)
-                                          .addAttr(IdentityAttrs.TenantKey,
-                                                   tenant)
-                                          .addAttr(IdentityAttrs.SessionKey,
-                                                   session)
-                                      )
+                                  env.dataStore.userRepo.save(user).flatMap { _ =>
+                                    env.dataStore.teamRepo.forTenant(tenant).exists(Json.obj("type" -> "Admin", "users.userId" -> user.id.asJson))
+                                      .flatMap(isTenantAdmin => {
+                                        nextFilter(
+                                          request
+                                            .addAttr(IdentityAttrs.TeamKey, team)
+                                            .addAttr(IdentityAttrs.UserKey, user)
+                                            .addAttr(IdentityAttrs.TenantAdminKey, isTenantAdmin)
+                                            .addAttr(
+                                              IdentityAttrs.ImpersonatorKey,
+                                              None)
+                                            .addAttr(IdentityAttrs.TenantKey,
+                                              tenant)
+                                            .addAttr(IdentityAttrs.SessionKey,
+                                              session)
+                                        )
+                                      })
                                   }
                                 }
                               }
@@ -460,8 +464,9 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                 )
                               case Some(team) =>
                                 for {
-                                  _ <- env.dataStore.userRepo.save(user)
-                                  result <- session.impersonatorId
+                                  _             <- env.dataStore.userRepo.save(user)
+                                  isTenantAdmin <- env.dataStore.teamRepo.forTenant(tenant).exists(Json.obj("type" -> "Admin", "users.userId" -> user.id.asJson))
+                                  result        <- session.impersonatorId
                                     .map(id =>
                                       env.dataStore.userRepo.findByIdNotDeleted(
                                         id))
@@ -471,6 +476,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                         request
                                           .addAttr(IdentityAttrs.TeamKey, team)
                                           .addAttr(IdentityAttrs.UserKey, user)
+                                          .addAttr(IdentityAttrs.TenantAdminKey, isTenantAdmin)
                                           .addAttr(
                                             IdentityAttrs.ImpersonatorKey,
                                             maybeImpersonator)
