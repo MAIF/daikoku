@@ -273,6 +273,13 @@ case class OtoroshiSettings(id: OtoroshiSettingsId,
                             clientSecret: String = "admin-api-apikey-secret")
     extends CanJson[OtoroshiSettings] {
   def asJson: JsValue = json.OtoroshiSettingsFormat.writes(this)
+  def toUiPayload(): JsValue = {
+    Json.obj(
+      "_id" -> id.value,
+      "url" -> url,
+      "host" -> host
+    )
+  }
 }
 
 case class ApiKeyRestrictionPath(method: String, path: String)

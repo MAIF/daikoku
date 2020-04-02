@@ -1,13 +1,3 @@
-export function currentTenant(team) {
-  return fetch(`/api/teams/${team}/tenant`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then(r => r.json());
-}
-
 export function me() {
   return fetch('/api/me', {
     method: 'GET',
@@ -456,6 +446,15 @@ export function addableUsersForTeam(teamId) {
 
 export function allOtoroshis(tenantId) {
   return fetch(`/api/tenants/${tenantId}/otoroshis`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+export function allSimpleOtoroshis(tenantId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/simplified`, {
     method: 'GET',
     credentials: 'include',
     headers: {

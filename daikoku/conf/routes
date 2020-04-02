@@ -191,15 +191,17 @@ GET     /asset-thumbnails/:assetId                      fr.maif.otoroshi.daikoku
 POST    /asset-thumbnails/:assetId                      fr.maif.otoroshi.daikoku.ctrls.AssetsThumbnailController.storeAsset(assetId)
 
 ### NoDocs ###
+GET     /api/tenants/:tenantId/otoroshis/simplified     fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshisSettingsSimple(tenantId)
+### NoDocs ###
+GET     /api/tenants/:tenantId/otoroshis                fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshisSettings(tenantId)
+### NoDocs ###
+GET     /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiSettings(tenantId, id)
+### NoDocs ###
 DELETE  /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.deleteOtoroshiSettings(tenantId, id)
 ### NoDocs ###
 PUT     /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.saveOtoroshiSettings(tenantId, id)
 ### NoDocs ###
-GET     /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiSettings(tenantId, id)
-### NoDocs ###
 POST    /api/tenants/:tenantId/otoroshis                fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createOtoroshiSettings(tenantId)
-### NoDocs ###
-GET     /api/tenants/:tenantId/otoroshis                fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshisSettings(tenantId)
 ### NoDocs ###
 POST    /api/teams/:teamId/testing/apikeys              fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createTestingApiKey(teamId)
 ### NoDocs ###
@@ -263,8 +265,6 @@ GET     /api/tenants/:id/_redirect                      fr.maif.otoroshi.daikoku
 POST    /api/tenants/:tenantId/_contact                 fr.maif.otoroshi.daikoku.ctrls.TenantController.contact(tenantId)
 ### NoDocs ###
 POST    /api/tenants/_names                             fr.maif.otoroshi.daikoku.ctrls.TenantController.namesOfTenants()
-### NoDocs ###
-GET     /api/teams/:teamId/tenant                       fr.maif.otoroshi.daikoku.ctrls.TenantController.currentTenant(teamId)
 ### NoDocs ###
 PUT     /api/tenants/:tenantId                          fr.maif.otoroshi.daikoku.ctrls.TenantController.saveTenant(tenantId)
 ### NoDocs ###

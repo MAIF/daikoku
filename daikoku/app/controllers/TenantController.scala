@@ -308,15 +308,6 @@ class TenantController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def currentTenant(teamId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(
-      AuditTrailEvent(s"@{user.name} has accessed the current tenant"))(teamId,
-                                                                        ctx) {
-      team =>
-        FastFuture.successful(Ok(ctx.tenant.asJson))
-    }
-  }
-
   def fetchOpenIdConfiguration() = DaikokuAction.async(parse.json) { ctx =>
     val _url = (ctx.request.body \ "url").asOpt[String].getOrElse("--")
     DaikokuAdminOnly(AuditTrailEvent(

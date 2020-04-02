@@ -45,6 +45,12 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def otoroshisSettingsSimple(tenantId: String) = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed otoroshi settings simple list"))(ctx) {
+      FastFuture.successful(Ok(JsArray(ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq)))
+    }
+  }
+
   def otoroshiSettings(tenantId: String, otoroshiId: String) = DaikokuAction.async { ctx =>
     TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed one otoroshi settings ($otoroshiId)"))(tenantId, ctx) { (tenant, _) =>
       tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
