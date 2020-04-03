@@ -1,19 +1,18 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import cats.data.{EitherT, OptionT}
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import cats.data.EitherT
 import controllers.AppError
 import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{ApiEditor, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.TeamUser
 import fr.maif.otoroshi.daikoku.domain.TranslationElement.ApiTranslationElement
-import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
@@ -22,6 +21,7 @@ import fr.maif.otoroshi.daikoku.utils.{ApiService, OtoroshiClient}
 import jobs.ApiKeyStatsJob
 import play.api.Logger
 import play.api.http.HttpEntity
+import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
@@ -35,7 +35,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                     env: Env,
                     otoroshiClient: OtoroshiClient,
                     cc: ControllerComponents)
-    extends AbstractController(cc) {
+    extends AbstractController(cc)
+    with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -529,10 +530,14 @@ class ApiController(DaikokuAction: DaikokuAction,
       id = NotificationId(BSONObjectID.generate().stringify),
       tenant = tenant.id,
       team = Some(api.team),
-      deleted = false,
       sender = user,
       action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id)
     )
+
+    val language =  tenant.defaultLanguage.getOrElse("en")
+    implicit val lang: Lang = Lang(language)
+    val title = messagesApi("mail.apikey.demand.title")
+    val body = messagesApi("mail.apikey.demand.body", user.name, api.name, s"${tenant.domain}/notifications")
 
     for {
       _            <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
@@ -550,9 +555,9 @@ class ApiController(DaikokuAction: DaikokuAction,
       _ <- maybeAdmins.traverse(
             admins =>
               tenant.mailer.send(
-                s"Somebody want an apikey",
+                title,
                 admins.map(admin => admin.email),
-                s"${user.name} want an apikey for ${api.name}. you receive this mail because you are an team admin. Do you accept this request ? Y or N"
+                body
             )
           )
     } yield {
@@ -1049,6 +1054,11 @@ class ApiController(DaikokuAction: DaikokuAction,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
 
+    val language =  ctx.tenant.defaultLanguage.getOrElse("en")
+    implicit val lang: Lang = Lang(language)
+    val title = messagesApi("mail.api.access.title")
+    val body = messagesApi("mail.api.access.body", ctx.user.name, api.name, team.name, s"${ctx.tenant.domain}/notifications")
+
     for {
       notificationRepo <- env.dataStore.notificationRepo.forTenantF(ctx.tenant.id)
       saved            <- notificationRepo.save(notification)
@@ -1067,9 +1077,9 @@ class ApiController(DaikokuAction: DaikokuAction,
 
       _ <- maybeAdmins.traverse { admins =>
             ctx.tenant.mailer.send(
-              "Somebody want to access your api",
+              title,
               admins.map(admin => admin.email),
-              s"${ctx.user.name} want to access your api ${api.name} for the team ${team.name}. you receive this mail because you are an team admin. Do you accept this request ? Y or N"
+              body
             )
           }
     } yield {

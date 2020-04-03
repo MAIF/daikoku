@@ -19,6 +19,7 @@ import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.libs.ws.WSClient
 import play.api.Logger
+import play.api.i18n.MessagesApi
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
@@ -221,7 +222,8 @@ sealed trait Env {
 class DaikokuEnv(ws: WSClient,
                  val environment: Environment,
                  configuration: Configuration,
-                 reactiveMongoApi: ReactiveMongoApi)
+                 reactiveMongoApi: ReactiveMongoApi,
+                 messagesApi: MessagesApi)
     extends Env {
 
   val logger = Logger("DaikokuEnv")
@@ -232,7 +234,7 @@ class DaikokuEnv(ws: WSClient,
     configuration.getOptional[Long]("daikoku.snowflake.seed").get
   val snowflakeGenerator = IdGenerator(snowflakeSeed)
 
-  val auditActor = actorSystem.actorOf(AuditActorSupervizer.props(this))
+  val auditActor = actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
 
   private val daikokuConfig = new Config(configuration)
   private val mongoDataStore = new MongoDataStore(this, reactiveMongoApi)

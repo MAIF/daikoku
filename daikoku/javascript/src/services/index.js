@@ -1274,13 +1274,14 @@ export function saveTeamTranslations(teamId, translations) {
   }).then(r => r.json());
 }
 
-export function sendEmails(name, email, subject, body, tenantId, teamId, apiId) {
+export function sendEmails(name, email, subject, body, tenantId, teamId, apiId, language) {
   return fetch(`/api/tenants/${tenantId}/_contact`, {
     method: 'POST',
     credentials: 'include',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      'X-contact-language': language
     },
     body: JSON.stringify({
       name,

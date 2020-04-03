@@ -7,12 +7,7 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
@@ -23,13 +18,11 @@ import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
+import play.api.i18n.I18nSupport
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc._
 import play.api.routing.Router
-import play.modules.reactivemongo.{
-  ReactiveMongoApi,
-  ReactiveMongoApiFromContext
-}
+import play.modules.reactivemongo.{ReactiveMongoApi, ReactiveMongoApiFromContext}
 import router.Routes
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,7 +42,8 @@ package object modules {
       extends ReactiveMongoApiFromContext(context)
       //with BuiltInComponentsFromContext(context)
       with AssetsComponents
-      with AhcWSComponents {
+      with AhcWSComponents
+      with I18nSupport {
 
     implicit lazy val reactiveMongo: ReactiveMongoApi = reactiveMongoApi
 
@@ -69,6 +63,7 @@ package object modules {
 
     override lazy val httpErrorHandler: HttpErrorHandler = wire[ErrorHandler]
 
+    val mesessagesApi = messagesApi
     val daikokuAction = wire[DaikokuAction]
     val daikokuTenantAction = wire[DaikokuTenantAction]
     val daikokuTenantActionMaybeWithGuest = wire[DaikokuActionMaybeWithGuest]

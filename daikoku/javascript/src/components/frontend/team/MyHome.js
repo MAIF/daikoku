@@ -1,12 +1,13 @@
 import React, { Component } from 'react';
-
-import * as Services from '../../../services';
-import { ApiList } from '../../frontend';
-import { updateTeamPromise, openContactModal } from '../../../core';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { CanIDoAction, manage, api as API, Can, read, team } from '../../utils';
+
+import { openContactModal, updateTeamPromise } from '../../../core';
 import { t, Translation } from '../../../locales';
+import * as Services from '../../../services';
+import { ApiList } from '../../frontend';
+import { api as API, CanIDoAction, manage } from '../../utils';
+
 
 class MyHomeComponent extends Component {
   state = {
