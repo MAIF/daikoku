@@ -11,6 +11,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
+import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
@@ -22,7 +23,8 @@ class TeamController(DaikokuAction: DaikokuAction,
                      env: Env,
                      otoroshiClient: OtoroshiClient,
                      cc: ControllerComponents)
-    extends AbstractController(cc) {
+    extends AbstractController(cc)
+    with I18nSupport {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
@@ -249,6 +251,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   def askForJoinTeam(teamId: String) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has asked to join team @{team.name} - @{team.id}"))(ctx) {
+      implicit val lang: Lang = Lang(ctx.tenant.defaultLanguage.getOrElse("en"))
       env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId).flatMap {
         case Some(team) if team.`type` == TeamType.Personal =>
           FastFuture.successful(Forbidden(
@@ -260,7 +263,6 @@ class TeamController(DaikokuAction: DaikokuAction,
           val notification = Notification(
             id = NotificationId(BSONObjectID.generate().stringify),
             tenant = ctx.tenant.id,
-            deleted = false,
             team = Some(team.id),
             sender = ctx.user,
             action = NotificationAction.TeamAccess(team.id)
@@ -276,9 +278,9 @@ class TeamController(DaikokuAction: DaikokuAction,
                          "_id" -> Json.obj("$in" -> JsArray(
                            team.admins().map(_.asJson).toSeq))))
             _ <- ctx.tenant.mailer.send(
-              "Somebody want to join your team",
+              messagesApi("mail.team.access.title"),
               admins.map(admin => admin.email),
-              s"${ctx.user.name} want to join ${team.name}. you receive this mail because you are an team admin. Do you accept this request ? Y or N"
+              messagesApi("mail.team.access.body", ctx.user.name, team.name, s"${ctx.tenant.domain}/notifications")
             )
           } yield {
             Ok(Json.obj("done" -> saved))
@@ -369,9 +371,9 @@ class TeamController(DaikokuAction: DaikokuAction,
               Forbidden(Json.obj("error" -> "Team type doesn't accept to add members from this way")))
           case TeamType.Organization =>
 
-          Source(members.value.toList)
+            Source(members.value.toList)
               .mapAsync(5)(member => {
-                val userId =  UserId(member.as[String])
+                val userId = UserId(member.as[String])
 
                 val notification = Notification(
                   id = NotificationId(BSONObjectID.generate().stringify),
@@ -384,14 +386,17 @@ class TeamController(DaikokuAction: DaikokuAction,
                 for {
                   maybeUser <- env.dataStore.userRepo.findByIdNotDeleted(userId)
                   _ <- env.dataStore.notificationRepo.forTenant(ctx.tenant).save(notification)
-                  _ <- maybeUser.traverse(user => ctx.tenant.mailer.send(
-                    s"Somebody want to invit you in his team",
-                    Seq(user.email),
-                    s"${ctx.user.name}, as admin of ${team.name}, wants to invit you in his team. please connect too your profile to accept or reject the invitation."
-                  ))
+                  _ <- maybeUser.traverse(user => {
+                    implicit val lang: Lang = Lang(user.defaultLanguage.orElse(ctx.tenant.defaultLanguage).getOrElse("en"))
+                    ctx.tenant.mailer.send(
+                      messagesApi("mail.team.invitation.title"),
+                      Seq(user.email),
+                      messagesApi("mail.team.invitation.body", ctx.user.name, team.name, s"${ctx.tenant.domain}/notifications")
+                    )
+                  })
                 } yield (userId)
               })
-            .runWith(Sink.seq[UserId])
+              .runWith(Sink.seq[UserId])
             .map(users => Ok(Json.obj(
               "done" -> true,
               "team" -> team.asJson,

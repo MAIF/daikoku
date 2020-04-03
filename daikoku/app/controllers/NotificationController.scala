@@ -8,11 +8,12 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.audit.AuthorizationLevel.NotAuthorized
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.TeamUser
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, OtoroshiClient}
 import play.api.Logger
+import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
 
@@ -25,7 +26,8 @@ class NotificationController(
                               apiService: ApiService,
                               otoroshiClient: OtoroshiClient,
                               cc: ControllerComponents)
-  extends AbstractController(cc) {
+  extends AbstractController(cc)
+  with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -214,7 +216,7 @@ class NotificationController(
           val r: EitherT[Future, AppError, Result] = for {
             _ <- notification.action match {
               case ApiAccess(apiId, teamRequestId) =>
-                EitherT(acceptApiAccess(ctx.tenant, apiId, teamRequestId))
+                EitherT(acceptApiAccess(ctx.tenant, apiId, teamRequestId, notification.sender))
               case TeamAccess(_) =>
                 EitherT(acceptTeamAccess(ctx.tenant, team.get, notification.sender))
               case ApiSubscriptionDemand(apiId, planId, requestedteamId) =>
@@ -223,7 +225,8 @@ class NotificationController(
                     apiId,
                     planId,
                     ctx.tenant,
-                    ctx.user))
+                    ctx.user,
+                    notification.sender))
               case TeamInvitation(_, user) if user != ctx.user.id => EitherT.leftT[Future, Unit](ForbiddenAction)
               case TeamInvitation(team, user) => EitherT(acceptTeamInvitation(ctx.tenant, team, user, notification.sender))
               case _ => EitherT(nothing())
@@ -264,34 +267,36 @@ class NotificationController(
     TeamAdminOnly(AuditTrailEvent(
       s"@{user.name} has accessed number of unread notifications for team @{team.name} - @{team.id} => @{notifications}"))(teamId.value, ctx) {
       team => {
-        val message = notification.action match {
+        implicit val lang: Lang = Lang(notification.sender.defaultLanguage.orElse(ctx.tenant.defaultLanguage).getOrElse("en"))
+
+        val message =  notification.action match {
           case ApiAccess(api, _) =>
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(api)
               .map {
-                case None => s"Your request to access to an unrecognized api has been rejected."
-                case Some(api) => s"Your request to access to api ${api.name} has been rejected."
+                case None => messagesApi("mail.api.access.rejection.body", messagesApi("unrecognized.api"))
+                case Some(api) => messagesApi("mail.api.access.rejection.body", api.name)
               }
           case TeamAccess(team) =>
             env.dataStore.teamRepo
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(team)
               .map {
-                case None => s"Your request to join an unrecognize team has been rejected."
-                case Some(team) => s"Your request to join the ${team.name} has been rejected."
+                case None => messagesApi("mail.team.access.rejection.body", messagesApi("unrecognized.team"))
+                case Some(team) => messagesApi("mail.team.access.rejection.body", team.name)
               }
           case TeamInvitation(team, user) =>
             env.dataStore.teamRepo
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(team)
               .flatMap {
-                case None => FastFuture.successful(s"Your request to invit an unrecognize user in your team has been rejected.")
+                case None => FastFuture.successful(messagesApi("mail.user.invitation.rejection.body", messagesApi("unrecognized.user"), messagesApi("unrecognized.team")))
                 case Some(team) => env.dataStore.userRepo
                   .findByIdNotDeleted(user)
                   .map {
-                    case None => s"Your request to invit an unrecognize user in your team - ${team.name} has been rejected."
-                    case Some(user) => s"Your request to invit ${user.name} in your team - ${team.name} has been rejected."
+                    case None => messagesApi("mail.user.invitation.rejection.body", messagesApi("unrecognized.user"), team.name)
+                    case Some(user) => messagesApi("mail.user.invitation.rejection.body", user.name, team.name)
                   }
               }
           case ApiSubscriptionDemand(apiId, _, _) =>
@@ -299,8 +304,8 @@ class NotificationController(
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(apiId)
               .map {
-                case None => s"Your request for an apikey for an unrecognized api has been rejected."
-                case Some(api) => s"Your request for an apikey for ${api.name} has been rejected."
+                case None => messagesApi("mail.api.subscription.rejection.body", messagesApi("unrecognized.api"))
+                case Some(api) => messagesApi("mail.api.subscription.rejection.body", api.name)
               }
           case _ => FastFuture.successful("")
         }
@@ -311,7 +316,7 @@ class NotificationController(
             .forTenant(ctx.tenant.id)
             .save(notification.copy(status = NotificationStatus.Rejected()))
           _ <- ctx.tenant.mailer.send(
-            "Your Daikoku request has been rejected.",
+            messagesApi("mail.rejection.title"),
             Seq(notification.sender.email),
             mailBody)
         } yield Ok(Json.obj("done" -> true))
@@ -324,6 +329,7 @@ class NotificationController(
       import cats.data._
       import cats.implicits._
 
+      implicit val lang: Lang = Lang(notification.sender.defaultLanguage.orElse(ctx.tenant.defaultLanguage).getOrElse("en"))
 
       val value: EitherT[Future, AppError, String] = notification.action match {
         case TeamInvitation(team, user) if user == ctx.user.id =>
@@ -331,12 +337,12 @@ class NotificationController(
             .forTenant(ctx.tenant.id)
             .findByIdNotDeleted(team)
             .flatMap {
-              case None => FastFuture.successful(s"Your request to invit an unrecognize user in your team has been rejected.")
+              case None => FastFuture.successful(messagesApi("mail.user.invitation.rejection.body", messagesApi("unrecognized.user"), messagesApi("unrecognized.team")))
               case Some(team) => env.dataStore.userRepo
                 .findByIdNotDeleted(user)
                 .map {
-                  case None => s"Your request to invit an unrecognize user in your team - ${team.name} has been rejected."
-                  case Some(user) => s"Your request to invit ${user.name} in your team - ${team.name} has been rejected."
+                  case None => messagesApi("mail.user.invitation.rejection.body", messagesApi("unrecognized.user"), team.name)
+                  case Some(user) => messagesApi("mail.user.invitation.rejection.body", user.name, team.name)
                 }
             })
         case _ => EitherT.leftT[Future, String](ForbiddenAction)
@@ -347,7 +353,7 @@ class NotificationController(
           .forTenant(ctx.tenant.id)
           .save(notification.copy(status = NotificationStatus.Rejected()))
         _ <- ctx.tenant.mailer.send(
-          "Your Daikoku request has been rejected.",
+          messagesApi("mail.rejection.title"),
           Seq(notification.sender.email),
           mailBody)
       } yield Ok(Json.obj("done" -> true)))
@@ -374,9 +380,12 @@ class NotificationController(
 
   def acceptApiAccess(tenant: Tenant,
                       apiId: ApiId,
-                      teamRequestId: TeamId): Future[Either[AppError, Unit]] = {
+                      teamRequestId: TeamId,
+                      sender: User): Future[Either[AppError, Unit]] = {
     import cats.data._
     import cats.implicits._
+
+    implicit val lang: Lang = Lang(tenant.defaultLanguage.getOrElse("en"))
     val result: EitherT[Future, AppError, Unit] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo
         .forTenant(tenant.id)
@@ -386,27 +395,24 @@ class NotificationController(
         .forTenant(tenant.id)
         .findByIdNotDeleted(teamRequestId.value),
         TeamNotFound)
-
-      recipients <- EitherT.liftF(
+      administrators <- EitherT.liftF(
         env.dataStore.userRepo
           .find(
             Json.obj("_deleted" -> false,
               "_id" -> Json.obj(
-                "$in" -> JsArray(team.users.map(_.asJson).toSeq))))
+                "$in" -> JsArray(team.users.filter(_.teamPermission == Administrator).map(_.asJson).toSeq))))
       )
-
       _ <- EitherT.liftF(
         env.dataStore.apiRepo
           .forTenant(tenant.id)
-          .save(api.copy(
-            authorizedTeams = api.authorizedTeams ++ Set(teamRequestId)))
+          .save(api.copy(authorizedTeams = api.authorizedTeams ++ Set(teamRequestId)))
       )
       _ <- EitherT.liftF(
         tenant.mailer.send(
-          "Your Daikoku request has been accepted.",
-          recipients.map(_.email),
-          s"Your request to access to api ${api.name} has been accepted.")
-      )
+          messagesApi("mail.acceptation.title"),
+          administrators.map(_.email) ++ Seq(sender.email),
+          messagesApi("mail.api.access.acceptation.body", api.name, sender.name)
+      ))
     } yield ()
 
     result.value
@@ -415,15 +421,16 @@ class NotificationController(
   def acceptTeamAccess(tenant: Tenant,
                        team: Team,
                        sender: User): Future[Either[AppError, Unit]] = {
+    implicit val lang: Lang = Lang(sender.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en"))
     for {
       _ <- env.dataStore.teamRepo
         .forTenant(tenant.id)
         .save(team.copy(
           users = team.users ++ Set(UserWithPermission(sender.id, TeamUser))))
       _ <- tenant.mailer.send(
-        "Your Daikoku request has been accepted.",
+        messagesApi("mail.acceptation.title"),
         Seq(sender.email),
-        s"Your request to join the team ${team.name} has been accepted.")
+        messagesApi("mail.team.access.acceptation.body", team.name))
     } yield Right(())
   }
 
@@ -434,6 +441,7 @@ class NotificationController(
     import cats.data._
     import cats.implicits._
 
+    implicit val lang: Lang = Lang(sender.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en"))
     val r: EitherT[Future, AppError, Unit] = for {
       invitedUser <- EitherT.fromOptionF(env.dataStore.userRepo.findByIdNotDeleted(invitedUserId), UserNotFound)
       team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(team), TeamNotFound)
@@ -442,9 +450,9 @@ class NotificationController(
         .save(team.copy(
           users = team.users ++ Set(UserWithPermission(invitedUser.id, TeamUser)))))
       _ <- EitherT.liftF(tenant.mailer.send(
-        "Your Daikoku request has been accepted.",
+        messagesApi("mail.acceptation.title"),
         Seq(sender.email),
-        s"Your request to invit ${invitedUser.name} in the team ${team.name} has been accepted."))
+        messagesApi("mail.user.invitation.acceptation.body", invitedUser.name, team.name)))
     } yield Right(Unit)
 
     r.value
@@ -454,10 +462,11 @@ class NotificationController(
                             apiId: ApiId,
                             plan: UsagePlanId,
                             tenant: Tenant,
-                            user: User): Future[Either[AppError, Unit]] = {
+                            user: User,
+                            sender: User): Future[Either[AppError, Unit]] = {
     import cats.data._
     import cats.implicits._
-
+    implicit val lang: Lang = Lang(tenant.defaultLanguage.getOrElse("en"))
     val r: EitherT[Future, AppError, Unit] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo
         .forTenant(tenant.id)
@@ -467,22 +476,21 @@ class NotificationController(
         .forTenant(tenant.id)
         .findByIdNotDeleted(teamRequestId.value),
         TeamNotFound)
-
-      recipients <- EitherT.liftF(
+      administrators <- EitherT.liftF(
         env.dataStore.userRepo
           .find(
             Json.obj("_deleted" -> false,
               "_id" -> Json.obj(
-                "$in" -> JsArray(team.users.map(_.asJson).toSeq))))
+                "$in" -> JsArray(team.users.filter(_.teamPermission == Administrator).map(_.asJson).toSeq))))
       )
       //todo: get plan "name" for mail body
       _ <- EitherT(
         apiService.subscribeToApi(tenant, user, api, plan.value, team))
       _ <- EitherT.liftF(
         tenant.mailer.send(
-          "Your Daikoku request has been accepted.",
-          recipients.map(_.email),
-          s"Your request for an apikey to ${api.name} has been accepted.")
+          messagesApi("mail.acceptation.title"),
+          administrators.map(_.email) ++ Seq(sender.email),
+          messagesApi("mail.api.subscription.acceptation.body", sender.name, api.name))
       )
     } yield ()
 

@@ -22,6 +22,7 @@ import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSeriali
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import play.api.Logger
+import play.api.i18n.{I18nSupport, Lang, MessagesApi}
 import play.api.libs.json._
 import play.api.libs.ws.WSRequest
 import play.api.mvc.RequestHeader
@@ -286,6 +287,15 @@ class AuditActor(implicit env: Env) extends Actor {
           admins <- OptionT.liftF(env.dataStore.userRepo.find(
             Json.obj("_id" -> Json.obj("$in" -> JsArray(team.users.filter(_.teamPermission == TeamPermission.Administrator).map(_.userId.asJson).toSeq)))))
         } yield {
+          //fixme: not a controller...can't use with i18nSupport
+//          val language =  tenant.defaultLanguage.getOrElse("en")
+//          implicit val lang: Lang = Lang(language)
+//
+//          val plan = api.possibleUsagePlans.find(p => p.id == subscription.plan).map(p => p.customName.getOrElse(p.typeName))
+//            .getOrElse(messagesApi("unknown.plan"))
+//          val title = messagesApi("mail.apikey.rotation.title")
+//          val mailBody = messagesApi("mail.rotation.body", api.name, plan)
+
           val title = "Your apikey have been unpdated";
           val plan = api.possibleUsagePlans.find(p => p.id == subscription.plan).map(p => p.customName.getOrElse(p.typeName))
           val body = s"Your apikey for api ${api.name} and plan ${plan.get} have been rotated. If you dan't work with an integration system, please update it usage."

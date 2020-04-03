@@ -9,17 +9,16 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
-import fr.maif.otoroshi.daikoku.domain.json.TenantFormat
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.TenantFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.OAuth2Config
-import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.utils.jwt.JWKSAlgoSettings
-import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, HtmlSanitizer, IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
-import play.api.Logger
+import play.api.i18n._
 import play.api.libs.json._
-import play.api.mvc.{AbstractController, ControllerComponents, Results}
+import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
@@ -31,7 +30,8 @@ class TenantController(DaikokuAction: DaikokuAction,
                        env: Env,
                        otoroshiClient: OtoroshiClient,
                        cc: ControllerComponents)
-    extends AbstractController(cc) {
+    extends AbstractController(cc)
+    with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -392,6 +392,15 @@ class TenantController(DaikokuAction: DaikokuAction,
   def contact(tenantId: String) = DaikokuActionMaybeWithGuest.async(parse.json) {ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{name} - @{email} send a contact email to @{contact}"))(ctx) {
 
+      val tenantLanguage = ctx.tenant.defaultLanguage
+      .getOrElse("en")
+
+      val currentLanguage = ctx.request.headers.toSimpleMap
+        .find(test => test._1 == "X-contact-language")
+        .map(h => h._2)
+        .orElse(ctx.tenant.defaultLanguage)
+        .getOrElse("en")
+
       val body = ctx.request.body
 
       val name = (body \ "name").as[String]
@@ -406,63 +415,37 @@ class TenantController(DaikokuAction: DaikokuAction,
 
       val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
 
-      val mailToSender =  raw"""
-        <div>Here is the data you sent us as part of your contact request:</div>
-        <div>name: <strong>$name</strong></div>
-        <div>contact email: $email</div>
-        <div>title: <strong>$subject<strong></div>
-        </br>
-        $sanitizeBody
-        </br>
-        <small>This e-mail is sent to you automatically, please do not reply.</small></br>
-        <small>Your request has been taken into account. It will be processed as soon as possible.</small>
-      """
-      val mailToContact = raw"""
-        <div>Somebody send you a contact request:</div>
-        <div>name: <strong>$name</strong></div>
-        <div>contact email: $email</div>
-        <div>title: <strong>$subject<strong></div>
-        </br>
-        $sanitizeBody
-      """
+      val titleToSender: String = messagesApi("mail.contact.title")(Lang(currentLanguage))
+      val titleToContact: String = messagesApi("mail.contact.title")(Lang(tenantLanguage))
+      val mailToSender: String = messagesApi("mail.contact.sender", name, email, subject, sanitizeBody)(Lang(currentLanguage))
+      val mailToContact: String = messagesApi("mail.contact.contact", name, email, subject, sanitizeBody)(Lang(tenantLanguage))
+
+      def sendMail: String => Future[Result] = (contact: String) => {
+        for {
+          _ <- ctx.tenant.mailer.send(titleToSender, Seq(email), mailToSender)
+          _ <- ctx.tenant.mailer.send(titleToContact, Seq(contact), mailToContact)
+        } yield {
+          ctx.setCtxValue("contact", contact)
+          Ok(Json.obj("send" -> true))
+        }
+      }
 
       (teamId, apiId) match {
         case (Some(id), _) => env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)
           .flatMap {
-            case Some(team) =>
-              for {
-                _ <- ctx.tenant.mailer.send("Contact request", Seq(email), mailToSender)
-                _ <- ctx.tenant.mailer.send("Contact request", Seq(team.contact), mailToContact)
-              } yield {
-                ctx.setCtxValue("contact", team.contact)
-                Ok(Json.obj("send" -> true))
-              }
+            case Some(team) => sendMail(team.contact)
             case None => FastFuture.successful(NotFound(Json.obj("error" -> "team not found")))
           }
         case (_, Some(id)) => env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)
           .flatMap {
             case Some(api) =>  env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(api.team)
               .flatMap {
-                case Some(team) =>
-                  for {
-                    _ <- ctx.tenant.mailer.send("Contact request", Seq(email), mailToSender)
-                    _ <- ctx.tenant.mailer.send("Contact request", Seq(team.contact), mailToContact)
-                  } yield {
-                    ctx.setCtxValue("contact", team.contact)
-                    Ok(Json.obj("send" -> true))
-                  }
+                case Some(team) => sendMail(team.contact)
                 case None => FastFuture.successful(NotFound(Json.obj("error" -> "team not found")))
               }
             case None => FastFuture.successful(NotFound(Json.obj("error" -> "api not found")))
           }
-        case (None, None) =>
-          for {
-            _ <- ctx.tenant.mailer.send("Contact request", Seq(email), mailToSender)
-            _ <- ctx.tenant.mailer.send("Contact request", Seq(ctx.tenant.contact), mailToContact)
-          } yield {
-            ctx.setCtxValue("contact", ctx.tenant.contact)
-            Ok(Json.obj("send" -> true))
-          }
+        case (None, None) => sendMail(ctx.tenant.contact)
       }
     }
   }
