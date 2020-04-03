@@ -182,10 +182,9 @@ export class ApiPricingCard extends Component {
                       )}
                       currentLanguage={this.props.currentLanguage}
                       teams={
-                        authorizedTeams.filter(
-                          team =>
-                            plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-                        )
+                        authorizedTeams
+                          .filter(t => t.type !== "Admin")
+                          .filter(team => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id)
                       }
                       pendingTeams={this.props.pendingSubscriptions.map(s => s.action.team)}
                       authorizedTeams={this.props.subscriptions.map(subs => subs.team)}

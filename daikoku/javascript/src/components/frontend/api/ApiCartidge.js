@@ -33,9 +33,9 @@ export class ApiCartidge extends Component {
           .map(s => s.action.team)
       ).length;
 
-    const subscribingTeams = this.props.myTeams.filter(team =>
-      this.props.subscriptions.some(sub => sub.team === team._id)
-    );
+    const subscribingTeams = this.props.myTeams
+      .filter(t => t.type !== "Admin")
+      .filter(team => this.props.subscriptions.some(sub => sub.team === team._id));
 
     return (
       <div className="d-flex col-12 col-sm-3 col-md-2 text-muted flex-column p-3 additionalContent">
@@ -170,10 +170,10 @@ export class ApiCartidge extends Component {
                 )}
                 buttonLabel="subscribe"
                 currentLanguage={this.props.currentLanguage}
-                teams={this.props.myTeams.filter(
-                  team =>
-                    defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-                )}
+                teams={this.props.myTeams
+                  .filter(t => t.type !== "Admin")
+                  .filter(team => defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id)
+                }
                 pendingTeams={this.props.pendingSubscriptions.map(s => s.action.team)}
                 authorizedTeams={this.props.subscriptions
                   .filter(subs => subs.plan === defaultPlan._id)
