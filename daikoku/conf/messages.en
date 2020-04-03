@@ -26,10 +26,10 @@ mail.api.access.body={0} want to join your team {1}. \
   </br>\
   <a href="{2}">Accept or reject request</a>
 mail.team.access.title=Somebody want to join your team
-mail.team.access.body={0} want to access your api {1} for the team {2}. \
+mail.team.access.body={0} want to join your team {1}. \
   you receive this mail because you are admin of the owner team. \
   </br>\
-  <a href="{3}">Accept or reject request</a>
+  <a href="{2}">Accept or reject request</a>
 mail.team.invitation.title=Somebody want to invit you in his team
 mail.team.invitation.body={0}, as admin of {1}, wants you to join his team. \
   </br>\
