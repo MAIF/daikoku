@@ -67,7 +67,8 @@ export class ApiCard extends Component {
                   authorizedTeams={api.authorizations
                     .filter(auth => auth.authorized)
                     .map(auth => auth.team)}
-                  teams={this.props.myTeams}
+                  teams={this.props.myTeams
+                    .filter(t => t.type !== "Admin")}
                   action={teams => this.props.askForApiAccess(teams)}
                   withAllTeamSelector={true}>
                   <button className="btn btn-sm btn-access-negative ml-1 mr-2">
