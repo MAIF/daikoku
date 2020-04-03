@@ -13,16 +13,16 @@ mail.contact.contact=<div>Quelqu''un vous a envoyé une demande de contact:</div
 </br>{3}
 unknown.plan=Plan inconnu
 mail.apikey.rotation.title=Votre clé d''api a été modifiée
-mail.apikey.rotation.body=Le secret de votre clé d''api pour l'api {0} et le plan {1} a été modifié suite à sa rotation automatique.\
+mail.apikey.rotation.body=Le secret de votre clé d''api pour l''api {0} et le plan {1} a été modifié suite à sa rotation automatique.\
   Si vous ne travaillez pas avec un système d''intégration automatique des secrets, pensez à le modifier.
 mail.apikey.demand.title=Demande de clé d''API
-mail.apikey.demand.body={0} demande une clé d'api pour l'api {1}.\
+mail.apikey.demand.body={0} demande une clé d''api pour l'api {1}.\
   Vous recevez ce message car vous êtes administrateur de l'équipe propriétaire.\
   </br>\
   <a href="{2}">Accepter/rejeter la demande</a>
-mail.api.access.title=Demande d'accès à une API
-mail.api.access.body={0} veut accéder a votre API {1} pour l'équipe {2}. \
-  Vous recevez ce message car vous êtes administrateur de l'équipe propriétaire.\
+mail.api.access.title=Demande d''accès à une API
+mail.api.access.body={0} veut accéder a votre API {1} pour l''équipe {2}. \
+  Vous recevez ce message car vous êtes administrateur de l''équipe propriétaire.\
   </br>\
   <a href="{3}">Accepter/rejeter la demande</a>
 mail.team.access.title=Quelqu''un veut rejoindre votre équipe
@@ -40,7 +40,7 @@ unrecognized.user=Utilisateur innconnu
 mail.rejection.title=Votre demande a été rejetée.
 mail.acceptation.title=Votre demande a été acceptée.
 mail.api.access.rejection.body=Votre demande d''accès à l''API {0} a été rejetée.
-mail.api.access.acceptation.body`=La demande d''accès à l''API {0} par {1} a été acceptée.
+mail.api.access.acceptation.body=La demande d''accès à l''API {0} par {1} a été acceptée.
 mail.api.subscription.rejection.body=Votre demande de clé d''API pour {0} a été rejetée.
 mail.api.subscription.acceptation.body=La demande de {0} de souscription à l''API {1} a été acceptée.
 mail.team.access.rejection.body=Votre demande d''accès à l''équipe {0} a été rejetée.
