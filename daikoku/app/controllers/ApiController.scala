@@ -140,10 +140,8 @@ class ApiController(DaikokuAction: DaikokuAction,
   def myVisibleApis() = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
       env.dataStore.teamRepo.forTenant(ctx.tenant).findAllNotDeleted()
-        .flatMap(teams => {
-          getVisibleApis(teams, ctx.user, ctx.tenant)
-            .map(Ok(_))
-        })
+        .flatMap(teams => getVisibleApis(teams, ctx.user, ctx.tenant))
+        .map(Ok(_))
     }
   }
 

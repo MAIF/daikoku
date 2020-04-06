@@ -137,7 +137,6 @@ class OtoroshiClient(env: Env) {
       implicit otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     validateGroupNameFromId(groupId) {
-      Logger.debug(Json.stringify(key.asJson))
       client(s"/api/groups/$groupId/apikeys").post(key.asJson).map { resp =>
         if (resp.status == 200) {
           resp.json.validate(ActualOtoroshiApiKeyFormat) match {

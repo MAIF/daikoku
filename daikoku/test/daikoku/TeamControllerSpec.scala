@@ -110,7 +110,7 @@ class TeamControllerSpec(configurationSpec: => Configuration)
       respDelete.status mustBe 401
     }
 
-    "delete a team" in {
+    "not delete a team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),

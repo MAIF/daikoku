@@ -112,7 +112,6 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
           s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$from&to=$to"
       )(tenant, session)
 
-      Logger.debug(Json.stringify(resp.json))
       resp.status mustBe 200
       val eventualPlan = fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat
         .reads((resp.json \ "plan").as[JsObject])
@@ -364,7 +363,6 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         method = "POST"
       )(tenant, session)
 
-      Logger.debug(Json.stringify(resp.json))
       resp.status mustBe 200
 
       val respConsumption = httpJsonCallBlocking(
@@ -461,7 +459,6 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         path =
           s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$threeDayAgo&to=$to"
       )(tenant, session)
-      Logger.debug(Json.stringify(resp.json))
       respConsumption.status mustBe 200
 
       (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
@@ -638,7 +635,6 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
         path =
           s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$threeDayAgo&to=$to"
       )(tenant, session)
-      Logger.debug(Json.stringify(resp.json))
       respConsumption.status mustBe 200
 
       (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
