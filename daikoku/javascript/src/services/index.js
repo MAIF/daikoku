@@ -507,6 +507,36 @@ export function createOtoroshiSettings(tenantId, oto) {
   }).then(r => r.json());
 }
 
+export function getOtoroshiGroups(tenantId, otoId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/groups`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function getOtoroshiServices(tenantId, otoId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function getOtoroshiApiKeys(tenantId, otoId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export function deleteTeamApi(teamId, id) {

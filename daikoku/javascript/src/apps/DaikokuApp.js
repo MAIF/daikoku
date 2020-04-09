@@ -59,7 +59,8 @@ import {
   TeamEditForAdmin,
   TeamMembersForAdmin,
   TeamList,
-  TenantAdminList
+  TenantAdminList,
+  InitializeFromOtoroshi
 } from '../components/adminbackoffice';
 
 import { smartRedirect, smartMatch } from '../services/path';
@@ -294,6 +295,17 @@ class DaikokuAppComponent extends Component {
                   history={p.history}
                   location={p.location}
                   tenantMode={true}
+                />
+              )}
+            />
+            <Route
+              exact
+              path="/settings/init"
+              render={p => (
+                <InitializeFromOtoroshi
+                  match={p.match}
+                  history={p.history}
+                  location={p.location}
                 />
               )}
             />
