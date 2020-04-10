@@ -90,9 +90,11 @@ PUT		  /api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.
 ### NoDocs ###
 DELETE  /api/teams/:teamId/subscriptions/_clean			    fr.maif.otoroshi.daikoku.ctrls.ApiController.cleanArchivedSubscriptions(teamId)
 ### NoDocs ###
-POST    /api/teams/:teamId/subscriptions/:id/_rotation    fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiKeyRotation(teamId, id)
+POST    /api/teams/:teamId/subscriptions/:id/_rotation  fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiKeyRotation(teamId, id)
 ### NoDocs ###
-POST    /api/teams/:teamId/subscriptions/:id/_refresh     fr.maif.otoroshi.daikoku.ctrls.ApiController.regenerateApiKeySecret(teamId, id)
+POST    /api/teams/:teamId/subscriptions/:id/_refresh   fr.maif.otoroshi.daikoku.ctrls.ApiController.regenerateApiKeySecret(teamId, id)
+### NoDocs ###
+POST    /api/apis/:apiId/subscriptions/_init             fr.maif.otoroshi.daikoku.ctrls.ApiController.initApiKey(apiId)
 
 ### NoDocs ###
 GET     /api/apis/:apiId/doc                            fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId)

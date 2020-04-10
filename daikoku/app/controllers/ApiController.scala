@@ -17,8 +17,9 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{ApiService, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import jobs.ApiKeyStatsJob
+import org.joda.time.DateTime
 import play.api.Logger
 import play.api.http.HttpEntity
 import play.api.i18n.{I18nSupport, Lang}
@@ -424,6 +425,33 @@ class ApiController(DaikokuAction: DaikokuAction,
         case Left(r)  => NotFound(r)
         case Right(r) => Ok(r)
       }
+    }
+  }
+
+  def initApiKey(apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has init an apikey for @{api.name} - @{api.id}"))(ctx.tenant.id.value, ctx) {(tenant, team) =>
+      val teamId: TeamId = (ctx.request.body \ "team").as(TeamIdFormat)
+      val planId: UsagePlanId     = (ctx.request.body \ "plan" \ "_id").as(UsagePlanIdFormat) //todo: change  it in  javascript to just send planId
+      val clientId: String     = (ctx.request.body \ "apikey" \ "clientId").as[String]
+      val clientSecret: String     = (ctx.request.body \ "apikey" \ "clientSecret").as[String]
+      val clientName: String     = (ctx.request.body \ "apikey" \ "clientName").as[String]
+
+      val apiSubscription = ApiSubscription(
+        id = ApiSubscriptionId(BSONObjectID.generate().stringify),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey(clientName, clientId, clientSecret),
+        plan = planId,
+        createdAt = DateTime.now(),
+        team = teamId,
+        api = ApiId(apiId),
+        by = ctx.user.id,
+        customName = None,
+        rotation = None,
+        integrationToken = IdGenerator.token(64)
+      )
+
+      env.dataStore.apiSubscriptionRepo.forTenant(tenant.id).save(apiSubscription)
+        .map(done => Created(Json.obj("done" -> done)))
     }
   }
 

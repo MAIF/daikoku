@@ -6,10 +6,9 @@ import StepWizard from 'react-step-wizard';
 import classNames from "classnames";
 
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, tenant as TENANT, Spinner } from '../../utils';
+import { Can, manage, tenant as TENANT, Spinner, Option } from '../../utils';
 
 import * as Services from '../../../services';
-import { Tabs } from 'antd';
 
 
 const InitializeFromOtoroshiComponent = props => {
@@ -24,6 +23,9 @@ const InitializeFromOtoroshiComponent = props => {
 
   const [createdApis, setCreatedApis] = useState([])
   const [createdSubs, setCreatedSubs] = useState([])
+
+  const [actualApiCreation, setActualApiCreation] = useState(undefined)
+  const [actualSubCreation, setActualSubCreation] = useState(undefined)
 
   useEffect(() => {
     if (otoroshiInstance) {
@@ -40,7 +42,7 @@ const InitializeFromOtoroshiComponent = props => {
           setServices(services)
           setTeams(teams)
           setApikeys(keys)
-          setApis(apis.map(({_id, name}) => ({_id, name})))
+          setApis(apis.map(({ _id, name, possibleUsagePlans }) => ({ _id, name, possibleUsagePlans })))
           instance.nextStep()
         })
     }
@@ -51,12 +53,53 @@ const InitializeFromOtoroshiComponent = props => {
       .then(r => setOtoroshis(r))
   }, [props.tenant])
 
+  const apikeyCustomization = {
+    dynamicPrefix: null,
+    clientIdOnly: false,
+    constrainedServicesOnly: false,
+    readOnly: false,
+    metadata: {},
+    tags: [],
+    restrictions: {
+      enabled: false,
+      allowLast: true,
+      allowed: [],
+      forbidden: [],
+      notFound: []
+    }
+  }
   const createApis = () => {
-    new Promise(function (resolve, reject) {
-      setTimeout(function () {
-        resolve(console.debug({ createdApis }));
-      }, 1000);
-    })
+    createdApis
+      .reduce((result, api, index) => {
+        const currentApi = { name: api.name, index: index + 1 };
+
+        return result
+          .then(() => Promise.resolve(setActualApiCreation(currentApi)))
+          .then(() => Services.fetchNewApi())
+          .then(newApi => ({ 
+            ...newApi, 
+            name: api.name, 
+            team: api.team, 
+            published: true, 
+            possibleUsagePlans: newApi.possibleUsagePlans.map(pp => ({ 
+              ...pp, 
+              otoroshiTarget: {otoroshiSettings: otoroshiInstance.value, serviceGroup: api.groupId, apikeyCustomization}})) }))
+          .then(api => Services.createTeamApi(api.team, api))
+      }, Promise.resolve())
+      .then(() => Services.myVisibleApis())
+      .then(apis => setApis(apis))
+      .then(() => instance.nextStep())
+  }
+
+  const createSubs = () => {
+    createdSubs
+      .reduce((result, apikey, index) => {
+        const currentSub = { name: apikey.clientName, index: index + 1 };
+
+        return result
+          .then(() => Promise.resolve(setActualSubCreation(currentSub)))
+          .then(() => Services.initApiKey(apikey.api._id, apikey.team, apikey.plan, apikey))
+      }, Promise.resolve())
       .then(() => instance.nextStep())
   }
 
@@ -64,25 +107,29 @@ const InitializeFromOtoroshiComponent = props => {
 
   const servicesSteps = services.map((s, idx) => (
     <ServicesStep
-      key={idx}
+      key={`service-${idx}`}
       service={s}
       groups={groups}
       teams={teams}
       testApiName={name => apis.some(a => a.name.toLowerCase() === name.toLowerCase()) || createdApis.some(a => a.name.toLowerCase() === name.toLowerCase())}
       addNewTeam={t => setTeams([...teams, t])}
-      addService={(s, team) => setCreatedApis([...createdApis, { ...s, team }])} />
+      addService={(s, team) => setCreatedApis([...createdApis, { ...s, team }])}
+      infos={{index: idx, total: services.length}}
+    />
   ))
 
-  const subsSteps = apikeys.map((apikey, idx) => {
+  const subsSteps = apikeys.map((apikey, idx) => (
     <ApiKeyStep
-      key={idx}
+      key={`sub-${idx}`}
       apikey={apikey}
       teams={teams}
-      apis={createdApis}
+      apis={apis}
+      groups={groups}
       addNewTeam={t => setTeams([...teams, t])}
-      addSub={(apikey, team, api) => setCreatedSubs([...createdSubs, { ...s, team, api }])}
+      addSub={(apikey, team, api, plan) => setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])}
+      infos={{index: idx, total: apikeys.length}}
     />
-  })
+  ))
 
   return (
     <UserBackOffice tab="Otoroshi">
@@ -97,9 +144,13 @@ const InitializeFromOtoroshiComponent = props => {
             {[
               <SelectOtoStep key="oto" setOtoInstance={setOtoroshiInstance} otoroshis={otoroshis} />,
               <WaitingStep key="wait-1" />,
+              <SelectionStepStep key="selection" subStep={servicesSteps.length + 6}/>,
               ...servicesSteps,
               <EndStep key="end" createdApis={createdApis} groups={groups} teams={teams} />,
-              <CreationStep key="creation" createApis={createApis} />,
+              <CreationStep key="creation-api" create={createApis} />,
+              ...subsSteps,
+              <RecapSubsStep key="recap-sub" createdSubs={createdSubs} apis={apis} teams={teams} />,
+              <CreationStep key="creation-sub" create={createSubs} />,
               <FinishStep key="finish" />]}
           </StepWizard>
         </div>
@@ -116,6 +167,16 @@ export const InitializeFromOtoroshi = connect(mapStateToProps)(InitializeFromOto
 
 
 //###############  HELP COMPONENTS 
+
+const SelectionStepStep = props => {
+
+  return (
+    <div className="d-flex">
+      <button className="btn btn-access" onClick={() => props.nextStep()}>Import Otoroshi Service</button>
+      <button className="btn btn-access" onClick={() => props.goToStep(props.subStep)}>Import Otoroshi ApiKeys</button>
+    </div>
+  )
+}
 
 const SelectOtoStep = props => {
   const [otoInstance, setOtoInstance] = useState(undefined)
@@ -171,7 +232,39 @@ const EndStep = props => {
         <button className='btn btn-access' onClick={props.previousStep}>Go Back</button>
         <button className='btn btn-access' onClick={props.nextStep}>Create</button>
       </div>
-      
+
+    </div>
+  )
+}
+
+const RecapSubsStep = props => {
+  return (
+    <div>
+      <ul>
+        {props.apis
+          .filter(a => props.createdSubs.some(s => s.api._id === a._id))
+          .map((a, idx) => {
+            return (
+              <li key={idx}>
+                <h4>{a.name}</h4>
+                <ul>
+                  {props.createdSubs
+                    .filter(s => s.api._id === a._id)
+                    .map((s, idx) => {
+                      return (
+                      <li key={idx}>{s.plan.customName || s.plan.type}/{s.clientName}</li>
+                      )
+                    })}
+                </ul>
+              </li>
+            )
+          })}
+      </ul>
+      <div className="d-flex justify-content-around">
+        <button className='btn btn-access' onClick={props.previousStep}>Go Back</button>
+        <button className='btn btn-access' onClick={props.nextStep}>Create</button>
+      </div>
+
     </div>
   )
 }
@@ -201,7 +294,7 @@ const ServicesStep = props => {
 
   useEffect(() => {
     if (props.testApiName(service.name)) {
-      setError({name: "Une api doit avoir un nom unique"})
+      setError({ name: "Une api doit avoir un nom unique" })
     } else {
       setError({})
     }
@@ -217,10 +310,10 @@ const ServicesStep = props => {
   return (
     <div className="d-flex flex-row col-12 flex-wrap">
       <div className="col-6">
-        <h3>Service 1/23</h3>
+        <h3>Service {props.infos.index + 1}/{props.infos.total}</h3>
         <div>Otoroshi</div>
         <div>Service: {props.service.name}</div>
-        <div>Group: {props.groups.find(g => g.id === props.service.groupId).name }</div>
+        <div>Group: {props.groups.find(g => g.id === props.service.groupId).name}</div>
       </div>
       <div className="col-6">
         <div>Evil-corps</div>
@@ -239,7 +332,7 @@ const ServicesStep = props => {
         </div>
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
-          <div>Api team</div>
+            <div>Api team</div>
           </div>
           <Creatable
             className="col-8"
@@ -254,14 +347,14 @@ const ServicesStep = props => {
             formatCreateLabel={value => `creer l'équipe ${value}`}
           />
         </div>
-        
+
       </div>
       <div className="d-flex justify-content-between col-12">
         <div>
           {props.currentStep > 1 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
         </div>
         <div>
-          <button className='btn btn-access' onClick={props.nextStep}>Next</button>
+          <button className='btn btn-access' onClick={props.nextStep}>Skip</button>
           <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>import</button>
         </div>
       </div>
@@ -284,7 +377,7 @@ const FinishStep = props => {
 const CreationStep = props => {
   useEffect(() => {
     if (props.isActive) {
-      props.createApis();
+      props.create();
     }
   }, [props.isActive])
   return (
@@ -294,27 +387,103 @@ const CreationStep = props => {
 
 const ApiKeyStep = props => {
   const [selectedApi, setSelectedApi] = useState(undefined)
+  const [selectedplan, setSelectedplan] = useState(undefined)
   const [selectedTeam, setSelectedTeam] = useState(undefined)
+  const [newTeam, setNewTeam] = useState(undefined)
+  const [loading, setLoading] = useState(false)
 
-  const apis = props.apis.map(a => ({ label: a.clientName, value: a.clientId }))
+  useEffect(() => {
+    if (newTeam) {
+      setLoading(true);
+      Services.fetchNewTeam()
+        .then(t => ({ ...t, name: newTeam }))
+        .then(t => Services.createTeam(t))
+        .then(t => {
+          props.addNewTeam(t)
+          setSelectedTeam(t._id)
+          setNewTeam(undefined)
+          setLoading(false)
+        })
+    }
+  }, [newTeam])
+
+  const getIt = () => {
+    props.addSub(props.apikey, selectedTeam, selectedApi, selectedplan);
+    props.nextStep();
+  }
+
+  const apis = props.apis.map(a => ({ label: a.name, value: a }))
   const teams = props.teams.map(t => ({ label: t.name, value: t._id }))
+  const possiblePlans = Option(props.apis.find(a => selectedApi && a._id === selectedApi._id))
+    .map(a => a.possibleUsagePlans)
+    .getOrElse([])
+    .map(pp => ({label: pp.customName || pp.type, value: pp}))
+
   return (
-    <div>
-      <h4>{props.apikey.clientName}</h4>
-      <Select
-        options={apis}
-        onChange={slug => setSelectedApi(slug.value)}
-        value={apis.find(a => a.value === selectedApi)}
-      />
-      <Creatable
-        isClearable
-        isDisabled={loading}
-        isLoading={loading}
-        onChange={slug => setSelectedTeam(slug.value)}
-        onCreateOption={setNewTeam}
-        options={teams}
-        value={teams.find(t => t.value === selectedTeam)}
-      />
+    <div className="d-flex flex-row col-12 flex-wrap">
+      <div className="col-6">
+        <h3>ApiKey {props.infos.index+1}/{props.infos.total}</h3>
+        <div>Otoroshi</div>
+        <div>ApiKey: {props.apikey.clientName}</div>
+        <div>Group: {props.groups.find(g => g.id === props.apikey.authorizedGroup).name}</div>
+      </div>
+      <div className="col-6">
+        <div>Evil-corps</div>
+        <div className="d-flex flex-row align-items-center mb-3">
+          <div className="col-4">
+            <div>Api</div>
+          </div>
+          <div className="d-flex flex-column col-8">
+            <Select
+              options={apis}
+              onChange={slug => setSelectedApi(slug.value)}
+              value={apis.find(a => !!selectedApi && a.value._id === selectedApi._id)}
+            />
+          </div>
+        </div>
+        <div className="d-flex flex-row align-items-center mb-3">
+          <div className="col-4">
+            <div>Plan</div>
+          </div>
+          <div className="d-flex flex-column col-8">
+            <Select
+              placeholder="Selectionner un plan d'usage"
+              isDisabled={!selectedApi}
+              isLoading={!selectedApi}
+              options={possiblePlans}
+              onChange={slug => setSelectedplan(slug.value)}
+              value={possiblePlans.find(a => !!selectedplan && a.value._id === selectedApi._id)}
+            />
+          </div>
+        </div>
+        <div className="d-flex flex-row align-items-center mb-3">
+          <div className="col-4">
+            <div>Team</div>
+          </div>
+          <Creatable
+            className="col-8"
+            isClearable
+            isDisabled={loading}
+            isLoading={loading}
+            onChange={slug => setSelectedTeam(slug.value)}
+            onCreateOption={setNewTeam}
+            options={teams}
+            value={teams.find(t => t.value === selectedTeam)}
+            placeholder="Selectionner une équipe"
+            formatCreateLabel={value => `creer l'équipe ${value}`}
+          />
+        </div>
+
+      </div>
+      <div className="d-flex justify-content-between col-12">
+        <div>
+          {props.currentStep > 1 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
+        </div>
+        <div>
+          <button className='btn btn-access' onClick={props.nextStep}>Skip</button>
+          <button className='btn btn-access' disabled={!selectedTeam || !selectedApi ? 'disabled' : null} onClick={getIt}>import</button>
+        </div>
+      </div>
     </div>
   )
 }
