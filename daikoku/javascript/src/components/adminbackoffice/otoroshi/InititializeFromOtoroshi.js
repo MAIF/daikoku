@@ -5,11 +5,13 @@ import Creatable from 'react-select/creatable';
 import StepWizard from 'react-step-wizard';
 import classNames from "classnames";
 import _ from 'lodash';
+import faker from 'faker';
 
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant as TENANT, Spinner, Option } from '../../utils';
 
 import * as Services from '../../../services';
+import { setError } from '../../../core';
 
 
 const InitializeFromOtoroshiComponent = props => {
@@ -43,7 +45,7 @@ const InitializeFromOtoroshiComponent = props => {
           setServices(services)
           setTeams(teams)
           setApikeys(keys)
-          setApis(apis.map(({ _id, name, possibleUsagePlans }) => ({ _id, name, possibleUsagePlans })))
+          setApis(apis)
           instance.nextStep()
         })
     }
@@ -77,14 +79,16 @@ const InitializeFromOtoroshiComponent = props => {
         return result
           .then(() => Promise.resolve(setActualApiCreation(currentApi)))
           .then(() => Services.fetchNewApi())
-          .then(newApi => ({ 
-            ...newApi, 
-            name: api.name, 
-            team: api.team, 
-            published: true, 
-            possibleUsagePlans: newApi.possibleUsagePlans.map(pp => ({ 
-              ...pp, 
-              otoroshiTarget: {otoroshiSettings: otoroshiInstance.value, serviceGroup: api.groupId, apikeyCustomization}})) }))
+          .then(newApi => ({
+            ...newApi,
+            name: api.name,
+            team: api.team,
+            published: true,
+            possibleUsagePlans: newApi.possibleUsagePlans.map(pp => ({
+              ...pp,
+              otoroshiTarget: { otoroshiSettings: otoroshiInstance.value, serviceGroup: api.groupId, apikeyCustomization }
+            }))
+          }))
           .then(api => Services.createTeamApi(api.team, api))
       }, Promise.resolve())
       .then(() => Services.myVisibleApis())
@@ -102,6 +106,16 @@ const InitializeFromOtoroshiComponent = props => {
           .then(() => Services.initApiKey(apikey.api._id, apikey.team, apikey.plan, apikey))
       }, Promise.resolve())
       .then(() => instance.nextStep())
+  }
+
+  const updateApi = api => {
+
+    return Services.teamApi(api.team, api._id)
+      .then(oldApi => Services.saveTeamApi(api.team, {...oldApi, ...api}))
+      .then(updatedApi => {
+        const filteredApis = apis.filter(a => a._id !== updatedApi._id)
+        setApis([...filteredApis, updatedApi])
+      })
   }
 
   const onStepChange = step => console.debug({ step })
@@ -131,6 +145,7 @@ const InitializeFromOtoroshiComponent = props => {
         addNewTeam={t => setTeams([...teams, t])}
         addSub={(apikey, team, api, plan) => setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])}
         infos={{ index: idx, total: apikeys.length }}
+        updateApi={api => updateApi(api)}
       />
     ))
 
@@ -147,7 +162,7 @@ const InitializeFromOtoroshiComponent = props => {
             {[
               <SelectOtoStep key="oto" setOtoInstance={setOtoroshiInstance} otoroshis={otoroshis} />,
               <WaitingStep key="wait-1" />,
-              <SelectionStepStep key="selection" subStep={servicesSteps.length + 6}/>,
+              <SelectionStepStep key="selection" subStep={servicesSteps.length + 6} />,
               ...servicesSteps,
               <EndStep key="end" createdApis={createdApis} groups={groups} teams={teams} />,
               <CreationStep key="creation-api" create={createApis} />,
@@ -255,7 +270,7 @@ const RecapSubsStep = props => {
                     .filter(s => s.api._id === a._id)
                     .map((s, idx) => {
                       return (
-                      <li key={idx}>{s.plan.customName || s.plan.type}/{s.clientName}</li>
+                        <li key={idx}>{s.plan.customName || s.plan.type}/{s.clientName}</li>
                       )
                     })}
                 </ul>
@@ -390,10 +405,24 @@ const CreationStep = props => {
 
 const ApiKeyStep = props => {
   const [selectedApi, setSelectedApi] = useState(undefined)
-  const [selectedplan, setSelectedplan] = useState(undefined)
+  const [selectedPlan, setSelectedPlan] = useState(undefined)
   const [selectedTeam, setSelectedTeam] = useState(undefined)
   const [newTeam, setNewTeam] = useState(undefined)
+  const [newPlan, setNewPlan] = useState(undefined)
   const [loading, setLoading] = useState(false)
+  const [loadingPlan, setLoadingPlan] = useState(false)
+  const [error, setError] = useState({})
+
+  useEffect(() => {
+    if (selectedApi) {
+      const api = props.apis.find(a => selectedApi._id === a._id)
+      setSelectedApi(api)
+
+      if (!!selectedPlan) {
+        setSelectedPlan(api.possibleUsagePlans.find(pp => pp._id === selectedPlan._id))
+      }
+    }
+  }, [props.apis])
 
   useEffect(() => {
     if (newTeam) {
@@ -410,8 +439,81 @@ const ApiKeyStep = props => {
     }
   }, [newTeam])
 
+  //add new plan effect
+  useEffect(() => {
+    if (newPlan) {
+      let plans = _.cloneDeep(selectedApi.possibleUsagePlans);
+      const plan = {
+        _id: faker.random.alphaNumeric(32),
+        type: 'FreeWithQuotas',
+        currency: { code: 'EUR' },
+        customName: newPlan,
+        customDescription: null,
+        maxPerSecond: 10,
+        maxPerDay: 1000,
+        maxPerMonth: 1000,
+        billingDuration: {
+          value: 1,
+          unit: 'month',
+        },
+        visibility: 'Public',
+        subscriptionProcess: 'Automatic',
+        integrationProcess: 'ApiKey',
+        rotation: false,
+        otoroshiTarget: {
+          otoroshiSettings: null,
+          serviceGroup: null,
+          clientIdOnly: false,
+          constrainedServicesOnly: false,
+          tags: [],
+          metadata: {},
+          restrictions: {
+            enabled: false,
+            allowLast: true,
+            allowed: [],
+            forbidden: [],
+            notFound: [],
+          },
+        },
+      };
+      plans.push(plan);
+      const value = _.cloneDeep(selectedApi);
+      value.possibleUsagePlans = plans;
+
+      debugger
+      setSelectedPlan(plan)
+      Promise.resolve(setLoadingPlan(true))
+        .then(() => props.updateApi(value))
+        .then(() => {
+          setNewPlan(undefined)
+          setLoadingPlan(false)
+        })
+    }
+  }, [newPlan])
+
+  //handle error effect
+  useEffect(() => {
+    if (!selectedPlan) {
+      setError({ ...error, plan: "no plan" })
+    } else {
+      delete error.plan
+    }
+
+    if (!selectedApi) {
+      setError({ ...error, api: "no api" })
+    } else {
+      delete error.api
+    }
+
+    if (!selectedTeam) {
+      setError({ ...error, team: "no team" })
+    } else {
+      delete error.team
+    }
+  }, [selectedPlan, selectedApi, selectedTeam])
+
   const getIt = () => {
-    props.addSub(props.apikey, selectedTeam, selectedApi, selectedplan);
+    props.addSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
     props.nextStep();
   }
 
@@ -420,12 +522,12 @@ const ApiKeyStep = props => {
   const possiblePlans = Option(props.apis.find(a => selectedApi && a._id === selectedApi._id))
     .map(a => a.possibleUsagePlans)
     .getOrElse([])
-    .map(pp => ({label: pp.customName || pp.type, value: pp}))
+    .map(pp => ({ label: pp.customName || pp.type, value: pp }))
 
   return (
     <div className="d-flex flex-row col-12 flex-wrap">
       <div className="col-6">
-        <h3>ApiKey {props.infos.index+1}/{props.infos.total}</h3>
+        <h3>ApiKey {props.infos.index + 1}/{props.infos.total}</h3>
         <div>Otoroshi</div>
         <div>ApiKey: {props.apikey.clientName}</div>
         <div>Group: {props.groups.find(g => g.id === props.apikey.authorizedGroup).name}</div>
@@ -449,13 +551,16 @@ const ApiKeyStep = props => {
             <div>Plan</div>
           </div>
           <div className="d-flex flex-column col-8">
-            <Select
-              placeholder="Selectionner un plan d'usage"
-              isDisabled={!selectedApi}
-              isLoading={!selectedApi}
+            <Creatable
+              isClearable
+              isDisabled={!selectedApi || loadingPlan}
+              isLoading={!selectedApi || loadingPlan}
+              onChange={slug => !!slug && setSelectedPlan(slug.value)}
+              onCreateOption={setNewPlan}
               options={possiblePlans}
-              onChange={slug => setSelectedplan(slug.value)}
-              value={possiblePlans.find(a => !!selectedplan && a.value._id === selectedApi._id)}
+              value={possiblePlans.find(a => !!selectedPlan && a.value._id === selectedPlan._id)}
+              placeholder="Selectionner un plan"
+              formatCreateLabel={value => `creer l'équipe ${value}`}
             />
           </div>
         </div>
@@ -484,7 +589,7 @@ const ApiKeyStep = props => {
         </div>
         <div>
           <button className='btn btn-access' onClick={props.nextStep}>Skip</button>
-          <button className='btn btn-access' disabled={!selectedTeam || !selectedApi ? 'disabled' : null} onClick={getIt}>import</button>
+          <button className='btn btn-access' disabled={!!error && Object.keys(error).length > 0 ? 'disabled' : null} onClick={getIt}>import</button>
         </div>
       </div>
     </div>
