@@ -4,6 +4,7 @@ import Select from 'react-select';
 import Creatable from 'react-select/creatable';
 import StepWizard from 'react-step-wizard';
 import classNames from "classnames";
+import _ from 'lodash';
 
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant as TENANT, Spinner, Option } from '../../utils';
@@ -105,31 +106,33 @@ const InitializeFromOtoroshiComponent = props => {
 
   const onStepChange = step => console.debug({ step })
 
-  const servicesSteps = services.map((s, idx) => (
-    <ServicesStep
-      key={`service-${idx}`}
-      service={s}
-      groups={groups}
-      teams={teams}
-      testApiName={name => apis.some(a => a.name.toLowerCase() === name.toLowerCase()) || createdApis.some(a => a.name.toLowerCase() === name.toLowerCase())}
-      addNewTeam={t => setTeams([...teams, t])}
-      addService={(s, team) => setCreatedApis([...createdApis, { ...s, team }])}
-      infos={{index: idx, total: services.length}}
-    />
-  ))
+  const servicesSteps = _.orderBy(services, ["groupId", "name"])
+    .map((s, idx) => (
+      <ServicesStep
+        key={`service-${idx}`}
+        service={s}
+        groups={groups}
+        teams={teams}
+        testApiName={name => apis.some(a => a.name.toLowerCase() === name.toLowerCase()) || createdApis.some(a => a.name.toLowerCase() === name.toLowerCase())}
+        addNewTeam={t => setTeams([...teams, t])}
+        addService={(s, team) => setCreatedApis([...createdApis, { ...s, team }])}
+        infos={{ index: idx, total: services.length }}
+      />
+    ))
 
-  const subsSteps = apikeys.map((apikey, idx) => (
-    <ApiKeyStep
-      key={`sub-${idx}`}
-      apikey={apikey}
-      teams={teams}
-      apis={apis}
-      groups={groups}
-      addNewTeam={t => setTeams([...teams, t])}
-      addSub={(apikey, team, api, plan) => setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])}
-      infos={{index: idx, total: apikeys.length}}
-    />
-  ))
+  const subsSteps = _.orderBy(apikeys, ['authorizedGroup', "clientName"])
+    .map((apikey, idx) => (
+      <ApiKeyStep
+        key={`sub-${idx}`}
+        apikey={apikey}
+        teams={teams}
+        apis={apis}
+        groups={groups}
+        addNewTeam={t => setTeams([...teams, t])}
+        addSub={(apikey, team, api, plan) => setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])}
+        infos={{ index: idx, total: apikeys.length }}
+      />
+    ))
 
   return (
     <UserBackOffice tab="Otoroshi">
