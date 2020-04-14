@@ -213,9 +213,9 @@ GET     /api/teams/:teamId/tenant/otoroshis/:oto/groups fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/tenants/:tenantId/otoroshis/:oto/groups    fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsForTenant(tenantId, oto)
 ### NoDocs ###
-GET     /api/tenants/:tenantId/otoroshis/:oto/services  fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesForTenant(tenantId, oto)
+GET     /api/tenants/:tenantId/otoroshis/:oto/services  fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesForTenant(tenantId, oto, page: Int ?= 0, pageSize: Int ?= 10)
 ### NoDocs ###
-GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys   fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto)
+GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys   fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto, page: Int ?= 0, pageSize: Int ?= 10)
 
 ### NoDocs ###
 GET     /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.teams()

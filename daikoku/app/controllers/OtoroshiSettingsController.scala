@@ -135,20 +135,20 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
     }
   }
-  def otoroshiServicesForTenant(tenantId: String, oto: String) = DaikokuAction.async { ctx =>
+  def otoroshiServicesForTenant(tenantId: String, oto: String, page: Int, pageSize: Int) = DaikokuAction.async { ctx =>
     TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(tenantId, ctx) { (tenant, _) =>
       tenant.otoroshiSettings.find(s => s.id.value == oto) match {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> s"Settings $oto not found")))
-        case Some(settings) => otoroshiClient.getServices()(settings)
+        case Some(settings) => otoroshiClient.getServices(pageSize, page)(settings)
           .map(Ok(_))
       }
     }
   }
-  def otoroshiApiKeysForTenant(tenantId: String, oto: String) = DaikokuAction.async { ctx =>
+  def otoroshiApiKeysForTenant(tenantId: String, oto: String, page: Int, pageSize: Int) = DaikokuAction.async { ctx =>
     TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(tenantId, ctx) { (tenant, _) =>
       tenant.otoroshiSettings.find(s => s.id.value == oto) match {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> s"Settings $oto not found")))
-        case Some(settings) => otoroshiClient.getApiKeys()(settings)
+        case Some(settings) => otoroshiClient.getApiKeys(pageSize, page)(settings)
           .map(Ok(_))
       }
     }

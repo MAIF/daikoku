@@ -6,10 +6,204 @@ import StepWizard from 'react-step-wizard';
 import classNames from "classnames";
 import _ from 'lodash';
 import faker from 'faker';
+import { useMachine } from "@xstate/react";
+import { Machine, assign } from 'xstate';
 
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant as TENANT, Spinner, Option } from '../../utils';
 import * as Services from '../../../services';
+
+const perPage = 10;
+const createdApis = [];
+const createdSubs = []
+
+const theMachine = Machine({
+  id: 'the-machine',
+  initial: 'otoroshiSelection',
+  context: {
+    tenant: undefined,
+    otoroshi: undefined,
+    groups: [],
+    services: [],
+    apikeys: []
+  },
+  states: {
+    otoroshiSelection: {
+      on: {
+        LOAD: 'loadingOtoroshiGroups'
+      }
+    },
+    loadingOtoroshiGroups: {
+      invoke: {
+        id: 'otoroshiGroupsLoader',
+        src: (context, _event) => {
+          return (callBack, _onEvent) => {
+            Services.getOtoroshiGroups(context.tenant._id, context.otoroshi._id)
+              .then(groups => callBack({ type: 'DONE_COMPLETE', groups }))
+          }
+        }
+      },
+      on: {
+        DONE_COMPLETE: {
+          target: 'stepSelection',
+          actions: assign({
+            groups: (_context, { groups = [] }) => groups
+          })
+        }
+      }
+    },
+    stepSelection: {
+      on: {
+        LOAD_SERVICE: 'loadingServices',
+        LOAD_APIKEY: 'loadingApikeys',
+      }
+    },
+    loadingServices: {
+      invoke: {
+        id: 'otoroshiServicesLoader',
+        src: (context, _event) => {
+          return (callBack, _onEvent) => {
+            //todo: real pagiantion of course
+            //todo: be capable to get tenant & otoroshi from context
+            //todo: maybe save actual page from context
+            //todo: not implemented but user could want to be back...
+            Services.getOtoroshiServices(context.tenant._id, context.otoroshi._id, perPage, 0) 
+              .then(newServices => {
+                const hasMore = newServices.length === perPage;
+                if (hasMore) {
+                  callBack({ type: 'DONE_MORE', newServices })
+                } else {
+                  callBack({ type: 'DONE_COMPLETE', newServices })
+                }
+              })
+          }
+        }
+      },
+      on: {
+        DONE_MORE: {
+          target: 'moreServices',
+          actions: assign({
+            services: ({ services }, { newServices = [] }) => [...services, ...newServices] //todo: be smart, remove 10 first before add 10 more
+          })
+        },
+        DONE_COMPLETE: {
+          target: 'completeServices',
+          actions: assign({
+            services: ({ services }, { newServices = [] }) => [...services, ...newServices] //todo: be smart, remove 10 first before add 10 more
+          })
+        }
+      }
+    },
+    moreServices: {
+      on: {
+        LOAD_SERVICE: 'loadingServices'
+      }
+    },
+    completeServices: {
+      on: {
+        CREATE_APIS: 'apiCreation'
+      }
+    },
+    apiCreation: {
+      invoke: {
+        id: 'daikokuApisCreator',
+        src: (context, _event) => {
+          //todo: need to access to createdApis (maybeWith context...test it)
+          createdApis
+            .reduce((result, api) => {
+              return result
+                .then(() => Services.fetchNewApi())
+                .then(newApi => ({
+                  ...newApi,
+                  name: api.name,
+                  team: api.team,
+                  published: true,
+                  possibleUsagePlans: newApi.possibleUsagePlans.map(pp => ({
+                    ...pp,
+                    otoroshiTarget: { otoroshiSettings: otoroshiInstance.value, serviceGroup: api.groupId, apikeyCustomization }
+                  }))
+                }))
+                .then(api => Services.createTeamApi(api.team, api))
+            }, Promise.resolve())
+            .then(() => Services.myVisibleApis())
+            .then(() => callBack({ type: 'CREATION_DONE' }))
+          //todo: need to update apis of state after creation
+        }
+      },
+      on: {
+        CREATION_DONE: 'loadingApikeys'
+      }
+    },
+    loadingApikeys: {
+      invoke: {
+        id: 'otoroshiServicesLoader',
+        src: (context, _event) => {
+          return (callBack, _onEvent) => {
+            //todo: real pagiantion of course
+            //todo: be capable to get tenant & otoroshi from context
+            //todo: maybe save actual page from context
+            //todo: not implemented but user could want to be back...
+            Services.getOtoroshiApiKeys(context.tenant._id, context.otoroshi._id, perPage, 0)
+              .then(newApikeys => {
+                const hasMore = newApikeys.length === perPage;
+                if (hasMore) {
+                  callBack({ type: 'DONE_MORE', newApikeys })
+                } else {
+                  callBack({ type: 'DONE_COMPLETE', newApikeys })
+                }
+              })
+          }
+        }
+      },
+      on: {
+        DONE_MORE: {
+          target: 'moreApikeys',
+          actions: assign({
+            apikeys: ({ apikeys }, { newApikeys = [] }) => [...apikeys, ...newApikeys] //todo: be smart, remove 10 first before add 10 more
+          })
+        },
+        DONE_COMPLETE: {
+          target: 'completeApikeys',
+          actions: assign({
+            apikeys: ({ apikeys }, { newApikeys = [] }) => [...apikeys, ...newApikeys] //todo: be smart, remove 10 first before add 10 more
+          })
+        }
+      }
+    },
+    moreApikeys: {
+      on: {
+        LOAD_APIKEYS: 'loadingApikeys'
+      }
+    },
+    completeApikeys: {
+      on: {
+        CREATE_APIS: 'subscriptionCreation'
+      }
+    },
+    subscriptionCreation: {
+      invoke: {
+        id: 'daikokuApisCreator',
+        src: (context, _event) => {
+          //todo: need to access to createdApis (maybeWith context...test it)
+          createdSubs
+            .reduce((result, apikey, index) => {
+              const currentSub = { name: apikey.clientName, index: index + 1 };
+
+              return result
+                .then(() => Promise.resolve(setActualSubCreation(currentSub)))
+                .then(() => Services.initApiKey(apikey.api._id, apikey.team, apikey.plan, apikey))
+            }, Promise.resolve())
+            .then(() => callBack({ type: 'CREATION_DONE' }))
+        }
+      },
+      on: {
+        CREATION_DONE: 'complete'
+      }
+    },
+    complete: { type: "final" },
+    failure: { type: "final" }
+  }
+})
 
 
 const InitializeFromOtoroshiComponent = props => {
@@ -37,7 +231,7 @@ const InitializeFromOtoroshiComponent = props => {
       ])
         .then(([groups, services, teams, keys, apis]) => {
           setGroups(groups);
-          setServices(services)
+          setServices(services.map(s => ({ id: s.id, groupId: s.groupId, name: s.name })))
           setTeams(teams)
           setApikeys(keys)
           setApis(apis)
@@ -68,11 +262,8 @@ const InitializeFromOtoroshiComponent = props => {
   }
   const createApis = () => {
     createdApis
-      .reduce((result, api, index) => {
-        const currentApi = { name: api.name, index: index + 1 };
-
+      .reduce((result, api) => {
         return result
-          .then(() => Promise.resolve(setActualApiCreation(currentApi)))
           .then(() => Services.fetchNewApi())
           .then(newApi => ({
             ...newApi,
@@ -104,16 +295,13 @@ const InitializeFromOtoroshiComponent = props => {
   }
 
   const updateApi = api => {
-
     return Services.teamApi(api.team, api._id)
-      .then(oldApi => Services.saveTeamApi(api.team, {...oldApi, ...api}))
+      .then(oldApi => Services.saveTeamApi(api.team, { ...oldApi, ...api }))
       .then(updatedApi => {
         const filteredApis = apis.filter(a => a._id !== updatedApi._id)
         setApis([...filteredApis, updatedApi])
       })
   }
-
-  const onStepChange = step => console.debug({ step })
 
   const servicesSteps = _.orderBy(services, ["groupId", "name"])
     .map((s, idx) => (
@@ -151,7 +339,6 @@ const InitializeFromOtoroshiComponent = props => {
           backgroundColor: "lightGray"
         }}>
           <StepWizard
-            onStepChange={onStepChange}
             instance={setInstance}
           >
             {[
@@ -178,15 +365,14 @@ const mapStateToProps = state => ({
 
 export const InitializeFromOtoroshi = connect(mapStateToProps)(InitializeFromOtoroshiComponent);
 
-
-//###############  HELP COMPONENTS 
+//###############  HELP COMPONENTS ##################
 
 const SelectionStepStep = props => {
 
   return (
     <div className="d-flex">
-      <button className="btn btn-access" onClick={() => setSelectedStep(SERVICE_STEP)}>Import Otoroshi Service</button>
-      <button className="btn btn-access" onClick={() => setSelectedStep(APIKEY_STEP)}>Import Otoroshi ApiKeys</button>
+      <button className="btn btn-access" onClick={() => props.nextStep()}>Import Otoroshi Service</button>
+      <button className="btn btn-access" onClick={() => props.goToStep(props.subStep)}>Import Otoroshi ApiKeys</button>
     </div>
   )
 }
@@ -364,7 +550,7 @@ const ServicesStep = props => {
       </div>
       <div className="d-flex justify-content-between col-12">
         <div>
-          {props.currentStep > 1 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
+          {props.infos.index > 0 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
         </div>
         <div>
           <button className='btn btn-access' onClick={props.nextStep}>Skip</button>
@@ -375,12 +561,12 @@ const ServicesStep = props => {
   )
 }
 
-const WaitingStep = props => {
+const WaitingStep = () => {
   return (
     <Spinner />
   )
 }
-const FinishStep = props => {
+const FinishStep = () => {
   return (
     <div>Thank you</div>
   )
@@ -519,13 +705,15 @@ const ApiKeyStep = props => {
     .getOrElse([])
     .map(pp => ({ label: pp.customName || pp.type, value: pp }))
 
+  const maybeGroup = props.groups.find(g => g.id === props.apikey.authorizedGroup)
+
   return (
     <div className="d-flex flex-row col-12 flex-wrap">
       <div className="col-6">
         <h3>ApiKey {props.infos.index + 1}/{props.infos.total}</h3>
         <div>Otoroshi</div>
         <div>ApiKey: {props.apikey.clientName}</div>
-        <div>Group: {props.groups.find(g => g.id === props.apikey.authorizedGroup).name}</div>
+        <div>Group: {Option(maybeGroup).map(g => g.name).getOrElse("Unknown group")}</div>
       </div>
       <div className="col-6">
         <div>Evil-corps</div>
@@ -580,7 +768,7 @@ const ApiKeyStep = props => {
       </div>
       <div className="d-flex justify-content-between col-12">
         <div>
-          {props.currentStep > 1 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
+          {props.infos.index > 0 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
         </div>
         <div>
           <button className='btn btn-access' onClick={props.nextStep}>Skip</button>

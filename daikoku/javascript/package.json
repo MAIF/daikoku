@@ -63,7 +63,8 @@
     "swagger-editor": "3.7.1",
     "swagger-ui-dist": "3.24.3",
     "uuid": "3.3.3",
-    "whatwg-fetch": "3.0.0"
+    "whatwg-fetch": "3.0.0",
+    "xstate": "4.8.0"
   },
   "devDependencies": {
     "@babel/core": "7.7.2",

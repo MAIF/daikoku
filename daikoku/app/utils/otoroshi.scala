@@ -76,9 +76,9 @@ class OtoroshiClient(env: Env) {
     }
   }
 
-  def getServices()(
+  def getServices(pageSize: Int = 10, page: Int = 0)(
     implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
-    client(s"/api/services").get().flatMap { resp =>
+    client(s"/api/services?pageSize=$pageSize&page=$page").get().flatMap { resp =>
       if (resp.status == 200) {
         val res = resp.json.as[JsArray]
         FastFuture.successful(JsArray(res.value))
@@ -90,9 +90,9 @@ class OtoroshiClient(env: Env) {
     }
   }
 
-  def getApiKeys()(
+  def getApiKeys(pageSize: Int = 10, page: Int = 0)(
     implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
-    client(s"/api/apikeys").get().flatMap { resp =>
+    client(s"/api/apikeys?pageSize=$pageSize&page=$page").get().flatMap { resp =>
       if (resp.status == 200) {
         val res = resp.json.as[JsArray]
         FastFuture.successful(JsArray(res.value))
