@@ -9,9 +9,7 @@ import faker from 'faker';
 
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant as TENANT, Spinner, Option } from '../../utils';
-
 import * as Services from '../../../services';
-import { setError } from '../../../core';
 
 
 const InitializeFromOtoroshiComponent = props => {
@@ -26,9 +24,6 @@ const InitializeFromOtoroshiComponent = props => {
 
   const [createdApis, setCreatedApis] = useState([])
   const [createdSubs, setCreatedSubs] = useState([])
-
-  const [actualApiCreation, setActualApiCreation] = useState(undefined)
-  const [actualSubCreation, setActualSubCreation] = useState(undefined)
 
   useEffect(() => {
     if (otoroshiInstance) {
@@ -190,8 +185,8 @@ const SelectionStepStep = props => {
 
   return (
     <div className="d-flex">
-      <button className="btn btn-access" onClick={() => props.nextStep()}>Import Otoroshi Service</button>
-      <button className="btn btn-access" onClick={() => props.goToStep(props.subStep)}>Import Otoroshi ApiKeys</button>
+      <button className="btn btn-access" onClick={() => setSelectedStep(SERVICE_STEP)}>Import Otoroshi Service</button>
+      <button className="btn btn-access" onClick={() => setSelectedStep(APIKEY_STEP)}>Import Otoroshi ApiKeys</button>
     </div>
   )
 }
@@ -560,7 +555,7 @@ const ApiKeyStep = props => {
               options={possiblePlans}
               value={possiblePlans.find(a => !!selectedPlan && a.value._id === selectedPlan._id)}
               placeholder="Selectionner un plan"
-              formatCreateLabel={value => `creer l'équipe ${value}`}
+              formatCreateLabel={value => `creer le plan ${value}`}
             />
           </div>
         </div>
