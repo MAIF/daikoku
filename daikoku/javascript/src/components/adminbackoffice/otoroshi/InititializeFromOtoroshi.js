@@ -13,14 +13,30 @@ import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant as TENANT, Spinner, Option } from '../../utils';
 import * as Services from '../../../services';
 
-const perPage = 10;
 const createdApis = [];
 const createdSubs = []
 
+const apikeyCustomization = {
+  dynamicPrefix: null,
+  clientIdOnly: false,
+  constrainedServicesOnly: false,
+  readOnly: false,
+  metadata: {},
+  tags: [],
+  restrictions: {
+    enabled: false,
+    allowLast: true,
+    allowed: [],
+    forbidden: [],
+    notFound: []
+  }
+}
 const theMachine = Machine({
   id: 'the-machine',
   initial: 'otoroshiSelection',
   context: {
+    page: 1,
+    perPage: 3,
     tenant: undefined,
     otoroshi: undefined,
     groups: [],
@@ -36,10 +52,12 @@ const theMachine = Machine({
     loadingOtoroshiGroups: {
       invoke: {
         id: 'otoroshiGroupsLoader',
-        src: (context, _event) => {
+        src: (_context, { otoroshi, tenant }) => {
           return (callBack, _onEvent) => {
-            Services.getOtoroshiGroups(context.tenant._id, context.otoroshi._id)
-              .then(groups => callBack({ type: 'DONE_COMPLETE', groups }))
+            Services.getOtoroshiGroups(tenant, otoroshi)
+              .then(groups => {
+                callBack({ type: 'DONE_COMPLETE', groups, tenant, otoroshi })
+              })
           }
         }
       },
@@ -47,7 +65,9 @@ const theMachine = Machine({
         DONE_COMPLETE: {
           target: 'stepSelection',
           actions: assign({
-            groups: (_context, { groups = [] }) => groups
+            tenant: (_context, { tenant }) => tenant,
+            otoroshi: (_context, { otoroshi }) => otoroshi,
+            groups: (_context, { groups = [] }) => groups,
           })
         }
       }
@@ -63,15 +83,13 @@ const theMachine = Machine({
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
           return (callBack, _onEvent) => {
-            //todo: real pagiantion of course
-            //todo: be capable to get tenant & otoroshi from context
-            //todo: maybe save actual page from context
+            const {page, perPage} = context;
             //todo: not implemented but user could want to be back...
-            Services.getOtoroshiServices(context.tenant._id, context.otoroshi._id, perPage, 0) 
+            Services.getOtoroshiServices(context.tenant, context.otoroshi, perPage, page) 
               .then(newServices => {
                 const hasMore = newServices.length === perPage;
                 if (hasMore) {
-                  callBack({ type: 'DONE_MORE', newServices })
+                  callBack({ type: 'DONE_MORE', newServices, nextPage: page + 1 })
                 } else {
                   callBack({ type: 'DONE_COMPLETE', newServices })
                 }
@@ -83,6 +101,7 @@ const theMachine = Machine({
         DONE_MORE: {
           target: 'moreServices',
           actions: assign({
+            page: ({ page }, { nextPage = page }) => nextPage,
             services: ({ services }, { newServices = [] }) => [...services, ...newServices] //todo: be smart, remove 10 first before add 10 more
           })
         },
@@ -125,7 +144,6 @@ const theMachine = Machine({
                 }))
                 .then(api => Services.createTeamApi(api.team, api))
             }, Promise.resolve())
-            .then(() => Services.myVisibleApis())
             .then(() => callBack({ type: 'CREATION_DONE' }))
           //todo: need to update apis of state after creation
         }
@@ -139,15 +157,13 @@ const theMachine = Machine({
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
           return (callBack, _onEvent) => {
-            //todo: real pagiantion of course
             //todo: be capable to get tenant & otoroshi from context
-            //todo: maybe save actual page from context
             //todo: not implemented but user could want to be back...
-            Services.getOtoroshiApiKeys(context.tenant._id, context.otoroshi._id, perPage, 0)
+            Services.getOtoroshiApiKeys(context.tenant._id, context.otoroshi._id, context.perPage, 0)
               .then(newApikeys => {
-                const hasMore = newApikeys.length === perPage;
+                const hasMore = newApikeys.length === context.perPage;
                 if (hasMore) {
-                  callBack({ type: 'DONE_MORE', newApikeys })
+                  callBack({ type: 'DONE_MORE', newApikeys, nextPage: context.page + 1 })
                 } else {
                   callBack({ type: 'DONE_COMPLETE', newApikeys })
                 }
@@ -159,6 +175,7 @@ const theMachine = Machine({
         DONE_MORE: {
           target: 'moreApikeys',
           actions: assign({
+            page: ({ page }, { nextPage = page }) => nextPage,
             apikeys: ({ apikeys }, { newApikeys = [] }) => [...apikeys, ...newApikeys] //todo: be smart, remove 10 first before add 10 more
           })
         },
@@ -207,6 +224,8 @@ const theMachine = Machine({
 
 
 const InitializeFromOtoroshiComponent = props => {
+  const [state, send] = useMachine(theMachine)
+
   const [otoroshis, setOtoroshis] = useState([])
   const [otoroshiInstance, setOtoroshiInstance] = useState(null)
   const [groups, setGroups] = useState([])
@@ -215,51 +234,24 @@ const InitializeFromOtoroshiComponent = props => {
   const [teams, setTeams] = useState([])
   const [apis, setApis] = useState([])
   const [instance, setInstance] = useState(undefined)
+  const [currentIndex, setCurrentIndex] = useState(0)
 
   const [createdApis, setCreatedApis] = useState([])
   const [createdSubs, setCreatedSubs] = useState([])
 
   useEffect(() => {
-    if (otoroshiInstance) {
-      instance.nextStep()
-      Promise.all([
-        Services.getOtoroshiGroups(props.tenant._id, otoroshiInstance.value),
-        Services.getOtoroshiServices(props.tenant._id, otoroshiInstance.value),
-        Services.teams(),
-        Services.getOtoroshiApiKeys(props.tenant._id, otoroshiInstance.value),
-        Services.myVisibleApis()
-      ])
-        .then(([groups, services, teams, keys, apis]) => {
-          setGroups(groups);
-          setServices(services.map(s => ({ id: s.id, groupId: s.groupId, name: s.name })))
-          setTeams(teams)
-          setApikeys(keys)
-          setApis(apis)
-          instance.nextStep()
-        })
-    }
-  }, [otoroshiInstance])
-
-  useEffect(() => {
-    Services.allSimpleOtoroshis(props.tenant._id)
-      .then(r => setOtoroshis(r))
+    Promise.all([
+      Services.teams(),
+      Services.allSimpleOtoroshis(props.tenant._id),
+      Services.myVisibleApis()
+    ])
+      .then( ([teams, otoroshis, apis]) => {
+        setTeams(teams)
+        setOtoroshis(otoroshis)
+        setApis(apis)
+      })
   }, [props.tenant])
 
-  const apikeyCustomization = {
-    dynamicPrefix: null,
-    clientIdOnly: false,
-    constrainedServicesOnly: false,
-    readOnly: false,
-    metadata: {},
-    tags: [],
-    restrictions: {
-      enabled: false,
-      allowLast: true,
-      allowed: [],
-      forbidden: [],
-      notFound: []
-    }
-  }
   const createApis = () => {
     createdApis
       .reduce((result, api) => {
@@ -303,21 +295,22 @@ const InitializeFromOtoroshiComponent = props => {
       })
   }
 
-  const servicesSteps = _.orderBy(services, ["groupId", "name"])
+  const servicesSteps = state.context.services
     .map((s, idx) => (
       <ServicesStep
         key={`service-${idx}`}
         service={s}
-        groups={groups}
+        groups={state.context.groups}
         teams={teams}
         testApiName={name => apis.some(a => a.name.toLowerCase() === name.toLowerCase()) || createdApis.some(a => a.name.toLowerCase() === name.toLowerCase())}
         addNewTeam={t => setTeams([...teams, t])}
         addService={(s, team) => setCreatedApis([...createdApis, { ...s, team }])}
-        infos={{ index: idx, total: services.length }}
+        infos={{ index: idx, total: services.length, total: state.context.services.length }}
+        loadMoreServices={() => send('LOAD_SERVICE')}
       />
     ))
 
-  const subsSteps = _.orderBy(apikeys, ['authorizedGroup', "clientName"])
+  const subsSteps = _.orderBy(state.context.apikeys, ['authorizedGroup', "clientName"])
     .map((apikey, idx) => (
       <ApiKeyStep
         key={`sub-${idx}`}
@@ -332,13 +325,38 @@ const InitializeFromOtoroshiComponent = props => {
       />
     ))
 
+    console.debug(`il y actuellement ${state.context.services.length} services de chargés`)
   return (
     <UserBackOffice tab="Otoroshi">
       <Can I={manage} a={TENANT} dispatchError>
         <div className="col-12 p-3" style={{
           backgroundColor: "lightGray"
         }}>
-          <StepWizard
+          {state.value === 'otoroshiSelection' && (
+            <SelectOtoStep setOtoInstance={oto => send("LOAD", { otoroshi:  oto.value, tenant: props.tenant._id})} otoroshis={otoroshis} />
+          )}
+          {state.value === 'loadingOtoroshiGroups' && (
+            <WaitingStep />
+          )}
+          {state.value === 'stepSelection' && (
+            <SelectionStepStep goToServices={() => send('LOAD_SERVICE')} goToApikeys={() => send('LOAD_APIKEY')}/>
+          )}
+          {((state.matches('moreServices') || state.matches('loadingServices')) && !!state.context.services.length) && (
+            <StepWizard
+            onStepChange={infos => setCurrentIndex(infos.activeStep)}
+            initialStep={currentIndex} 
+            transitions={{}} 
+            instance={setInstance}>
+              { servicesSteps }
+            </StepWizard>
+          )}
+          {state.value === 'moreApikeys' && (
+            <StepWizard transitions={{}} instance={setInstance}>
+              { subsSteps }
+            </StepWizard>
+          )}
+
+          {/* <StepWizard
             instance={setInstance}
           >
             {[
@@ -352,7 +370,7 @@ const InitializeFromOtoroshiComponent = props => {
               <RecapSubsStep key="recap-sub" createdSubs={createdSubs} apis={apis} teams={teams} />,
               <CreationStep key="creation-sub" create={createSubs} />,
               <FinishStep key="finish" />]}
-          </StepWizard>
+          </StepWizard> */}
         </div>
       </Can>
     </UserBackOffice>
@@ -371,8 +389,8 @@ const SelectionStepStep = props => {
 
   return (
     <div className="d-flex">
-      <button className="btn btn-access" onClick={() => props.nextStep()}>Import Otoroshi Service</button>
-      <button className="btn btn-access" onClick={() => props.goToStep(props.subStep)}>Import Otoroshi ApiKeys</button>
+      <button className="btn btn-access" onClick={() => props.goToServices()}>Import Otoroshi Service</button>
+      <button className="btn btn-access" onClick={() => props.goToApikeys()}>Import Otoroshi ApiKeys</button>
     </div>
   )
 }
@@ -499,11 +517,24 @@ const ServicesStep = props => {
     }
   }, [service])
 
+  useEffect(() => {
+    if (props.isActive) {
+      console.debug({ ...props.infos, test: props.infos.index === (props.infos.total - 2)})
+    }
+    if (props.isActive && props.infos.index === (props.infos.total - 2)) {
+      props.loadMoreServices()
+    }
+  }, [props.isActive])
+
+  const nextStep = () => {
+    props.nextStep();
+  }
 
   const getIt = () => {
     props.addService(service, selectedTeam);
-    props.nextStep();
+    nextStep();
   }
+
 
   const teams = props.teams.map(t => ({ label: t.name, value: t._id }))
   return (
@@ -548,13 +579,15 @@ const ServicesStep = props => {
         </div>
 
       </div>
+      {/* todo: real pagination with load more service in the 9th service or no btn skip if the last is display */}
+      {/* todo: if previous is click maybe load more apis before it or don't siplay it if this is the first api */}
       <div className="d-flex justify-content-between col-12">
         <div>
           {props.infos.index > 0 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
         </div>
         <div>
-          <button className='btn btn-access' onClick={props.nextStep}>Skip</button>
-          <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>import</button>
+          <button className='btn btn-access' onClick={() => nextStep()}>Skip</button>
+          <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={() => getIt()}>import</button>
         </div>
       </div>
     </div>
