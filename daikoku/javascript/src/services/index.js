@@ -529,8 +529,8 @@ export function getOtoroshiGroups(tenantId, otoId) {
   }).then(r => r.json());
 }
 
-export function getOtoroshiServices(tenantId, otoId, pageSize=10, page=0) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services?pageSize=${pageSize}&page=${page}`, {
+export function getOtoroshiServices(tenantId, otoId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -539,8 +539,8 @@ export function getOtoroshiServices(tenantId, otoId, pageSize=10, page=0) {
   }).then(r => r.json());
 }
 
-export function getOtoroshiApiKeys(tenantId, otoId, pageSize = 10, page = 0) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys?pageSize=${pageSize}&page=${page}`, {
+export function getOtoroshiApiKeys(tenantId, otoId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`, {
     method: 'GET',
     credentials: 'include',
     headers: {
