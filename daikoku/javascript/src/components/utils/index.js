@@ -15,3 +15,4 @@ export * from './TranslationForm';
 export * from './Footer';
 export * from './validation';
 export * from './BeautifulTitle';
+export * from './entities';
