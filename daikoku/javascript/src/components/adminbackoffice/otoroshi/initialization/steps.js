@@ -4,7 +4,7 @@ import Creatable from 'react-select/creatable';
 import classNames from "classnames";
 import _ from 'lodash';
 
-import { Option } from '../../../utils';
+import { Option, api } from '../../../utils';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan } from '../../../utils';
 
@@ -32,6 +32,8 @@ export const SelectOtoStep = props => {
       <Select
         placeholder="select an Oto instance"
         className="add-member-select mr-2 reactSelect"
+        isDisabled={!props.otoroshis.length}
+        isLoading={!props.otoroshis.length}
         options={props.otoroshis.map(s => ({
           label: s.url,
           value: s._id
@@ -112,8 +114,8 @@ export const RecapSubsStep = props => {
 export const ServicesStep = props => {
   const [service, setService] = useState(props.service)
   const [loading, setLoading] = useState(false);
-  const [newTeam, setNewTeam] = useState(undefined)
-  const [selectedTeam, setSelectedTeam] = useState(undefined)
+  const [newTeam, setNewTeam] = useState()
+  const [selectedTeam, setSelectedTeam] = useState(props.maybeCreatedApi.map(api => api.team).getOrNull())
   const [error, setError] = useState({})
 
   useEffect(() => {
@@ -152,6 +154,15 @@ export const ServicesStep = props => {
     nextStep();
   }
 
+  const update = () => {
+    props.updateService(service, selectedTeam)
+    nextStep();
+  }
+
+  const reset = () => {
+    props.resetService();
+  }
+
 
   const teams = props.teams.map(t => ({ label: t.name, value: t._id }))
   return (
@@ -172,9 +183,9 @@ export const ServicesStep = props => {
             <input
               type="text"
               className={classNames("form-control", { "on-error": !!error.name })}
-              value={service.name}
+              value={props.maybeCreatedApi.map(a => a.name).getOrElse(service.name)}
               onChange={e => setService({ ...service, name: e.target.value })} />
-            {error.name && <small class="invalid-input-info">{error.name}</small>}
+            {error.name && <small className="invalid-input-info">{error.name}</small>}
           </div>
         </div>
         <div className="d-flex flex-row align-items-center mb-3">
@@ -201,8 +212,10 @@ export const ServicesStep = props => {
           {props.infos.index > 0 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
         </div>
         <div>
-          <button className='btn btn-access' onClick={() => nextStep()}>Skip</button>
-          <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={() => getIt()}>import</button>
+          {props.maybeCreatedApi.isDefined && <button className='btn btn-danger' onClick={reset}>Reset</button>}
+          <button className='btn btn-access' onClick={nextStep}>Skip</button>
+          {props.maybeCreatedApi.isDefined && <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={update}>Update</button>}
+          {!props.maybeCreatedApi.isDefined && <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>import</button>}
         </div>
       </div>
     </div>
@@ -282,6 +295,11 @@ export const ApiKeyStep = props => {
     nextStep();
   }
 
+  const update = () => {
+    props.updateSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
+    nextStep();
+  }
+
   const apis = props.apis.map(a => ({ label: a.name, value: a }))
   const teams = props.teams.map(t => ({ label: t.name, value: t._id }))
   const possiblePlans = Option(props.apis.find(a => selectedApi && a._id === selectedApi._id))
@@ -355,8 +373,10 @@ export const ApiKeyStep = props => {
           {props.infos.index > 0 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
         </div>
         <div>
+          {props.maybeCreatedSub.isDefined && <button className='btn btn-danger' onClick={props.resetSub}>Reset</button>}
           <button className='btn btn-access' onClick={nextStep}>Skip</button>
-          <button className='btn btn-access' disabled={Object.entries(error).some(([_key, value]) => !value) ? 'disabled' : null} onClick={getIt}>import</button>
+          {props.maybeCreatedSub.isDefined && <button className='btn btn-access' disabled={Object.entries(error).some(([_key, value]) => !value) ? 'disabled' : null} onClick={update}>Update</button>}
+          {!props.maybeCreatedSub.isDefined && <button className='btn btn-access' disabled={Object.entries(error).some(([_key, value]) => !value) ? 'disabled' : null} onClick={getIt}>import</button>}
         </div>
       </div>
     </div>

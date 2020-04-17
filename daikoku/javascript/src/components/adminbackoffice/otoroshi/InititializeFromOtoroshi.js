@@ -6,7 +6,7 @@ import StepWizard from 'react-step-wizard';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, Spinner, tenant as TENANT } from '../../utils';
+import { Can, manage, Spinner, tenant as TENANT, Option } from '../../utils';
 import {theMachine, SelectOtoStep, SelectionStepStep, ServicesStep, ApiKeyStep, EndStep, RecapSubsStep} from './initialization';
 
 const InitializeFromOtoroshiComponent = props => {
@@ -61,6 +61,9 @@ const InitializeFromOtoroshiComponent = props => {
         addService={(s, team) => setCreatedApis([...createdApis, { ...s, team }])}
         infos={{ index: idx, total: state.context.services.length }}
         recap={() => send('RECAP')}
+        maybeCreatedApi={Option(createdApis.find(a => a.id === s.id))}
+        updateService={(s, team) => setCreatedApis([...createdApis.filter(a => a.id !== s.id), { ...s, team }])}
+        resetService={() => setCreatedApis([...createdApis.filter(a => a.id !== s.id)])}
       />
     ))
 
@@ -77,6 +80,9 @@ const InitializeFromOtoroshiComponent = props => {
         infos={{ index: idx, total: state.context.apikeys.length }}
         updateApi={api => updateApi(api)}
         recap={() => send('RECAP')}
+        maybeCreatedSub={Option(createdsubs.find(a => a.clienId === s.clientId))}
+        updateSub={(apikey, team, api, plan) => setCreatedSubs([...createdSubs.filter(s => s.clientId !== apikey.clientId), { ...apikey, team, api, plan }])}
+        resetSub={() => setCreatedApis([...createdSubs.filter(s => s.clientId !== apikey.clientId)])}
       />
     ))
 
