@@ -613,5 +613,6 @@
     "admin.added.successfully": "%s has been added as new admin of the tenant",
     "remove.admin.tenant.confirm": "Are you sure you want to remove this admin from the tenant ?",
     "remove.admin.tenant.alert": "You can't delete this admin, it must remain one admin in a tenant.",
-    "remove.admin.tenant.success": "%s is no lonoger admin of the tenant"
+    "remove.admin.tenant.success": "%s is no lonoger admin of the tenant",
+    "Initialization": "Initialization"
 }

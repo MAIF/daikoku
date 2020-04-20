@@ -612,5 +612,6 @@
   "admin.added.successfully": "%s a été ajouté comme nouvel admin du tenant",
   "remove.admin.tenant.confirm": "Êtes vous certain de vouloir supprimer cette admin du tenant ?",
   "remove.admin.tenant.alert": "Vous ne pouvez pas supprimer cette admin, il doit rester au moins un admin.",
-  "remove.admin.tenant.success": "%s n'est plus admin du tenant"
+  "remove.admin.tenant.success": "%s n'est plus admin du tenant",
+  "Initialization": "Initialisation"
 }

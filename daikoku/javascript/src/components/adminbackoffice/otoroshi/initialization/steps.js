@@ -30,7 +30,7 @@ export const SelectOtoStep = props => {
   return (
     <div>
       <Select
-        placeholder="select an Oto instance"
+        placeholder="select an Otoroshi instance"
         className="add-member-select mr-2 reactSelect"
         isDisabled={!props.otoroshis.length}
         isLoading={!props.otoroshis.length}

@@ -95,7 +95,7 @@ const InitializeFromOtoroshiComponent = props => {
   }
 
   return (
-    <UserBackOffice tab="Otoroshi">
+    <UserBackOffice tab="Initialization">
       <Can I={manage} a={TENANT} dispatchError>
         <div className="col-12 p-3" style={{
           backgroundColor: "lightGray"
