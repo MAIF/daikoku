@@ -34,12 +34,6 @@ const InitializeFromOtoroshiComponent = props => {
       })
   }, [props.tenant])
 
-  useEffect(() => {
-    if (instance && (state.matches('completeServices') || state.matches('completeApikeys'))) {
-      instance.goToStep(step)
-    }
-  }, [state.value])
-
   const updateApi = api => {
     return Services.teamApi(api.team, api._id)
       .then(oldApi => Services.saveTeamApi(api.team, { ...oldApi, ...api }))
@@ -49,7 +43,13 @@ const InitializeFromOtoroshiComponent = props => {
       })
   }
 
-  const servicesSteps = state.context.services
+
+
+  const orderedServices = _.orderBy(state.context.services, ['groiupId', 'name']);
+  const filterServices = inputValue => Promise.resolve(orderedServices
+      .map(({ name }, index) => ({ label: name, value: index + 1 }))
+      .filter(s => s.label.toLowerCase().includes(inputValue.toLowerCase())));
+  const servicesSteps = orderedServices
     .map((s, idx) => (
       <ServicesStep
         key={`service-${idx}`}
@@ -64,10 +64,15 @@ const InitializeFromOtoroshiComponent = props => {
         maybeCreatedApi={Option(createdApis.find(a => a.id === s.id))}
         updateService={(s, team) => setCreatedApis([...createdApis.filter(a => a.id !== s.id), { ...s, team }])}
         resetService={() => setCreatedApis([...createdApis.filter(a => a.id !== s.id)])}
+        getFilteredServices={filterServices}
       />
     ))
 
-  const subsSteps = _.orderBy(state.context.apikeys, ['authorizedGroup', "clientName"])
+  const orderedApikeys = _.orderBy(state.context.apikeys, ['authorizedGroup', "clientName"]);
+  const filterApikeys = inputValue => Promise.resolve(orderedApikeys
+    .map(({ clientName }, index) => ({ label: clientName, value: index + 1 }))
+    .filter(s => s.label.toLowerCase().includes(inputValue.toLowerCase())));
+  const subsSteps = orderedApikeys
     .map((apikey, idx) => (
       <ApiKeyStep
         key={`sub-${idx}`}
@@ -80,9 +85,10 @@ const InitializeFromOtoroshiComponent = props => {
         infos={{ index: idx, total: state.context.apikeys.length }}
         updateApi={api => updateApi(api)}
         recap={() => send('RECAP')}
-        maybeCreatedSub={Option(createdsubs.find(a => a.clienId === s.clientId))}
+        maybeCreatedSub={Option(createdSubs.find(a => a.clienId === s.clientId))}
         updateSub={(apikey, team, api, plan) => setCreatedSubs([...createdSubs.filter(s => s.clientId !== apikey.clientId), { ...apikey, team, api, plan }])}
         resetSub={() => setCreatedApis([...createdSubs.filter(s => s.clientId !== apikey.clientId)])}
+        getFilteredApikeys={filterApikeys}
       />
     ))
 
@@ -111,6 +117,7 @@ const InitializeFromOtoroshiComponent = props => {
           )}
           {state.matches('completeServices') && (
             <StepWizard
+              initialStep={step}
               isLazyMount={true}
               transitions={{}}
               instance={i => setInstance(i)}

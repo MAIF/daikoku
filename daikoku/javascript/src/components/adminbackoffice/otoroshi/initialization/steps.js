@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import Creatable from 'react-select/creatable';
+import AsyncSelect from 'react-select/async';
 import classNames from "classnames";
 import _ from 'lodash';
 
-import { Option, api } from '../../../utils';
+import { Option } from '../../../utils';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan } from '../../../utils';
 
@@ -167,8 +168,25 @@ export const ServicesStep = props => {
   const teams = props.teams.map(t => ({ label: t.name, value: t._id }))
   return (
     <div className="d-flex flex-row col-12 flex-wrap">
+      <div className="d-flex flew-row justify-content-between col-12 ">
+        <div className="d-flex flex-row justify-content-start flex-grow">
+          <h3>Service {props.infos.index + 1}/{props.infos.total}</h3>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            placeholder="go to specific step"
+            className="add-member-select reactSelect ml-2"
+            loadOptions={props.getFilteredServices}
+            onChange={({value}) => props.goToStep(value)}
+            classNamePrefix="reactSelect"
+          />
+        </div>
+        <btn className="btn btn-access" onClick={() => props.goToStep(props.totalSteps)}>
+          Last 
+          <i className="fas fa-fast-forward ml-1" />
+        </btn>
+      </div>
       <div className="col-6">
-        <h3>Service {props.infos.index + 1}/{props.infos.total}</h3>
         <div>Otoroshi</div>
         <div>Service: {props.service.name}</div>
         <div>Group: {props.groups.find(g => g.id === props.service.groupId).name}</div>
@@ -311,8 +329,25 @@ export const ApiKeyStep = props => {
 
   return (
     <div className="d-flex flex-row col-12 flex-wrap">
+      <div className="d-flex flew-row justify-content-between col-12 ">
+        <div className="d-flex flex-row justify-content-start flex-grow">
+          <h3>ApiKey {props.infos.index + 1}/{props.infos.total}</h3>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            placeholder="go to specific apikey"
+            className="add-member-select reactSelect ml-2"
+            loadOptions={props.getFilteredApikeys}
+            onChange={({ value }) => props.goToStep(value)}
+            classNamePrefix="reactSelect"
+          />
+        </div>
+        <btn className="btn btn-access" onClick={() => props.goToStep(props.totalSteps)}>
+          Last
+          <i className="fas fa-fast-forward ml-1" />
+        </btn>
+      </div>
       <div className="col-6">
-        <h3>ApiKey {props.infos.index + 1}/{props.infos.total}</h3>
         <div>Otoroshi</div>
         <div>ApiKey: {props.apikey.clientName}</div>
         <div>Group: {Option(maybeGroup).map(g => g.name).getOrElse("Unknown group")}</div>
