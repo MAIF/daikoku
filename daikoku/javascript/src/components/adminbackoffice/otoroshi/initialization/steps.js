@@ -8,13 +8,22 @@ import _ from 'lodash';
 import { Option } from '../../../utils';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan } from '../../../utils';
+import { t, Translation } from '../../../../locales';
 
 export const SelectionStepStep = props => {
 
   return (
     <div className="d-flex">
-      <button className="btn btn-access" onClick={() => props.goToServices()}>Import Otoroshi Service</button>
-      <button className="btn btn-access" onClick={() => props.goToApikeys()}>Import Otoroshi ApiKeys</button>
+      <button className="btn btn-access" onClick={() => props.goToServices()}>
+        <Translation i18nkey="Import Otoroshi services" language={props.currentLanguage}>
+          Import Otoroshi Services
+        </Translation>
+      </button>
+      <button className="btn btn-access" onClick={() => props.goToApikeys()}>
+        <Translation i18nkey="Import Otoroshi apikeys" language={props.currentLanguage}>
+          Import Otoroshi Apikeys
+        </Translation>
+      </button>
     </div>
   )
 }
@@ -31,7 +40,7 @@ export const SelectOtoStep = props => {
   return (
     <div>
       <Select
-        placeholder="select an Otoroshi instance"
+        placeholder={t("Select an Otoroshi instance", props.currentLanguage)}
         className="add-member-select mr-2 reactSelect"
         isDisabled={!props.otoroshis.length}
         isLoading={!props.otoroshis.length}
@@ -48,7 +57,7 @@ export const SelectOtoStep = props => {
   )
 }
 
-export const EndStep = props => {
+export const RecapServiceStep = props => {
   return (
     <div>
       <ul>
@@ -72,8 +81,16 @@ export const EndStep = props => {
           })}
       </ul>
       <div className="d-flex justify-content-around">
-        <button className='btn btn-access' onClick={() => props.goBackToServices()}>Go Back</button>
-        <button className='btn btn-access' onClick={() => props.create()}>Create</button>
+        <button className='btn btn-access' onClick={() => props.goBackToServices()}>
+          <Translation i18nkey="Back" language={props.currentLanguage}>
+            Back
+          </Translation>
+        </button>
+        <button className='btn btn-access' onClick={() => props.create()}>
+          <Translation i18nkey="Create apis" language={props.currentLanguage}>
+            Create APIs
+          </Translation>
+        </button>
       </div>
 
     </div>
@@ -104,8 +121,16 @@ export const RecapSubsStep = props => {
           })}
       </ul>
       <div className="d-flex justify-content-around">
-        <button className='btn btn-access' onClick={props.goBackToServices}>Go Back</button>
-        <button className='btn btn-access' onClick={props.create}>Create</button>
+        <button className='btn btn-access' onClick={() => props.goBackToServices()}>
+          <Translation i18nkey="Back" language={props.currentLanguage}>
+            Back
+          </Translation>
+        </button>
+        <button className='btn btn-access' onClick={() => props.create()}>
+          <Translation i18nkey="Create apis" language={props.currentLanguage}>
+            Create APIs
+          </Translation>
+        </button>
       </div>
 
     </div>
@@ -136,7 +161,7 @@ export const ServicesStep = props => {
 
   useEffect(() => {
     if (props.testApiName(service.name)) {
-      setError({ name: "Une api doit avoir un nom unique" })
+      setError({ name: t("api.unique.name.error", props.currentLanguage, false, "Api name must be unique") })
     } else {
       setError({})
     }
@@ -170,32 +195,41 @@ export const ServicesStep = props => {
     <div className="d-flex flex-row col-12 flex-wrap">
       <div className="d-flex flew-row justify-content-between col-12 ">
         <div className="d-flex flex-row justify-content-start flex-grow">
-          <h3>Service {props.infos.index + 1}/{props.infos.total}</h3>
+          <h3>
+            <Translation i18nkey="init.services.title" language={props.currentLanguage} replacements={[props.infos.index + 1, props.infos.total]}>
+              Service {props.infos.index + 1}/{props.infos.total}
+            </Translation>
+          </h3>
           <AsyncSelect
             cacheOptions
             defaultOptions
-            placeholder="go to specific step"
+            placeholder={t("Jump to specific service", props.currentLanguage)}
             className="add-member-select reactSelect ml-2"
             loadOptions={props.getFilteredServices}
-            onChange={({value}) => props.goToStep(value)}
+            onChange={({ value }) => props.goToStep(value)}
             classNamePrefix="reactSelect"
           />
         </div>
-        <btn className="btn btn-access" onClick={() => props.goToStep(props.totalSteps)}>
-          Last 
-          <i className="fas fa-fast-forward ml-1" />
-        </btn>
       </div>
       <div className="col-6">
-        <div>Otoroshi</div>
-        <div>Service: {props.service.name}</div>
-        <div>Group: {props.groups.find(g => g.id === props.service.groupId).name}</div>
+        <div>
+          <Translation i18nkey="Otoroshi" language={props.currentLanguage}>
+            Otoroshi
+          </Translation>
+        </div>
+        <div>
+          <Translation i18nkey="Service" language={props.currentLanguage}>Service</Translation>: {props.service.name}
+        </div>
+        <div>
+          <Translation i18nkey="Service group" language={props.currentLanguage}>Service group</Translation>: {props.groups.find(g => g.id === props.service.groupId).name}</div>
       </div>
       <div className="col-6">
-        <div>Evil-corps</div>
+        <div>{props.tenant.name}</div>
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
-            <div>Api name</div>
+            <div>
+              <Translation i18nkey="Api name" language={props.currentLanguage}>Api name</Translation>
+            </div>
           </div>
           <div className="d-flex flex-column col-8">
             <input
@@ -208,7 +242,9 @@ export const ServicesStep = props => {
         </div>
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
-            <div>Api team</div>
+            <div>
+              <Translation i18nkey="Api team" language={props.currentLanguage}>Api team</Translation>
+            </div>
           </div>
           <Creatable
             className="col-8"
@@ -219,21 +255,44 @@ export const ServicesStep = props => {
             onCreateOption={setNewTeam}
             options={teams}
             value={teams.find(t => t.value === selectedTeam)}
-            placeholder="Selectionner une équipe"
-            formatCreateLabel={value => `creer l'équipe ${value}`}
+            placeholder={t("Select a team", props.currentLanguage)}
+            formatCreateLabel={value => t('create.team.label', props.currentLanguage, false, `creer l'équipe ${value}`, value)}
           />
         </div>
 
       </div>
       <div className="d-flex justify-content-between col-12">
         <div>
-          {props.infos.index > 0 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
+          <button className='btn btn-access' disabled={props.currentStep === 1 ? 'disabled' : null} onClick={() => props.goToStep(1)}>
+            <i className="fas fa-angle-double-left" />
+          </button>
+          <button className="btn btn-access" disabled={props.currentStep === 1 ? 'disabled' : null}  onClick={props.previousStep}>
+            <i className="fas fa-angle-left" />
+          </button>
         </div>
+
+        <div className="flex-grow">
+          {props.maybeCreatedApi.isDefined && 
+            <button className='btn btn-danger' onClick={reset}>
+              <Translation i18nkey="Reset" language={props.currentLanguage}>Reset</Translation>  
+            </button>}
+          {props.maybeCreatedApi.isDefined && 
+            <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={update}>
+              <Translation i18nkey="Update" language={props.currentLanguage}>Update</Translation>
+            </button>}
+          {!props.maybeCreatedApi.isDefined && 
+            <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>
+              <Translation i18nkey="Import" language={props.currentLanguage}>Import</Translation>
+            </button>}
+        </div>
+
         <div>
-          {props.maybeCreatedApi.isDefined && <button className='btn btn-danger' onClick={reset}>Reset</button>}
-          <button className='btn btn-access' onClick={nextStep}>Skip</button>
-          {props.maybeCreatedApi.isDefined && <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={update}>Update</button>}
-          {!props.maybeCreatedApi.isDefined && <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>import</button>}
+          <button className='btn btn-access' onClick={nextStep}>
+            <i className="fas fa-angle-right" />
+          </button>
+          <button className="btn btn-access" disabled={props.currentStep === props.totalSteps ? 'disabled' : null} onClick={() => props.goToStep(props.totalSteps)}>
+            <i className="fas fa-angle-double-right" />
+          </button>
         </div>
       </div>
     </div>
@@ -241,9 +300,9 @@ export const ServicesStep = props => {
 }
 
 export const ApiKeyStep = props => {
-  const [selectedApi, setSelectedApi] = useState(undefined)
-  const [selectedPlan, setSelectedPlan] = useState(undefined)
-  const [selectedTeam, setSelectedTeam] = useState(undefined)
+  const [selectedApi, setSelectedApi] = useState(props.maybeCreatedSub.map(sub => sub.api).getOrNull())
+  const [selectedPlan, setSelectedPlan] = useState(props.maybeCreatedSub.map(sub => sub.plan).getOrNull())
+  const [selectedTeam, setSelectedTeam] = useState(props.maybeCreatedSub.map(sub => sub.team).getOrNull())
   const [newTeam, setNewTeam] = useState(undefined)
   const [newPlan, setNewPlan] = useState(undefined)
   const [loading, setLoading] = useState(false)
@@ -335,40 +394,53 @@ export const ApiKeyStep = props => {
           <AsyncSelect
             cacheOptions
             defaultOptions
-            placeholder="go to specific apikey"
+            placeholder={t("Jump to specific apikey", props.currentLanguage)}
             className="add-member-select reactSelect ml-2"
             loadOptions={props.getFilteredApikeys}
             onChange={({ value }) => props.goToStep(value)}
             classNamePrefix="reactSelect"
           />
         </div>
-        <btn className="btn btn-access" onClick={() => props.goToStep(props.totalSteps)}>
-          Last
-          <i className="fas fa-fast-forward ml-1" />
-        </btn>
       </div>
       <div className="col-6">
-        <div>Otoroshi</div>
-        <div>ApiKey: {props.apikey.clientName}</div>
-        <div>Group: {Option(maybeGroup).map(g => g.name).getOrElse("Unknown group")}</div>
+        <Translation i18nkey="Otoroshi" language={props.currentLanguage}>
+          Otoroshi
+        </Translation>
+        <div>
+          <Translation i18nkey="API key" language={props.currentLanguage}>
+            API key
+          </Translation>: {props.apikey.clientName}</div>
+        <div>
+          <Translation i18nkey="Service group" language={props.currentLanguage}>
+            Service group
+          </Translation>: {Option(maybeGroup).map(g => g.name).getOrElse("???")}</div>
       </div>
       <div className="col-6">
-        <div>Evil-corps</div>
+        <div>{props.tenant.name}</div>
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
-            <div>Api</div>
+            <div>
+              <Translation i18nkey="API" language={props.currentLanguage}>
+                API
+              </Translation>
+            </div>
           </div>
           <div className="d-flex flex-column col-8">
             <Select
               options={apis}
               onChange={slug => setSelectedApi(slug.value)}
               value={apis.find(a => !!selectedApi && a.value._id === selectedApi._id)}
+              placeholder={t("Select an API", props.currentLanguage)}
             />
           </div>
         </div>
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
-            <div>Plan</div>
+            <div>
+              <Translation i18nkey="Plan" language={props.currentLanguage}>
+                Plan
+              </Translation>
+            </div>
           </div>
           <div className="d-flex flex-column col-8">
             <Creatable
@@ -379,14 +451,18 @@ export const ApiKeyStep = props => {
               onCreateOption={setNewPlan}
               options={possiblePlans}
               value={possiblePlans.find(a => !!selectedPlan && a.value._id === selectedPlan._id)}
-              placeholder="Selectionner un plan"
-              formatCreateLabel={value => `creer le plan ${value}`}
+              placeholder={t("Select a plan", props.currentLanguage)}
+              formatCreateLabel={value => t('create.plan.label', props.currentLanguage, false, `Create plan ${value}`, value)}
             />
           </div>
         </div>
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
-            <div>Team</div>
+            <div>
+              <Translation i18nkey="Team" language={props.currentLanguage}>
+                Team
+              </Translation>
+            </div>
           </div>
           <Creatable
             className="col-8"
@@ -397,21 +473,44 @@ export const ApiKeyStep = props => {
             onCreateOption={setNewTeam}
             options={teams}
             value={teams.find(t => t.value === selectedTeam)}
-            placeholder="Selectionner une équipe"
-            formatCreateLabel={value => `creer l'équipe ${value}`}
+            placeholder={t("Select a team", props.currentLanguage)}
+            formatCreateLabel={value => t('create.team.label', props.currentLanguage, false, `creer l'équipe ${value}`, value)}
           />
         </div>
 
       </div>
       <div className="d-flex justify-content-between col-12">
         <div>
-          {props.infos.index > 0 && <button className='btn btn-access' onClick={props.previousStep}>Previous</button>}
+          <button className='btn btn-access' disabled={props.currentStep === 1 ? 'disabled' : null} onClick={() => props.goToStep(1)}>
+            <i className="fas fa-angle-double-left" />
+          </button>
+          <button className="btn btn-access" disabled={props.currentStep === 1 ? 'disabled' : null} onClick={props.previousStep}>
+            <i className="fas fa-angle-left" />
+          </button>
         </div>
+
+        <div className="flex-grow">
+          {props.maybeCreatedSub.isDefined &&
+            <button className='btn btn-danger' onClick={props.resetSub}>
+              <Translation i18nkey="Reset" language={props.currentLanguage}>Reset</Translation>
+            </button>}
+          {props.maybeCreatedSub.isDefined &&
+            <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={update}>
+              <Translation i18nkey="Update" language={props.currentLanguage}>Update</Translation>
+            </button>}
+          {!props.maybeCreatedSub.isDefined &&
+            <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>
+              <Translation i18nkey="Import" language={props.currentLanguage}>Import</Translation>
+            </button>}
+        </div>
+
         <div>
-          {props.maybeCreatedSub.isDefined && <button className='btn btn-danger' onClick={props.resetSub}>Reset</button>}
-          <button className='btn btn-access' onClick={nextStep}>Skip</button>
-          {props.maybeCreatedSub.isDefined && <button className='btn btn-access' disabled={Object.entries(error).some(([_key, value]) => !value) ? 'disabled' : null} onClick={update}>Update</button>}
-          {!props.maybeCreatedSub.isDefined && <button className='btn btn-access' disabled={Object.entries(error).some(([_key, value]) => !value) ? 'disabled' : null} onClick={getIt}>import</button>}
+          <button className='btn btn-access' onClick={nextStep}>
+            <i className="fas fa-angle-right" />
+          </button>
+          <button className="btn btn-access" disabled={props.currentStep === props.totalSteps ? 'disabled' : null} onClick={() => props.goToStep(props.totalSteps)}>
+            <i className="fas fa-angle-double-right" />
+          </button>
         </div>
       </div>
     </div>
