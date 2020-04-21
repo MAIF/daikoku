@@ -94,7 +94,9 @@ POST    /api/teams/:teamId/subscriptions/:id/_rotation  fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/teams/:teamId/subscriptions/:id/_refresh   fr.maif.otoroshi.daikoku.ctrls.ApiController.regenerateApiKeySecret(teamId, id)
 ### NoDocs ###
-POST    /api/apis/:apiId/subscriptions/_init             fr.maif.otoroshi.daikoku.ctrls.ApiController.initApiKey(apiId)
+POST    /api/subscriptions/_init                        fr.maif.otoroshi.daikoku.ctrls.ApiController.initSubscriptions()
+### NoDocs ###
+POST    /api/apis/_init                                 fr.maif.otoroshi.daikoku.ctrls.ApiController.initApis()
 
 ### NoDocs ###
 GET     /api/apis/:apiId/doc                            fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId)

@@ -234,6 +234,7 @@ export const ServicesStep = props => {
           <div className="d-flex flex-column col-8">
             <input
               type="text"
+              autoFocus
               className={classNames("form-control", { "on-error": !!error.name })}
               value={props.maybeCreatedApi.map(a => a.name).getOrElse(service.name)}
               onChange={e => setService({ ...service, name: e.target.value })} />

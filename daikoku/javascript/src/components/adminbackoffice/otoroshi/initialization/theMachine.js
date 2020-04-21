@@ -1,4 +1,6 @@
 import { Machine, assign } from 'xstate';
+import faker from 'faker';
+
 import * as Services from '../../../../services';
 
 const apikeyCustomization = {
@@ -96,23 +98,20 @@ export const theMachine = Machine({
         id: 'daikokuApisCreator',
         src: (context, { createdApis, callBackCreation }) => {
           return (callBack, _onEvent) => {
-            //todo: try to stream creation or bulk it
-            createdApis
-              .reduce((result, api) => {
-                return result
-                  .then(() => Services.fetchNewApi())
-                  .then(newApi => ({
-                    ...newApi,
-                    name: api.name,
-                    team: api.team,
-                    published: true,
-                    possibleUsagePlans: newApi.possibleUsagePlans.map(pp => ({
-                      ...pp,
-                      otoroshiTarget: { otoroshiSettings: context.otoroshi, serviceGroup: api.groupId, apikeyCustomization }
-                    }))
-                  }))
-                  .then(api => Services.createTeamApi(api.team, api))
-              }, Promise.resolve())
+            Services.fetchNewApi()
+              .then(newApi => createdApis.map(api => ({
+                ...newApi,
+                _id: faker.random.alphaNumeric(32),
+                name: api.name,
+                team: api.team,
+                published: true,
+                possibleUsagePlans: newApi.possibleUsagePlans.map(pp => ({
+                  ...pp,
+                  otoroshiTarget: { otoroshiSettings: context.otoroshi, serviceGroup: api.groupId, apikeyCustomization }
+                }))
+              })))
+              .then(apis => Services.apisInit(apis))
+              .then(res => console.debug({ res }))//todo: read stream result to update status bar for example
               .then(() => callBackCreation())
               .then(() => callBack({ type: 'CREATION_DONE' }))
           }
@@ -162,15 +161,24 @@ export const theMachine = Machine({
     },
     subscriptionCreation: {
       invoke: {
-        id: 'daikokuApisCreator',
-        src: (_context, { createdSubs }) => {
+        id: 'daikokuSubscriptionsCreator',
+        src: (context, { createdSubs }) => {
           return (callBack, _onEvent) => {
-            createdSubs
-              .reduce((result, apikey) => {
-                return result
-                  .then(() => Services.initApiKey(apikey.api._id, apikey.team, apikey.plan, apikey))
-              }, Promise.resolve())
-              .then(() => callBack({ type: 'CREATION_DONE' }))
+            const subscriptions = createdSubs
+              .map(apikey => ({
+                apikey: {
+                  clientName: apikey.clientName, 
+                  clientId: apikey.clientId, 
+                  clientSecret: apikey.clientSecret
+                },
+                plan: apikey.plan._id,
+                team: apikey.team,
+                api: apikey.api._id
+              }))
+              
+            Services.subscriptionsInit(subscriptions)
+                .then(res => console.debug({ res }))//todo: read stream result to update status bar for example
+                .then(() => callBack({ type: 'CREATION_DONE' }))
           }
         }
       },

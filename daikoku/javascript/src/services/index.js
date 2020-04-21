@@ -273,6 +273,30 @@ export function initApiKey(api, team, plan, apikey) {
   }).then(r => r.json());
 }
 
+export function apisInit(apis) {
+  return fetch('/api/apis/_init', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-type': 'application/json'
+    },
+    body: JSON.stringify(apis)
+  })
+}
+
+export function subscriptionsInit(subscriptions) {
+  return fetch('/api/subscriptions/_init', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-type': 'application/json'
+    },
+    body: JSON.stringify(subscriptions)
+  })
+}
+
 export function deleteApiKey(teamId, subscriptionId) {
   return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_delete`, {
     method: 'DELETE',
