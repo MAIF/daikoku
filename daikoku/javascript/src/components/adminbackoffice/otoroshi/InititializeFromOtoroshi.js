@@ -17,7 +17,6 @@ const InitializeFromOtoroshiComponent = props => {
   const [teams, setTeams] = useState([])
   const [apis, setApis] = useState([])
   const [step, setStep] = useState(1)
-  const [instance, setInstance] = useState(undefined)
 
   const [createdApis, setCreatedApis] = useState([])
   const [createdSubs, setCreatedSubs] = useState([])
@@ -131,7 +130,6 @@ const InitializeFromOtoroshiComponent = props => {
               initialStep={step}
               isLazyMount={true}
               transitions={{}}
-              instance={i => setInstance(i)}
               onStepChange={x => setStep(x.activeStep)}>
               {servicesSteps}
             </StepWizard>
@@ -149,7 +147,6 @@ const InitializeFromOtoroshiComponent = props => {
             <StepWizard
               isLazyMount={true}
               transitions={{}}
-              instance={i => setInstance(i)}
               onStepChange={x => setStep(x.activeStep)}>
               {subsSteps}
             </StepWizard>
@@ -167,6 +164,12 @@ const InitializeFromOtoroshiComponent = props => {
             <Translation i18nkey="Done" language={props.currentLanguage}>
               Done
             </Translation>
+          )}
+
+          {state.matches('failure') && (
+            <div className="alert alert-danger">
+              {state.context.error.error}
+            </div>
           )}
         </div>
       </Can>

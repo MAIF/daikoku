@@ -27,7 +27,8 @@ export const theMachine = Machine({
     otoroshi: undefined,
     groups: [],
     services: [],
-    apikeys: []
+    apikeys: [],
+    error: undefined
   },
   states: {
     otoroshiSelection: {
@@ -41,9 +42,8 @@ export const theMachine = Machine({
         src: (_context, { otoroshi, tenant }) => {
           return (callBack, _onEvent) => {
             Services.getOtoroshiGroups(tenant, otoroshi)
-              .then(groups => {
-                callBack({ type: 'DONE_COMPLETE', groups, tenant, otoroshi })
-              })
+              .then(groups => callBack({ type: 'DONE_COMPLETE', groups, tenant, otoroshi }))
+              .catch(error => callBack({ type: 'FAILURE', error }))
           }
         }
       },
@@ -54,6 +54,12 @@ export const theMachine = Machine({
             tenant: (_context, { tenant }) => tenant,
             otoroshi: (_context, { otoroshi }) => otoroshi,
             groups: (_context, { groups = [] }) => groups,
+          })
+        },
+        FAILURE: {
+          target: 'failure',
+          actions: assign({
+            error: (_context, { error }) => error
           })
         }
       }
@@ -70,6 +76,7 @@ export const theMachine = Machine({
         src: (context, _event) => {
           return (callBack, _event) => Services.getOtoroshiServices(context.tenant, context.otoroshi)
             .then(newServices => callBack({ type: 'DONE_COMPLETE', newServices }))
+            .catch(error => callBack({ type: 'FAILURE', error }))
         }
       },
       on: {
@@ -77,6 +84,12 @@ export const theMachine = Machine({
           target: 'completeServices',
           actions: assign({
             services: ({ services }, { newServices = [] }) => [...services, ...newServices]
+          })
+        },
+        FAILURE: {
+          target: 'failure',
+          actions: assign({
+            error: (_context, { error }) => error
           })
         }
       }
@@ -111,14 +124,20 @@ export const theMachine = Machine({
                 }))
               })))
               .then(apis => Services.apisInit(apis))
-              .then(res => console.debug({ res }))//todo: read stream result to update status bar for example
               .then(() => callBackCreation())
               .then(() => callBack({ type: 'CREATION_DONE' }))
+              .catch(error => callBack({ type: "FAILURE", error }))
           }
         }
       },
       on: {
-        CREATION_DONE: 'loadingApikeys'
+        CREATION_DONE: 'loadingApikeys',
+        FAILURE: {
+          target: 'failure',
+          actions: assign({
+            error: (_context, { error }) => error
+          })
+        }
       }
     },
     loadingApikeys: {
@@ -135,6 +154,7 @@ export const theMachine = Machine({
                   callBack({ type: 'DONE_COMPLETE', newApikeys })
                 }
               })
+              .catch(error => callBack({ type: 'FAILURE', error }))
           }
         }
       },
@@ -143,6 +163,12 @@ export const theMachine = Machine({
           target: 'completeApikeys',
           actions: assign({
             apikeys: ({ apikeys }, { newApikeys = [] }) => [...apikeys, ...newApikeys]
+          })
+        },
+        FAILURE: {
+          target: 'failure',
+          actions: assign({
+            error: (_context, { error }) => error
           })
         }
       }
@@ -167,26 +193,32 @@ export const theMachine = Machine({
             const subscriptions = createdSubs
               .map(apikey => ({
                 apikey: {
-                  clientName: apikey.clientName, 
-                  clientId: apikey.clientId, 
+                  clientName: apikey.clientName,
+                  clientId: apikey.clientId,
                   clientSecret: apikey.clientSecret
                 },
                 plan: apikey.plan._id,
                 team: apikey.team,
                 api: apikey.api._id
               }))
-              
+
             Services.subscriptionsInit(subscriptions)
-                .then(res => console.debug({ res }))//todo: read stream result to update status bar for example
-                .then(() => callBack({ type: 'CREATION_DONE' }))
+              .then(() => callBack({ type: 'CREATION_DONE' }))
+              .catch(error => callBack({ type: 'FAILURE', error }))
           }
         }
       },
       on: {
-        CREATION_DONE: 'complete'
+        CREATION_DONE: 'complete',
+        FAILURE: {
+          target: 'failure',
+          actions: assign({
+            error: (_context, { error }) => error
+          })
+        }
       }
     },
     complete: { type: "final" },
-    failure: { type: "final" } //todo: update all step to get failure if something wrong appened
+    failure: { type: "final" }
   }
 })
