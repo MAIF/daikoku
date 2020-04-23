@@ -2,6 +2,7 @@ import { useMachine } from "@xstate/react";
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
+import toastr from 'react-redux-toastr';
 import StepWizard from 'react-step-wizard';
 
 import * as Services from '../../../services';
@@ -20,6 +21,12 @@ const InitializeFromOtoroshiComponent = props => {
 
   const [createdApis, setCreatedApis] = useState([])
   const [createdSubs, setCreatedSubs] = useState([])
+
+  useEffect(() => {
+    if (apis.length && state.context.otoroshi) {
+      localStorage.setItem(`daikoku-initialization-${props.tenant._id}`, JSON.stringify({ otoroshi: state.context.otoroshi, tenant: props.tenant._id, step, createdApis, createdSubs}));
+    }
+  }, [createdApis, createdSubs])
 
   useEffect(() => {
     Promise.all([
@@ -42,8 +49,6 @@ const InitializeFromOtoroshiComponent = props => {
         setApis([...filteredApis, updatedApi])
       })
   }
-
-
 
   const orderedServices = _.orderBy(state.context.services, ['groiupId', 'name']);
   const filterServices = inputValue => Promise.resolve(orderedServices
@@ -104,6 +109,22 @@ const InitializeFromOtoroshiComponent = props => {
       })
   }
 
+
+  const loadPreviousState = () => {
+    const { otoroshi, tenant, step, createdApis, createdSubs } = JSON.parse(localStorage.getItem(`daikoku-initialization-${props.tenant._id}`));
+    if (createdApis.length) {
+      setStep(step)
+      setCreatedApis(createdApis)
+      send("LOAD_PREVIOUS_STATE", { otoroshi, tenant, goto: 'services'})
+    } else if (createdSubs.length) {
+      setStep(step)
+      setCreatedSubs(createdSubs)
+      send("LOAD_PREVIOUS_STATE", { otoroshi, tenant, goto: 'apikeys' })
+    } else {
+      toastr.warning("Seems to have no saved state...please continue")
+    }
+  }
+
   return (
     <UserBackOffice tab="Initialization">
       <Can I={manage} a={TENANT} dispatchError>
@@ -112,6 +133,8 @@ const InitializeFromOtoroshiComponent = props => {
         }}>
           {state.value === 'otoroshiSelection' && (
             <SelectOtoStep 
+              tenant={props.tenant}
+              loadPreviousState={previousState => loadPreviousState(previousState)}
               setOtoInstance={oto => send("LOAD", { otoroshi: oto.value, tenant: props.tenant._id })} 
               otoroshis={otoroshis} 
               currentLanguage={props.currentLanguage}/>

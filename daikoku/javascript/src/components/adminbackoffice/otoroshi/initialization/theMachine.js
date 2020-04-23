@@ -33,7 +33,57 @@ export const theMachine = Machine({
   states: {
     otoroshiSelection: {
       on: {
-        LOAD: 'loadingOtoroshiGroups'
+        LOAD: 'loadingOtoroshiGroups',
+        LOAD_PREVIOUS_STATE: 'loadingPreviousState'
+      }
+    },
+    loadingPreviousState: {
+      invoke: {
+        id: 'previousStateLoader',
+        src: (_context, { otoroshi, tenant, goto }) => {
+          return (callBack, _onEvent) => {
+            if  (goto === "services") {
+              Promise.all([
+                Services.getOtoroshiGroups(tenant, otoroshi),
+                Services.getOtoroshiServices(tenant, otoroshi)
+              ])
+              .then(([groups, services]) => {
+                callBack({ type: "DONE_SERVICES", tenant, otoroshi, groups, services})
+              })
+            } else if (goto === "apikeys") {
+              Promise.all([
+                Services.getOtoroshiGroups(tenant, otoroshi),
+                Services.getOtoroshiApiKeys(tenant, otoroshi)
+              ])
+                .then(([groups, apikeys]) => {
+                  callBack({ type: "DONE_SERVICES", tenant, otoroshi, groups, apikeys })
+                })
+            } else {
+              callBack({ type: "DONE" })
+            }
+          }
+        }
+      },
+      on: {
+        DONE_SERVICES: {
+          target: 'completeServices',
+          actions: assign({
+            tenant: (_context, { tenant }) => tenant,
+            otoroshi: (_context, { otoroshi }) => otoroshi,
+            groups: (_context, { groups = [] }) => groups,
+            services: (_context, { services = [] }) => services,
+          })
+        },
+        DONE_APIKEYS: {
+          target: 'completeApikeys',
+          actions: assign({
+            tenant: (_context, { tenant }) => tenant,
+            otoroshi: (_context, { otoroshi }) => otoroshi,
+            groups: (_context, { groups = [] }) => groups,
+            apikeys: (_context, { apikeys = [] }) => apikeys,
+          })
+        },
+        DONE: 'otoroshiSelection'
       }
     },
     loadingOtoroshiGroups: {
@@ -188,7 +238,7 @@ export const theMachine = Machine({
     subscriptionCreation: {
       invoke: {
         id: 'daikokuSubscriptionsCreator',
-        src: (context, { createdSubs }) => {
+        src: (_context, { createdSubs }) => {
           return (callBack, _onEvent) => {
             const subscriptions = createdSubs
               .map(apikey => ({
@@ -218,7 +268,17 @@ export const theMachine = Machine({
         }
       }
     },
-    complete: { type: "final" },
+    complete: { 
+      type: "final",
+      invoke: {
+        id: 'cleaning',
+        src: ({tenant}, _event) => {
+          return (_callback, _onEvent) => {
+            localStorage.removeItem(`daikoku-initialization-${tenant}`)
+          }
+        }
+      } 
+    },
     failure: { type: "final" }
   }
 })

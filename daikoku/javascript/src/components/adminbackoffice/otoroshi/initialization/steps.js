@@ -37,8 +37,9 @@ export const SelectOtoStep = props => {
     }
   }, [otoInstance])
 
+  const previousState = JSON.parse(localStorage.getItem(`daikoku-initialization-${props.tenant._id}`));
   return (
-    <div>
+    <div className="d-flex flex-row align-items-center justify-content-around">
       <Select
         placeholder={t("Select an Otoroshi instance", props.currentLanguage)}
         className="add-member-select mr-2 reactSelect"
@@ -53,6 +54,14 @@ export const SelectOtoStep = props => {
         value={otoInstance}
         classNamePrefix="reactSelect"
       />
+      {!!previousState && previousState.tenant === props.tenant._id && (
+        <div>
+          <button className="btn btn-access d-flex flex-column" onClick={props.loadPreviousState}>
+            <i className="fa fa-download" />
+            <span>Load previous state</span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
