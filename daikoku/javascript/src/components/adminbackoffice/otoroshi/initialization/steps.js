@@ -147,7 +147,7 @@ export const RecapSubsStep = props => {
 }
 
 export const ServicesStep = props => {
-  const [service, setService] = useState(props.service)
+  const [service, setService] = useState(props.maybeCreatedApi.getOrElse(props.service))
   const [loading, setLoading] = useState(false);
   const [newTeam, setNewTeam] = useState()
   const [selectedTeam, setSelectedTeam] = useState(props.maybeCreatedApi.map(api => api.team).getOrNull())
@@ -169,7 +169,7 @@ export const ServicesStep = props => {
   }, [newTeam])
 
   useEffect(() => {
-    if (props.testApiName(service.name)) {
+    if (props.testApiName(service.id, service.name)) {
       setError({ name: t("api.unique.name.error", props.currentLanguage, false, "Api name must be unique") })
     } else {
       setError({})
@@ -196,6 +196,8 @@ export const ServicesStep = props => {
 
   const reset = () => {
     props.resetService();
+    setService(props.service);
+    setSelectedTeam(null)
   }
 
 
@@ -245,7 +247,7 @@ export const ServicesStep = props => {
               type="text"
               autoFocus
               className={classNames("form-control", { "on-error": !!error.name })}
-              value={props.maybeCreatedApi.map(a => a.name).getOrElse(service.name)}
+              value={service.name}
               onChange={e => setService({ ...service, name: e.target.value })} />
             {error.name && <small className="invalid-input-info">{error.name}</small>}
           </div>
@@ -258,10 +260,11 @@ export const ServicesStep = props => {
           </div>
           <Creatable
             className="col-8"
-            isClearable
+            isClearable={true}
             isDisabled={loading}
             isLoading={loading}
-            onChange={slug => setSelectedTeam(slug.value)}
+            onChange={(slug, {action}) => {
+              setSelectedTeam(action === 'clear' ? undefined : slug.value)}}
             onCreateOption={setNewTeam}
             options={teams}
             value={teams.find(t => t.value === selectedTeam)}
@@ -457,7 +460,7 @@ export const ApiKeyStep = props => {
               isClearable
               isDisabled={!selectedApi || loadingPlan}
               isLoading={!selectedApi || loadingPlan}
-              onChange={slug => !!slug && setSelectedPlan(slug.value)}
+              onChange={(slug, { action }) => setSelectedPlan(action === 'clear' ? undefined : slug.value)}
               onCreateOption={setNewPlan}
               options={possiblePlans}
               value={possiblePlans.find(a => !!selectedPlan && a.value._id === selectedPlan._id)}
@@ -479,7 +482,7 @@ export const ApiKeyStep = props => {
             isClearable
             isDisabled={loading}
             isLoading={loading}
-            onChange={slug => setSelectedTeam(slug.value)}
+            onChange={(slug, {action}) => setSelectedTeam(action === 'clear' ? undefined : slug.value)}
             onCreateOption={setNewTeam}
             options={teams}
             value={teams.find(t => t.value === selectedTeam)}

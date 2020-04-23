@@ -174,6 +174,7 @@ export const theMachine = Machine({
                 }))
               })))
               .then(apis => Services.apisInit(apis))
+              .then(() => localStorage.removeItem(`daikoku-initialization-${context.tenant}`))
               .then(() => callBackCreation())
               .then(() => callBack({ type: 'CREATION_DONE' }))
               .catch(error => callBack({ type: "FAILURE", error }))
