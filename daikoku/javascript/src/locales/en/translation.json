@@ -637,5 +637,11 @@
     "Select a plan": "Select a plan",
     "create.plan.label": "Create plan %s",
     "Select a team": "Select a team",
-    "create.team.label": "Create team %s"
+    "create.team.label": "Create team %s",
+    "Load a work in progress": "Load a work in progress",
+    "Daikoku initialization": "Daikoku initialization",
+    "Keyboard shortcuts": "Keyboard shortcuts",
+    "keyboard.shortcuts.arrow.right": "Arrow-Right: next step",
+    "keyboard.shortcuts.arrow.left": "Arrow-Left: previous step",
+    "keyboard.shortcuts.tab": "Tab: focus on api name"
 }

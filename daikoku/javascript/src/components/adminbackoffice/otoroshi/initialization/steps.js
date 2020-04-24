@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Popover from 'react-popover';
 import Select from 'react-select';
 import Creatable from 'react-select/creatable';
 import AsyncSelect from 'react-select/async';
@@ -30,6 +31,7 @@ export const SelectionStepStep = props => {
 
 export const SelectOtoStep = props => {
   const [otoInstance, setOtoInstance] = useState(undefined)
+  const [help, setHelp] = useState(false)
 
   useEffect(() => {
     if (otoInstance) {
@@ -56,10 +58,20 @@ export const SelectOtoStep = props => {
       />
       {!!previousState && previousState.tenant === props.tenant._id && (
         <div>
-          <button className="btn btn-access d-flex flex-column" onClick={props.loadPreviousState}>
-            <i className="fa fa-download" />
-            <span>Load previous state</span>
-          </button>
+          <Popover
+            isOpen={help}
+            preferPlace='below'
+            place='below'
+            className="beautiful-popover"
+            body={t("Load a work in progress", props.currentLanguage)}>
+            <button
+              onMouseEnter={() => setHelp(true)}
+              onMouseLeave={() => setHelp(false)}
+              className="btn btn-access d-flex flex-column"
+              onClick={props.loadPreviousState}>
+              <i className="fa fa-download" />
+            </button>
+          </Popover>
         </div>
       )}
     </div>
@@ -152,6 +164,7 @@ export const ServicesStep = props => {
   const [newTeam, setNewTeam] = useState()
   const [selectedTeam, setSelectedTeam] = useState(props.maybeCreatedApi.map(api => api.team).getOrNull())
   const [error, setError] = useState({})
+  const [inputRef, setInputRef] = useState(null)
 
   useEffect(() => {
     if (newTeam) {
@@ -201,6 +214,30 @@ export const ServicesStep = props => {
   }
 
 
+  useEffect(() => {
+    return () => {
+      document.onkeydown = null;
+    }
+  }, [window.event])
+  const checkKey = e => {
+    if (inputRef && document.activeElement !== inputRef) {
+      if (e.keyCode === 37 && props.currentStep > 1) {
+        props.previousStep()
+      } else if (e.keyCode === 39) {
+        if (props.maybeCreatedApi && selectedTeam) {
+          props.updateService(service, selectedTeam)
+          nextStep();
+        } else if (selectedTeam) {
+          props.addService(service, selectedTeam);
+          nextStep();
+        } else {
+          nextStep()
+        }
+      }
+    }
+  }
+  document.onkeydown = checkKey;
+
   const teams = props.teams.map(t => ({ label: t.name, value: t._id }))
   return (
     <div className="d-flex flex-row col-12 flex-wrap">
@@ -245,7 +282,8 @@ export const ServicesStep = props => {
           <div className="d-flex flex-column col-8">
             <input
               type="text"
-              autoFocus
+              tabIndex="0"
+              ref={ref => setInputRef(ref)}
               className={classNames("form-control", { "on-error": !!error.name })}
               value={service.name}
               onChange={e => setService({ ...service, name: e.target.value })} />
@@ -263,8 +301,9 @@ export const ServicesStep = props => {
             isClearable={true}
             isDisabled={loading}
             isLoading={loading}
-            onChange={(slug, {action}) => {
-              setSelectedTeam(action === 'clear' ? undefined : slug.value)}}
+            onChange={(slug, { action }) => {
+              setSelectedTeam(action === 'clear' ? undefined : slug.value)
+            }}
             onCreateOption={setNewTeam}
             options={teams}
             value={teams.find(t => t.value === selectedTeam)}
@@ -279,21 +318,21 @@ export const ServicesStep = props => {
           <button className='btn btn-access' disabled={props.currentStep === 1 ? 'disabled' : null} onClick={() => props.goToStep(1)}>
             <i className="fas fa-angle-double-left" />
           </button>
-          <button className="btn btn-access" disabled={props.currentStep === 1 ? 'disabled' : null}  onClick={props.previousStep}>
+          <button className="btn btn-access" disabled={props.currentStep === 1 ? 'disabled' : null} onClick={props.previousStep}>
             <i className="fas fa-angle-left" />
           </button>
         </div>
 
         <div className="flex-grow">
-          {props.maybeCreatedApi.isDefined && 
+          {props.maybeCreatedApi.isDefined &&
             <button className='btn btn-danger' onClick={reset}>
-              <Translation i18nkey="Reset" language={props.currentLanguage}>Reset</Translation>  
+              <Translation i18nkey="Reset" language={props.currentLanguage}>Reset</Translation>
             </button>}
-          {props.maybeCreatedApi.isDefined && 
+          {props.maybeCreatedApi.isDefined &&
             <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={update}>
               <Translation i18nkey="Update" language={props.currentLanguage}>Update</Translation>
             </button>}
-          {!props.maybeCreatedApi.isDefined && 
+          {!props.maybeCreatedApi.isDefined &&
             <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>
               <Translation i18nkey="Import" language={props.currentLanguage}>Import</Translation>
             </button>}
@@ -399,6 +438,29 @@ export const ApiKeyStep = props => {
 
   const maybeGroup = props.groups.find(g => g.id === props.apikey.authorizedGroup)
 
+
+  useEffect(() => {
+    return () => {
+      document.onkeydown = null;
+    }
+  }, [window.event])
+  const checkKey = e => {
+    if (e.keyCode === 37 && props.currentStep > 1) {
+      props.previousStep()
+    } else if (e.keyCode === 39) {
+      if (props.maybeCreatedApi && selectedTeam) {
+        props.updateService(service, selectedTeam)
+        nextStep();
+      } else if (selectedTeam) {
+        props.addService(service, selectedTeam);
+        nextStep();
+      } else {
+        nextStep()
+      }
+    }
+  }
+  document.onkeydown = checkKey;
+
   return (
     <div className="d-flex flex-row col-12 flex-wrap">
       <div className="d-flex flew-row justify-content-between col-12 ">
@@ -482,7 +544,7 @@ export const ApiKeyStep = props => {
             isClearable
             isDisabled={loading}
             isLoading={loading}
-            onChange={(slug, {action}) => setSelectedTeam(action === 'clear' ? undefined : slug.value)}
+            onChange={(slug, { action }) => setSelectedTeam(action === 'clear' ? undefined : slug.value)}
             onCreateOption={setNewTeam}
             options={teams}
             value={teams.find(t => t.value === selectedTeam)}

@@ -637,5 +637,11 @@
   "Select a plan": "Selectionner un plan",
   "create.plan.label": "Créer le plan %s",
   "Select a team": "Selectionner une équipe",
-  "create.team.label": "Créer l'équipe %s"
+  "create.team.label": "Créer l'équipe %s",
+  "Load a work in progress": "Charger une intialisation en cours",
+  "Daikoku initialization": "Initialisation Daikoku",
+  "Keyboard shortcuts": "Raccourcis clavier",
+  "keyboard.shortcuts.arrow.right": "Flèche droite: prochaine étape",
+  "keyboard.shortcuts.arrow.left": "Flèche gauche: étape précédente",
+  "keyboard.shortcuts.tab": "Tab: focus sur le nom de l'api"
 }
