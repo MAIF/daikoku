@@ -66,16 +66,19 @@ export function init(user, tenant, impersonator, session, loginCallback, isTenan
     };
 
     const setupTimeouts = _session => {
-      const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
+      
+      // const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
+      const firstPing = 2000;
       const secondPing = _session.expires - Date.now() + 2000;
       setTimeout(() => {
+        const language = storeInst.getState().context.currentLanguage;
         window.alert(
           close => (
             <div style={{ width: '100%' }}>
               <p>
                 <Translation
                   i18nkey="session.expire.info"
-                  language={store.getState().currentLanguage}>
+                  language={language}>
                   Your session is about to expire in less than 2 minutes. Do you want to extend it ?
                 </Translation>
               </p>
@@ -90,7 +93,7 @@ export function init(user, tenant, impersonator, session, loginCallback, isTenan
                   type="button"
                   className="btn btn-success"
                   onClick={() => extendSession(close)}>
-                  <Translation i18nkey="session.extend" language={store.getstate().currentLanguage}>
+                  <Translation i18nkey="session.extend" language={language}>
                     Yes, extend my session
                   </Translation>
                 </button>
