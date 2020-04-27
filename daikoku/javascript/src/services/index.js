@@ -912,8 +912,8 @@ export const fetchNewApi = () => fetchEntity('/api/entities/api');
 export const fetchNewUser = () => fetchEntity('/api/entities/user');
 export const fetchNewOtoroshi = () => fetchEntity('/api/entities/otoroshi');
 
-export function checkIfApiNameIsUnique(teamId, name) {
-  return fetch(`/api/teams/${teamId}/apis/_names`, {
+export function checkIfApiNameIsUnique(name) {
+  return fetch(`/api/apis/_names`, {
     method: 'POST',
     credentials: 'include',
     headers: {

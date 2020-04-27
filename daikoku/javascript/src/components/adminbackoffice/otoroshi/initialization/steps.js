@@ -182,11 +182,15 @@ export const ServicesStep = props => {
   }, [newTeam])
 
   useEffect(() => {
-    if (props.testApiName(service.id, service.name)) {
-      setError({ name: t("api.unique.name.error", props.currentLanguage, false, "Api name must be unique") })
-    } else {
-      setError({})
-    }
+    Services.checkIfApiNameIsUnique(service.name)
+      .then(({exists}) => {
+        if (exists) {
+          setError({ name: t("api.unique.name.error", props.currentLanguage, false, "Api name must be unique") })
+        } else {
+          setError({})
+        }
+      })
+    
   }, [service])
 
   const nextStep = () => {

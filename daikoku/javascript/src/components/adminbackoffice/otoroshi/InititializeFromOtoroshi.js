@@ -62,7 +62,6 @@ const InitializeFromOtoroshiComponent = props => {
         service={s}
         groups={state.context.groups}
         teams={teams}
-        testApiName={(id, name) => apis.some(a => a.name.toLowerCase() === name.toLowerCase()) || createdApis.some(a => a.id !== id && a.name.toLowerCase() === name.toLowerCase())}
         addNewTeam={t => setTeams([...teams, t])}
         addService={(s, team) => setCreatedApis([...createdApis, { ...s, team }])}
         infos={{ index: idx, total: state.context.services.length }}

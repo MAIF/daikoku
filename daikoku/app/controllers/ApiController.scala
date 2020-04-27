@@ -1042,19 +1042,23 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def verifyNameUniqueness(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamApiEditorOnly(
+  def verifyNameUniqueness() = DaikokuAction.async(parse.json) { ctx =>
+    PublicUserAccess(
       AuditTrailEvent(s"@{user.name} is checking if api name (@{api.name}) is unique @{team.name} - @{team.id}")
-    )(teamId, ctx) { team =>
+    )(ctx){
+      import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+
       val name = (ctx.request.body.as[JsObject] \ "name").as[String].toLowerCase.trim
       ctx.setCtxValue("api.name", name)
+
+      val maybeHumanReadableId = name.urlPathSegmentSanitized
 
       env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
         .findAllNotDeleted()
         .map { apis =>
-          val withSameName = apis.filter(api => api.name.toLowerCase.trim == name)
-          Ok(Json.obj("exists" -> withSameName.nonEmpty))
+          val withSameName = apis.exists(api => api.humanReadableId == maybeHumanReadableId)
+          Ok(Json.obj("exists" -> withSameName))
         }
     }
   }
