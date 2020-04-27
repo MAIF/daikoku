@@ -148,8 +148,8 @@ export const RecapSubsStep = props => {
           </Translation>
         </button>
         <button className='btn btn-access' onClick={() => props.create()}>
-          <Translation i18nkey="Create apis" language={props.currentLanguage}>
-            Create APIs
+          <Translation i18nkey="Create subscriptions" language={props.currentLanguage}>
+            Create subscriptions
           </Translation>
         </button>
       </div>
