@@ -324,6 +324,12 @@ export const ServicesStep = props => {
           </button>
         </div>
 
+        <div>
+          <button className='btn btn-danger' onClick={props.recap}>
+            <Translation i18nkey="Finish" language={props.currentLanguage}>Finish</Translation>
+          </button>
+        </div>
+
         <div className="flex-grow">
           {props.maybeCreatedApi.isDefined &&
             <button className='btn btn-danger' onClick={reset}>
@@ -337,9 +343,6 @@ export const ServicesStep = props => {
             <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>
               <Translation i18nkey="Import" language={props.currentLanguage}>Import</Translation>
             </button>}
-        </div>
-
-        <div>
           <button className='btn btn-access' onClick={nextStep}>
             <i className="fas fa-angle-right" />
           </button>
@@ -574,22 +577,25 @@ export const ApiKeyStep = props => {
           </button>
         </div>
 
-        <div className="flex-grow">
-          {props.maybeCreatedSub.isDefined &&
-            <button className='btn btn-danger' onClick={props.resetSub}>
-              <Translation i18nkey="Reset" language={props.currentLanguage}>Reset</Translation>
-            </button>}
-          {props.maybeCreatedSub.isDefined &&
-            <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={update}>
-              <Translation i18nkey="Update" language={props.currentLanguage}>Update</Translation>
-            </button>}
-          {!props.maybeCreatedSub.isDefined &&
-            <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>
-              <Translation i18nkey="Import" language={props.currentLanguage}>Import</Translation>
-            </button>}
+        <div>
+          <button className='btn btn-danger' onClick={props.recap}>
+            <Translation i18nkey="Finish" language={props.currentLanguage}>Finish</Translation>
+          </button>
         </div>
 
         <div>
+          {props.maybeCreatedSub.isDefined &&
+            <button className='btn btn-danger' onClick={props.resetSub}>
+              <i className="fas fa-times-circle" />
+            </button>}
+          {props.maybeCreatedSub.isDefined &&
+            <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={update}>
+              <i className="fas fa-save" />
+            </button>}
+          {!props.maybeCreatedSub.isDefined &&
+            <button className='btn btn-access' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>
+              <i className="fas fa-plus-circle" />
+            </button>}
           <button className='btn btn-access' onClick={nextStep}>
             <i className="fas fa-angle-right" />
           </button>
