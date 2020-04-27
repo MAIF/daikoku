@@ -183,14 +183,14 @@ export const ServicesStep = props => {
 
   useEffect(() => {
     Services.checkIfApiNameIsUnique(service.name)
-      .then(({exists}) => {
+      .then(({ exists }) => {
         if (exists) {
           setError({ name: t("api.unique.name.error", props.currentLanguage, false, "Api name must be unique") })
         } else {
           setError({})
         }
       })
-    
+
   }, [service])
 
   const nextStep = () => {
@@ -395,7 +395,16 @@ export const ApiKeyStep = props => {
   useEffect(() => {
     if (newPlan) {
       let plans = _.cloneDeep(selectedApi.possibleUsagePlans);
-      const plan = newPossibleUsagePlan(newPlan);
+      const newPossiblePlan = newPossibleUsagePlan(newPlan);
+      const plan = {
+        ...newPossiblePlan,
+        otoroshiTarget: {
+          ...newPossiblePlan.otoroshiTarget,
+          otoroshiSettings: props.otoroshi,
+          serviceGroup: props.apikey.authorizedGroup
+        }
+      }
+      console.debug({ newPossiblePlan, plan})
       plans.push(plan);
       const value = _.cloneDeep(selectedApi);
       value.possibleUsagePlans = plans;

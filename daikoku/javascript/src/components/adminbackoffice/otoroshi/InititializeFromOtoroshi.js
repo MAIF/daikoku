@@ -83,6 +83,7 @@ const InitializeFromOtoroshiComponent = props => {
     .map((apikey, idx) => (
       <ApiKeyStep
         key={`sub-${idx}`}
+        otoroshi={state.context.otoroshi}
         apikey={apikey}
         teams={teams}
         apis={apis}
