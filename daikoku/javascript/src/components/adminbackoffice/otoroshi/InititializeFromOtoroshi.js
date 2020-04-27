@@ -129,7 +129,7 @@ const InitializeFromOtoroshiComponent = props => {
   return (
     <UserBackOffice tab="Initialization">
       <Can I={manage} a={TENANT} dispatchError>
-        <div className="d-flex flex-row align-items-start">
+        <div className="d-flex flex-row align-items-center">
           <h1>
             <Translation i18nkey="Daikoku initialization" language={props.currentLanguage}>
               Daikoku initialization
