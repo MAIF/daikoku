@@ -241,43 +241,38 @@ export const ServicesStep = props => {
   const teams = props.teams.map(t => ({ label: t.name, value: t._id }))
   return (
     <div className="d-flex flex-row col-12 flex-wrap">
-      <div className="d-flex flew-row justify-content-between col-12 ">
-        <div className="d-flex flex-row justify-content-start flex-grow">
-          <h3>
-            <Translation i18nkey="init.services.title" language={props.currentLanguage} replacements={[props.infos.index + 1, props.infos.total]}>
-              Service {props.infos.index + 1}/{props.infos.total}
-            </Translation>
-          </h3>
-          <AsyncSelect
-            cacheOptions
-            defaultOptions
-            placeholder={t("Jump to specific service", props.currentLanguage)}
-            className="add-member-select reactSelect ml-2"
-            loadOptions={props.getFilteredServices}
-            onChange={({ value }) => props.goToStep(value)}
-            classNamePrefix="reactSelect"
-          />
-        </div>
-      </div>
       <div className="col-6">
-        <div>
+        <h2>
           <Translation i18nkey="Otoroshi" language={props.currentLanguage}>
             Otoroshi
           </Translation>
-        </div>
+        </h2>
         <div>
-          <Translation i18nkey="Service" language={props.currentLanguage}>Service</Translation>: {props.service.name}
+          <span style={{fontWeight:"bold"}}><Translation i18nkey="init.services.title" language={props.currentLanguage} replacements={[props.infos.index + 1, props.infos.total]}>
+                    Service {props.infos.index + 1}/{props.infos.total})
+          </Translation></span> : {props.service.name}
+          <AsyncSelect
+              cacheOptions
+              defaultOptions
+              placeholder={t("Jump to specific service", props.currentLanguage)}
+              className="add-member-select reactSelect"
+              loadOptions={props.getFilteredServices}
+              onChange={({ value }) => props.goToStep(value)}
+              classNamePrefix="reactSelect"
+          />
         </div>
-        <div>
-          <Translation i18nkey="Service group" language={props.currentLanguage}>Service group</Translation>: {props.groups.find(g => g.id === props.service.groupId).name}</div>
+        <div className="mt-3">
+            <span style={{fontWeight:"bold"}}>
+                <Translation i18nkey="Service group" language={props.currentLanguage}>Service group</Translation>
+            </span> : {props.groups.find(g => g.id === props.service.groupId).name}</div>
       </div>
       <div className="col-6">
-        <div>{props.tenant.name}</div>
+        <h2>{props.tenant.name}</h2>
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
-            <div>
-              <Translation i18nkey="Api name" language={props.currentLanguage}>Api name</Translation>
-            </div>
+              <span style={{fontWeight:"bold"}}>
+                <Translation i18nkey="Api name" language={props.currentLanguage}>Api name</Translation>
+              </span>
           </div>
           <div className="d-flex flex-column col-8">
             <input
@@ -293,7 +288,9 @@ export const ServicesStep = props => {
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
             <div>
-              <Translation i18nkey="Api team" language={props.currentLanguage}>Api team</Translation>
+                <span style={{fontWeight:"bold"}}>
+                     <Translation i18nkey="Api team" language={props.currentLanguage}>Api team</Translation>
+                </span>
             </div>
           </div>
           <Creatable
@@ -313,7 +310,7 @@ export const ServicesStep = props => {
         </div>
 
       </div>
-      <div className="d-flex justify-content-between col-12">
+      <div className="d-flex justify-content-between col-12 mt-4">
         <div>
           <button className='btn btn-access' disabled={props.currentStep === 1 ? 'disabled' : null} onClick={() => props.goToStep(1)}>
             <i className="fas fa-angle-double-left" />

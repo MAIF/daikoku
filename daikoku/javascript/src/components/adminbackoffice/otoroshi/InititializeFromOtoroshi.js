@@ -139,9 +139,7 @@ const InitializeFromOtoroshiComponent = props => {
             <Help language={props.currentLanguage}/>
           )}
         </div>
-        <div className="col-12 p-3" style={{
-          backgroundColor: "lightGray"
-        }}>
+        <div className="section p-3" >
           {state.value === 'otoroshiSelection' && (
             <SelectOtoStep 
               tenant={props.tenant}
