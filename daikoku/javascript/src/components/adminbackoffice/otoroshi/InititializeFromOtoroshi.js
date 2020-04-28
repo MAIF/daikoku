@@ -1,7 +1,7 @@
 import { useMachine } from "@xstate/react";
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
-import Popover from 'react-popover';
+import {Popover} from 'antd';
 import { connect } from 'react-redux';
 import {toastr} from 'react-redux-toastr';
 import StepWizard from 'react-step-wizard';
@@ -231,11 +231,8 @@ const Help = ({language}) => {
   
   return (
     <Popover
-      isOpen={isOpen}
-      preferPlace='below'
-      place='below'
-      className="beautiful-popover"
-      body={<div className="d-flex flex-column">
+      placement='bottom'
+      content={<div className="d-flex flex-column">
         <h4><Translation i18nkey="Keyboard shortcuts" language={language}>Keyboard shortcut</Translation></h4>
         <ul>
           <li><Translation i18nkey="keyboard.shortcuts.arrow.left" language={language}>arrow-left: previous step</Translation></li>

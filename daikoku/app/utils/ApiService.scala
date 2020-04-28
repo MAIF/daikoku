@@ -56,7 +56,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
         api = api.id,
         by = user.id,
         customName = None,
-        rotation = plan.autoRotation.map(_ => ApiSubscriptionRotation()),
+        rotation = plan.autoRotation.map(rotation => ApiSubscriptionRotation(enabled = rotation)),
         integrationToken = IdGenerator.token(64)
       )
       val ctx = Map(

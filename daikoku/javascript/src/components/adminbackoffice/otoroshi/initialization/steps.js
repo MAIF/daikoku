@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Popover from 'react-popover';
+import {Popover} from 'antd';
 import Select from 'react-select';
 import Creatable from 'react-select/creatable';
 import AsyncSelect from 'react-select/async';
@@ -31,7 +31,6 @@ export const SelectionStepStep = props => {
 
 export const SelectOtoStep = props => {
   const [otoInstance, setOtoInstance] = useState(undefined)
-  const [help, setHelp] = useState(false)
 
   useEffect(() => {
     if (otoInstance) {
@@ -59,14 +58,9 @@ export const SelectOtoStep = props => {
       {!!previousState && previousState.tenant === props.tenant._id && (
         <div className="d-flex flex-column">
           <Popover
-            isOpen={help}
-            preferPlace='below'
-            place='below'
-            className="beautiful-popover"
-            body={t("Load a work in progress", props.currentLanguage)}>
+            placement='bottom'
+            content={t("Load a work in progress", props.currentLanguage)}>
             <button
-              onMouseEnter={() => setHelp(true)}
-              onMouseLeave={() => setHelp(false)}
               className="btn btn-access"
               onClick={props.loadPreviousState}>
               <i className="fa fa-download" />

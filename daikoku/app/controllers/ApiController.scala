@@ -432,6 +432,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   case class subscriptionData(apiKey: OtoroshiApiKey, plan: UsagePlanId, team: TeamId, api: ApiId)
+
   def byteStringToApiSubscription: Flow[ByteString, subscriptionData, NotUsed] =
     Flow[ByteString]
       .via(JsonFraming.objectScanner(Int.MaxValue))
@@ -439,10 +440,10 @@ class ApiController(DaikokuAction: DaikokuAction,
       .filterNot(_.isEmpty)
       .map(Json.parse)
       .map(value => subscriptionData(
-          apiKey = (value \ "apikey").as(OtoroshiApiKeyFormat),
-          plan = (value \ "plan").as(UsagePlanIdFormat),
-          team = (value \ "team").as(TeamIdFormat),
-          api = (value \ "api").as(ApiIdFormat)
+        apiKey = (value \ "apikey").as(OtoroshiApiKeyFormat),
+        plan = (value \ "plan").as(UsagePlanIdFormat),
+        team = (value \ "team").as(TeamIdFormat),
+        api = (value \ "api").as(ApiIdFormat)
       ))
 
   val sourceApiSubscriptionsDataBodyParser: BodyParser[Source[subscriptionData, _]] =
@@ -473,10 +474,16 @@ class ApiController(DaikokuAction: DaikokuAction,
         .alsoTo(Sink.foreach(seq => Logger.debug(s"${seq.length} apiSubscriptions process")))
         .flatMapConcat(seq => {
           Source(seq)
-            .mapAsync(10) { api =>
-              env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
-                .save(api).map { done =>
-                Json.obj("name" -> api.apiKey.clientName, "done" -> done)
+            .mapAsync(10) { sub =>
+              for {
+                team  <- env.dataStore.teamRepo.forTenant(tenant.id).findById(sub.team) if team.isDefined
+                _     <- env.dataStore.teamRepo
+                  .forTenant(tenant.id)
+                  .save(team.get.copy(subscriptions = team.get.subscriptions :+ sub.id))
+                done  <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
+                  .save(sub)
+              } yield {
+                Json.obj("name" -> sub.apiKey.clientName, "done" -> done)
               }
             }
         })
@@ -1045,7 +1052,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   def verifyNameUniqueness() = DaikokuAction.async(parse.json) { ctx =>
     PublicUserAccess(
       AuditTrailEvent(s"@{user.name} is checking if api name (@{api.name}) is unique @{team.name} - @{team.id}")
-    )(ctx){
+    )(ctx) {
       import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 
       val name = (ctx.request.body.as[JsObject] \ "name").as[String].toLowerCase.trim
