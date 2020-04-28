@@ -16,7 +16,7 @@ import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.{Configuration, Logger}
+import play.api.Configuration
 import play.api.libs.json.{JsArray, JsObject, Json}
 
 class ApiControllerSpec(configurationSpec: => Configuration)
@@ -48,7 +48,141 @@ class ApiControllerSpec(configurationSpec: => Configuration)
     wireMockServer.stop()
   }
 
+  "a tenant administrator" can {
+    "initialize tenant apis" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq.empty
+      )
+
+      val apis = Seq(
+        generateApi("test-1", tenant.id, teamOwnerId, Seq.empty),
+        generateApi("test-2", tenant.id, teamOwnerId, Seq.empty),
+        generateApi("test-3", tenant.id, teamOwnerId, Seq.empty),
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = "/api/apis/_init",
+        method = "POST",
+        body = Some(json.SeqApiFormat.writes(apis)
+      ))(tenant, session)
+
+      resp.status mustBe 201
+      val result = resp.json.as[JsArray].value.map(v => ((v \ "name").as[String], (v \ "done").as[Boolean]))
+
+      result.forall(tuple => apis.exists(api => api.name == tuple._1 && tuple._2)) mustBe true
+    }
+
+    "initialize tenant subscriptions" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(defaultApi)
+      )
+
+      def generateInitSubJson(apikeyValue: String, apiId: ApiId, usagePlanId: UsagePlanId, teamId: TeamId): JsObject =
+        Json.obj(
+          "apikey"  -> OtoroshiApiKey(apikeyValue, apikeyValue, apikeyValue).asJson,
+          "api" -> apiId.asJson,
+          "plan" -> usagePlanId.asJson,
+          "team" -> teamId.asJson
+        )
+
+
+      val apikeys = Seq(
+        generateInitSubJson("1", defaultApi.id, UsagePlanId("1"), teamConsumerId),
+        generateInitSubJson("2", defaultApi.id, UsagePlanId("2"), teamConsumerId),
+        generateInitSubJson("3", defaultApi.id, UsagePlanId("3"), teamConsumerId),
+        generateInitSubJson("4", defaultApi.id, UsagePlanId("4"), teamConsumerId),
+        generateInitSubJson("5", defaultApi.id, UsagePlanId("5"), teamConsumerId),
+        generateInitSubJson("1", defaultApi.id, UsagePlanId("1"), teamOwnerId),
+        generateInitSubJson("2", defaultApi.id, UsagePlanId("2"), teamOwnerId),
+        generateInitSubJson("3", defaultApi.id, UsagePlanId("3"), teamOwnerId),
+        generateInitSubJson("4", defaultApi.id, UsagePlanId("4"), teamOwnerId),
+        generateInitSubJson("5", defaultApi.id, UsagePlanId("5"), teamOwnerId),
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = "/api/subscriptions/_init",
+        method = "POST",
+        body = Some(Json.arr(apikeys))
+        )(tenant, session)
+
+      resp.status mustBe 201
+      val result = resp.json.as[JsArray].value.map(v => ((v \ "name").as[String], (v \ "done").as[Boolean]))
+
+      result.forall(tuple => apikeys.exists(apikey => (apikey \ "apikey").as(json.OtoroshiApiKeyFormat).clientName == tuple._1 && tuple._2)) mustBe true
+    }
+  }
+
   "a team administrator" can {
+    "not initialize tenant apis" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq.empty
+      )
+
+      val apis = Seq(
+        generateApi("test-1", tenant.id, teamOwnerId, Seq.empty),
+        generateApi("test-2", tenant.id, teamOwnerId, Seq.empty),
+        generateApi("test-3", tenant.id, teamOwnerId, Seq.empty),
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = "/api/apis/_init",
+        method = "POST",
+        body = Some(json.SeqApiFormat.writes(apis)
+        ))(tenant, session)
+      resp.status mustBe 403
+    }
+
+    "not initialize tenant subscriptions" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(defaultApi)
+      )
+
+      def generateInitSubJson(apikeyValue: String, apiId: ApiId, usagePlanId: UsagePlanId, teamId: TeamId): JsObject =
+        Json.obj(
+          "apikey"  -> OtoroshiApiKey(apikeyValue, apikeyValue, apikeyValue).asJson,
+          "api" -> apiId.asJson,
+          "plan" -> usagePlanId.asJson,
+          "team" -> teamId.asJson
+        )
+
+      val apikeys = Seq(
+        generateInitSubJson("1", defaultApi.id, UsagePlanId("1"), teamConsumerId),
+        generateInitSubJson("2", defaultApi.id, UsagePlanId("2"), teamConsumerId),
+        generateInitSubJson("3", defaultApi.id, UsagePlanId("3"), teamConsumerId),
+        generateInitSubJson("4", defaultApi.id, UsagePlanId("4"), teamConsumerId),
+        generateInitSubJson("5", defaultApi.id, UsagePlanId("5"), teamConsumerId),
+        generateInitSubJson("1", defaultApi.id, UsagePlanId("1"), teamOwnerId),
+        generateInitSubJson("2", defaultApi.id, UsagePlanId("2"), teamOwnerId),
+        generateInitSubJson("3", defaultApi.id, UsagePlanId("3"), teamOwnerId),
+        generateInitSubJson("4", defaultApi.id, UsagePlanId("4"), teamOwnerId),
+        generateInitSubJson("5", defaultApi.id, UsagePlanId("5"), teamOwnerId),
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = "/api/subscriptions/_init",
+        method = "POST",
+        body = Some(Json.arr(apikeys))
+      )(tenant, session)
+
+      resp.status mustBe 403
+    }
+
     "see his teams" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1691,25 +1825,45 @@ class ApiControllerSpec(configurationSpec: => Configuration)
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi)
+        apis = Seq(defaultApi.copy(name = "test name api"))
+      )
+
+      val names = Seq(
+        "test" -> false,
+        "test name api" -> true,
+        "TEST NAME API" -> true,
+        "test name api " -> true,
+        "test  name  api" -> true,
+        "test   name api" -> false,
+        "test-name-api" -> false
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis",
-        method = "POST",
-        body = Some(defaultApi.copy(id = ApiId("another-id")).asJson))(tenant,
-        session)
 
-      resp.status mustBe 409
+      names.forall(test => {
+        val respVerif = httpJsonCallBlocking(
+          path = s"/api/apis/_names",
+          method = "POST",
+          body = Some(Json.obj("name" -> test._1)))(tenant, session)
 
-      val respVerif = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/_names",
-        method = "POST",
-        body = Some(Json.obj("name" -> defaultApi.name)))(tenant, session)
+        test._2 == (respVerif.json \ "exists").as[Boolean]
+      }) mustBe true
 
-      respVerif.status mustBe 200
-      (respVerif.json \ "exists").as[Boolean] mustBe true
+//      val resp = httpJsonCallBlocking(
+//        path = s"/api/teams/${teamOwnerId.value}/apis",
+//        method = "POST",
+//        body = Some(defaultApi.copy(id = ApiId("another-id")).asJson))(tenant,
+//        session)
+//
+//      resp.status mustBe 409
+//
+//      val respVerif = httpJsonCallBlocking(
+//        path = s"/api/apis/_names",
+//        method = "POST",
+//        body = Some(Json.obj("name" -> defaultApi.name)))(tenant, session)
+//
+//      respVerif.status mustBe 200
+//      (respVerif.json \ "exists").as[Boolean] mustBe true
     }
 
     "not be accessed by another team of the owner if it is not published" in {
