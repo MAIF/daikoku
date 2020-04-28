@@ -630,7 +630,7 @@
   "Api name": "Nom de l'API",
   "Api team": "Équipe",
   "Api imported": "APIs à importer",
-  "Apikey imported": "Apikey à importer",
+  "Apikey imported": "Clés d'API à importer",
   "Import": "Importer cette API",
   "Update": "Mettre à jour",
   "Create apis": "Créer les APIs",
@@ -647,5 +647,6 @@
   "Keyboard shortcuts": "Raccourcis clavier",
   "keyboard.shortcuts.arrow.right": "Flèche droite: prochaine étape",
   "keyboard.shortcuts.arrow.left": "Flèche gauche: étape précédente",
-  "keyboard.shortcuts.tab": "Tab: focus sur le nom de l'api"
+  "keyboard.shortcuts.tab": "Tab: focus sur le nom de l'api",
+  "Finish": "Terminer"
 }

@@ -82,8 +82,8 @@ export const RecapServiceStep = props => {
   return (
     <div>
       <h2>
-          <Translation i18nkey="api imported" language={props.currentLanguage}>
-            Api to import
+          <Translation i18nkey="Api imported" language={props.currentLanguage}>
+            Apis to import
           </Translation>
       </h2>
       <ul style={{listStyleType:'none'}}>
@@ -113,6 +113,11 @@ export const RecapServiceStep = props => {
             Back
           </Translation>
         </button>
+        <button className='btn btn-outline-danger mr-1' onClick={props.cancel}>
+          <Translation i18nkey="Cancel" language={props.currentLanguage}>
+            Cancel
+          </Translation>
+        </button>
         <button className='btn btn-outline-success' onClick={() => props.create()}>
           <Translation i18nkey="Create apis" language={props.currentLanguage}>
             Create APIs
@@ -128,7 +133,7 @@ export const RecapSubsStep = props => {
   return (
     <div>
       <h2>
-        <Translation i18nkey="apikey imported" language={props.currentLanguage}>
+        <Translation i18nkey="Apikey imported" language={props.currentLanguage}>
           Apikey to import
         </Translation>
       </h2>
@@ -154,8 +159,14 @@ export const RecapSubsStep = props => {
       </ul>
       <div className="d-flex justify-content-end">
         <button className='btn btn-outline-primary mr-1' onClick={() => props.goBackToServices()}>
+          <i className="fas fa-chevron-left mr-1"></i>
           <Translation i18nkey="Back" language={props.currentLanguage}>
             Back
+          </Translation>
+        </button>
+        <button className='btn btn-outline-danger mr-1' onClick={props.cancel}>
+          <Translation i18nkey="Cancel" language={props.currentLanguage}>
+            Cancel
           </Translation>
         </button>
         <button className='btn btn-outline-success' onClick={() => props.create()}>
@@ -355,14 +366,13 @@ export const ServicesStep = props => {
           </button>
         </div>
 
-        <div className="flex-grow">
+        <div>
           <button className='btn btn-outline-danger mr-2' onClick={props.cancel}>
-            Cancel
+            <Translation i18nkey="Cancel" language={props.currentLanguage}>Cancel</Translation>
           </button>
           <button className='btn btn-outline-success' onClick={props.recap}>
             <Translation i18nkey="Finish" language={props.currentLanguage}>Finish</Translation>
           </button>
-
         </div>
       </div>
     </div>
@@ -621,6 +631,9 @@ export const ApiKeyStep = props => {
         </div>
 
         <div>
+          <button className='btn btn-outline-danger mr-2' onClick={props.cancel}>
+            <Translation i18nkey="Cancel" language={props.currentLanguage}>Cancel</Translation>
+          </button>
           <button className='btn btn-outline-success' onClick={props.recap}>
             <Translation i18nkey="Finish" language={props.currentLanguage}>Finish</Translation>
           </button>

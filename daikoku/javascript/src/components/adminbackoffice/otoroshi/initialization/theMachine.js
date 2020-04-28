@@ -42,14 +42,14 @@ export const theMachine = Machine({
         id: 'previousStateLoader',
         src: (_context, { otoroshi, tenant, goto }) => {
           return (callBack, _onEvent) => {
-            if  (goto === "services") {
+            if (goto === "services") {
               Promise.all([
                 Services.getOtoroshiGroups(tenant, otoroshi),
                 Services.getOtoroshiServices(tenant, otoroshi)
               ])
-              .then(([groups, services]) => {
-                callBack({ type: "DONE_SERVICES", tenant, otoroshi, groups, services})
-              })
+                .then(([groups, services]) => {
+                  callBack({ type: "DONE_SERVICES", tenant, otoroshi, groups, services })
+                })
             } else if (goto === "apikeys") {
               Promise.all([
                 Services.getOtoroshiGroups(tenant, otoroshi),
@@ -294,7 +294,7 @@ export const theMachine = Machine({
     subscriptionCreation: {
       invoke: {
         id: 'daikokuSubscriptionsCreator',
-        src: (_context, { createdSubs }) => {
+        src: ({ tenant }, { createdSubs, callBackCreation }) => {
           return (callBack, _onEvent) => {
             const subscriptions = createdSubs
               .map(apikey => ({
@@ -309,13 +309,17 @@ export const theMachine = Machine({
               }))
 
             Services.subscriptionsInit(subscriptions)
-              .then(() => callBack({ type: 'CREATION_DONE' }))
+              .then(() => callBackCreation())
+              .then(() => {
+                localStorage.removeItem(`daikoku-initialization-${tenant}`)
+                callBack({ type: 'CREATION_DONE' })
+              })
               .catch(error => callBack({ type: 'FAILURE', error }))
           }
         }
       },
       on: {
-        CREATION_DONE: 'complete',
+        CREATION_DONE: 'otoroshiSelection',
         FAILURE: {
           target: 'failure',
           actions: assign({
@@ -323,17 +327,6 @@ export const theMachine = Machine({
           })
         }
       }
-    },
-    complete: { 
-      type: "final",
-      invoke: {
-        id: 'cleaning',
-        src: ({tenant}, _event) => {
-          return (_callback, _onEvent) => {
-            localStorage.removeItem(`daikoku-initialization-${tenant}`)
-          }
-        }
-      } 
     },
     failure: { type: "final" }
   }

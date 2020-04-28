@@ -3,7 +3,7 @@ import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import Popover from 'react-popover';
 import { connect } from 'react-redux';
-import toastr from 'react-redux-toastr';
+import {toastr} from 'react-redux-toastr';
 import StepWizard from 'react-step-wizard';
 
 import * as Services from '../../../services';
@@ -109,7 +109,13 @@ const InitializeFromOtoroshiComponent = props => {
       .then(apis => {
         setStep(1)
         setApis(apis)
+        toastr.success("Apis successfully created")
       })
+  }
+
+  const afterSubCreation = () => {
+    setStep(1)
+    toastr.success("Subscriptions successfully created")
   }
 
 
@@ -171,6 +177,7 @@ const InitializeFromOtoroshiComponent = props => {
           {state.matches('recap') && (
             <RecapServiceStep
               currentLanguage={props.currentLanguage}
+              cancel={() => send('CANCEL')}
               createdApis={createdApis}
               groups={state.context.groups}
               teams={teams}
@@ -188,10 +195,11 @@ const InitializeFromOtoroshiComponent = props => {
           {state.matches('recapSubs') && (
             <RecapSubsStep
               createdSubs={createdSubs}
+              cancel={() => send('CANCEL')}
               apis={apis}
               teams={teams}
               goBackToServices={() => send('ROLLBACK')}
-              create={() => send('CREATE_APIKEYS', { createdSubs })}
+              create={() => send('CREATE_APIKEYS', { createdSubs, callBackCreation: () => afterSubCreation() })}
               currentLanguage={props.currentLanguage} />
           )}
           {state.matches('complete') && (

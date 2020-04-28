@@ -629,8 +629,8 @@
     "Service": "Api",
     "Api name": "Api name",
     "Api team": "Api team",
-    "Api imported": "Api to import",
-    "Apikey imported": "Apikey to import",
+    "Api imported": "Apis to import",
+    "Apikey imported": "Apikeys to import",
     "Import" : "Import this api",
     "Update": "Update",
     "Create apis": "Create apis",
@@ -647,5 +647,6 @@
     "Keyboard shortcuts": "Keyboard shortcuts",
     "keyboard.shortcuts.arrow.right": "Arrow-Right: next step",
     "keyboard.shortcuts.arrow.left": "Arrow-Left: previous step",
-    "keyboard.shortcuts.tab": "Tab: focus on api name"
+    "keyboard.shortcuts.tab": "Tab: focus on api name",
+    "Finish": "Finish"
 }
