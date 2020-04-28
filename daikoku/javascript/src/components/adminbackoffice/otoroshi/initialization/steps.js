@@ -351,7 +351,7 @@ export const ServicesStep = props => {
         </div>
 
         <div className="flex-grow">
-          <button className='btn btn-outline-danger mr-2' onClick={props.recap}>
+          <button className='btn btn-outline-danger mr-2' onClick={props.cancel}>
             Cancel
           </button>
           <button className='btn btn-outline-success' onClick={props.recap}>

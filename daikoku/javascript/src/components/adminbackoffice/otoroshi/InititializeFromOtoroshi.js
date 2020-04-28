@@ -72,6 +72,7 @@ const InitializeFromOtoroshiComponent = props => {
         getFilteredServices={filterServices}
         currentLanguage={props.currentLanguage}
         tenant={props.tenant}
+        cancel={() => send('CANCEL')}
       />
     ))
 
@@ -99,6 +100,7 @@ const InitializeFromOtoroshiComponent = props => {
         getFilteredApikeys={filterApikeys}
         currentLanguage={props.currentLanguage}
         tenant={props.tenant}
+        cancel={() => send('CANCEL')}
       />
     ))
 

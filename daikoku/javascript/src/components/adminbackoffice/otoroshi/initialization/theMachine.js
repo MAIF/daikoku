@@ -118,6 +118,17 @@ export const theMachine = Machine({
       on: {
         LOAD_SERVICE: 'loadingServices',
         LOAD_APIKEY: 'loadingApikeys',
+        CANCEL: {
+          target: 'otoroshiSelection',
+          actions: assign({
+            tenant: undefined,
+            otoroshi: undefined,
+            groups: [],
+            services: [],
+            apikeys: [],
+            error: undefined
+          })
+        }
       }
     },
     loadingServices: {
@@ -147,13 +158,35 @@ export const theMachine = Machine({
     completeServices: {
       on: {
         RECAP: 'recap',
-        CREATE_APIS: 'apiCreation'
+        CREATE_APIS: 'apiCreation',
+        CANCEL: {
+          target: 'otoroshiSelection',
+          actions: assign({
+            tenant: undefined,
+            otoroshi: undefined,
+            groups: [],
+            services: [],
+            apikeys: [],
+            error: undefined
+          })
+        }
       }
     },
     recap: {
       on: {
         ROLLBACK: 'completeServices',
-        CREATE_APIS: 'apiCreation'
+        CREATE_APIS: 'apiCreation',
+        CANCEL: {
+          target: 'otoroshiSelection',
+          actions: assign({
+            tenant: undefined,
+            otoroshi: undefined,
+            groups: [],
+            services: [],
+            apikeys: [],
+            error: undefined
+          })
+        }
       }
     },
     apiCreation: {
@@ -227,13 +260,35 @@ export const theMachine = Machine({
     completeApikeys: {
       on: {
         RECAP: 'recapSubs',
-        CREATE_APIKEYS: 'subscriptionCreation'
+        CREATE_APIKEYS: 'subscriptionCreation',
+        CANCEL: {
+          target: 'otoroshiSelection',
+          actions: assign({
+            tenant: undefined,
+            otoroshi: undefined,
+            groups: [],
+            services: [],
+            apikeys: [],
+            error: undefined
+          })
+        }
       }
     },
     recapSubs: {
       on: {
         ROLLBACK: 'completeApikeys',
-        CREATE_APIKEYS: 'subscriptionCreation'
+        CREATE_APIKEYS: 'subscriptionCreation',
+        CANCEL: {
+          target: 'otoroshiSelection',
+          actions: assign({
+            tenant: undefined,
+            otoroshi: undefined,
+            groups: [],
+            services: [],
+            apikeys: [],
+            error: undefined
+          })
+        }
       }
     },
     subscriptionCreation: {
