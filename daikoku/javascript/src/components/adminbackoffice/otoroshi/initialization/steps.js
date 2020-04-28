@@ -127,13 +127,18 @@ export const RecapServiceStep = props => {
 export const RecapSubsStep = props => {
   return (
     <div>
-      <ul>
+      <h2>
+        <Translation i18nkey="apikey imported" language={props.currentLanguage}>
+          Apikey to import
+        </Translation>
+      </h2>
+      <ul style={{listStyleType:'none'}}>
         {props.apis
           .filter(a => props.createdSubs.some(s => s.api._id === a._id))
           .map((a, idx) => {
             return (
-              <li key={idx}>
-                <h4>{a.name}</h4>
+              <li className="mt-3" key={idx}>
+                <h5><i className="fas fa-atlas"></i> {a.name}</h5>
                 <ul>
                   {props.createdSubs
                     .filter(s => s.api._id === a._id)
@@ -147,13 +152,13 @@ export const RecapSubsStep = props => {
             )
           })}
       </ul>
-      <div className="d-flex justify-content-around">
-        <button className='btn btn-access' onClick={() => props.goBackToServices()}>
+      <div className="d-flex justify-content-end">
+        <button className='btn btn-outline-primary mr-1' onClick={() => props.goBackToServices()}>
           <Translation i18nkey="Back" language={props.currentLanguage}>
             Back
           </Translation>
         </button>
-        <button className='btn btn-access' onClick={() => props.create()}>
+        <button className='btn btn-outline-success' onClick={() => props.create()}>
           <Translation i18nkey="Create subscriptions" language={props.currentLanguage}>
             Create subscriptions
           </Translation>
@@ -592,7 +597,7 @@ export const ApiKeyStep = props => {
           <button className='btn btn-access' disabled={props.currentStep === 1 ? 'disabled' : null} onClick={() => props.goToStep(1)}>
             <i className="fas fa-angle-double-left" />
           </button>
-          <button className="btn btn-access" disabled={props.currentStep === 1 ? 'disabled' : null} onClick={props.previousStep}>
+          <button className="btn btn-access mr-2" disabled={props.currentStep === 1 ? 'disabled' : null} onClick={props.previousStep}>
             <i className="fas fa-angle-left" />
           </button>
           {props.maybeCreatedSub.isDefined &&
@@ -605,9 +610,9 @@ export const ApiKeyStep = props => {
           </button>}
           {!props.maybeCreatedSub.isDefined &&
           <button className='btn btn-outline-success' disabled={!selectedTeam || error.name ? 'disabled' : null} onClick={getIt}>
-            <i className="fas fa-plus-circle" />Import this API key
+            Import this API key
           </button>}
-          <button className='btn btn-access' onClick={nextStep}>
+          <button className='btn btn-access ml-2' onClick={nextStep}>
             <i className="fas fa-angle-right" />
           </button>
           <button className="btn btn-access" disabled={props.currentStep === props.totalSteps ? 'disabled' : null} onClick={() => props.goToStep(props.totalSteps)}>
