@@ -1,0 +1,58 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.14.1
+ignore: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  SNYK-JS-LODASH-567746:
+    - lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - antd > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - react-color > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - recharts > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - antd > rc-form > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - antd > rc-steps > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - antd > rc-table > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - antd > rc-tabs > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - react-color > reactcss > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - recharts > react-smooth > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > json-refs > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > react-redux > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > redux > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > swagger-client > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > swagger-ui > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - antd > rc-editor-mention > rc-editor-core > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > json-refs > graphlib > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > swagger-ui > react-redux > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > swagger-ui > redux > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > swagger-ui > swagger-client > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > react-ace > opencollective > inquirer > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - react-select > @emotion/css > babel-plugin-emotion > @babel/helper-module-imports > @babel/types > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > swagger-client > isomorphic-form-data > form-data > async > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - react-select > @emotion/core > @emotion/css > babel-plugin-emotion > @babel/helper-module-imports > @babel/types > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
+    - swagger-editor > swagger-ui > swagger-client > isomorphic-form-data > form-data > async > lodash:
+        patched: '2020-04-30T22:53:08.865Z'
