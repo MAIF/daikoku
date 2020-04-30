@@ -474,14 +474,17 @@ class ApiController(DaikokuAction: DaikokuAction,
         .alsoTo(Sink.foreach(seq => Logger.debug(s"${seq.length} apiSubscriptions process")))
         .flatMapConcat(seq => {
           Source(seq)
-            .mapAsync(10) { sub =>
+            .mapAsync(1) { sub =>
               for {
                 team  <- env.dataStore.teamRepo.forTenant(tenant.id).findById(sub.team) if team.isDefined
+                api   <- env.dataStore.apiRepo.forTenant(tenant.id).findById(sub.api) if api.isDefined
                 _     <- env.dataStore.teamRepo
                   .forTenant(tenant.id)
                   .save(team.get.copy(subscriptions = team.get.subscriptions :+ sub.id))
-                done  <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
-                  .save(sub)
+                _     <- env.dataStore.apiRepo
+                  .forTenant(tenant.id)
+                  .save(api.get.copy(subscriptions = api.get.subscriptions :+ sub.id))
+                done  <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id).save(sub)
               } yield {
                 Json.obj("name" -> sub.apiKey.clientName, "done" -> done)
               }

@@ -79,7 +79,7 @@ class ApiControllerSpec(configurationSpec: => Configuration)
     "initialize tenant subscriptions" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
+        users = Seq(tenantAdmin, userAdmin),
         teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(defaultApi)
       )
@@ -117,6 +117,26 @@ class ApiControllerSpec(configurationSpec: => Configuration)
       val result = resp.json.as[JsArray].value.map(v => ((v \ "name").as[String], (v \ "done").as[Boolean]))
 
       result.forall(tuple => apikeys.exists(apikey => (apikey \ "apikey").as(json.OtoroshiApiKeyFormat).clientName == tuple._1 && tuple._2)) mustBe true
+
+      val sessionTest = loginWithBlocking(userAdmin, tenant)
+      val respTestApis = httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}/subscribed-apis")(tenant, sessionTest)
+      respTestApis.status mustBe 200
+      val resultTestApis = fr.maif.otoroshi.daikoku.domain.json.SeqApiFormat.reads(respTestApis.json)
+      resultTestApis.isSuccess mustBe true
+      resultTestApis.get.length mustBe 1
+      resultTestApis.get.exists(a => a.id == defaultApi.id)
+
+      val respTestSubscriptions = httpJsonCallBlocking(s"/api/apis/${defaultApi.id.value}/subscriptions/teams/${teamOwnerId.value}")(tenant, sessionTest)
+      respTestSubscriptions.status mustBe 200
+      val resultTestSubscriptions = fr.maif.otoroshi.daikoku.domain.json.SeqApiSubscriptionFormat.reads(respTestSubscriptions.json)
+      resultTestSubscriptions.isSuccess mustBe true
+      resultTestSubscriptions.get.length mustBe 5
+      Seq("1", "2", "3", "4", "5").map(UsagePlanId).forall(id => resultTestSubscriptions.get.exists(sub => sub.plan == id)) mustBe true
+
+      val respTestMySubscriptions = httpJsonCallBlocking(s"/api/me/subscriptions/${defaultApi.id.value}")(tenant, sessionTest)
+      respTestMySubscriptions.status mustBe 200
+      (respTestMySubscriptions.json \ "subscriptions").as[JsArray].value.length mustBe 10
+
     }
   }
 
