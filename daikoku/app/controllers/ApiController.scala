@@ -1,9 +1,12 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.{Done, NotUsed}
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Framing, JsonFraming, Sink, Source}
+import akka.stream.{ActorMaterializer, ClosedShape, FlowShape, SourceShape}
+import akka.stream.scaladsl.{Broadcast, Flow, Framing, GraphDSL, JsonFraming, Merge, Partition, Sink, Source}
 import akka.util.ByteString
 import cats.data.EitherT
 import controllers.AppError
@@ -30,6 +33,7 @@ import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
+import scala.util.hashing.MurmurHash3
 import scala.util.{Failure, Success}
 
 class ApiController(DaikokuAction: DaikokuAction,
@@ -456,7 +460,8 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def initSubscriptions() = DaikokuAction.async(sourceApiSubscriptionsDataBodyParser) { ctx =>
     TenantAdminOnly(AuditTrailEvent(s"@{user.name} has init an apikey for @{api.name} - @{api.id}"))(ctx.tenant.id.value, ctx) { (tenant, _) =>
-      val source = ctx.request.body
+      val parallelism = 10;
+      val subSource = ctx.request.body
         .map(data => ApiSubscription(
           id = ApiSubscriptionId(BSONObjectID.generate().stringify),
           tenant = tenant.id,
@@ -470,27 +475,81 @@ class ApiController(DaikokuAction: DaikokuAction,
           rotation = None,
           integrationToken = IdGenerator.token(64)
         ))
-        .grouped(10)
-        .alsoTo(Sink.foreach(seq => Logger.debug(s"${seq.length} apiSubscriptions process")))
-        .flatMapConcat(seq => {
-          Source(seq)
-            .mapAsync(1) { sub =>
-              for {
-                team  <- env.dataStore.teamRepo.forTenant(tenant.id).findById(sub.team) if team.isDefined
-                api   <- env.dataStore.apiRepo.forTenant(tenant.id).findById(sub.api) if api.isDefined
-                _     <- env.dataStore.teamRepo
-                  .forTenant(tenant.id)
-                  .save(team.get.copy(subscriptions = team.get.subscriptions :+ sub.id))
-                _     <- env.dataStore.apiRepo
-                  .forTenant(tenant.id)
-                  .save(api.get.copy(subscriptions = api.get.subscriptions :+ sub.id))
-                done  <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id).save(sub)
-              } yield {
-                Json.obj("name" -> sub.apiKey.clientName, "done" -> done)
-              }
-            }
+
+      val UpdateTeamsFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow[ApiSubscription]
+        .mapAsync(1)(sub => {
+          for {
+            team <- env.dataStore.teamRepo.forTenant(tenant.id).findById(sub.team) if team.isDefined
+            _ <- env.dataStore.teamRepo
+              .forTenant(tenant.id)
+              .save(team.get.copy(subscriptions = team.get.subscriptions :+ sub.id))
+          } yield {
+            sub
+          }
         })
-        .map(json => ByteString(Json.stringify(json)))
+      val updateTeamConcurrentFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit b: GraphDSL.Builder[NotUsed] =>
+        import GraphDSL.Implicits._
+
+        val merge = b.add(Merge[ApiSubscription](parallelism))
+        val partition = b.add(Partition[ApiSubscription](parallelism, sub => {
+          MurmurHash3.stringHash(sub.team.value) % parallelism
+        }))
+
+        for (i <- 0 until parallelism) {
+          partition.out(i) ~> UpdateTeamsFlow.async ~> merge.in(i)
+        }
+
+        FlowShape(partition.in, merge.out)
+      })
+
+      val UpdateApisFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow[ApiSubscription]
+        .mapAsync(1)(sub => {
+          for {
+            api <- env.dataStore.apiRepo.forTenant(tenant.id).findById(sub.api) if api.isDefined
+            _ <- env.dataStore.apiRepo
+              .forTenant(tenant.id)
+              .save(api.get.copy(subscriptions = api.get.subscriptions :+ sub.id))
+          } yield {
+            sub
+          }
+        })
+      val updateApisConcurrentFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit b: GraphDSL.Builder[NotUsed] =>
+        import GraphDSL.Implicits._
+
+        val merge = b.add(Merge[ApiSubscription](parallelism))
+        val partition = b.add(Partition[ApiSubscription](parallelism, sub => {
+          MurmurHash3.stringHash(sub.api.value) % parallelism
+        }))
+
+        for (i <- 0 until parallelism) {
+          partition.out(i) ~> UpdateApisFlow.async ~> merge.in(i)
+        }
+
+        FlowShape(partition.in, merge.out)
+      })
+
+      val createSubFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow[ApiSubscription]
+        .mapAsync(10)(sub => env.dataStore.apiSubscriptionRepo.forTenant(tenant.id)
+          .save(sub)
+          .map(done => sub -> done))
+        .filter(_._2)
+        .map(_._1)
+
+      val source = Source.fromGraph(GraphDSL.create() { implicit b: GraphDSL.Builder[NotUsed] =>
+        import GraphDSL.Implicits._
+
+        val broadcast = b.add(Broadcast[ApiSubscription](2))
+        val merge = b.add(Merge[ApiSubscription](2))
+
+        subSource ~> createSubFlow ~> broadcast ~> updateTeamConcurrentFlow ~> merge
+                                      broadcast ~> updateApisConcurrentFlow ~> merge
+
+        SourceShape(merge.out)
+      })
+
+      val transformFlow = Flow[ApiSubscription]
+        .map(_.apiKey.clientName)
+        .map(json => ByteString(json))
         .intersperse(ByteString("["), ByteString(","), ByteString("]"))
         .watchTermination() { (mt, d) =>
           d.onComplete {
@@ -501,7 +560,8 @@ class ApiController(DaikokuAction: DaikokuAction,
           mt
         }
 
-      FastFuture.successful(Created.sendEntity(HttpEntity.Streamed(source, None, Some("application/json"))))
+
+      FastFuture.successful(Created.sendEntity(HttpEntity.Streamed(source.via(transformFlow), None, Some("application/json"))))
     }
   }
 
