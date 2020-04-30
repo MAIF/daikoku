@@ -67,8 +67,7 @@ export function init(user, tenant, impersonator, session, loginCallback, isTenan
 
     const setupTimeouts = _session => {
       
-      // const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
-      const firstPing = 2000;
+      const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
       const secondPing = _session.expires - Date.now() + 2000;
       setTimeout(() => {
         const language = storeInst.getState().context.currentLanguage;
