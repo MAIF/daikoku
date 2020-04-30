@@ -41,11 +41,11 @@ export class ApiCard extends Component {
           </div>
 
           <div className="ml-2">
-            <div className="btn_group">
+            <div className="btn_group d-flex align-items-start">
               <Can I={manage} a={API} team={team}>
                 <button
                   type="button"
-                  className="btn btn-sm btn-access-negative"
+                  className="btn btn-sm btn-access-negative mr-1 mb-1"
                   onClick={this.props.redirectToEditPage}>
                   <i className="fas fa-edit" />
                 </button>
@@ -71,7 +71,7 @@ export class ApiCard extends Component {
                     .filter(t => t.type !== "Admin")}
                   action={teams => this.props.askForApiAccess(teams)}
                   withAllTeamSelector={true}>
-                  <button className="btn btn-sm btn-access-negative ml-1 mr-2">
+                  <button className="btn btn-sm btn-access-negative mr-1">
                     <Translation i18nkey="Access" language={this.props.currentLanguage}>
                       Access
                     </Translation>
@@ -79,7 +79,7 @@ export class ApiCard extends Component {
                 </ActionWithTeamSelector>
               )}
               {isPending && (
-                <button className="btn btn-sm btn-access-negative ml-1 mr-2">
+                <button className="btn btn-sm btn-access-negative mr-1">
                   <Translation i18nkey="Pending request" language={this.props.currentLanguage}>
                     Pending request
                   </Translation>
@@ -88,7 +88,7 @@ export class ApiCard extends Component {
               {api.visibility === 'Private' && (
                 <button
                   type="button"
-                  className="btn btn-sm btn-access-negative ml-1 mr-2 disabled cursor-forbidden"
+                  className="btn btn-sm btn-access-negative mr-1 disabled cursor-forbidden"
                   disabled>
                   Private
                 </button>

@@ -36,3 +36,7 @@
     background-color: $form-select-focused-color !important;
     color:$form-select-focused-text-color !important;
 }
+
+.reactSelect__option:hover{
+    cursor: pointer;
+}

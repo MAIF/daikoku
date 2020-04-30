@@ -150,7 +150,7 @@ class TeamEditForAdministrationComponent extends Component {
                 onClick={this.members}>
                 <span>
                   <i className="fas fa-users mr-1" />
-                  <Translation i18nkey="members" language={this.props.currentLanguage} isPlural>
+                  <Translation i18nkey="Members" language={this.props.currentLanguage} isPlural>
                     Members
                   </Translation>
                 </span>

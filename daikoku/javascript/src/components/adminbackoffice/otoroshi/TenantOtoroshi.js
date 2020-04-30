@@ -161,11 +161,11 @@ class TenantOtoroshiComponent extends Component {
                 </React.Suspense>
               )}
             </div>
-            <div className="row" style={{ justifyContent: 'flex-end' }}>
+            <div className="row justify-content-end">
               <Link
                 className="btn btn-outline-primary"
                 to="/settings/otoroshis">
-                <i className="fas fa-chevron-left" />
+                <i className="fas fa-chevron-left mr-1" />
                 <Translation i18nkey="Back" language={this.props.currentLanguage}>
                   Back
                 </Translation>
@@ -176,7 +176,7 @@ class TenantOtoroshiComponent extends Component {
                   type="button"
                   className="btn btn-outline-danger"
                   onClick={this.delete}>
-                  <i className="fas fa-trash" />
+                  <i className="fas fa-trash mr-1" />
                   <Translation i18nkey="Delete" language={this.props.currentLanguage}>
                     Delete
                   </Translation>
@@ -189,7 +189,7 @@ class TenantOtoroshiComponent extends Component {
                 onClick={this.save}>
                 {!this.state.create && (
                   <span>
-                    <i className="fas fa-save" />
+                    <i className="fas fa-save mr-1" />
                     <Translation i18nkey="Save" language={this.props.currentLanguage}>
                       Save
                     </Translation>
