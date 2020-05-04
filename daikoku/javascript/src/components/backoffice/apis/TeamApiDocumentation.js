@@ -307,38 +307,35 @@ export class TeamApiDocumentation extends Component {
     if (this.props.value === null) return null;
     return (
       <div className="row">
-        <div className="col-3 p-1">
+        <div className="col-12 col-sm-6 col-lg-3 p-1">
           <table className="table table-striped table-hover table-sm table-plan-name section">
             <thead className="thead-light">
               <tr>
                 <th
                   scope="col"
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                  className="flex-column flex-md-row">
+                  className="d-flex justify-content-between align-items-center">
                   Plan title{' '}
                   <div className="btn-group">
                     <button
                       onClick={this.onUp}
                       type="button"
-                      className="btn btn-sm btn-outline-success float-right">
+                      className="btn btn-sm btn-outline-success">
                       <i className="fas fa-arrow-up" />
                     </button>
                     <button
                       onClick={this.onDown}
                       type="button"
-                      className="btn btn-sm btn-outline-success float-right">
+                      className="btn btn-sm btn-outline-success">
                       <i className="fas fa-arrow-down" />
                     </button>
                     <button
                       onClick={this.addNewPage}
                       type="button"
-                      className="btn btn-sm btn-outline-primary float-right">
-                      <i className="fas fa-plus" />
-                      <span className="d-none d-sm-block">
+                      className="btn btn-sm btn-outline-primary">
+                      <i className="fas fa-plus mr-1" />
                         <Translation i18nkey="Add page" language={this.props.currentLanguage}>
                           add page
                         </Translation>
-                      </span>
                     </button>
                   </div>
                 </th>
@@ -368,7 +365,7 @@ export class TeamApiDocumentation extends Component {
             )}
           </table>
         </div>
-        <div className="col-9">
+        <div className="col-12 col-sm-6 col-lg-9">
           {!!this.state.selected && (
             <div>
               <div className="d-flex justify-content-end">

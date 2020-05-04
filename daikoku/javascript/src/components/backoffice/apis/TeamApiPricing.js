@@ -1,14 +1,13 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
-import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import faker from 'faker';
 import Select from 'react-select';
 import classNames from 'classnames';
 
-import { Spinner } from '../../utils';
+import { Spinner, newPossibleUsagePlan } from '../../utils';
 import { t, Translation } from '../../../locales';
-import { ThumbsDown } from 'react-feather';
+
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -1023,39 +1022,7 @@ export class TeamApiPricing extends Component {
 
   addNewPlan = () => {
     let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
-    const newPlan = {
-      _id: faker.random.alphaNumeric(32),
-      type: 'FreeWithQuotas',
-      currency: { code: 'EUR' },
-      customName: faker.commerce.productName() + ' plan',
-      customDescription: null,
-      maxPerSecond: 10,
-      maxPerDay: 1000,
-      maxPerMonth: 1000,
-      billingDuration: {
-        value: 1,
-        unit: 'month',
-      },
-      visibility: PUBLIC,
-      subscriptionProcess: AUTOMATIC,
-      integrationProcess: APIKEY,
-      rotation: false,
-      otoroshiTarget: {
-        otoroshiSettings: null,
-        serviceGroup: null,
-        clientIdOnly: false,
-        constrainedServicesOnly: false,
-        tags: [],
-        metadata: {},
-        restrictions: {
-          enabled: false,
-          allowLast: true,
-          allowed: [],
-          forbidden: [],
-          notFound: [],
-        },
-      },
-    };
+    const newPlan = newPossibleUsagePlan(faker.commerce.productName() + ' plan');
     plans.push(newPlan);
     const value = _.cloneDeep(this.props.value);
     value.possibleUsagePlans = plans;

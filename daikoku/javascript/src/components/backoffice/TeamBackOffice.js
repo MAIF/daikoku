@@ -409,6 +409,18 @@ class UserBackOfficeComponent extends Component {
                           </Translation>
                         </Link>
                       </li>
+                      <li className="nav-item">
+                        <Link
+                          className={`nav-link ${tab === 'Initialization' ? 'active' : ''}`}
+                          to={'/settings/init'}>
+                          <i className="fas fa-cloud-download-alt" />
+                          <Translation
+                            i18nkey="Initialization"
+                            language={this.props.currentLanguage}>
+                            Initalization
+                          </Translation>
+                        </Link>
+                      </li>
                     </ul>
                   </Can>
 

@@ -145,7 +145,7 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
           className="btn btn-outline-primary"
           href="#"
           onClick={() => history.goBack()}>
-          <i className="fas fa-chevron-left" />
+          <i className="fas fa-chevron-left mr-1" />
           <Translation i18nkey="Back" language={currentLanguage}>
             Back
             </Translation>

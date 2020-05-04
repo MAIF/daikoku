@@ -113,9 +113,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
 
   def otoroshiGroupsFor(teamId: String, oto: String) = DaikokuAction.async { ctx =>
       TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accessed groups of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { team =>
+        s"@{user.name} has accessed groups of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(teamId, ctx) { team =>
         ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
@@ -126,6 +124,34 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
             }
         }
       }
+  }
+
+  def otoroshiGroupsForTenant(tenantId: String, oto: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(tenantId, ctx) { (tenant, _) =>
+      tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> s"Settings $oto not found")))
+        case Some(settings) => otoroshiClient.getServiceGroups()(settings)
+          .map(Ok(_))
+      }
+    }
+  }
+  def otoroshiServicesForTenant(tenantId: String, oto: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(tenantId, ctx) { (tenant, _) =>
+      tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> s"Settings $oto not found")))
+        case Some(settings) => otoroshiClient.getServices()(settings)
+          .map(Ok(_))
+      }
+    }
+  }
+  def otoroshiApiKeysForTenant(tenantId: String, oto: String) = DaikokuAction.async { ctx =>
+    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(tenantId, ctx) { (tenant, _) =>
+      tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> s"Settings $oto not found")))
+        case Some(settings) => otoroshiClient.getApiKeys()(settings)
+          .map(Ok(_))
+      }
+    }
   }
 
   def createTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) {

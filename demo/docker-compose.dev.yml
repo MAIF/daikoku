@@ -1,11 +1,11 @@
 version: '3'
 services:
-  mongo:
-    image: mongo:4.2
-    ports:
-      - 27017:27017
-    volumes:
-      - ./config/mongo-data:/data/db
+  # mongo:
+  #   image: mongo:4.2
+  #   ports:
+  #     - 27017:27017
+  #   volumes:
+  #     - ./config/mongo-data:/data/db
   redis:
     image: redis:4.0.8
     expose:
@@ -91,7 +91,7 @@ services:
     expose:
       - 9200
   otoroshi:
-    image: maif/otoroshi:1.4.10-jdk11
+    image: maif/otoroshi:1.4.21-jdk11
     environment:
       - APP_STORAGE=redis
       - REDIS_HOST=redis

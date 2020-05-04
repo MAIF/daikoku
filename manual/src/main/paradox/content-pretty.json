@@ -238,6 +238,13 @@
     "content": "# Managing Otoroshi instances\n\nGo to `settings/Organizations settings` and click `Otoroshi instances` on the left menu.\n\nAnd you should see the list of existing `Otoroshi instances`.\n\n## Add a new Otoroshi\n\nClick on the `Create` button.\nA Otoroshi instance is really simple to create. Just fill Otoroshi's url (otoroshi-api URL, not client 😉), the host and credentials.\n\n## Update an existing instance\n\nTo update an Otoroshi instance, just click the `Update` button (Pen icon). You can modify the otoroshi url, the host or credentials.\n\n## Remove an existing instance\n\nTo delete an Otoroshi instances, just click the `Delete` button (trash icon) and confirm the command."
   },
   {
+    "name": "1.5-initialize.md",
+    "id": "/tenantusage/1.5-initialize.md",
+    "url": "/tenantusage/1.5-initialize.html",
+    "title": "Initialize Tenant from Otoroshi instances",
+    "content": "# Initialize Tenant from Otoroshi instances\nYou perhaps have a previous instance of Otoroshi, whiche contains services and lot of apikeys. This page have been created to easily import service group as API and apikeys as subscriptions in a tenant of your Daikoku instance.\n\nGo to `settings/Organizations settings` and click `Initialization` on the left menu.\n\nNow, it's easy as just follow steps.\n\n## Select Otoroshi instance\n\nJust select a previously created Otoroshi instance to begin.\n\n## Select the step\n\nYou can begin to import Otoroshi service groups or just Otoroshi apikeys\n\n## Select Service group to import\n\nYou have to choose which services you want to import. It's completly possible to change the API name but no necessary. \nYou have to choose a team to admin the crated API. If the team doesn't exist, you can create a team in this screen.\nYour action is just, for the moment, to tack the api to create, the creation will be effective later.  \n_notice: Every choice you make are saved on your local storage in case of problem._\n\n## Recap and creation\n\nThe next screen list all API to create. If your agree with this, you can click on the `create` button to launch the APIs creation.\n\n## Select Service group to import\n\nYou have to choose which apikeys you want to import.\nYou have to choose an api with a plan and a team for every apikeys. If the plan does't exists, you can create a plan in this screen (_notice: it will a FreePlan but you can change it after creation_).  \nIf the team doesn't exist, you can create a team in this screen.\nYour action is just, for the moment, to stack the apikey to create, the creation will be effective later.  \n_notice: Every choice you make are saved on your local storage in case of problem._\n\n## Recap and creation\n\nThe next screen list all subscriptions to create. If your agree with this, you can click on the create button to launch the subscriptios creation.\n\n## Done\n\nAll the selected APIs and apikeys are created. You have certainly to go to API page to update some informations because APIs are just created with default informations, just name and plan.\nIf you have created some teams, be aware that you are the only member of those teams.\nYou can import APIS and apikeys from another Otorshi instance if you wish."
+  },
+  {
     "name": "2-teams.md",
     "id": "/tenantusage/2-teams.md",
     "url": "/tenantusage/2-teams.html",
@@ -256,6 +263,6 @@
     "id": "/tenantusage/index.md",
     "url": "/tenantusage/index.html",
     "title": "Using Daikoku as Tenant admin",
-    "content": "# Using Daikoku as Tenant admin\n\nNow we will see how to use Daikoku as tenant admin.\n\n@@@ index\n\n* [managing Otoroshi instances](./1-otoroshi.md)\n* [managing teams](./2-teams.md)\n* [managing assets](./3-assets.md)\n\n@@@\n"
+    "content": "# Using Daikoku as Tenant admin\n\nNow we will see how to use Daikoku as tenant admin.\n\n@@@ index\n\n* [managing Otoroshi instances](./1-otoroshi.md)\n* [initialize tenant from otoroshi instance](./1.5-initialize.md)\n* [managing teams](./2-teams.md)\n* [managing assets](./3-assets.md)\n\n@@@\n"
   }
 ]

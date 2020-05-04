@@ -25,7 +25,7 @@ class TeamListComponent extends Component {
   deleteTeam = teamId => {
     window
       .confirm(
-        t('delete team', this.props.currentTeam, 'Are you sure you want to delete this team ?')
+        t('delete team', this.props.currentLanguage, 'Are you sure you want to delete this team ?')
       )
       .then(ok => {
         if (ok) {

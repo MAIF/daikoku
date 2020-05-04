@@ -10,7 +10,7 @@ class NameAlreadyExists extends Component {
   state = { exists: false };
 
   update = props => {
-    Services.checkIfApiNameIsUnique(props.rawValue.team, props.rawValue.name).then(r =>
+    Services.checkIfApiNameIsUnique(props.rawValue.name).then(r =>
       this.setState({ exists: r.exists })
     );
   };

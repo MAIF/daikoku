@@ -51,14 +51,14 @@ class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
 
   def getSuites(): Seq[Suite] = {
     Seq(
-      new BasicUsageSpec(defaultTestConfig),
+//      new BasicUsageSpec(defaultTestConfig),
       new ApiControllerSpec(defaultTestConfig),
-      new TeamControllerSpec(defaultTestConfig),
-      new UserControllerSpec(defaultTestConfig),
-      new NotificationControllerSpec(defaultTestConfig),
-      new ConsumptionControllerSpec(defaultTestConfig),
-      new TenantControllerSpec(defaultTestConfig),
-      new GuestModeSpec(defaultTestConfig)
+//      new TeamControllerSpec(defaultTestConfig),
+//      new UserControllerSpec(defaultTestConfig),
+//      new NotificationControllerSpec(defaultTestConfig),
+//      new ConsumptionControllerSpec(defaultTestConfig),
+//      new TenantControllerSpec(defaultTestConfig),
+//      new GuestModeSpec(defaultTestConfig)
     )
   }
 
