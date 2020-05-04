@@ -1,7 +1,7 @@
 import React, { Component, useState } from 'react';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
-import Popover from 'react-popover';
+import {Popover} from 'antd';
 
 import * as Services from '../../../services';
 import { openAssetSelectorModal } from '../../../core/modal/actions';
@@ -132,7 +132,6 @@ export class AssetChooserComponent extends Component {
     loading: true,
     assets: [],
     error: false,
-    popoverIsOpen: false,
   };
 
   getTenantAssets = () =>
@@ -195,10 +194,6 @@ export class AssetChooserComponent extends Component {
       .catch(error => this.setState({ error, loading: false }));
   }
 
-  toggle(toState = null) {
-    this.setState({ popoverIsOpen: toState === null ? !this.state.popoverIsOpen : toState });
-  }
-
   render() {
     if (this.state.assets && this.state.loading) {
       return (
@@ -212,12 +207,10 @@ export class AssetChooserComponent extends Component {
 
     if (this.state.error) {
       return (
-        <Popover isOpen={this.state.popoverIsOpen} body={this.state.error.message}>
+        <Popover content={this.state.error.message}>
           <button
             type="button"
             className="btn btn-outline-primary ml-1 cursor-help"
-            onMouseEnter={() => this.toggle(true)}
-            onMouseLeave={() => this.toggle(false)}
             disabled>
             <i
               className={classNames('fas', {
@@ -234,16 +227,10 @@ export class AssetChooserComponent extends Component {
     if (!this.state.assets.length) {
       return (
         <Popover
-          isOpen={this.state.popoverIsOpen}
-          body={t('No assets found', this.props.currentLanguage)}>
+          content={t('No assets found', this.props.currentLanguage)}>
           <button
             type="button"
             className="btn btn-access-negative ml-1 cursor-help"
-            onMouseEnter={() =>
-              this.setState({ popoverIsOpen: true }, () =>
-                setTimeout(() => this.setState({ popoverIsOpen: false }), 2000)
-              )
-            }
             disabled>
             <i
               className={classNames('fas mr-1', {

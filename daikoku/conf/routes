@@ -90,14 +90,20 @@ PUT		  /api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.
 ### NoDocs ###
 DELETE  /api/teams/:teamId/subscriptions/_clean			    fr.maif.otoroshi.daikoku.ctrls.ApiController.cleanArchivedSubscriptions(teamId)
 ### NoDocs ###
-POST    /api/teams/:teamId/subscriptions/:id/_rotation    fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiKeyRotation(teamId, id)
+POST    /api/teams/:teamId/subscriptions/:id/_rotation  fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiKeyRotation(teamId, id)
 ### NoDocs ###
-POST    /api/teams/:teamId/subscriptions/:id/_refresh     fr.maif.otoroshi.daikoku.ctrls.ApiController.regenerateApiKeySecret(teamId, id)
+POST    /api/teams/:teamId/subscriptions/:id/_refresh   fr.maif.otoroshi.daikoku.ctrls.ApiController.regenerateApiKeySecret(teamId, id)
+### NoDocs ###
+POST    /api/subscriptions/_init                        fr.maif.otoroshi.daikoku.ctrls.ApiController.initSubscriptions()
+### NoDocs ###
+POST    /api/apis/_init                                 fr.maif.otoroshi.daikoku.ctrls.ApiController.initApis()
 
 ### NoDocs ###
 GET     /api/apis/:apiId/doc                            fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId)
 ### NoDocs ###
 POST    /api/apis/:apiId/access                         fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiAccess(apiId)
+### NoDocs ###
+POST    /api/apis/_names                                fr.maif.otoroshi.daikoku.ctrls.ApiController.verifyNameUniqueness()
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscription/:id/informations         fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionInformations(teamId, id)
@@ -139,8 +145,6 @@ DELETE  /api/teams/:teamId/apis/:id                     fr.maif.otoroshi.daikoku
 POST    /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku.ctrls.ApiController.createApiOfTeam(teamId)
 ### NoDocs ###
 GET     /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku.ctrls.ApiController.apisOfTeam(teamId)
-### NoDocs ###
-POST    /api/teams/:teamId/apis/_names                  fr.maif.otoroshi.daikoku.ctrls.ApiController.verifyNameUniqueness(teamId)
 ### NoDocs ###
 GET     /api/teams/:teamId/visible-apis                 fr.maif.otoroshi.daikoku.ctrls.ApiController.visibleApisOfTeam(teamId)
 ### NoDocs ###
@@ -208,6 +212,12 @@ POST    /api/teams/:teamId/testing/apikeys              fr.maif.otoroshi.daikoku
 POST    /api/teams/:teamId/testing/:apiId/call          fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.fakeApiCall(teamId, apiId)
 ### NoDocs ###
 GET     /api/teams/:teamId/tenant/otoroshis/:oto/groups fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsFor(teamId, oto)
+### NoDocs ###
+GET     /api/tenants/:tenantId/otoroshis/:oto/groups    fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsForTenant(tenantId, oto)
+### NoDocs ###
+GET     /api/tenants/:tenantId/otoroshis/:oto/services  fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesForTenant(tenantId, oto)
+### NoDocs ###
+GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys   fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto)
 
 ### NoDocs ###
 GET     /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.teams()

@@ -76,6 +76,34 @@ class OtoroshiClient(env: Env) {
     }
   }
 
+  def getServices()(
+    implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
+    client(s"/api/services").get().flatMap { resp =>
+      if (resp.status == 200) {
+        val res = resp.json.as[JsArray]
+        FastFuture.successful(JsArray(res.value))
+      } else {
+        Future
+          .failed(new RuntimeException(
+            s"Error while fetching otoroshi service groups: ${resp.status} - ${resp.body}"))
+      }
+    }
+  }
+
+  def getApiKeys()(
+    implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
+    client(s"/api/apikeys").get().flatMap { resp =>
+      if (resp.status == 200) {
+        val res = resp.json.as[JsArray]
+        FastFuture.successful(JsArray(res.value))
+      } else {
+        Future
+          .failed(new RuntimeException(
+            s"Error while fetching otoroshi service groups: ${resp.status} - ${resp.body}"))
+      }
+    }
+  }
+
   def getServiceGroup(groupId: String)(
       implicit otoroshiSettings: OtoroshiSettings): Future[JsObject] = {
     client(s"/api/groups/$groupId").get().flatMap { resp =>

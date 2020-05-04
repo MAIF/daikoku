@@ -1,20 +1,14 @@
-import React, {useState} from'react';
-import Popover from 'react-popover';
+import React from 'react';
+import { Popover } from 'antd';
 
 export const BeautifulTitle = ({ title, children, place }) => {
-  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <Popover
-      isOpen={isOpen}
-      preferPlace='below'
-      place={place || 'below'}
-      onOuterAction={() => setIsOpen(false)}
+      placement={place || 'bottom'}
       className="beautiful-popover"
-      body={title}>
-      <span
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}>
+      content={title}>
+      <span>
         {children}
       </span>
     </Popover>

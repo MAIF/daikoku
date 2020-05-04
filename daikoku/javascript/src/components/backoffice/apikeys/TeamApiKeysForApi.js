@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
-import Popover from 'react-popover';
-import Select from 'react-select';
+import {Popover} from 'antd';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
@@ -17,7 +16,8 @@ import {
   isUserIsTeamAdmin,
   CanIDoAction,
   PaginatedComponent,
-  BeautifulTitle
+  BeautifulTitle,
+  Option
 } from '../../utils';
 import { SwitchButton } from '../../inputs';
 import { t, Translation } from '../../../locales';
@@ -238,10 +238,10 @@ const ApiKeyCard = ({
   const [hide, setHide] = useState(true);
   const [settingMode, setSettingMode] = useState(false)
   const [customName, setCustomName] = useState(subscription.customName || plan.customName || plan.type);
-  const [rotation, setRotation] = useState(subscription.rotation.enabled);
+  const [rotation, setRotation] = useState(Option(subscription.rotation).map(r => r.enabled).getOrElse(false));
   const [editMode, setEditMode] = useState(false);
-  const [rotationEvery, setRotationEvery] = useState(subscription.rotation.rotationEvery || 744);
-  const [gracePeriod, setGracePeriod] = useState(subscription.rotation.gracePeriod || 168);
+  const [rotationEvery, setRotationEvery] = useState(Option(subscription.rotation).map(r => r.rotationEvery).getOrElse(744));
+  const [gracePeriod, setGracePeriod] = useState(Option(subscription.rotation).map(r => r.gracePeriod).getOrElse(168));
   const [error, setError] = useState({})
   const [activeTab, setActiveTab] = useState(plan.integrationProcess === "Automatic" ? "token" : "apikey")
 
@@ -577,20 +577,12 @@ const ApiKeyCard = ({
 };
 
 const Help = ({ message }) => {
-  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <Popover
-      isOpen={isOpen}
-      preferPlace='below'
-      place='below'
-      className="beautiful-popover"
-      body={message}>
-      <i
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
-        className="ml-4 far fa-question-circle"
-      />
+      placement='bottom'
+      content={message}>
+      <i className="ml-4 far fa-question-circle"/>
     </Popover>
   )
 }

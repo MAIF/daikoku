@@ -261,6 +261,42 @@ export function askForApiKey(api, teams, plan) {
   }).then(r => r.json());
 }
 
+export function initApiKey(api, team, plan, apikey) {
+  return fetch(`/api/apis/${api}/subscriptions/_init`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ plan, team, apikey }),
+  }).then(r => r.json());
+}
+
+export function apisInit(apis) {
+  return fetch('/api/apis/_init', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-type': 'application/json'
+    },
+    body: JSON.stringify(apis)
+  })
+}
+
+export function subscriptionsInit(subscriptions) {
+  return fetch('/api/subscriptions/_init', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-type': 'application/json'
+    },
+    body: JSON.stringify(subscriptions)
+  })
+}
+
 export function deleteApiKey(teamId, subscriptionId) {
   return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_delete`, {
     method: 'DELETE',
@@ -504,6 +540,36 @@ export function createOtoroshiSettings(tenantId, oto) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(oto),
+  }).then(r => r.json());
+}
+
+export function getOtoroshiGroups(tenantId, otoId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/groups`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function getOtoroshiServices(tenantId, otoId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then(r => r.json());
+}
+
+export function getOtoroshiApiKeys(tenantId, otoId) {
+  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
   }).then(r => r.json());
 }
 
@@ -846,8 +912,8 @@ export const fetchNewApi = () => fetchEntity('/api/entities/api');
 export const fetchNewUser = () => fetchEntity('/api/entities/user');
 export const fetchNewOtoroshi = () => fetchEntity('/api/entities/otoroshi');
 
-export function checkIfApiNameIsUnique(teamId, name) {
-  return fetch(`/api/teams/${teamId}/apis/_names`, {
+export function checkIfApiNameIsUnique(name) {
+  return fetch(`/api/apis/_names`, {
     method: 'POST',
     credentials: 'include',
     headers: {

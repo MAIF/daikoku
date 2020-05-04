@@ -173,6 +173,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
   private def verifyIfOtoroshiApiKeysStillExists(): Future[Unit] = {
     env.dataStore.apiSubscriptionRepo.forAllTenant().findAllNotDeleted().map {
       subscriptions =>
+        Logger.debug(subscriptions.map(_.id.value).mkString(" - "))
         subscriptions.map { subscription =>
           env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant).map {
             case None =>
@@ -358,6 +359,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                               (key, value) // should never happens
                                           }
 
+                                        Logger.debug(plan.maxRequestPerSecond.getOrElse(apk.throttlingQuota).toString)
                                         val newApk = apk.copy(
                                           tags = newTags,
                                           metadata = newMeta,
@@ -366,7 +368,10 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                           allowClientIdOnly =
                                             target.apikeyCustomization.clientIdOnly,
                                           restrictions =
-                                            target.apikeyCustomization.restrictions
+                                            target.apikeyCustomization.restrictions,
+                                          throttlingQuota = plan.maxRequestPerSecond.getOrElse(apk.throttlingQuota),
+                                          dailyQuota = plan.maxRequestPerDay.getOrElse(apk.dailyQuota),
+                                          monthlyQuota = plan.maxRequestPerMonth.getOrElse(apk.monthlyQuota)
                                         )
 
                                         if (subscription.rotation.exists(_.enabled) && apk.clientSecret != subscription.apiKey.clientSecret) {

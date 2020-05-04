@@ -5,6 +5,8 @@ export const Some = x => ({
   flatMap: f => f(x),
   fold: (ifEmpty, f) => f(x),
   getOrElse: () => x,
+  getOrNull:  () => x,
+  isDefined: true
 });
 
 export const None = {
@@ -12,4 +14,6 @@ export const None = {
   flatMap: () => None,
   fold: (ifEmpty, f) => ifEmpty(),
   getOrElse: ifEmpty => ifEmpty,
+  getOrNull: () => undefined,
+  isDefined: false
 };
