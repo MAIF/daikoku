@@ -59,7 +59,7 @@
     "redux-thunk": "2.3.0",
     "set-value": "3.0.2",
     "showdown": "1.9.1",
-    "snyk": "^1.316.1",
+    "snyk": "^1.317.0",
     "swagger-editor": "3.8.1",
     "swagger-ui-dist": "3.25.1",
     "uuid": "8.0.0",
