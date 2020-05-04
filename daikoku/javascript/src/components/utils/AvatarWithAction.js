@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'antd';
-import uuidv4 from 'uuid/v4';
+import {v4 as uuidv4} from 'uuid';
 
 const placements = ['topRight', 'topLeft', 'bottomRight', 'bottomLeft'];
 

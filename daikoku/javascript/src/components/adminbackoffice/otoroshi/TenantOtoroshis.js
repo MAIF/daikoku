@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
-import uuid from 'uuid/v4';
+import {v4 as uuid} from 'uuid';
 import faker from 'faker';
 
 import * as Services from '../../../services';
