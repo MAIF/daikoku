@@ -24,7 +24,7 @@ const InitializeFromOtoroshiComponent = props => {
   const [createdSubs, setCreatedSubs] = useState([])
 
   useEffect(() => {
-    if (apis.length && state.context.otoroshi) {
+    if (apis.length && state.context.otoroshi && (createdApis.length || createdSubs.length)) {
       localStorage.setItem(`daikoku-initialization-${props.tenant._id}`, JSON.stringify({ otoroshi: state.context.otoroshi, tenant: props.tenant._id, step, createdApis, createdSubs}));
     }
   }, [createdApis, createdSubs])
@@ -109,12 +109,14 @@ const InitializeFromOtoroshiComponent = props => {
       .then(apis => {
         setStep(1)
         setApis(apis)
+        setCreatedApis([])
         toastr.success("Apis successfully created")
       })
   }
 
   const afterSubCreation = () => {
     setStep(1)
+    setCreatedSubs([])
     toastr.success("Subscriptions successfully created")
   }
 
