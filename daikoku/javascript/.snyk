@@ -56,3 +56,5 @@ patch:
         patched: '2020-05-01T01:29:34.720Z'
     - swagger-editor > swagger-ui > swagger-client > isomorphic-form-data > form-data > async > lodash:
         patched: '2020-05-01T01:29:34.720Z'
+    - antd > @ant-design/react-slick > lodash:
+        patched: '2020-05-04T15:11:46.864Z'
