@@ -492,7 +492,7 @@ class ApiController(DaikokuAction: DaikokuAction,
 
         val merge = b.add(Merge[ApiSubscription](parallelism))
         val partition = b.add(Partition[ApiSubscription](parallelism, sub => {
-          MurmurHash3.stringHash(sub.team.value) % parallelism
+          Math.abs(MurmurHash3.stringHash(sub.team.value)) % parallelism
         }))
 
         for (i <- 0 until parallelism) {
