@@ -4,7 +4,7 @@ export const openCreationTeamModal = (modalProps) => dispatch => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
-    modalType: "teamCreation"
+    modalType: 'teamCreation'
   });
 };
 
@@ -12,7 +12,7 @@ export const openTeamSelectorModal = (modalProps) => dispatch => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
-    modalType: "teamSelector"
+    modalType: 'teamSelector'
   });
 };
 
@@ -20,7 +20,7 @@ export const openAssetSelectorModal = (modalProps) => dispatch => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
-    modalType: "assetSelector"
+    modalType: 'assetSelector'
   });
 };
 
@@ -28,7 +28,7 @@ export const openWysywygModal = (modalProps) => dispatch => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
-    modalType: "wysywygModal"
+    modalType: 'wysywygModal'
   });
 };
 
@@ -36,7 +36,7 @@ export const openSaveOrCancelModal = (modalProps) => dispatch => {
   return dispatch({
     type: OPEN_MODAL,
     modalProps,
-    modalType: "saveOrCancelModal"
+    modalType: 'saveOrCancelModal'
   });
 };
 
@@ -44,9 +44,9 @@ export const openContactModal = (name = undefined, email = undefined, tenant, te
   return dispatch({
     type: OPEN_MODAL,
     modalProps: {name, email, tenant, team, api},
-    modalType: "contactModal"
+    modalType: 'contactModal'
   });
-}
+};
 
 export const closeModal = () => dispatch => {
   return dispatch({

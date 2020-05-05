@@ -35,7 +35,7 @@ export class MailjetConfig extends Component {
       type: 'markdown',
       props: { 
         label: t('Mail template', this.props.currentLanguage),
-        help: t("mail.template.help", this.props.currentLanguage) 
+        help: t('mail.template.help', this.props.currentLanguage) 
       }
     },
   };

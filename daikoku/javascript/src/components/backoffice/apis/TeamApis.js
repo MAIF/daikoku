@@ -31,7 +31,7 @@ class TeamApisComponent extends Component {
           <SwitchButton
             onSwitch={() => this.togglePublish(api)}
             checked={api.published}
-            disabled={api.visibility === "AdminOnly"}
+            disabled={api.visibility === 'AdminOnly'}
             large
             noText
           />

@@ -106,7 +106,7 @@ class ApiListComponent extends Component {
           history: this.props.history,
           team
         }
-      ))
+      ));
   }
 
   redirectToTeam = team => {
@@ -302,7 +302,7 @@ class ApiListComponent extends Component {
                 'You are going to create an api. For which team do you want to create it ?'
               )}
               teams={this.props.myTeams
-                .filter(t => t.type !== "Admin")
+                .filter(t => t.type !== 'Admin')
                 .filter(t => CanIDoAction(this.props.connectedUser, manage, api, t))
               }
               action={team => this.createNewApi(team)}

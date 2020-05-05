@@ -7,16 +7,16 @@ import * as Services from '../../../services';
 
 export const TeamCreationModal = props => {
 
-  const [team, setTeam] = useState(props.team)
-  const [created, setCreated] = useState(false)
-  const [error, setError] = useState(undefined)
+  const [team, setTeam] = useState(props.team);
+  const [created, setCreated] = useState(false);
+  const [error, setError] = useState(undefined);
 
   useEffect(() => {
     if (created) {
       props.closeModal();
       props.history.push(`/${team._humanReadableId}/settings/members`);
     }
-  }, [created])
+  }, [created]);
 
   return (
     <div className="modal-content">
@@ -31,7 +31,7 @@ export const TeamCreationModal = props => {
         </button>
       </div>
       <div className="modal-body">
-        {!!error && <div class="alert alert-danger" role="alert">
+        {!!error && <div className="alert alert-danger" role="alert">
           {t(error, props.currentLanguage)}
         </div>}
         <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={props.currentLanguage} />
@@ -49,15 +49,15 @@ export const TeamCreationModal = props => {
           onClick={() => Services.createTeam(team)
             .then(r => {
               if (r.error) {
-                return Promise.reject(r)
+                return Promise.reject(r);
               } else {
-                return r
+                return r;
               }
             })
             .then(newteam => setTeam(newteam))
             .then(() => setCreated(true))
             .catch(e => {
-              setError(e.error)
+              setError(e.error);
             }
             )}>
           <Translation i18nkey="Create" language={props.currentLanguage}>

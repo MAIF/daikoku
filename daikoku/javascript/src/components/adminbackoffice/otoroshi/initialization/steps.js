@@ -3,7 +3,7 @@ import {Popover} from 'antd';
 import Select from 'react-select';
 import Creatable from 'react-select/creatable';
 import AsyncSelect from 'react-select/async';
-import classNames from "classnames";
+import classNames from 'classnames';
 import _ from 'lodash';
 
 import { Option } from '../../../utils';
@@ -26,23 +26,23 @@ export const SelectionStepStep = props => {
         </Translation>
       </button>
     </div>
-  )
-}
+  );
+};
 
 export const SelectOtoStep = props => {
-  const [otoInstance, setOtoInstance] = useState(undefined)
+  const [otoInstance, setOtoInstance] = useState(undefined);
 
   useEffect(() => {
     if (otoInstance) {
-      props.setOtoInstance(otoInstance)
+      props.setOtoInstance(otoInstance);
     }
-  }, [otoInstance])
+  }, [otoInstance]);
 
   const previousState = JSON.parse(localStorage.getItem(`daikoku-initialization-${props.tenant._id}`));
   return (
     <div className="d-flex flex-row">
       <Select
-        placeholder={t("Select an Otoroshi instance", props.currentLanguage)}
+        placeholder={t('Select an Otoroshi instance', props.currentLanguage)}
         className="add-member-select mr-2 reactSelect"
         isDisabled={!props.otoroshis.length}
         isLoading={!props.otoroshis.length}
@@ -59,7 +59,7 @@ export const SelectOtoStep = props => {
         <div className="d-flex flex-column">
           <Popover
             placement='bottom'
-            content={t("Load a work in progress", props.currentLanguage)}>
+            content={t('Load a work in progress', props.currentLanguage)}>
             <button
               className="btn btn-access"
               onClick={props.loadPreviousState}>
@@ -69,8 +69,8 @@ export const SelectOtoStep = props => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 export const RecapServiceStep = props => {
   return (
@@ -93,11 +93,11 @@ export const RecapServiceStep = props => {
                     .map((s, idx) => {
                       return (
                         <li key={idx}>{s.name}</li>
-                      )
+                      );
                     })}
                 </ul>
               </li>
-            )
+            );
           })}
       </ul>
       <div className="d-flex justify-content-end">
@@ -120,8 +120,8 @@ export const RecapServiceStep = props => {
       </div>
 
     </div>
-  )
-}
+  );
+};
 
 export const RecapSubsStep = props => {
   return (
@@ -144,11 +144,11 @@ export const RecapSubsStep = props => {
                     .map((s, idx) => {
                       return (
                         <li key={idx}>{s.plan.customName || s.plan.type}/{s.clientName}</li>
-                      )
+                      );
                     })}
                 </ul>
               </li>
-            )
+            );
           })}
       </ul>
       <div className="d-flex justify-content-end">
@@ -171,16 +171,16 @@ export const RecapSubsStep = props => {
       </div>
 
     </div>
-  )
-}
+  );
+};
 
 export const ServicesStep = props => {
-  const [service, setService] = useState(props.maybeCreatedApi.getOrElse(props.service))
+  const [service, setService] = useState(props.maybeCreatedApi.getOrElse(props.service));
   const [loading, setLoading] = useState(false);
-  const [newTeam, setNewTeam] = useState()
-  const [selectedTeam, setSelectedTeam] = useState(props.maybeCreatedApi.map(api => api.team).getOrNull())
-  const [error, setError] = useState({})
-  const [inputRef, setInputRef] = useState(null)
+  const [newTeam, setNewTeam] = useState();
+  const [selectedTeam, setSelectedTeam] = useState(props.maybeCreatedApi.map(api => api.team).getOrNull());
+  const [error, setError] = useState({});
+  const [inputRef, setInputRef] = useState(null);
 
   useEffect(() => {
     if (newTeam) {
@@ -189,76 +189,76 @@ export const ServicesStep = props => {
         .then(t => ({ ...t, name: newTeam }))
         .then(t => Services.createTeam(t))
         .then(t => {
-          props.addNewTeam(t)
-          setSelectedTeam(t._id)
-          setNewTeam(undefined)
-          setLoading(false)
-        })
+          props.addNewTeam(t);
+          setSelectedTeam(t._id);
+          setNewTeam(undefined);
+          setLoading(false);
+        });
     }
-  }, [newTeam])
+  }, [newTeam]);
 
   useEffect(() => {
     Services.checkIfApiNameIsUnique(service.name)
       .then(({ exists }) => {
         if (exists) {
-          setError({ name: t("api.unique.name.error", props.currentLanguage, false, "Api name must be unique") })
+          setError({ name: t('api.unique.name.error', props.currentLanguage, false, 'Api name must be unique') });
         } else {
-          setError({})
+          setError({});
         }
-      })
+      });
 
-  }, [service])
+  }, [service]);
 
   const nextStep = () => {
     if (props.currentStep === props.totalSteps) {
-      props.recap()
+      props.recap();
     } else {
       props.nextStep();
     }
-  }
+  };
 
   const getIt = () => {
     props.addService(service, selectedTeam);
     nextStep();
-  }
+  };
 
   const update = () => {
-    props.updateService(service, selectedTeam)
+    props.updateService(service, selectedTeam);
     nextStep();
-  }
+  };
 
   const reset = () => {
     props.resetService();
     setService(props.service);
-    setSelectedTeam(null)
-  }
+    setSelectedTeam(null);
+  };
 
 
   useEffect(() => {
     return () => {
       document.onkeydown = null;
-    }
-  }, [window.event])
+    };
+  }, [window.event]);
   const checkKey = e => {
     if (inputRef && document.activeElement !== inputRef) {
       if (e.keyCode === 37 && props.currentStep > 1) {
-        props.previousStep()
+        props.previousStep();
       } else if (e.keyCode === 39) {
         if (props.maybeCreatedApi && selectedTeam) {
-          props.updateService(service, selectedTeam)
+          props.updateService(service, selectedTeam);
           nextStep();
         } else if (selectedTeam) {
           props.addService(service, selectedTeam);
           nextStep();
         } else {
-          nextStep()
+          nextStep();
         }
       }
     }
-  }
+  };
   document.onkeydown = checkKey;
 
-  const teams = props.teams.map(t => ({ label: t.name, value: t._id }))
+  const teams = props.teams.map(t => ({ label: t.name, value: t._id }));
   return (
     <div className="d-flex flex-row col-12 flex-wrap">
       <div className="col-6">
@@ -268,13 +268,13 @@ export const ServicesStep = props => {
           </Translation>
         </h2>
         <div>
-          <span style={{fontWeight:"bold"}}><Translation i18nkey="init.services.title" language={props.currentLanguage} replacements={[props.infos.index + 1, props.infos.total]}>
+          <span style={{fontWeight:'bold'}}><Translation i18nkey="init.services.title" language={props.currentLanguage} replacements={[props.infos.index + 1, props.infos.total]}>
                     Api {props.infos.index + 1}/{props.infos.total}
           </Translation></span> : {props.service.name}
           <AsyncSelect
               cacheOptions
               defaultOptions
-              placeholder={t("Jump to specific service", props.currentLanguage)}
+              placeholder={t('Jump to specific service', props.currentLanguage)}
               className="add-member-select reactSelect"
               loadOptions={props.getFilteredServices}
               onChange={({ value }) => props.goToStep(value)}
@@ -282,7 +282,7 @@ export const ServicesStep = props => {
           />
         </div>
         <div className="mt-3">
-            <span style={{fontWeight:"bold"}}>
+            <span style={{fontWeight:'bold'}}>
                 <Translation i18nkey="api group" language={props.currentLanguage}>Api group</Translation>
             </span> : {props.groups.find(g => g.id === props.service.groupId).name}</div>
       </div>
@@ -290,7 +290,7 @@ export const ServicesStep = props => {
         <h2>{props.tenant.name}</h2>
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
-              <span style={{fontWeight:"bold"}}>
+              <span style={{fontWeight:'bold'}}>
                 <Translation i18nkey="Api name" language={props.currentLanguage}>Api name</Translation>
               </span>
           </div>
@@ -299,7 +299,7 @@ export const ServicesStep = props => {
               type="text"
               tabIndex="0"
               ref={ref => setInputRef(ref)}
-              className={classNames("form-control", { "on-error": !!error.name })}
+              className={classNames('form-control', { 'on-error': !!error.name })}
               value={service.name}
               onChange={e => setService({ ...service, name: e.target.value })} />
             {error.name && <small className="invalid-input-info text-danger">{error.name}</small>}
@@ -308,7 +308,7 @@ export const ServicesStep = props => {
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
             <div>
-                <span style={{fontWeight:"bold"}}>
+                <span style={{fontWeight:'bold'}}>
                      <Translation i18nkey="Api team" language={props.currentLanguage}>Api team</Translation>
                 </span>
             </div>
@@ -319,12 +319,12 @@ export const ServicesStep = props => {
             isDisabled={loading}
             isLoading={loading}
             onChange={(slug, { action }) => {
-              setSelectedTeam(action === 'clear' ? undefined : slug.value)
+              setSelectedTeam(action === 'clear' ? undefined : slug.value);
             }}
             onCreateOption={setNewTeam}
             options={teams}
             value={teams.find(t => t.value === selectedTeam)}
-            placeholder={t("Select a team", props.currentLanguage)}
+            placeholder={t('Select a team', props.currentLanguage)}
             formatCreateLabel={value => t('create.team.label', props.currentLanguage, false, `creer l'équipe ${value}`, value)}
             classNamePrefix="reactSelect"
           />
@@ -370,29 +370,32 @@ export const ServicesStep = props => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export const ApiKeyStep = props => {
-  const [selectedApi, setSelectedApi] = useState(props.maybeCreatedSub.map(sub => sub.api).getOrNull())
-  const [selectedPlan, setSelectedPlan] = useState(props.maybeCreatedSub.map(sub => sub.plan).getOrNull())
-  const [selectedTeam, setSelectedTeam] = useState(props.maybeCreatedSub.map(sub => sub.team).getOrNull())
-  const [newTeam, setNewTeam] = useState(undefined)
-  const [newPlan, setNewPlan] = useState(undefined)
-  const [loading, setLoading] = useState(false)
-  const [loadingPlan, setLoadingPlan] = useState(false)
-  const [error, setError] = useState({ plan: false, api: false, team: false })
+  const [selectedApi, setSelectedApi] = useState(props.maybeCreatedSub.map(sub => sub.api).getOrNull());
+  const [selectedPlan, setSelectedPlan] = useState(props.maybeCreatedSub.map(sub => sub.plan).getOrNull());
+  const [selectedTeam, setSelectedTeam] = useState(props.maybeCreatedSub.map(sub => sub.team).getOrNull());
+  const [newTeam, setNewTeam] = useState(undefined);
+  const [newPlan, setNewPlan] = useState(undefined);
+  const [loading, setLoading] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState(false);
+  const [error, setError] = useState({ plan: false, api: false, team: false });
 
   useEffect(() => {
     if (selectedApi) {
-      const api = props.apis.find(a => selectedApi._id === a._id)
-      setSelectedApi(api)
+      const api = props.apis.find(a => selectedApi._id === a._id);
+      setSelectedApi(api);
 
-      if (!!selectedPlan) {
-        setSelectedPlan(api.possibleUsagePlans.find(pp => pp._id === selectedPlan._id))
+      if (selectedPlan) {
+        setSelectedPlan(api.possibleUsagePlans.find(pp => pp._id === selectedPlan._id));
       }
     }
-  }, [props.apis])
+
+    //remove document.OnKeyDown listener
+    return () => document.onkeydown = null;
+  }, [props.apis]);
 
   useEffect(() => {
     if (newTeam) {
@@ -401,13 +404,13 @@ export const ApiKeyStep = props => {
         .then(t => ({ ...t, name: newTeam }))
         .then(t => Services.createTeam(t))
         .then(t => {
-          props.addNewTeam(t)
-          setSelectedTeam(t._id)
-          setNewTeam(undefined)
-          setLoading(false)
-        })
+          props.addNewTeam(t);
+          setSelectedTeam(t._id);
+          setNewTeam(undefined);
+          setLoading(false);
+        });
     }
-  }, [newTeam])
+  }, [newTeam]);
 
   //add new plan effect
   useEffect(() => {
@@ -421,75 +424,69 @@ export const ApiKeyStep = props => {
           otoroshiSettings: props.otoroshi,
           serviceGroup: props.apikey.authorizedGroup
         }
-      }
-      console.debug({ newPossiblePlan, plan})
+      };
+      console.debug({ newPossiblePlan, plan});
       plans.push(plan);
       const value = _.cloneDeep(selectedApi);
       value.possibleUsagePlans = plans;
 
-      setSelectedPlan(plan)
+      setSelectedPlan(plan);
       Promise.resolve(setLoadingPlan(true))
         .then(() => props.updateApi(value))
         .then(() => {
-          setNewPlan(undefined)
-          setLoadingPlan(false)
-        })
+          setNewPlan(undefined);
+          setLoadingPlan(false);
+        });
     }
-  }, [newPlan])
+  }, [newPlan]);
 
   //handle error effect
   useEffect(() => {
-    setError({ plan: !!selectedPlan, api: !!selectedApi, team: !!selectedTeam })
-  }, [selectedPlan, selectedApi, selectedTeam])
+    setError({ plan: !!selectedPlan, api: !!selectedApi, team: !!selectedTeam });
+  }, [selectedPlan, selectedApi, selectedTeam]);
 
   const nextStep = () => {
     if (props.currentStep === props.totalSteps) {
-      props.recap()
+      props.recap();
     } else {
       props.nextStep();
     }
-  }
+  };
 
   const getIt = () => {
     props.addSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
     nextStep();
-  }
+  };
 
   const update = () => {
     props.updateSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
     nextStep();
-  }
+  };
 
-  const apis = props.apis.map(a => ({ label: a.name, value: a }))
-  const teams = props.teams.map(t => ({ label: t.name, value: t._id }))
+  const apis = props.apis.map(a => ({ label: a.name, value: a }));
+  const teams = props.teams.map(t => ({ label: t.name, value: t._id }));
   const possiblePlans = Option(props.apis.find(a => selectedApi && a._id === selectedApi._id))
     .map(a => a.possibleUsagePlans)
     .getOrElse([])
-    .map(pp => ({ label: pp.customName || pp.type, value: pp }))
+    .map(pp => ({ label: pp.customName || pp.type, value: pp }));
 
-  const maybeGroup = props.groups.find(g => g.id === props.apikey.authorizedGroup)
+  const maybeGroup = props.groups.find(g => g.id === props.apikey.authorizedGroup);
 
-
-  useEffect(() => {
-    return () => {
-      document.onkeydown = null;
-    }
-  }, [window.event])
   const checkKey = e => {
     if (e.keyCode === 37 && props.currentStep > 1) {
-      props.previousStep()
+      props.previousStep();
     } else if (e.keyCode === 39) {
-      if (props.maybeCreatedApi && selectedTeam) {
-        props.updateService(service, selectedTeam)
+      if (props.maybeCreatedSub && selectedApi && selectedPlan && selectedTeam) {
+        props.updateSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
         nextStep();
       } else if (selectedTeam) {
-        props.addService(service, selectedTeam);
+        props.addSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
         nextStep();
       } else {
-        nextStep()
+        nextStep();
       }
     }
-  }
+  };
   document.onkeydown = checkKey;
 
   return (
@@ -501,7 +498,7 @@ export const ApiKeyStep = props => {
           </Translation>
         </h2>
         <div>
-             <span style={{fontWeight:"bold"}}>
+             <span style={{fontWeight:'bold'}}>
                 <Translation i18nkey="API key" language={props.currentLanguage}>
                 API key
                </Translation> ({props.infos.index + 1}/{props.infos.total}) : {props.apikey.clientName}
@@ -509,7 +506,7 @@ export const ApiKeyStep = props => {
             <AsyncSelect
                   cacheOptions
                   defaultOptions
-                  placeholder={t("Jump to specific apikey", props.currentLanguage)}
+                  placeholder={t('Jump to specific apikey', props.currentLanguage)}
                   className="add-member-select reactSelect"
                   loadOptions={props.getFilteredApikeys}
                   onChange={({ value }) => props.goToStep(value)}
@@ -517,17 +514,17 @@ export const ApiKeyStep = props => {
               />
             </div>
         <div className="mt-3">
-          <span style={{fontWeight:"bold"}}>
+          <span style={{fontWeight:'bold'}}>
             <Translation i18nkey="Service group" language={props.currentLanguage}>
               Api group
-            </Translation></span> : {Option(maybeGroup).map(g => g.name).getOrElse("???")}</div>
+            </Translation></span> : {Option(maybeGroup).map(g => g.name).getOrElse('???')}</div>
       </div>
       <div className="col-6">
         <h2>{props.tenant.name}</h2>
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
             <div>
-              <span style={{fontWeight:"bold"}}>
+              <span style={{fontWeight:'bold'}}>
                 <Translation i18nkey="API" language={props.currentLanguage}>
                   API
                 </Translation>
@@ -539,7 +536,7 @@ export const ApiKeyStep = props => {
               options={apis}
               onChange={slug => setSelectedApi(slug.value)}
               value={apis.find(a => !!selectedApi && a.value._id === selectedApi._id)}
-              placeholder={t("Select an API", props.currentLanguage)}
+              placeholder={t('Select an API', props.currentLanguage)}
               classNamePrefix="reactSelect"
             />
           </div>
@@ -547,7 +544,7 @@ export const ApiKeyStep = props => {
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
             <div>
-              <span style={{fontWeight:"bold"}}>
+              <span style={{fontWeight:'bold'}}>
                 <Translation i18nkey="Plan" language={props.currentLanguage}>
                   Plan
                 </Translation>
@@ -563,7 +560,7 @@ export const ApiKeyStep = props => {
               onCreateOption={setNewPlan}
               options={possiblePlans}
               value={possiblePlans.find(a => !!selectedPlan && a.value._id === selectedPlan._id)}
-              placeholder={t("Select a plan", props.currentLanguage)}
+              placeholder={t('Select a plan', props.currentLanguage)}
               formatCreateLabel={value => t('create.plan.label', props.currentLanguage, false, `Create plan ${value}`, value)}
               classNamePrefix="reactSelect"
             />
@@ -572,7 +569,7 @@ export const ApiKeyStep = props => {
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
             <div>
-              <span style={{fontWeight:"bold"}}>
+              <span style={{fontWeight:'bold'}}>
                 <Translation i18nkey="Team" language={props.currentLanguage}>
                   Team
                 </Translation>
@@ -588,7 +585,7 @@ export const ApiKeyStep = props => {
             onCreateOption={setNewTeam}
             options={teams}
             value={teams.find(t => t.value === selectedTeam)}
-            placeholder={t("Select a team", props.currentLanguage)}
+            placeholder={t('Select a team', props.currentLanguage)}
             formatCreateLabel={value => t('create.team.label', props.currentLanguage, false, `creer l'équipe ${value}`, value)}
             classNamePrefix="reactSelect"
           />
@@ -634,5 +631,5 @@ export const ApiKeyStep = props => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

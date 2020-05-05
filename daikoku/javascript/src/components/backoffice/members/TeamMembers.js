@@ -24,12 +24,11 @@ import {
 import { t, Translation } from '../../../locales';
 
 import 'antd/lib/tooltip/style/index.css';
-import { Tabs } from 'antd';
 
 const TABS = {
-  members: "MEMBERS",
-  pending: "PENDING"
-}
+  members: 'MEMBERS',
+  pending: 'PENDING'
+};
 
 export class TeamMembersSimpleComponent extends Component {
   state = {
@@ -106,7 +105,7 @@ export class TeamMembersSimpleComponent extends Component {
           'remove.member.alert',
           this.props.currentLanguage,
           false,
-          "You can't delete this user, it must remain an admin in a team."
+          'You can\'t delete this user, it must remain an admin in a team.'
         )
       );
     } else {
@@ -147,7 +146,7 @@ export class TeamMembersSimpleComponent extends Component {
     this.setState({ selectedMember: member }, () => {
       const teamId = this.props.currentTeam._id;
       Services.addMembersToTeam(teamId, [member._id])
-        .then(({ done, team }) => {
+        .then(({ done }) => {
           this.setState({ selectedMember: null }, () => {
             done
               ? toastr.success(
@@ -178,7 +177,7 @@ export class TeamMembersSimpleComponent extends Component {
           t(
             'remove.admin.alert',
             this.props.currentLanguage,
-            "You can't remove this admin status, it must remain an admin in a team."
+            'You can\'t remove this admin status, it must remain an admin in a team.'
           )
         );
       } else {
@@ -207,7 +206,7 @@ export class TeamMembersSimpleComponent extends Component {
         t(
           'not.admin.alert',
           this.props.currentLanguage,
-          "Your are not an administrator. You can't do that."
+          'Your are not an administrator. You can\'t do that.'
         )
       );
     }
@@ -335,7 +334,7 @@ export class TeamMembersSimpleComponent extends Component {
                   </>
                 }
                 actions={[]}
-              />
+              />;
             }
             return (
               <AvatarWithAction
@@ -403,7 +402,7 @@ export class TeamMembersSimpleComponent extends Component {
                   <span className="team-member__name">{member.name}</span>
                 }
                 actions={[]}
-              />
+              />;
             }
           }
         />}

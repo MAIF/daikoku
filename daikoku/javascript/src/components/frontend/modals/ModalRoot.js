@@ -4,7 +4,7 @@ import ReactModal from 'react-modal';
 import ClasseNames from 'classnames';
 
 import * as Modals from './';
-import {closeModal} from '../../../core/modal/actions'
+import {closeModal} from '../../../core/modal/actions';
 
 export const MODAL_TYPES = {
   teamSelector: Modals.TeamSelectorModal,
@@ -16,12 +16,12 @@ export const MODAL_TYPES = {
 };
 
 const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
-  const [modalIsOpen, setModalIsOpen] = useState(open)
-  const SpecifiedModal = MODAL_TYPES[modalType]
+  const [modalIsOpen, setModalIsOpen] = useState(open);
+  const SpecifiedModal = MODAL_TYPES[modalType];
 
   useEffect(() => {
-    setModalIsOpen(open)
-  }, [open])
+    setModalIsOpen(open);
+  }, [open]);
 
   if (!modalType) {
     return null;
@@ -43,7 +43,7 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
       </ReactModal>
     </div>
   );
-}
+};
 
 const mapStateToProps = state => ({
   ...state.modal,
@@ -51,6 +51,6 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   closeModal: () => closeModal(),
-}
+};
 
 export const ModalRoot = connect(mapStateToProps, mapDispatchToProps)(ModalContainer);

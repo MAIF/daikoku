@@ -57,5 +57,5 @@ export const updateTenant = tenant => dispatch => {
   return dispatch({
     type: UPDATE_TENANT,
     tenant
-  })
-}
+  });
+};

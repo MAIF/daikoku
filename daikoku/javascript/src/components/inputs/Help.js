@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import {BeautifulTitle} from '../utils'
+import {BeautifulTitle} from '../utils';
 
 export class Help extends Component {
   render() {

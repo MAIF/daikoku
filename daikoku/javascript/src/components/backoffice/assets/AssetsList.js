@@ -599,7 +599,6 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = {
-  closeModal: () => closeModal(),
   openWysywygModal: (modalProps) => openWysywygModal(modalProps),
 };
 

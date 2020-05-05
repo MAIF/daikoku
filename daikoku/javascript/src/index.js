@@ -111,7 +111,7 @@ export function init(user, tenant, impersonator, session, loginCallback, isTenan
     registerAlert(); // Hell Yeah !!!!
     registerConfirm();
     registerPrompt();
-    registerContact(storeInst)
+    registerContact(storeInst);
   }
 }
 
@@ -127,7 +127,7 @@ export function login(provider, callback, tenant) {
   registerAlert(); // Hell Yeah !!!!
   registerConfirm();
   registerPrompt();
-  registerContact(storeInst)
+  registerContact(storeInst);
 }
 
 export function initNotLogged(tenant) {
@@ -142,5 +142,5 @@ export function initNotLogged(tenant) {
   registerAlert(); // Hell Yeah !!!!
   registerConfirm();
   registerPrompt();
-  registerContact(storeInst)
+  registerContact(storeInst);
 }

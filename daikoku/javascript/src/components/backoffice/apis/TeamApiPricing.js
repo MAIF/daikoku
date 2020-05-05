@@ -33,8 +33,6 @@ const SUBSCRIPTION_PLAN_TYPES = {
 
 const PUBLIC = 'Public';
 const PRIVATE = 'Private';
-const APIKEY = 'ApiKey';
-const AUTOMATIC = 'Automatic';
 
 export class TeamApiPricing extends Component {
   state = {
@@ -209,7 +207,7 @@ export class TeamApiPricing extends Component {
       'autoRotation',
       'subscriptionProcess',
       'integrationProcess'
-    ]
+    ];
   }
 
   securityForm = _found => {
@@ -249,7 +247,7 @@ export class TeamApiPricing extends Component {
           ],
         },
       }
-    }
+    };
   }
 
   select = selected => {

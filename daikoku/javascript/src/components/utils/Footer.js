@@ -11,7 +11,7 @@ const FooterComponent = ({tenant, isBackOffice}) => {
 
   return (
     <footer
-      className={classNames("footer row", {
+      className={classNames('footer row', {
         // 'col-md-10': !!isBackOffice,
         // 'ml-sm-auto': !!isBackOffice,
         // 'col-md-12': !isBackOffice,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import Select from 'react-select';
 import { toastr } from 'react-redux-toastr';
+import _ from 'lodash';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
@@ -10,12 +11,12 @@ import { Translation, t } from '../../../locales';
 
 
 const TenantAdminListComponent = props => {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [addableAdmins, setAddableAdmins] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [team, setTeam] = useState(undefined);
-  const [tenant, setTenant] = useState(undefined)
+  const [tenant, setTenant] = useState(undefined);
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [selectedAdmin, setSelectedAdmin] = useState(undefined);
 
@@ -32,7 +33,7 @@ const TenantAdminListComponent = props => {
           setAdmins(admins);
           setTenant(tenant);
           setAddableAdmins(addableAdmins);
-          setAdmins(admins)
+          setAdmins(admins);
           setLoading(false);
         }
       );
@@ -44,15 +45,15 @@ const TenantAdminListComponent = props => {
         [name, email].some(value => value.toLowerCase().includes(search))))
       .getOrElse(admins);
 
-    setFilteredAdmins(filteredAdmins)
-  }, [search, admins])
+    setFilteredAdmins(filteredAdmins);
+  }, [search, admins]);
 
   useEffect(() => {
     if (selectedAdmin) {
       Services.addAdminsToTenant(tenant._id, [selectedAdmin._id])
         .then(team => {
           if (team.error) {
-            toastr.error('Failure', team.error)
+            toastr.error('Failure', team.error);
           } else {
             setTeam(team);
             setAdmins([...admins, selectedAdmin]);
@@ -63,12 +64,12 @@ const TenantAdminListComponent = props => {
               false,
               `${selectedAdmin.name} has been added as new admin of the tenant`,
               selectedAdmin.name
-            ))
+            ));
             setSelectedAdmin(null);
           }
         });
     }
-  }, [selectedAdmin])
+  }, [selectedAdmin]);
 
   const adminToSelector = admin => ({
     label: (
@@ -83,7 +84,7 @@ const TenantAdminListComponent = props => {
       </div>
     ),
     value: admin,
-  })
+  });
 
   const removeAdmin = admin => {
     if (
@@ -94,7 +95,7 @@ const TenantAdminListComponent = props => {
           'remove.admin.tenant.alert',
           props.currentLanguage,
           false,
-          "You can't delete this admin, it must remain an admin in a tenant."
+          'You can\'t delete this admin, it must remain an admin in a tenant.'
         )
       );
     } else {
@@ -111,14 +112,14 @@ const TenantAdminListComponent = props => {
             Services.removeAdminFromTenant(tenant._id, admin._id)
               .then(team => {
                 if (team.error) {
-                  toastr.error(t("Failure", props.currentLanguage), team.error)
+                  toastr.error(t('Failure', props.currentLanguage), team.error);
                 } else {
                   setTeam(team);
                   setAddableAdmins([...addableAdmins, admin]);
                   setAdmins(admins.filter(a => a._id !== admin._id));
-                  toastr.success(t('remove.admin.tenant.success', currentLanguage, false, 'Admin deleted successfully', admin.name))
+                  toastr.success(t('remove.admin.tenant.success', props.currentLanguage, false, 'Admin deleted successfully', admin.name));
                 }
-              })
+              });
           }
         });
     }
@@ -185,7 +186,7 @@ const TenantAdminListComponent = props => {
       </Can>
     </UserBackOffice>
   );
-}
+};
 
 const mapStateToProps = state => ({
   ...state.context,

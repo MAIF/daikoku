@@ -70,7 +70,7 @@ class TenantOtoroshiComponent extends Component {
       Services.createOtoroshiSettings(this.props.tenant._id, this.state.otoroshi)
         .then(result => {
           if (result.error) {
-            toastr.error("Failure", result.error)
+            toastr.error('Failure', result.error);
           } else {
             toastr.success(t(
               'otoroshi.settings.created.success',
@@ -78,14 +78,14 @@ class TenantOtoroshiComponent extends Component {
               false,
               'Otoroshi settings successfuly created'
             ));
-            this.setState({ create: false })
+            this.setState({ create: false });
           }
         });
     } else {
       Services.saveOtoroshiSettings(this.props.tenant._id, this.state.otoroshi)
         .then(result => {
           if (result.error) {
-            toastr.error("Failure", result.error)
+            toastr.error('Failure', result.error);
           } else {
             toastr.success(t(
               'otoroshi.settings.updated.success',
@@ -93,9 +93,9 @@ class TenantOtoroshiComponent extends Component {
               false,
               'Otoroshi settings successfuly updated'
             ));
-            this.setState({ create: false })
+            this.setState({ create: false });
           }
-        })
+        });
     }
   };
 
@@ -120,7 +120,7 @@ class TenantOtoroshiComponent extends Component {
                 'Otoroshi settings successfuly deleted'
               ));
               this.props.history.push('/settings/otoroshis');
-            })
+            });
         }
       });
   };

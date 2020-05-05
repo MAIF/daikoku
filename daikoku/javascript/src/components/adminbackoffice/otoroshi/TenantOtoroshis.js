@@ -88,7 +88,7 @@ export class TenantOtoroshisComponent extends Component {
               'Otoroshi settings successfuly deleted'
             ));
             this.table.update();
-          })
+          });
         }
       });
   };

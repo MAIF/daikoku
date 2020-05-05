@@ -50,7 +50,7 @@ export class ApiCard extends Component {
                   <i className="fas fa-edit" />
                 </button>
               </Can>
-              {!allTeamsAreAuthorized && !isPending && !["Private", "AdminOnly"].includes(api.visibility) && (
+              {!allTeamsAreAuthorized && !isPending && !['Private', 'AdminOnly'].includes(api.visibility) && (
                 <ActionWithTeamSelector
                   title="Api access"
                   description={t(
@@ -68,7 +68,7 @@ export class ApiCard extends Component {
                     .filter(auth => auth.authorized)
                     .map(auth => auth.team)}
                   teams={this.props.myTeams
-                    .filter(t => t.type !== "Admin")}
+                    .filter(t => t.type !== 'Admin')}
                   action={teams => this.props.askForApiAccess(teams)}
                   withAllTeamSelector={true}>
                   <button className="btn btn-sm btn-access-negative mr-1">

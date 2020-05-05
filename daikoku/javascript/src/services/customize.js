@@ -1,4 +1,3 @@
-import { toastr } from 'react-redux-toastr';
 import { SET_ERROR } from '../core';
 import queryString from 'query-string';
 

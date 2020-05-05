@@ -75,7 +75,7 @@ export class SimpleNotification extends Component {
             style={{ marginRight: 5 }}
             title={t('Team invitation', this.props.currentLanguage)}
           />
-        )
+        );
     }
   };
 
@@ -134,7 +134,7 @@ export class SimpleNotification extends Component {
       case 'TeamAccess':
         return sender.name;
       case 'TeamInvitation': 
-        return this.props.getTeam(action.team).name
+        return this.props.getTeam(action.team).name;
       case 'ApiSubscription':
         return `${sender.name}/${this.props.getTeam(action.team).name}`;
       case 'OtoroshiSyncSubscriptionError':

@@ -8,25 +8,25 @@ import * as Services from '../../../services';
 
 const ContactModalComponent = props => {
 
-  const [email, setEmail] = useState(props.email)
-  const [name, setName] = useState(props.name)
-  const [honeyName, setHoneyName] = useState("")
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("")
-  const [formRef, setFormRef] = useState(undefined)
-  const [validity, setValidity] = useState(false)
+  const [email, setEmail] = useState(props.email);
+  const [name, setName] = useState(props.name);
+  const [honeyName, setHoneyName] = useState('');
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [formRef, setFormRef] = useState(undefined);
+  const [validity, setValidity] = useState(false);
 
   useEffect(() => {
     if (formRef) {
-      setValidity(formRef.checkValidity())
+      setValidity(formRef.checkValidity());
     }
-  }, [email, subject, body])
+  }, [email, subject, body]);
 
   const sendEmail = () => {
 
     if (!honeyName && validity) {
       Services.sendEmails(name, email, subject, body, props.tenant._id, props.team, props.api, props.currentLanguage)
-        .then(() => props.closeModal())
+        .then(() => props.closeModal());
     }
   };
 
@@ -53,8 +53,8 @@ const ContactModalComponent = props => {
                 value={name}
                 required
                 type="text" className="form-control" id="sender-name" 
-                aria-describedby={t("Enter your name", props.currentLanguage)} 
-                placeholder={t("Enter your name", props.currentLanguage)} />
+                aria-describedby={t('Enter your name', props.currentLanguage)} 
+                placeholder={t('Enter your name', props.currentLanguage)} />
             </div>}
             {!props.email && <div className="form-group">
               <label htmlFor="sender-email">
@@ -65,8 +65,8 @@ const ContactModalComponent = props => {
                 value={email}
                 required
                 type="email" className="form-control" id="sender-email" 
-                aria-describedby={t("Enter email", props.currentLanguage)} 
-                placeholder={t("Enter email", props.currentLanguage)} />
+                aria-describedby={t('Enter email', props.currentLanguage)} 
+                placeholder={t('Enter email', props.currentLanguage)} />
             </div>}
             <div className="form-group">
               <label htmlFor="subject">
@@ -77,8 +77,8 @@ const ContactModalComponent = props => {
                 value={subject}
                 required
                 type="text" className="form-control" id="subject" 
-                aria-describedby={t("subject", props.currentLanguage)} 
-                placeholder={t("Subject", props.currentLanguage)} />
+                aria-describedby={t('subject', props.currentLanguage)} 
+                placeholder={t('Subject', props.currentLanguage)} />
             </div>
             <div className="form-group">
               <label htmlFor="message">
@@ -89,8 +89,8 @@ const ContactModalComponent = props => {
                 value={body}
                 required
                 name="message" id="body" cols="30" rows="7" className="form-control" 
-                aria-describedby={t("Your message", props.currentLanguage)} 
-                placeholder={t("Your message", props.currentLanguage)}/>
+                aria-describedby={t('Your message', props.currentLanguage)} 
+                placeholder={t('Your message', props.currentLanguage)}/>
             </div>
 
 
@@ -102,8 +102,8 @@ const ContactModalComponent = props => {
                 onChange={e => setHoneyName(e.target.value)}
                 value={honeyName}
                 type="text" className="form-control" id="name"
-                aria-describedby={t("Enter your name", props.currentLanguage)}
-                placeholder={t("Enter your name", props.currentLanguage)} />
+                aria-describedby={t('Enter your name', props.currentLanguage)}
+                placeholder={t('Enter your name', props.currentLanguage)} />
             </div>
           </form>
         </div>
@@ -136,4 +136,4 @@ const mapStateToProps = state => ({
   ...state.context,
 });
 
-export const ContactModal = connect(mapStateToProps)(ContactModalComponent)
+export const ContactModal = connect(mapStateToProps)(ContactModalComponent);

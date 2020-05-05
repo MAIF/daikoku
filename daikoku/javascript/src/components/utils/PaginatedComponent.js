@@ -8,16 +8,16 @@ export const PaginatedComponent = (props) => {
 
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [pageNumber, setPageNumber] = useState(props.count || 10);
-  const [itemCount, setItemCount] = useState(props.items.length)
+
+  const pageNumber = props.count || 10;
 
   useEffect(() => {
-    setOffset(selectedPage * pageNumber)
-  }, [selectedPage])
+    setOffset(selectedPage * pageNumber);
+  }, [selectedPage]);
 
 
   const handlePageClick = data => {
-    setSelectedPage(data.selected)
+    setSelectedPage(data.selected);
   };
 
   const pagedItems = props.items.slice(
@@ -63,7 +63,7 @@ export const PaginatedComponent = (props) => {
       </div>
     </div>
   );
-}
+};
 
 PaginatedComponent.propTypes = {
   items: PropTypes.array.isRequired,

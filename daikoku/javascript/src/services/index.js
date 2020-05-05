@@ -282,7 +282,7 @@ export function apisInit(apis) {
       'Content-type': 'application/json'
     },
     body: JSON.stringify(apis)
-  })
+  });
 }
 
 export function subscriptionsInit(subscriptions) {
@@ -294,7 +294,7 @@ export function subscriptionsInit(subscriptions) {
       'Content-type': 'application/json'
     },
     body: JSON.stringify(subscriptions)
-  })
+  });
 }
 
 export function deleteApiKey(teamId, subscriptionId) {
@@ -913,7 +913,7 @@ export const fetchNewUser = () => fetchEntity('/api/entities/user');
 export const fetchNewOtoroshi = () => fetchEntity('/api/entities/otoroshi');
 
 export function checkIfApiNameIsUnique(name) {
-  return fetch(`/api/apis/_names`, {
+  return fetch('/api/apis/_names', {
     method: 'POST',
     credentials: 'include',
     headers: {

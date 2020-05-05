@@ -2,9 +2,8 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router';
 import { converter } from '../../services/showdown';
-import { Translation } from '../../locales';
 
-const MaybeHomePageComponent = ({ tenant, currentLanguage }) => {
+const MaybeHomePageComponent = ({ tenant }) => {
   if (!tenant.homePageVisible) {
     return <Redirect to="/apis" />;
   }

@@ -12,5 +12,5 @@ export const BeautifulTitle = ({ title, children, place }) => {
         {children}
       </span>
     </Popover>
-  )
-}
+  );
+};

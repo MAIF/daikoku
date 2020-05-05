@@ -115,7 +115,7 @@ export class TeamEditForm extends Component {
 
 
 const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
-  const [team, setTeam] = useState(currentTeam)
+  const [team, setTeam] = useState(currentTeam);
 
 
   const members = () => {
@@ -174,8 +174,8 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
         </button>
       </div>
     </TeamBackOffice>
-  )
-}
+  );
+};
 
 const mapStateToProps = state => ({
   ...state.context,

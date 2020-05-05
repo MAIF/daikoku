@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
-import ReactDOMServer from 'react-dom/server';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';

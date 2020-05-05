@@ -37,8 +37,8 @@ class TeamPlanConsumptionComponent extends Component {
         data.reduce((acc, item) => {
           const value = acc.find(a => a.name === item.clientId) || { count: 0 };
 
-          const team = this.state.teams.find(t => t._id === item.team)
-          const name = team.name
+          const team = this.state.teams.find(t => t._id === item.team);
+          const name = team.name;
 
           return [
             ...acc.filter(a => a.name !== item.clientId),
@@ -85,11 +85,10 @@ class TeamPlanConsumptionComponent extends Component {
   };
 
   componentDidMount() {
-    Promise.all([
-      Services.teams()
-    ]).then(([teams, api]) =>
-      this.setState({ teams })
-    );
+    Services.teams()
+      .then(teams =>
+        this.setState({ teams })
+      );
   }
 
   render() {

@@ -22,10 +22,10 @@ export class TeamApiSwagger extends Component {
 
   initSwaggerEditor = content => {
     console.log('initSwaggerEditor');
-    window.editor = SwaggerEditorBundle({
+    window.editor = SwaggerEditorBundle({ // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
       layout: 'StandaloneLayout',
-      presets: [SwaggerEditorStandalonePreset],
+      presets: [SwaggerEditorStandalonePreset], // eslint-disable-line no-undef
       showExtensions: false,
       swagger2GeneratorUrl: 'https://generator.swagger.io/api/swagger.json',
       oas3GeneratorUrl: 'https://generator3.swagger.io/openapi.json',

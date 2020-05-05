@@ -175,7 +175,7 @@ class TeamIncomeComponent extends Component {
                             return (
                               <PriceCartridge
                                 key={idx}
-                                label={usagePlan.customName || formatPlanType(usagePlan)}
+                                label={usagePlan.customName || formatPlanType(usagePlan)}
                                 total={billing.total}
                                 currency={usagePlan.currency}
                                 handleClick={() => this.setState({ selectedPlan: usagePlan })}

@@ -22,6 +22,12 @@
     ],
     "parser": "babel-eslint",
     "rules": {
+        "no-unused-vars": [
+            "error",
+            {
+                "args": "none"
+            }
+        ],
         "react/prop-types": 0,
         "react/no-unescaped-entities": 0,
         "react/jsx-uses-react": 1,

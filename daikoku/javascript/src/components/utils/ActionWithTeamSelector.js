@@ -16,7 +16,6 @@ class ActionWithTeamSelectorComponent extends Component {
         acceptedTeams: this.props.authorizedTeams,
         action: teams => this.props.action(teams),
         allowMultipleDemand: this.props.allowMultipleDemand,
-        currentLanguage: this.props.currentLanguage
       }
     );
   };
@@ -54,7 +53,6 @@ ActionWithTeamSelectorComponent.propTypes = {
   withAllTeamSelector: PropTypes.bool,
   closeOnSelect: PropTypes.bool,
   allowMultipleDemand: PropTypes.bool,
-  currentLanguage: PropTypes.string
 };
 
 const mapStateToProps = state => ({

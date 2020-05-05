@@ -283,6 +283,6 @@ export function registerContact(store) {
   window.contact = modalProps => store.dispatch({
     type: OPEN_MODAL,
     modalProps,
-    modalType: "contactModal"
-  })
+    modalType: 'contactModal'
+  });
 }

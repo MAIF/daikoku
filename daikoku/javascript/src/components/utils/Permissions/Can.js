@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { Option } from '../';
@@ -9,7 +8,7 @@ import { permissions } from './permissions';
 
 export const CanIDoAction = (user, action, what, team, isTenantAdmin, whichOne, currentTenant) => {
   if (what === tenant) {
-    return isTenantAdmin && whichOne._id === currentTenant._id || user.isDaikokuAdmin
+    return isTenantAdmin && whichOne._id === currentTenant._id || user.isDaikokuAdmin;
   }
 
   const realPerm = Option(team)

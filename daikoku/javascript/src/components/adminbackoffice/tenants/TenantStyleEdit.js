@@ -25,7 +25,7 @@ export class TenantStyleEditComponent extends Component {
   };
 
   componentDidMount() {
-    console.debug(styleVariables)
+    console.debug(styleVariables);
     if (this.props.location && this.props.location.state && this.props.location.state.newTenant) {
       this.setState({
         tenant: {
@@ -169,7 +169,7 @@ class Preview extends React.Component {
   }
 
   _updateIframe() {
-    const iframe = this.refs.iframe;
+    const iframe = this.iframe;
     const document = iframe.contentDocument;
     const head = document.getElementsByTagName('head')[0];
 
@@ -199,7 +199,7 @@ class Preview extends React.Component {
   render() {
     return (
       <iframe
-        ref="iframe"
+        ref={ref => this.iframe = ref}
         style={{
           height: '100vh',
           border: 'none',

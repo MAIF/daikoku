@@ -66,10 +66,10 @@ class TeamApiConsumptionComponent extends Component {
         data.reduce((acc, item) => {
           const value = acc.find(a => a.clientId === item.clientId) || { count: 0 };
 
-          const team = this.state.teams.find(t => t._id === item.team)
-          const plan = this.state.api.possibleUsagePlans.find(p => p._id == item.plan)
+          const team = this.state.teams.find(t => t._id === item.team);
+          const plan = this.state.api.possibleUsagePlans.find(p => p._id == item.plan);
 
-          const name = `${team.name}/${plan.customName || plan.type}`
+          const name = `${team.name}/${plan.customName || plan.type}`;
 
           return [
             ...acc.filter(a => a.name !== item.clientId),
