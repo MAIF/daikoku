@@ -86,11 +86,10 @@ export class SignupComponent extends Component {
     },
     createAccount: {
       type: () => (
-        <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end' }}>
+        <div className="d-flex justify-content-end">
           <button
-            style={{ marginLeft: 5 }}
             type="button"
-            className="btn btn-access-negative"
+            className="btn btn-access-negative m-2"
             onClick={this.createAccount}>
             <span>
               <i className="fas fa-save mr-1" />
@@ -168,7 +167,7 @@ export class SignupComponent extends Component {
     if (this.state.state === 'done') {
       return (
         <div className="col">
-          <h1 className="h1-rwd-reduce" style={{ textAlign: 'center', width: '100%' }}>
+          <h1 className="h1-rwd-reduce text-center">
             <Translation i18nkey="Create account" language={this.props.currentLanguage}>
               Create account
             </Translation>
@@ -189,7 +188,7 @@ export class SignupComponent extends Component {
 
     return (
       <div className="col">
-        <h1 className="h1-rwd-reduce" style={{ textAlign: 'center', width: '100%' }}>
+        <h1 className="h1-rwd-reduce text-center">
           <Translation i18nkey="Create account" language={this.props.currentLanguage}>
             Create account
           </Translation>
@@ -200,15 +199,7 @@ export class SignupComponent extends Component {
           </div>
         )}
         {this.state.user && (
-          <div
-            style={{
-              width: '100%',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-              marginTop: 20,
-              marginBottom: 20,
-            }}>
+          <div className="d-flex justify-content-end align-items-center my-4" >
             <img
               src={this.state.user.avatar}
               style={{ width: 60, borderRadius: '50%', backgroundColor: 'white' }}
@@ -262,11 +253,10 @@ export class ResetPasswordComponent extends Component {
     },
     resetPassword: {
       type: () => (
-        <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end' }}>
+        <div className="d-flex justify-content-end">
           <button
-            style={{ marginLeft: 5 }}
             type="button"
-            className="btn btn-outline-danger"
+            className="btn btn-outline-danger m-2"
             onClick={this.resetPassword}>
             <span>
               <i className="fas fa-bomb mr-1" />
@@ -335,12 +325,12 @@ export class ResetPasswordComponent extends Component {
     if (this.state.state === 'done') {
       return (
         <div className="col">
-          <h1 className="h1-rwd-reduce" style={{ textAlign: 'center', width: '100%' }}>
+          <h1 className="h1-rwd-reduce text-center mt-2">
             <Translation i18nkey="Reset password" language={this.props.currentLanguage}>
               Reset password
             </Translation>
           </h1>
-          <p style={{ width: '100%', textAlign: 'center' }}>
+          <p className="text-center mt-2">
             <Translation
               i18nkey="password.reset.done"
               language={this.props.currentLanguage}
@@ -355,7 +345,7 @@ export class ResetPasswordComponent extends Component {
     }
     return (
       <div className="col">
-        <h1 className="h1-rwd-reduce" style={{ textAlign: 'center', width: '100%' }}>
+        <h1 className="h1-rwd-reduce text-center mt-2">
           <Translation i18nkey="Reset password" language={this.props.currentLanguage}>
             Reset password
           </Translation>
@@ -367,14 +357,16 @@ export class ResetPasswordComponent extends Component {
         )}
         {this.state.user && (
           <React.Suspense fallback={<Spinner />}>
-            <LazyForm
-              flow={this.formFlow}
-              schema={this.formSchema(this.props.currentLanguage)}
-              value={this.state.user}
-              onChange={user => {
-                this.setState({ user });
-              }}
-            />
+            <div className="row">
+              <LazyForm
+                flow={this.formFlow}
+                schema={this.formSchema(this.props.currentLanguage)}
+                value={this.state.user}
+                onChange={user => {
+                  this.setState({ user });
+                }}
+              />
+            </div>
           </React.Suspense>
         )}
       </div>

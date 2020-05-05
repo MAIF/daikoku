@@ -72,22 +72,20 @@ export class TeamEditForm extends Component {
 
     return (
       <>
-        <div className="row d-flex justify-content-start align-items-center">
+        <div className="row d-flex justify-content-start align-items-center mb-2">
           {this.props.team && (
             <div
+              className="d-flex ml-1"
               style={{
                 width: '100px',
                 height: '100px',
                 borderRadius: '50px',
                 border: '3px solid #fff',
                 boxShadow: '0px 0px 0px 3px lightgrey',
-                display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'center',
                 overflow: 'hidden',
               }}>
               <img
-                style={{ width: '100%', height: 'auto' }}
+                className="img-fluid"
                 src={this.props.team.avatar}
                 alt="avatar"
               />
