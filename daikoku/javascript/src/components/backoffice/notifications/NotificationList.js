@@ -21,7 +21,7 @@ class NotificationListComponent extends Component {
     untreatedCount: 0,
   };
 
-  isUntreatedNotification = n => {
+  isUntreatedNotification = (n) => {
     return n.status.status === 'Pending';
   };
 
@@ -32,7 +32,7 @@ class NotificationListComponent extends Component {
       Services.myVisibleApis(),
     ]).then(([notifications, teams, apis]) =>
       this.setState({
-        untreatedNotifications: notifications.notifications.filter(n =>
+        untreatedNotifications: notifications.notifications.filter((n) =>
           this.isUntreatedNotification(n)
         ),
         notifications: notifications.notifications,
@@ -47,7 +47,7 @@ class NotificationListComponent extends Component {
 
   acceptNotification(notificationId) {
     this.setState({
-      notifications: this.state.notifications.map(n => {
+      notifications: this.state.notifications.map((n) => {
         n.fade = n._id === notificationId;
         return n;
       }),
@@ -60,7 +60,7 @@ class NotificationListComponent extends Component {
             notifications,
             count,
             untreatedCount: count,
-            untreatedNotifications: notifications.filter(n => this.isUntreatedNotification(n)),
+            untreatedNotifications: notifications.filter((n) => this.isUntreatedNotification(n)),
           },
           () => this.props.updateNotifications(this.state.untreatedNotifications.length)
         )
@@ -69,7 +69,7 @@ class NotificationListComponent extends Component {
 
   rejectNotification(notificationId) {
     this.setState({
-      notifications: this.state.notifications.map(n => {
+      notifications: this.state.notifications.map((n) => {
         n.fade = n._id === notificationId;
         return n;
       }),
@@ -82,14 +82,14 @@ class NotificationListComponent extends Component {
             notifications,
             count,
             untreatedCount: count,
-            untreatedNotifications: notifications.filter(n => this.isUntreatedNotification(n)),
+            untreatedNotifications: notifications.filter((n) => this.isUntreatedNotification(n)),
           },
           () => this.props.updateNotifications(this.state.untreatedNotifications.length)
         )
       );
   }
 
-  onSelectTab = tab => {
+  onSelectTab = (tab) => {
     this.setState({ tab, loading: true, page: 0 }, () => {
       if (tab === 'all') {
         Services.myAllNotifications(
@@ -210,9 +210,9 @@ class NotificationListComponent extends Component {
             )}
             <div className="col-10 offset-1">
               <div className="home-tiles">
-                {Object.keys(notifByTeams).map(key => {
+                {Object.keys(notifByTeams).map((key) => {
                   const notifs = notifByTeams[key];
-                  const team = this.state.teams.find(t => t._id === key);
+                  const team = this.state.teams.find((t) => t._id === key);
 
                   return (
                     <div key={key}>
@@ -221,15 +221,15 @@ class NotificationListComponent extends Component {
                         .sort((a, b) => {
                           return b.date - a.date;
                         })
-                        .map(notification => (
+                        .map((notification) => (
                           <SimpleNotification
                             key={notification._id}
                             notification={notification}
                             fade={notification.fade}
                             accept={() => this.acceptNotification(notification._id)}
                             reject={() => this.rejectNotification(notification._id)}
-                            getTeam={id => this.state.teams.find(team => team._id === id)}
-                            getApi={id => this.state.apis.find(a => a._id === id)}
+                            getTeam={(id) => this.state.teams.find((team) => team._id === id)}
+                            getApi={(id) => this.state.apis.find((a) => a._id === id)}
                             currentLanguage={this.props.currentLanguage}
                           />
                         ))}
@@ -255,12 +255,12 @@ class NotificationListComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
-  updateNotifications: count => updateNotications(count),
+  updateNotifications: (count) => updateNotications(count),
 };
 
 export const NotificationList = connect(

@@ -45,7 +45,7 @@ export class AlgoSettings extends Component {
         <SelectInput
           label={this.props.algoTitle || t('Algo.', this.props.currentLanguage)}
           value={algo.type}
-          onChange={e => {
+          onChange={(e) => {
             switch (e) {
               case 'HSAlgoSettings':
                 changeTheValue(path + '', {
@@ -101,7 +101,7 @@ export class AlgoSettings extends Component {
               'Word size for the SHA-2 hash function used'
             )}
             value={algo.size}
-            onChange={v => changeTheValue(path + '.size', v)}
+            onChange={(v) => changeTheValue(path + '.size', v)}
             possibleValues={[
               { label: '256', value: 256 },
               { label: '384', value: 384 },
@@ -114,7 +114,7 @@ export class AlgoSettings extends Component {
             placeholder="secret"
             value={algo.secret}
             help={t('hmac.secet.help', this.props.currentLanguage, 'The Hmac secret')}
-            onChange={e => changeTheValue(path + '.secret', e)}
+            onChange={(e) => changeTheValue(path + '.secret', e)}
           />,
         ]}
         {algo.type === 'RSAlgoSettings' && [
@@ -127,7 +127,7 @@ export class AlgoSettings extends Component {
               'Word size for the SHA-2 hash function used'
             )}
             value={algo.size}
-            onChange={v => changeTheValue(path + '.size', v)}
+            onChange={(v) => changeTheValue(path + '.size', v)}
             possibleValues={[
               { label: '256', value: 256 },
               { label: '384', value: 384 },
@@ -139,7 +139,7 @@ export class AlgoSettings extends Component {
             label={t('Public key', this.props.currentLanguage)}
             value={algo.publicKey}
             help={t('The RSA public key', this.props.currentLanguage)}
-            onChange={e => changeTheValue(path + '.publicKey', e)}
+            onChange={(e) => changeTheValue(path + '.publicKey', e)}
           />,
           <TextareaInput
             key="private-key"
@@ -150,7 +150,7 @@ export class AlgoSettings extends Component {
               this.props.currentLanguage,
               'The RSA private key, private key can be empty if not used for JWT token signing'
             )}
-            onChange={e => changeTheValue(path + '.privateKey', e)}
+            onChange={(e) => changeTheValue(path + '.privateKey', e)}
           />,
         ]}
         {algo.type === 'ESAlgoSettings' && [
@@ -163,7 +163,7 @@ export class AlgoSettings extends Component {
               'Word size for the SHA-2 hash function used'
             )}
             value={algo.size}
-            onChange={v => changeTheValue(path + '.size', v)}
+            onChange={(v) => changeTheValue(path + '.size', v)}
             possibleValues={[
               { label: '256', value: 256 },
               { label: '384', value: 384 },
@@ -175,7 +175,7 @@ export class AlgoSettings extends Component {
             label={t('Public key', this.props.currentLanguage)}
             value={algo.publicKey}
             help={t('The ECDSA public key', this.props.currentLanguage)}
-            onChange={e => changeTheValue(path + '.publicKey', e)}
+            onChange={(e) => changeTheValue(path + '.publicKey', e)}
           />,
           <TextareaInput
             key="private-key"
@@ -186,7 +186,7 @@ export class AlgoSettings extends Component {
               this.props.currentLanguage,
               'The ECDSA private key, private key can be empty if not used for JWT token signing'
             )}
-            onChange={e => changeTheValue(path + '.privateKey', e)}
+            onChange={(e) => changeTheValue(path + '.privateKey', e)}
           />,
         ]}
         {algo.type === 'JWKSAlgoSettings' && [
@@ -195,7 +195,7 @@ export class AlgoSettings extends Component {
             label={t('URL', this.props.currentLanguage)}
             value={algo.url}
             help={t('The JWK Set url', this.props.currentLanguage)}
-            onChange={e => changeTheValue(path + '.url', e)}
+            onChange={(e) => changeTheValue(path + '.url', e)}
           />,
           <NumberInput
             key="http-call-timeout"
@@ -203,7 +203,7 @@ export class AlgoSettings extends Component {
             suffix={t('millis.', this.props.currentLanguage)}
             value={algo.timeout}
             help={t('Timeout for fetching the keyset', this.props.currentLanguage)}
-            onChange={e => changeTheValue(path + '.timeout', e)}
+            onChange={(e) => changeTheValue(path + '.timeout', e)}
           />,
           <NumberInput
             key="ttl"
@@ -211,21 +211,21 @@ export class AlgoSettings extends Component {
             suffix={t('millis.', this.props.currentLanguage)}
             value={algo.ttl}
             help={t('Cache TTL for the keyset', this.props.currentLanguage)}
-            onChange={e => changeTheValue(path + '.ttl', e)}
+            onChange={(e) => changeTheValue(path + '.ttl', e)}
           />,
           <ObjectInput
             key="http-header"
             label={t('HTTP Headers', this.props.currentLanguage)}
             value={algo.headers}
             help={t('The HTTP headers passed', this.props.currentLanguage)}
-            onChange={e => changeTheValue(path + '.headers', e)}
+            onChange={(e) => changeTheValue(path + '.headers', e)}
           />,
           <SelectInput
             key="key-type"
             label={t('Key type', this.props.currentLanguage)}
             help={t('Type of key', this.props.currentLanguage)}
             value={algo.kty}
-            onChange={v => changeTheValue(path + '.kty', v)}
+            onChange={(v) => changeTheValue(path + '.kty', v)}
             possibleValues={[
               { label: 'RSA', value: 'RSA' },
               { label: 'EC', value: 'EC' },
@@ -239,7 +239,7 @@ export class AlgoSettings extends Component {
 
 export class OAuth2Config extends Component {
   fetchConfig = () => {
-    window.prompt(t('URL of the OIDC config', this.props.currentLanguage)).then(url => {
+    window.prompt(t('URL of the OIDC config', this.props.currentLanguage)).then((url) => {
       if (url) {
         return fetch('/api/oidc/_fetchConfig', {
           method: 'POST',
@@ -255,8 +255,8 @@ export class OAuth2Config extends Component {
             desc: this.props.value.desc,
           }),
         })
-          .then(r => r.json())
-          .then(config => {
+          .then((r) => r.json())
+          .then((config) => {
             this.props.onChange(config);
           });
       }
@@ -432,7 +432,7 @@ export class OAuth2Config extends Component {
       <React.Suspense fallback={<Spinner />}>
         <LazyForm
           value={this.props.value}
-          onChange={e => {
+          onChange={(e) => {
             console.log('onChange', e);
             this.props.onChange(e);
           }}

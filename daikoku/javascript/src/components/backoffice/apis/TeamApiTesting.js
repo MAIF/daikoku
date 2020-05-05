@@ -17,17 +17,17 @@ class GenerateApiKeyModal extends Component {
     return ['otoroshiSettings', 'serviceGroup'];
   };
 
-  otoroshiForm = _found => {
+  otoroshiForm = (_found) => {
     if (!_found.otoroshiSettings) {
       return {
         otoroshiSettings: {
           type: 'select',
           props: {
             label: t('Otoroshi instance', this.props.currentLanguage),
-            possibleValues: this.props.otoroshiSettings.map(s => ({
-                  label: s.url,
-                  value: s._id,
-                })),
+            possibleValues: this.props.otoroshiSettings.map((s) => ({
+              label: s.url,
+              value: s._id,
+            })),
           },
         },
         serviceGroup: {
@@ -44,10 +44,10 @@ class GenerateApiKeyModal extends Component {
         type: 'select',
         props: {
           label: t('Otoroshi instance', this.props.currentLanguage),
-          possibleValues: this.props.otoroshiSettings.map(s => ({
-                label: s.url,
-                value: s._id,
-              })),
+          possibleValues: this.props.otoroshiSettings.map((s) => ({
+            label: s.url,
+            value: s._id,
+          })),
         },
       },
       serviceGroup: {
@@ -55,7 +55,7 @@ class GenerateApiKeyModal extends Component {
         props: {
           label: t('Service group', this.props.currentLanguage),
           valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${_found.otoroshiSettings}/groups`,
-          transformer: s => ({ label: s.name, value: s.id }),
+          transformer: (s) => ({ label: s.name, value: s.id }),
         },
       },
     };
@@ -63,7 +63,7 @@ class GenerateApiKeyModal extends Component {
   };
 
   generateApiKey = () => {
-    Services.createTestingApiKey(this.props.teamId, this.state.config).then(apikey => {
+    Services.createTestingApiKey(this.props.teamId, this.state.config).then((apikey) => {
       this.props.changeValue('username', apikey.clientId);
       this.props.changeValue('password', apikey.clientSecret);
       // this.props.changeValue('auth', 'Basic');
@@ -80,7 +80,7 @@ class GenerateApiKeyModal extends Component {
             flow={this.otoroshiFlow()}
             schema={this.otoroshiForm(config)}
             value={config}
-            onChange={config => this.setState({ config })}
+            onChange={(config) => this.setState({ config })}
           />
         </React.Suspense>
         <div
@@ -172,7 +172,7 @@ class GenerateApiKey extends Component {
       tag: `daikoku_testing_${random}`,
     };
     window.alert(
-      close => (
+      (close) => (
         <GenerateApiKeyModal
           currentLanguage={this.props.currentLanguage}
           changeValue={this.props.changeValue}
@@ -255,7 +255,7 @@ export class TeamApiTesting extends Component {
         api: () => this.props.value.id || this.props.value._id,
         changeValue: this.props.changeValue,
         currentLanguage: this.props.currentLanguage,
-        otoroshiSettings: this.props.otoroshiSettings
+        otoroshiSettings: this.props.otoroshiSettings,
       },
     },
   };
@@ -269,7 +269,7 @@ export class TeamApiTesting extends Component {
           flow={this.formFlow}
           schema={this.formSchema}
           value={this.props.value.testing}
-          onChange={testing => this.props.onChange({ ...this.props.value, testing })}
+          onChange={(testing) => this.props.onChange({ ...this.props.value, testing })}
         />
       </React.Suspense>
     );

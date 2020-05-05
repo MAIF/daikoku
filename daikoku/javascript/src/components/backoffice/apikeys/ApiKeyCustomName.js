@@ -4,12 +4,12 @@ export const ApiKeyCustomName = ({ apiKeyCustomName, updateCustomName }) => {
   const [customName, setCustomName] = useState(apiKeyCustomName || '');
   const [changes, setChanges] = useState(false);
 
-  const updateValue = value => {
+  const updateValue = (value) => {
     setCustomName(value);
     setChanges(value !== apiKeyCustomName);
   };
 
-  const handleKeyPress = e => {
+  const handleKeyPress = (e) => {
     if (e.charCode === 13) {
       updateCustomName(customName);
     }
@@ -21,8 +21,8 @@ export const ApiKeyCustomName = ({ apiKeyCustomName, updateCustomName }) => {
         className="form-control"
         type="text"
         value={customName}
-        onChange={e => updateValue(e.target.value)}
-        onKeyPress={e => handleKeyPress(e)}
+        onChange={(e) => updateValue(e.target.value)}
+        onKeyPress={(e) => handleKeyPress(e)}
       />
       {changes && (
         <div className="input-group-append">

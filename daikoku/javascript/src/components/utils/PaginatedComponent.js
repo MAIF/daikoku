@@ -5,7 +5,6 @@ import classNames from 'classnames';
 import { t } from '../../locales';
 
 export const PaginatedComponent = (props) => {
-
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
 
@@ -15,15 +14,11 @@ export const PaginatedComponent = (props) => {
     setOffset(selectedPage * pageNumber);
   }, [selectedPage]);
 
-
-  const handlePageClick = data => {
+  const handlePageClick = (data) => {
     setSelectedPage(data.selected);
   };
 
-  const pagedItems = props.items.slice(
-    offset,
-    offset + pageNumber
-  );
+  const pagedItems = props.items.slice(offset, offset + pageNumber);
 
   return (
     <div className="section p-2">
@@ -36,7 +31,7 @@ export const PaginatedComponent = (props) => {
             'flex-row': !props.columnMode,
             'flex-row-reverse': !props.columnMode && props.reverse,
           })}>
-          {pagedItems.map(item => {
+          {pagedItems.map((item) => {
             if (React.isValidElement(item)) {
               return item;
             }
@@ -53,7 +48,7 @@ export const PaginatedComponent = (props) => {
             pageCount={Math.ceil(props.items.length / pageNumber)}
             marginPagesDisplayed={1}
             pageRangeDisplayed={5}
-            onPageChange={data => handlePageClick(data)}
+            onPageChange={(data) => handlePageClick(data)}
             containerClassName={'pagination'}
             pageClassName={'page-selector'}
             forcePage={selectedPage}

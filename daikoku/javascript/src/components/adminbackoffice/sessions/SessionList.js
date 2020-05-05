@@ -14,29 +14,29 @@ class SessionListComponent extends Component {
     {
       title: t('User', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: item => item.userName + ' - ' + item.userEmail,
+      content: (item) => item.userName + ' - ' + item.userEmail,
     },
     {
       title: t('Impersonator', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: item =>
+      content: (item) =>
         item.impersonatorId ? `${item.impersonatorName} - ${item.impersonatorEmail}` : '',
     },
     {
       title: t('Created at', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: item => moment(item.created).format('YYYY-MM-DD HH:mm:ss.SSS'),
+      content: (item) => moment(item.created).format('YYYY-MM-DD HH:mm:ss.SSS'),
     },
     {
       title: t('Expires', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: item => moment(item.expires).format('YYYY-MM-DD HH:mm:ss.SSS'),
+      content: (item) => moment(item.expires).format('YYYY-MM-DD HH:mm:ss.SSS'),
     },
     {
       title: t('Actions', this.props.currentLanguage),
       style: { justifyContent: 'center', width: 150, alignItems: 'center', display: 'flex' },
       notFilterable: true,
-      content: item => item._id,
+      content: (item) => item._id,
       cell: (a, session) => (
         <div className="btn-group">
           <button
@@ -51,7 +51,7 @@ class SessionListComponent extends Component {
     },
   ];
 
-  deleteSession = session => {
+  deleteSession = (session) => {
     window
       .confirm(
         t(
@@ -60,7 +60,7 @@ class SessionListComponent extends Component {
           'Are you sure you want to destroy this session ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.deleteSession(session._id).then(() => {
             if (this.table) {
@@ -83,7 +83,7 @@ class SessionListComponent extends Component {
           'Are you sure you want to destroy all sessions including yours ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.deleteSessions().then(() => {
             if (this.table) {
@@ -117,8 +117,8 @@ class SessionListComponent extends Component {
                   fetchItems={() => Services.getSessions()}
                   showActions={false}
                   showLink={false}
-                  injectTable={t => (this.table = t)}
-                  extractKey={item => item._id}
+                  injectTable={(t) => (this.table = t)}
+                  extractKey={(item) => item._id}
                   injectTopBar={() => (
                     <button
                       type="button"
@@ -144,7 +144,7 @@ class SessionListComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

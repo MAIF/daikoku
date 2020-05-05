@@ -58,44 +58,46 @@ class TenantOtoroshiComponent extends Component {
     if (this.props.location && this.props.location.state && this.props.location.state.newSettings) {
       this.setState({ otoroshi: this.props.location.state.newSettings, create: true });
     } else {
-      Services.oneOtoroshi(this.props.tenant._id, this.props.match.params.otoroshiId)
-        .then(otoroshi =>
-          this.setState({ otoroshi })
-        );
+      Services.oneOtoroshi(
+        this.props.tenant._id,
+        this.props.match.params.otoroshiId
+      ).then((otoroshi) => this.setState({ otoroshi }));
     }
   }
 
   save = () => {
     if (this.state.create) {
-      Services.createOtoroshiSettings(this.props.tenant._id, this.state.otoroshi)
-        .then(result => {
-          if (result.error) {
-            toastr.error('Failure', result.error);
-          } else {
-            toastr.success(t(
+      Services.createOtoroshiSettings(this.props.tenant._id, this.state.otoroshi).then((result) => {
+        if (result.error) {
+          toastr.error('Failure', result.error);
+        } else {
+          toastr.success(
+            t(
               'otoroshi.settings.created.success',
               this.props.currentLanguage,
               false,
               'Otoroshi settings successfuly created'
-            ));
-            this.setState({ create: false });
-          }
-        });
+            )
+          );
+          this.setState({ create: false });
+        }
+      });
     } else {
-      Services.saveOtoroshiSettings(this.props.tenant._id, this.state.otoroshi)
-        .then(result => {
-          if (result.error) {
-            toastr.error('Failure', result.error);
-          } else {
-            toastr.success(t(
+      Services.saveOtoroshiSettings(this.props.tenant._id, this.state.otoroshi).then((result) => {
+        if (result.error) {
+          toastr.error('Failure', result.error);
+        } else {
+          toastr.success(
+            t(
               'otoroshi.settings.updated.success',
               this.props.currentLanguage,
               false,
               'Otoroshi settings successfuly updated'
-            ));
-            this.setState({ create: false });
-          }
-        });
+            )
+          );
+          this.setState({ create: false });
+        }
+      });
     }
   };
 
@@ -109,18 +111,21 @@ class TenantOtoroshiComponent extends Component {
           'Are you sure you want to delete those otoroshi settings ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
-          Services.deleteOtoroshiSettings(this.props.tenant._id, this.state.otoroshi._id)
-            .then(() => {
-              toastr.success(t(
-                'otoroshi.settings.deleted.success',
-                this.props.currentLanguage,
-                false,
-                'Otoroshi settings successfuly deleted'
-              ));
+          Services.deleteOtoroshiSettings(this.props.tenant._id, this.state.otoroshi._id).then(
+            () => {
+              toastr.success(
+                t(
+                  'otoroshi.settings.deleted.success',
+                  this.props.currentLanguage,
+                  false,
+                  'Otoroshi settings successfuly deleted'
+                )
+              );
               this.props.history.push('/settings/otoroshis');
-            });
+            }
+          );
         }
       });
   };
@@ -155,16 +160,14 @@ class TenantOtoroshiComponent extends Component {
                     flow={this.formFlow}
                     schema={this.formSchema}
                     value={this.state.otoroshi}
-                    onChange={otoroshi => this.setState({ otoroshi })}
+                    onChange={(otoroshi) => this.setState({ otoroshi })}
                     style={{ marginBottom: 20, paddingTop: 20 }}
                   />
                 </React.Suspense>
               )}
             </div>
             <div className="row justify-content-end">
-              <Link
-                className="btn btn-outline-primary"
-                to="/settings/otoroshis">
+              <Link className="btn btn-outline-primary" to="/settings/otoroshis">
                 <i className="fas fa-chevron-left mr-1" />
                 <Translation i18nkey="Back" language={this.props.currentLanguage}>
                   Back
@@ -211,7 +214,7 @@ class TenantOtoroshiComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

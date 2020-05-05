@@ -25,7 +25,7 @@ class TeamIncomeComponent extends Component {
     this.getBillingData(this.props.currentTeam);
   }
 
-  getBillingData = team => {
+  getBillingData = (team) => {
     this.setState({ loading: true }, () => {
       Promise.all([
         Services.getTeamIncome(
@@ -42,9 +42,9 @@ class TeamIncomeComponent extends Component {
     });
   };
 
-  getConsumptionsByApi = consumptions =>
+  getConsumptionsByApi = (consumptions) =>
     consumptions.reduce((acc, consumption) => {
-      const api = acc.find(item => item.api === consumption.api);
+      const api = acc.find((item) => item.api === consumption.api);
       const { hits, total } = api ? api.billing : { hits: 0, total: 0 };
       const billing = {
         hits: hits + consumption.billing.hits,
@@ -52,7 +52,7 @@ class TeamIncomeComponent extends Component {
       };
       const obj = { billing, api: consumption.api };
 
-      return [...acc.filter(item => item.api !== consumption.api), obj];
+      return [...acc.filter((item) => item.api !== consumption.api), obj];
     }, []);
 
   sync = () => {
@@ -65,7 +65,7 @@ class TeamIncomeComponent extends Component {
 
   render() {
     const total = this.state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
-    const mostRecentConsumption = _.maxBy(this.state.consumptions, c => c.to);
+    const mostRecentConsumption = _.maxBy(this.state.consumptions, (c) => c.to);
     const lastDate =
       mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
     return (
@@ -85,7 +85,7 @@ class TeamIncomeComponent extends Component {
                     <div className="row month__and__total">
                       <div className="col-12 month__selector d-flex align-items-center">
                         <MonthPicker
-                          updateDate={date =>
+                          updateDate={(date) =>
                             this.setState({ date }, () =>
                               this.getBillingData(this.props.currentTeam)
                             )
@@ -124,10 +124,10 @@ class TeamIncomeComponent extends Component {
                             handleClick={() =>
                               this.setState({
                                 selectedPlan: undefined,
-                                selectedApi: this.state.apis.find(a => a._id === api),
+                                selectedApi: this.state.apis.find((a) => a._id === api),
                               })
                             }
-                            api={this.state.apis.find(a => a._id === api)}
+                            api={this.state.apis.find((a) => a._id === api)}
                             total={billing.total}
                           />
                         ))}
@@ -149,12 +149,12 @@ class TeamIncomeComponent extends Component {
                           />
                         </div>
                         {this.state.consumptions
-                          .filter(c => c.api === this.state.selectedApi._id)
+                          .filter((c) => c.api === this.state.selectedApi._id)
                           .reduce((agg, consumption) => {
-                            const maybeAggCons = agg.find(c => c.plan === consumption.plan);
+                            const maybeAggCons = agg.find((c) => c.plan === consumption.plan);
                             if (maybeAggCons) {
                               return [
-                                ...agg.filter(x => x.plan !== consumption.plan),
+                                ...agg.filter((x) => x.plan !== consumption.plan),
                                 {
                                   ...maybeAggCons,
                                   billing: {
@@ -170,7 +170,7 @@ class TeamIncomeComponent extends Component {
                           .sort((c1, c2) => c2.billing.total - c1.billing.total)
                           .map(({ plan, billing }, idx) => {
                             const usagePlan = this.state.selectedApi.possibleUsagePlans.find(
-                              pp => pp._id === plan
+                              (pp) => pp._id === plan
                             );
                             return (
                               <PriceCartridge
@@ -189,7 +189,8 @@ class TeamIncomeComponent extends Component {
                         <div className="api__plans__consumption__header">
                           <h3 className="api__name">
                             {this.state.selectedApi.name} -{' '}
-                            {this.state.selectedPlan.customName || formatPlanType(this.state.selectedPlan)}
+                            {this.state.selectedPlan.customName ||
+                              formatPlanType(this.state.selectedPlan)}
                           </h3>
                           <i
                             className="far fa-arrow-alt-circle-left quit"
@@ -198,12 +199,12 @@ class TeamIncomeComponent extends Component {
                         </div>
                         {this.state.consumptions
                           .filter(
-                            c =>
+                            (c) =>
                               c.api === this.state.selectedApi._id &&
                               c.plan === this.state.selectedPlan._id
                           )
                           .map((c, idx) => {
-                            const team = this.state.teams.find(t => t._id === c.team);
+                            const team = this.state.teams.find((t) => t._id === c.team);
                             return (
                               <PriceCartridge
                                 key={idx}
@@ -226,7 +227,7 @@ class TeamIncomeComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

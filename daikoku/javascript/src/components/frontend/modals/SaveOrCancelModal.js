@@ -1,8 +1,8 @@
 import React from 'react';
 import { PropTypes } from 'prop-types';
 
-export const SaverOrCancelModal = props => {
-  const actionAndClose = action => {
+export const SaverOrCancelModal = (props) => {
+  const actionAndClose = (action) => {
     if (action instanceof Promise) {
       action().then(() => props.closeModal());
     } else {

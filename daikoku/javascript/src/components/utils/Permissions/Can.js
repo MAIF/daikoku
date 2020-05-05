@@ -8,31 +8,31 @@ import { permissions } from './permissions';
 
 export const CanIDoAction = (user, action, what, team, isTenantAdmin, whichOne, currentTenant) => {
   if (what === tenant) {
-    return isTenantAdmin && whichOne._id === currentTenant._id || user.isDaikokuAdmin;
+    return (isTenantAdmin && whichOne._id === currentTenant._id) || user.isDaikokuAdmin;
   }
 
   const realPerm = Option(team)
-    .map(t => t.users)
-    .flatMap(users => Option(users.find(u => u.userId === user._id)))
-    .map(userWithPermission => userWithPermission.teamPermission)
-    .map(ability => permissions[ability])
-    .flatMap(perms => Option(perms.find(p => p.what === what)))
-    .map(perm =>
+    .map((t) => t.users)
+    .flatMap((users) => Option(users.find((u) => u.userId === user._id)))
+    .map((userWithPermission) => userWithPermission.teamPermission)
+    .map((ability) => permissions[ability])
+    .flatMap((perms) => Option(perms.find((p) => p.what === what)))
+    .map((perm) =>
       Option(perm.condition).fold(
         () => perm.action,
-        condition => (condition(team) ? perm.action : doNothing)
+        (condition) => (condition(team) ? perm.action : doNothing)
       )
     )
     .fold(
       () => doNothing,
-      perm => perm
+      (perm) => perm
     );
 
   return action <= realPerm || user.isDaikokuAdmin;
 };
 
 export const CanIDoActionForOneOfTeams = (user, action, what, teams) => {
-  return teams.some(team => CanIDoAction(user, action, what, team, false));
+  return teams.some((team) => CanIDoAction(user, action, what, team, false));
 };
 
 const CanComponent = ({
@@ -47,7 +47,7 @@ const CanComponent = ({
   orElse = null,
   isTenantAdmin,
   tenant,
-  whichOne = tenant
+  whichOne = tenant,
 }) => {
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams)
@@ -63,11 +63,11 @@ const CanComponent = ({
   return children;
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 const mapDispatchToProps = {
-  setError: error => setError(error),
+  setError: (error) => setError(error),
 };
 
 export const Can = connect(mapStateToProps, mapDispatchToProps)(CanComponent);
@@ -80,5 +80,5 @@ CanComponent.propTypes = {
   dispatchError: PropTypes.bool,
   setError: PropTypes.func.isRequired,
   orElse: PropTypes.element,
-  isTenantAdmin: PropTypes.bool
+  isTenantAdmin: PropTypes.bool,
 };

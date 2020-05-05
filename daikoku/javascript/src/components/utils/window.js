@@ -6,7 +6,7 @@ import _ from 'lodash';
 import { OPEN_MODAL } from '../../core/modal';
 
 class Alert extends Component {
-  defaultButton = e => {
+  defaultButton = (e) => {
     if (e.keyCode === 13) {
       this.props.close();
     }
@@ -72,7 +72,7 @@ Alert.propTypes = {
 };
 
 class Confirm extends Component {
-  defaultButton = e => {
+  defaultButton = (e) => {
     if (e.keyCode === 13) {
       this.props.ok();
     }
@@ -130,7 +130,7 @@ class Prompt extends Component {
   state = {
     text: this.props.value || '',
   };
-  defaultButton = e => {
+  defaultButton = (e) => {
     if (e.keyCode === 13) {
       this.props.ok(this.state.text);
     }
@@ -163,8 +163,8 @@ class Prompt extends Component {
                     type={this.props.isPassword ? 'password' : 'text'}
                     className="form-control"
                     value={this.state.text}
-                    ref={r => (this.ref = r)}
-                    onChange={e => this.setState({ text: e.target.value })}
+                    ref={(r) => (this.ref = r)}
+                    onChange={(e) => this.setState({ text: e.target.value })}
                   />
                 </div>
               </div>
@@ -206,7 +206,7 @@ export function registerAlert() {
     document.body.appendChild(div);
   }
   window.alert = (message, title, linkOpt) => {
-    return new Promise(success => {
+    return new Promise((success) => {
       ReactDOM.render(
         <Alert
           message={message}
@@ -230,8 +230,8 @@ export function registerConfirm() {
     div.setAttribute('id', 'daikoku-alerts-container');
     document.body.appendChild(div);
   }
-  window.confirm = message => {
-    return new Promise(success => {
+  window.confirm = (message) => {
+    return new Promise((success) => {
       ReactDOM.render(
         <Confirm
           message={message}
@@ -258,13 +258,13 @@ export function registerPrompt() {
     document.body.appendChild(div);
   }
   window.prompt = (message, value, isPassword) => {
-    return new Promise(success => {
+    return new Promise((success) => {
       ReactDOM.render(
         <Prompt
           isPassword={!!isPassword}
           message={message}
           value={value}
-          ok={inputValue => {
+          ok={(inputValue) => {
             success(inputValue);
             ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
           }}
@@ -280,9 +280,10 @@ export function registerPrompt() {
 }
 
 export function registerContact(store) {
-  window.contact = modalProps => store.dispatch({
-    type: OPEN_MODAL,
-    modalProps,
-    modalType: 'contactModal'
-  });
+  window.contact = (modalProps) =>
+    store.dispatch({
+      type: OPEN_MODAL,
+      modalProps,
+      modalType: 'contactModal',
+    });
 }

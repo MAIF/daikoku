@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 
 import { Spinner } from '../../../utils';
-import {t} from '../../../../locales';
+import { t } from '../../../../locales';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
@@ -32,13 +32,13 @@ export class MailgunConfig extends Component {
       props: {
         label: t('Email from', this.props.currentLanguage),
       },
-    }, 
+    },
     template: {
       type: 'markdown',
-      props: { 
+      props: {
         label: t('Mail template', this.props.currentLanguage),
-        help: t('mail.template.help', this.props.currentLanguage) 
-      }
+        help: t('mail.template.help', this.props.currentLanguage),
+      },
     },
   };
 

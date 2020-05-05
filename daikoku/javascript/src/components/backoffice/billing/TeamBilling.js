@@ -28,12 +28,8 @@ class TeamBillingComponent extends Component {
       Promise.all([
         Services.getTeamBillings(
           team._id,
-          moment()
-            .startOf('month')
-            .valueOf(),
-          moment()
-            .endOf('month')
-            .valueOf()
+          moment().startOf('month').valueOf(),
+          moment().endOf('month').valueOf()
         ),
         Services.subscribedApis(team._id),
       ]).then(([consumptions, apis]) => {
@@ -43,9 +39,9 @@ class TeamBillingComponent extends Component {
     });
   }
 
-  getConsumptionsByApi = consumptions =>
+  getConsumptionsByApi = (consumptions) =>
     consumptions.reduce((acc, consumption) => {
-      const api = acc.find(item => item.api === consumption.api);
+      const api = acc.find((item) => item.api === consumption.api);
       const { hits, total } = api ? api.billing : { hits: 0, total: 0 };
       const billing = {
         hits: hits + consumption.billing.hits,
@@ -53,16 +49,16 @@ class TeamBillingComponent extends Component {
       };
       const obj = { billing, api: consumption.api };
 
-      return [...acc.filter(item => item.api !== consumption.api), obj];
+      return [...acc.filter((item) => item.api !== consumption.api), obj];
     }, []);
 
-  getBilling = date => {
+  getBilling = (date) => {
     this.setState({ loading: true, selectedApi: undefined }, () => {
       Services.getTeamBillings(
         this.props.currentTeam._id,
         date.startOf('month').valueOf(),
         date.endOf('month').valueOf()
-      ).then(consumptions =>
+      ).then((consumptions) =>
         this.setState({
           date,
           consumptions,
@@ -83,7 +79,7 @@ class TeamBillingComponent extends Component {
             this.state.date.endOf('month').valueOf()
           )
         )
-        .then(consumptions =>
+        .then((consumptions) =>
           this.setState({
             consumptions,
             consumptionsByApi: this.getConsumptionsByApi(consumptions),
@@ -95,7 +91,7 @@ class TeamBillingComponent extends Component {
 
   render() {
     const total = this.state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
-    const mostRecentConsumption = _.maxBy(this.state.consumptions, c => c.to);
+    const mostRecentConsumption = _.maxBy(this.state.consumptions, (c) => c.to);
     const lastDate =
       mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 
@@ -144,9 +140,11 @@ class TeamBillingComponent extends Component {
                         <ApiTotal
                           key={api}
                           handleClick={() =>
-                            this.setState({ selectedApi: this.state.apis.find(a => a._id === api) })
+                            this.setState({
+                              selectedApi: this.state.apis.find((a) => a._id === api),
+                            })
                           }
-                          api={this.state.apis.find(a => a._id === api)}
+                          api={this.state.apis.find((a) => a._id === api)}
                           total={billing.total}
                         />
                       ))}
@@ -168,11 +166,11 @@ class TeamBillingComponent extends Component {
                         />
                       </div>
                       {this.state.consumptions
-                        .filter(c => c.api === this.state.selectedApi._id)
+                        .filter((c) => c.api === this.state.selectedApi._id)
                         .sort((c1, c2) => c2.billing.total - c1.billing.total)
                         .map(({ plan, billing }, idx) => {
                           const usagePlan = this.state.selectedApi.possibleUsagePlans.find(
-                            pp => pp._id === plan
+                            (pp) => pp._id === plan
                           );
                           return (
                             <PriceCartridge
@@ -195,7 +193,7 @@ class TeamBillingComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

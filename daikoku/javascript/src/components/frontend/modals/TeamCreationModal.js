@@ -5,8 +5,7 @@ import { TeamEditForm } from '../../backoffice/teams/TeamEdit';
 import { t, Translation } from '../../../locales';
 import * as Services from '../../../services';
 
-export const TeamCreationModal = props => {
-
+export const TeamCreationModal = (props) => {
   const [team, setTeam] = useState(props.team);
   const [created, setCreated] = useState(false);
   const [error, setError] = useState(undefined);
@@ -31,11 +30,12 @@ export const TeamCreationModal = props => {
         </button>
       </div>
       <div className="modal-body">
-        {!!error && <div className="alert alert-danger" role="alert">
-          {t(error, props.currentLanguage)}
-        </div>}
+        {!!error && (
+          <div className="alert alert-danger" role="alert">
+            {t(error, props.currentLanguage)}
+          </div>
+        )}
         <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={props.currentLanguage} />
-
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={props.closeModal}>
@@ -43,27 +43,30 @@ export const TeamCreationModal = props => {
             Close
           </Translation>
         </button>
-        {!created && <button
-          type="button"
-          className="btn btn-outline-success"
-          onClick={() => Services.createTeam(team)
-            .then(r => {
-              if (r.error) {
-                return Promise.reject(r);
-              } else {
-                return r;
-              }
-            })
-            .then(newteam => setTeam(newteam))
-            .then(() => setCreated(true))
-            .catch(e => {
-              setError(e.error);
-            }
-            )}>
-          <Translation i18nkey="Create" language={props.currentLanguage}>
-            Create
-          </Translation>
-        </button>}
+        {!created && (
+          <button
+            type="button"
+            className="btn btn-outline-success"
+            onClick={() =>
+              Services.createTeam(team)
+                .then((r) => {
+                  if (r.error) {
+                    return Promise.reject(r);
+                  } else {
+                    return r;
+                  }
+                })
+                .then((newteam) => setTeam(newteam))
+                .then(() => setCreated(true))
+                .catch((e) => {
+                  setError(e.error);
+                })
+            }>
+            <Translation i18nkey="Create" language={props.currentLanguage}>
+              Create
+            </Translation>
+          </button>
+        )}
       </div>
     </div>
   );

@@ -32,7 +32,7 @@ export const WysiwygModal = ({ closeModal, action, value, team, currentLanguage,
               team={team}
               height={window.innerHeight - 300 + 'px'}
               value={newValue}
-              onChange={code => setNewValue(code)}
+              onChange={(code) => setNewValue(code)}
             />
           </React.Suspense>
         </div>

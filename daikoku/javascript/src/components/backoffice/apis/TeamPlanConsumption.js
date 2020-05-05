@@ -15,16 +15,16 @@ class TeamPlanConsumptionComponent extends Component {
   mappers = [
     {
       type: 'LineChart',
-      label: data => {
+      label: (data) => {
         const totalHits = data.reduce((acc, cons) => acc + cons.hits, 0);
         return `Data In (${totalHits})`;
       },
       title: 'Data In',
-      formatter: data =>
+      formatter: (data) =>
         data.reduce((acc, item) => {
           const date = moment(item.to).format('DD MMM.');
-          const value = acc.find(a => a.date === date) || { count: 0 };
-          return [...acc.filter(a => a.date !== date), { date, count: value.count + item.hits }];
+          const value = acc.find((a) => a.date === date) || { count: 0 };
+          return [...acc.filter((a) => a.date !== date), { date, count: value.count + item.hits }];
         }, []),
       xAxis: 'date',
       yAxis: 'count',
@@ -33,15 +33,15 @@ class TeamPlanConsumptionComponent extends Component {
       type: 'RoundChart',
       label: 'Hits by apikeys',
       title: 'Hits by apikey',
-      formatter: data =>
+      formatter: (data) =>
         data.reduce((acc, item) => {
-          const value = acc.find(a => a.name === item.clientId) || { count: 0 };
+          const value = acc.find((a) => a.name === item.clientId) || { count: 0 };
 
-          const team = this.state.teams.find(t => t._id === item.team);
+          const team = this.state.teams.find((t) => t._id === item.team);
           const name = team.name;
 
           return [
-            ...acc.filter(a => a.name !== item.clientId),
+            ...acc.filter((a) => a.name !== item.clientId),
             { clientId: item.clientId, name, count: value.count + item.hits },
           ];
         }, []),
@@ -50,32 +50,34 @@ class TeamPlanConsumptionComponent extends Component {
     {
       type: 'Global',
       label: 'Global informations',
-      formatter: data => this.sumGlobalInformations(data),
+      formatter: (data) => this.sumGlobalInformations(data),
     },
   ];
 
   getPlanInformation = () => {
-    return Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId).then(api => {
-      if (api.error) {
-        return null;
+    return Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId).then(
+      (api) => {
+        if (api.error) {
+          return null;
+        }
+        return {
+          api,
+          plan: api.possibleUsagePlans.find((pp) => pp._id === this.props.match.params.planId),
+        };
       }
-      return {
-        api,
-        plan: api.possibleUsagePlans.find(pp => pp._id === this.props.match.params.planId),
-      };
-    });
+    );
   };
 
-  sumGlobalInformations = data => {
-    const globalInformations = data.map(d => d.globalInformations);
+  sumGlobalInformations = (data) => {
+    const globalInformations = data.map((d) => d.globalInformations);
 
     const value = globalInformations.reduce((acc, item) => {
-      Object.keys(item).forEach(key => (acc[key] = (acc[key] || 0) + item[key]));
+      Object.keys(item).forEach((key) => (acc[key] = (acc[key] || 0) + item[key]));
       return acc;
     }, {});
 
-    const howManyDuration = globalInformations.filter(d => !!d.avgDuration).length;
-    const howManyOverhead = globalInformations.filter(d => !!d.avgDuration).length;
+    const howManyDuration = globalInformations.filter((d) => !!d.avgDuration).length;
+    const howManyOverhead = globalInformations.filter((d) => !!d.avgDuration).length;
 
     return {
       ...value,
@@ -85,10 +87,7 @@ class TeamPlanConsumptionComponent extends Component {
   };
 
   componentDidMount() {
-    Services.teams()
-      .then(teams =>
-        this.setState({ teams })
-      );
+    Services.teams().then((teams) => this.setState({ teams }));
   }
 
   render() {
@@ -129,7 +128,7 @@ class TeamPlanConsumptionComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
@@ -142,7 +141,7 @@ class PlanInformations extends Component {
   };
 
   componentDidMount() {
-    this.props.fetchData().then(informations => this.setState({ informations, loading: false }));
+    this.props.fetchData().then((informations) => this.setState({ informations, loading: false }));
   }
 
   render() {

@@ -10,12 +10,14 @@ export class ApiCard extends Component {
     console.log('ApiCardError', e);
   }
 
-  authorizedOn = api => api.visibility === 'Public' || api.authorizations.some(a => a.authorized);
-  allTeamsAuthorizedOn = api =>
-    api.visibility === 'Public' || api.authorizations.every(a => a.authorized);
-  isPending = api => api.authorizations && api.authorizations.every(a => a.pending || a.authorized);
+  authorizedOn = (api) =>
+    api.visibility === 'Public' || api.authorizations.some((a) => a.authorized);
+  allTeamsAuthorizedOn = (api) =>
+    api.visibility === 'Public' || api.authorizations.every((a) => a.authorized);
+  isPending = (api) =>
+    api.authorizations && api.authorizations.every((a) => a.pending || a.authorized);
 
-  redirectToApiPage = auth => {
+  redirectToApiPage = (auth) => {
     if (auth) {
       this.props.redirectToApiPage();
     }
@@ -50,34 +52,35 @@ export class ApiCard extends Component {
                   <i className="fas fa-edit" />
                 </button>
               </Can>
-              {!allTeamsAreAuthorized && !isPending && !['Private', 'AdminOnly'].includes(api.visibility) && (
-                <ActionWithTeamSelector
-                  title="Api access"
-                  description={t(
-                    'api.access.request',
-                    this.props.currentLanguage,
-                    false,
-                    `You will send an access request to the API "${api.name}". For which team do you want to send the request ?`,
-                    [api.name]
-                  )}
-                  buttonLabel="Send"
-                  pendingTeams={api.authorizations
-                    .filter(auth => auth.pending)
-                    .map(auth => auth.team)}
-                  authorizedTeams={api.authorizations
-                    .filter(auth => auth.authorized)
-                    .map(auth => auth.team)}
-                  teams={this.props.myTeams
-                    .filter(t => t.type !== 'Admin')}
-                  action={teams => this.props.askForApiAccess(teams)}
-                  withAllTeamSelector={true}>
-                  <button className="btn btn-sm btn-access-negative mr-1">
-                    <Translation i18nkey="Access" language={this.props.currentLanguage}>
-                      Access
-                    </Translation>
-                  </button>
-                </ActionWithTeamSelector>
-              )}
+              {!allTeamsAreAuthorized &&
+                !isPending &&
+                !['Private', 'AdminOnly'].includes(api.visibility) && (
+                  <ActionWithTeamSelector
+                    title="Api access"
+                    description={t(
+                      'api.access.request',
+                      this.props.currentLanguage,
+                      false,
+                      `You will send an access request to the API "${api.name}". For which team do you want to send the request ?`,
+                      [api.name]
+                    )}
+                    buttonLabel="Send"
+                    pendingTeams={api.authorizations
+                      .filter((auth) => auth.pending)
+                      .map((auth) => auth.team)}
+                    authorizedTeams={api.authorizations
+                      .filter((auth) => auth.authorized)
+                      .map((auth) => auth.team)}
+                    teams={this.props.myTeams.filter((t) => t.type !== 'Admin')}
+                    action={(teams) => this.props.askForApiAccess(teams)}
+                    withAllTeamSelector={true}>
+                    <button className="btn btn-sm btn-access-negative mr-1">
+                      <Translation i18nkey="Access" language={this.props.currentLanguage}>
+                        Access
+                      </Translation>
+                    </button>
+                  </ActionWithTeamSelector>
+                )}
               {isPending && (
                 <button className="btn btn-sm btn-access-negative mr-1">
                   <Translation i18nkey="Pending request" language={this.props.currentLanguage}>
@@ -108,7 +111,7 @@ export class ApiCard extends Component {
           {!!api.tags.length && (
             <div className="d-flex">
               <i className="fas fa-tag mr-2" />
-              {api.tags.map(tag => (
+              {api.tags.map((tag) => (
                 <span
                   className="badge badge-warning mr-1 cursor-pointer"
                   key={tag}
@@ -123,7 +126,7 @@ export class ApiCard extends Component {
           {!!api.categories.length && (
             <div className="d-flex">
               <i className="fas fa-folder mr-2" />
-              {api.categories.map(category => (
+              {api.categories.map((category) => (
                 <small
                   className="badge badge-warning mr-1 cursor-pointer"
                   key={category}

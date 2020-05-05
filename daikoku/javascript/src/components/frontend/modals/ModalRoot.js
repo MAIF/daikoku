@@ -4,7 +4,7 @@ import ReactModal from 'react-modal';
 import ClasseNames from 'classnames';
 
 import * as Modals from './';
-import {closeModal} from '../../../core/modal/actions';
+import { closeModal } from '../../../core/modal/actions';
 
 export const MODAL_TYPES = {
   teamSelector: Modals.TeamSelectorModal,
@@ -12,7 +12,7 @@ export const MODAL_TYPES = {
   wysywygModal: Modals.WysiwygModal,
   saveOrCancelModal: Modals.SaverOrCancelModal,
   teamCreation: Modals.TeamCreationModal,
-  contactModal: Modals.ContactModal
+  contactModal: Modals.ContactModal,
 };
 
 const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
@@ -26,8 +26,6 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
   if (!modalType) {
     return null;
   }
-
-
 
   return (
     <div>
@@ -45,7 +43,7 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
   );
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.modal,
 });
 

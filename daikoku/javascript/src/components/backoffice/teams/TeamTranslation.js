@@ -15,10 +15,10 @@ export const TeamTranslationForm = ({ team, t, onTranslationChange }) => {
 
   const getTranslatedValue = (key, lng) => {
     return Option(translation)
-      .map(t => t[lng])
+      .map((t) => t[lng])
       .fold(
         () => undefined,
-        t => t[key]
+        (t) => t[key]
       );
   };
 
@@ -37,14 +37,14 @@ export const TeamTranslationForm = ({ team, t, onTranslationChange }) => {
             className="mb-1 col-4"
             value={{ label: language, value: language }}
             placeholder="Select a language"
-            options={languages.map(l => ({ label: l, value: l }))}
-            onChange={e => setLanguage(e.value)}
+            options={languages.map((l) => ({ label: l, value: l }))}
+            onChange={(e) => setLanguage(e.value)}
           />
           <TextInput
             label="description"
             placeholder={team.description}
             value={getTranslatedValue(descriptionKey, language)}
-            onChange={e => handleChange(e, descriptionKey)}
+            onChange={(e) => handleChange(e, descriptionKey)}
           />
         </div>
       </div>

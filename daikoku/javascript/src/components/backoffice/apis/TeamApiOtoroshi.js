@@ -9,7 +9,7 @@ export class TeamApiOtoroshi extends Component {
     // TODO: register callback
   }
 
-  select = selected => {
+  select = (selected) => {
     // TODO: fetch oto service
     this.setState({ selected });
   };
@@ -18,14 +18,14 @@ export class TeamApiOtoroshi extends Component {
     // TODO: save oto service
   };
 
-  isSelected = service => {
+  isSelected = (service) => {
     return this.state.selected && service.service === this.state.selected.service;
   };
 
   addNewService = () => {};
 
   deleteService = () => {
-    window.confirm('Are you sure you want to delete this service ?').then(ok => {
+    window.confirm('Are you sure you want to delete this service ?').then((ok) => {
       if (ok) {
         // TODO: delete in api
         // TODO: delete in oto
@@ -60,7 +60,7 @@ export class TeamApiOtoroshi extends Component {
               </tr>
             </thead>
             <tbody>
-              {this.props.value.managedServices.map(service => {
+              {this.props.value.managedServices.map((service) => {
                 return (
                   <tr key={service.service}>
                     <td

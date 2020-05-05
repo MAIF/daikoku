@@ -12,7 +12,7 @@ export const configuration = {
   },
 };
 
-export const languages = Object.keys(configuration).map(value => ({
+export const languages = Object.keys(configuration).map((value) => ({
   value,
   label: configuration[value].label,
 }));

@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import Select from 'react-select';
 import { Help } from './Help';
 
-const valueToSelectOption = value => {
+const valueToSelectOption = (value) => {
   if (value === null) {
     return null;
   }
@@ -25,7 +25,7 @@ export class SelectInput extends Component {
       this.reloadValues();
     } else {
       this.setState({
-        value: this.state.values.find(item => item.value === this.state.value.value),
+        value: this.state.values.find((item) => item.value === this.state.value.value),
       });
     }
   }
@@ -36,7 +36,7 @@ export class SelectInput extends Component {
     }
     if (nextProps.valuesFrom && nextProps.value !== this.props.value) {
       this.reloadValues().then(() => {
-        this.setState({ value: this.state.values.find(v => v.value === nextProps.value) });
+        this.setState({ value: this.state.values.find((v) => v.value === nextProps.value) });
       });
     }
     if (nextProps.possibleValues !== this.props.possibleValues) {
@@ -45,7 +45,7 @@ export class SelectInput extends Component {
       });
     }
     if (!nextProps.valuesFrom && nextProps.value !== this.props.value) {
-      this.setState({ value: this.state.values.find(v => v.value === nextProps.value) });
+      this.setState({ value: this.state.values.find((v) => v.value === nextProps.value) });
     }
   }
 
@@ -54,7 +54,7 @@ export class SelectInput extends Component {
     this.setState({ error });
   }
 
-  reloadValues = from => {
+  reloadValues = (from) => {
     const cond = this.props.fetchCondition ? this.props.fetchCondition() : true;
 
     if (cond) {
@@ -66,14 +66,14 @@ export class SelectInput extends Component {
           Accept: 'application/json',
         },
       })
-        .then(r => r.json())
-        .then(values => values.map(this.props.transformer || (a => a)))
-        .then(values => {
+        .then((r) => r.json())
+        .then((values) => values.map(this.props.transformer || ((a) => a)))
+        .then((values) => {
           return this.setState({
             values,
             value:
               values.find(
-                item =>
+                (item) =>
                   item.value === (this.state.value ? this.state.value.value : this.state.value)
               ) || null,
             loading: false,
@@ -82,7 +82,7 @@ export class SelectInput extends Component {
     }
   };
 
-  onChange = e => {
+  onChange = (e) => {
     if (e) {
       this.setState({ value: e });
       this.props.onChange(e.value);
@@ -92,7 +92,7 @@ export class SelectInput extends Component {
     }
   };
 
-  onChangeClassic = e => {
+  onChangeClassic = (e) => {
     this.setState({ value: e.target.value });
     this.props.onChange(e.target.value);
   };

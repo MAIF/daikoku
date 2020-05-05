@@ -5,13 +5,13 @@ import { Spinner } from '../utils';
 
 const LazyForm = React.lazy(() => import('./Form'));
 
-const ArrayForm = props => {
-  const possibleValues = props.value.map(v => v[props.selector]);
+const ArrayForm = (props) => {
+  const possibleValues = props.value.map((v) => v[props.selector]);
   const [selectedSelector, setSelectedSelector] = useState(possibleValues[0]);
   const [selectedValue, setSelectedValue] = useState(props.value[0]);
 
   useEffect(() => {
-    const value = props.value.find(v => v[props.selector] === selectedSelector);
+    const value = props.value.find((v) => v[props.selector] === selectedSelector);
     setSelectedValue(value);
   }, [selectedSelector]);
 
@@ -20,13 +20,13 @@ const ArrayForm = props => {
   }, [selectedValue]);
 
   useEffect(() => {
-    const value = props.value.find(v => v[props.selector] === selectedSelector);
+    const value = props.value.find((v) => v[props.selector] === selectedSelector);
     setSelectedValue(value);
   }, [props.value]);
 
-  const onChange = e => {
+  const onChange = (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    const updated = [...props.value.filter(v => v[props.selector] !== selectedSelector), e];
+    const updated = [...props.value.filter((v) => v[props.selector] !== selectedSelector), e];
     props.onChange(updated);
   };
 
@@ -42,8 +42,8 @@ const ArrayForm = props => {
       <Select
         className="col-11"
         value={{ label: selectedSelector, value: selectedSelector }}
-        options={possibleValues.map(v => ({ label: v, value: v }))}
-        onChange={e => setSelectedSelector(e.value)}
+        options={possibleValues.map((v) => ({ label: v, value: v }))}
+        onChange={(e) => setSelectedSelector(e.value)}
         classNamePrefix="reactSelect"
       />
       <div className="col-sm-10">
@@ -67,7 +67,7 @@ const ArrayForm = props => {
               flow={props.flow}
               schema={props.schema}
               value={selectedValue}
-              onChange={e => setSelectedValue(e)}
+              onChange={(e) => setSelectedValue(e)}
             />
           </React.Suspense>
         )}

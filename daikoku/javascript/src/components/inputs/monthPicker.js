@@ -6,7 +6,7 @@ import enUS from 'antd/lib/locale-provider/en_US';
 import 'antd/lib/date-picker/style/index.css';
 
 export class MonthPicker extends Component {
-  onChange = value => {
+  onChange = (value) => {
     const date = value;
     if (date && this.props.updateDate && !this.props.value.isSame(date)) {
       this.props.updateDate(date.endOf('month'));
@@ -20,9 +20,9 @@ export class MonthPicker extends Component {
         <DatePicker.MonthPicker
           defaultValue={this.props.value}
           placeholder="Select month"
-          onChange={v => this.onChange(v)}
+          onChange={(v) => this.onChange(v)}
           format={dateFormat}
-          onOk={value => value}
+          onOk={(value) => value}
         />
       </ConfigProvider>
     );

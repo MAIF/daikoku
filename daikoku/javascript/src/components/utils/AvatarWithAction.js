@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'antd';
-import {v4 as uuidv4} from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 const placements = ['topRight', 'topLeft', 'bottomRight', 'bottomLeft'];
 
-export const AvatarWithAction = props => {
+export const AvatarWithAction = (props) => {
   const [secondaryActions, setSecondaryActions] = useState([]);
 
-  const handleAction = action => {
+  const handleAction = (action) => {
     if (secondaryActions.length) {
       setSecondaryActions([]);
     }

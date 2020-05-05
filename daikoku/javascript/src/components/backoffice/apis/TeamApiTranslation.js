@@ -9,14 +9,14 @@ export const TeamApiTranslation = ({ value, onChange }) => {
   const getTranslatedValue = (key, lng, orElse = value[key]) => {
     console.debug({ t: value.translation });
     return Option(value.translation)
-      .map(t => t[lng])
-      .map(t => t[`${value._id}.${key}`])
+      .map((t) => t[lng])
+      .map((t) => t[`${value._id}.${key}`])
       .getOrElse(orElse);
   };
 
   const flow = ['smallDescription', 'description'];
 
-  const schema = lng => {
+  const schema = (lng) => {
     const schemaObj = {
       smallDescription: {
         type: 'string',
@@ -37,7 +37,7 @@ export const TeamApiTranslation = ({ value, onChange }) => {
     };
 
     //todo: value & placeholder doesn't work because of pp is an array
-    value.possibleUsagePlans.forEach(pp => {
+    value.possibleUsagePlans.forEach((pp) => {
       schemaObj[`possibleUsagePlans//${pp._id}//customName`] = {
         type: 'string',
         props: {
@@ -64,7 +64,7 @@ export const TeamApiTranslation = ({ value, onChange }) => {
     description: null,
   };
 
-  value.possibleUsagePlans.forEach(pp => {
+  value.possibleUsagePlans.forEach((pp) => {
     flow.push(`>>>${pp.type}`);
     flow.push(`possibleUsagePlans//${pp._id}//customName`);
     flow.push(`possibleUsagePlans//${pp._id}//customDescription`);
@@ -72,19 +72,19 @@ export const TeamApiTranslation = ({ value, onChange }) => {
     formattedValue[`possibleUsagePlans//${pp._id}//customDescription`] = null;
   });
 
-  const handleChange = translations => {
+  const handleChange = (translations) => {
     const t = translations
-      .map(localizedTranslation => {
+      .map((localizedTranslation) => {
         const language = localizedTranslation.key;
         // delete localizedTranslation.key
         return Object.keys(localizedTranslation)
-          .filter(key => key !== 'key')
-          .map(key => ({
+          .filter((key) => key !== 'key')
+          .map((key) => ({
             language,
             key: `${value._id}.${key.replace(/\/\//g, '.')}`,
             value: localizedTranslation[key],
           }))
-          .filter(t => !!t.value);
+          .filter((t) => !!t.value);
       })
       .flat();
     onChange(t);
@@ -111,17 +111,17 @@ export const TeamApiTranslationForm = ({ team, api, t, onTranslationChange }) =>
 
   const getTranslatedValue = (key, lng) => {
     return Option(translation)
-      .map(t => t[lng])
+      .map((t) => t[lng])
       .fold(
         () => undefined,
-        t => t[key]
+        (t) => t[key]
       );
   };
 
   const smallDescriptionKey = `${api._id}.smallDescription`;
   const descriptionKey = `${api._id}.description`;
-  const planCustomNameKey = plan => `${api._id}.possibleUsagesPlans.${plan._id}.customName`;
-  const planCustomDescriptionKey = plan =>
+  const planCustomNameKey = (plan) => `${api._id}.possibleUsagesPlans.${plan._id}.customName`;
+  const planCustomDescriptionKey = (plan) =>
     `${api._id}.possibleUsagesPlans.${plan._id}.customDescription`;
 
   const handleChange = (value, key) => {
@@ -136,22 +136,22 @@ export const TeamApiTranslationForm = ({ team, api, t, onTranslationChange }) =>
             className="reactSelect mb-1 col-4"
             value={{ label: language, value: language }}
             placeholder="Select a language"
-            options={languages.map(l => ({ label: l, value: l }))}
-            onChange={e => setLanguage(e.value)}
+            options={languages.map((l) => ({ label: l, value: l }))}
+            onChange={(e) => setLanguage(e.value)}
             classNamePrefix="reactSelect"
           />
           <TextInput
             label="small description"
             placeholder={api.smallDescription}
             value={getTranslatedValue(smallDescriptionKey, language)}
-            onChange={e => handleChange(e, smallDescriptionKey)}
+            onChange={(e) => handleChange(e, smallDescriptionKey)}
           />
           <CodeInput
             label="description"
             value={getTranslatedValue(descriptionKey, language)}
-            onChange={e => handleChange(e, descriptionKey)}
+            onChange={(e) => handleChange(e, descriptionKey)}
           />
-          {api.possibleUsagePlans.map(pp => {
+          {api.possibleUsagePlans.map((pp) => {
             const descriptionKey = planCustomDescriptionKey(pp);
             const customeNameKey = planCustomNameKey(pp);
 
@@ -161,13 +161,13 @@ export const TeamApiTranslationForm = ({ team, api, t, onTranslationChange }) =>
                   label="custom name"
                   placeholder={pp.customName}
                   value={getTranslatedValue(customeNameKey, language)}
-                  onChange={e => handleChange(e, customeNameKey)}
+                  onChange={(e) => handleChange(e, customeNameKey)}
                 />
                 <TextInput
                   label="custom description"
                   placeholder={pp.description}
                   value={getTranslatedValue(descriptionKey, language)}
-                  onChange={e => handleChange(e, descriptionKey)}
+                  onChange={(e) => handleChange(e, descriptionKey)}
                 />
               </Collapse>
             );

@@ -17,7 +17,7 @@ const MaybeHomePageComponent = ({ tenant }) => {
   );
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

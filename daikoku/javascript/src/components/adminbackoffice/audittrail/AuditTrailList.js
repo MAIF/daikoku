@@ -18,21 +18,21 @@ export class AuditTrailList extends Component {
   columns = [
     {
       title: 'Date',
-      content: item => item['@timestamp'],
+      content: (item) => item['@timestamp'],
       style: { textAlign: 'center', width: 200, alignItems: 'center', display: 'flex' },
-      cell: value => {
+      cell: (value) => {
         return moment(value).format('YYYY-MM-DD HH:mm:ss.SSS');
       },
     },
     {
       title: 'Name',
       style: { textAlign: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      content: item => item.user.name,
+      content: (item) => item.user.name,
     },
     {
       title: 'Impersonator',
       style: { textAlign: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      content: item => (item.impersonator ? item.impersonator.name : ''),
+      content: (item) => (item.impersonator ? item.impersonator.name : ''),
     },
     {
       title: 'Message',
@@ -42,13 +42,13 @@ export class AuditTrailList extends Component {
         wordBreak: 'break-all',
         whiteSpace: 'initial',
       },
-      content: item => item.message,
+      content: (item) => item.message,
     },
     {
       title: 'Actions',
       style: { justifyContent: 'center', width: 100, alignItems: 'center', display: 'flex' },
       notFilterable: true,
-      content: item => item._id,
+      content: (item) => item._id,
       cell: (a, value) => (
         <button
           type="button"
@@ -109,7 +109,7 @@ export class AuditTrailList extends Component {
           type="number mr-1"
           style={{ width: 60, textAlign: 'center' }}
           value={this.state.page}
-          onChange={e => {
+          onChange={(e) => {
             this.setState({ page: e.target.value });
             this.table.update();
           }}
@@ -120,7 +120,7 @@ export class AuditTrailList extends Component {
           className="mr-1"
           style={{ width: 60, textAlign: 'center' }}
           value={this.state.size}
-          onChange={e => {
+          onChange={(e) => {
             this.setState({ size: e.target.value });
             this.table.update();
           }}
@@ -140,7 +140,7 @@ export class AuditTrailList extends Component {
       this.state.to.valueOf(),
       this.state.page,
       this.state.size
-    ).then(resp => {
+    ).then((resp) => {
       this.setState({ total: resp.size });
       return resp.events;
     });
@@ -173,8 +173,8 @@ export class AuditTrailList extends Component {
                     fetchItems={this.fetchItems}
                     showActions={false}
                     showLink={false}
-                    extractKey={item => item._id}
-                    injectTable={t => (this.table = t)}
+                    extractKey={(item) => item._id}
+                    injectTable={(t) => (this.table = t)}
                     defaultSortDesc={true}
                     injectTopBar={this.topBar}
                   />

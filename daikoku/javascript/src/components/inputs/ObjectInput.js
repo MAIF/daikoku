@@ -17,14 +17,14 @@ export class ObjectInput extends Component {
     this.props.onChange(newValues);
   };
 
-  addFirst = e => {
+  addFirst = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!this.props.value || Object.keys(this.props.value).length === 0) {
       this.props.onChange(this.props.defaultValue || { '': '' });
     }
   };
 
-  addNext = e => {
+  addNext = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     const newItem = this.props.defaultValue || { '': '' };
     const newValues = { ...this.props.value, ...newItem };
@@ -39,7 +39,7 @@ export class ObjectInput extends Component {
   };
 
   render() {
-    const values = Object.keys(this.props.value || {}).map(k => [k, this.props.value[k]]);
+    const values = Object.keys(this.props.value || {}).map((k) => [k, this.props.value[k]]);
     return (
       <div>
         {values.length === 0 && (
@@ -76,7 +76,7 @@ export class ObjectInput extends Component {
                   className="form-control"
                   placeholder={this.props.placeholderKey}
                   value={value[0]}
-                  onChange={e => this.changeKey(e, value[0])}
+                  onChange={(e) => this.changeKey(e, value[0])}
                 />
                 <input
                   disabled={this.props.disabled}
@@ -84,14 +84,14 @@ export class ObjectInput extends Component {
                   className="form-control"
                   placeholder={this.props.placeholderValue}
                   value={value[1]}
-                  onChange={e => this.changeValue(e, value[0])}
+                  onChange={(e) => this.changeValue(e, value[0])}
                 />
                 <span className="input-group-append">
                   <button
                     disabled={this.props.disabled}
                     type="button"
                     className="btn btn-outline-danger"
-                    onClick={e => this.remove(e, value[0])}>
+                    onClick={(e) => this.remove(e, value[0])}>
                     <i className="fas fa-trash" />
                   </button>
                   {idx === values.length - 1 && (
@@ -129,14 +129,14 @@ export class VerticalObjectInput extends Component {
     this.props.onChange(newValues);
   };
 
-  addFirst = e => {
+  addFirst = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!this.props.value || Object.keys(this.props.value).length === 0) {
       this.props.onChange(this.props.defaultValue || { '': '' });
     }
   };
 
-  addNext = e => {
+  addNext = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     const newItem = this.props.defaultValue || { '': '' };
     const newValues = { ...this.props.value, ...newItem };
@@ -151,7 +151,7 @@ export class VerticalObjectInput extends Component {
   };
 
   render() {
-    const values = Object.keys(this.props.value || {}).map(k => [k, this.props.value[k]]);
+    const values = Object.keys(this.props.value || {}).map((k) => [k, this.props.value[k]]);
     return (
       <div>
         {values.length === 0 && (
@@ -192,7 +192,7 @@ export class VerticalObjectInput extends Component {
                   style={{ width: '50%' }}
                   placeholder={this.props.placeholderKey}
                   value={value[0]}
-                  onChange={e => this.changeKey(e, value[0])}
+                  onChange={(e) => this.changeKey(e, value[0])}
                 />
                 <input
                   disabled={this.props.disabled}
@@ -201,7 +201,7 @@ export class VerticalObjectInput extends Component {
                   style={{ width: '50%' }}
                   placeholder={this.props.placeholderValue}
                   value={value[1]}
-                  onChange={e => this.changeValue(e, value[0])}
+                  onChange={(e) => this.changeValue(e, value[0])}
                 />
                 <span className="btn-group">
                   <button
@@ -209,7 +209,7 @@ export class VerticalObjectInput extends Component {
                     type="button"
                     className="btn btn-sm btn-danger"
                     style={{ marginRight: 0 }}
-                    onClick={e => this.remove(e, value[0])}>
+                    onClick={(e) => this.remove(e, value[0])}>
                     <i className="fas fa-trash" />
                   </button>
                 </span>

@@ -54,7 +54,7 @@ class ApiHomeComponent extends Component {
     }
   }
 
-  updateSubscriptions = apiId => {
+  updateSubscriptions = (apiId) => {
     Promise.all([Services.getVisibleApi(apiId), Services.myTeams()]).then(([api, myTeams]) => {
       if (api.error) {
         this.props.setError({ error: { status: 404, message: api.error } });
@@ -66,7 +66,7 @@ class ApiHomeComponent extends Component {
             pendingSubscriptions: api.pendingRequests,
             myTeams,
           },
-          () => Services.team(api.team).then(ownerTeam => this.setState({ ownerTeam }))
+          () => Services.team(api.team).then((ownerTeam) => this.setState({ ownerTeam }))
         );
       }
     });
@@ -76,12 +76,12 @@ class ApiHomeComponent extends Component {
     const planName = formatPlanType(plan, this.props.currentLanguage);
 
     return Services.askForApiKey(this.state.api._id, teams, plan._id)
-      .then(results => {
+      .then((results) => {
         if (results.error) {
           return toastr.error(t('Error', this.props.currentLanguage), results.error);
         }
-        return results.forEach(result => {
-          const team = this.state.myTeams.find(t => t._id === result.subscription.team);
+        return results.forEach((result) => {
+          const team = this.state.myTeams.find((t) => t._id === result.subscription.team);
 
           if (result.error) {
             return toastr.error(t('Error', this.props.currentLanguage), result.error);
@@ -115,8 +115,8 @@ class ApiHomeComponent extends Component {
       .then(() => this.updateSubscriptions(this.state.api._id));
   };
 
-  redirectToEditPage = api => {
-    const adminTeam = this.state.myTeams.find(team => api.team === team._id);
+  redirectToEditPage = (api) => {
+    const adminTeam = this.state.myTeams.find((team) => api.team === team._id);
     this.props.history.push(`/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`);
   };
 
@@ -130,10 +130,9 @@ class ApiHomeComponent extends Component {
     const teamId = this.props.match.params.teamId;
 
     //for contact modal
-    const {isGuest, name, email} = this.props.connectedUser;
+    const { isGuest, name, email } = this.props.connectedUser;
     const userName = isGuest ? undefined : name;
     const userEmail = isGuest ? undefined : email;
-
 
     return (
       <main role="main" className="row">
@@ -252,8 +251,16 @@ class ApiHomeComponent extends Component {
                   askForApikeys={(teams, plan) => this.askForApikeys(teams, plan)}
                   pendingSubscriptions={this.state.pendingSubscriptions}
                   currentLanguage={this.props.currentLanguage}
-                  openContactModal={() => this.props.openContactModal(userName, userEmail, this.props.tenant._id, api.team, api._id)}
-                  redirectToApiKeysPage={team => {
+                  openContactModal={() =>
+                    this.props.openContactModal(
+                      userName,
+                      userEmail,
+                      this.props.tenant._id,
+                      api.team,
+                      api._id
+                    )
+                  }
+                  redirectToApiKeysPage={(team) => {
                     this.props.history.push(
                       `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}`
                     );
@@ -331,13 +338,13 @@ class ApiHomeComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
   setError,
-  openContactModal
+  openContactModal,
 };
 
 export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);

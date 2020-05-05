@@ -14,7 +14,7 @@ export class ApiSwagger extends Component {
         docExpansion: 'list',
         presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
         plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-        requestInterceptor: req => {
+        requestInterceptor: (req) => {
           if (req.loadSpec) return req;
           const body = JSON.stringify({
             credentials: req.credentials,
@@ -41,13 +41,15 @@ export class ApiSwagger extends Component {
   componentDidMount() {
     this.drawSwaggerUi();
     setTimeout(() => {
-      [...document.querySelectorAll('.scheme-container')].map(i => (i.style.display = 'none'));
-      [...document.querySelectorAll('.information-container')].map(i => (i.style.display = 'none'));
+      [...document.querySelectorAll('.scheme-container')].map((i) => (i.style.display = 'none'));
+      [...document.querySelectorAll('.information-container')].map(
+        (i) => (i.style.display = 'none')
+      );
       this.handleAuthorize(false);
     }, 500);
   }
 
-  handleAuthorize = canCreate => {
+  handleAuthorize = (canCreate) => {
     // TODO: at start, try to see if user has test key for it and use it
     //if (canCreate && this.props.testing.auth === "ApiKey") {
     //  // TODO: create a key dedicated for tests and use it

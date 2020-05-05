@@ -98,10 +98,10 @@ export class Table extends Component {
         this.showAddForm();
       } else if (action === 'edit') {
         const item = this.props.parentProps.params.titem;
-        this.props.fetchItems().then(data => {
+        this.props.fetchItems().then((data) => {
           console.log(this.props.parentProps.params);
           console.log(data);
-          const row = data.filter(d => this.props.extractKey(d) === item)[0];
+          const row = data.filter((d) => this.props.extractKey(d) === item)[0];
           this.showEditForm(null, row);
         });
       }
@@ -116,7 +116,7 @@ export class Table extends Component {
     document.body.removeEventListener('keydown', this.saveShortcut);
   };
 
-  saveShortcut = e => {
+  saveShortcut = (e) => {
     if (e.keyCode === 83 && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       if (this.state.showEditForm) {
@@ -131,7 +131,7 @@ export class Table extends Component {
   update = () => {
     this.setState({ loading: true });
     return this.props.fetchItems().then(
-      rawItems => {
+      (rawItems) => {
         this.setState({ items: rawItems, loading: false });
       },
       () => this.setState({ loading: false })
@@ -143,7 +143,7 @@ export class Table extends Component {
     this.props.navigateTo(item);
   };
 
-  closeAddForm = e => {
+  closeAddForm = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.unmountShortcuts();
     this.props.parentProps.setTitle(this.props.defaultTitle);
@@ -151,7 +151,7 @@ export class Table extends Component {
     urlTo(`/bo/dashboard/${this.props.selfUrl}`);
   };
 
-  showAddForm = e => {
+  showAddForm = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.mountShortcuts();
     this.props.parentProps.setTitle(`Create a new ${this.props.itemName}`);
@@ -159,7 +159,7 @@ export class Table extends Component {
     this.setState({ currentItem: this.props.defaultValue(), showAddForm: true });
   };
 
-  closeEditForm = e => {
+  closeEditForm = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.unmountShortcuts();
     this.props.parentProps.setTitle(this.props.defaultTitle);
@@ -177,14 +177,14 @@ export class Table extends Component {
 
   deleteItem = (e, item) => {
     if (e && e.preventDefault) e.preventDefault();
-    window.confirm('Are you sure you want to delete that item ?').then(v => {
+    window.confirm('Are you sure you want to delete that item ?').then((v) => {
       if (v) {
         this.props
           .deleteItem(item)
           .then(() => {
             return this.props.fetchItems();
           })
-          .then(items => {
+          .then((items) => {
             urlTo(`/bo/dashboard/${this.props.selfUrl}`);
             this.setState({ items, showEditForm: false, showAddForm: false });
           });
@@ -192,20 +192,20 @@ export class Table extends Component {
     });
   };
 
-  createItem = e => {
+  createItem = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.props
       .createItem(this.state.currentItem)
       .then(() => {
         return this.props.fetchItems();
       })
-      .then(items => {
+      .then((items) => {
         urlTo(`/bo/dashboard/${this.props.selfUrl}`);
         this.setState({ items, showAddForm: false });
       });
   };
 
-  createItemAndStay = e => {
+  createItemAndStay = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.props.createItem(this.state.currentItem).then(() => {
       urlTo(
@@ -215,19 +215,19 @@ export class Table extends Component {
     });
   };
 
-  updateItem = e => {
+  updateItem = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.props
       .updateItem(this.state.currentItem)
       .then(() => {
         return this.props.fetchItems();
       })
-      .then(items => {
+      .then((items) => {
         this.setState({ items, showEditForm: false });
       });
   };
 
-  updateItemAndStay = e => {
+  updateItemAndStay = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.props.updateItem(this.state.currentItem);
   };
@@ -238,14 +238,14 @@ export class Table extends Component {
     }
     const windowWidth = window.innerWidth;
     const columns = this.props.columns
-      .filter(c => {
+      .filter((c) => {
         if (windowWidth > this.props.mobileSize) {
           return true;
         } else {
           return !c.noMobile;
         }
       })
-      .map(c => {
+      .map((c) => {
         return {
           Header: c.title,
           id: c.title,
@@ -254,24 +254,24 @@ export class Table extends Component {
           style: { ...c.style },
           sortable: !c.notSortable,
           filterable: !c.notFilterable,
-          accessor: d => (c.accessor ? d[c.accessor] : c.content ? c.content(d) : d),
-          Filter: d => (
+          accessor: (d) => (c.accessor ? d[c.accessor] : c.content ? c.content(d) : d),
+          Filter: (d) => (
             <input
               type="text"
               className="form-control input-sm"
               value={d.filter ? d.filter.value : ''}
-              onChange={e => d.onChange(e.target.value)}
+              onChange={(e) => d.onChange(e.target.value)}
               placeholder={t('Search ...', this.props.currentLanguage)}
             />
           ),
-          Cell: r => {
+          Cell: (r) => {
             const value = r.value;
             const original = r.original;
             return c.cell ? (
               c.cell(value, original, this)
             ) : (
               <div
-                onClick={e => {
+                onClick={(e) => {
                   if (this.props.rowNavigation) {
                     if (e.metaKey) {
                       if (this.props.itemUrl) {
@@ -298,27 +298,27 @@ export class Table extends Component {
         width: 140,
         style: { textAlign: 'center' },
         filterable: false,
-        accessor: item => (
+        accessor: (item) => (
           <td style={{ width: 140, textAlign: 'center' }}>
             <div className="displayGroupBtn">
               <button
                 type="button"
                 className="btn btn-sm btn-outline-success"
-                onClick={e => this.showEditForm(e, item)}>
+                onClick={(e) => this.showEditForm(e, item)}>
                 <i className="fa fa-pencil" />
               </button>
               {this.props.showLink && (
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
-                  onClick={e => this.gotoItem(e, item)}>
+                  onClick={(e) => this.gotoItem(e, item)}>
                   <i className="fas fa-link" />
                 </button>
               )}
               <button
                 type="button"
                 className="btn btn-sm btn-outline-danger"
-                onClick={e => this.deleteItem(e, item)}>
+                onClick={(e) => this.deleteItem(e, item)}>
                 <i className="fas fa-trash" />
               </button>
             </div>
@@ -398,7 +398,7 @@ export class Table extends Component {
             {this.props.formComponent && (
               <form className="form-horizontal" style={this.props.style}>
                 {React.createElement(this.props.formComponent, {
-                  onChange: currentItem => this.setState({ currentItem }),
+                  onChange: (currentItem) => this.setState({ currentItem }),
                   value: this.state.currentItem,
                   ...(this.props.formPassProps || {}),
                 })}
@@ -408,7 +408,7 @@ export class Table extends Component {
               <React.Suspense fallback={<Spinner />}>
                 <LazyForm
                   value={this.state.currentItem}
-                  onChange={currentItem => this.setState({ currentItem })}
+                  onChange={(currentItem) => this.setState({ currentItem })}
                   flow={this.props.formFlow}
                   schema={this.props.formSchema}
                 />
@@ -438,7 +438,7 @@ export class Table extends Component {
             {this.props.formComponent && (
               <form className="form-horizontal" style={this.props.style}>
                 {React.createElement(this.props.formComponent, {
-                  onChange: currentItem => {
+                  onChange: (currentItem) => {
                     this.setState({ currentItem });
                   },
                   value: this.state.currentItem,
@@ -450,7 +450,7 @@ export class Table extends Component {
               <React.Suspense fallback={<Spinner />}>
                 <LazyForm
                   value={this.state.currentItem}
-                  onChange={currentItem => this.setState({ currentItem })}
+                  onChange={(currentItem) => this.setState({ currentItem })}
                   flow={this.props.formFlow}
                   schema={this.props.formSchema}
                 />
@@ -462,7 +462,7 @@ export class Table extends Component {
                 type="button"
                 className="btn btn-outline-danger"
                 title="Delete current item"
-                onClick={e => this.deleteItem(e, this.state.currentItem)}>
+                onClick={(e) => this.deleteItem(e, this.state.currentItem)}>
                 <i className="fas fa-trash" /> Delete
               </button>
               <button type="button" className="btn btn-outline-danger" onClick={this.closeEditForm}>

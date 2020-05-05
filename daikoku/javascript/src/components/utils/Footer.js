@@ -3,8 +3,7 @@ import { connect } from 'react-redux';
 import classNames from 'classnames';
 import { converter } from '../../services/showdown';
 
-const FooterComponent = ({tenant, isBackOffice}) => {
-
+const FooterComponent = ({ tenant, isBackOffice }) => {
   if (!tenant.footer) {
     return null;
   }
@@ -15,16 +14,17 @@ const FooterComponent = ({tenant, isBackOffice}) => {
         // 'col-md-10': !!isBackOffice,
         // 'ml-sm-auto': !!isBackOffice,
         // 'col-md-12': !isBackOffice,
-        'back-office-footer': isBackOffice
+        'back-office-footer': isBackOffice,
       })}>
-      <div 
+      <div
         className="container"
-        dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer)}} />
+        dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer) }}
+      />
     </footer>
   );
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

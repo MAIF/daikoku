@@ -13,7 +13,7 @@ export class TeamApiDescription extends Component {
             team={this.props.team}
             height={window.innerHeight - 300 + 'px'}
             value={this.props.value.description}
-            onChange={code => {
+            onChange={(code) => {
               const newValue = this.props.value;
               newValue.description = code;
               this.props.onChange(newValue);

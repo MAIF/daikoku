@@ -5,7 +5,7 @@ export function me() {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function myOwnTeam() {
@@ -15,7 +15,7 @@ export function myOwnTeam() {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 //Restricted api with all of property
@@ -26,7 +26,7 @@ export function oneOfMyTeam(id) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getVisibleApi(id) {
@@ -36,7 +36,7 @@ export function getVisibleApi(id) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getTeamVisibleApi(teamId, apiId) {
@@ -46,7 +46,7 @@ export function getTeamVisibleApi(teamId, apiId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function myTeams() {
@@ -56,7 +56,7 @@ export function myTeams() {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function allJoinableTeams() {
@@ -66,7 +66,7 @@ export function allJoinableTeams() {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function myVisibleApis() {
@@ -76,7 +76,7 @@ export function myVisibleApis() {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function myVisibleApisOfTeam(currentTeam) {
@@ -86,7 +86,7 @@ export function myVisibleApisOfTeam(currentTeam) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function teamAllNotifications(teamId, page = 0) {
@@ -96,7 +96,7 @@ export function teamAllNotifications(teamId, page = 0) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function teamNotifications(teamId) {
@@ -106,7 +106,7 @@ export function teamNotifications(teamId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function teamUnreadNotificationsCount(teamId) {
@@ -117,7 +117,7 @@ export function teamUnreadNotificationsCount(teamId) {
       Accept: 'application/json',
     },
   }).then(
-    r => {
+    (r) => {
       if (r.status === 200) {
         return r.json();
       } else {
@@ -135,7 +135,7 @@ export function myAllNotifications(page = 0, pageSize = 10) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function myNotifications(page = 0, pageSize = 10) {
@@ -145,7 +145,7 @@ export function myNotifications(page = 0, pageSize = 10) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function myUnreadNotificationsCount() {
@@ -156,7 +156,7 @@ export function myUnreadNotificationsCount() {
       Accept: 'application/json',
     },
   }).then(
-    r => {
+    (r) => {
       if (r.status === 200) {
         return r.json();
       } else {
@@ -174,7 +174,7 @@ export function acceptNotificationOfTeam(NotificationId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function rejectNotificationOfTeam(NotificationId) {
@@ -184,7 +184,7 @@ export function rejectNotificationOfTeam(NotificationId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function subscribedApis(team) {
@@ -194,7 +194,7 @@ export function subscribedApis(team) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getDocPage(api, id) {
@@ -204,7 +204,7 @@ export function getDocPage(api, id) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getDocDetails(api) {
@@ -214,7 +214,7 @@ export function getDocDetails(api) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function reorderDoc(team, api) {
@@ -226,7 +226,7 @@ export function reorderDoc(team, api) {
       'Content-Type': 'application/json',
     },
     body: '{}',
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getTeamSubscriptions(api, team) {
@@ -236,7 +236,7 @@ export function getTeamSubscriptions(api, team) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getMySubscriptions(apiId) {
@@ -246,7 +246,7 @@ export function getMySubscriptions(apiId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function askForApiKey(api, teams, plan) {
@@ -258,7 +258,7 @@ export function askForApiKey(api, teams, plan) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ plan, teams }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function initApiKey(api, team, plan, apikey) {
@@ -270,7 +270,7 @@ export function initApiKey(api, team, plan, apikey) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ plan, team, apikey }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function apisInit(apis) {
@@ -279,9 +279,9 @@ export function apisInit(apis) {
     credentials: 'include',
     headers: {
       Accept: 'application/json',
-      'Content-type': 'application/json'
+      'Content-type': 'application/json',
     },
-    body: JSON.stringify(apis)
+    body: JSON.stringify(apis),
   });
 }
 
@@ -291,9 +291,9 @@ export function subscriptionsInit(subscriptions) {
     credentials: 'include',
     headers: {
       Accept: 'application/json',
-      'Content-type': 'application/json'
+      'Content-type': 'application/json',
     },
-    body: JSON.stringify(subscriptions)
+    body: JSON.stringify(subscriptions),
   });
 }
 
@@ -305,7 +305,7 @@ export function deleteApiKey(teamId, subscriptionId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function archiveApiKey(teamId, subscriptionId, enable) {
@@ -316,7 +316,7 @@ export function archiveApiKey(teamId, subscriptionId, enable) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 export function toggleApiKeyRotation(teamId, subscriptionId, rotationEvery, gracePeriod) {
   return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
@@ -327,7 +327,7 @@ export function toggleApiKeyRotation(teamId, subscriptionId, rotationEvery, grac
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ rotationEvery, gracePeriod }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 export function regenerateApiKeySecret(teamId, subscriptionId) {
   return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
@@ -337,10 +337,8 @@ export function regenerateApiKeySecret(teamId, subscriptionId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
-
-
 
 export function cleanArchivedSubscriptions(teamId) {
   return fetch(`/api/teams/${teamId}/subscriptions/_clean`, {
@@ -350,7 +348,7 @@ export function cleanArchivedSubscriptions(teamId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function member(teamId, userId) {
@@ -360,7 +358,7 @@ export function member(teamId, userId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function members(teamId) {
@@ -370,7 +368,7 @@ export function members(teamId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function teamHome(teamId) {
@@ -380,7 +378,7 @@ export function teamHome(teamId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function teamApi(teamId, apiId) {
@@ -390,7 +388,7 @@ export function teamApi(teamId, apiId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function teamApis(teamId) {
@@ -400,7 +398,7 @@ export function teamApis(teamId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 //public api with restricted property
@@ -411,7 +409,7 @@ export function team(teamId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function teamFull(teamId) {
@@ -421,7 +419,7 @@ export function teamFull(teamId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function teams() {
@@ -431,7 +429,7 @@ export function teams() {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function createTeam(team) {
@@ -443,7 +441,7 @@ export function createTeam(team) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(team),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function updateTeam(team) {
@@ -455,7 +453,7 @@ export function updateTeam(team) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(team),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteTeam(teamId) {
@@ -465,7 +463,7 @@ export function deleteTeam(teamId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function addableUsersForTeam(teamId) {
@@ -475,7 +473,7 @@ export function addableUsersForTeam(teamId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -487,7 +485,7 @@ export function allOtoroshis(tenantId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 export function allSimpleOtoroshis(tenantId) {
   return fetch(`/api/tenants/${tenantId}/otoroshis/simplified`, {
@@ -496,7 +494,7 @@ export function allSimpleOtoroshis(tenantId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function oneOtoroshi(tenantId, id) {
@@ -506,7 +504,7 @@ export function oneOtoroshi(tenantId, id) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteOtoroshiSettings(tenantId, id) {
@@ -516,7 +514,7 @@ export function deleteOtoroshiSettings(tenantId, id) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function saveOtoroshiSettings(tenantId, oto) {
@@ -528,7 +526,7 @@ export function saveOtoroshiSettings(tenantId, oto) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(oto),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function createOtoroshiSettings(tenantId, oto) {
@@ -540,7 +538,7 @@ export function createOtoroshiSettings(tenantId, oto) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(oto),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getOtoroshiGroups(tenantId, otoId) {
@@ -550,7 +548,7 @@ export function getOtoroshiGroups(tenantId, otoId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getOtoroshiServices(tenantId, otoId) {
@@ -560,7 +558,7 @@ export function getOtoroshiServices(tenantId, otoId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getOtoroshiApiKeys(tenantId, otoId) {
@@ -570,7 +568,7 @@ export function getOtoroshiApiKeys(tenantId, otoId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -582,7 +580,7 @@ export function deleteTeamApi(teamId, id) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function saveTeamApi(teamId, api) {
@@ -594,7 +592,7 @@ export function saveTeamApi(teamId, api) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(api),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function createTeamApi(teamId, api) {
@@ -606,7 +604,7 @@ export function createTeamApi(teamId, api) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(api),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -618,7 +616,7 @@ export function removeMemberFromTeam(teamId, userId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function addMembersToTeam(teamId, members) {
@@ -630,7 +628,7 @@ export function addMembersToTeam(teamId, members) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ members }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function updateTeamMemberPermission(teamId, members, permission) {
@@ -642,7 +640,7 @@ export function updateTeamMemberPermission(teamId, members, permission) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ members, permission }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function createDocPage(teamId, apiId, page) {
@@ -654,7 +652,7 @@ export function createDocPage(teamId, apiId, page) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(page),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteDocPage(teamId, apiId, pageId) {
@@ -664,7 +662,7 @@ export function deleteDocPage(teamId, apiId, pageId) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function saveDocPage(teamId, apiId, page) {
@@ -676,7 +674,7 @@ export function saveDocPage(teamId, apiId, page) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(page),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function allTenants() {
@@ -686,7 +684,7 @@ export function allTenants() {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function oneTenant(tenant) {
@@ -696,7 +694,7 @@ export function oneTenant(tenant) {
     headers: {
       Accept: 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function createTenant(tenant) {
@@ -708,7 +706,7 @@ export function createTenant(tenant) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(tenant),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function saveTenant(tenant) {
@@ -720,7 +718,7 @@ export function saveTenant(tenant) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(tenant),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteTenant(id) {
@@ -731,7 +729,7 @@ export function deleteTenant(id) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function askToJoinTeam(team) {
@@ -742,7 +740,7 @@ export function askToJoinTeam(team) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function askForApiAccess(teams, api) {
@@ -754,7 +752,7 @@ export function askForApiAccess(teams, api) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ teams }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function updateApiKeysVisibility(teamId, showApiKeyOnlyToAdmins) {
@@ -766,7 +764,7 @@ export function updateApiKeysVisibility(teamId, showApiKeyOnlyToAdmins) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ showApiKeyOnlyToAdmins }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function fetchAuditTrail(from, to, page, size) {
@@ -777,7 +775,7 @@ export function fetchAuditTrail(from, to, page, size) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -790,7 +788,7 @@ export function fetchAllUsers() {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function findUserById(id) {
@@ -801,7 +799,7 @@ export function findUserById(id) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteUserById(id) {
@@ -812,7 +810,7 @@ export function deleteUserById(id) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteSelfUserById() {
@@ -823,7 +821,7 @@ export function deleteSelfUserById() {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function setAdminStatus(user, isDaikokuAdmin) {
@@ -834,8 +832,8 @@ export function setAdminStatus(user, isDaikokuAdmin) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({isDaikokuAdmin}),
-  }).then(r => r.json());
+    body: JSON.stringify({ isDaikokuAdmin }),
+  }).then((r) => r.json());
 }
 export function updateUserById(user) {
   return fetch(`/api/admin/users/${user._id}`, {
@@ -846,7 +844,7 @@ export function updateUserById(user) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(user),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function createUser(user) {
@@ -858,7 +856,7 @@ export function createUser(user) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(user),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function simpleTenantList() {
@@ -869,7 +867,7 @@ export function simpleTenantList() {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function redirectToTenant(id) {
@@ -880,7 +878,7 @@ export function redirectToTenant(id) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getTenantNames(ids) {
@@ -892,7 +890,7 @@ export function getTenantNames(ids) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(ids),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 function fetchEntity(url) {
@@ -903,7 +901,7 @@ function fetchEntity(url) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export const fetchNewTenant = () => fetchEntity('/api/entities/tenant');
@@ -921,7 +919,7 @@ export function checkIfApiNameIsUnique(name) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ name }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getSessions() {
@@ -932,7 +930,7 @@ export function getSessions() {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteSession(id) {
@@ -943,7 +941,7 @@ export function deleteSession(id) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteSessions() {
@@ -954,7 +952,7 @@ export function deleteSessions() {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function search(search) {
@@ -966,18 +964,21 @@ export function search(search) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ search }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function subscriptionConsumption(subscriptionId, teamId, from, to) {
-  return fetch(`/api/teams/${teamId}/subscription/${subscriptionId}/consumption?from=${from}&to=${to}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then(r => r.json());
+  return fetch(
+    `/api/teams/${teamId}/subscription/${subscriptionId}/consumption?from=${from}&to=${to}`,
+    {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    }
+  ).then((r) => r.json());
 }
 
 export function syncSubscriptionConsumption(subscriptionId, teamId) {
@@ -988,7 +989,7 @@ export function syncSubscriptionConsumption(subscriptionId, teamId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function syncApiConsumption(apiId, teamId) {
@@ -999,7 +1000,7 @@ export function syncApiConsumption(apiId, teamId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function syncTeamBilling(teamId) {
@@ -1010,7 +1011,7 @@ export function syncTeamBilling(teamId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function syncTeamIncome(teamId) {
@@ -1021,7 +1022,7 @@ export function syncTeamIncome(teamId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function apiConsumption(apiId, planId, teamId, from, to) {
@@ -1035,7 +1036,7 @@ export function apiConsumption(apiId, planId, teamId, from, to) {
         'Content-Type': 'application/json',
       },
     }
-  ).then(r => r.json());
+  ).then((r) => r.json());
 }
 
 export function apiGlobalConsumption(apiId, teamId, from, to) {
@@ -1046,7 +1047,7 @@ export function apiGlobalConsumption(apiId, teamId, from, to) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getSubscriptionInformations(subscription, teamId) {
@@ -1057,7 +1058,7 @@ export function getSubscriptionInformations(subscription, teamId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getTeamConsumptions(teamId, from, to) {
@@ -1068,7 +1069,7 @@ export function getTeamConsumptions(teamId, from, to) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getTeamBillings(teamId, from, to) {
@@ -1079,7 +1080,7 @@ export function getTeamBillings(teamId, from, to) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getTeamIncome(teamId, from, to) {
@@ -1090,7 +1091,7 @@ export function getTeamIncome(teamId, from, to) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 export function getApiCategories() {
   return fetch('/api/categories', {
@@ -1100,7 +1101,7 @@ export function getApiCategories() {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1112,7 +1113,7 @@ export function getAsset(teamId, assetId) {
     method: 'GET',
     credentials: 'include',
     headers: {},
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteAsset(teamId, assetId) {
@@ -1123,7 +1124,7 @@ export function deleteAsset(teamId, assetId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function listAssets(teamId) {
@@ -1134,7 +1135,7 @@ export function listAssets(teamId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function storeAsset(teamId, filename, title, desc, contentType, formData) {
@@ -1147,7 +1148,7 @@ export function storeAsset(teamId, filename, title, desc, contentType, formData)
       //'X-Thumbnail': thumbnail
     },
     body: formData,
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function updateAsset(teamId, assetId, contentType, formData) {
@@ -1159,7 +1160,7 @@ export function updateAsset(teamId, assetId, contentType, formData) {
       'Content-Type': contentType,
     },
     body: formData,
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1171,7 +1172,7 @@ export function getTenantAsset(assetId) {
     method: 'GET',
     credentials: 'include',
     headers: {},
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function deleteTenantAsset(assetId) {
@@ -1182,7 +1183,7 @@ export function deleteTenantAsset(assetId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function updateTenantAsset(assetId, contentType, formData) {
@@ -1194,7 +1195,7 @@ export function updateTenantAsset(assetId, contentType, formData) {
       'Content-Type': contentType,
     },
     body: formData,
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function listTenantAssets(teamId) {
@@ -1206,7 +1207,7 @@ export function listTenantAssets(teamId) {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
-    }).then(r => r.json());
+    }).then((r) => r.json());
   } else {
     return fetch('/tenant-assets', {
       method: 'GET',
@@ -1215,7 +1216,7 @@ export function listTenantAssets(teamId) {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
-    }).then(r => r.json());
+    }).then((r) => r.json());
   }
 }
 
@@ -1229,7 +1230,7 @@ export function storeTenantAsset(filename, title, desc, contentType, formData) {
       //'X-Thumbnail': thumbnail
     },
     body: formData,
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -1242,7 +1243,7 @@ export function uploadExportFile(file) {
       'Content-Type': 'application/x-ndjson',
     },
     body: file,
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function updateSubscriptionCustomName(team, subscription, customName) {
@@ -1254,7 +1255,7 @@ export function updateSubscriptionCustomName(team, subscription, customName) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ customName }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function storeThumbnail(id, formData) {
@@ -1266,7 +1267,7 @@ export function storeThumbnail(id, formData) {
       'Asset-Content-Type': 'image/png',
     },
     body: formData,
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function createTestingApiKey(teamId, body) {
@@ -1278,7 +1279,7 @@ export function createTestingApiKey(teamId, body) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function testingCall(teamId, apiId, body) {
@@ -1290,7 +1291,7 @@ export function testingCall(teamId, apiId, body) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function getTranslations() {
@@ -1301,7 +1302,7 @@ export function getTranslations() {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function saveApiTranslations(teamId, apiId, translations) {
@@ -1313,7 +1314,7 @@ export function saveApiTranslations(teamId, apiId, translations) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(translations),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function saveTenantTranslations(tenantId, translations) {
@@ -1325,7 +1326,7 @@ export function saveTenantTranslations(tenantId, translations) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(translations),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function saveTeamTranslations(teamId, translations) {
@@ -1337,7 +1338,7 @@ export function saveTeamTranslations(teamId, translations) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(translations),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function sendEmails(name, email, subject, body, tenantId, teamId, apiId, language) {
@@ -1347,7 +1348,7 @@ export function sendEmails(name, email, subject, body, tenantId, teamId, apiId, 
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      'X-contact-language': language
+      'X-contact-language': language,
     },
     body: JSON.stringify({
       name,
@@ -1355,9 +1356,9 @@ export function sendEmails(name, email, subject, body, tenantId, teamId, apiId, 
       subject,
       body,
       teamId,
-      apiId
+      apiId,
     }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function tenantAdmins(tenantId) {
@@ -1368,7 +1369,7 @@ export function tenantAdmins(tenantId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function addableAdminsForTenant(tenantId) {
@@ -1378,7 +1379,7 @@ export function addableAdminsForTenant(tenantId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  }).then(r => r.json());
+  }).then((r) => r.json());
 }
 
 export function addAdminsToTenant(tenantId, adminIds) {
@@ -1389,8 +1390,8 @@ export function addAdminsToTenant(tenantId, adminIds) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(adminIds)
-  }).then(r => r.json());
+    body: JSON.stringify(adminIds),
+  }).then((r) => r.json());
 }
 
 export function removeAdminFromTenant(tenantId, adminId) {
@@ -1400,6 +1401,6 @@ export function removeAdminFromTenant(tenantId, adminId) {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-    }
-  }).then(r => r.json());
+    },
+  }).then((r) => r.json());
 }

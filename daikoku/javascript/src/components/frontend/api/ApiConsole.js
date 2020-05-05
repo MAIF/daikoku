@@ -8,7 +8,7 @@ export class ApiConsole extends Component {
 
   componentDidMount() {
     // TODO: this current team is actually needed by the api
-    Services.oneOfMyTeam(this.props.teamId).then(team => this.setState({ team }));
+    Services.oneOfMyTeam(this.props.teamId).then((team) => this.setState({ team }));
   }
 
   render() {

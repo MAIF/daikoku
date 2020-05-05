@@ -23,7 +23,7 @@ class TeamApiComponent extends Component {
     create: false,
     tab: this.props.match.params.tab || 'infos',
     error: null,
-    otoroshiSettings: []
+    otoroshiSettings: [],
   };
 
   formSchema = {
@@ -59,20 +59,19 @@ class TeamApiComponent extends Component {
 
   componentDidMount() {
     if (this.props.location && this.props.location.state && this.props.location.state.newApi) {
-      Services.allSimpleOtoroshis(this.props.tenant._id)
-        .then(otoroshiSettings => this.setState({
+      Services.allSimpleOtoroshis(this.props.tenant._id).then((otoroshiSettings) =>
+        this.setState({
           otoroshiSettings,
           api: this.props.location.state.newApi,
           originalApi: this.props.location.state.newApi,
           create: true,
-        }))
-      ;
+        })
+      );
     } else {
       Promise.all([
         Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId),
-        Services.allSimpleOtoroshis(this.props.tenant._id)
-      ])
-      .then(([api, otoroshiSettings]) => {
+        Services.allSimpleOtoroshis(this.props.tenant._id),
+      ]).then(([api, otoroshiSettings]) => {
         this.setState({ api, originalApi: api, otoroshiSettings });
       });
     }
@@ -89,7 +88,7 @@ class TeamApiComponent extends Component {
     const editedApi = this.transformPossiblePlansBack(this.state.api);
     if (this.state.create) {
       return Services.createTeamApi(this.props.currentTeam._id, editedApi)
-        .then(api => {
+        .then((api) => {
           if (api.name) {
             toastr.success(
               t(
@@ -105,7 +104,7 @@ class TeamApiComponent extends Component {
             return Promise.reject();
           }
         })
-        .then(api =>
+        .then((api) =>
           this.setState({ create: false, api }, () =>
             this.props.history.push(
               `/${this.props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/infos`
@@ -129,7 +128,7 @@ class TeamApiComponent extends Component {
           'Are you sure you want to delete this api ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.deleteTeamApi(this.props.currentTeam._id, this.state.api._id)
             .then(() =>
@@ -140,7 +139,7 @@ class TeamApiComponent extends Component {
       });
   };
 
-  transformPossiblePlansBack = api => {
+  transformPossiblePlansBack = (api) => {
     if (!api) {
       return api;
     }
@@ -164,7 +163,7 @@ class TeamApiComponent extends Component {
       },
     };
     const possibleUsagePlans = api.possibleUsagePlans || [];
-    api.possibleUsagePlans = possibleUsagePlans.map(plan => {
+    api.possibleUsagePlans = possibleUsagePlans.map((plan) => {
       plan.otoroshiTarget = plan.otoroshiTarget || { ...def.otoroshiTarget };
       plan.otoroshiTarget.apikeyCustomization = plan.otoroshiTarget.apikeyCustomization || {
         ...def.otoroshiTarget.apikeyCustomization,
@@ -172,7 +171,7 @@ class TeamApiComponent extends Component {
       plan.otoroshiTarget.apikeyCustomization.restrictions = plan.otoroshiTarget.apikeyCustomization
         .restrictions || { ...def.otoroshiTarget.apikeyCustomization.restrictions };
       plan.otoroshiTarget.apikeyCustomization.restrictions.allowed = plan.otoroshiTarget.apikeyCustomization.restrictions.allowed.map(
-        v => {
+        (v) => {
           const [method, ...tail] = v.split(':');
           return {
             method: method || '*',
@@ -181,7 +180,7 @@ class TeamApiComponent extends Component {
         }
       );
       plan.otoroshiTarget.apikeyCustomization.restrictions.forbidden = plan.otoroshiTarget.apikeyCustomization.restrictions.forbidden.map(
-        v => {
+        (v) => {
           const [method, ...tail] = v.split(':');
           return {
             method: method || '*',
@@ -190,7 +189,7 @@ class TeamApiComponent extends Component {
         }
       );
       plan.otoroshiTarget.apikeyCustomization.restrictions.notFound = plan.otoroshiTarget.apikeyCustomization.restrictions.notFound.map(
-        v => {
+        (v) => {
           const [method, ...tail] = v.split(':');
           return {
             method: method || '*',
@@ -203,7 +202,7 @@ class TeamApiComponent extends Component {
     return api;
   };
 
-  transformPossiblePlans = api => {
+  transformPossiblePlans = (api) => {
     if (!api) {
       return api;
     }
@@ -227,7 +226,7 @@ class TeamApiComponent extends Component {
       },
     };
     const possibleUsagePlans = api.possibleUsagePlans || [];
-    api.possibleUsagePlans = possibleUsagePlans.map(plan => {
+    api.possibleUsagePlans = possibleUsagePlans.map((plan) => {
       plan.otoroshiTarget = plan.otoroshiTarget || { ...def.otoroshiTarget };
       plan.otoroshiTarget.apikeyCustomization = plan.otoroshiTarget.apikeyCustomization || {
         ...def.otoroshiTarget.apikeyCustomization,
@@ -235,13 +234,13 @@ class TeamApiComponent extends Component {
       plan.otoroshiTarget.apikeyCustomization.restrictions = plan.otoroshiTarget.apikeyCustomization
         .restrictions || { ...def.otoroshiTarget.apikeyCustomization.restrictions };
       plan.otoroshiTarget.apikeyCustomization.restrictions.allowed = plan.otoroshiTarget.apikeyCustomization.restrictions.allowed.map(
-        v => (v.method && v.path ? `${v.method}:${v.path}` : v)
+        (v) => (v.method && v.path ? `${v.method}:${v.path}` : v)
       );
       plan.otoroshiTarget.apikeyCustomization.restrictions.forbidden = plan.otoroshiTarget.apikeyCustomization.restrictions.forbidden.map(
-        v => (v.method && v.path ? `${v.method}:${v.path}` : v)
+        (v) => (v.method && v.path ? `${v.method}:${v.path}` : v)
       );
       plan.otoroshiTarget.apikeyCustomization.restrictions.notFound = plan.otoroshiTarget.apikeyCustomization.restrictions.notFound.map(
-        v => (v.method && v.path ? `${v.method}:${v.path}` : v)
+        (v) => (v.method && v.path ? `${v.method}:${v.path}` : v)
       );
       return plan;
     });
@@ -346,17 +345,19 @@ class TeamApiComponent extends Component {
                       </Translation>
                     </Link>
                   </li>
-                  {editedApi.visibility !== 'AdminOnly' && <li className="nav-item">
-                    <Link
-                      className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
-                      to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/testing`}
-                      onClick={() => this.setState({ tab: 'testing' })}>
-                      <i className="fas fa-vial mr-1" />
-                      <Translation i18nkey="Testing" language={this.props.currentLanguage}>
-                        Testing
-                      </Translation>
-                    </Link>
-                  </li>}
+                  {editedApi.visibility !== 'AdminOnly' && (
+                    <li className="nav-item">
+                      <Link
+                        className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
+                        to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/testing`}
+                        onClick={() => this.setState({ tab: 'testing' })}>
+                        <i className="fas fa-vial mr-1" />
+                        <Translation i18nkey="Testing" language={this.props.currentLanguage}>
+                          Testing
+                        </Translation>
+                      </Link>
+                    </li>
+                  )}
                   <li className="nav-item">
                     <Link
                       className={`nav-link ${tab === 'documentation' ? 'active' : ''}`}
@@ -383,7 +384,7 @@ class TeamApiComponent extends Component {
                         }
                         value={editedApi}
                         getCategories={this.getApiCategories}
-                        onChange={api => this.setState({ api })}
+                        onChange={(api) => this.setState({ api })}
                       />
                     )}
                     {editedApi && this.state.tab === 'description' && (
@@ -391,14 +392,14 @@ class TeamApiComponent extends Component {
                         currentLanguage={this.props.currentLanguage}
                         value={editedApi}
                         team={this.props.currentTeam}
-                        onChange={api => this.setState({ api })}
+                        onChange={(api) => this.setState({ api })}
                       />
                     )}
                     {editedApi && this.state.tab === 'swagger' && (
                       <TeamApiSwagger
                         currentLanguage={this.props.currentLanguage}
                         value={editedApi}
-                        onChange={api => this.setState({ api })}
+                        onChange={(api) => this.setState({ api })}
                       />
                     )}
                     {editedApi && this.state.tab === 'pricing' && (
@@ -406,7 +407,7 @@ class TeamApiComponent extends Component {
                         currentLanguage={this.props.currentLanguage}
                         teamId={teamId}
                         value={editedApi}
-                        onChange={api => this.setState({ api })}
+                        onChange={(api) => this.setState({ api })}
                         otoroshiSettings={this.state.otoroshiSettings}
                       />
                     )}
@@ -415,7 +416,7 @@ class TeamApiComponent extends Component {
                         currentLanguage={this.props.currentLanguage}
                         teamId={teamId}
                         value={editedApi}
-                        onChange={api => this.setState({ api })}
+                        onChange={(api) => this.setState({ api })}
                         tenant={this.props.tenant}
                       />
                     )}
@@ -423,7 +424,7 @@ class TeamApiComponent extends Component {
                       <TeamApiOtoroshiPlaceholder
                         currentLanguage={this.props.currentLanguage}
                         value={editedApi}
-                        onChange={api => this.setState({ api })}
+                        onChange={(api) => this.setState({ api })}
                       />
                     )}
                     {editedApi && this.state.tab === 'documentation' && (
@@ -433,9 +434,9 @@ class TeamApiComponent extends Component {
                         team={this.props.currentTeam}
                         teamId={teamId}
                         value={editedApi}
-                        onChange={api => this.setState({ api })}
+                        onChange={(api) => this.setState({ api })}
                         save={this.save}
-                        hookSavePage={savePage => this.setState({ savePage })}
+                        hookSavePage={(savePage) => this.setState({ savePage })}
                       />
                     )}
                     {editedApi && this.state.tab === 'testing' && (
@@ -445,9 +446,9 @@ class TeamApiComponent extends Component {
                         team={this.props.currentTeam}
                         teamId={teamId}
                         value={editedApi}
-                        onChange={api => this.setState({ api })}
+                        onChange={(api) => this.setState({ api })}
                         save={this.save}
-                        hookSavePage={savePage => this.setState({ savePage })}
+                        hookSavePage={(savePage) => this.setState({ savePage })}
                         otoroshiSettings={this.state.otoroshiSettings}
                       />
                     )}
@@ -497,7 +498,7 @@ class TeamApiComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

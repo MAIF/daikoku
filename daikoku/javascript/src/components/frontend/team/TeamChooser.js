@@ -18,22 +18,22 @@ class TeamChooserComponent extends Component {
   };
 
   componentDidMount() {
-    Services.allJoinableTeams().then(teams => this.setState({ teams }));
+    Services.allJoinableTeams().then((teams) => this.setState({ teams }));
   }
 
   askToJoin = (e, team) => {
     Services.askToJoinTeam(team._id)
       .then(() => Services.allJoinableTeams())
-      .then(teams => this.setState({ teams }));
+      .then((teams) => this.setState({ teams }));
   };
 
-  redirectToTeamSettings = team => {
+  redirectToTeamSettings = (team) => {
     this.props
       .updateTeam(team)
       .then(() => this.props.history.push(`/${team._humanReadableId}/settings`));
   };
 
-  handlePageClick = data => {
+  handlePageClick = (data) => {
     this.setState({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected });
   };
 
@@ -43,7 +43,7 @@ class TeamChooserComponent extends Component {
     const filteredTeams =
       searched === ''
         ? teams
-        : teams.filter(team => {
+        : teams.filter((team) => {
             if (team.name.toLowerCase().indexOf(searched) > -1) {
               return true;
             } else return team.description.toLowerCase().indexOf(searched) > -1;
@@ -84,19 +84,19 @@ class TeamChooserComponent extends Component {
                 placeholder={t('Search a team', this.props.currentLanguage)}
                 aria-label="Search a team"
                 value={this.state.searched}
-                onChange={e => this.setState({ searched: e.target.value })}
+                onChange={(e) => this.setState({ searched: e.target.value })}
               />
             </div>
           </div>
           <div className="row">
             <div className="d-flex col flex-column p-3">
-              {paginateTeams.map(team => (
+              {paginateTeams.map((team) => (
                 <TeamCard
                   key={team._id}
                   user={this.props.connectedUser}
                   team={team}
                   currentLanguage={this.props.currentLanguage}
-                  askToJoin={e => this.askToJoin(e, team)}
+                  askToJoin={(e) => this.askToJoin(e, team)}
                   redirectToTeamPage={() => this.props.history.push(`/${team._humanReadableId}`)}
                   redirectToTeamSettings={() => this.redirectToTeamSettings(team)}
                 />
@@ -125,12 +125,12 @@ class TeamChooserComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
-  updateTeam: team => updateTeamPromise(team),
+  updateTeam: (team) => updateTeamPromise(team),
 };
 
 export const TeamChooser = connect(mapStateToProps, mapDispatchToProps)(TeamChooserComponent);

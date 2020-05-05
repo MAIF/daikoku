@@ -8,10 +8,10 @@ import { t, Translation } from '../../../locales';
 import { BeautifulTitle } from '../../utils';
 
 export const MimeTypeFilter = {
-  image: value => value.startsWith('image'),
-  css: value => value.indexOf('css') > -1,
-  javascript: value => value.indexOf('javascript') > -1,
-  font: value => value.indexOf('font') > -1,
+  image: (value) => value.startsWith('image'),
+  css: (value) => value.indexOf('css') > -1,
+  javascript: (value) => value.indexOf('javascript') > -1,
+  font: (value) => value.indexOf('font') > -1,
 };
 
 export const AssetSelectorModal = ({
@@ -30,7 +30,7 @@ export const AssetSelectorModal = ({
   };
 
   const filteredAssets = assets.filter(
-    asset => !search || asset.title.toLowerCase().includes(search)
+    (asset) => !search || asset.title.toLowerCase().includes(search)
   );
 
   return (
@@ -50,7 +50,7 @@ export const AssetSelectorModal = ({
           <input
             placeholder={t('Find an assets', currentLanguage)}
             className="form-control"
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
           />
           <div
             className={classNames({
@@ -135,8 +135,8 @@ export class AssetChooserComponent extends Component {
   };
 
   getTenantAssets = () =>
-    Services.listTenantAssets(this.props.teamId).then(assets =>
-      assets.map(asset => ({
+    Services.listTenantAssets(this.props.teamId).then((assets) =>
+      assets.map((asset) => ({
         label: asset.meta.filename + ' - ' + asset.meta.title,
         value: asset.meta.asset,
         filename: asset.meta.filename,
@@ -148,9 +148,9 @@ export class AssetChooserComponent extends Component {
       }))
     );
 
-  getTeamAssets = team =>
-    Services.listAssets(team._id).then(assets =>
-      assets.map(asset => ({
+  getTeamAssets = (team) =>
+    Services.listAssets(team._id).then((assets) =>
+      assets.map((asset) => ({
         label: asset.meta.filename + ' - ' + asset.meta.title,
         value: asset.meta.asset,
         filename: asset.meta.filename,
@@ -173,7 +173,7 @@ export class AssetChooserComponent extends Component {
   // }
 
   getAssets(team) {
-    let fetchAssets = () => new Promise(resolve => resolve([]));
+    let fetchAssets = () => new Promise((resolve) => resolve([]));
     if (this.props.tenantMode) {
       fetchAssets = () => this.getTenantAssets();
     } else if (!this.props.tenantMode && team._id) {
@@ -181,17 +181,17 @@ export class AssetChooserComponent extends Component {
     }
 
     fetchAssets()
-      .then(assets => {
+      .then((assets) => {
         if (this.props.typeFilter) {
           this.setState({
-            assets: assets.filter(asset => this.props.typeFilter(asset.contentType)),
+            assets: assets.filter((asset) => this.props.typeFilter(asset.contentType)),
             loading: false,
           });
         } else {
           this.setState({ assets, loading: false });
         }
       })
-      .catch(error => this.setState({ error, loading: false }));
+      .catch((error) => this.setState({ error, loading: false }));
   }
 
   render() {
@@ -208,10 +208,7 @@ export class AssetChooserComponent extends Component {
     if (this.state.error) {
       return (
         <BeautifulTitle title={this.state.error.message}>
-          <button
-            type="button"
-            className="btn btn-outline-primary ml-1 cursor-help"
-            disabled>
+          <button type="button" className="btn btn-outline-primary ml-1 cursor-help" disabled>
             <i
               className={classNames('fas', {
                 'fa-user-circle mr-1': !!this.props.onlyPreview,
@@ -226,12 +223,8 @@ export class AssetChooserComponent extends Component {
 
     if (!this.state.assets.length) {
       return (
-        <BeautifulTitle
-          title={t('No assets found', this.props.currentLanguage)}>
-          <button
-            type="button"
-            className="btn btn-access-negative ml-1 cursor-help"
-            disabled>
+        <BeautifulTitle title={t('No assets found', this.props.currentLanguage)}>
+          <button type="button" className="btn btn-access-negative ml-1 cursor-help" disabled>
             <i
               className={classNames('fas mr-1', {
                 'fa-user-circle': !!this.props.onlyPreview,
@@ -249,16 +242,14 @@ export class AssetChooserComponent extends Component {
         type="button"
         className="btn btn-access-negative ml-1"
         onClick={() =>
-          this.props.openAssetSelectorModal(
-            {
-              open: true,
-              assets: this.state.assets,
-              onSelect: asset => this.props.onSelect(asset),
-              onlyPreview: this.props.onlyPreview,
-              panelView: true,
-              currentLanguage: this.props.currentLanguage,
-            }
-          )
+          this.props.openAssetSelectorModal({
+            open: true,
+            assets: this.state.assets,
+            onSelect: (asset) => this.props.onSelect(asset),
+            onlyPreview: this.props.onlyPreview,
+            panelView: true,
+            currentLanguage: this.props.currentLanguage,
+          })
         }>
         <i
           className={classNames('fas mr-1', {
@@ -272,7 +263,7 @@ export class AssetChooserComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

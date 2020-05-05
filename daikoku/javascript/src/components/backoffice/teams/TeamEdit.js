@@ -24,7 +24,7 @@ export class TeamEditForm extends Component {
       props: {
         label: t('Tenant', this.props.currentLanguage),
         valuesFrom: '/api/tenants',
-        transformer: tenant => ({ label: tenant.name, value: tenant._id }),
+        transformer: (tenant) => ({ label: tenant.name, value: tenant._id }),
       },
     },
     type: {
@@ -62,7 +62,7 @@ export class TeamEditForm extends Component {
         team: () => this.props.team,
         currentLanguage: this.props.currentLanguage,
       },
-    }
+    },
   };
 
   render() {
@@ -84,16 +84,10 @@ export class TeamEditForm extends Component {
                 boxShadow: '0px 0px 0px 3px lightgrey',
                 overflow: 'hidden',
               }}>
-              <img
-                className="img-fluid"
-                src={this.props.team.avatar}
-                alt="avatar"
-              />
+              <img className="img-fluid" src={this.props.team.avatar} alt="avatar" />
             </div>
           )}
-          <h1 className="h1-rwd-reduce ml-2">
-            {this.props.team.name}
-          </h1>
+          <h1 className="h1-rwd-reduce ml-2">{this.props.team.name}</h1>
         </div>
         <div className="row">
           <React.Suspense fallback={<Spinner />}>
@@ -101,7 +95,7 @@ export class TeamEditForm extends Component {
               flow={this.flow}
               schema={this.schema}
               value={this.props.team}
-              onChange={team => this.props.updateTeam(team)}
+              onChange={(team) => this.props.updateTeam(team)}
             />
           </React.Suspense>
         </div>
@@ -110,21 +104,16 @@ export class TeamEditForm extends Component {
   }
 }
 
-
-
-
-
 const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
-
 
   const members = () => {
     history.push(`/${team._humanReadableId}/settings/members`);
   };
 
   const save = () => {
-    Services.updateTeam(team)
-      .then(() => toastr.success(
+    Services.updateTeam(team).then(() =>
+      toastr.success(
         t(
           'team.updated.success',
           currentLanguage,
@@ -132,21 +121,19 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
           `team ${team.name} successfully updated`,
           team.name
         )
-      ));
+      )
+    );
   };
 
   return (
     <TeamBackOffice>
       <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={currentLanguage} />
       <div className="row form-back-fixedBtns">
-        <a
-          className="btn btn-outline-primary"
-          href="#"
-          onClick={() => history.goBack()}>
+        <a className="btn btn-outline-primary" href="#" onClick={() => history.goBack()}>
           <i className="fas fa-chevron-left mr-1" />
           <Translation i18nkey="Back" language={currentLanguage}>
             Back
-            </Translation>
+          </Translation>
         </a>
         <button
           style={{ marginLeft: 5 }}
@@ -157,7 +144,7 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
             <i className="fas fa-users mr-1" />
             <Translation i18nkey="Members" language={currentLanguage}>
               Members
-              </Translation>
+            </Translation>
           </span>
         </button>
         <button
@@ -177,12 +164,12 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
   );
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
-  updateTeam: team => updateTeamPromise(team),
+  updateTeam: (team) => updateTeamPromise(team),
 };
 
 export const TeamEdit = connect(mapStateToProps, mapDispatchToProps)(TeamEditComponent);

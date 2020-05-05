@@ -51,7 +51,7 @@ const mimeTypes = [
 ];
 
 const maybeCreateThumbnail = (id, file) => {
-  return new Promise(s => {
+  return new Promise((s) => {
     if (
       file.type === 'image/gif' ||
       file.type === 'image/png' ||
@@ -61,14 +61,14 @@ const maybeCreateThumbnail = (id, file) => {
       const reader = new FileReader();
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      reader.onload = function(event) {
+      reader.onload = function (event) {
         var img = new Image();
-        img.onload = function() {
+        img.onload = function () {
           canvas.width = 128; //img.width;
           canvas.height = 128; //img.height;
           ctx.drawImage(img, 0, 0, 128, 128);
           const base64 = canvas.toDataURL();
-          canvas.toBlob(blob => {
+          canvas.toBlob((blob) => {
             Services.storeThumbnail(id, blob).then(() => {
               s(base64);
             });
@@ -84,7 +84,7 @@ const maybeCreateThumbnail = (id, file) => {
 };
 
 const handleAssetType = (tenantMode, type, currentLanguage) => {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     if (tenantMode) {
       return resolve(true);
     } else if (
@@ -101,7 +101,7 @@ const handleAssetType = (tenantMode, type, currentLanguage) => {
   });
 };
 
-const ReplaceButton = props => {
+const ReplaceButton = (props) => {
   const [file, setFile] = useState();
   const [input, setInput] = useState();
 
@@ -134,20 +134,20 @@ const ReplaceButton = props => {
         <i className="fas fa-retweet" />
       </button>
       <input
-          ref={r => setInput(r)}
-          type="file"
-          multiple
-          className="form-control hide"
-          onChange={e => {
-            const file = e.target.files[0];
-            if (e.target.files.length > 1) {
-              props.displayError(t('error.replace.files.multi', props.currentLanguage));
-            } else if (props.asset.contentType !== file.type) {
-              props.displayError(t('error.replace.files.content.type', props.currentLanguage));
-            } else {
-              setFile(file);
-            }
-          }}
+        ref={(r) => setInput(r)}
+        type="file"
+        multiple
+        className="form-control hide"
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (e.target.files.length > 1) {
+            props.displayError(t('error.replace.files.multi', props.currentLanguage));
+          } else if (props.asset.contentType !== file.type) {
+            props.displayError(t('error.replace.files.content.type', props.currentLanguage));
+          } else {
+            setFile(file);
+          }
+        }}
       />
     </>
   );
@@ -156,7 +156,7 @@ const ReplaceButton = props => {
 class FileInput extends Component {
   state = { uploading: false };
 
-  setFiles = e => {
+  setFiles = (e) => {
     const files = e.target.files;
     this.setState({ uploading: true }, () => {
       this.props.setFiles(files).then(() => {
@@ -173,7 +173,7 @@ class FileInput extends Component {
     return (
       <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
         <input
-          ref={r => (this.input = r)}
+          ref={(r) => (this.input = r)}
           type="file"
           multiple
           className="form-control hide"
@@ -235,13 +235,13 @@ class AssetsListComponent extends Component {
       props: {
         label: t('Content-Type', this.props.currentLanguage),
         possibleValues: mimeTypes
-          .filter(mt => (this.props.tenantMode ? true : !mt.tenantModeOnly))
+          .filter((mt) => (this.props.tenantMode ? true : !mt.tenantModeOnly))
           .map(({ label, value }) => ({ label, value })),
       },
     },
     input: {
       type: FileInput,
-      props: { setFiles: f => this.setFiles(f), currentLanguage: this.props.currentLanguage },
+      props: { setFiles: (f) => this.setFiles(f), currentLanguage: this.props.currentLanguage },
     },
     add: {
       type: AddAsset,
@@ -253,22 +253,22 @@ class AssetsListComponent extends Component {
     {
       title: t('Filename', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: item => (item.meta && item.meta.filename ? item.meta.filename : '--'),
+      content: (item) => (item.meta && item.meta.filename ? item.meta.filename : '--'),
     },
     {
       title: t('Title', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: item => (item.meta && item.meta.title ? item.meta.title : '--'),
+      content: (item) => (item.meta && item.meta.title ? item.meta.title : '--'),
     },
     {
       title: t('Description', this.props.currentLanguage),
       style: { alignItems: 'center', justifyContent: 'center', display: 'flex' },
-      content: item => (item.meta && item.meta.desc ? item.meta.desc : '--'),
+      content: (item) => (item.meta && item.meta.desc ? item.meta.desc : '--'),
     },
     {
       title: t('Thumbnail', this.props.currentLanguage),
       style: { alignItems: 'center', justifyContent: 'center', display: 'flex', width: 86 },
-      content: item => {
+      content: (item) => {
         const type = item.meta['content-type'];
         if (
           type === 'image/gif' ||
@@ -304,12 +304,13 @@ class AssetsListComponent extends Component {
     {
       title: t('Content-Type', this.props.currentLanguage),
       style: { alignItems: 'center', justifyContent: 'center', display: 'flex' },
-      content: item => (item.meta && item.meta['content-type'] ? item.meta['content-type'] : '--'),
+      content: (item) =>
+        item.meta && item.meta['content-type'] ? item.meta['content-type'] : '--',
     },
     {
       title: t('Actions', this.props.currentLanguage),
       style: { justifyContent: 'flex-end', alignItems: 'center', display: 'flex', width: 150 },
-      content: item => (
+      content: (item) => (
         <div className="btn-group">
           {item.contentType.startsWith('text') && (
             <button
@@ -323,7 +324,7 @@ class AssetsListComponent extends Component {
             asset={item}
             tenantMode={this.props.tenantMode}
             teamId={this.props.currentTeam ? this.props.currentTeam._id : undefined}
-            displayError={error => toastr.error(error)}
+            displayError={(error) => toastr.error(error)}
             currentLanguage={this.props.currentLanguage}
             postAction={() => {
               if (this.table) {
@@ -331,11 +332,10 @@ class AssetsListComponent extends Component {
               }
             }}
           />
-          <a
-            href={this.assetLink(item.meta.asset)}
-            target="_blank"
-            rel="noreferrer noopener">
-            <button className="btn btn-sm btn-outline-primary mr-1" style={{borderRadius:'0px', marginLeft:'0.15rem'}}>
+          <a href={this.assetLink(item.meta.asset)} target="_blank" rel="noreferrer noopener">
+            <button
+              className="btn btn-sm btn-outline-primary mr-1"
+              style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
               <i className="fas fa-eye" />
             </button>
           </a>
@@ -350,7 +350,7 @@ class AssetsListComponent extends Component {
     },
   ];
 
-  readAndUpdate = asset => {
+  readAndUpdate = (asset) => {
     let link;
     if (this.props.tenantMode) {
       link = `/tenant-assets/${asset.meta.asset}?download=true`;
@@ -362,35 +362,33 @@ class AssetsListComponent extends Component {
       method: 'GET',
       credentials: 'include',
     })
-      .then(response => response.text())
-      .then(value =>
-        this.props.openWysywygModal(
-          {
-            action: value => {
-              const textFileAsBlob = new Blob([value], { type: 'text/plain' });
-              const file = new File([textFileAsBlob], asset.filename);
+      .then((response) => response.text())
+      .then((value) =>
+        this.props.openWysywygModal({
+          action: (value) => {
+            const textFileAsBlob = new Blob([value], { type: 'text/plain' });
+            const file = new File([textFileAsBlob], asset.filename);
 
-              if (this.props.tenantMode) {
-                Services.updateTenantAsset(asset.meta.asset, asset.contentType, file);
-              } else {
-                Services.updateAsset(
-                  this.props.currentTeam._id,
-                  asset.meta.asset,
-                  asset.contentType,
-                  file
-                );
-              }
-            },
-            title: asset.meta.filename,
-            value,
-            team: this.props.currentTeam,
-            currentLanguage: this.props.currentLanguage,
-          }
-        )
+            if (this.props.tenantMode) {
+              Services.updateTenantAsset(asset.meta.asset, asset.contentType, file);
+            } else {
+              Services.updateAsset(
+                this.props.currentTeam._id,
+                asset.meta.asset,
+                asset.contentType,
+                file
+              );
+            }
+          },
+          title: asset.meta.filename,
+          value,
+          team: this.props.currentTeam,
+          currentLanguage: this.props.currentLanguage,
+        })
       );
   };
 
-  assetLink = asset => {
+  assetLink = (asset) => {
     if (this.props.tenantMode) {
       return `/tenant-assets/${asset}?download=true`;
     } else {
@@ -398,7 +396,7 @@ class AssetsListComponent extends Component {
     }
   };
 
-  serviceDelete = asset => {
+  serviceDelete = (asset) => {
     if (this.props.tenantMode) {
       return Services.deleteTenantAsset(asset);
     } else {
@@ -406,7 +404,7 @@ class AssetsListComponent extends Component {
     }
   };
 
-  deleteAsset = asset => {
+  deleteAsset = (asset) => {
     window
       .confirm(
         t(
@@ -415,7 +413,7 @@ class AssetsListComponent extends Component {
           'Are you sure you want to delete that asset ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           this.serviceDelete(asset.meta.asset).then(() => {
             if (this.table) {
@@ -439,17 +437,17 @@ class AssetsListComponent extends Component {
   fetchAssets = () => {
     if (this.props.currentTeam) {
       if (this.props.tenantMode) {
-        return Services.listTenantAssets().then(assets => {
+        return Services.listTenantAssets().then((assets) => {
           return assets;
         });
       } else {
-        return Services.listAssets(this.props.currentTeam._id).then(assets => {
+        return Services.listAssets(this.props.currentTeam._id).then((assets) => {
           return assets;
         });
       }
     } else {
       if (this.props.tenantMode) {
-        return Services.listTenantAssets().then(assets => {
+        return Services.listTenantAssets().then((assets) => {
           return assets;
         });
       } else {
@@ -462,7 +460,7 @@ class AssetsListComponent extends Component {
     const multiple = this.state.assets.length > 1;
     const files = [...this.state.assets];
     this.setState({ loading: true });
-    const promises = files.map(file => {
+    const promises = files.map((file) => {
       const formData = file;
       if (formData && this.state.newAsset.filename && this.state.newAsset.title) {
         if (this.props.tenantMode) {
@@ -474,7 +472,7 @@ class AssetsListComponent extends Component {
             this.state.newAsset.description || '--',
             multiple ? file.type : this.state.newAsset.contentType,
             formData
-          ).then(asset => {
+          ).then((asset) => {
             return maybeCreateThumbnail(asset.id, formData).then(() => {
               this.setState({ newAsset: {} });
               if (this.table) {
@@ -494,7 +492,7 @@ class AssetsListComponent extends Component {
                 this.state.newAsset.description || '--',
                 multiple ? file.type : this.state.newAsset.contentType,
                 formData
-              ).then(asset => {
+              ).then((asset) => {
                 return maybeCreateThumbnail(asset.id, formData).then(() => {
                   this.setState({ newAsset: {} });
                   if (this.table) {
@@ -503,7 +501,7 @@ class AssetsListComponent extends Component {
                 });
               })
             )
-            .catch(error => toastr.error(error));
+            .catch((error) => toastr.error(error));
         }
       } else {
         toastr.error(
@@ -520,7 +518,7 @@ class AssetsListComponent extends Component {
       .catch(() => this.setState({ loading: false }));
   };
 
-  setFiles = assets =>
+  setFiles = (assets) =>
     new Promise((resolve, reject) => {
       const file = assets[0];
       if (!file) {
@@ -566,7 +564,7 @@ class AssetsListComponent extends Component {
                   flow={this.flow}
                   schema={this.schema}
                   value={this.state.newAsset}
-                  onChange={newAsset => this.setState({ newAsset })}
+                  onChange={(newAsset) => this.setState({ newAsset })}
                 />
               </React.Suspense>
             </div>
@@ -582,8 +580,8 @@ class AssetsListComponent extends Component {
                 fetchItems={this.fetchAssets}
                 showActions={false}
                 showLink={false}
-                extractKey={item => item.key}
-                injectTable={t => (this.table = t)}
+                extractKey={(item) => item.key}
+                injectTable={(t) => (this.table = t)}
                 currentLanguage={this.props.currentLanguage}
               />
             </div>
@@ -594,7 +592,7 @@ class AssetsListComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

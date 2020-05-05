@@ -6,11 +6,17 @@ import _ from 'lodash';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, tenant as TENANT, PaginatedComponent, AvatarWithAction, Option } from '../../utils';
+import {
+  Can,
+  manage,
+  tenant as TENANT,
+  PaginatedComponent,
+  AvatarWithAction,
+  Option,
+} from '../../utils';
 import { Translation, t } from '../../../locales';
 
-
-const TenantAdminListComponent = props => {
+const TenantAdminListComponent = (props) => {
   const [search, setSearch] = useState('');
   const [addableAdmins, setAddableAdmins] = useState([]);
   const [admins, setAdmins] = useState([]);
@@ -25,24 +31,24 @@ const TenantAdminListComponent = props => {
     Promise.all([
       Services.tenantAdmins(tenantId),
       Services.addableAdminsForTenant(tenantId),
-      Services.oneTenant(tenantId)
-    ])
-      .then(
-        ([{ team, admins }, addableAdmins, tenant]) => {
-          setTeam(team);
-          setAdmins(admins);
-          setTenant(tenant);
-          setAddableAdmins(addableAdmins);
-          setAdmins(admins);
-          setLoading(false);
-        }
-      );
+      Services.oneTenant(tenantId),
+    ]).then(([{ team, admins }, addableAdmins, tenant]) => {
+      setTeam(team);
+      setAdmins(admins);
+      setTenant(tenant);
+      setAddableAdmins(addableAdmins);
+      setAdmins(admins);
+      setLoading(false);
+    });
   }, [props.match.params.tenantId]);
 
   useEffect(() => {
     const filteredAdmins = Option(search)
-      .map(search => admins.filter(({ name, email }) =>
-        [name, email].some(value => value.toLowerCase().includes(search))))
+      .map((search) =>
+        admins.filter(({ name, email }) =>
+          [name, email].some((value) => value.toLowerCase().includes(search))
+        )
+      )
       .getOrElse(admins);
 
     setFilteredAdmins(filteredAdmins);
@@ -50,31 +56,31 @@ const TenantAdminListComponent = props => {
 
   useEffect(() => {
     if (selectedAdmin) {
-      Services.addAdminsToTenant(tenant._id, [selectedAdmin._id])
-        .then(team => {
-          if (team.error) {
-            toastr.error('Failure', team.error);
-          } else {
-            setTeam(team);
-            setAdmins([...admins, selectedAdmin]);
-            setAddableAdmins(addableAdmins.filter(u => u._id !== selectedAdmin._id));
-            toastr.success(t(
+      Services.addAdminsToTenant(tenant._id, [selectedAdmin._id]).then((team) => {
+        if (team.error) {
+          toastr.error('Failure', team.error);
+        } else {
+          setTeam(team);
+          setAdmins([...admins, selectedAdmin]);
+          setAddableAdmins(addableAdmins.filter((u) => u._id !== selectedAdmin._id));
+          toastr.success(
+            t(
               'admin.added.successfully',
               props.currentLanguage,
               false,
               `${selectedAdmin.name} has been added as new admin of the tenant`,
               selectedAdmin.name
-            ));
-            setSelectedAdmin(null);
-          }
-        });
+            )
+          );
+          setSelectedAdmin(null);
+        }
+      });
     }
   }, [selectedAdmin]);
 
-  const adminToSelector = admin => ({
+  const adminToSelector = (admin) => ({
     label: (
-      <div
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {admin.name} ({admin.email}){' '}
         <img
           style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
@@ -86,46 +92,50 @@ const TenantAdminListComponent = props => {
     value: admin,
   });
 
-  const removeAdmin = admin => {
-    if (
-      team.users.length === 1
-    ) {
+  const removeAdmin = (admin) => {
+    if (team.users.length === 1) {
       alert(
         t(
           'remove.admin.tenant.alert',
           props.currentLanguage,
           false,
-          'You can\'t delete this admin, it must remain an admin in a tenant.'
+          "You can't delete this admin, it must remain an admin in a tenant."
         )
       );
     } else {
-      window.confirm(
-        t(
-          'remove.admin.tenant.confirm',
-          props.currentLanguage,
-          false,
-          'Are you sure you want to remove this admin from the tenant ?'
+      window
+        .confirm(
+          t(
+            'remove.admin.tenant.confirm',
+            props.currentLanguage,
+            false,
+            'Are you sure you want to remove this admin from the tenant ?'
+          )
         )
-      )
-        .then(ok => {
+        .then((ok) => {
           if (ok) {
-            Services.removeAdminFromTenant(tenant._id, admin._id)
-              .then(team => {
-                if (team.error) {
-                  toastr.error(t('Failure', props.currentLanguage), team.error);
-                } else {
-                  setTeam(team);
-                  setAddableAdmins([...addableAdmins, admin]);
-                  setAdmins(admins.filter(a => a._id !== admin._id));
-                  toastr.success(t('remove.admin.tenant.success', props.currentLanguage, false, 'Admin deleted successfully', admin.name));
-                }
-              });
+            Services.removeAdminFromTenant(tenant._id, admin._id).then((team) => {
+              if (team.error) {
+                toastr.error(t('Failure', props.currentLanguage), team.error);
+              } else {
+                setTeam(team);
+                setAddableAdmins([...addableAdmins, admin]);
+                setAdmins(admins.filter((a) => a._id !== admin._id));
+                toastr.success(
+                  t(
+                    'remove.admin.tenant.success',
+                    props.currentLanguage,
+                    false,
+                    'Admin deleted successfully',
+                    admin.name
+                  )
+                );
+              }
+            });
           }
         });
     }
   };
-
-
 
   return (
     <UserBackOffice tab={props.tenantMode ? 'Admins' : 'Tenants'} isLoading={loading}>
@@ -134,9 +144,7 @@ const TenantAdminListComponent = props => {
           <div className="col">
             <h1>
               {tenant && <>{tenant.name} - </>}
-              <Translation
-                i18nkey="Admins"
-                language={props.currentLanguage}>
+              <Translation i18nkey="Admins" language={props.currentLanguage}>
                 Admins
               </Translation>
             </h1>
@@ -148,30 +156,28 @@ const TenantAdminListComponent = props => {
               placeholder={t('Add new admin', props.currentLanguage)}
               className="add-member-select mr-2 reactSelect"
               options={addableAdmins.map(adminToSelector)}
-              onChange={slug => setSelectedAdmin(slug.value)}
+              onChange={(slug) => setSelectedAdmin(slug.value)}
               value={selectedAdmin}
-              filterOption={(data, search) => _.values(data.value).some(v => v.includes(search))}
+              filterOption={(data, search) => _.values(data.value).some((v) => v.includes(search))}
               classNamePrefix="reactSelect"
             />
             <input
               placeholder={t('Find an admin', props.currentLanguage)}
               className="form-control"
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
         <PaginatedComponent
           currentLanguage={props.currentLanguage}
-          items={_.sortBy(filteredAdmins, [a => a.name.toLowerCase()])}
+          items={_.sortBy(filteredAdmins, [(a) => a.name.toLowerCase()])}
           count={15}
           formatter={(admin) => {
             return (
               <AvatarWithAction
                 key={admin._id}
                 avatar={admin.picture}
-                infos={
-                  <span className="team-member__name">{admin.name}</span>
-                }
+                infos={<span className="team-member__name">{admin.name}</span>}
                 actions={[
                   {
                     action: () => removeAdmin(admin),
@@ -188,7 +194,7 @@ const TenantAdminListComponent = props => {
   );
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

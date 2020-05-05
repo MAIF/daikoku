@@ -3,32 +3,32 @@ import { Help } from './Help';
 
 import './BooleanInput.css';
 
-const OnSwitch = props => (
+const OnSwitch = (props) => (
   <div className="content-switch-button-on" onClick={props.onChange}>
     <div className="switch-button-on" />
   </div>
 );
 
-const OffSwitch = props => (
+const OffSwitch = (props) => (
   <div className="content-switch-button-off" onClick={props.onChange}>
     <div className="switch-button-off" />
   </div>
 );
 
 export class BooleanInput extends Component {
-  toggleOff = e => {
+  toggleOff = (e) => {
     console.debug({ e });
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChange(false);
   };
 
-  toggleOn = e => {
+  toggleOn = (e) => {
     console.debug({ e });
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChange(true);
   };
 
-  toggle = value => {
+  toggle = (value) => {
     this.props.onChange(value);
   };
 
@@ -59,19 +59,19 @@ export class BooleanInput extends Component {
 }
 
 export class SimpleBooleanInput extends Component {
-  toggleOff = e => {
+  toggleOff = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     console.log('off');
     this.props.onChange(false);
   };
 
-  toggleOn = e => {
+  toggleOn = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     console.log('on');
     this.props.onChange(true);
   };
 
-  toggle = value => {
+  toggle = (value) => {
     this.props.onChange(value);
   };
 

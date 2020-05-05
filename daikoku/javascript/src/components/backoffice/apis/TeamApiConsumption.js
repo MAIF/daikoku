@@ -11,7 +11,7 @@ import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Spinner, Can, read, stat } from '../../utils';
 
 const Currency = ({ plan }) => {
-  const cur = _.find(currencies, c => c.code === plan.currency.code);
+  const cur = _.find(currencies, (c) => c.code === plan.currency.code);
   return (
     <span>
       {' '}
@@ -20,11 +20,11 @@ const Currency = ({ plan }) => {
   );
 };
 
-const sumGlobalInformations = data =>
+const sumGlobalInformations = (data) =>
   data
-    .map(d => d.globalInformations)
+    .map((d) => d.globalInformations)
     .reduce((acc, item) => {
-      Object.keys(item).forEach(key => (acc[key] = (acc[key] || 0) + item[key]));
+      Object.keys(item).forEach((key) => (acc[key] = (acc[key] || 0) + item[key]));
       return acc;
     }, {});
 
@@ -34,9 +34,7 @@ class TeamApiConsumptionComponent extends Component {
     consumptions: null,
     period: {
       from: moment().startOf('day'),
-      to: moment()
-        .add(1, 'day')
-        .startOf('day'),
+      to: moment().add(1, 'day').startOf('day'),
     },
     viewByPlan: true,
   };
@@ -44,16 +42,16 @@ class TeamApiConsumptionComponent extends Component {
   mappers = [
     {
       type: 'LineChart',
-      label: data => {
+      label: (data) => {
         const totalHits = data.reduce((acc, cons) => acc + cons.hits, 0);
         return `Data In (${totalHits})`;
       },
       title: 'Data In',
-      formatter: data =>
+      formatter: (data) =>
         data.reduce((acc, item) => {
           const date = moment(item.to).format('DD MMM.');
-          const value = acc.find(a => a.date === date) || { count: 0 };
-          return [...acc.filter(a => a.date !== date), { date, count: value.count + item.hits }];
+          const value = acc.find((a) => a.date === date) || { count: 0 };
+          return [...acc.filter((a) => a.date !== date), { date, count: value.count + item.hits }];
         }, []),
       xAxis: 'date',
       yAxis: 'count',
@@ -62,18 +60,18 @@ class TeamApiConsumptionComponent extends Component {
       type: 'RoundChart',
       label: 'Hits by apikeys',
       title: 'Hits by apikey',
-      formatter: data =>
+      formatter: (data) =>
         data.reduce((acc, item) => {
-          const value = acc.find(a => a.clientId === item.clientId) || { count: 0 };
+          const value = acc.find((a) => a.clientId === item.clientId) || { count: 0 };
 
-          const team = this.state.teams.find(t => t._id === item.team);
-          const plan = this.state.api.possibleUsagePlans.find(p => p._id == item.plan);
+          const team = this.state.teams.find((t) => t._id === item.team);
+          const plan = this.state.api.possibleUsagePlans.find((p) => p._id == item.plan);
 
           const name = `${team.name}/${plan.customName || plan.type}`;
 
           return [
-            ...acc.filter(a => a.name !== item.clientId),
-            { clientId:  item.clientId, name, count: value.count + item.hits },
+            ...acc.filter((a) => a.name !== item.clientId),
+            { clientId: item.clientId, name, count: value.count + item.hits },
           ];
         }, []),
       dataKey: 'count',
@@ -81,20 +79,20 @@ class TeamApiConsumptionComponent extends Component {
     {
       type: 'Global',
       label: 'Global informations',
-      formatter: data => sumGlobalInformations(data),
+      formatter: (data) => sumGlobalInformations(data),
     },
     {
       label: 'Plans',
-      formatter: data => (
+      formatter: (data) => (
         <div className="row">
-          {this.state.api.possibleUsagePlans.map(plan => (
+          {this.state.api.possibleUsagePlans.map((plan) => (
             <div key={plan._id} className="col-sm-4 col-lg-3">
               <PlanLightConsumption
                 api={this.state.api}
                 team={this.props.currentTeam}
                 key={plan._id}
                 plan={plan}
-                data={sumGlobalInformations(data.filter(d => d.plan === plan._id))}
+                data={sumGlobalInformations(data.filter((d) => d.plan === plan._id))}
                 period={this.state.period}
                 handleClick={() =>
                   this.props.history.push(
@@ -112,10 +110,8 @@ class TeamApiConsumptionComponent extends Component {
   componentDidMount() {
     Promise.all([
       Services.teams(),
-      Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId)
-    ]).then(([teams, api]) =>
-      this.setState({ teams, api })
-    );
+      Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId),
+    ]).then(([teams, api]) => this.setState({ teams, api }));
   }
 
   render() {
@@ -156,7 +152,7 @@ class TeamApiConsumptionComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

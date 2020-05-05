@@ -15,7 +15,7 @@ class TeamMembersComponent extends Component {
   }
 
   updateMembers = () => {
-    Services.teamFull(this.props.match.params.teamSettingId).then(team => {
+    Services.teamFull(this.props.match.params.teamSettingId).then((team) => {
       this.setState({
         team,
       });
@@ -34,7 +34,7 @@ class TeamMembersComponent extends Component {
             currentLanguage={this.props.currentLanguage}
             currentTeam={this.state.team}
             connectedUser={this.props.connectedUser}
-            updateTeam={team => Promise.resolve(this.setState({ team }))}
+            updateTeam={(team) => Promise.resolve(this.setState({ team }))}
           />
         </Can>
       </UserBackOffice>
@@ -42,7 +42,7 @@ class TeamMembersComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

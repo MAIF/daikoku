@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import AceEditor from 'react-ace';
 
 export default class SingleJsonInput extends Component {
-  onChange = e => {
+  onChange = (e) => {
     this.props.onChange(e);
   };
 

@@ -27,7 +27,7 @@ import 'antd/lib/tooltip/style/index.css';
 
 const TABS = {
   members: 'MEMBERS',
-  pending: 'PENDING'
+  pending: 'PENDING',
 };
 
 export class TeamMembersSimpleComponent extends Component {
@@ -36,19 +36,19 @@ export class TeamMembersSimpleComponent extends Component {
     pendingUsers: [],
     selectedMember: null,
     loading: true,
-    tab: TABS.members
+    tab: TABS.members,
   };
 
   componentDidMount() {
     this.updateMembers(this.props.currentTeam);
   }
 
-  updateMembers = team => {
+  updateMembers = (team) => {
     Promise.all([Services.members(team._id), Services.addableUsersForTeam(team._id)]).then(
       ([members, users]) => {
         this.setState({
           pendingUsers: users.pendingUsers,
-          addableMembers: users.addableUsers.map(m => ({
+          addableMembers: users.addableUsers.map((m) => ({
             label: (
               <div
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -69,7 +69,7 @@ export class TeamMembersSimpleComponent extends Component {
     );
   };
 
-  isAdmin = user => {
+  isAdmin = (user) => {
     if (!this.props.currentTeam) {
       return false;
     }
@@ -78,34 +78,34 @@ export class TeamMembersSimpleComponent extends Component {
       return true;
     }
 
-    return Option(this.props.currentTeam.users.find(u => u.userId === user._id))
-      .map(user => user.teamPermission)
+    return Option(this.props.currentTeam.users.find((u) => u.userId === user._id))
+      .map((user) => user.teamPermission)
       .fold(
         () => false,
-        perm => perm === administrator
+        (perm) => perm === administrator
       );
   };
 
   userHavePemission = (user, permission) => {
-    return Option(this.props.currentTeam.users.find(u => u.userId === user._id))
-      .map(user => user.teamPermission)
+    return Option(this.props.currentTeam.users.find((u) => u.userId === user._id))
+      .map((user) => user.teamPermission)
       .fold(
         () => false,
-        perm => perm === permission
+        (perm) => perm === permission
       );
   };
 
-  removeMember = member => {
+  removeMember = (member) => {
     if (
       this.isAdmin(member) &&
-      this.props.currentTeam.users.filter(u => u.teamPermission === administrator).length === 1
+      this.props.currentTeam.users.filter((u) => u.teamPermission === administrator).length === 1
     ) {
       alert(
         t(
           'remove.member.alert',
           this.props.currentLanguage,
           false,
-          'You can\'t delete this user, it must remain an admin in a team.'
+          "You can't delete this user, it must remain an admin in a team."
         )
       );
     } else {
@@ -118,7 +118,7 @@ export class TeamMembersSimpleComponent extends Component {
             'Are you sure you want to remove this member from the team ?'
           )
         )
-        .then(ok => {
+        .then((ok) => {
           if (ok) {
             const teamId = this.props.currentTeam._id;
             Services.removeMemberFromTeam(teamId, member._id).then(({ done, team }) => {
@@ -141,7 +141,7 @@ export class TeamMembersSimpleComponent extends Component {
     }
   };
 
-  addMember = slug => {
+  addMember = (slug) => {
     const member = slug.value;
     this.setState({ selectedMember: member }, () => {
       const teamId = this.props.currentTeam._id;
@@ -150,15 +150,15 @@ export class TeamMembersSimpleComponent extends Component {
           this.setState({ selectedMember: null }, () => {
             done
               ? toastr.success(
-                'Success',
-                t(
-                  'member.now.invited',
-                  this.props.currentLanguage,
-                  false,
-                  `${member.name} has been invited as new member of your team`,
-                  member.name
+                  'Success',
+                  t(
+                    'member.now.invited',
+                    this.props.currentLanguage,
+                    false,
+                    `${member.name} has been invited as new member of your team`,
+                    member.name
+                  )
                 )
-              )
               : toastr.error('Failure');
           });
         })
@@ -171,13 +171,13 @@ export class TeamMembersSimpleComponent extends Component {
       const teamId = this.props.currentTeam._id;
       if (
         this.userHavePemission(member, administrator) &&
-        this.props.currentTeam.users.filter(u => u.teamPermission === administrator).length === 1
+        this.props.currentTeam.users.filter((u) => u.teamPermission === administrator).length === 1
       ) {
         alert(
           t(
             'remove.admin.alert',
             this.props.currentLanguage,
-            'You can\'t remove this admin status, it must remain an admin in a team.'
+            "You can't remove this admin status, it must remain an admin in a team."
           )
         );
       } else {
@@ -206,13 +206,13 @@ export class TeamMembersSimpleComponent extends Component {
         t(
           'not.admin.alert',
           this.props.currentLanguage,
-          'Your are not an administrator. You can\'t do that.'
+          "Your are not an administrator. You can't do that."
         )
       );
     }
   };
 
-  updateApiKeysVisibility = onlyForAdmins => {
+  updateApiKeysVisibility = (onlyForAdmins) => {
     return Services.updateApiKeysVisibility(
       this.props.currentTeam._id,
       onlyForAdmins
@@ -230,14 +230,14 @@ export class TeamMembersSimpleComponent extends Component {
 
     const filteredMembers = this.state.search
       ? this.state.members.filter(({ name, email }) =>
-          [name, email].some(value => value.toLowerCase().includes(this.state.search))
+          [name, email].some((value) => value.toLowerCase().includes(this.state.search))
         )
       : this.state.members;
 
     const filteredPending = this.state.search
       ? this.state.pendingUsers.filter(({ name, email }) =>
-        [name, email].some(value => value.toLowerCase().includes(this.state.search))
-      )
+          [name, email].some((value) => value.toLowerCase().includes(this.state.search))
+        )
       : this.state.pendingUsers;
     return (
       <>
@@ -261,13 +261,13 @@ export class TeamMembersSimpleComponent extends Component {
               options={this.state.addableMembers}
               onChange={this.addMember}
               value={this.state.selectedMember}
-              filterOption={(data, search) => _.values(data.value).some(v => v.includes(search))}
+              filterOption={(data, search) => _.values(data.value).some((v) => v.includes(search))}
               classNamePrefix="reactSelect"
             />
             <input
               placeholder={t('Find a member', this.props.currentLanguage)}
               className="form-control"
-              onChange={e => {
+              onChange={(e) => {
                 this.setState({ search: e.target.value });
               }}
             />
@@ -290,9 +290,14 @@ export class TeamMembersSimpleComponent extends Component {
               <ul className="nav nav-tabs flex-column flex-sm-row">
                 <li className="nav-item">
                   <span
-                    className={`nav-link cursor-pointer ${this.state.tab === TABS.members ? 'active' : ''}`}
+                    className={`nav-link cursor-pointer ${
+                      this.state.tab === TABS.members ? 'active' : ''
+                    }`}
                     onClick={() => this.setState({ tab: TABS.members })}>
-                    <Translation i18nkey="Member" language={this.props.currentLanguage} isPlural={this.state.members.length > 1}>
+                    <Translation
+                      i18nkey="Member"
+                      language={this.props.currentLanguage}
+                      isPlural={this.state.members.length > 1}>
                       Member
                     </Translation>
                   </span>
@@ -301,9 +306,11 @@ export class TeamMembersSimpleComponent extends Component {
                   <span
                     className={classnames('nav-link cursor-pointer', {
                       active: this.state.tab === TABS.pending,
-                      disabled: filteredPending.length === 0
+                      disabled: filteredPending.length === 0,
                     })}
-                    onClick={() => this.state.pendingUsers.length > 0 && this.setState({tab: TABS.pending})}>
+                    onClick={() =>
+                      this.state.pendingUsers.length > 0 && this.setState({ tab: TABS.pending })
+                    }>
                     <Translation
                       i18nkey="pending members"
                       language={this.props.currentLanguage}
@@ -316,96 +323,101 @@ export class TeamMembersSimpleComponent extends Component {
             </div>
           </div>
         </div>
-        {this.state.tab === TABS.members && <PaginatedComponent
-          currentLanguage={this.props.currentLanguage}
-          items={_.sortBy(filteredMembers, [member => member.name.toLowerCase()])}
-          count={15}
-          formatter={member => {
-            const isAdmin = this.userHavePemission(member, administrator);
-            const isApiEditor = this.userHavePemission(member, apiEditor);
-            if (member.isPending) {
-              return <AvatarWithAction
-                key={member._id}
-                avatar={member.picture}
-                infos={
-                  <>
-                    <i className="fas fa-question mr-2" />
-                    <span className="team-member__name">{member.name}</span>
-                  </>
-                }
-                actions={[]}
-              />;
-            }
-            return (
-              <AvatarWithAction
-                key={member._id}
-                avatar={member.picture}
-                infos={
-                  <>
-                    {this.userHavePemission(member, administrator) && (
-                      <i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />
-                    )}
-                    {this.userHavePemission(member, apiEditor) && (
-                      <i className="fas fa-pencil-alt" style={{ marginRight: '10px' }} />
-                    )}
-                    <span className="team-member__name">{member.name}</span>
-                  </>
-                }
-                actions={[
-                  {
-                    action: () => this.removeMember(member),
-                    iconClass: 'fas fa-trash delete-icon',
-                    tooltip: t('Remove member', this.props.currentLanguage),
-                  },
-                  {
-                    action: [
-                      {
-                        action: () => this.togglePermission(member, administrator),
-                        iconClass: `fas fa-shield-alt ${
-                          isAdmin ? 'admin-active' : 'admin-inactive'
-                        }`,
-                        tooltip: `${
-                          isAdmin
-                            ? t('Remove administrator status', this.props.currentLanguage)
-                            : t('Add administrator status', this.props.currentLanguage)
-                        }`,
-                      },
-                      {
-                        action: () => this.togglePermission(member, apiEditor),
-                        iconClass: `fas fa-pencil-alt ${
-                          isApiEditor ? 'admin-active' : 'admin-inactive'
-                        }`,
-                        tooltip: `${
-                          isApiEditor
-                            ? t('Remove api editor status', this.props.currentLanguage)
-                            : t('Add api editor status', this.props.currentLanguage)
-                        }`,
-                      },
-                    ],
-                    iconClass: 'fas fa-user-cog',
-                    tooltip: t('Manage permissions', this.props.currentLanguage),
-                  },
-                ]}
-              />
-            );
-          }}
-        />}
-        {this.state.tab === TABS.pending && <PaginatedComponent
-          currentLanguage={this.props.currentLanguage}
-          items={_.sortBy(filteredPending, [member => member.name.toLowerCase()])}
-          count={15}
-          formatter={member => {
-              return <AvatarWithAction
-                key={member._id}
-                avatar={member.picture}
-                infos={
-                  <span className="team-member__name">{member.name}</span>
-                }
-                actions={[]}
-              />;
-            }
-          }
-        />}
+        {this.state.tab === TABS.members && (
+          <PaginatedComponent
+            currentLanguage={this.props.currentLanguage}
+            items={_.sortBy(filteredMembers, [(member) => member.name.toLowerCase()])}
+            count={15}
+            formatter={(member) => {
+              const isAdmin = this.userHavePemission(member, administrator);
+              const isApiEditor = this.userHavePemission(member, apiEditor);
+              if (member.isPending) {
+                return (
+                  <AvatarWithAction
+                    key={member._id}
+                    avatar={member.picture}
+                    infos={
+                      <>
+                        <i className="fas fa-question mr-2" />
+                        <span className="team-member__name">{member.name}</span>
+                      </>
+                    }
+                    actions={[]}
+                  />
+                );
+              }
+              return (
+                <AvatarWithAction
+                  key={member._id}
+                  avatar={member.picture}
+                  infos={
+                    <>
+                      {this.userHavePemission(member, administrator) && (
+                        <i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />
+                      )}
+                      {this.userHavePemission(member, apiEditor) && (
+                        <i className="fas fa-pencil-alt" style={{ marginRight: '10px' }} />
+                      )}
+                      <span className="team-member__name">{member.name}</span>
+                    </>
+                  }
+                  actions={[
+                    {
+                      action: () => this.removeMember(member),
+                      iconClass: 'fas fa-trash delete-icon',
+                      tooltip: t('Remove member', this.props.currentLanguage),
+                    },
+                    {
+                      action: [
+                        {
+                          action: () => this.togglePermission(member, administrator),
+                          iconClass: `fas fa-shield-alt ${
+                            isAdmin ? 'admin-active' : 'admin-inactive'
+                          }`,
+                          tooltip: `${
+                            isAdmin
+                              ? t('Remove administrator status', this.props.currentLanguage)
+                              : t('Add administrator status', this.props.currentLanguage)
+                          }`,
+                        },
+                        {
+                          action: () => this.togglePermission(member, apiEditor),
+                          iconClass: `fas fa-pencil-alt ${
+                            isApiEditor ? 'admin-active' : 'admin-inactive'
+                          }`,
+                          tooltip: `${
+                            isApiEditor
+                              ? t('Remove api editor status', this.props.currentLanguage)
+                              : t('Add api editor status', this.props.currentLanguage)
+                          }`,
+                        },
+                      ],
+                      iconClass: 'fas fa-user-cog',
+                      tooltip: t('Manage permissions', this.props.currentLanguage),
+                    },
+                  ]}
+                />
+              );
+            }}
+          />
+        )}
+        {this.state.tab === TABS.pending && (
+          <PaginatedComponent
+            currentLanguage={this.props.currentLanguage}
+            items={_.sortBy(filteredPending, [(member) => member.name.toLowerCase()])}
+            count={15}
+            formatter={(member) => {
+              return (
+                <AvatarWithAction
+                  key={member._id}
+                  avatar={member.picture}
+                  infos={<span className="team-member__name">{member.name}</span>}
+                  actions={[]}
+                />
+              );
+            }}
+          />
+        )}
       </>
     );
   }
@@ -423,12 +435,12 @@ class TeamMembersComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
-  updateTeam: team => updateTeamPromise(team),
+  updateTeam: (team) => updateTeamPromise(team),
 };
 
 export const TeamMembers = connect(mapStateToProps, mapDispatchToProps)(TeamMembersComponent);

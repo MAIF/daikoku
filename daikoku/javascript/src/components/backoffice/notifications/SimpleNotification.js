@@ -4,7 +4,7 @@ import moment from 'moment';
 import { t, Translation } from '../../../locales';
 
 export class SimpleNotification extends Component {
-  typeFormatter = type => {
+  typeFormatter = (type) => {
     switch (type) {
       case 'ApiAccess':
         return (
@@ -54,20 +54,22 @@ export class SimpleNotification extends Component {
             title={t('ApiKey deletion information', this.props.currentLanguage)}
           />
         );
-      case 'ApiKeyRotationInProgress': return (
-        <i
-          className="fas fa-sync-alt"
-          style={{ marginRight: 5 }}
-          title={t('ApiKey rotation in progress', this.props.currentLanguage)}
-        />
-      );
-      case 'ApiKeyRotationEnded': return (
-        <i
-          className="fas fa-sync-alt"
-          style={{ marginRight: 5 }}
-          title={t('ApiKey rotation ended', this.props.currentLanguage)}
-        />
-      );
+      case 'ApiKeyRotationInProgress':
+        return (
+          <i
+            className="fas fa-sync-alt"
+            style={{ marginRight: 5 }}
+            title={t('ApiKey rotation in progress', this.props.currentLanguage)}
+          />
+        );
+      case 'ApiKeyRotationEnded':
+        return (
+          <i
+            className="fas fa-sync-alt"
+            style={{ marginRight: 5 }}
+            title={t('ApiKey rotation ended', this.props.currentLanguage)}
+          />
+        );
       case 'TeamInvitation':
         return (
           <i
@@ -133,7 +135,7 @@ export class SimpleNotification extends Component {
         return `${sender.name}/${this.props.getTeam(action.team).name}`;
       case 'TeamAccess':
         return sender.name;
-      case 'TeamInvitation': 
+      case 'TeamInvitation':
         return this.props.getTeam(action.team).name;
       case 'ApiSubscription':
         return `${sender.name}/${this.props.getTeam(action.team).name}`;
@@ -143,8 +145,10 @@ export class SimpleNotification extends Component {
         return 'Otoroshi verifier job';
       case 'ApiKeyDeletionInformation':
         return `${sender.name}`;
-      case 'ApiKeyRotationInProgress': return 'Otoroshi verifier job';
-      case 'ApiKeyRotationEnded': return 'Otoroshi verifier job';
+      case 'ApiKeyRotationInProgress':
+        return 'Otoroshi verifier job';
+      case 'ApiKeyRotationEnded':
+        return 'Otoroshi verifier job';
     }
   }
 
@@ -153,7 +157,7 @@ export class SimpleNotification extends Component {
     let infos = {};
     if (['ApiAccess', 'ApiSubscription'].includes(notification.action.type)) {
       const api = getApi(notification.action.api);
-      const plan = api.possibleUsagePlans.find(p => p._id === notification.action.plan);
+      const plan = api.possibleUsagePlans.find((p) => p._id === notification.action.plan);
 
       infos = { api, plan };
     }
@@ -220,9 +224,14 @@ export class SimpleNotification extends Component {
                     <Translation
                       i18nkey="notif.apikey.rotation.inprogress"
                       language={this.props.currentLanguage}
-                      replacements={[notification.action.clientId, notification.action.api, notification.action.plan]}>
-                      Your apiKey with clientId {notification.action.clientId} ({notification.action.api}/{notification.action.plan}) 
-                      has started its rotation. Its clientSecret hab been updated.
+                      replacements={[
+                        notification.action.clientId,
+                        notification.action.api,
+                        notification.action.plan,
+                      ]}>
+                      Your apiKey with clientId {notification.action.clientId} (
+                      {notification.action.api}/{notification.action.plan}) has started its
+                      rotation. Its clientSecret hab been updated.
                     </Translation>
                   </div>
                 )}
@@ -231,9 +240,13 @@ export class SimpleNotification extends Component {
                     <Translation
                       i18nkey="notif.apikey.rotation.ended"
                       language={this.props.currentLanguage}
-                      replacements={[notification.action.clientId, notification.action.api, notification.action.plan]}>
-                      Your apiKey with clientId {notification.action.clientId} ({notification.action.api}/{notification.action.plan}) 
-                      has ended its rotation.
+                      replacements={[
+                        notification.action.clientId,
+                        notification.action.api,
+                        notification.action.plan,
+                      ]}>
+                      Your apiKey with clientId {notification.action.clientId} (
+                      {notification.action.api}/{notification.action.plan}) has ended its rotation.
                     </Translation>
                   </div>
                 )}
@@ -242,8 +255,12 @@ export class SimpleNotification extends Component {
                     <Translation
                       i18nkey="team.invitation"
                       language={this.props.currentLanguage}
-                      replacements={[notification.sender.name, this.props.getTeam(notification.action.team).name]}>
-                      {notification.sender.name}, as admin of {this.props.getTeam(notification.action.team).name}, invit you in his team.
+                      replacements={[
+                        notification.sender.name,
+                        this.props.getTeam(notification.action.team).name,
+                      ]}>
+                      {notification.sender.name}, as admin of{' '}
+                      {this.props.getTeam(notification.action.team).name}, invit you in his team.
                     </Translation>
                   </div>
                 )}

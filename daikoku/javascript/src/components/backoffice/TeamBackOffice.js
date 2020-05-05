@@ -4,7 +4,19 @@ import classNames from 'classnames';
 import { connect } from 'react-redux';
 
 import * as Services from '../../services';
-import { Error, Can, manage, read, api, apikey, stat, team, asset, daikoku, tenant } from '../utils';
+import {
+  Error,
+  Can,
+  manage,
+  read,
+  api,
+  apikey,
+  stat,
+  team,
+  asset,
+  daikoku,
+  tenant,
+} from '../utils';
 import { t, Translation } from '../../locales';
 
 function elvis(value, f) {
@@ -15,7 +27,7 @@ function elvis(value, f) {
   }
 }
 
-const BackOfficeContent = props => {
+const BackOfficeContent = (props) => {
   return (
     <div className="pt-5 pr-3 pl-3" style={{ height: '100%' }}>
       {props.error.status && <Error error={props.error} />}
@@ -31,17 +43,17 @@ class TeamBackOfficeHomeComponent extends Component {
 
   componentDidMount() {
     this.props.history.listen(() => {
-      elvis(document.getElementById('sidebar'), e =>
+      elvis(document.getElementById('sidebar'), (e) =>
         e.setAttribute('class', 'col-md-2 d-md-block sidebar collapse')
       );
       // document.getElementById('navbar').setAttribute('class', 'navbar-collapse collapse');
-      elvis(document.getElementById('toggle-sidebar'), e =>
+      elvis(document.getElementById('toggle-sidebar'), (e) =>
         e.setAttribute('class', 'navbar-toggle menu collapsed')
       );
       // document.getElementById('toggle-navigation').setAttribute('class', 'navbar-toggle collapsed');
     });
 
-    Services.teamHome(this.props.currentTeam._id).then(team => this.setState({ team }));
+    Services.teamHome(this.props.currentTeam._id).then((team) => this.setState({ team }));
   }
 
   render() {
@@ -180,14 +192,16 @@ class TeamBackOfficeComponent extends Component {
                     <Link to={`/${currentTeam._humanReadableId}/settings`}>
                       {this.props.currentTeam.name}
                     </Link>
-                    {this.props.currentTeam.type !== 'Admin' && <Can I={manage} a={team} team={this.props.currentTeam}>
-                      <Link
-                        to={`/${this.props.currentTeam._humanReadableId}/settings/edition`}
-                        className=""
-                        title={t('Update team', this.props.currentLanguage)}>
-                        <i className="fas fa-pen" />
-                      </Link>
-                    </Can>}
+                    {this.props.currentTeam.type !== 'Admin' && (
+                      <Can I={manage} a={team} team={this.props.currentTeam}>
+                        <Link
+                          to={`/${this.props.currentTeam._humanReadableId}/settings/edition`}
+                          className=""
+                          title={t('Update team', this.props.currentLanguage)}>
+                          <i className="fas fa-pen" />
+                        </Link>
+                      </Can>
+                    )}
                   </h6>
                   <ul className="nav flex-column mt-3">
                     <Can I={read} a={api} team={this.props.currentTeam}>
@@ -257,18 +271,22 @@ class TeamBackOfficeComponent extends Component {
                         </li>
                       </Can>
                     )}
-                    {this.props.currentTeam.type !== 'Admin' && <Can I={manage} a={asset} team={this.props.currentTeam}>
-                      <li className="nav-item">
-                        <Link
-                          className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
-                          to={`/${currentTeam._humanReadableId}/settings/assets`}>
-                          <i className="fas fa-tools" />
-                          <Translation i18nkey="Team assets" language={this.props.currentLanguage}>
-                            Team assets
-                          </Translation>
-                        </Link>
-                      </li>
-                    </Can>}
+                    {this.props.currentTeam.type !== 'Admin' && (
+                      <Can I={manage} a={asset} team={this.props.currentTeam}>
+                        <li className="nav-item">
+                          <Link
+                            className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
+                            to={`/${currentTeam._humanReadableId}/settings/assets`}>
+                            <i className="fas fa-tools" />
+                            <Translation
+                              i18nkey="Team assets"
+                              language={this.props.currentLanguage}>
+                              Team assets
+                            </Translation>
+                          </Link>
+                        </li>
+                      </Can>
+                    )}
                   </ul>
                 </div>
               </nav>
@@ -336,7 +354,7 @@ class UserBackOfficeComponent extends Component {
                       {this.props.notificationSubMenu || null}
                     </li>
                   </ul>
-                  
+
                   <Can I={manage} a={tenant}>
                     <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                       <Translation
@@ -370,9 +388,7 @@ class UserBackOfficeComponent extends Component {
                           className={`mr-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
                           to={'/settings/admins'}>
                           <i className="fas fa-user-shield mr-1" />
-                          <Translation
-                            i18nkey="Admins"
-                            language={this.props.currentLanguage}>
+                          <Translation i18nkey="Admins" language={this.props.currentLanguage}>
                             Admins
                           </Translation>
                         </Link>
@@ -500,7 +516,7 @@ class UserBackOfficeComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
   error: state.error,
 });

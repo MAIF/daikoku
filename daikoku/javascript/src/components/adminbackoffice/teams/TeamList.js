@@ -13,7 +13,7 @@ class TeamListComponent extends Component {
   };
 
   createNewTeam = () => {
-    Services.fetchNewTeam().then(newTeam => {
+    Services.fetchNewTeam().then((newTeam) => {
       this.props.history.push(`/settings/teams/${newTeam._id}`, { newTeam });
     });
   };
@@ -22,12 +22,12 @@ class TeamListComponent extends Component {
     this.updateTeams();
   }
 
-  deleteTeam = teamId => {
+  deleteTeam = (teamId) => {
     window
       .confirm(
         t('delete team', this.props.currentLanguage, 'Are you sure you want to delete this team ?')
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.deleteTeam(teamId).then(() => {
             this.updateTeams();
@@ -37,7 +37,7 @@ class TeamListComponent extends Component {
   };
 
   updateTeams = () => {
-    Services.teams().then(teams => this.setState({ teams }));
+    Services.teams().then((teams) => this.setState({ teams }));
   };
 
   render() {
@@ -45,7 +45,7 @@ class TeamListComponent extends Component {
       ? this.state.teams.filter(({ name }) => name.toLowerCase().includes(this.state.search))
       : this.state.teams;
 
-    const actions = team => {
+    const actions = (team) => {
       const basicActions = [
         {
           action: () => this.deleteTeam(team._id),
@@ -88,7 +88,7 @@ class TeamListComponent extends Component {
                     className="btn btn-sm btn-access-negative mb-1 ml-1"
                     title={t('Create a new team', this.props.currentLanguage)}
                     href="#"
-                    onClick={e => {
+                    onClick={(e) => {
                       e.preventDefault();
                       this.createNewTeam();
                     }}>
@@ -98,15 +98,15 @@ class TeamListComponent extends Component {
                 <input
                   placeholder={t('Find a team', this.props.currentLanguage)}
                   className="form-control col-5"
-                  onChange={e => {
+                  onChange={(e) => {
                     this.setState({ search: e.target.value });
                   }}
                 />
               </div>
               <PaginatedComponent
-                items={_.sortBy(filteredTeams, [team => team.name.toLowerCase()])}
+                items={_.sortBy(filteredTeams, [(team) => team.name.toLowerCase()])}
                 count={8}
-                formatter={team => {
+                formatter={(team) => {
                   return (
                     <AvatarWithAction
                       key={team._id}
@@ -130,7 +130,7 @@ class TeamListComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

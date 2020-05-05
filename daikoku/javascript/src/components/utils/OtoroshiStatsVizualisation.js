@@ -8,7 +8,7 @@ import _ from 'lodash';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Spinner } from './Spinner';
 
-Number.prototype.prettify = function() {
+Number.prototype.prettify = function () {
   return this.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ');
 };
 
@@ -21,16 +21,11 @@ class Period {
     this.value = value;
   }
 
-  format = consumptions => {
+  format = (consumptions) => {
     let time = '';
     if (consumptions && consumptions.length) {
-      const maxDate = _.maxBy(consumptions, o => o.to);
-      if (
-        maxDate &&
-        moment(maxDate.to)
-          .startOf('day')
-          .isSame(moment().startOf('day'))
-      ) {
+      const maxDate = _.maxBy(consumptions, (o) => o.to);
+      if (maxDate && moment(maxDate.to).startOf('day').isSame(moment().startOf('day'))) {
         time = moment(maxDate.to).format('HH:mm');
       }
     }
@@ -47,35 +42,26 @@ class Period {
 const periods = {
   today: new Period({
     from: moment().startOf('day'),
-    to: () =>
-      moment()
-        .add(1, 'day')
-        .startOf('day'),
+    to: () => moment().add(1, 'day').startOf('day'),
     unitTime: 'day',
     label: 'Today',
     value: 'TODAY',
   }),
   yesterday: new Period({
-    from: moment()
-      .subtract(1, 'day')
-      .startOf('day'),
+    from: moment().subtract(1, 'day').startOf('day'),
     to: () => moment().startOf('day'),
     unitTime: 'day',
     label: 'Yesterday',
     value: 'YESTERDAY',
   }),
   last7days: new Period({
-    from: moment()
-      .subtract(7, 'days')
-      .startOf('day'),
+    from: moment().subtract(7, 'days').startOf('day'),
     to: () => moment(),
     label: 'Last 7 days',
     value: 'LAST7',
   }),
   last30days: new Period({
-    from: moment()
-      .subtract(30, 'days')
-      .startOf('day'),
+    from: moment().subtract(30, 'days').startOf('day'),
     to: () => moment(),
     label: 'Last 30 days',
     value: 'LAST30',
@@ -203,7 +189,7 @@ export class OtoroshiStatsVizualization extends Component {
     this.setState({ loading: true }, () => {
       this.props
         .fetchData(from, to)
-        .then(consumptions => {
+        .then((consumptions) => {
           if (consumptions.error) {
             this.setState({ error: true, loading: false });
           } else {
@@ -220,7 +206,7 @@ export class OtoroshiStatsVizualization extends Component {
       this.props
         .sync()
         .then(() => this.props.fetchData(from, to()))
-        .then(consumptions => {
+        .then((consumptions) => {
           if (consumptions.error) {
             this.setState({ error: true, loading: false });
           } else {
@@ -240,8 +226,8 @@ export class OtoroshiStatsVizualization extends Component {
             className="col col-sm-3 reactSelect period-select"
             value={{ value: this.state.period.value, label: this.state.period.label }}
             clearable={false}
-            options={Object.keys(periods).map(k => periods[k])}
-            onChange={period => {
+            options={Object.keys(periods).map((k) => periods[k])}
+            onChange={(period) => {
               this.setState({ period }, () => {
                 this.updateConsumption(period.from, period.to());
               });
@@ -281,7 +267,7 @@ export class OtoroshiStatsVizualization extends Component {
 }
 
 export class GlobalDataConsumption extends Component {
-  computeValue = value => {
+  computeValue = (value) => {
     let unit = 'Mb';
     let computedValue = parseFloat((converterBase2(value, 'B', 'MB') || 0).toFixed(3));
     if (computedValue > 1024.0) {

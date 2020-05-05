@@ -44,7 +44,7 @@ export class SignupComponent extends Component {
     },
   };
 
-  formSchema = currentLanguage => ({
+  formSchema = (currentLanguage) => ({
     name: {
       type: 'string',
       props: {
@@ -128,8 +128,8 @@ export class SignupComponent extends Component {
           },
           body: JSON.stringify({ ...this.state.user }),
         })
-          .then(r => r.json())
-          .then(res => {
+          .then((r) => r.json())
+          .then((res) => {
             if (res.error) {
               this.setState({ state: 'error', error: res.error });
             } else {
@@ -157,7 +157,7 @@ export class SignupComponent extends Component {
         error: t(
           'account.creation.error',
           this.props.currentLanguage,
-          'Your account creation request is not valid anymore (it\'s only valid for 15 minutes). Please creates a new request.'
+          "Your account creation request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
         ),
       });
     }
@@ -199,7 +199,7 @@ export class SignupComponent extends Component {
           </div>
         )}
         {this.state.user && (
-          <div className="d-flex justify-content-end align-items-center my-4" >
+          <div className="d-flex justify-content-end align-items-center my-4">
             <img
               src={this.state.user.avatar}
               style={{ width: 60, borderRadius: '50%', backgroundColor: 'white' }}
@@ -213,7 +213,7 @@ export class SignupComponent extends Component {
               flow={this.formFlow}
               schema={this.formSchema(this.props.currentLanguage)}
               value={this.state.user}
-              onChange={user => {
+              onChange={(user) => {
                 this.setState({ user });
               }}
             />
@@ -229,7 +229,7 @@ export class ResetPasswordComponent extends Component {
     user: {},
   };
 
-  formSchema = currentLanguage => ({
+  formSchema = (currentLanguage) => ({
     email: {
       type: 'string',
       props: {
@@ -254,10 +254,7 @@ export class ResetPasswordComponent extends Component {
     resetPassword: {
       type: () => (
         <div className="d-flex justify-content-end">
-          <button
-            type="button"
-            className="btn btn-outline-danger m-2"
-            onClick={this.resetPassword}>
+          <button type="button" className="btn btn-outline-danger m-2" onClick={this.resetPassword}>
             <span>
               <i className="fas fa-bomb mr-1" />
               <Translation i18nkey="Reset password" language={currentLanguage}>
@@ -288,8 +285,8 @@ export class ResetPasswordComponent extends Component {
           },
           body: JSON.stringify(this.state.user),
         })
-          .then(r => r.json())
-          .then(res => {
+          .then((r) => r.json())
+          .then((res) => {
             if (res.error) {
               this.setState({ state: 'error', error: t(res.error, this.props.currentLanguage) });
             } else {
@@ -315,7 +312,7 @@ export class ResetPasswordComponent extends Component {
         error: t(
           'account.reset.error',
           this.props.currentLanguage,
-          'Your password reset request is not valid anymore (it\'s only valid for 15 minutes). Please creates a new request.'
+          "Your password reset request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
         ),
       });
     }
@@ -362,7 +359,7 @@ export class ResetPasswordComponent extends Component {
                 flow={this.formFlow}
                 schema={this.formSchema(this.props.currentLanguage)}
                 value={this.state.user}
-                onChange={user => {
+                onChange={(user) => {
                   this.setState({ user });
                 }}
               />
@@ -382,7 +379,7 @@ export class DaikokuHomeApp extends Component {
         <div role="root-container" className="container-fluid">
           <Route
             path="/"
-            render={p => (
+            render={(p) => (
               <UnauthenticatedTopBar
                 tenant={tenant}
                 location={p.location}
@@ -394,14 +391,14 @@ export class DaikokuHomeApp extends Component {
           <Route
             exact
             path="/"
-            render={p => (
+            render={(p) => (
               <UnauthenticatedHome tenant={tenant} match={p.match} history={p.history} />
             )}
           />
           <Route
             exact
             path="/signup"
-            render={p => <Signup tenant={tenant} match={p.match} history={p.history} />}
+            render={(p) => <Signup tenant={tenant} match={p.match} history={p.history} />}
           />
           <Route exact path="/reset" render={() => <ResetPassword />} />
         </div>
@@ -410,12 +407,12 @@ export class DaikokuHomeApp extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
-  updateContextLanguage: team => udpateLanguage(team),
+  updateContextLanguage: (team) => udpateLanguage(team),
 };
 
 export const Signup = connect(mapStateToProps, mapDispatchToProps)(SignupComponent);

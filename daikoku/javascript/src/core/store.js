@@ -7,7 +7,7 @@ import { createBrowserHistory } from 'history';
 
 export const history = createBrowserHistory();
 
-export const store = context => {
+export const store = (context) => {
   let composeEnhancers = compose;
   let middleware = [thunkMiddleware];
 

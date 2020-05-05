@@ -16,7 +16,7 @@ const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 export class TenantStyleEditComponent extends Component {
   state = {
     tenant: null,
-    style: [...styleVariables.matchAll(regexp)].map(item => ({
+    style: [...styleVariables.matchAll(regexp)].map((item) => ({
       value: item[1],
       defaultColor: item[2],
       group: item[3],
@@ -33,11 +33,11 @@ export class TenantStyleEditComponent extends Component {
         create: true,
       });
     } else {
-      Services.oneTenant(this.props.match.params.tenantId).then(tenant => {
+      Services.oneTenant(this.props.match.params.tenantId).then((tenant) => {
         const style = this.state.style.map(({ value, defaultColor, group }) => {
           const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
             () => defaultColor,
-            value => value[1]
+            (value) => value[1]
           );
           return { value, color: color, group };
         });
@@ -47,7 +47,7 @@ export class TenantStyleEditComponent extends Component {
   }
 
   updateStyleProp(item, color) {
-    const style = [...this.state.style.filter(s => s.value !== item.value), { ...item, color }];
+    const style = [...this.state.style.filter((s) => s.value !== item.value), { ...item, color }];
     this.setState({ style });
   }
 
@@ -120,22 +120,22 @@ export class TenantStyleEditComponent extends Component {
                     .sortBy('group')
                     .value()
                     .map((item, idx) => {
-                      const {group, colors} = item;
+                      const { group, colors } = item;
                       return (
                         <div key={idx}>
                           <h3>{group}</h3>
                           <div>
                             {_.sortBy(colors, ['value']).map((item, idx) => {
-                              const property = this.state.style.find(c => c.value === item.value);
+                              const property = this.state.style.find((c) => c.value === item.value);
                               return (
                                 <div key={idx}>
                                   <label htmlFor={item.value}>
                                     {item.value.replace(/-/gi, ' ').trim()}
                                   </label>
                                   <ColorPicker
-                                    presetColors={this.state.style.map(c => c.color)}
+                                    presetColors={this.state.style.map((c) => c.color)}
                                     initialColor={property.color}
-                                    handleColorChange={color => this.updateStyleProp(item, color)}
+                                    handleColorChange={(color) => this.updateStyleProp(item, color)}
                                   />
                                 </div>
                               );
@@ -155,7 +155,7 @@ export class TenantStyleEditComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
@@ -175,21 +175,21 @@ class Preview extends React.Component {
     const document = iframe.contentDocument;
     const head = document.getElementsByTagName('head')[0];
 
-    window.parent.document.querySelectorAll('link[rel=stylesheet]').forEach(link => {
+    window.parent.document.querySelectorAll('link[rel=stylesheet]').forEach((link) => {
       var newLink = document.createElement('link');
       newLink.rel = link.rel;
       newLink.href = link.href;
       head && head.appendChild(newLink);
     });
 
-    window.parent.document.querySelectorAll('style').forEach(style => {
+    window.parent.document.querySelectorAll('style').forEach((style) => {
       var newLink = document.createElement('style');
       newLink.innerHTML = style.innerHTML;
       head && head.appendChild(newLink);
     });
 
     const styleVariables = this.props.variables
-      .map(variable => `${variable.value}:${variable.color};\n`)
+      .map((variable) => `${variable.value}:${variable.color};\n`)
       .join('');
     const root = `:root {${styleVariables}}`;
 
@@ -201,7 +201,7 @@ class Preview extends React.Component {
   render() {
     return (
       <iframe
-        ref={ref => this.iframe = ref}
+        ref={(ref) => (this.iframe = ref)}
         style={{
           height: '100vh',
           border: 'none',
@@ -216,7 +216,7 @@ class Preview extends React.Component {
 }
 
 const ColorPicker = ({ initialColor, handleColorChange, presetColors }) => {
-  const sketchColorToReadableColor = c => {
+  const sketchColorToReadableColor = (c) => {
     if (c.r) {
       return `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`;
     } else {
@@ -285,7 +285,7 @@ const ColorPicker = ({ initialColor, handleColorChange, presetColors }) => {
           <SketchPicker
             presetColors={_.uniq(presetColors).sort()}
             color={color}
-            onChange={value => setPickerValue(value)}
+            onChange={(value) => setPickerValue(value)}
           />
         </div>
       ) : null}

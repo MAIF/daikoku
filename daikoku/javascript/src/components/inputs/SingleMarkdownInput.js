@@ -130,7 +130,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
     },
   ];
 
-  onChange = e => {
+  onChange = (e) => {
     this.props.onChange(e);
   };
 
@@ -160,7 +160,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               this.editor.session.insert(this.editor.getCursorPosition(), command.inject());
             }
             if (command.move) {
-              command.move(this.editor.getCursorPosition(), p =>
+              command.move(this.editor.getCursorPosition(), (p) =>
                 this.editor.moveCursorToPosition(p)
               );
             }
@@ -177,7 +177,9 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
     const team = _.isFunction(this.props.team) ? this.props.team() : this.props.team;
     return (
       <div className="d-flex flex-column">
-        <label htmlFor={`input-${this.props.label}`} className="col-form-label d-flex align-items-center">
+        <label
+          htmlFor={`input-${this.props.label}`}
+          className="col-form-label d-flex align-items-center">
           {this.props.label} <Help place="right" text={this.props.help} />
         </label>
         <div
@@ -215,7 +217,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
                 tenantMode={this.props.tenantMode}
                 team={team}
                 label={t('Set from asset', this.props.currentLanguage)}
-                onSelect={asset => {
+                onSelect={(asset) => {
                   this.editor.session.insert(this.editor.getCursorPosition(), asset.link);
                   this.editor.focus();
                 }}
@@ -225,7 +227,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
         </div>
         {!this.state.preview && (
           <AceEditor
-            ref={r => {
+            ref={(r) => {
               if (r && r.editor) {
                 this.editor = r.editor;
               }

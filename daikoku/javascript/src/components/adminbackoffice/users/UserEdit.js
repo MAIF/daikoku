@@ -16,21 +16,23 @@ const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 class SetPassword extends Component {
   genAndSetPassword = () => {
-    window.prompt(t('Type the password', this.props.currentLanguage), undefined, true).then(pw1 => {
-      if (pw1) {
-        window
-          .prompt(t('Re-type the password', this.props.currentLanguage), undefined, true)
-          .then(pw2 => {
-            const validation = validatePassword(pw1, pw2, this.props.currentLanguage);
-            if (validation.ok) {
-              const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-              this.props.changeValue('password', hashed);
-            } else {
-              this.props.displayError(validation.error);
-            }
-          });
-      }
-    });
+    window
+      .prompt(t('Type the password', this.props.currentLanguage), undefined, true)
+      .then((pw1) => {
+        if (pw1) {
+          window
+            .prompt(t('Re-type the password', this.props.currentLanguage), undefined, true)
+            .then((pw2) => {
+              const validation = validatePassword(pw1, pw2, this.props.currentLanguage);
+              if (validation.ok) {
+                const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
+                this.props.changeValue('password', hashed);
+              } else {
+                this.props.displayError(validation.error);
+              }
+            });
+        }
+      });
   };
 
   render() {
@@ -103,7 +105,7 @@ class AssetButton extends Component {
         onlyPreview
         tenantMode
         label={t('Set avatar from asset', this.props.currentLanguage)}
-        onSelect={asset => this.props.changeValue('picture', asset.link)}
+        onSelect={(asset) => this.props.changeValue('picture', asset.link)}
       />
     );
   }
@@ -195,7 +197,7 @@ export class UserEditComponent extends Component {
       type: SetPassword,
       props: {
         currentLanguage: this.props.currentLanguage,
-        displayError: error => toastr.error(error),
+        displayError: (error) => toastr.error(error),
       },
     },
     avatarFromAsset: {
@@ -231,7 +233,7 @@ export class UserEditComponent extends Component {
         create: true,
       });
     } else {
-      Services.findUserById(this.props.match.params.userId).then(user => this.setState({ user }));
+      Services.findUserById(this.props.match.params.userId).then((user) => this.setState({ user }));
     }
   }
 
@@ -244,7 +246,7 @@ export class UserEditComponent extends Component {
           'Are you sure you want to delete this user ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.deleteUserById(this.state.user._id).then(() => {
             toastr.info(
@@ -279,7 +281,7 @@ export class UserEditComponent extends Component {
           this.props.history.push('/settings/users');
         });
       } else {
-        Services.updateUserById(this.state.user).then(user => {
+        Services.updateUserById(this.state.user).then((user) => {
           this.setState({ user, create: false }, () => {
             toastr.success(
               t(
@@ -314,11 +316,7 @@ export class UserEditComponent extends Component {
                   border: '3px solid #fff',
                   boxShadow: '0px 0px 0px 3px lightgrey',
                 }}>
-                <img
-                  src={this.state.user.picture}
-                  className="img-fluid"
-                  alt="avatar"
-                />
+                <img src={this.state.user.picture} className="img-fluid" alt="avatar" />
               </div>
             )}
             {!this.state.user && <h1>User</h1>}
@@ -335,7 +333,7 @@ export class UserEditComponent extends Component {
                   flow={this.formFlow}
                   schema={this.formSchema}
                   value={this.state.user}
-                  onChange={user => {
+                  onChange={(user) => {
                     this.setState({ user });
                   }}
                 />
@@ -389,7 +387,7 @@ export class UserEditComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

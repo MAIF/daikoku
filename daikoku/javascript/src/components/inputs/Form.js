@@ -124,7 +124,7 @@ export default class Form extends Component {
               key={name}
               value={this.getValue(name, [])}
               {...props}
-              onChange={v => this.changeValue(name, v)}
+              onChange={(v) => this.changeValue(name, v)}
             />
           );
         } else if (type === 'object') {
@@ -134,7 +134,7 @@ export default class Form extends Component {
               key={name}
               value={this.getValue(name, {})}
               {...props}
-              onChange={v => this.changeValue(name, v)}
+              onChange={(v) => this.changeValue(name, v)}
             />
           );
         } else if (type === 'bool') {
@@ -144,7 +144,7 @@ export default class Form extends Component {
               key={name}
               value={this.getValue(name, false)}
               {...props}
-              onChange={v => this.changeValue(name, v)}
+              onChange={(v) => this.changeValue(name, v)}
             />
           );
         } else if (type === 'select') {
@@ -154,7 +154,7 @@ export default class Form extends Component {
               key={name}
               value={this.getValue(name, '')}
               {...props}
-              onChange={v => this.changeValue(name, v)}
+              onChange={(v) => this.changeValue(name, v)}
             />
           );
         } else if (type === 'string') {
@@ -164,7 +164,7 @@ export default class Form extends Component {
               key={name}
               value={this.getValue(name, '')}
               {...props}
-              onChange={v => this.changeValue(name, v)}
+              onChange={(v) => this.changeValue(name, v)}
             />
           );
         } else if (type === 'text') {
@@ -174,7 +174,7 @@ export default class Form extends Component {
               key={name}
               value={this.getValue(name, '')}
               {...props}
-              onChange={v => this.changeValue(name, v)}
+              onChange={(v) => this.changeValue(name, v)}
             />
           );
         } else if (type === 'code') {
@@ -185,7 +185,7 @@ export default class Form extends Component {
                 key={name}
                 value={this.getValue(name, '')}
                 {...props}
-                onChange={v => this.changeValue(name, v)}
+                onChange={(v) => this.changeValue(name, v)}
               />
             </React.Suspense>
           );
@@ -198,7 +198,7 @@ export default class Form extends Component {
                 key={name}
                 value={this.getValue(name, '')}
                 {...props}
-                onChange={v => this.changeValue(name, v)}
+                onChange={(v) => this.changeValue(name, v)}
               />
             </React.Suspense>
           );
@@ -211,7 +211,7 @@ export default class Form extends Component {
               key={name}
               value={this.getValue(name, 0)}
               {...props}
-              onChange={v => this.changeValue(name, v)}
+              onChange={(v) => this.changeValue(name, v)}
             />
           );
         } else if (type === 'arrayForm') {
@@ -222,7 +222,7 @@ export default class Form extends Component {
                 key={name}
                 value={this.getValue(name, '')}
                 {...props}
-                onChange={v => this.changeValue(name, v)}
+                onChange={(v) => this.changeValue(name, v)}
               />
             </React.Suspense>
           );
@@ -234,8 +234,8 @@ export default class Form extends Component {
             key: name,
             value: this.getValue(name, {}),
             changeValue: this.changeValue,
-            onChange: v => this.changeValue(name, v),
-            onRawChange: v => this.props.onChange(v),
+            onChange: (v) => this.changeValue(name, v),
+            onRawChange: (v) => this.props.onChange(v),
           });
         } else if (React.isValidElement(type)) {
           component = type;

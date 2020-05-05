@@ -67,13 +67,28 @@ class TeamEditForAdministrationComponent extends Component {
   save = () => {
     if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
       Services.createTeam(this.state.team)
-        .then(team => toastr.success(t('team.created', this.props.currentLanguage, false, `Team ${team.name} successfully created`, team.name)))
+        .then((team) =>
+          toastr.success(
+            t(
+              'team.created',
+              this.props.currentLanguage,
+              false,
+              `Team ${team.name} successfully created`,
+              team.name
+            )
+          )
+        )
         .then(() => {
           this.props.history.push(`/settings/teams/${this.state.team._humanReadableId}/members`);
         });
     } else {
-      Services.updateTeam(this.state.team)
-        .then(team => this.setState({ team }, () => toastr.success(t('team.updated', this.props.currentLanguage, false, 'Team successfully updated'))));
+      Services.updateTeam(this.state.team).then((team) =>
+        this.setState({ team }, () =>
+          toastr.success(
+            t('team.updated', this.props.currentLanguage, false, 'Team successfully updated')
+          )
+        )
+      );
     }
   };
 
@@ -85,7 +100,7 @@ class TeamEditForAdministrationComponent extends Component {
     if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
       this.setState({ team: this.props.location.state.newTeam, create: true });
     } else {
-      Services.teamFull(this.props.match.params.teamSettingId).then(team =>
+      Services.teamFull(this.props.match.params.teamSettingId).then((team) =>
         this.setState({ team })
       );
     }
@@ -127,7 +142,7 @@ class TeamEditForAdministrationComponent extends Component {
                 flow={this.flow}
                 schema={this.schema}
                 value={this.state.team}
-                onChange={team => this.setState({ team })}
+                onChange={(team) => this.setState({ team })}
                 style={{ marginBottom: 100, paddingTop: 20 }}
               />
             </React.Suspense>
@@ -185,7 +200,7 @@ class TeamEditForAdministrationComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

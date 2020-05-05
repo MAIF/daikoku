@@ -30,7 +30,7 @@ export class Histogram extends Component {
     '#a52a2a',
   ];
 
-  formatTick = v => {
+  formatTick = (v) => {
     if (v > 999999) {
       return (v / 1000000).toFixed(0) + ' M';
     }
@@ -47,12 +47,12 @@ export class Histogram extends Component {
     // console.log(this.props.title, this.props.series);
 
     if (this.props.series && this.props.series[0]) {
-      seriesName = this.props.series.map(s => s.name);
+      seriesName = this.props.series.map((s) => s.name);
       const values = [];
       const size = this.props.series[0].data.length;
       for (let i = 0; i < size; i++) {
         let finalItem = {};
-        this.props.series.forEach(serie => {
+        this.props.series.forEach((serie) => {
           const item = serie.data[i];
           if (item) {
             finalItem = {
@@ -85,7 +85,7 @@ export class Histogram extends Component {
             <YAxis tickFormatter={this.formatTick} />
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip />
-            {_.sortBy(seriesName, sn => sn).map((sn, idx) => (
+            {_.sortBy(seriesName, (sn) => sn).map((sn, idx) => (
               <Area
                 key={sn}
                 type="monotone"
@@ -118,7 +118,7 @@ export class RoundChart extends Component {
     '#a52a2a',
   ];
 
-  renderCustomizedLabel = props => {
+  renderCustomizedLabel = (props) => {
     const { x, y, cx } = props;
     return (
       <text
@@ -164,10 +164,10 @@ export class RoundChart extends Component {
                 outerRadius={this.props.size ? this.props.size / 2 + 30 : 130}
                 dataKey={this.props.dataKey || 'value'}
                 label={this.renderCustomizedLabel}>
-                {this.props.series2.map(entry => {
-                  const parentIdx = [...new Set(this.props.series.map(item => item.name))].indexOf(
-                    entry[this.props.parentKey]
-                  );
+                {this.props.series2.map((entry) => {
+                  const parentIdx = [
+                    ...new Set(this.props.series.map((item) => item.name)),
+                  ].indexOf(entry[this.props.parentKey]);
                   return (
                     <Cell key={entry.name} fill={this.colors[parentIdx % this.colors.length]} />
                   );

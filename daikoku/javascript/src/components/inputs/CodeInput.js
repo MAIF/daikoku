@@ -18,7 +18,7 @@ export default class CodeInput extends Component {
     value: null,
   };
 
-  onChange = e => {
+  onChange = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     try {
       this.setState({ value: null }, () => {

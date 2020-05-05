@@ -14,7 +14,7 @@ export const TenantTranslation = ({ match }) => {
 
   useEffect(() => {
     if (!tenant) {
-      Services.oneTenant(match.params.tenantId).then(tenant => setTenant(tenant));
+      Services.oneTenant(match.params.tenantId).then((tenant) => setTenant(tenant));
     }
   }, []);
 
@@ -27,7 +27,7 @@ export const TenantTranslation = ({ match }) => {
   const getTranslatedValue = (key, lng) => {
     return Option(translation[lng]).fold(
       () => undefined,
-      t => t[key]
+      (t) => t[key]
     );
   };
 
@@ -53,14 +53,14 @@ export const TenantTranslation = ({ match }) => {
                 className="mb-1 col-4"
                 value={{ label: language, value: language }}
                 placeholder="Select a language"
-                options={languages.map(l => ({ label: l, value: l }))}
-                onChange={e => setLanguage(e.value)}
+                options={languages.map((l) => ({ label: l, value: l }))}
+                onChange={(e) => setLanguage(e.value)}
               />
               <TextInput
                 label="description"
                 placeholder={tenant.style.description}
                 value={getTranslatedValue(descriptionKey, language)}
-                onChange={e => handleChange(e, descriptionKey)}
+                onChange={(e) => handleChange(e, descriptionKey)}
               />
             </div>
             <div className="row form-back-fixedBtns">

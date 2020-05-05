@@ -14,21 +14,21 @@ import { Translation, t } from '../../../locales';
 import * as Services from '../../../services';
 
 const all = { value: 'All', label: 'All' };
-const allCategories = language => ({ value: 'All', label: t('All categories', language) });
-const allTags = language => ({ value: 'All', label: t('All tags', language) });
+const allCategories = (language) => ({ value: 'All', label: t('All categories', language) });
+const allTags = (language) => ({ value: 'All', label: t('All tags', language) });
 
-const computeTop = arrayOfArray => {
+const computeTop = (arrayOfArray) => {
   return arrayOfArray
     .flat()
     .reduce((acc, value) => {
-      const val = acc.find(item => item.value === value);
+      const val = acc.find((item) => item.value === value);
       let newVal;
       if (val) {
         newVal = { ...val, count: val.count + 1 };
       } else {
         newVal = { value, label: value, count: 1 };
       }
-      return [...acc.filter(item => item.value !== value), newVal];
+      return [...acc.filter((item) => item.value !== value), newVal];
     }, [])
     .sort((a, b) => b.count - a.count);
 };
@@ -57,8 +57,8 @@ class ApiListComponent extends Component {
       // const tags = this.computeTop(props.apis.map(api => api.tags));
       // const categories = this.computeTop(props.apis.map(api => api.categories));
 
-      const tags = computeTop(props.apis.map(api => api.tags));
-      const categories = computeTop(props.apis.map(api => api.categories));
+      const tags = computeTop(props.apis.map((api) => api.tags));
+      const categories = computeTop(props.apis.map((api) => api.categories));
 
       return {
         prevPropsApis: props.apis,
@@ -69,9 +69,9 @@ class ApiListComponent extends Component {
     return null;
   }
 
-  createNewApi = teamId => {
+  createNewApi = (teamId) => {
     Promise.all([
-      Services.fetchNewApi().then(e => {
+      Services.fetchNewApi().then((e) => {
         const verb = faker.hacker.verb();
         const apiName =
           verb.charAt(0).toUpperCase() +
@@ -83,13 +83,10 @@ class ApiListComponent extends Component {
           ' api';
 
         e.name = apiName;
-        e._humanReadableId = apiName
-          .replace(/\s/gi, '-')
-          .toLowerCase()
-          .trim();
+        e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
         return e;
       }),
-      this.props.updateTeam(this.props.myTeams.find(t => t._id === teamId)),
+      this.props.updateTeam(this.props.myTeams.find((t) => t._id === teamId)),
     ]).then(([newApi]) => {
       this.props.history.push(
         `/${this.props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
@@ -99,56 +96,35 @@ class ApiListComponent extends Component {
   };
 
   createNewteam = () => {
-    Services.fetchNewTeam()
-      .then(team => this.props.openCreationTeamModal(
-        {
-          currentLanguage: this.props.currentLanguage,
-          history: this.props.history,
-          team
-        }
-      ));
-  }
+    Services.fetchNewTeam().then((team) =>
+      this.props.openCreationTeamModal({
+        currentLanguage: this.props.currentLanguage,
+        history: this.props.history,
+        team,
+      })
+    );
+  };
 
-  redirectToTeam = team => {
+  redirectToTeam = (team) => {
     this.props.history.push(`/${team._humanReadableId}/settings`);
   };
 
   computeTops(apis) {
-    const tags = computeTop(apis.map(api => api.tags));
-    const categories = computeTop(apis.map(api => api.categories));
+    const tags = computeTop(apis.map((api) => api.tags));
+    const categories = computeTop(apis.map((api) => api.categories));
 
     this.setState({ tags, categories });
   }
 
   tagMatches(api, term) {
-    return !!_.find(
-      api.tags,
-      tag =>
-        tag
-          .trim()
-          .toLowerCase()
-          .indexOf(term) > -1
-    );
+    return !!_.find(api.tags, (tag) => tag.trim().toLowerCase().indexOf(term) > -1);
   }
   categoryMatches(api, term) {
-    return !!_.find(
-      api.categories,
-      cat =>
-        cat
-          .trim()
-          .toLowerCase()
-          .indexOf(term) > -1
-    );
+    return !!_.find(api.categories, (cat) => cat.trim().toLowerCase().indexOf(term) > -1);
   }
   teamMatch(api, searched) {
-    const ownerTeam = this.props.teams.find(t => t._id === api.team);
-    return (
-      ownerTeam &&
-      ownerTeam.name
-        .trim()
-        .toLowerCase()
-        .indexOf(searched) > -1
-    );
+    const ownerTeam = this.props.teams.find((t) => t._id === api.team);
+    return ownerTeam && ownerTeam.name.trim().toLowerCase().indexOf(searched) > -1;
   }
 
   filterPreview(count) {
@@ -197,9 +173,15 @@ class ApiListComponent extends Component {
     );
   }
 
-  handlePageClick = data => {
-    this.setState({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected }, 
-      () => console.debug({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected}));
+  handlePageClick = (data) => {
+    this.setState(
+      { offset: data.selected * this.state.pageNumber, selectedPage: data.selected },
+      () =>
+        console.debug({
+          offset: data.selected * this.state.pageNumber,
+          selectedPage: data.selected,
+        })
+    );
   };
 
   render() {
@@ -208,13 +190,13 @@ class ApiListComponent extends Component {
     const searched = this.state.searched.trim().toLowerCase();
 
     const categorisedApis = apis.filter(
-      api =>
+      (api) =>
         this.state.selectedCategory.value === all.value ||
         api.categories.includes(this.state.selectedCategory.value)
     );
 
     const taggedApis = categorisedApis.filter(
-      api =>
+      (api) =>
         this.state.selectedTag.value === all.value ||
         api.tags.includes(this.state.selectedTag.value)
     );
@@ -222,7 +204,7 @@ class ApiListComponent extends Component {
     const filteredApis =
       searched === ''
         ? taggedApis
-        : taggedApis.filter(api => {
+        : taggedApis.filter((api) => {
             if (api.name.toLowerCase().indexOf(searched) > -1) {
               return true;
             } else if (api.smallDescription.toLowerCase().indexOf(searched) > -1) {
@@ -249,7 +231,7 @@ class ApiListComponent extends Component {
               placeholder={t('Search your API...', this.props.currentLanguage)}
               aria-label="Search your API"
               value={this.state.searched}
-              onChange={e =>
+              onChange={(e) =>
                 this.setState({ searched: e.target.value, selectedPage: 0, offset: 0 })
               }
             />
@@ -260,7 +242,7 @@ class ApiListComponent extends Component {
             value={this.state.selectedTag}
             clearable={false}
             options={[allTags(this.props.currentLanguage), ...this.state.tags]}
-            onChange={e => {
+            onChange={(e) => {
               this.setState({ selectedTag: e, selectedPage: 0, offset: 0 });
             }}
             classNamePrefix="reactSelect"
@@ -271,7 +253,7 @@ class ApiListComponent extends Component {
             value={this.state.selectedCategory}
             clearable={false}
             options={[allCategories(this.props.currentLanguage), ...this.state.categories]}
-            onChange={e => {
+            onChange={(e) => {
               this.setState({ selectedCategory: e, selectedPage: 0, offset: 0 });
             }}
             classNamePrefix="reactSelect"
@@ -302,10 +284,9 @@ class ApiListComponent extends Component {
                 'You are going to create an api. For which team do you want to create it ?'
               )}
               teams={this.props.myTeams
-                .filter(t => t.type !== 'Admin')
-                .filter(t => CanIDoAction(this.props.connectedUser, manage, api, t))
-              }
-              action={team => this.createNewApi(team)}
+                .filter((t) => t.type !== 'Admin')
+                .filter((t) => CanIDoAction(this.props.connectedUser, manage, api, t))}
+              action={(team) => this.createNewApi(team)}
               withAllTeamSelector={false}>
               <div className="col-12 col-sm-2">
                 <button className="btn btn-access-negative mb-2 float-right">
@@ -318,25 +299,25 @@ class ApiListComponent extends Component {
         <div className="row">
           <div className="d-flex col flex-column p-3 section">
             {this.filterPreview(filteredApis.length)}
-            {paginateApis.map(api => (
+            {paginateApis.map((api) => (
               <ApiCard
                 key={api._id}
                 user={user}
                 api={api}
                 showTeam={this.props.showTeam}
                 teamVisible={this.props.teamVisible}
-                team={this.props.teams.find(t => t._id === api.team)}
+                team={this.props.teams.find((t) => t._id === api.team)}
                 myTeams={this.props.myTeams}
-                askForApiAccess={teams => this.props.askForApiAccess(api, teams)}
-                redirectToTeamPage={team => this.props.redirectToTeamPage(team)}
+                askForApiAccess={(teams) => this.props.askForApiAccess(api, teams)}
+                redirectToTeamPage={(team) => this.props.redirectToTeamPage(team)}
                 redirectToApiPage={() => this.props.redirectToApiPage(api)}
                 redirectToEditPage={() => this.props.redirectToEditPage(api)}
-                handleTagSelect={tag =>
-                  this.setState({ selectedTag: this.state.tags.find(t => t.value === tag) })
+                handleTagSelect={(tag) =>
+                  this.setState({ selectedTag: this.state.tags.find((t) => t.value === tag) })
                 }
-                handleCategorySelect={category =>
+                handleCategorySelect={(category) =>
                   this.setState({
-                    selectedCategory: this.state.categories.find(c => c.value === category),
+                    selectedCategory: this.state.categories.find((c) => c.value === category),
                   })
                 }
                 currentLanguage={this.props.currentLanguage}
@@ -374,8 +355,8 @@ class ApiListComponent extends Component {
                 title="Top tags"
                 icon="fas fa-tag mr-2"
                 list={this.state.tags}
-                formatter={tag => tag.value}
-                handleClick={tag => this.setState({ selectedTag: tag })}
+                formatter={(tag) => tag.value}
+                handleClick={(tag) => this.setState({ selectedTag: tag })}
               />
             )}
             {!!this.state.categories.length && (
@@ -384,8 +365,8 @@ class ApiListComponent extends Component {
                 title="Top categories"
                 icon="fas fa-folder mr-2"
                 list={this.state.categories}
-                formatter={category => category.value}
-                handleClick={category => this.setState({ selectedCategory: category })}
+                formatter={(category) => category.value}
+                handleClick={(category) => this.setState({ selectedCategory: category })}
               />
             )}
           </div>
@@ -395,12 +376,12 @@ class ApiListComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
-  updateTeam: team => updateTeamPromise(team),
+  updateTeam: (team) => updateTeamPromise(team),
   openCreationTeamModal: (modalProps) => openCreationTeamModal(modalProps),
 };
 
@@ -421,7 +402,7 @@ ApiListComponent.propTypes = {
   redirectToEditPage: PropTypes.func.isRequired,
 };
 
-const Top = props => {
+const Top = (props) => {
   return (
     <div className={`top__container ${props.className ? props.className : ''}`}>
       <div>
@@ -447,7 +428,7 @@ const Top = props => {
 const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
   const [searchedTeam, setSearchedTeam] = useState();
   const maybeTeams = searchedTeam
-    ? teams.filter(team => team.name.toLowerCase().includes(searchedTeam))
+    ? teams.filter((team) => team.name.toLowerCase().includes(searchedTeam))
     : teams;
   const language = props.currentlanguage;
   return (
@@ -458,24 +439,22 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
           {t('your teams', language)}
         </h5>
       </div>
-    <div className="input-group">
+      <div className="input-group">
         <input
-            placeholder={t('find team', language)}
-            className="form-control"
-            onChange={e => setSearchedTeam(e.target.value)}
+          placeholder={t('find team', language)}
+          className="form-control"
+          onChange={(e) => setSearchedTeam(e.target.value)}
         />
         <div className="input-group-append">
-            <button
-                className="btn btn-access-negative"
-                onClick={() => createNewTeam()}>
-                <i className="fas fa-plus-square" />
-            </button>
+          <button className="btn btn-access-negative" onClick={() => createNewTeam()}>
+            <i className="fas fa-plus-square" />
+          </button>
         </div>
-    </div>
+      </div>
       <div className="d-flex flex-column">
-        {_.sortBy(maybeTeams, team => team.name.toLowerCase())
+        {_.sortBy(maybeTeams, (team) => team.name.toLowerCase())
           .slice(0, 5)
-          .map(team => {
+          .map((team) => {
             return (
               <span
                 className="p-1 cursor-pointer underline-on-hover"

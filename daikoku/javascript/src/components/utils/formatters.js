@@ -1,15 +1,15 @@
 import { currencies } from '../../services/currencies';
 import { t } from '../../locales';
 
-export const formatCurrency = number => {
+export const formatCurrency = (number) => {
   return new Intl.NumberFormat('fr-FR', {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
   }).format(number);
 };
 
-export const getCurrencySymbol = code => {
-  const currency = currencies.find(currency => currency.code === code);
+export const getCurrencySymbol = (code) => {
+  const currency = currencies.find((currency) => currency.code === code);
   return currency ? currency.symbol : undefined;
 };
 

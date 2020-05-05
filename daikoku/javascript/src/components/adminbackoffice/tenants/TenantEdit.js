@@ -86,7 +86,7 @@ class StyleLogoAssetButton extends Component {
           tenantMode
           label={t('Set tenant logo from asset', this.props.currentLanguage)}
           currentLanguage={this.props.currentLanguage}
-          onSelect={asset => this.props.changeValue('style.logo', origin + asset.link)}
+          onSelect={(asset) => this.props.changeValue('style.logo', origin + asset.link)}
         />
       </div>
     );
@@ -106,7 +106,7 @@ class StyleJsUrlAssetButton extends Component {
           tenantMode
           label={t('Set js from asset', this.props.currentLanguage)}
           currentLanguage={this.props.currentLanguage}
-          onSelect={asset => this.props.changeValue('style.jsUrl', origin + asset.link)}
+          onSelect={(asset) => this.props.changeValue('style.jsUrl', origin + asset.link)}
         />
       </div>
     );
@@ -126,7 +126,7 @@ class StyleCssUrlAssetButton extends Component {
           tenantMode
           label={t('Set css from asset', this.props.currentLanguage)}
           currentLanguage={this.props.currentLanguage}
-          onSelect={asset => this.props.changeValue('style.cssUrl', origin + asset.link)}
+          onSelect={(asset) => this.props.changeValue('style.cssUrl', origin + asset.link)}
         />
       </div>
     );
@@ -147,7 +147,7 @@ class StyleFaviconUrlAssetButton extends Component {
           tenantMode
           label={t('Set favicon from asset', this.props.currentLanguage)}
           currentLanguage={this.props.currentLanguage}
-          onSelect={asset => this.props.changeValue('style.faviconUrl', origin + asset.link)}
+          onSelect={(asset) => this.props.changeValue('style.faviconUrl', origin + asset.link)}
         />
       </div>
     );
@@ -166,7 +166,7 @@ class StyleFontFamilyUrlAssetButton extends Component {
           tenantMode
           label={t('Set font family from asset', this.props.currentLanguage)}
           currentLanguage={this.props.currentLanguage}
-          onSelect={asset => this.props.changeValue('style.fontFamilyUrl', origin + asset.link)}
+          onSelect={(asset) => this.props.changeValue('style.fontFamilyUrl', origin + asset.link)}
         />
       </div>
     );
@@ -224,7 +224,7 @@ class HomePageVisibilitySwitch extends Component {
         key="style.homePageVisible"
         {...this.props}
         value={this.props.rawValue.style.homePageVisible}
-        onChange={v => this.props.changeValue('style.homePageVisible', v)}
+        onChange={(v) => this.props.changeValue('style.homePageVisible', v)}
       />
     );
   }
@@ -376,7 +376,7 @@ export class TenantEditComponent extends Component {
       type: 'select',
       props: {
         label: t('Default  language', this.props.currentLanguage),
-        possibleValues: Object.keys(configuration).map(key => ({
+        possibleValues: Object.keys(configuration).map((key) => ({
           label: key,
           value: key,
         })),
@@ -385,8 +385,8 @@ export class TenantEditComponent extends Component {
     contact: {
       type: 'string',
       props: {
-        label: t('Contact', this.props.currentLanguage)
-      }
+        label: t('Contact', this.props.currentLanguage),
+      },
     },
     'style.title': {
       type: 'string',
@@ -418,7 +418,7 @@ export class TenantEditComponent extends Component {
       props: {
         tenant: () => this.state.tenant,
         currentLanguage: this.props.currentLanguage,
-        onChangeLogo: obj => {
+        onChangeLogo: (obj) => {
           console.log(obj);
         },
       },
@@ -428,7 +428,7 @@ export class TenantEditComponent extends Component {
       props: {
         tenant: () => this.state.tenant,
         currentLanguage: this.props.currentLanguage,
-        onChangeLogo: obj => {
+        onChangeLogo: (obj) => {
           console.log(obj);
         },
       },
@@ -438,7 +438,7 @@ export class TenantEditComponent extends Component {
       props: {
         tenant: () => this.state.tenant,
         currentLanguage: this.props.currentLanguage,
-        onChangeLogo: obj => {
+        onChangeLogo: (obj) => {
           console.log(obj);
         },
       },
@@ -448,7 +448,7 @@ export class TenantEditComponent extends Component {
       props: {
         tenant: () => this.state.tenant,
         currentLanguage: this.props.currentLanguage,
-        onChangeLogo: obj => {
+        onChangeLogo: (obj) => {
           console.log(obj);
         },
       },
@@ -469,9 +469,7 @@ export class TenantEditComponent extends Component {
         history: this.props.history,
         currentLanguage: this.props.currentLanguage,
         isTenantUpdated: () => !!this.state.updated,
-        openModal: props =>
-          this.props.openSaveOrCancelModal(
-            { ...props }),
+        openModal: (props) => this.props.openSaveOrCancelModal({ ...props }),
       },
     },
     'style.js': {
@@ -499,14 +497,14 @@ export class TenantEditComponent extends Component {
       props: {
         tenant: () => this.state.tenant,
         currentLanguage: this.props.currentLanguage,
-        onChangeFont: obj => {
+        onChangeFont: (obj) => {
           console.log(obj);
         },
       },
     },
     'style.footer': {
       type: 'markdown',
-      props: { label: t('Footer', this.props.currentLanguage) }
+      props: { label: t('Footer', this.props.currentLanguage) },
     },
     isPrivate: {
       type: 'bool',
@@ -545,9 +543,9 @@ export class TenantEditComponent extends Component {
     },
     mailerSettings: {
       type: MailerConfig,
-      props: { 
+      props: {
         label: t('Mailer', this.props.currentLanguage),
-        currentLanguage: this.props.currentLanguage
+        currentLanguage: this.props.currentLanguage,
       },
     },
     'daikokuHeader.name': {
@@ -706,7 +704,7 @@ export class TenantEditComponent extends Component {
         create: true,
       });
     } else {
-      Services.oneTenant(this.props.match.params.tenantId).then(tenant => {
+      Services.oneTenant(this.props.match.params.tenantId).then((tenant) => {
         this.setState({ tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } });
       });
     }
@@ -714,7 +712,7 @@ export class TenantEditComponent extends Component {
 
   static getDerivedStateFromProps(props, state) {
     if (state.tenant && props.match.params.tenantId !== state.tenant._humanReadableId) {
-      Services.oneTenant(props.match.params.tenantId).then(tenant => {
+      Services.oneTenant(props.match.params.tenantId).then((tenant) => {
         return { tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } };
       });
     }
@@ -723,7 +721,7 @@ export class TenantEditComponent extends Component {
 
   save = () => {
     if (this.state.create) {
-      return Services.createTenant(this.state.tenant).then(tenant => {
+      return Services.createTenant(this.state.tenant).then((tenant) => {
         this.setState(
           {
             create: false,
@@ -760,27 +758,25 @@ export class TenantEditComponent extends Component {
           <Can I={manage} a={tenant} dispatchError>
             <div className="row">
               <div className="col-12 d-flex justify-content-start align-items-center mb-2">
-                  <div
-                    style={{
-                      width: '100px',
-                      height: '100px',
-                      borderRadius: '50px',
-                      border: '3px solid #fff',
-                      boxShadow: '0px 0px 0px 3px lightgrey',
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                      alignItems: 'center',
-                      overflow: 'hidden',
-                    }}>
-                    <img
-                      style={{ width: '100%', height: 'auto' }}
+                <div
+                  style={{
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '50px',
+                    border: '3px solid #fff',
+                    boxShadow: '0px 0px 0px 3px lightgrey',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    overflow: 'hidden',
+                  }}>
+                  <img
+                    style={{ width: '100%', height: 'auto' }}
                     src={this.state.tenant.style.logo}
-                      alt="avatar"
-                    />
-                  </div>
-                <h1 className="h1-rwd-reduce ml-2">
-                  {this.state.tenant.name}
-                </h1>
+                    alt="avatar"
+                  />
+                </div>
+                <h1 className="h1-rwd-reduce ml-2">{this.state.tenant.name}</h1>
               </div>
               <React.Suspense fallback={<Spinner />}>
                 <LazyForm
@@ -788,7 +784,7 @@ export class TenantEditComponent extends Component {
                   flow={this.flow}
                   schema={this.schema}
                   value={this.state.tenant}
-                  onChange={tenant => this.setState({ tenant, updated: true })}
+                  onChange={(tenant) => this.setState({ tenant, updated: true })}
                   style={{ marginBottom: 100, paddingTop: 20 }}
                 />
               </React.Suspense>
@@ -800,12 +796,16 @@ export class TenantEditComponent extends Component {
                     Back
                   </Translation>
                 </Link>
-                {!this.state.create && <Link className="btn btn-outline-primary mr-1" to={`/settings/tenants/${this.state.tenant._humanReadableId}/admins`}>
-                  <i className="fas fa-user-shield mr-1" />
-                  <Translation i18nkey="Admins" language={this.props.currentLanguage}>
-                    Admins
-                  </Translation>
-                </Link>}
+                {!this.state.create && (
+                  <Link
+                    className="btn btn-outline-primary mr-1"
+                    to={`/settings/tenants/${this.state.tenant._humanReadableId}/admins`}>
+                    <i className="fas fa-user-shield mr-1" />
+                    <Translation i18nkey="Admins" language={this.props.currentLanguage}>
+                      Admins
+                    </Translation>
+                  </Link>
+                )}
                 <button
                   type="button"
                   className="btn btn-outline-success"
@@ -837,7 +837,7 @@ export class TenantEditComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import classNames from 'classnames';
-import {v4 as uuidv4} from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 export class SwitchButton extends Component {
   state = {
@@ -30,16 +30,14 @@ export class SwitchButton extends Component {
         className={classNames({
           'switch--loading': this.state.loading,
           'switch--loaded': !this.state.loading,
-          'switch--disabled': this.props.disabled
+          'switch--disabled': this.props.disabled,
         })}>
-        <label
-          className='switch--item'
-          htmlFor={id}>
+        <label className="switch--item" htmlFor={id}>
           {label && <div className="switch__label">{label}</div>}
           <input
             type="checkbox"
             id={id}
-            ref={ref => (this.switch = ref)}
+            ref={(ref) => (this.switch = ref)}
             checked={this.props.checked}
             style={{ display: 'none' }}
             onChange={() => this.notifySwitch()}
@@ -57,5 +55,5 @@ SwitchButton.propTypes = {
   label: PropTypes.string,
   onSwitch: PropTypes.func,
   checked: PropTypes.bool,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
 };

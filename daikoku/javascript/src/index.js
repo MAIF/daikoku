@@ -16,7 +16,12 @@ import 'bootstrap';
 import { store } from './core';
 import { DaikokuApp, DaikokuHomeApp } from './apps';
 import { LoginPage } from './components';
-import { registerAlert, registerConfirm, registerPrompt, registerContact } from './components/utils/window';
+import {
+  registerAlert,
+  registerConfirm,
+  registerPrompt,
+  registerContact,
+} from './components/utils/window';
 import { customizeFetch } from './services/customize';
 import { Option } from './components/utils';
 import { Translation } from './locales';
@@ -27,7 +32,13 @@ window.jQuery = jQuery;
 export function init(user, tenant, impersonator, session, loginCallback, isTenantAdmin) {
   const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse('En');
   const currentLanguage = Option(user.defaultLanguage).getOrElse(tenantDefaultLanguage);
-  const storeInst = store({ connectedUser: user, tenant, impersonator, currentLanguage, isTenantAdmin });
+  const storeInst = store({
+    connectedUser: user,
+    tenant,
+    impersonator,
+    currentLanguage,
+    isTenantAdmin,
+  });
 
   // history.listen(location => console.log(location))
   customizeFetch(storeInst);
@@ -47,7 +58,7 @@ export function init(user, tenant, impersonator, session, loginCallback, isTenan
   if (session) {
     let reloadTimeout = null;
 
-    const extendSession = close => {
+    const extendSession = (close) => {
       return fetch('/api/session/_renew', {
         method: 'POST',
         credentials: 'include',
@@ -57,27 +68,24 @@ export function init(user, tenant, impersonator, session, loginCallback, isTenan
         },
         body: '',
       })
-        .then(r => r.json())
-        .then(sess => {
+        .then((r) => r.json())
+        .then((sess) => {
           clearTimeout(reloadTimeout);
           setupTimeouts(sess);
           close();
         });
     };
 
-    const setupTimeouts = _session => {
-      
+    const setupTimeouts = (_session) => {
       const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
       const secondPing = _session.expires - Date.now() + 2000;
       setTimeout(() => {
         const language = storeInst.getState().context.currentLanguage;
         window.alert(
-          close => (
+          (close) => (
             <div style={{ width: '100%' }}>
               <p>
-                <Translation
-                  i18nkey="session.expire.info"
-                  language={language}>
+                <Translation i18nkey="session.expire.info" language={language}>
                   Your session is about to expire in less than 2 minutes. Do you want to extend it ?
                 </Translation>
               </p>

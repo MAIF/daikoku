@@ -16,10 +16,10 @@ class OrganizationChooserComponent extends Component {
   };
 
   componentDidMount() {
-    Services.simpleTenantList().then(organizations => this.setState({ organizations }));
+    Services.simpleTenantList().then((organizations) => this.setState({ organizations }));
   }
 
-  handlePageClick = data => {
+  handlePageClick = (data) => {
     this.setState({ offset: data.selected * this.state.pageNumber, selectedPage: data.selected });
   };
 
@@ -29,7 +29,7 @@ class OrganizationChooserComponent extends Component {
     const filteredOrganizations =
       searched === ''
         ? organizations
-        : organizations.filter(orga => {
+        : organizations.filter((orga) => {
             if (orga.name.toLowerCase().indexOf(searched) > -1) {
               return true;
             } else return orga.desc.toLowerCase().indexOf(searched) > -1;
@@ -69,13 +69,13 @@ class OrganizationChooserComponent extends Component {
                 placeholder={t('Search an organization', this.props.currentLanguage)}
                 aria-label="Search an organization"
                 value={this.state.searched}
-                onChange={e => this.setState({ searched: e.target.value })}
+                onChange={(e) => this.setState({ searched: e.target.value })}
               />
             </div>
           </div>
           <div className="row">
             <div className="d-flex col flex-column p-3">
-              {paginateOrganizations.map(orga => (
+              {paginateOrganizations.map((orga) => (
                 <OrgaCard
                   key={orga._id}
                   user={this.props.connectedUser}
@@ -107,7 +107,7 @@ class OrganizationChooserComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

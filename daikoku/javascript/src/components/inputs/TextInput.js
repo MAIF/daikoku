@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Help } from './Help';
 
 export class TextInput extends Component {
-  onChange = e => {
+  onChange = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChange(e.target.value);
   };
@@ -50,7 +50,7 @@ export class TextInput extends Component {
 }
 
 export class TextareaInput extends Component {
-  onChange = e => {
+  onChange = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChange(e.target.value);
   };
@@ -78,11 +78,11 @@ export class TextareaInput extends Component {
 }
 
 export class RangeTextInput extends Component {
-  onChangeFrom = e => {
+  onChangeFrom = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChangeFrom(e.target.value);
   };
-  onChangeTo = e => {
+  onChangeTo = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChangeTo(e.target.value);
   };
@@ -165,7 +165,7 @@ export class RangeTextInput extends Component {
 }
 
 export class VerticalTextInput extends Component {
-  onChange = e => {
+  onChange = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChange(e.target.value);
   };

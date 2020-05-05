@@ -10,7 +10,7 @@ import { Sun, Moon } from 'react-feather';
 import * as Services from '../../services';
 import { logout, updateNotications, udpateLanguage } from '../../core/context/actions';
 import { t, Translation, languages } from '../../locales';
-import {Can, manage, daikoku, tenant} from '../utils';
+import { Can, manage, daikoku, tenant } from '../utils';
 
 const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) => {
   const [login, setLogin] = useState('');
@@ -43,7 +43,7 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
                     name="username"
                     className="form-control"
                     value={login}
-                    onChange={e => setLogin(e.target.value)}
+                    onChange={(e) => setLogin(e.target.value)}
                   />
                 </div>
                 <div className="form-group">
@@ -58,7 +58,7 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
                     name="password"
                     className="form-control"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                   <small className="form-text text-muted">
                     <a href="/reset">
@@ -147,8 +147,8 @@ export class TopBarComponent extends Component {
     this.setState({ error: null });
   };
 
-  selectSearchedItem = item => {
-    const team = this.state.teams.find(t => t._id === item.team);
+  selectSearchedItem = (item) => {
+    const team = this.state.teams.find((t) => t._id === item.team);
     switch (item.type) {
       case 'link':
         this.props.history.push(item.url);
@@ -165,13 +165,13 @@ export class TopBarComponent extends Component {
     }
   };
 
-  checkNavigationErrors = props => {
+  checkNavigationErrors = (props) => {
     if (props.location.state && props.location.state && props.location.state.error) {
       this.setState({ error: props.location.state.error });
     }
   };
 
-  listenToSlash = e => {
+  listenToSlash = (e) => {
     // in select : ref={r => (this.selector = r)}
     if (
       e.keyCode === 191 &&
@@ -196,11 +196,11 @@ export class TopBarComponent extends Component {
       document.addEventListener('keydown', this.listenToSlash, false);
     }
 
-    Services.myUnreadNotificationsCount().then(unreadNotifications => {
+    Services.myUnreadNotificationsCount().then((unreadNotifications) => {
       this.props.updateNotificationsCount(unreadNotifications.count);
     });
 
-    Services.teams().then(teams => this.setState({ teams }));
+    Services.teams().then((teams) => this.setState({ teams }));
 
     this.checkNavigationErrors(this.props);
   }
@@ -270,7 +270,7 @@ export class TopBarComponent extends Component {
     });
   };
 
-  handleSearch = search => {
+  handleSearch = (search) => {
     this.setState({ search });
   };
 
@@ -285,7 +285,7 @@ export class TopBarComponent extends Component {
       ? { border: '3px solid red', boxShadow: '0px 0px 5px 2px red' }
       : {};
 
-    const promiseOptions = inputValue => {
+    const promiseOptions = (inputValue) => {
       const options = [
         {
           value: 'me',
@@ -310,12 +310,12 @@ export class TopBarComponent extends Component {
 
       const utils = {
         label: 'Daikoku',
-        options: options.filter(i => i.label.toLowerCase().includes(inputValue.toLowerCase())),
+        options: options.filter((i) => i.label.toLowerCase().includes(inputValue.toLowerCase())),
       };
 
-      return Services.search(inputValue).then(result => [
+      return Services.search(inputValue).then((result) => [
         utils,
-        ...result.map(item => ({ ...item, label: t(item.label, this.props.currentLanguage) })),
+        ...result.map((item) => ({ ...item, label: t(item.label, this.props.currentLanguage) })),
       ]);
     };
 
@@ -353,10 +353,10 @@ export class TopBarComponent extends Component {
                   <AsyncSelect
                     placeholder={t('Search', this.props.currentLanguage)}
                     className="general-search px-1 px-lg-0"
-                    ref={r => (this.selector = r)}
+                    ref={(r) => (this.selector = r)}
                     cacheOptions
                     defaultOptions
-                    components={props => <components.Group {...props} />}
+                    components={(props) => <components.Group {...props} />}
                     loadOptions={_.debounce(promiseOptions, 100, { leading: true })}
                     onChange={this.selectSearchedItem}
                     classNamePrefix="reactSelect"
@@ -375,10 +375,10 @@ export class TopBarComponent extends Component {
               {!this.props.connectedUser._humanReadableId && (
                 <Select
                   className="language-selector"
-                  value={languages.find(l => l.value === this.props.currentLanguage)}
+                  value={languages.find((l) => l.value === this.props.currentLanguage)}
                   placeholder="Select a language"
                   options={languages}
-                  onChange={e => this.props.udpateLanguageProp(e.value)}
+                  onChange={(e) => this.props.udpateLanguageProp(e.value)}
                   classNamePrefix="reactSelect"
                 />
               )}
@@ -439,14 +439,14 @@ export class TopBarComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
   logout: () => logout(),
-  updateNotificationsCount: count => updateNotications(count),
-  udpateLanguageProp: l => udpateLanguage(l),
+  updateNotificationsCount: (count) => updateNotications(count),
+  udpateLanguageProp: (l) => udpateLanguage(l),
 };
 
 export const TopBar = connect(mapStateToProps, mapDispatchToProps)(TopBarComponent);

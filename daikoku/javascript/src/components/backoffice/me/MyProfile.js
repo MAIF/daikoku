@@ -15,21 +15,23 @@ const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 class SetPassword extends Component {
   genAndSetPassword = () => {
-    window.prompt(t('Type the password', this.props.currentLanguage), undefined, true).then(pw1 => {
-      if (pw1) {
-        window
-          .prompt(t('Re-type the password', this.props.currentLanguage), undefined, true)
-          .then(pw2 => {
-            const validation = validatePassword(pw1, pw2, this.props.currentLanguage);
-            if (validation.ok) {
-              const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-              this.props.changeValue('password', hashed);
-            } else {
-              this.props.displayError(validation.error);
-            }
-          });
-      }
-    });
+    window
+      .prompt(t('Type the password', this.props.currentLanguage), undefined, true)
+      .then((pw1) => {
+        if (pw1) {
+          window
+            .prompt(t('Re-type the password', this.props.currentLanguage), undefined, true)
+            .then((pw2) => {
+              const validation = validatePassword(pw1, pw2, this.props.currentLanguage);
+              if (validation.ok) {
+                const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
+                this.props.changeValue('password', hashed);
+              } else {
+                this.props.displayError(validation.error);
+              }
+            });
+        }
+      });
   };
 
   render() {
@@ -111,7 +113,7 @@ class TenantList extends Component {
   };
 
   componentDidMount() {
-    Services.getTenantNames(this.props.value).then(tenants => this.setState({ tenants }));
+    Services.getTenantNames(this.props.value).then((tenants) => this.setState({ tenants }));
   }
 
   render() {
@@ -133,7 +135,7 @@ class TenantList extends Component {
 class PictureUpload extends Component {
   state = { uploading: false };
 
-  setFiles = e => {
+  setFiles = (e) => {
     const files = e.target.files;
     this.setState({ uploading: true }, () => {
       this.props.setFiles(files).then(() => {
@@ -150,7 +152,7 @@ class PictureUpload extends Component {
     return (
       <div className="changePicture">
         <input
-          ref={r => (this.input = r)}
+          ref={(r) => (this.input = r)}
           type="file"
           className="form-control hide"
           onChange={this.setFiles}
@@ -243,7 +245,7 @@ class MyProfileComponent extends Component {
       type: SetPassword,
       props: {
         currentLanguage: this.props.currentLanguage,
-        displayError: error => toastr.error(error),
+        displayError: (error) => toastr.error(error),
       },
     },
     gravatar: {
@@ -256,7 +258,7 @@ class MyProfileComponent extends Component {
       type: 'select',
       props: {
         label: t('Default language', this.props.currentLanguage),
-        possibleValues: Object.keys(configuration).map(key => ({
+        possibleValues: Object.keys(configuration).map((key) => ({
           label: key,
           value: key,
         })),
@@ -277,7 +279,7 @@ class MyProfileComponent extends Component {
     'defaultLanguage',
   ];
 
-  setFiles = files => {
+  setFiles = (files) => {
     const file = files[0];
     const filename = file.name;
     const contentType = file.type;
@@ -290,22 +292,32 @@ class MyProfileComponent extends Component {
       },
       body: file,
     })
-      .then(r => r.json())
-      .then(res => {
+      .then((r) => r.json())
+      .then((res) => {
         this.setState({ user: { ...this.state.user, picture: `/user-assets/${res.id}` } });
       });
   };
 
   componentDidMount() {
-    Services.me(this.props.connectedUser._id).then(user => this.setState({ user }));
+    Services.me(this.props.connectedUser._id).then((user) => this.setState({ user }));
   }
 
   save = () => {
     if (this.state.user.name && this.state.user.email && this.state.user.picture) {
       const emailValidation = ValidateEmail(this.state.user.email);
       if (emailValidation.ok) {
-        Services.updateUserById(this.state.user).then(user => {
-          this.setState({ user }, () => toastr.success(t('user.updated.success', this.props.currentLanguage, false, 'user successfully updated', user.name)));
+        Services.updateUserById(this.state.user).then((user) => {
+          this.setState({ user }, () =>
+            toastr.success(
+              t(
+                'user.updated.success',
+                this.props.currentLanguage,
+                false,
+                'user successfully updated',
+                user.name
+              )
+            )
+          );
         });
       } else {
         toastr.error(emailValidation.error);
@@ -324,7 +336,7 @@ class MyProfileComponent extends Component {
           'Are you sure you want to delete your account ? This action cannot be undone ...'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.deleteSelfUserById().then(() => {
             this.props.history.push('/logout');
@@ -376,7 +388,7 @@ class MyProfileComponent extends Component {
                   flow={this.formFlow}
                   schema={this.formSchema}
                   value={this.state.user}
-                  onChange={user => {
+                  onChange={(user) => {
                     this.setState({ user });
                   }}
                 />
@@ -422,7 +434,7 @@ class MyProfileComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

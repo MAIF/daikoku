@@ -3,7 +3,7 @@ import { CLOSE_MODAL, OPEN_MODAL } from './action-types';
 const initialState = {
   modalType: null,
   modalProps: {},
-  open: false
+  open: false,
 };
 
 export function modalReducer(state = initialState, action) {

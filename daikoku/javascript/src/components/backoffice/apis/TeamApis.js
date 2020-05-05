@@ -15,17 +15,17 @@ class TeamApisComponent extends Component {
     {
       title: t('Name', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: api => api.name,
+      content: (api) => api.name,
     },
     {
       title: t('Description', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: api => api.smallDescription,
+      content: (api) => api.smallDescription,
     },
     {
       title: t('Published', this.props.currentLanguage),
       style: { justifyContent: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      content: api => (api.published ? 'yes' : 'no'),
+      content: (api) => (api.published ? 'yes' : 'no'),
       cell: (a, api) => (
         <Can I={manage} a={Api} team={this.props.currentTeam}>
           <SwitchButton
@@ -42,7 +42,7 @@ class TeamApisComponent extends Component {
       title: t('Actions', this.props.currentLanguage),
       style: { textAlign: 'center', width: 180, alignItems: 'center', display: 'flex' },
       notFilterable: true,
-      content: item => item._id,
+      content: (item) => item._id,
       cell: (a, api) => (
         <div className="btn-group">
           <Link
@@ -71,56 +71,68 @@ class TeamApisComponent extends Component {
               title="Edit this Api">
               <i className="fas fa-edit" />
             </Link>
-            {api.visibility !== 'AdminOnly' && <button
-              key={`delete-${api._humanReadableId}`}
-              type="button"
-              className="btn btn-sm btn-access-negative"
-              title="Delete this Api"
-              onClick={() => this.delete(api)}>
-              <i className="fas fa-trash" />
-            </button>}
+            {api.visibility !== 'AdminOnly' && (
+              <button
+                key={`delete-${api._humanReadableId}`}
+                type="button"
+                className="btn btn-sm btn-access-negative"
+                title="Delete this Api"
+                onClick={() => this.delete(api)}>
+                <i className="fas fa-trash" />
+              </button>
+            )}
           </Can>
         </div>
       ),
     },
   ];
 
-  togglePublish = api => {
+  togglePublish = (api) => {
     Services.saveTeamApi(this.props.currentTeam._id, {
       ...api,
       published: !api.published,
     }).then(() => this.table.update());
   };
 
-  isTeamAdmin = user => {
-    return Option(this.props.currentTeam.users.find(u => u.userId === user._id))
-      .map(user => user.teamPermission)
+  isTeamAdmin = (user) => {
+    return Option(this.props.currentTeam.users.find((u) => u.userId === user._id))
+      .map((user) => user.teamPermission)
       .fold(
         () => false,
-        perm => perm === administrator
+        (perm) => perm === administrator
       );
   };
 
-  delete = api => {
-    window.confirm(t(
-      'delete.api.confirm',
-      this.props.currentLanguage,
-      'Are you sure you want to delete this api ?'
-    ))
-      .then(ok => {
+  delete = (api) => {
+    window
+      .confirm(
+        t(
+          'delete.api.confirm',
+          this.props.currentLanguage,
+          'Are you sure you want to delete this api ?'
+        )
+      )
+      .then((ok) => {
         if (ok) {
-          Services.deleteTeamApi(this.props.currentTeam._id, api._id)
-            .then(() => {
-              toastr.success(t('delete.api.success', this.props.currentLanguage, false, 'API deleted successfully', api.name));
-              this.table.update();
-            });
+          Services.deleteTeamApi(this.props.currentTeam._id, api._id).then(() => {
+            toastr.success(
+              t(
+                'delete.api.success',
+                this.props.currentLanguage,
+                false,
+                'API deleted successfully',
+                api.name
+              )
+            );
+            this.table.update();
+          });
         }
       });
   };
 
   createNewApi = () => {
     Services.fetchNewApi()
-      .then(e => {
+      .then((e) => {
         const verb = faker.hacker.verb();
         const apiName =
           verb.charAt(0).toUpperCase() +
@@ -132,13 +144,10 @@ class TeamApisComponent extends Component {
           ' api';
 
         e.name = apiName;
-        e._humanReadableId = apiName
-          .replace(/\s/gi, '-')
-          .toLowerCase()
-          .trim();
+        e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
         return e;
       })
-      .then(newApi => {
+      .then((newApi) => {
         this.props.history.push(
           `/${this.props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
           { newApi: { ...newApi, team: this.props.currentTeam._id } }
@@ -154,18 +163,20 @@ class TeamApisComponent extends Component {
             <div className="col">
               <h1>
                 Team apis
-                {this.props.currentTeam.type !== 'Admin' && <Can I={manage} a={Api} team={this.props.currentTeam}>
-                  <a
-                    className="btn btn-sm btn-access-negative mb-1 ml-1"
-                    title={t('Create a new API', this.props.currentLanguage)}
-                    href="#"
-                    onClick={e => {
-                      e.preventDefault();
-                      this.createNewApi();
-                    }}>
-                    <i className="fas fa-plus-circle" />
-                  </a>
-                </Can>}
+                {this.props.currentTeam.type !== 'Admin' && (
+                  <Can I={manage} a={Api} team={this.props.currentTeam}>
+                    <a
+                      className="btn btn-sm btn-access-negative mb-1 ml-1"
+                      title={t('Create a new API', this.props.currentLanguage)}
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        this.createNewApi();
+                      }}>
+                      <i className="fas fa-plus-circle" />
+                    </a>
+                  </Can>
+                )}
               </h1>
               <div className="section p-2">
                 <Table
@@ -178,8 +189,8 @@ class TeamApisComponent extends Component {
                   fetchItems={() => Services.teamApis(this.props.currentTeam._id)}
                   showActions={false}
                   showLink={false}
-                  extractKey={item => item._id}
-                  injectTable={t => (this.table = t)}
+                  extractKey={(item) => item._id}
+                  injectTable={(t) => (this.table = t)}
                 />
               </div>
             </div>
@@ -190,7 +201,7 @@ class TeamApisComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

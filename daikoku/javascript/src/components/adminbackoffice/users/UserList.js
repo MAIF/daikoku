@@ -19,7 +19,7 @@ class UserListComponent extends Component {
   }
 
   updateUsers = () => {
-    Services.fetchAllUsers().then(users => this.setState({ users }));
+    Services.fetchAllUsers().then((users) => this.setState({ users }));
   };
 
   createNewUser = () => {
@@ -40,7 +40,7 @@ class UserListComponent extends Component {
     });
   };
 
-  removeUser = user => {
+  removeUser = (user) => {
     window
       .confirm(
         t(
@@ -49,7 +49,7 @@ class UserListComponent extends Component {
           'Are you sure you want to delete this user ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.deleteUserById(user._id).then(() => {
             toastr.info(
@@ -67,26 +67,24 @@ class UserListComponent extends Component {
       });
   };
 
-  toggleAdmin = member => {
+  toggleAdmin = (member) => {
     if (member._id === this.props.connectedUser._id) {
       alert(
         t(
           'toggle.admin.alert',
           this.props.currentLanguage,
-          'You can\'t remove your admin status, ask another admin.'
+          "You can't remove your admin status, ask another admin."
         )
       );
     } else {
-      Services.setAdminStatus(member, !member.isDaikokuAdmin ).then(() =>
-        this.updateUsers()
-      );
+      Services.setAdminStatus(member, !member.isDaikokuAdmin).then(() => this.updateUsers());
     }
   };
 
   render() {
     const filteredUsers = this.state.search
       ? this.state.users.filter(({ name, email }) =>
-          [name, email].some(item => item.toLowerCase().includes(this.state.search))
+          [name, email].some((item) => item.toLowerCase().includes(this.state.search))
         )
       : this.state.users;
     return (
@@ -101,7 +99,7 @@ class UserListComponent extends Component {
                     className="btn btn-sm btn-access-negative mb-1 ml-1"
                     title={t('Create a new user', this.props.currentLanguage)}
                     href="#"
-                    onClick={e => {
+                    onClick={(e) => {
                       e.preventDefault();
                       this.createNewUser();
                     }}>
@@ -111,15 +109,15 @@ class UserListComponent extends Component {
                 <input
                   placeholder={t('Find a user', this.props.currentLanguage)}
                   className="form-control col-5"
-                  onChange={e => {
+                  onChange={(e) => {
                     this.setState({ search: e.target.value });
                   }}
                 />
               </div>
               <PaginatedComponent
-                items={_.sortBy(filteredUsers, [user => user.name.toLowerCase()])}
+                items={_.sortBy(filteredUsers, [(user) => user.name.toLowerCase()])}
                 count={15}
-                formatter={user => {
+                formatter={(user) => {
                   return (
                     <AvatarWithAction
                       key={user._id}
@@ -170,7 +168,7 @@ class UserListComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

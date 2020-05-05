@@ -12,11 +12,11 @@ const getTrad = (
   replacements
 ) => {
   const maybeTranslationFromConf = Option(configuration[language])
-    .map(lng => lng.translations)
-    .map(t => t[i18nkey]);
+    .map((lng) => lng.translations)
+    .map((t) => t[i18nkey]);
   const maybeExtraTranslation = Option(extraConf)
-    .map(conf => conf[language])
-    .map(lng => lng[i18nkey]);
+    .map((conf) => conf[language])
+    .map((lng) => lng[i18nkey]);
 
   const resultFromConf = maybeTranslationFromConf.getOrElse(defaultTranslation || i18nkey);
   const resultWithExtra = maybeExtraTranslation.getOrElse(resultFromConf);
@@ -55,7 +55,7 @@ export const Translation = ({
   replacements,
 }) => {
   const pluralOption = Option(count)
-    .map(count => count > 1)
+    .map((count) => count > 1)
     .getOrElse(!!isPlural);
 
   return <>{getTrad(i18nkey, language, pluralOption, children, extraConf, replacements)}</>;

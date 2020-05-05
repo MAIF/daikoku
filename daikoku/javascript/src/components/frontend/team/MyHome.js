@@ -8,7 +8,6 @@ import * as Services from '../../../services';
 import { ApiList } from '../../frontend';
 import { api as API, CanIDoAction, manage } from '../../utils';
 
-
 class MyHomeComponent extends Component {
   state = {
     apis: [],
@@ -44,21 +43,21 @@ class MyHomeComponent extends Component {
     return Services.askForApiAccess(teams, api._id).then(() => this.fetchData());
   };
 
-  redirectToTeamPage = team => {
+  redirectToTeamPage = (team) => {
     this.props.history.push(`/${team._humanReadableId}`);
   };
 
-  redirectToApiPage = api => {
-    if (api.visibility === 'Public' || api.authorizations.some(auth => auth.authorized)) {
-      const apiOwner = this.state.teams.find(t => t._id === api.team);
+  redirectToApiPage = (api) => {
+    if (api.visibility === 'Public' || api.authorizations.some((auth) => auth.authorized)) {
+      const apiOwner = this.state.teams.find((t) => t._id === api.team);
       this.props.history.push(
         `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}`
       );
     }
   };
 
-  redirectToEditPage = api => {
-    const adminTeam = this.state.myTeams.find(team => api.team === team._id);
+  redirectToEditPage = (api) => {
+    const adminTeam = this.state.myTeams.find((team) => api.team === team._id);
 
     if (CanIDoAction(this.props.connectedUser, manage, API, adminTeam)) {
       this.props
@@ -119,7 +118,7 @@ class MyHomeComponent extends Component {
           redirectToApiPage={this.redirectToApiPage}
           redirectToEditPage={this.redirectToEditPage}
           redirectToTeamPage={this.redirectToTeamPage}
-          refreshTeams={() => Services.myTeams().then(myTeams => this.setState({ myTeams}))}
+          refreshTeams={() => Services.myTeams().then((myTeams) => this.setState({ myTeams }))}
           showTeam={true}
         />
       </main>
@@ -127,7 +126,7 @@ class MyHomeComponent extends Component {
   }
 }
 
-const Description = props => {
+const Description = (props) => {
   if (!props.description) {
     return (
       <p className="lead">
@@ -146,13 +145,13 @@ const Description = props => {
   return <p className="lead">{props.description}</p>;
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
-  updateTeam: team => updateTeamPromise(team),
-  openContactModal: props => openContactModal(props)
+  updateTeam: (team) => updateTeamPromise(team),
+  openContactModal: (props) => openContactModal(props),
 };
 
 export const MyHome = connect(mapStateToProps, mapDispatchToProps)(MyHomeComponent);

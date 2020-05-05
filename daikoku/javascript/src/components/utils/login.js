@@ -10,12 +10,12 @@ export class LoginPage extends Component {
     message: null,
   };
 
-  onChange = e => {
+  onChange = (e) => {
     this.setState({ [e.target.name]: e.target.value });
   };
 
-  handleError = mess => {
-    return err => {
+  handleError = (mess) => {
+    return (err) => {
       console.log(err && err.message ? err.message : err);
       this.setState({ error: mess });
       throw err;

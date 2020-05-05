@@ -11,7 +11,7 @@ import { AssetChooserByModal } from '../../frontend';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-Array.prototype.move = function(from, to) {
+Array.prototype.move = function (from, to) {
   this.splice(to, 0, this.splice(from, 1)[0]);
   return this;
 };
@@ -62,7 +62,7 @@ class AssetButton extends Component {
             team={team}
             teamId={team._id}
             label={t('Set from asset', this.props.currentLanguage)}
-            onSelect={asset => {
+            onSelect={(asset) => {
               this.props.onRawChange({
                 ...this.props.rawValue,
                 contentType: asset.contentType,
@@ -134,7 +134,7 @@ export class TeamApiDocumentation extends Component {
   };
 
   updateDetails = () => {
-    return Services.getDocDetails(this.props.value._id).then(details => {
+    return Services.getDocDetails(this.props.value._id).then((details) => {
       return this.setState({ details });
     });
   };
@@ -158,14 +158,14 @@ export class TeamApiDocumentation extends Component {
     }
   }
 
-  select = selected => {
+  select = (selected) => {
     if (this.state.selected) {
       this.onSave(this.state.selected)
         .then(() => {
           return this.updateDetails();
         })
         .then(() => {
-          Services.getDocPage(this.props.value._id, selected._id).then(page => {
+          Services.getDocPage(this.props.value._id, selected._id).then((page) => {
             if (page.error) {
               this.setState({ error: page.error });
             } else {
@@ -174,7 +174,7 @@ export class TeamApiDocumentation extends Component {
           });
         });
     } else {
-      Services.getDocPage(this.props.value._id, selected._id).then(page => {
+      Services.getDocPage(this.props.value._id, selected._id).then((page) => {
         if (page.error) {
           this.setState({ error: page.error });
         } else {
@@ -184,27 +184,27 @@ export class TeamApiDocumentation extends Component {
     }
   };
 
-  onChange = v => {
+  onChange = (v) => {
     this.onSave(v);
   };
 
-  onSave = page => {
+  onSave = (page) => {
     return Services.saveDocPage(this.props.teamId, this.props.value._id, page).then(() => {
       toastr.success(t('Page saved', this.props.currentLanguage));
       return this.updateDetails();
     });
   };
 
-  isSelected = page => {
+  isSelected = (page) => {
     return this.state.selected && page._id === this.state.selected._id;
   };
 
   onReorder = () => {
     return Services.reorderDoc(this.props.team._humanReadableId, this.props.value._humanReadableId)
-      .then(details => {
+      .then((details) => {
         return this.setState({ details });
       })
-      .catch(e => {
+      .catch((e) => {
         console.log(e);
       });
   };
@@ -257,7 +257,7 @@ export class TeamApiDocumentation extends Component {
       level: 0,
       lastModificationAt: Date.now(),
       content: '# New page\n\nA new page',
-    }).then(page => {
+    }).then((page) => {
       let pages = _.cloneDeep(this.props.value.documentation.pages);
       //pages.push(page._id);
       pages.splice(index, 0, page._id);
@@ -280,7 +280,7 @@ export class TeamApiDocumentation extends Component {
           'Are you sure you want to delete this page ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.deleteDocPage(
             this.props.teamId,
@@ -288,7 +288,7 @@ export class TeamApiDocumentation extends Component {
             this.state.selected._id
           ).then(() => {
             let pages = _.cloneDeep(this.props.value.documentation.pages).filter(
-              p => p !== this.state.selected._id
+              (p) => p !== this.state.selected._id
             );
             const value = _.cloneDeep(this.props.value);
             value.documentation.pages = pages;
@@ -311,9 +311,7 @@ export class TeamApiDocumentation extends Component {
           <table className="table table-striped table-hover table-sm table-plan-name section">
             <thead className="thead-light">
               <tr>
-                <th
-                  scope="col"
-                  className="d-flex justify-content-between align-items-center">
+                <th scope="col" className="d-flex justify-content-between align-items-center">
                   Plan title{' '}
                   <div className="btn-group">
                     <button
@@ -333,9 +331,9 @@ export class TeamApiDocumentation extends Component {
                       type="button"
                       className="btn btn-sm btn-outline-primary">
                       <i className="fas fa-plus mr-1" />
-                        <Translation i18nkey="Add page" language={this.props.currentLanguage}>
-                          add page
-                        </Translation>
+                      <Translation i18nkey="Add page" language={this.props.currentLanguage}>
+                        add page
+                      </Translation>
                     </button>
                   </div>
                 </th>
@@ -384,7 +382,7 @@ export class TeamApiDocumentation extends Component {
                   flow={this.flow}
                   schema={this.schema}
                   value={this.state.selected}
-                  onChange={selected => this.setState({ selected })}
+                  onChange={(selected) => this.setState({ selected })}
                 />
               </React.Suspense>
             </div>

@@ -12,24 +12,24 @@ class TeamConsumptionComponent extends Component {
       type: 'DoubleRoundChart',
       label: 'Hits by api/plan',
       title: 'Hits by api/plan',
-      formatter: data =>
+      formatter: (data) =>
         _.sortBy(
           data.reduce((acc, item) => {
-            const value = acc.find(a => a.name === item.apiName) || { count: 0 };
+            const value = acc.find((a) => a.name === item.apiName) || { count: 0 };
             return [
-              ...acc.filter(a => a.name !== item.apiName),
+              ...acc.filter((a) => a.name !== item.apiName),
               { name: item.apiName, count: value.count + item.hits },
             ];
           }, []),
           ['name']
         ),
-      formatter2: data =>
+      formatter2: (data) =>
         _.sortBy(
           data.reduce((acc, item) => {
             const plan = `${item.apiName} - ${item.plan}`;
-            const value = acc.find(a => a.name === plan) || { count: 0 };
+            const value = acc.find((a) => a.name === plan) || { count: 0 };
             return [
-              ...acc.filter(a => a.name !== plan),
+              ...acc.filter((a) => a.name !== plan),
               { name: plan, api: item.apiName, count: value.count + item.hits },
             ];
           }, []),
@@ -64,7 +64,7 @@ class TeamConsumptionComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

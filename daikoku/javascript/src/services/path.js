@@ -13,7 +13,7 @@ function matched(f, p) {
 }
 
 export function smartMatch(f) {
-  return p => {
+  return (p) => {
     if (p.match.path.indexOf('/:teamId') === 0) {
       const searched = p.match.url.split('/')[1];
       if (avoidMatching.indexOf(searched) !== -1) {
@@ -36,7 +36,7 @@ export function smartMatch(f) {
 }
 
 export function smartRedirect(f) {
-  return p => {
+  return (p) => {
     if (p.match.path.indexOf('/teams/:teamId/apis/') === 0) {
       const to = p.match.url.replace('/teams/', '/').replace('/apis/', '/');
       console.log('redirect from', p.match.url, 'to', to);

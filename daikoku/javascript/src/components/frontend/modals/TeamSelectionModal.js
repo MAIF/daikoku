@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PropTypes } from 'prop-types';
 import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
-import {t, Translation} from '../../../locales';
+import { t, Translation } from '../../../locales';
 
 export const TeamSelectorModal = ({
   closeModal,
@@ -14,11 +14,11 @@ export const TeamSelectorModal = ({
   acceptedTeams = [],
   action,
   allTeamSelector,
-  allowMultipleDemand
+  allowMultipleDemand,
 }) => {
   const [selectedTeams, setSelectedTeams] = useState([]);
   const allTeams = teams.filter(
-    team => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
+    (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
   );
 
   const finalAction = () => {
@@ -31,11 +31,11 @@ export const TeamSelectorModal = ({
     if (selectedTeams.length === allTeams.length) {
       setSelectedTeams([]);
     } else {
-      setSelectedTeams([...allTeams.map(t => t._id)]);
+      setSelectedTeams([...allTeams.map((t) => t._id)]);
     }
   };
 
-  const getButton = team => {
+  const getButton = (team) => {
     if (!allowMultipleDemand && pendingTeams.includes(team._id)) {
       return (
         <button type="button" className="btn btn-sm btn-access disabled">
@@ -53,18 +53,18 @@ export const TeamSelectorModal = ({
     }
   };
 
-  const getTeamLabel = team => {
+  const getTeamLabel = (team) => {
     return team.name;
   };
 
-  const doTeamAction = team => {
+  const doTeamAction = (team) => {
     if (
       allowMultipleDemand ||
       (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))
     ) {
       if (allTeamSelector) {
         if (selectedTeams.includes(team._id)) {
-          setSelectedTeams(selectedTeams.filter(t => t !== team._id));
+          setSelectedTeams(selectedTeams.filter((t) => t !== team._id));
         } else {
           setSelectedTeams([...selectedTeams, team._id]);
         }
@@ -74,7 +74,7 @@ export const TeamSelectorModal = ({
     }
   };
 
-  const actionAndClose = teams => {
+  const actionAndClose = (teams) => {
     if (action instanceof Promise) {
       action(teams).then(() => closeModal());
     } else {
@@ -107,7 +107,7 @@ export const TeamSelectorModal = ({
               </span>
             </div>
           )}
-          {teams.map(team => {
+          {teams.map((team) => {
             return (
               <div
                 key={team._id}
@@ -126,11 +126,7 @@ export const TeamSelectorModal = ({
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          {t(
-              'Close',
-              currentLanguage,
-              'Close'
-          )}
+          {t('Close', currentLanguage, 'Close')}
         </button>
         {!!allTeamSelector && (
           <button
@@ -139,11 +135,7 @@ export const TeamSelectorModal = ({
               disabled: !selectedTeams.length,
             })}
             onClick={() => finalAction()}>
-            {t(
-                'Subscribe',
-                currentLanguage,
-                'Subscribe'
-            )}
+            {t('Subscribe', currentLanguage, 'Subscribe')}
           </button>
         )}
       </div>

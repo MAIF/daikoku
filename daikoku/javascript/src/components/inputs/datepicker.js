@@ -7,7 +7,7 @@ import 'antd/lib/date-picker/style/index.css';
 import './datepicker.css';
 
 export class OtoDatePicker extends Component {
-  onChange = value => {
+  onChange = (value) => {
     const from = value[0];
     const to = value[1];
     if (
@@ -31,7 +31,7 @@ export class OtoDatePicker extends Component {
           format={dateFormat}
           placeholder={['Start Time', 'End Time']}
           onChange={this.onChange}
-          onOk={value => value}
+          onOk={(value) => value}
         />
       </LocaleProvider>
     );

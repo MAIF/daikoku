@@ -9,8 +9,8 @@ const LazyForm = React.lazy(() => import('../../inputs/Form'));
 class NameAlreadyExists extends Component {
   state = { exists: false };
 
-  update = props => {
-    Services.checkIfApiNameIsUnique(props.rawValue.name).then(r =>
+  update = (props) => {
+    Services.checkIfApiNameIsUnique(props.rawValue.name).then((r) =>
       this.setState({ exists: r.exists })
     );
   };
@@ -96,7 +96,7 @@ export class TeamApiInfo extends Component {
         label: t('Categories', this.props.currentLanguage),
         creatable: true,
         valuesFrom: '/api/categories',
-        transformer: t => ({ label: t, value: t }),
+        transformer: (t) => ({ label: t, value: t }),
       },
     },
     visibility: {
@@ -124,7 +124,7 @@ export class TeamApiInfo extends Component {
         label: t('Authorized teams', this.props.currentLanguage),
         valuesFrom: '/api/teams',
         selectClassName: 'full-width-select',
-        transformer: t => ({ label: t.name, value: t._id }),
+        transformer: (t) => ({ label: t.name, value: t._id }),
       },
     },
   };
@@ -146,11 +146,7 @@ export class TeamApiInfo extends Component {
     'authorizedTeams',
   ];
 
-  adminFormFlow = [
-    '_id',
-    'name',
-    'smallDescription'
-  ];
+  adminFormFlow = ['_id', 'name', 'smallDescription'];
 
   adminFormSchema = {
     _id: {
@@ -167,8 +163,8 @@ export class TeamApiInfo extends Component {
       type: 'text',
       disabled: true,
       props: { label: t('Small desc.', this.props.currentLanguage) },
-    }
-  }
+    },
+  };
 
   render() {
     if (this.props.value.visibility === 'AdminOnly') {

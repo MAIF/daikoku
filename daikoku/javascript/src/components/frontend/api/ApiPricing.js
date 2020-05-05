@@ -9,7 +9,7 @@ import { t, Translation } from '../../../locales';
 import { Can, access, apikey } from '../../utils';
 
 const Curreny = ({ plan }) => {
-  const cur = _.find(currencies, c => c.code === plan.currency.code);
+  const cur = _.find(currencies, (c) => c.code === plan.currency.code);
   return (
     <span>
       {' '}
@@ -18,8 +18,8 @@ const Curreny = ({ plan }) => {
   );
 };
 
-const currency = plan => {
-  const cur = _.find(currencies, c => c.code === plan.currency.code);
+const currency = (plan) => {
+  const cur = _.find(currencies, (c) => c.code === plan.currency.code);
   return `${cur.name}(${cur.symbol})`;
 };
 
@@ -121,19 +121,19 @@ export class ApiPricingCard extends Component {
     const type = plan.type;
     const customDescription = plan.customDescription;
     const authorizedTeams = this.props.myTeams.filter(
-      t =>
+      (t) =>
         this.props.api.visibility === 'Public' ||
         this.props.api.authorizedTeams.includes(t._id) ||
         t._id === this.props.ownerTeam._id
     );
 
     const allPossibleTeams = _.difference(
-      authorizedTeams.map(t => t._id),
-      this.props.subscriptions.map(s => s.team)
+      authorizedTeams.map((t) => t._id),
+      this.props.subscriptions.map((s) => s.team)
     );
     const isPending = !_.difference(
       allPossibleTeams,
-      this.props.pendingSubscriptions.map(s => s.action.team)
+      this.props.pendingSubscriptions.map((s) => s.action.team)
     ).length;
     const isAccepted = !allPossibleTeams.length;
 
@@ -166,9 +166,10 @@ export class ApiPricingCard extends Component {
                   I={access}
                   a={apikey}
                   teams={authorizedTeams.filter(
-                    team => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                    (team) => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
                   )}>
-                  {(this.props.api.visibility === 'AdminOnly' || (plan.otoroshiTarget && !isAccepted && !isPending)) && (
+                  {(this.props.api.visibility === 'AdminOnly' ||
+                    (plan.otoroshiTarget && !isAccepted && !isPending)) && (
                     <ActionWithTeamSelector
                       title={t(
                         'team.selection.title',
@@ -181,15 +182,16 @@ export class ApiPricingCard extends Component {
                         'You are going to subscribe to the api. On which team do you want to make this subscriptions ?'
                       )}
                       currentLanguage={this.props.currentLanguage}
-                      teams={
-                        authorizedTeams
-                          .filter(t => t.type !== 'Admin')
-                          .filter(team => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id)
-                      }
-                      pendingTeams={this.props.pendingSubscriptions.map(s => s.action.team)}
-                      authorizedTeams={this.props.subscriptions.map(subs => subs.team)}
+                      teams={authorizedTeams
+                        .filter((t) => t.type !== 'Admin')
+                        .filter(
+                          (team) =>
+                            plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                        )}
+                      pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
+                      authorizedTeams={this.props.subscriptions.map((subs) => subs.team)}
                       allowMultipleDemand={plan.allowMultipleKeys}
-                      action={teams => this.props.askForApikeys(teams)}
+                      action={(teams) => this.props.askForApikeys(teams)}
                       withAllTeamSelector={true}>
                       <button type="button" className="btn btn-sm btn-access-negative">
                         <Translation i18nkey="Subscribe" language={this.props.currentLanguage}>
@@ -226,11 +228,11 @@ export class ApiPricing extends Component {
       return null;
     }
 
-    const possibleUsagePlans = api.possibleUsagePlans.filter(plan => {
+    const possibleUsagePlans = api.possibleUsagePlans.filter((plan) => {
       return (
         plan.visibility === 'Public' ||
-        this.props.myTeams.some(team => team._id === this.props.ownerTeam._id) ||
-        this.props.myTeams.some(team => plan.authorizedTeams.includes(team._id))
+        this.props.myTeams.some((team) => team._id === this.props.ownerTeam._id) ||
+        this.props.myTeams.some((team) => plan.authorizedTeams.includes(team._id))
       );
     });
 
@@ -239,7 +241,7 @@ export class ApiPricing extends Component {
         <div className="album">
           <div className="container">
             <div className="row">
-              {possibleUsagePlans.map(plan => (
+              {possibleUsagePlans.map((plan) => (
                 <div key={plan._id} className="col-md-4">
                   <ApiPricingCard
                     api={api}
@@ -248,12 +250,12 @@ export class ApiPricing extends Component {
                     myTeams={this.props.myTeams}
                     ownerTeam={this.props.ownerTeam}
                     subscriptions={this.props.subscriptions.filter(
-                      subs => subs.api === api._id && subs.plan === plan._id
+                      (subs) => subs.api === api._id && subs.plan === plan._id
                     )}
                     pendingSubscriptions={this.props.pendingSubscriptions.filter(
-                      subs => subs.action.api === api._id && subs.action.plan === plan._id
+                      (subs) => subs.action.api === api._id && subs.action.plan === plan._id
                     )}
-                    askForApikeys={teams => this.props.askForApikeys(teams, plan)}
+                    askForApikeys={(teams) => this.props.askForApikeys(teams, plan)}
                     updateSubscriptions={this.props.updateSubscriptions}
                     currentLanguage={this.props.currentLanguage}
                   />

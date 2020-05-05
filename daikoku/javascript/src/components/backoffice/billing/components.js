@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import React from 'react';
 import { Translation } from '../../../locales';
 
-export const ApiTotal = props => {
+export const ApiTotal = (props) => {
   return (
     <div className="col-4 api__billing__card" onClick={props.handleClick}>
       <div className="api__billing__name label">{props.api ? props.api.name : null}</div>
@@ -45,7 +45,7 @@ export const NoData = ({ language }) => {
   );
 };
 
-export const TheadBillingContainer = props => {
+export const TheadBillingContainer = (props) => {
   return (
     <div className="col-12 total ">
       <div className="title__container__bloc">

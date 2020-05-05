@@ -5,19 +5,17 @@ import { connect } from 'react-redux';
 
 class ActionWithTeamSelectorComponent extends Component {
   openTeamSelectorModal = () => {
-    this.props.openTeamSelectorModal(
-      {
-        allTeamSelector: this.props.withAllTeamSelector,
-        title: this.props.title,
-        description: this.props.description,
-        currentLanguage:this.props.currentLanguage,
-        teams: this.props.teams,
-        pendingTeams: this.props.pendingTeams,
-        acceptedTeams: this.props.authorizedTeams,
-        action: teams => this.props.action(teams),
-        allowMultipleDemand: this.props.allowMultipleDemand,
-      }
-    );
+    this.props.openTeamSelectorModal({
+      allTeamSelector: this.props.withAllTeamSelector,
+      title: this.props.title,
+      description: this.props.description,
+      currentLanguage: this.props.currentLanguage,
+      teams: this.props.teams,
+      pendingTeams: this.props.pendingTeams,
+      acceptedTeams: this.props.authorizedTeams,
+      action: (teams) => this.props.action(teams),
+      allowMultipleDemand: this.props.allowMultipleDemand,
+    });
   };
 
   render() {
@@ -34,7 +32,7 @@ class ActionWithTeamSelectorComponent extends Component {
         {React.cloneElement(this.props.children, { onClick: () => this.openTeamSelectorModal() })}
       </>
     );
-  } 
+  }
 }
 
 ActionWithTeamSelectorComponent.defaultProps = {
@@ -55,8 +53,8 @@ ActionWithTeamSelectorComponent.propTypes = {
   allowMultipleDemand: PropTypes.bool,
 };
 
-const mapStateToProps = state => ({
-  ...state.context
+const mapStateToProps = (state) => ({
+  ...state.context,
 });
 
 const mapDispatchToProps = {

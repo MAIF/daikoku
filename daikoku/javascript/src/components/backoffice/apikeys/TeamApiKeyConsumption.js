@@ -17,8 +17,8 @@ class TeamApiKeyConsumptionComponent extends Component {
       type: 'LineChart',
       label: (data, max) => this.getLabelForDataIn(data, max),
       title: 'Data In',
-      formatter: data =>
-        data.map(item => ({
+      formatter: (data) =>
+        data.map((item) => ({
           date: moment(item.from).format('DD MMM.'),
           count: item.hits,
         })),
@@ -28,7 +28,7 @@ class TeamApiKeyConsumptionComponent extends Component {
     {
       type: 'Global',
       label: 'Global informations',
-      formatter: data => (data.length ? data[data.length - 1].globalInformations : []),
+      formatter: (data) => (data.length ? data[data.length - 1].globalInformations : []),
     },
   ];
 
@@ -95,7 +95,7 @@ class TeamApiKeyConsumptionComponent extends Component {
                       this.props.currentTeam._id,
                       from.valueOf(),
                       to.valueOf()
-                    ).then(c => c.consumptions)
+                    ).then((c) => c.consumptions)
                   }
                   mappers={this.mappers}
                   forConsumer={true}
@@ -116,7 +116,7 @@ class PlanInformations extends Component {
   };
 
   componentDidMount() {
-    this.props.fetchData().then(informations => this.setState({ informations, loading: false }));
+    this.props.fetchData().then((informations) => this.setState({ informations, loading: false }));
   }
 
   render() {
@@ -137,7 +137,7 @@ class PlanInformations extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

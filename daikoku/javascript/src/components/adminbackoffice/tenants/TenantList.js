@@ -16,16 +16,16 @@ export class TenantListComponent extends Component {
   }
 
   getTenants() {
-    Services.allTenants().then(tenants => this.setState({ tenants }));
+    Services.allTenants().then((tenants) => this.setState({ tenants }));
   }
 
   createNewTenant = () => {
-    Services.fetchNewTenant().then(newTenant => {
+    Services.fetchNewTenant().then((newTenant) => {
       this.props.history.push(`/settings/tenants/${newTenant._id}`, { newTenant });
     });
   };
 
-  removeTenant = tenantId => {
+  removeTenant = (tenantId) => {
     window
       .confirm(
         t(
@@ -34,7 +34,7 @@ export class TenantListComponent extends Component {
           'Are you sure you want to delete this tenant ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.deleteTenant(tenantId).then(() => this.getTenants());
         }
@@ -59,7 +59,7 @@ export class TenantListComponent extends Component {
                     className="btn btn-sm btn-access-negative mb-1 ml-1"
                     title={t('Create a new tenant', this.props.currentLanguage)}
                     href="#"
-                    onClick={e => {
+                    onClick={(e) => {
                       e.preventDefault();
                       this.createNewTenant();
                     }}>
@@ -69,16 +69,16 @@ export class TenantListComponent extends Component {
                 <input
                   placeholder={t('Find a tenant', this.props.currentLanguage)}
                   className="form-control col-5"
-                  onChange={e => {
+                  onChange={(e) => {
                     this.setState({ search: e.target.value });
                   }}
                 />
               </div>
               <PaginatedComponent
                 currentLanguage={this.props.currentLanguage}
-                items={_.sortBy(filteredTenants, [tenant => tenant.name.toLowerCase()])}
+                items={_.sortBy(filteredTenants, [(tenant) => tenant.name.toLowerCase()])}
                 count={15}
-                formatter={tenant => {
+                formatter={(tenant) => {
                   return (
                     <AvatarWithAction
                       key={tenant._id}
@@ -107,7 +107,9 @@ export class TenantListComponent extends Component {
                         },
                         {
                           redirect: () =>
-                            this.props.history.push(`/settings/tenants/${tenant._humanReadableId}/admins`),
+                            this.props.history.push(
+                              `/settings/tenants/${tenant._humanReadableId}/admins`
+                            ),
                           iconClass: 'fas fa-user-shield',
                           tooltip: t('Admins', this.props.currentLanguage),
                         },
@@ -124,7 +126,7 @@ export class TenantListComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

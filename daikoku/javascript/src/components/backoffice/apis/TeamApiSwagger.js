@@ -20,9 +20,10 @@ export class TeamApiSwagger extends Component {
     }
   }
 
-  initSwaggerEditor = content => {
+  initSwaggerEditor = (content) => {
     console.log('initSwaggerEditor');
-    window.editor = SwaggerEditorBundle({ // eslint-disable-line no-undef
+    window.editor = SwaggerEditorBundle({
+      // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
       layout: 'StandaloneLayout',
       presets: [SwaggerEditorStandalonePreset], // eslint-disable-line no-undef
@@ -72,7 +73,7 @@ export class TeamApiSwagger extends Component {
             placeholder="The url of the swagger file"
             value={swagger.url}
             help="..."
-            onChange={e => {
+            onChange={(e) => {
               const value = this.props.value;
               value.swagger.url = e;
               this.props.onChange(value);
@@ -84,7 +85,7 @@ export class TeamApiSwagger extends Component {
             label={t('Headers', this.props.currentLanguage)}
             value={swagger.headers}
             help="..."
-            onChange={e => {
+            onChange={(e) => {
               const value = this.props.value;
               value.swagger.headers = e;
               this.props.onChange(value);
@@ -95,7 +96,7 @@ export class TeamApiSwagger extends Component {
           label={t('Use swagger content', this.props.currentLanguage)}
           value={!!swagger.content}
           help="..."
-          onChange={e => {
+          onChange={(e) => {
             const value = this.props.value;
             if (e) {
               value.swagger.content = JSON.stringify(

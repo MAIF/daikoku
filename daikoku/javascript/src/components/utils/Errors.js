@@ -49,7 +49,7 @@ const ErrorComponent = ({ error, goBack }) => {
   );
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   error: state.error,
   router: state.router,
 });

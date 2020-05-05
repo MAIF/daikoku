@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
-import {v4 as uuid} from 'uuid';
+import { v4 as uuid } from 'uuid';
 import faker from 'faker';
 
 import * as Services from '../../../services';
@@ -20,18 +20,18 @@ export class TenantOtoroshisComponent extends Component {
     {
       title: t('Url', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: item => item.url,
+      content: (item) => item.url,
     },
     {
       title: t('Host', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: item => item.host,
+      content: (item) => item.host,
     },
     {
       title: t('Actions', this.props.currentLanguage),
       style: { textAlign: 'center', width: 100, alignItems: 'center', display: 'flex' },
       notFilterable: true,
-      content: item => item._id,
+      content: (item) => item._id,
       cell: (a, otoroshi) => (
         <div className="btn-group">
           {this.isTenantAdmin() && (
@@ -62,14 +62,12 @@ export class TenantOtoroshisComponent extends Component {
     if (this.props.connectedUser.isDaikokuAdmin) {
       return true;
     }
-    return (
-      this.props.tenant.admins
-        .indexOf(this.props.connectedUser._id) > -1
-    );
+    return this.props.tenant.admins.indexOf(this.props.connectedUser._id) > -1;
   };
 
-  delete = id => {
-    window.confirm(
+  delete = (id) => {
+    window
+      .confirm(
         t(
           'otoroshi.settings.delete.confirm',
           this.props.currentLanguage,
@@ -77,16 +75,17 @@ export class TenantOtoroshisComponent extends Component {
           'Are you sure you want to delete those otoroshi settings ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
-          Services.deleteOtoroshiSettings(this.props.tenant._id, id)
-          .then(() => {
-            toastr.success(t(
-              'otoroshi.settings.deleted.success',
-              this.props.currentLanguage,
-              false,
-              'Otoroshi settings successfuly deleted'
-            ));
+          Services.deleteOtoroshiSettings(this.props.tenant._id, id).then(() => {
+            toastr.success(
+              t(
+                'otoroshi.settings.deleted.success',
+                this.props.currentLanguage,
+                false,
+                'Otoroshi settings successfuly deleted'
+              )
+            );
             this.table.update();
           });
         }
@@ -118,7 +117,7 @@ export class TenantOtoroshisComponent extends Component {
                   className="btn btn-sm btn-access-negative mb-1 ml-1"
                   title={t('Create new settings', this.props.currentLanguage)}
                   href="#"
-                  onClick={e => {
+                  onClick={(e) => {
                     e.preventDefault();
                     this.createNewSettings();
                   }}>
@@ -136,8 +135,8 @@ export class TenantOtoroshisComponent extends Component {
                   fetchItems={() => Services.allOtoroshis(this.props.tenant._id)}
                   showActions={false}
                   showLink={false}
-                  extractKey={item => item._id}
-                  injectTable={t => (this.table = t)}
+                  extractKey={(item) => item._id}
+                  injectTable={(t) => (this.table = t)}
                 />
               </div>
             </div>
@@ -148,7 +147,7 @@ export class TenantOtoroshisComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

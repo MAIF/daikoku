@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import { Error } from '../utils';
 
-const FrontOfficeComponent = props => {
+const FrontOfficeComponent = (props) => {
   return (
     <>
       {props.error.status && <Error error={props.error} />}
@@ -12,7 +12,7 @@ const FrontOfficeComponent = props => {
   );
 };
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   error: state.error,
 });
 

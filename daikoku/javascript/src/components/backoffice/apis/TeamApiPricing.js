@@ -8,7 +8,6 @@ import classNames from 'classnames';
 import { Spinner, newPossibleUsagePlan } from '../../utils';
 import { t, Translation } from '../../../locales';
 
-
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 const SUBSCRIPTION_PLAN_TYPES = {
@@ -36,10 +35,10 @@ const PRIVATE = 'Private';
 
 export class TeamApiPricing extends Component {
   state = {
-    selected: this.props.value.possibleUsagePlans[0]
+    selected: this.props.value.possibleUsagePlans[0],
   };
 
-  otoroshiFlow = _found => {
+  otoroshiFlow = (_found) => {
     if (
       !(
         !!_found.otoroshiTarget &&
@@ -71,7 +70,7 @@ export class TeamApiPricing extends Component {
     ];
   };
 
-  otoroshiForm = _found => {
+  otoroshiForm = (_found) => {
     if (
       !(
         !!_found.otoroshiTarget &&
@@ -84,10 +83,10 @@ export class TeamApiPricing extends Component {
           type: 'select',
           props: {
             label: t('Otoroshi instance', this.props.currentLanguage),
-            possibleValues: this.props.otoroshiSettings.map(s => ({
-                  label: s.url,
-                  value: s._id,
-                })),
+            possibleValues: this.props.otoroshiSettings.map((s) => ({
+              label: s.url,
+              value: s._id,
+            })),
           },
         },
         'otoroshiTarget.serviceGroup': {
@@ -95,7 +94,7 @@ export class TeamApiPricing extends Component {
           props: {
             label: t('Service group', this.props.currentLanguage),
             valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${_found.otoroshiTarget.otoroshiSettings}/groups`,
-            transformer: s => ({ label: s.name, value: s.id }),
+            transformer: (s) => ({ label: s.name, value: s.id }),
             fetchCondition: () => !!_found.otoroshiTarget.otoroshiSettings,
           },
         },
@@ -107,10 +106,10 @@ export class TeamApiPricing extends Component {
         type: 'select',
         props: {
           label: t('Otoroshi instance', this.props.currentLanguage),
-          possibleValues: this.props.otoroshiSettings.map(s => ({
-                label: s.url,
-                value: s._id,
-              })),
+          possibleValues: this.props.otoroshiSettings.map((s) => ({
+            label: s.url,
+            value: s._id,
+          })),
         },
       },
       'otoroshiTarget.serviceGroup': {
@@ -118,7 +117,7 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Service group', this.props.currentLanguage),
           valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${found.otoroshiTarget.otoroshiSettings}/groups`,
-          transformer: s => ({ label: s.name, value: s.id }),
+          transformer: (s) => ({ label: s.name, value: s.id }),
           fetchCondition: () => !!found.otoroshiTarget.otoroshiSettings,
         },
       },
@@ -201,24 +200,24 @@ export class TeamApiPricing extends Component {
     };
   };
 
-  securityFlow = _found => {
+  securityFlow = (_found) => {
     return [
       `>>> ${t('Security', this.props.currentLanguage)}`,
       'autoRotation',
       'subscriptionProcess',
-      'integrationProcess'
+      'integrationProcess',
     ];
-  }
+  };
 
-  securityForm = _found => {
+  securityForm = (_found) => {
     return {
-      'autoRotation': {
+      autoRotation: {
         type: 'bool',
         props: {
-          label: t('Force apikey auto-rotation', this.props.currentLanguage)
-        }
+          label: t('Force apikey auto-rotation', this.props.currentLanguage),
+        },
       },
-      'subscriptionProcess': {
+      subscriptionProcess: {
         type: 'select',
         props: {
           label: t('Subscription', this.props.currentLanguage),
@@ -227,13 +226,11 @@ export class TeamApiPricing extends Component {
               label: t('Automatic', this.props.currentLanguage),
               value: 'Automatic',
             },
-            { label: t('Manual', this.props.currentLanguage), 
-              value: 'Manual' 
-            }
+            { label: t('Manual', this.props.currentLanguage), value: 'Manual' },
           ],
         },
       },
-      'integrationProcess': {
+      integrationProcess: {
         type: 'select',
         props: {
           label: t('Integration', this.props.currentLanguage),
@@ -242,19 +239,18 @@ export class TeamApiPricing extends Component {
               label: t('Automatic', this.props.currentLanguage),
               value: 'Automatic',
             },
-            { label: t('ApiKey', this.props.currentLanguage), 
-              value: 'ApiKey' },
+            { label: t('ApiKey', this.props.currentLanguage), value: 'ApiKey' },
           ],
         },
-      }
+      },
     };
-  }
+  };
 
-  select = selected => {
+  select = (selected) => {
     this.setState({ selected });
   };
 
-  smartNameAndDescription = newType => {
+  smartNameAndDescription = (newType) => {
     let response = {};
     if (newType !== this.state.selected.type) {
       const { customName, customDescription, type } = this.state.selected;
@@ -272,12 +268,12 @@ export class TeamApiPricing extends Component {
     return response;
   };
 
-  onChange = v => {
+  onChange = (v) => {
     if (!v.currency) {
       v.currency = { code: 'EUR' };
     }
     v = { ...v, ...this.smartNameAndDescription(v.type) };
-    const selected = this.props.value.possibleUsagePlans.filter(p => p._id === v._id)[0];
+    const selected = this.props.value.possibleUsagePlans.filter((p) => p._id === v._id)[0];
     const idx = this.props.value.possibleUsagePlans.indexOf(selected);
     let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
     plans.splice(idx, 1, v);
@@ -287,21 +283,15 @@ export class TeamApiPricing extends Component {
     this.setState({ selected: v });
   };
 
-  renderAdmin = plan => {
-    const found = _.find(this.props.value.possibleUsagePlans, p => p._id === plan._id);
+  renderAdmin = (plan) => {
+    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
         serviceGroup: null,
       };
     }
-    const flow = [
-      '_id',
-      'type',
-      'customName',
-      'customDescription',
-      ...this.otoroshiFlow(found)
-    ];
+    const flow = ['_id', 'type', 'customName', 'customDescription', ...this.otoroshiFlow(found)];
     const schema = {
       _id: {
         type: 'string',
@@ -317,11 +307,36 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Type', this.props.currentLanguage),
           possibleValues: [
-            { label: t('FreeWithoutQuotas', this.props.currentLanguage, false, 'Free without quotas'), value: 'FreeWithoutQuotas' },
-            { label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'), value: 'FreeWithQuotas' },
-            { label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'), value: 'QuotasWithLimits' },
-            { label: t('QuotasWithoutLimits', this.props.currentLanguage, false, 'Quotas without limits'), value: 'QuotasWithoutLimits' },
-            { label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'), value: 'PayPerUse' },
+            {
+              label: t(
+                'FreeWithoutQuotas',
+                this.props.currentLanguage,
+                false,
+                'Free without quotas'
+              ),
+              value: 'FreeWithoutQuotas',
+            },
+            {
+              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              value: 'FreeWithQuotas',
+            },
+            {
+              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              value: 'QuotasWithLimits',
+            },
+            {
+              label: t(
+                'QuotasWithoutLimits',
+                this.props.currentLanguage,
+                false,
+                'Quotas without limits'
+              ),
+              value: 'QuotasWithoutLimits',
+            },
+            {
+              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              value: 'PayPerUse',
+            },
           ],
         },
       },
@@ -341,7 +356,7 @@ export class TeamApiPricing extends Component {
           placeholder: t('Plan description', this.props.currentLanguage),
         },
       },
-      ...this.otoroshiForm(found)
+      ...this.otoroshiForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -350,8 +365,8 @@ export class TeamApiPricing extends Component {
     );
   };
 
-  renderFreeWithoutQuotas = plan => {
-    const found = _.find(this.props.value.possibleUsagePlans, p => p._id === plan._id);
+  renderFreeWithoutQuotas = (plan) => {
+    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -368,7 +383,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.value',
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
-      ...this.securityFlow(found)
+      ...this.securityFlow(found),
     ];
     const schema = {
       _id: {
@@ -384,11 +399,36 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Type', this.props.currentLanguage),
           possibleValues: [
-            { label: t('FreeWithoutQuotas', this.props.currentLanguage, false, 'Free without quotas'), value: 'FreeWithoutQuotas' },
-            { label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'), value: 'FreeWithQuotas' },
-            { label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'), value: 'QuotasWithLimits' },
-            { label: t('QuotasWithoutLimits', this.props.currentLanguage, false, 'Quotas without limits'), value: 'QuotasWithoutLimits' },
-            { label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'), value: 'PayPerUse' },
+            {
+              label: t(
+                'FreeWithoutQuotas',
+                this.props.currentLanguage,
+                false,
+                'Free without quotas'
+              ),
+              value: 'FreeWithoutQuotas',
+            },
+            {
+              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              value: 'FreeWithQuotas',
+            },
+            {
+              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              value: 'QuotasWithLimits',
+            },
+            {
+              label: t(
+                'QuotasWithoutLimits',
+                this.props.currentLanguage,
+                false,
+                'Quotas without limits'
+              ),
+              value: 'QuotasWithoutLimits',
+            },
+            {
+              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              value: 'PayPerUse',
+            },
           ],
         },
       },
@@ -431,7 +471,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
-      ...this.securityForm(found)
+      ...this.securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -440,8 +480,8 @@ export class TeamApiPricing extends Component {
     );
   };
 
-  renderFreeWithQuotas = plan => {
-    const found = _.find(this.props.value.possibleUsagePlans, p => p._id === plan._id);
+  renderFreeWithQuotas = (plan) => {
+    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -462,7 +502,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.value',
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
-      ...this.securityFlow(found)
+      ...this.securityFlow(found),
     ];
     const schema = {
       _id: {
@@ -478,11 +518,36 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Type', this.props.currentLanguage),
           possibleValues: [
-            { label: t('FreeWithoutQuotas', this.props.currentLanguage, false, 'Free without quotas'), value: 'FreeWithoutQuotas' },
-            { label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'), value: 'FreeWithQuotas' },
-            { label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'), value: 'QuotasWithLimits' },
-            { label: t('QuotasWithoutLimits', this.props.currentLanguage, false, 'Quotas without limits'), value: 'QuotasWithoutLimits' },
-            { label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'), value: 'PayPerUse' },
+            {
+              label: t(
+                'FreeWithoutQuotas',
+                this.props.currentLanguage,
+                false,
+                'Free without quotas'
+              ),
+              value: 'FreeWithoutQuotas',
+            },
+            {
+              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              value: 'FreeWithQuotas',
+            },
+            {
+              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              value: 'QuotasWithLimits',
+            },
+            {
+              label: t(
+                'QuotasWithoutLimits',
+                this.props.currentLanguage,
+                false,
+                'Quotas without limits'
+              ),
+              value: 'QuotasWithoutLimits',
+            },
+            {
+              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              value: 'PayPerUse',
+            },
           ],
         },
       },
@@ -546,7 +611,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
-      ...this.securityForm(found)
+      ...this.securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -555,8 +620,8 @@ export class TeamApiPricing extends Component {
     );
   };
 
-  renderQuotasWithLimits = plan => {
-    const found = _.find(this.props.value.possibleUsagePlans, p => p._id === plan._id);
+  renderQuotasWithLimits = (plan) => {
+    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -582,7 +647,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.value',
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
-      ...this.securityFlow(found)
+      ...this.securityFlow(found),
     ];
     const schema = {
       _id: {
@@ -598,11 +663,36 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Type', this.props.currentLanguage),
           possibleValues: [
-            { label: t('FreeWithoutQuotas', this.props.currentLanguage, false, 'Free without quotas'), value: 'FreeWithoutQuotas' },
-            { label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'), value: 'FreeWithQuotas' },
-            { label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'), value: 'QuotasWithLimits' },
-            { label: t('QuotasWithoutLimits', this.props.currentLanguage, false, 'Quotas without limits'), value: 'QuotasWithoutLimits' },
-            { label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'), value: 'PayPerUse' },
+            {
+              label: t(
+                'FreeWithoutQuotas',
+                this.props.currentLanguage,
+                false,
+                'Free without quotas'
+              ),
+              value: 'FreeWithoutQuotas',
+            },
+            {
+              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              value: 'FreeWithQuotas',
+            },
+            {
+              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              value: 'QuotasWithLimits',
+            },
+            {
+              label: t(
+                'QuotasWithoutLimits',
+                this.props.currentLanguage,
+                false,
+                'Quotas without limits'
+              ),
+              value: 'QuotasWithoutLimits',
+            },
+            {
+              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              value: 'PayPerUse',
+            },
           ],
         },
       },
@@ -681,7 +771,7 @@ export class TeamApiPricing extends Component {
         type: 'select',
         props: {
           label: t('Currency', this.props.currentLanguage),
-          possibleValues: currencies.map(c => ({
+          possibleValues: currencies.map((c) => ({
             label: `${c.name} (${c.symbol})`,
             value: c.code,
           })),
@@ -702,7 +792,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
-      ...this.securityForm(found)
+      ...this.securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -711,8 +801,8 @@ export class TeamApiPricing extends Component {
     );
   };
 
-  renderQuotasWithoutLimits = plan => {
-    const found = _.find(this.props.value.possibleUsagePlans, p => p._id === plan._id);
+  renderQuotasWithoutLimits = (plan) => {
+    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -739,7 +829,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.value',
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
-      ...this.securityFlow(found)
+      ...this.securityFlow(found),
     ];
     const schema = {
       _id: {
@@ -755,11 +845,36 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Type', this.props.currentLanguage),
           possibleValues: [
-            { label: t('FreeWithoutQuotas', this.props.currentLanguage, false, 'Free without quotas'), value: 'FreeWithoutQuotas' },
-            { label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'), value: 'FreeWithQuotas' },
-            { label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'), value: 'QuotasWithLimits' },
-            { label: t('QuotasWithoutLimits', this.props.currentLanguage, false, 'Quotas without limits'), value: 'QuotasWithoutLimits' },
-            { label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'), value: 'PayPerUse' },
+            {
+              label: t(
+                'FreeWithoutQuotas',
+                this.props.currentLanguage,
+                false,
+                'Free without quotas'
+              ),
+              value: 'FreeWithoutQuotas',
+            },
+            {
+              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              value: 'FreeWithQuotas',
+            },
+            {
+              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              value: 'QuotasWithLimits',
+            },
+            {
+              label: t(
+                'QuotasWithoutLimits',
+                this.props.currentLanguage,
+                false,
+                'Quotas without limits'
+              ),
+              value: 'QuotasWithoutLimits',
+            },
+            {
+              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              value: 'PayPerUse',
+            },
           ],
         },
       },
@@ -845,7 +960,7 @@ export class TeamApiPricing extends Component {
         type: 'select',
         props: {
           label: t('Currency', this.props.currentLanguage),
-          possibleValues: currencies.map(c => ({
+          possibleValues: currencies.map((c) => ({
             label: `${c.name} (${c.symbol})`,
             value: c.code,
           })),
@@ -866,7 +981,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
-      ...this.securityForm(found)
+      ...this.securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -875,8 +990,8 @@ export class TeamApiPricing extends Component {
     );
   };
 
-  renderPayPerUse = plan => {
-    const found = _.find(this.props.value.possibleUsagePlans, p => p._id === plan._id);
+  renderPayPerUse = (plan) => {
+    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -899,7 +1014,7 @@ export class TeamApiPricing extends Component {
       'trialPeriod.value',
       'trialPeriod.unit',
       ...this.otoroshiFlow(found),
-      ...this.securityFlow(found)
+      ...this.securityFlow(found),
     ];
     const schema = {
       _id: {
@@ -915,11 +1030,36 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Type', this.props.currentLanguage),
           possibleValues: [
-            { label: t('FreeWithoutQuotas', this.props.currentLanguage, false, 'Free without quotas'), value: 'FreeWithoutQuotas' },
-            { label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'), value: 'FreeWithQuotas' },
-            { label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'), value: 'QuotasWithLimits' },
-            { label: t('QuotasWithoutLimits', this.props.currentLanguage, false, 'Quotas without limits'), value: 'QuotasWithoutLimits' },
-            { label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'), value: 'PayPerUse' },
+            {
+              label: t(
+                'FreeWithoutQuotas',
+                this.props.currentLanguage,
+                false,
+                'Free without quotas'
+              ),
+              value: 'FreeWithoutQuotas',
+            },
+            {
+              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              value: 'FreeWithQuotas',
+            },
+            {
+              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              value: 'QuotasWithLimits',
+            },
+            {
+              label: t(
+                'QuotasWithoutLimits',
+                this.props.currentLanguage,
+                false,
+                'Quotas without limits'
+              ),
+              value: 'QuotasWithoutLimits',
+            },
+            {
+              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              value: 'PayPerUse',
+            },
           ],
         },
       },
@@ -941,7 +1081,7 @@ export class TeamApiPricing extends Component {
         type: 'select',
         props: {
           label: t('Currency', this.props.currentLanguage),
-          possibleValues: currencies.map(c => ({
+          possibleValues: currencies.map((c) => ({
             label: `${c.name} (${c.symbol})`,
             value: c.code,
           })),
@@ -1005,7 +1145,7 @@ export class TeamApiPricing extends Component {
         },
       },
       ...this.otoroshiForm(found),
-      ...this.securityForm(found)
+      ...this.securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -1014,7 +1154,7 @@ export class TeamApiPricing extends Component {
     );
   };
 
-  isSelected = plan => {
+  isSelected = (plan) => {
     return this.state.selected && plan._id === this.state.selected._id;
   };
 
@@ -1037,10 +1177,10 @@ export class TeamApiPricing extends Component {
           'Are you sure you want to delete this plan ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           let plans = _.cloneDeep(this.props.value.possibleUsagePlans).filter(
-            p => p._id !== this.state.selected._id
+            (p) => p._id !== this.state.selected._id
           );
           const value = _.cloneDeep(this.props.value);
           value.possibleUsagePlans = plans;
@@ -1069,7 +1209,7 @@ export class TeamApiPricing extends Component {
       const updatedValue = {
         ...this.props.value,
         possibleUsagePlans: [
-          ...this.props.value.possibleUsagePlans.filter(pp => pp._id !== this.state.selected._id),
+          ...this.props.value.possibleUsagePlans.filter((pp) => pp._id !== this.state.selected._id),
           updatedPlan,
         ],
       };
@@ -1078,7 +1218,7 @@ export class TeamApiPricing extends Component {
     }
   };
 
-  planToOption = plan => {
+  planToOption = (plan) => {
     return {
       label:
         this.props.value.defaultUsagePlan === plan._id ? (
@@ -1124,15 +1264,17 @@ export class TeamApiPricing extends Component {
             paddingBottom: 20,
             borderBottom: '1px solid #DFDFDF',
           }}>
-          {this.props.value.visibility !== 'AdminOnly' && <button
-            onClick={this.addNewPlan}
-            type="button"
-            className="btn btn-sm btn-outline-primary float-right">
-            <i className="fas fa-plus mr-1" />
-            <Translation i18nkey="add a new plan" language={this.props.currentLanguage}>
-              add a new plan
-            </Translation>
-          </button>}
+          {this.props.value.visibility !== 'AdminOnly' && (
+            <button
+              onClick={this.addNewPlan}
+              type="button"
+              className="btn btn-sm btn-outline-primary float-right">
+              <i className="fas fa-plus mr-1" />
+              <Translation i18nkey="add a new plan" language={this.props.currentLanguage}>
+                add a new plan
+              </Translation>
+            </button>
+          )}
           <div style={{ width: '100%', marginLeft: 10 }}>
             <Select
               clearable={false}
@@ -1142,7 +1284,7 @@ export class TeamApiPricing extends Component {
               )}
               placeholder="Select a plan to edit it"
               options={this.props.value.possibleUsagePlans.map(this.planToOption)}
-              onChange={e => this.select(e.plan)}
+              onChange={(e) => this.select(e.plan)}
               classNamePrefix="reactSelect"
               className="reactSelect"
             />
@@ -1189,18 +1331,19 @@ export class TeamApiPricing extends Component {
                     )}
                   </button>
                 )}
-                {this.props.value.visibility !== 'AdminOnly' && <button
-                  onClick={this.deletePlan}
-                  type="button"
-                  className="btn btn-sm btn-outline-danger mb-2">
-                  <i className="fas fa-trash mr-1" />
-                  <Translation i18nkey="Delete plan" language={this.props.currentLanguage}>
-                    Delete plan
-                  </Translation>
-                </button>}
+                {this.props.value.visibility !== 'AdminOnly' && (
+                  <button
+                    onClick={this.deletePlan}
+                    type="button"
+                    className="btn btn-sm btn-outline-danger mb-2">
+                    <i className="fas fa-trash mr-1" />
+                    <Translation i18nkey="Delete plan" language={this.props.currentLanguage}>
+                      Delete plan
+                    </Translation>
+                  </button>
+                )}
               </div>
-              {this.state.selected.type === 'Admin' &&
-                this.renderAdmin(this.state.selected)}
+              {this.state.selected.type === 'Admin' && this.renderAdmin(this.state.selected)}
               {this.state.selected.type === 'FreeWithoutQuotas' &&
                 this.renderFreeWithoutQuotas(this.state.selected)}
               {this.state.selected.type === 'FreeWithQuotas' &&

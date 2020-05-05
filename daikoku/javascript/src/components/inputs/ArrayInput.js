@@ -3,7 +3,7 @@ import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { Help } from './Help';
 
-const valueToSelectOption = value => {
+const valueToSelectOption = (value) => {
   if (value === null) {
     return null;
   }
@@ -27,7 +27,7 @@ export class ArrayInput extends Component {
     }
   }
 
-  reloadValues = from => {
+  reloadValues = (from) => {
     this.setState({ loading: true });
     return fetch(from || this.props.valuesFrom, {
       method: 'GET',
@@ -36,12 +36,12 @@ export class ArrayInput extends Component {
         Accept: 'application/json',
       },
     })
-      .then(r => r.json())
-      .then(values => values.map(this.props.transformer || (a => a)))
-      .then(values =>
+      .then((r) => r.json())
+      .then((values) => values.map(this.props.transformer || ((a) => a)))
+      .then((values) =>
         this.setState({
           values,
-          value: values.filter(v => this.props.value.includes(v.value)),
+          value: values.filter((v) => this.props.value.includes(v.value)),
           loading: false,
         })
       );
@@ -55,7 +55,7 @@ export class ArrayInput extends Component {
       this.reloadValues().then(() => {
         if (!this.props.creatable) {
           this.setState({
-            value: this.state.values.filter(v => nextProps.value.includes(v.value)),
+            value: this.state.values.filter((v) => nextProps.value.includes(v.value)),
           });
         } else {
           this.setState({ value: (nextProps.value || []).map(valueToSelectOption) });
@@ -68,14 +68,14 @@ export class ArrayInput extends Component {
     }
   }
 
-  changeValue = e => {
+  changeValue = (e) => {
     if (e) {
-      if (e.some(item => item.__isNew__)) {
-        const newVals = e.filter(item => item.__isNew__);
+      if (e.some((item) => item.__isNew__)) {
+        const newVals = e.filter((item) => item.__isNew__);
         this.setState({ value: e, values: [...this.state.values, ...newVals] });
       } else {
         this.setState({ value: e });
-        const finaItem = item =>
+        const finaItem = (item) =>
           this.props.transformSet ? this.props.transformSet(item.value) : item.value;
         this.props.onChange(e.map(finaItem));
       }
@@ -85,16 +85,16 @@ export class ArrayInput extends Component {
     }
   };
 
-  handleInputChange = inputValue => {
+  handleInputChange = (inputValue) => {
     this.setState({ inputValue });
   };
 
-  handleKeyDown = event => {
+  handleKeyDown = (event) => {
     const { inputValue, value } = this.state;
     if (!inputValue) return;
 
     const newValue = [...value, { label: inputValue, value: inputValue }];
-    const finaItem = item =>
+    const finaItem = (item) =>
       this.props.transformSet ? this.props.transformSet(item.value) : item.value;
     switch (event.key) {
       case 'Enter':

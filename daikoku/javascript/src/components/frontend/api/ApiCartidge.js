@@ -11,17 +11,18 @@ const Separator = () => <hr className="hr-apidescription" />;
 export class ApiCartidge extends Component {
   render() {
     const { api, ownerTeam } = this.props;
-    const defaultPlan = api.possibleUsagePlans.filter(p => p._id === api.defaultUsagePlan)[0];
+    const defaultPlan = api.possibleUsagePlans.filter((p) => p._id === api.defaultUsagePlan)[0];
     const pricing = defaultPlan ? defaultPlan.type : 'None';
 
     const authorizedTeams = this.props.myTeams.filter(
-      t => this.props.api.visibility === 'Public' || this.props.api.authorizedTeams.includes(t._id)
+      (t) =>
+        this.props.api.visibility === 'Public' || this.props.api.authorizedTeams.includes(t._id)
     );
     const allPossibleTeams = _.difference(
-      authorizedTeams.map(t => t._id),
+      authorizedTeams.map((t) => t._id),
       this.props.subscriptions
-        .filter(sub => !defaultPlan || sub.plan === defaultPlan._id)
-        .map(s => s.team)
+        .filter((sub) => !defaultPlan || sub.plan === defaultPlan._id)
+        .map((s) => s.team)
     );
     const isAccepted = !allPossibleTeams.length;
     const isPending =
@@ -29,13 +30,13 @@ export class ApiCartidge extends Component {
       !_.difference(
         allPossibleTeams,
         this.props.pendingSubscriptions
-          .filter(sub => !defaultPlan || sub.action.plan === defaultPlan._id)
-          .map(s => s.action.team)
+          .filter((sub) => !defaultPlan || sub.action.plan === defaultPlan._id)
+          .map((s) => s.action.team)
       ).length;
 
     const subscribingTeams = this.props.myTeams
-      .filter(t => t.type !== 'Admin')
-      .filter(team => this.props.subscriptions.some(sub => sub.team === team._id));
+      .filter((t) => t.type !== 'Admin')
+      .filter((team) => this.props.subscriptions.some((sub) => sub.team === team._id));
 
     return (
       <div className="d-flex col-12 col-sm-3 col-md-2 text-muted flex-column p-3 additionalContent">
@@ -48,11 +49,11 @@ export class ApiCartidge extends Component {
           <Link to={`/${ownerTeam._humanReadableId}`}>{ownerTeam.name}</Link>
         </small>
         <div>
-          <button 
-            className="btn btn-xs btn-access-negative" 
-            onClick={this.props.openContactModal}>
-            <i className="far fa-envelope mr-1"/>
-            <Translation i18nkey="Contact us" language={this.props.currentLanguage}>Contact us</Translation>
+          <button className="btn btn-xs btn-access-negative" onClick={this.props.openContactModal}>
+            <i className="far fa-envelope mr-1" />
+            <Translation i18nkey="Contact us" language={this.props.currentLanguage}>
+              Contact us
+            </Translation>
           </button>
         </div>
         <Separator />
@@ -119,13 +120,13 @@ export class ApiCartidge extends Component {
           <Can I={read} a={apikey}>
             <ActionWithTeamSelector
               title={t(
-                  'teamapi.select.title',
-                  this.props.currentLanguage,
-                  'Select the team to view your api key'
+                'teamapi.select.title',
+                this.props.currentLanguage,
+                'Select the team to view your api key'
               )}
               teams={subscribingTeams}
-              action={team =>
-                this.props.redirectToApiKeysPage(this.props.myTeams.find(t => t._id === team))
+              action={(team) =>
+                this.props.redirectToApiKeysPage(this.props.myTeams.find((t) => t._id === team))
               }
               currentLanguage={this.props.currentLanguage}
               withAllTeamSelector={false}>
@@ -153,7 +154,8 @@ export class ApiCartidge extends Component {
               I={access}
               a={apikey}
               teams={authorizedTeams.filter(
-                team => defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                (team) =>
+                  defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id
               )}>
               <ActionWithTeamSelector
                 title={t(
@@ -171,14 +173,16 @@ export class ApiCartidge extends Component {
                 buttonLabel="subscribe"
                 currentLanguage={this.props.currentLanguage}
                 teams={this.props.myTeams
-                  .filter(t => t.type !== 'Admin')
-                  .filter(team => defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id)
-                }
-                pendingTeams={this.props.pendingSubscriptions.map(s => s.action.team)}
+                  .filter((t) => t.type !== 'Admin')
+                  .filter(
+                    (team) =>
+                      defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                  )}
+                pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
                 authorizedTeams={this.props.subscriptions
-                  .filter(subs => subs.plan === defaultPlan._id)
-                  .map(subs => subs.team)}
-                action={teams => this.props.askForApikeys(teams, defaultPlan)}
+                  .filter((subs) => subs.plan === defaultPlan._id)
+                  .map((subs) => subs.team)}
+                action={(teams) => this.props.askForApikeys(teams, defaultPlan)}
                 withAllTeamSelector={true}>
                 <button type="button" className="btn btn-sm btn-access-negative mt-5">
                   <Translation i18nkey="Subscribe" language={this.props.currentLanguage}>

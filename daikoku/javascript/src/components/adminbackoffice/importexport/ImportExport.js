@@ -14,7 +14,7 @@ export class ImportExportComponent extends Component {
     }
   };
 
-  actuallyImportState = e => {
+  actuallyImportState = (e) => {
     const files = e.target.files;
     this.setState({ uploading: true }, () => {
       Services.uploadExportFile(files[0]).then(() => {
@@ -57,7 +57,7 @@ export class ImportExportComponent extends Component {
               <input
                 type="file"
                 className="hide"
-                ref={r => (this.input = r)}
+                ref={(r) => (this.input = r)}
                 onChange={this.actuallyImportState}
               />
             </div>
@@ -68,7 +68,7 @@ export class ImportExportComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 

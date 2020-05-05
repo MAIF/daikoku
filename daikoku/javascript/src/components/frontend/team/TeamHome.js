@@ -13,7 +13,7 @@ class TeamHomeComponent extends Component {
     apis: [],
   };
 
-  fetchData = teamId => {
+  fetchData = (teamId) => {
     Promise.all([
       Services.myVisibleApisOfTeam(teamId),
       Services.team(teamId),
@@ -42,26 +42,26 @@ class TeamHomeComponent extends Component {
     );
   };
 
-  redirectToApiPage = api => {
+  redirectToApiPage = (api) => {
     if (api.visibility === 'Public' || api.authorized) {
-      const apiOwner = this.state.teams.find(t => t._id === api.team);
+      const apiOwner = this.state.teams.find((t) => t._id === api.team);
       this.props.history.push(
         `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}`
       );
     }
   };
 
-  redirectToTeamPage = team => {
+  redirectToTeamPage = (team) => {
     this.props.history.push(`/${team._humanReadableId}`);
   };
 
-  redirectToEditPage = api => {
+  redirectToEditPage = (api) => {
     this.props.history.push(
       `/${this.props.match.params.teamId}/settings/apis/${api._humanReadableId}/infos`
     );
   };
 
-  redirectToTeamSettings = team => {
+  redirectToTeamSettings = (team) => {
     this.props.history.push(`/${team._humanReadableId}/settings`);
     // this.props
     //   .updateTeam(team)
@@ -116,7 +116,7 @@ class TeamHomeComponent extends Component {
           myTeams={this.state.myTeams}
           showTeam={false}
           team={this.state.teams.find(
-            team => team._humanReadableId === this.props.match.params.teamId
+            (team) => team._humanReadableId === this.props.match.params.teamId
           )}
         />
       </main>
@@ -124,13 +124,13 @@ class TeamHomeComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
 const mapDispatchToProps = {
-  updateTeam: team => updateTeamPromise(team),
-  setError: error => setError(error),
+  updateTeam: (team) => updateTeamPromise(team),
+  setError: (error) => setError(error),
 };
 
 export const TeamHome = connect(mapStateToProps, mapDispatchToProps)(TeamHomeComponent);

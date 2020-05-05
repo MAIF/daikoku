@@ -20,18 +20,18 @@ export class TeamApiKeysComponent extends Component {
     {
       title: t('Api Name', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: api => api.name,
+      content: (api) => api.name,
     },
     {
       title: t('Version', this.props.currentLanguage),
       style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: api => api.currentVersion,
+      content: (api) => api.currentVersion,
     },
     {
       title: t('Actions', this.props.currentLanguage),
       style: { textAlign: 'center', width: 150, alignItems: 'center', display: 'flex' },
       notFilterable: true,
-      content: item => item._id,
+      content: (item) => item._id,
       cell: (a, api) =>
         this.state.showApiKey && (
           <div style={{ width: 100 }}>
@@ -57,7 +57,7 @@ export class TeamApiKeysComponent extends Component {
           'Are you sure you want to clean archived subscriptions ?'
         )
       )
-      .then(ok => {
+      .then((ok) => {
         if (ok) {
           Services.cleanArchivedSubscriptions(this.props.currentTeam._id).then(() =>
             this.table.update()
@@ -96,8 +96,8 @@ export class TeamApiKeysComponent extends Component {
                   fetchItems={() => Services.subscribedApis(this.props.currentTeam._id)}
                   showActions={false}
                   showLink={false}
-                  extractKey={item => item._id}
-                  injectTable={t => (this.table = t)}
+                  extractKey={(item) => item._id}
+                  injectTable={(t) => (this.table = t)}
                 />
                 <button className="btn btn-sm btn-danger-negative mt-1" onClick={this.cleanSubs}>
                   <Translation
@@ -115,7 +115,7 @@ export class TeamApiKeysComponent extends Component {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state) => ({
   ...state.context,
 });
 
