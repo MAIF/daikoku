@@ -25,7 +25,6 @@ export class TenantStyleEditComponent extends Component {
   };
 
   componentDidMount() {
-    console.debug(styleVariables);
     if (this.props.location && this.props.location.state && this.props.location.state.newTenant) {
       this.setState({
         tenant: {
@@ -115,10 +114,13 @@ export class TenantStyleEditComponent extends Component {
             <div className="flex-row d-flex ">
               {!this.state.preview && (
                 <div className="flex-grow-0">
-                  {Object.entries(_.groupBy(this.state.style, 'group'))
-                    .sort((a, b) => b[1] - a[1])
+                  {_.chain(this.state.style)
+                    .groupBy('group')
+                    .map((value, key) => ({ group: key, colors: value }))
+                    .sortBy('group')
+                    .value()
                     .map((item, idx) => {
-                      const [group, colors] = item;
+                      const {group, colors} = item;
                       return (
                         <div key={idx}>
                           <h3>{group}</h3>
