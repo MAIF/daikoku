@@ -306,19 +306,17 @@ export class UserEditComponent extends Component {
           <div className="row d-flex justify-content-start align-items-center mb-2">
             {this.state.user && (
               <div
+                className="ml-1"
                 style={{
                   width: '100px',
                   height: '100px',
                   borderRadius: '50px',
                   border: '3px solid #fff',
                   boxShadow: '0px 0px 0px 3px lightgrey',
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
                 }}>
                 <img
                   src={this.state.user.picture}
-                  style={{ width: 200, borderRadius: '50%', backgroundColor: 'white' }}
+                  className="img-fluid"
                   alt="avatar"
                 />
               </div>

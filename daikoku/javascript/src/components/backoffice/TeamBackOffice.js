@@ -367,9 +367,9 @@ class UserBackOfficeComponent extends Component {
                       </li>
                       <li className="nav-item">
                         <Link
-                          className={`nav-link ${tab === 'Admins' ? 'active' : ''}`}
+                          className={`mr-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
                           to={'/settings/admins'}>
-                          <i className="fas fa-user-shield" />
+                          <i className="fas fa-user-shield mr-1" />
                           <Translation
                             i18nkey="Admins"
                             language={this.props.currentLanguage}>

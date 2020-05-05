@@ -801,7 +801,7 @@ export class TenantEditComponent extends Component {
                   </Translation>
                 </Link>
                 {!this.state.create && <Link className="btn btn-outline-primary mr-1" to={`/settings/tenants/${this.state.tenant._humanReadableId}/admins`}>
-                  <i className="fas fa-user-shield" />
+                  <i className="fas fa-user-shield mr-1" />
                   <Translation i18nkey="Admins" language={this.props.currentLanguage}>
                     Admins
                   </Translation>
