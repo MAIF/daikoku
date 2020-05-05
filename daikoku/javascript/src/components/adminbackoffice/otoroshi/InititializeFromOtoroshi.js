@@ -1,14 +1,13 @@
 import { useMachine } from '@xstate/react';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
-import {Popover} from 'antd';
 import { connect } from 'react-redux';
 import {toastr} from 'react-redux-toastr';
 import StepWizard from 'react-step-wizard';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, Spinner, tenant as TENANT, Option } from '../../utils';
+import { Can, manage, Spinner, tenant as TENANT, Option, BeautifulTitle } from '../../utils';
 import {theMachine, SelectOtoStep, SelectionStepStep, ServicesStep, ApiKeyStep, RecapServiceStep, RecapSubsStep} from './initialization';
 import {Translation} from '../../../locales';
 
@@ -230,9 +229,9 @@ export const InitializeFromOtoroshi = connect(mapStateToProps)(InitializeFromOto
 const Help = ({language}) => {
   
   return (
-    <Popover
+    <BeautifulTitle
       placement='bottom'
-      content={<div className='d-flex flex-column'>
+      title={<div className='d-flex flex-column'>
         <h4><Translation i18nkey="Keyboard shortcuts" language={language}>Keyboard shortcut</Translation></h4>
         <ul>
           <li><Translation i18nkey='keyboard.shortcuts.arrow.left' language={language}>arrow-left: previous step</Translation></li>
@@ -243,6 +242,6 @@ const Help = ({language}) => {
       <i
         className='ml-4 far fa-question-circle'
       />
-    </Popover>
+    </BeautifulTitle>
   );
 };

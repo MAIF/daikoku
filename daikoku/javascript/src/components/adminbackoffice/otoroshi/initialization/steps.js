@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {Popover} from 'antd';
 import Select from 'react-select';
 import Creatable from 'react-select/creatable';
 import AsyncSelect from 'react-select/async';
@@ -8,7 +7,7 @@ import _ from 'lodash';
 
 import { Option } from '../../../utils';
 import * as Services from '../../../../services';
-import { newPossibleUsagePlan } from '../../../utils';
+import { newPossibleUsagePlan, BeautifulTitle } from '../../../utils';
 import { t, Translation } from '../../../../locales';
 
 export const SelectionStepStep = props => {
@@ -57,15 +56,15 @@ export const SelectOtoStep = props => {
       />
       {!!previousState && previousState.tenant === props.tenant._id && (
         <div className="d-flex flex-column">
-          <Popover
+          <BeautifulTitle
             placement='bottom'
-            content={t('Load a work in progress', props.currentLanguage)}>
+            title={t('Load a work in progress', props.currentLanguage)}>
             <button
               className="btn btn-access"
               onClick={props.loadPreviousState}>
               <i className="fa fa-download" />
             </button>
-          </Popover>
+          </BeautifulTitle>
         </div>
       )}
     </div>

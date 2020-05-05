@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
-import {Popover} from 'antd';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
@@ -578,10 +577,10 @@ const ApiKeyCard = ({
 const Help = ({ message }) => {
 
   return (
-    <Popover
+    <BeautifulTitle
       placement='bottom'
-      content={message}>
+      title={message}>
       <i className="ml-4 far fa-question-circle"/>
-    </Popover>
+    </BeautifulTitle>
   );
 };

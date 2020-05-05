@@ -1,11 +1,11 @@
 import React, { Component, useState } from 'react';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
-import {Popover} from 'antd';
 
 import * as Services from '../../../services';
 import { openAssetSelectorModal } from '../../../core/modal/actions';
 import { t, Translation } from '../../../locales';
+import { BeautifulTitle } from '../../utils';
 
 export const MimeTypeFilter = {
   image: value => value.startsWith('image'),
@@ -207,7 +207,7 @@ export class AssetChooserComponent extends Component {
 
     if (this.state.error) {
       return (
-        <Popover content={this.state.error.message}>
+        <BeautifulTitle title={this.state.error.message}>
           <button
             type="button"
             className="btn btn-outline-primary ml-1 cursor-help"
@@ -220,14 +220,14 @@ export class AssetChooserComponent extends Component {
             />
             {this.props.label}
           </button>
-        </Popover>
+        </BeautifulTitle>
       );
     }
 
     if (!this.state.assets.length) {
       return (
-        <Popover
-          content={t('No assets found', this.props.currentLanguage)}>
+        <BeautifulTitle
+          title={t('No assets found', this.props.currentLanguage)}>
           <button
             type="button"
             className="btn btn-access-negative ml-1 cursor-help"
@@ -240,7 +240,7 @@ export class AssetChooserComponent extends Component {
             />
             {this.props.label}
           </button>
-        </Popover>
+        </BeautifulTitle>
       );
     }
 
