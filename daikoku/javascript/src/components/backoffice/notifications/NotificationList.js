@@ -168,7 +168,7 @@ class NotificationListComponent extends Component {
                   count={this.state.untreatedCount}>
                   Untreated
                 </Translation>
-                ({this.state.untreatedCount})
+                &nbsp;({this.state.untreatedCount})
               </a>
             </li>
             <li
