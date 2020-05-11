@@ -197,7 +197,9 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
   val logger = Logger("LoginFilter")
 
   import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
-  import kaleidoscope._
+  implicit class RegexOps(sc: StringContext) {
+    def r = new util.matching.Regex(sc.parts.mkString)
+  }
 
   val exclusions = Seq(
     ("get", "/login/*/login"),
@@ -248,7 +250,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
       case "/daikoku.min.js.map"        => "/"
       case "/daikoku.home.min.js.map"   => "/"
       case "/daikoku.login.min.js.map"  => "/"
-      case r"/assets/(.*)"              => "/"
+      case r"/assets/.*"              => "/"
       case _                            => uri
     }
   }
@@ -260,16 +262,15 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
       s"Filtering on ${request.method.toLowerCase()} => ${request.relativeUri}")
 
     (request.method.toLowerCase(), request.relativeUri) match {
-      case (_, r"/fakeotoroshi/$path@(.*)")         => nextFilter(request)
-      case (_, r"/assets/$path@(.*)")               => nextFilter(request)
-      case ("get", r"/auth/$prov@(.*)/login")       => nextFilter(request)
-      case (_, r"/auth/$prov@(.*)/callback")        => nextFilter(request)
+      case (_, r"/fakeotoroshi/.*")         => nextFilter(request)
+      case (_, r"/assets/.*")               => nextFilter(request)
+      case ("get", r"/auth/.*/login")       => nextFilter(request)
+      case (_, r"/auth/.*/callback")        => nextFilter(request)
       case ("post", r"/api/reset")                  => nextFilter(request)
       case ("post", r"/api/reset")                  => nextFilter(request)
-      case ("post", r"/api/jobs/$path@(.*)")        => nextFilter(request)
-      case ("post", r"/admin-api/state/import(.*)") => nextFilter(request)
-      case _ => {
-
+      case ("post", r"/api/jobs/.*")        => nextFilter(request)
+      case ("post", r"/admin-api/state/import.*") => nextFilter(request)
+      case _ =>
         TenantHelper.withTenant(request, env) { tenant =>
           val provider = tenant.authProvider
 
@@ -291,39 +292,37 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case (_, r"/account") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case (_, r"/account/$path@(.*)") =>
+                  case (_, r"/account/.*") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/tenant-assets/$path@(.*)") =>
+                  case ("get", r"/tenant-assets/.*") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/user-assets/$path@(.*)") =>
+                  case ("get", r"/user-assets/.*") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case ("get", r"/asset-thumbnails/$path@(.*)") =>
+                  case ("get", r"/asset-thumbnails/.*") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case (_, r"/admin-api/$path@(.*)") =>
+                  case (_, r"/admin-api/.*") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
-                  case (_, r"/integration-api/$path@(.*)") => {
+                  case (_, r"/integration-api/.*") =>
                     request
                       .getQueryString("token")
                       .orElse(request.headers.get("X-Personal-Token")) match {
-                      case None => {
+                      case None =>
                         logger.info("No personal token found")
                         FastFuture.successful(
                           Results.Unauthorized(
                             Json.obj("error" -> "not authorized"))
                         )
-                      }
-                      case Some(token) => {
+                      case Some(token) =>
                         env.dataStore.userRepo
                           .findOneNotDeleted(Json.obj("personalToken" -> token))
                           .flatMap {
-                            case None => {
+                            case None =>
                               logger.info("No user found")
                               FastFuture.successful(
                                 Results.Unauthorized(
                                   Json.obj("error" -> "not authorized"))
                               )
-                            }
-                            case Some(_user) => {
+                            case Some(_user) =>
                               val user =
                                 _user.copy(tenants = _user.tenants + tenant.id)
                               val session = UserSession(
@@ -354,7 +353,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                           request.relativeUri)
                                       )
                                   )
-                                case Some(team) => {
+                                case Some(team) =>
                                   env.dataStore.userRepo.save(user).flatMap { _ =>
                                     env.dataStore.teamRepo.forTenant(tenant).exists(Json.obj("type" -> "Admin", "users.userId" -> user.id.asJson))
                                       .flatMap(isTenantAdmin => {
@@ -373,13 +372,9 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                         )
                                       })
                                   }
-                                }
                               }
-                            }
                           }
-                      }
                     }
-                  }
                   case (_, _) if tenant.isPrivate =>
                     FastFuture.successful(
                       Results
@@ -443,7 +438,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                     request.relativeUri)
                                 )
                             )
-                          case Some(_user) => {
+                          case Some(_user) =>
                             val user =
                               _user.copy(tenants = _user.tenants + tenant.id)
                             findUserTeam(tenant.id, user).flatMap {
@@ -488,7 +483,6 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                   result
                                 }
                             }
-                          }
                         }
                   }
             }
@@ -502,7 +496,6 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
             case AuthProvider.OAuth2 => passWithSession()
           }
         }
-      }
     }
   }
 }
