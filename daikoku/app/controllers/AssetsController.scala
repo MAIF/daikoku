@@ -10,6 +10,7 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.AssetId
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import play.api.Logger
 import play.api.http.HttpEntity
@@ -97,7 +98,7 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
               case e: fr.maif.otoroshi.daikoku.utils.BadFileContentFromContentType =>
                 BadRequest(Json.obj("error" -> "Bad file content"))
               case e =>
-                Logger.error(
+                AppLogger.error(
                   s"Error during tenant asset storage: ${e.getMessage}",
                   e)
                 InternalServerError(Json.obj("error" -> e.toString))
@@ -169,7 +170,7 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
                       Ok(Json.obj("done" -> true, "id" -> assetId))
                     } recover {
                     case e =>
-                      Logger.error(
+                      AppLogger.error(
                         s"Error during update tenant asset: $filename",
                         e)
                       InternalServerError(Json.obj("error" -> ec.toString))
@@ -318,7 +319,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
               Ok(Json.obj("done" -> true, "id" -> assetId.value))
             } recover {
             case e =>
-              Logger.error(s"Error during tenant asset storage: ${filename}", e)
+              AppLogger.error(s"Error during tenant asset storage: ${filename}", e)
               InternalServerError(Json.obj("error" -> ec.toString))
           }
       }
@@ -369,7 +370,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
                     Ok(Json.obj("done" -> true, "id" -> assetId))
                   } recover {
                   case e =>
-                    Logger.error(s"Error during update tenant asset: $filename",
+                    AppLogger.error(s"Error during update tenant asset: $filename",
                                  e)
                     InternalServerError(Json.obj("error" -> ec.toString))
                 }

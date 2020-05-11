@@ -12,6 +12,7 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.DateTimeFormat
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import org.joda.time.{DateTime, Days}
 import play.api.Logger
@@ -44,7 +45,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
   }
 
   def getStats(): Future[Done] = {
-    Logger.info("Scrapping apikey stats from otoroshi")
+    AppLogger.info("Scrapping apikey stats from otoroshi")
     syncAll()
   }
 
@@ -296,12 +297,12 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
         .runWith(Sink.seq)
         .recover {
           case e =>
-            Logger.error("[apikey stats job] Error during sync consumption", e)
+            AppLogger.error("[apikey stats job] Error during sync consumption", e)
             Seq.empty
         }
     }.recover {
       case e =>
-        Logger.error("[apikey stats job] Error during sync consumptions", e)
+        AppLogger.error("[apikey stats job] Error during sync consumptions", e)
         Seq.empty
     }).getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption]))
   }

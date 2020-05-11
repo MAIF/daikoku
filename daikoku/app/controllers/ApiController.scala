@@ -21,6 +21,7 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import jobs.ApiKeyStatsJob
 import org.joda.time.DateTime
@@ -553,9 +554,9 @@ class ApiController(DaikokuAction: DaikokuAction,
         .intersperse(ByteString("["), ByteString(","), ByteString("]"))
         .watchTermination() { (mt, d) =>
           d.onComplete {
-            case Success(done) => Logger.debug(s"$done")
+            case Success(done) => AppLogger.debug(s"$done")
             case Failure(exception) =>
-              Logger.error("Error processing stream", exception)
+              AppLogger.error("Error processing stream", exception)
           }
           mt
         }
@@ -614,7 +615,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     TenantAdminOnly(AuditTrailEvent(s"@{user.name} has init apis"))(ctx.tenant.id.value, ctx) { (_, _) => {
       val source = ctx.request.body
         .grouped(10)
-        .alsoTo(Sink.foreach(seq => Logger.debug(s"${seq.length} apis process")))
+        .alsoTo(Sink.foreach(seq => AppLogger.debug(s"${seq.length} apis process")))
         .flatMapConcat(seq => {
           Source(seq)
             .mapAsync(10) { api =>
@@ -628,9 +629,9 @@ class ApiController(DaikokuAction: DaikokuAction,
         .intersperse(ByteString("["), ByteString(","), ByteString("]"))
         .watchTermination() { (mt, d) =>
           d.onComplete {
-            case Success(done) => Logger.debug(s"$done")
+            case Success(done) => AppLogger.debug(s"$done")
             case Failure(exception) =>
-              Logger.error("Error processing stream", exception)
+              AppLogger.error("Error processing stream", exception)
           }
           mt
         }
@@ -1640,7 +1641,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       .runWith(Sink.ignore)
       .recover {
         case e =>
-          Logger.error(s"Error while deleting api subscriptions", e)
+          AppLogger.error(s"Error while deleting api subscriptions", e)
           Done
       }
   }

@@ -7,6 +7,7 @@ import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{OtoroshiSyncApiError, OtoroshiSyncSubscriptionError}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{ConsoleMailer, IdGenerator, Mailer, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -173,7 +174,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
   private def verifyIfOtoroshiApiKeysStillExists(): Future[Unit] = {
     env.dataStore.apiSubscriptionRepo.forAllTenant().findAllNotDeleted().map {
       subscriptions =>
-        Logger.debug(subscriptions.map(_.id.value).mkString(" - "))
+        AppLogger.debug(subscriptions.map(_.id.value).mkString(" - "))
         subscriptions.map { subscription =>
           env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant).map {
             case None =>
