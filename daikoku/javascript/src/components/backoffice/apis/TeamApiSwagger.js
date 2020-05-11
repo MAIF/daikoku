@@ -22,8 +22,7 @@ export class TeamApiSwagger extends Component {
 
   initSwaggerEditor = (content) => {
     console.log('initSwaggerEditor');
-    window.editor = SwaggerEditorBundle({
-      // eslint-disable-line no-undef
+    window.editor = SwaggerEditorBundle({ // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
       layout: 'StandaloneLayout',
       presets: [SwaggerEditorStandalonePreset], // eslint-disable-line no-undef

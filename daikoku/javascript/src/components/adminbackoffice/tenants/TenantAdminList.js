@@ -99,7 +99,7 @@ const TenantAdminListComponent = (props) => {
           'remove.admin.tenant.alert',
           props.currentLanguage,
           false,
-          "You can't delete this admin, it must remain an admin in a tenant."
+          'You can\'t delete this admin, it must remain an admin in a tenant.'
         )
       );
     } else {

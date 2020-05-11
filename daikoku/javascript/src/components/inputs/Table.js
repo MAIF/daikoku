@@ -10,7 +10,7 @@ export function useForceUpdate() {
   const [, setTick] = useState(0);
   const update = React.useCallback(() => {
     setTick(tick => tick + 1);
-  }, [])
+  }, []);
   return update;
 }
 
@@ -26,26 +26,26 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, currentL
     }, 400);
     window.addEventListener('resize', sizeListener);
 
-    if (!! injectTable) {
+    if (injectTable) {
       injectTable({update: () => update()});
     }
 
-    update()
+    update();
 
     return () => {
       window.removeEventListener('resize', sizeListener);
-    }
+    };
   }, []);
 
   useEffect(() => {
     if (hasError) {
       setLoading(false);
     }
-  }, [hasError])
+  }, [hasError]);
 
   useEffect(() => {
     setLoading(false);
-  }, [items])
+  }, [items]);
 
   const update = () => {
     setLoading(true);
@@ -80,7 +80,7 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, currentL
         sortable: !c.notSortable,
         filterable: !c.notFilterable,
         accessor: (d) => (c.accessor ? d[c.accessor] : c.content ? c.content(d) : d),
-        Filter: (d) => (
+        Filter: (d) => (// eslint-disable-line react/display-name
           <input
             type="text"
             className="form-control input-sm"
@@ -89,7 +89,7 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, currentL
             placeholder={t('Search ...', currentLanguage)}
           />
         ),
-        Cell: (r) => {
+        Cell: (r) => {// eslint-disable-line react/display-name
           const value = r.value;
           const original = r.original;
           return c.cell ? (
@@ -161,9 +161,9 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, currentL
           </div>
       </div>
     );
-}
+};
 
 Table.propTypes = {
   columns: PropTypes.array.isRequired,
   fetchItems: PropTypes.func.isRequired,
-}
+};

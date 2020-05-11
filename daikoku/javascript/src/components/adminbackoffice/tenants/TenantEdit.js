@@ -9,7 +9,7 @@ import * as Services from '../../../services';
 
 import { LDAPConfig, LocalConfig, OAuth2Config, OtoroshiConfig } from './auth';
 import { ConsoleConfig, MailgunConfig, MailjetConfig } from './mailer';
-import { Can, manage, tenant, Spinner, BeautifulTitle } from '../../utils';
+import { Can, manage, tenant, Spinner } from '../../utils';
 import { t, Translation, configuration } from '../../../locales';
 import { BooleanInput } from '../../inputs/BooleanInput';
 import { openSaveOrCancelModal } from '../../../core/modal/actions';

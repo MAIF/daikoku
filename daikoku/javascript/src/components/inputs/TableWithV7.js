@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
-import { useTable, usePagination } from 'react-table'
+import { useTable, usePagination } from 'react-table';
 
 import { t } from '../../locales';
+import { Spinner } from '../utils';
 
 export function useForceUpdate() {
   const [, setTick] = useState(0);
   const update = React.useCallback(() => {
     setTick(tick => tick + 1);
-  }, [])
+  }, []);
   return update;
 }
 
@@ -42,7 +43,7 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
       pageCount: Math.ceil(items.length / pageSizee),
     },
     usePagination
-  )
+  );
 
   useEffect(() => {
     const sizeListener = _.debounce(() => {
@@ -50,26 +51,26 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
     }, 400);
     window.addEventListener('resize', sizeListener);
 
-    if (!!injectTable) {
+    if (injectTable) {
       injectTable({ update: () => update() });
     }
 
-    update()
+    update();
 
     return () => {
       window.removeEventListener('resize', sizeListener);
-    }
+    };
   }, []);
 
   useEffect(() => {
     if (hasError) {
       setLoading(false);
     }
-  }, [hasError])
+  }, [hasError]);
 
   useEffect(() => {
     setLoading(false);
-  }, [items])
+  }, [items]);
 
   const update = () => {
     setLoading(true);
@@ -85,47 +86,51 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
     return <h3>Something went wrong !!!</h3>;
   }
 
-  const windowWidth = window.innerWidth;
-  const columnsConst = columns
-    .filter((c) => {
-      if (windowWidth > mobileSize) {
-        return true;
-      } else {
-        return !c.noMobile;
-      }
-    })
-    .map((c) => {
-      return {
-        Header: c.title,
-        id: c.title,
-        headerStyle: c.style,
-        width: c.style && c.style.width ? c.style.width : undefined,
-        style: { ...c.style },
-        sortable: !c.notSortable,
-        filterable: !c.notFilterable,
-        accessor: (d) => (c.accessor ? d[c.accessor] : c.content ? c.content(d) : d),
-        Filter: (d) => (
-          <input
-            type="text"
-            className="form-control input-sm"
-            value={d.filter ? d.filter.value : ''}
-            onChange={(e) => d.onChange(e.target.value)}
-            placeholder={t('Search ...', currentLanguage)}
-          />
-        ),
-        Cell: (r) => {
-          const value = r.value;
-          const original = r.original;
-          return c.cell ? (
-            c.cell(value, original, this)
-          ) : (
-              <div>
-                {value}
-              </div>
-            );
-        },
-      };
-    });
+  // const windowWidth = window.innerWidth;
+  // const columnsConst = columns
+  //   .filter((c) => {
+  //     if (windowWidth > mobileSize) {
+  //       return true;
+  //     } else {
+  //       return !c.noMobile;
+  //     }
+  //   })
+  //   .map((c) => {
+  //     return {
+  //       Header: c.title,
+  //       id: c.title,
+  //       headerStyle: c.style,
+  //       width: c.style && c.style.width ? c.style.width : undefined,
+  //       style: { ...c.style },
+  //       sortable: !c.notSortable,
+  //       filterable: !c.notFilterable,
+  //       accessor: (d) => (c.accessor ? d[c.accessor] : c.content ? c.content(d) : d),
+  //       Filter: (d) => (
+  //         <input
+  //           type="text"
+  //           className="form-control input-sm"
+  //           value={d.filter ? d.filter.value : ''}
+  //           onChange={(e) => d.onChange(e.target.value)}
+  //           placeholder={t('Search ...', currentLanguage)}
+  //         />
+  //       ),
+  //       Cell: (r) => {
+  //         const value = r.value;
+  //         const original = r.original;
+  //         return c.cell ? (
+  //           c.cell(value, original, this)
+  //         ) : (
+  //             <div>
+  //               {value}
+  //             </div>
+  //           );
+  //       },
+  //     };
+  //   });
+
+  if (loading) {
+    return <Spinner />;
+  }
 
   return (
     <div>
@@ -147,26 +152,32 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
         <div className="rrow">
           <table {...getTableProps()} className="fulltable -striped -highlight">
             <thead>
-              {headerGroups.map(headerGroup => (
-                <tr {...headerGroup.getHeaderGroupProps()}>
-                  {headerGroup.headers.map(column => {
+              {headerGroups.map((headerGroup, idx) => (
+                <tr {...headerGroup.getHeaderGroupProps()} key={`th-tr-${idx}`}>
+                  {headerGroup.headers.map((column, idx) => {
                     return (
-                      <th style={column.style} {...column.getHeaderProps()}>{column.render('Header')}</th>
-                    )
+                      <th style={column.style} {...column.getHeaderProps()} key={`th-${idx}`}>
+                        {column.render('Header')}
+                      </th>
+                    );
                   })}
                 </tr>
               ))}
             </thead>
             <tbody {...getTableBodyProps()}>
-              {rows.map((row, i) => {
-                prepareRow(row)
+              {rows.map((row, idx) => {
+                prepareRow(row);
                 return (
-                  <tr {...row.getRowProps()}>
-                    {row.cells.map(cell => {
-                      return <td style={cell.column.style} {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                  <tr {...row.getRowProps()} key={`tr-${idx}`}>
+                    {row.cells.map((cell, idx) => {
+                      return (
+                        <td style={cell.column.style} {...cell.getCellProps()} key={`td-${idx}`}>
+                          {cell.render('Cell')}
+                        </td>
+                      );
                     })}
                   </tr>
-                )
+                );
               })}
             </tbody>
           </table>
@@ -174,9 +185,9 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
       </div>
     </div>
   );
-}
+};
 
 TableWithV7.propTypes = {
   columns: PropTypes.array.isRequired,
   fetchItems: PropTypes.func.isRequired,
-}
+};
