@@ -342,7 +342,9 @@ case class OtoroshiTarget(
     apikeyCustomization.metadata
       .asOpt[Map[String, String]]
       .getOrElse(Map.empty[String, String])
+      .view
       .mapValues(v => OtoroshiTarget.processValue(v, context))
+      .toMap
   }
   def processedTags(context: Map[String, String]): Seq[String] = {
     apikeyCustomization.tags

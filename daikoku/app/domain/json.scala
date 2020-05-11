@@ -867,21 +867,21 @@ object json {
               .map(
                 _.value.map(p => ApiKeyRestrictionPathFormat.reads(p)).collect {
                   case JsSuccess(rp, _) => rp
-                })
+                }.toSeq)
               .getOrElse(Seq.empty),
             forbidden = (json \ "forbidden")
               .asOpt[JsArray]
               .map(
                 _.value.map(p => ApiKeyRestrictionPathFormat.reads(p)).collect {
                   case JsSuccess(rp, _) => rp
-                })
+                }.toSeq)
               .getOrElse(Seq.empty),
             notFound = (json \ "notFound")
               .asOpt[JsArray]
               .map(
                 _.value.map(p => ApiKeyRestrictionPathFormat.reads(p)).collect {
                   case JsSuccess(rp, _) => rp
-                })
+                }.toSeq)
               .getOrElse(Seq.empty)
           )
         )
@@ -1017,7 +1017,7 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "remoteContentHeaders" -> JsObject(
-        o.remoteContentHeaders.mapValues(JsString.apply)),
+        o.remoteContentHeaders.view.mapValues(JsString.apply).toSeq),
       // "api" -> o.api.asJson,
     )
   }
@@ -1318,7 +1318,7 @@ object json {
         .as[JsValue],
       "hardwareKeyRegistrations" -> JsArray(o.hardwareKeyRegistrations),
       "lastTenant" -> o.lastTenant.map(_.asJson).getOrElse(JsNull).as[JsValue],
-      "metadata" -> JsObject(o.metadata.mapValues(JsString.apply)),
+      "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "isGuest" -> o.isGuest
@@ -1377,7 +1377,7 @@ object json {
       "authorizedOtoroshiGroups" -> JsArray(
         o.authorizedOtoroshiGroups.map(OtoroshiGroupFormat.writes).toSeq),
       "showApiKeyOnlyToAdmins" -> o.showApiKeyOnlyToAdmins,
-      "metadata" -> JsObject(o.metadata.mapValues(JsString.apply)),
+      "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
     )
   }
 
@@ -1568,7 +1568,7 @@ object json {
         "throttlingQuota" -> apk.throttlingQuota,
         "dailyQuota" -> apk.dailyQuota,
         "monthlyQuota" -> apk.monthlyQuota,
-        "metadata" -> JsObject(apk.metadata.mapValues(JsString.apply)),
+        "metadata" -> JsObject(apk.metadata.view.mapValues(JsString.apply).toSeq),
         "tags" -> JsArray(apk.tags.map(JsString.apply)),
         "restrictions" -> apk.restrictions.asJson,
         "rotation" -> apk.rotation
@@ -1604,7 +1604,7 @@ object json {
               .getOrElse(false),
             tags = (json \ "tags")
               .asOpt[JsArray]
-              .map(_.value.map(_.as[String]))
+              .map(_.value.map(_.as[String]).toSeq)
               .getOrElse(Seq.empty[String]),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
             rotation = (json \ "rotation").asOpt(ApiKeyRotationFormat)
