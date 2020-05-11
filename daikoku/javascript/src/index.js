@@ -7,7 +7,7 @@ import { Provider } from 'react-redux';
 
 import jQuery from 'jquery';
 
-import 'react-table/react-table.css';
+import 'react-table-6/react-table.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';
 
