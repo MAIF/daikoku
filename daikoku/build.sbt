@@ -5,7 +5,7 @@ organization := "fr.maif.otoroshi"
 maintainer := "oss@maif.fr"
 packageName in Universal := "daikoku"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.13.1"
 
 lazy val root = (project in file("."))
   .enablePlugins(PlayScala, DockerPlugin)
@@ -14,27 +14,26 @@ lazy val root = (project in file("."))
 libraryDependencies ++= Seq(
   ws,
   filters,
-  "org.gnieh" %% "diffson-play-json" % "3.1.1" excludeAll (ExclusionRule(
+  "org.gnieh" %% "diffson-play-json" % "4.0.2" excludeAll (ExclusionRule(
     organization = "com.typesafe.akka")),
-  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test,
-  "com.themillhousegroup" %% "scoup" % "0.4.6" % Test,
-  "com.typesafe.play" %% "play-json" % "2.6.10",
-  "com.typesafe.play" %% "play-json-joda" % "2.6.10",
-  "com.auth0" % "java-jwt" % "3.4.0",
-  "com.auth0" % "jwks-rsa" % "0.7.0", // https://github.com/auth0/jwks-rsa-java
-  "com.nimbusds" % "nimbus-jose-jwt" % "6.0",
-  "com.softwaremill.macwire" %% "macros" % "2.3.0" % "provided",
-  "javax.xml.bind" % "jaxb-api" % "2.3.0",
-  "com.sun.xml.bind" % "jaxb-core" % "2.3.0",
-  "com.sun.xml.bind" % "jaxb-impl" % "2.3.0",
-  "org.reactivemongo" %% "play2-reactivemongo" % "0.16.0-play26",
-  "org.reactivemongo" %% "reactivemongo-akkastream" % "0.16.0",
-  "com.typesafe.akka" %% "akka-stream-kafka" % "0.21",
-  "org.typelevel" %% "cats-core" % "1.3.1",
+  "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test,
+  "com.themillhousegroup" %% "scoup" % "0.4.7" % Test,
+  "com.typesafe.play" %% "play-json" % "2.8.1",
+  "com.typesafe.play" %% "play-json-joda" % "2.8.1",
+  "com.auth0" % "java-jwt" % "3.10.3",
+  "com.auth0" % "jwks-rsa" % "0.11.0", // https://github.com/auth0/jwks-rsa-java
+  "com.nimbusds" % "nimbus-jose-jwt" % "8.16",
+  "com.softwaremill.macwire" %% "macros" % "2.3.4" % "provided",
+  "javax.xml.bind" % "jaxb-api" % "2.3.1",
+  "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1",
+  "com.sun.xml.bind" % "jaxb-impl" % "2.3.3",
+  "org.reactivemongo" %% "play2-reactivemongo" % "0.20.10-play28",
+  "org.reactivemongo" %% "reactivemongo-akkastream" % "0.20.10",
+  "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.2",
+  "org.typelevel" %% "cats-core" % "2.1.1",
   "de.svenkubiak" % "jBCrypt" % "0.4.1",
-  "com.propensive" %% "kaleidoscope" % "0.1.0",
-  "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "1.0.1",
-  "com.github.tomakehurst" % "wiremock" % "1.33" % "test",
+  "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "2.0.0",
+  "com.github.tomakehurst" % "wiremock" % "2.26.3" % "test",
   "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1"
 
 )
@@ -45,7 +44,7 @@ scalacOptions ++= Seq(
   "-language:implicitConversions",
   "-language:existentials",
   "-language:postfixOps",
-  "-Ypartial-unification",
+//  "-Ypartial-unification",
   "-Xfatal-warnings"
 )
 
