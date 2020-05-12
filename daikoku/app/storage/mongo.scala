@@ -12,8 +12,8 @@ import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.commands.{MultiBulkWriteResult, WriteResult}
-import reactivemongo.api.indexes.Index
-import reactivemongo.api.{Cursor, QueryOpts, ReadConcern, ReadPreference}
+import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.api.{CollectionMetaCommands, Cursor, QueryOpts, ReadConcern, ReadPreference}
 import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -671,7 +671,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   def collectionName: String
 
-  def indices: Seq[Index] = Seq.empty
+  def indices: Seq[Index.Default] = Seq.empty
 
   override def ensureIndices(implicit ec: ExecutionContext): Future[Unit] =
     for {
@@ -810,7 +810,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
     collection.flatMap { col =>
       val payloads = values.map(v => format.writes(v).as[JsObject])
       col
-        .insert[JsObject](true)(jsObjectWrites)
+        .insert(true)
         .many(payloads)
         .map(_.n)
     }
@@ -994,14 +994,14 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   def collectionName: String
 
-  def indices: Seq[Index] = Seq.empty
+  def indices: Seq[Index.Default] = Seq.empty
 
   override def ensureIndices(implicit ec: ExecutionContext): Future[Unit] =
     for {
-      db <- reactiveMongoApi.database
+      db        <- reactiveMongoApi.database
       foundName <- db.collectionNames.map(names =>
         names.contains(collectionName))
-      _ <- if (foundName) {
+      _         <- if (foundName) {
         logger.info(s"Ensuring indices for $collectionName")
         val col = db.collection[JSONCollection](collectionName)
         Future.sequence(indices.map(i => col.indexesManager.ensure(i)))
@@ -1231,7 +1231,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       val payloads = values.map(v =>
         format.writes(v).as[JsObject] ++ Json.obj("_tenant" -> tenant.value))
       col
-        .insert[JsObject](true)(jsObjectWrites)
+        .insert(true)
         .many(payloads)
         .map(_.n)
     }
