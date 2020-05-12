@@ -15,6 +15,7 @@ libraryDependencies ++= Seq(
   ws,
   filters,
   "org.apache.commons" % "commons-lang3" % "3.10",
+  "org.bouncycastle" % "bcprov-jdk15on" % "1.65",
   "org.gnieh" %% "diffson-play-json" % "4.0.2" excludeAll ExclusionRule(
     organization = "com.typesafe.akka"),
   "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test,
