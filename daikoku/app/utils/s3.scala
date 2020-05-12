@@ -14,6 +14,7 @@ import akka.{Done, NotUsed}
 import fr.maif.otoroshi.daikoku.domain._
 import play.api.libs.json._
 import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -100,12 +101,13 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
     val settings = S3Settings(
       bufferType = MemoryBufferType,
       credentialsProvider = awsCredentials,
-      s3RegionProvider = new AwsRegionProvider() {
-        override def getRegion: String = conf.region
+      s3RegionProvider = new AwsRegionProvider {
+        override def getRegion: Region = Region.of(conf.region)
       },
       listBucketApiVersion = ApiVersion.ListBucketVersion2
-    ).withEndpointUrl(conf.endpoint)
-      .withPathStyleAccess(true)
+    )
+      .withEndpointUrl(conf.endpoint)
+//      .withPathStyleAccess //todo: fix this issue
     S3Attributes.settings(settings)
   }
 

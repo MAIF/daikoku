@@ -35,7 +35,7 @@ class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
 
   def apikeysStatsSyncJob() = Action.async { req =>
     if (env.config.apikeysStatsByCron) {
-      apiKeyStatsJob.getStats().map(_ => Ok(Json.obj("done" -> true)))
+      apiKeyStatsJob.getStats.map(_ => Ok(Json.obj("done" -> true)))
     } else {
       FastFuture.successful(
         NotFound(Json.obj("error" -> "API not found ! (2)")))

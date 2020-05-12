@@ -38,13 +38,13 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     if (ref.get() == null) {
       ref.set(
         env.defaultActorSystem.scheduler
-          .schedule(1.seconds, env.config.apikeysStatsSyncInterval) {
-            syncAll()
+          .scheduleAtFixedRate(1.seconds, env.config.apikeysStatsSyncInterval) {
+            () => syncAll()
           })
     }
   }
 
-  def getStats(): Future[Done] = {
+  def getStats: Future[Done] = {
     AppLogger.info("Scrapping apikey stats from otoroshi")
     syncAll()
   }

@@ -2,9 +2,9 @@ package fr.maif.otoroshi.daikoku.env
 
 import java.nio.file.Paths
 
-import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill}
+import akka.actor.{Actor, ActorRef, ActorSystem, ClassicActorSystemProvider, PoisonPill}
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
+import akka.stream.{Materializer, SystemMaterializer}
 import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
 import com.auth0.jwt.{JWT, JWTVerifier}
 import com.auth0.jwt.algorithms.Algorithm
@@ -219,12 +219,12 @@ class DaikokuEnv(ws: WSClient,
                  configuration: Configuration,
                  reactiveMongoApi: ReactiveMongoApi,
                  messagesApi: MessagesApi)
-    extends Actor with Env {
+    extends Env {
 
-  val logger = Logger("DaikokuEnv")
+  val logger: Logger = Logger("DaikokuEnv")
 
   val actorSystem: ActorSystem = ActorSystem("daikoku")
-  val materializer: Materializer = Materializer.createMaterializer(context) //todo: create Materializer instead
+  val materializer: Materializer = Materializer.createMaterializer(actorSystem)
   val snowflakeSeed: Long = configuration.getOptional[Long]("daikoku.snowflake.seed").get
   val snowflakeGenerator: IdGenerator = IdGenerator(snowflakeSeed)
 
