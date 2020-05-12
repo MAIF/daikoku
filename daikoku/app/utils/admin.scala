@@ -11,7 +11,6 @@ import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
 import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
-import gnieh.diffson.playJson._
 import play.api.Logger
 import play.api.http.HttpEntity
 import play.api.libs.json._
@@ -20,7 +19,7 @@ import storage.{DataStore, Repo}
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 case class DaikokuApiActionContext[A](request: Request[A], tenant: Tenant)
 
@@ -276,39 +275,56 @@ abstract class AdminApiController[Of, Id <: ValueType](
   }
 
   def patchEntity(id: String) = DaikokuApiAction.async(parse.json) { ctx =>
+    import cats.implicits._
+    import diffson._
+    import diffson.jsonpatch.lcsdiff._
+    import diffson.lcs._
+    import diffson.playJson._
+
+    implicit val lcs: Patience[JsValue] = new Patience[JsValue]
+
     val fu: Future[Option[Of]] =
-      ctx.request.queryString.get("notDeleted").exists(_ == "true") match {
-        case true =>
-          entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
-        case false => entityStore(ctx.tenant, env.dataStore).findById(id)
+      if (ctx.request.queryString.get("notDeleted").contains("true")) {
+        entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
+      } else {
+        entityStore(ctx.tenant, env.dataStore).findById(id)
       }
-    fu.flatMap {
+
+    val value: Future[Result] = fu.flatMap {
       case None =>
         Errors.craftResponseResult(s"Entity $entityName not found",
-                                   Results.NotFound,
-                                   ctx.request,
-                                   None,
-                                   env)
-      case Some(entity) => {
+          Results.NotFound,
+          ctx.request,
+          None,
+          env)
+      case Some(entity) =>
         val currentJson = toJson(entity)
-        val patch = JsonPatch(ctx.request.body)
-        val newEntity = patch(currentJson)
-        fromJson(newEntity) match {
-          case Left(e) =>
+
+        val patch = diff(currentJson, ctx.request.body)
+        val maybeNewEntity = patch[Try](currentJson)
+
+        maybeNewEntity.map(fromJson) match {
+          case Failure(e) =>
             logger.error(s"Bad $entityName format", new RuntimeException(e))
             Errors.craftResponseResult(s"Bad $entityName format",
-                                       Results.BadRequest,
-                                       ctx.request,
-                                       None,
-                                       env)
-          case Right(newNewEntity) => {
+              Results.BadRequest,
+              ctx.request,
+              None,
+              env)
+          case Success(Left(e)) =>
+            logger.error(s"Bad $entityName format", new RuntimeException(e))
+            Errors.craftResponseResult(s"Bad $entityName format",
+              Results.BadRequest,
+              ctx.request,
+              None,
+              env)
+          case Success(Right(newNewEntity)) =>
             entityStore(ctx.tenant, env.dataStore)
               .save(newNewEntity)
               .map(_ => Ok(toJson(newNewEntity)))
-          }
         }
-      }
     }
+    value
   }
 
   def deleteEntity(id: String) = DaikokuApiAction.async { ctx =>

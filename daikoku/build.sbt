@@ -14,8 +14,9 @@ lazy val root = (project in file("."))
 libraryDependencies ++= Seq(
   ws,
   filters,
-  "org.gnieh" %% "diffson-play-json" % "4.0.2" excludeAll (ExclusionRule(
-    organization = "com.typesafe.akka")),
+  "org.apache.commons" % "commons-lang3" % "3.10",
+  "org.gnieh" %% "diffson-play-json" % "4.0.2" excludeAll ExclusionRule(
+    organization = "com.typesafe.akka"),
   "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test,
   "com.themillhousegroup" %% "scoup" % "0.4.7" % Test,
   "com.typesafe.play" %% "play-json" % "2.8.1",
@@ -118,7 +119,7 @@ dockerUpdateLatest := true
 // swaggerV3 := true
 // swaggerPrettyJson := true
 
-import ReleaseTransformations._
+import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies, // : ReleaseStep
