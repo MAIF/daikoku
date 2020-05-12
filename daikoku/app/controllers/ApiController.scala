@@ -5,7 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.{Done, NotUsed}
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.{ActorMaterializer, ClosedShape, FlowShape, SourceShape}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.stream.{ActorMaterializer, ClosedShape, FlowShape, Materializer, SourceShape}
 import akka.stream.scaladsl.{Broadcast, Flow, Framing, GraphDSL, JsonFraming, Merge, Partition, Sink, Source}
 import akka.util.ByteString
 import cats.data.EitherT
@@ -378,7 +379,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                             r.header("Content-Length").map(_.toLong),
                             r.header("Content-Type"))
                         )
-                        .withHeaders(r.headers.mapValues(_.head).toSeq: _*)
+                        .withHeaders(r.headers.view.mapValues(_.head).toSeq: _*)
                         .as(page.contentType) //r.header("Content-Type").getOrElse(page.contentType))
                     }
                 }
@@ -1304,7 +1305,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def deleteApiOfTeam(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
-    implicit val mat: ActorMaterializer = env.defaultMaterializer
+    implicit val mat: Materializer = env.defaultMaterializer
 
     TeamApiEditorOnly(
       AuditTrailEvent(s"@{user.name} has delete api @{api.name} - @{api.id} of team @{team.name} - @{team.id}")
@@ -1630,7 +1631,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     })
 
   def deleteApiPlansSubscriptions(plans: Seq[UsagePlan], api: Api, tenant: Tenant, user: User): Future[Done] = {
-    implicit val mat: ActorMaterializer = env.defaultMaterializer
+    implicit val mat: Materializer = env.defaultMaterializer
 
     Source(plans.toList)
       .mapAsync(1)(plan =>

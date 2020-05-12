@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.Cancellable
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 import fr.maif.otoroshi.daikoku.domain.BillingTimeUnit.{Day, Hour, Month, Year}
@@ -31,7 +31,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  implicit val mat: ActorMaterializer = env.defaultMaterializer
+  implicit val mat: Materializer = env.defaultMaterializer
 
   def start(): Unit = {
     logger.info("Scrapping apikey stats from otoroshi")

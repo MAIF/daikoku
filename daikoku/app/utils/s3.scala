@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader}
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.CannedAcl
 import akka.stream.alpakka.s3.scaladsl.S3
@@ -14,8 +14,6 @@ import akka.{Done, NotUsed}
 import fr.maif.otoroshi.daikoku.domain._
 import play.api.libs.json._
 import software.amazon.awssdk.auth.credentials._
-import software.amazon.awssdk.profiles.ProfileProperty
-import software.amazon.awssdk.regions._
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -59,7 +57,7 @@ case class S3Configuration(
 }
 
 object S3Configuration {
-  val format = new Format[S3Configuration] {
+  val format: Format[S3Configuration] = new Format[S3Configuration] {
     override def reads(json: JsValue): JsResult[S3Configuration] =
       Try {
         JsSuccess(
@@ -90,7 +88,7 @@ object S3Configuration {
 }
 
 class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
-                                                mat: ActorMaterializer) {
+                                                mat: Materializer) {
 
   private def s3ClientSettingsAttrs(implicit conf: S3Configuration) = {
     val awsCredentials = StaticCredentialsProvider.create(

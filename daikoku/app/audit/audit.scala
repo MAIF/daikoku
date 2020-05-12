@@ -600,7 +600,7 @@ object ElasticTemplates {
 
 object ElasticWritesAnalytics {
 
-  import collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   val clusterInitializedCache = new ConcurrentHashMap[String, Boolean]()
 
