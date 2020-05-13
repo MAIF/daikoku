@@ -409,7 +409,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                       nextFilter(
                         request.addAttr(IdentityAttrs.TenantKey, tenant))
                     case Some(session)
-                        if session.expires.isBefore(DateTime.now()) =>
+                        if session.expires.isBeforeNow =>
                       logger.info("Session expired")
                       FastFuture.successful(
                         Results
@@ -422,7 +422,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                           )
                       )
                     case Some(session)
-                        if session.expires.isAfter(DateTime.now()) =>
+                        if !session.expires.isBeforeNow =>
                       env.dataStore.userRepo
                         .findByIdNotDeleted(session.userId)
                         .flatMap {
@@ -484,6 +484,17 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                 }
                             }
                         }
+                    case _ =>
+                      FastFuture.successful(
+                        Results
+                          .Redirect(
+                            fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
+                              .loginPage(provider.name))
+                          .removingFromSession("sessionId")(request)
+                          .withSession(
+                            "redirect" -> cleanupRedirect(request.relativeUri)
+                          )
+                      )
                   }
             }
           }

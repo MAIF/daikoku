@@ -1,7 +1,7 @@
 package storage
 
 import akka.NotUsed
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
