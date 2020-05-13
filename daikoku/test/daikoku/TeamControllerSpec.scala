@@ -19,7 +19,7 @@ class TeamControllerSpec(configurationSpec: => Configuration)
     with IntegrationPatience {
 
   override def getConfiguration(configuration: Configuration) =
-    configuration ++ configurationSpec ++ Configuration(
+    configuration withFallback configurationSpec withFallback Configuration(
       ConfigFactory.parseString(s"""
 									 |{
 									 |  http.port=$port

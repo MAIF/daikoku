@@ -27,7 +27,7 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
     with BeforeAndAfterEach {
 
   override def getConfiguration(configuration: Configuration): Configuration =
-    configuration ++ configurationSpec ++ Configuration(
+    configuration withFallback configurationSpec withFallback Configuration(
       ConfigFactory.parseString(s"""
 									 |{
 									 |  http.port=$port
@@ -37,12 +37,12 @@ class ConsumptionControllerSpec(configurationSpec: => Configuration)
     )
 
   lazy val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
-  override def beforeEach {
+  override def beforeEach(): Unit = {
     wireMockServer.start()
     WireMock.configureFor(stubHost, stubPort)
   }
 
-  override def afterEach {
+  override def afterEach(): Unit = {
     wireMockServer.stop()
   }
 

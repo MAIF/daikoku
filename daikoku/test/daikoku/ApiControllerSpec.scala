@@ -27,7 +27,7 @@ class ApiControllerSpec(configurationSpec: => Configuration)
     with BeforeAndAfterEach {
 
   override def getConfiguration(configuration: Configuration): Configuration =
-    configuration ++ configurationSpec ++ Configuration(
+    configuration withFallback configurationSpec withFallback Configuration(
       ConfigFactory.parseString(
         s"""
 									  |{
@@ -39,12 +39,13 @@ class ApiControllerSpec(configurationSpec: => Configuration)
 
   lazy val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
 
-  override def beforeEach {
-    wireMockServer.start()
-    WireMock.configureFor(stubHost, stubPort)
+
+  override def beforeEach(): Unit = {
+      wireMockServer.start()
+      WireMock.configureFor(stubHost, stubPort)
   }
 
-  override def afterEach {
+  override def afterEach(): Unit = {
     wireMockServer.stop()
   }
 

@@ -17,7 +17,7 @@ class GuestModeSpec(configurationSpec: => Configuration)
     with BeforeAndAfterEach {
 
   override def getConfiguration(configuration: Configuration): Configuration =
-    configuration ++ configurationSpec ++ Configuration(
+    configuration withFallback configurationSpec withFallback Configuration(
       ConfigFactory.parseString(
         s"""
 									  |{

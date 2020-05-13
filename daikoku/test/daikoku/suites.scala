@@ -454,7 +454,7 @@ object utils {
       val payload: String = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(Json.toBytes(payloadJson))
       val signatureBytes: Array[Byte] = algorithm.sign(
-        (header + "." + payload).getBytes(StandardCharsets.UTF_8))
+        header.getBytes(StandardCharsets.UTF_8), payload.getBytes(StandardCharsets.UTF_8))
       val signature: String = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(signatureBytes)
       String.format("%s.%s.%s", header, payload, signature)
@@ -470,7 +470,7 @@ object utils {
       flush().onComplete {
         case Success(_) => r
         case Failure(exception) =>
-          Logger.error("Error during flushing db", exception)
+          logger.error("Error during flushing db", exception)
       }
 
 //
