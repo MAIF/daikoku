@@ -15,6 +15,7 @@ import fr.maif.otoroshi.daikoku.domain.TranslationElement._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
@@ -1960,7 +1961,8 @@ object json {
 
   val UserSessionFormat = new Format[UserSession] {
 
-    override def reads(json: JsValue): JsResult[UserSession] =
+    override def reads(json: JsValue): JsResult[UserSession] = {
+
       Try {
         JsSuccess(
           UserSession(
@@ -1989,6 +1991,7 @@ object json {
       } recover {
         case e => JsError(e.getMessage)
       } get
+    }
 
     override def writes(o: UserSession): JsValue = Json.obj(
       "_id" -> o.id.asJson,

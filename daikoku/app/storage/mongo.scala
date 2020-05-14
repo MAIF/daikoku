@@ -11,12 +11,11 @@ import fr.maif.otoroshi.daikoku.env.Env
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.commands.{MultiBulkWriteResult, WriteResult}
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.api.{CollectionMetaCommands, Cursor, CursorOptions, QueryOpts, ReadConcern, ReadPreference, WriteConcern}
+import reactivemongo.api.commands.WriteResult
+import reactivemongo.api.indexes.Index
+import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MongoTenantCapableRepo[A, Id <: ValueType]

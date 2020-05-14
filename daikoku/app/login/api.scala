@@ -13,6 +13,7 @@ import play.api.libs.typedmap._
 import play.api.mvc._
 import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.Logger
 import reactivemongo.bson.BSONObjectID
 
@@ -146,10 +147,10 @@ object TenantHelper {
                   case None =>
                     FastFuture.successful(Tenant.Default)
                   case Some(session)
-                      if session.expires.isBefore(DateTime.now()) =>
+                      if !session.expires.isAfterNow =>
                     FastFuture.successful(Tenant.Default)
                   case Some(session)
-                      if session.expires.isAfter(DateTime.now()) =>
+                      if session.expires.isAfterNow =>
                     env.dataStore.userRepo
                       .findByIdNotDeleted(session.userId)
                       .flatMap {
@@ -160,10 +161,7 @@ object TenantHelper {
                             case None =>
                               FastFuture.successful(Tenant.Default)
                             case Some(tenantId) =>
-                              env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).map {
-                                case Some(tenant) => tenant.id
-                                case None => Tenant.Default
-                              }
+                              FastFuture.successful(tenantId)
                           }
                       }
                 }
@@ -422,7 +420,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                           )
                       )
                     case Some(session)
-                        if !session.expires.isBeforeNow =>
+                        if session.expires.isAfterNow =>
                       env.dataStore.userRepo
                         .findByIdNotDeleted(session.userId)
                         .flatMap {
