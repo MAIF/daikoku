@@ -7,6 +7,8 @@ packageName in Universal := "daikoku"
 
 scalaVersion := "2.13.1"
 
+val reactiveMongoVersion = "0.20.10"
+
 lazy val root = (project in file("."))
   .enablePlugins(PlayScala, DockerPlugin)
   .disablePlugins(PlayFilters)
@@ -29,8 +31,9 @@ libraryDependencies ++= Seq(
   "javax.xml.bind" % "jaxb-api" % "2.3.1",
   "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1",
   "com.sun.xml.bind" % "jaxb-impl" % "2.3.3",
-  "org.reactivemongo" %% "play2-reactivemongo" % "0.20.10-play28",
-  "org.reactivemongo" %% "reactivemongo-akkastream" % "0.20.10",
+  "org.reactivemongo" %% "play2-reactivemongo" % s"$reactiveMongoVersion-play28",
+  "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",
+  "org.reactivemongo" %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",
   "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.2",
   "org.typelevel" %% "cats-core" % "2.1.1",
   "de.svenkubiak" % "jBCrypt" % "0.4.1",

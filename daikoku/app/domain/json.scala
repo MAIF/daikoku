@@ -60,7 +60,7 @@ object json {
   val DateTimeFormat = new Format[DateTime] {
     override def reads(json: JsValue) =
       Try {
-        JsSuccess(new DateTime(json.as[Long]))
+        JsSuccess(new DateTime((json \ "$long").as[Long]))
       } recover {
         case e => JsError(e.getMessage)
       } get
