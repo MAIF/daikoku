@@ -104,7 +104,14 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
       columns: useMemo(() => columns, []),
       data: items,
       defaultColumn,
-      filterTypes
+      filterTypes,
+      initialState: {
+        sortBy: useMemo(() => [
+          {
+            id: defaultSort || columns[0].title,
+            desc: defaultSortDesc || false,
+          },
+        ], [])}
     },
     useFilters,
     useSortBy,

@@ -193,6 +193,7 @@ class TeamApisComponent extends Component {
                   selfUrl="apis"
                   defaultTitle="Team Apis"
                   defaultValue={() => ({})}
+                  defaultSort="name"
                   itemName="api"
                   columns={this.columns}
                   fetchItems={() => Services.teamApis(this.props.currentTeam._id)}
