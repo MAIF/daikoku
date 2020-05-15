@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "org.bouncycastle" % "bcprov-jdk15on" % "1.65",
   "org.gnieh" %% "diffson-play-json" % "4.0.2" excludeAll ExclusionRule(
     organization = "com.typesafe.akka"),
-  "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test,
+  "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0" % Test,
   "com.themillhousegroup" %% "scoup" % "0.4.7" % Test,
   "com.typesafe.play" %% "play-json" % "2.8.1",
   "com.typesafe.play" %% "play-json-joda" % "2.8.1",
