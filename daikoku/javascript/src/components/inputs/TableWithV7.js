@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTable, usePagination, useSortBy } from 'react-table';
+import { useTable, usePagination, useSortBy, useFilters } from 'react-table';
 import classNames from 'classnames';
 import _ from 'lodash';
 import PropTypes from 'prop-types';
 
 import { t } from '../../locales';
 import { Spinner } from '../utils';
+import {fuzzyTextFilterFn, DefaultColumnFilter} from './'
 
 export function useForceUpdate() {
   const [, setTick] = useState(0);
@@ -15,15 +16,70 @@ export function useForceUpdate() {
   return update;
 }
 
-//todo: to upgrade tableWithV§ to tableWithV7:
-//todo: - in column prop, rename title, content, cell in Header, accessor, Cell
-
-//todo: implement sorting, search, resize
 export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, currentLanguage, defaultSort, defaultSortDesc, search, pageSizee = 15, mobileSize = 767 }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const forceUpdate = useForceUpdate();
+
+  const filterTypes = React.useMemo(
+    () => ({
+      // Add a new fuzzyTextFilterFn filter type.
+      fuzzyText: fuzzyTextFilterFn,
+      // Or, override the default text filter to use
+      // "startWith"
+      text: (rows, id, filterValue) => {
+        return rows.filter(row => {
+          const rowValue = row.values[id]
+          return rowValue !== undefined
+            ? String(rowValue)
+              .toLowerCase()
+              .startsWith(String(filterValue).toLowerCase())
+            : true
+        })
+      },
+    }),
+    []
+  )
+  const EditableCell = ({
+    value: initialValue,
+    row: { index },
+    column: { id },
+    updateMyData, // This is a custom function that we supplied to our table instance
+    editable,
+  }) => {
+    // We need to keep and update the state of the cell normally
+    const [value, setValue] = React.useState(initialValue)
+
+    const onChange = e => {
+      setValue(e.target.value)
+    }
+
+    // We'll only update the external data when the input is blurred
+    const onBlur = () => {
+      updateMyData(index, id, value)
+    }
+
+    // If the initialValue is changed externall, sync it up with our state
+    React.useEffect(() => {
+      setValue(initialValue)
+    }, [initialValue])
+
+    if (!editable) {
+      return `${initialValue}`
+    }
+
+    return <input value={value} onChange={onChange} onBlur={onBlur} />
+  }
+  const defaultColumn = React.useMemo(
+    () => ({
+      // Let's set up our default Filter UI
+      Filter: DefaultColumnFilter,
+      // And also our default editable cell
+      Cell: EditableCell,
+    }),
+    []
+  )
 
 
   const {
@@ -32,6 +88,7 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
     headerGroups,
     rows,
     prepareRow,
+    setFilter,
     page,
     canPreviousPage,
     canNextPage,
@@ -41,15 +98,17 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
     nextPage,
     previousPage,
     setPageSize,
-    state: { pageIndex, pageSize }
+    state: { pageIndex, pageSize, sortBy, filters }
   } = useTable(
     {
       columns: useMemo(() => columns, []),
       data: items,
-      initialState: { pageIndex: 0 }
+      defaultColumn,
+      filterTypes
     },
-      useSortBy,
-      usePagination,
+    useFilters,
+    useSortBy,
+    usePagination,
   );
 
   useEffect(() => {
@@ -93,48 +152,6 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
     return <h3>Something went wrong !!!</h3>;
   }
 
-  // const windowWidth = window.innerWidth;
-  // const columnsConst = columns
-  //   .filter((c) => {
-  //     if (windowWidth > mobileSize) {
-  //       return true;
-  //     } else {
-  //       return !c.noMobile;
-  //     }
-  //   })
-  //   .map((c) => {
-  //     return {
-  //       Header: c.title,
-  //       id: c.title,
-  //       headerStyle: c.style,
-  //       width: c.style && c.style.width ? c.style.width : undefined,
-  //       style: { ...c.style },
-  //       sortable: !c.notSortable,
-  //       filterable: !c.notFilterable,
-  //       accessor: (d) => (c.accessor ? d[c.accessor] : c.content ? c.content(d) : d),
-  //       Filter: (d) => (
-  //         <input
-  //           type="text"
-  //           className="form-control input-sm"
-  //           value={d.filter ? d.filter.value : ''}
-  //           onChange={(e) => d.onChange(e.target.value)}
-  //           placeholder={t('Search ...', currentLanguage)}
-  //         />
-  //       ),
-  //       Cell: (r) => {
-  //         const value = r.value;
-  //         const original = r.original;
-  //         return c.cell ? (
-  //           c.cell(value, original, this)
-  //         ) : (
-  //             <div>
-  //               {value}
-  //             </div>
-  //           );
-  //       },
-  //     };
-  //   });
-
   if (loading) {
     return <Spinner />;
   }
@@ -165,8 +182,9 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
                         <th className={classNames({
                           "--sort-asc": column.isSorted && !column.isSortedDesc,
                           "--sort-desc": column.isSorted && column.isSortedDesc
-                        })} {...column.getHeaderProps(column.getSortByToggleProps())}>
-                          {column.render("Header")}
+                        })}>
+                        <div {...column.getHeaderProps(column.getSortByToggleProps())}>{column.render("Header")}</div>
+                          <div>{column.canFilter ? column.render('Filter') : null}</div>
                         </th>
                     ))}
                   </tr>

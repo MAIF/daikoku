@@ -7,12 +7,13 @@ import faker from 'faker';
 import * as Services from '../../../services';
 import { Can, read, manage, stat, api as Api, administrator } from '../../utils';
 import { TeamBackOffice } from '../..';
-import { Table, SwitchButton, TableWithV7 } from '../../inputs';
+import { SwitchButton, TableWithV7, BooleanColumnFilter } from '../../inputs';
 import { t } from '../../../locales';
 
 class TeamApisComponent extends Component {
   columns = [
     {
+      id: "name",
       Header: t('Name', this.props.currentLanguage),
       style: { textAlign: 'left'},
       accessor: (api) => api.name,
@@ -27,6 +28,9 @@ class TeamApisComponent extends Component {
       Header: t('Published', this.props.currentLanguage),
       style: { textAlign: 'center'},
       accessor: (api) => api.published,
+      disableSortBy: true,
+      Filter: BooleanColumnFilter,
+      filter: 'equals',
       Cell: ({ cell: { row: {original} } }) => {
         const api = original;
         return (<Can I={manage} a={Api} team={this.props.currentTeam}>
@@ -43,7 +47,8 @@ class TeamApisComponent extends Component {
     {
       Header: t('Actions', this.props.currentLanguage),
       style: { textAlign: 'center'},
-      notFilterable: true,
+      disableSortBy: true,
+      disableFilters: true,
       accessor: (item) => item._id,
       Cell: ({ cell: { row: { original } } }) => {
         const api = original;
