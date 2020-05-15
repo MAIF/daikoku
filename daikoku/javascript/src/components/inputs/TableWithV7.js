@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
-import { useTable, usePagination } from 'react-table';
+import { useTable, usePagination, useSortBy } from 'react-table';
 
 import { t } from '../../locales';
 import { Spinner } from '../utils';
@@ -31,18 +31,24 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
     headerGroups,
     rows,
     prepareRow,
+    page,
+    canPreviousPage,
+    canNextPage,
+    pageOptions,
+    pageCount,
+    gotoPage,
+    nextPage,
+    previousPage,
+    setPageSize,
+    state: { pageIndex, pageSize }
   } = useTable(
     {
       columns: useMemo(() => columns, []),
       data: items,
-      initialState: { pageIndex: 0, pageSize: pageSizee }, // Pass our hoisted table state
-      manualPagination: true, // Tell the usePagination
-      // hook that we'll handle our own data fetching
-      // This means we'll also have to provide our own
-      // pageCount.
-      pageCount: Math.ceil(items.length / pageSizee),
+      initialState: { pageIndex: 0 }
     },
-    usePagination
+      useSortBy,
+      usePagination,
   );
 
   useEffect(() => {
@@ -149,19 +155,20 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
             )}
           </div>
         </div>
-        <div className="rrow">
-          <table {...getTableProps()} className="fulltable -striped -highlight">
+        <div className="rrow section">
+          <table {...getTableProps()} className="reactTableV7">
             <thead>
-              {headerGroups.map((headerGroup, idx) => (
-                <tr {...headerGroup.getHeaderGroupProps()} key={`th-tr-${idx}`}>
-                  {headerGroup.headers.map((column, idx) => {
-                    return (
-                      <th style={column.style} {...column.getHeaderProps()} key={`th-${idx}`}>
-                        {column.render('Header')}
-                      </th>
-                    );
-                  })}
-                </tr>
+              {headerGroups.map(headerGroup => (
+                  <tr {...headerGroup.getHeaderGroupProps()}>
+                    {headerGroup.headers.map(column => (
+                        <th {...column.getHeaderProps(column.getSortByToggleProps())}>
+                          {column.render("Header")}
+                          <span>
+                            {column.isSorted ? (column.isSortedDesc ? " 🔽" : " 🔼") : ""}
+                          </span>
+                        </th>
+                    ))}
+                  </tr>
               ))}
             </thead>
             <tbody {...getTableBodyProps()}>
@@ -181,6 +188,27 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
               })}
             </tbody>
           </table>
+
+          <div className="text-center py-2">
+            <button onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
+              {"<<"}
+            </button>{" "}
+            <button onClick={() => previousPage()} disabled={!canPreviousPage}>
+              {"<"}
+            </button>{" "}
+            <span className="mx-2">
+          Page{" "}
+              <strong>
+            {pageIndex + 1} of {pageOptions.length}
+          </strong>{" "}
+        </span>
+            <button onClick={() => nextPage()} disabled={!canNextPage}>
+              {">"}
+            </button>{" "}
+            <button onClick={() => gotoPage(pageCount - 1)} disabled={!canNextPage}>
+              {">>"}
+            </button>{" "}
+          </div>
         </div>
       </div>
     </div>

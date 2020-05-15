@@ -7,26 +7,27 @@ import faker from 'faker';
 import * as Services from '../../../services';
 import { Can, read, manage, stat, api as Api, administrator } from '../../utils';
 import { TeamBackOffice } from '../..';
-import { Table, SwitchButton } from '../../inputs';
+import { Table, SwitchButton, TableWithV7 } from '../../inputs';
 import { t } from '../../../locales';
 
 class TeamApisComponent extends Component {
   columns = [
     {
-      title: t('Name', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (api) => api.name,
+      Header: t('Name', this.props.currentLanguage),
+      style: { textAlign: 'left'},
+      accessor: (api) => api.name,
+      sortType: "basic",
     },
     {
-      title: t('Description', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (api) => api.smallDescription,
+      Header: t('Description', this.props.currentLanguage),
+      style: { textAlign: 'left'},
+      accessor: (api) => api.smallDescription,
     },
     {
-      title: t('Published', this.props.currentLanguage),
-      style: { justifyContent: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      content: (api) => (api.published ? 'yes' : 'no'),
-      cell: (a, api) => (
+      Header: t('Published', this.props.currentLanguage),
+      style: { justifyContent: 'center', alignItems: 'center',display:'flex'},
+      accessor: (api) => (api.published ? 'yes' : 'no'),
+      Cell: (a, api) => (
         <Can I={manage} a={Api} team={this.props.currentTeam}>
           <SwitchButton
             onSwitch={() => this.togglePublish(api)}
@@ -39,11 +40,11 @@ class TeamApisComponent extends Component {
       ),
     },
     {
-      title: t('Actions', this.props.currentLanguage),
-      style: { textAlign: 'center', width: 180, alignItems: 'center', display: 'flex' },
+      Header: t('Actions', this.props.currentLanguage),
+      style: { textAlign: 'center'},
       notFilterable: true,
-      content: (item) => item._id,
-      cell: (a, api) => (
+      accessor: (item) => item._id,
+      Cell: (a, api) => (
         <div className="btn-group">
           <Link
             rel="noopener"
@@ -178,8 +179,8 @@ class TeamApisComponent extends Component {
                   </Can>
                 )}
               </h1>
-              <div className="section p-2">
-                <Table
+              <div className="p-2">
+                <TableWithV7
                   currentLanguage={this.props.currentLanguage}
                   selfUrl="apis"
                   defaultTitle="Team Apis"
