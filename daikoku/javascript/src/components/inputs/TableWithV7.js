@@ -164,7 +164,7 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
                         <th {...column.getHeaderProps(column.getSortByToggleProps())}>
                           {column.render("Header")}
                           <span>
-                            {column.isSorted ? (column.isSortedDesc ? " 🔽" : " 🔼") : ""}
+                            {column.isSorted ? (column.isSortedDesc ? <i className="ml-2 fas fa-arrow-circle-down"></i> : <i class="ml-2 fas fa-arrow-circle-up"></i>) : ""}
                           </span>
                         </th>
                     ))}
