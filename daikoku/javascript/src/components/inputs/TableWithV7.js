@@ -3,6 +3,8 @@ import { useTable, usePagination, useSortBy, useFilters } from 'react-table';
 import classNames from 'classnames';
 import _ from 'lodash';
 import PropTypes from 'prop-types';
+import Pagination from 'react-paginate';
+import Select from 'react-select';
 
 import { t } from '../../locales';
 import { Spinner } from '../utils';
@@ -16,7 +18,7 @@ export function useForceUpdate() {
   return update;
 }
 
-export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, currentLanguage, defaultSort, defaultSortDesc, search, pageSizee = 15, mobileSize = 767 }) => {
+export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, defaultSort, defaultSortDesc, search, pageSizee = 15, mobileSize = 767, currentLanguage }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -106,6 +108,8 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
       defaultColumn,
       filterTypes,
       initialState: {
+        pageSize: 2,
+        pageIndex: 0,
         sortBy: useMemo(() => [
           {
             id: defaultSort || columns[0].title,
@@ -198,7 +202,7 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
               ))}
             </thead>
             <tbody {...getTableBodyProps()}>
-              {rows.map((row, idx) => {
+              {page.map((row, idx) => {
                 prepareRow(row);
                 return (
                   <tr {...row.getRowProps()} key={`tr-${idx}`}>
@@ -215,29 +219,34 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
             </tbody>
           </table>
 
-          <div className="text-center py-2">
-            <button onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
-              {"<<"}
-            </button>{" "}
-            <button onClick={() => previousPage()} disabled={!canPreviousPage}>
-              {"<"}
-            </button>{" "}
-            <span className="mx-2">
-          Page{" "}
-              <strong>
-            {pageIndex + 1} of {pageOptions.length}
-          </strong>{" "}
-        </span>
-            <button onClick={() => nextPage()} disabled={!canNextPage}>
-              {">"}
-            </button>{" "}
-            <button onClick={() => gotoPage(pageCount - 1)} disabled={!canNextPage}>
-              {">>"}
-            </button>{" "}
+          <div className="d-flex flex-row justify-content-around align-items-baseline">
+            <Pagination
+              containerClassName="col-9"
+              previousLabel={t('Previous', currentLanguage)}
+              nextLabel={t('Next', currentLanguage)}
+              breakLabel={'...'}
+              breakClassName={'break'}
+              pageCount={pageOptions.length}
+              marginPagesDisplayed={1}
+              pageRangeDisplayed={5}
+              onPageChange={({ selected }) => gotoPage(selected)}
+              containerClassName={'pagination'}
+              pageClassName={'page-selector'}
+              activeClassName={'active'}
+            />
+            <Select
+              className="reactSelect col-3"
+              value={{ label: pageSize, value: pageSize }}
+              options={[2, 10, 20, 50, 100].map(x => ({ label: `show ${x}`, value: x }))} //todo: remove "2" option aafter tests
+              onChange={(e) => setPageSize(Number(e.value))}
+              classNamePrefix="reactSelect"
+            />
+            
           </div>
+          
+        </div>
         </div>
       </div>
-    </div>
   );
 };
 
