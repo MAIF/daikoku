@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import PropTypes from 'prop-types';
-import _ from 'lodash';
 import { useTable, usePagination, useSortBy } from 'react-table';
+import classNames from 'classnames';
+import _ from 'lodash';
+import PropTypes from 'prop-types';
 
 import { t } from '../../locales';
 import { Spinner } from '../utils';
@@ -161,11 +162,11 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, cu
               {headerGroups.map(headerGroup => (
                   <tr {...headerGroup.getHeaderGroupProps()}>
                     {headerGroup.headers.map(column => (
-                        <th {...column.getHeaderProps(column.getSortByToggleProps())}>
+                        <th className={classNames({
+                          "--sort-asc": column.isSorted && !column.isSortedDesc,
+                          "--sort-desc": column.isSorted && column.isSortedDesc
+                        })} {...column.getHeaderProps(column.getSortByToggleProps())}>
                           {column.render("Header")}
-                          <span>
-                            {column.isSorted ? (column.isSortedDesc ? <i className="ml-2 fas fa-arrow-circle-down"></i> : <i class="ml-2 fas fa-arrow-circle-up"></i>) : ""}
-                          </span>
                         </th>
                     ))}
                   </tr>

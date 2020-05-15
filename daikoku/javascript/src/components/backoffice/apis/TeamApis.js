@@ -26,9 +26,10 @@ class TeamApisComponent extends Component {
     {
       Header: t('Published', this.props.currentLanguage),
       style: { textAlign: 'center'},
-      accessor: (api) => (api.published ? 'yes' : 'no'),
-      Cell: (a, api) => (
-        <Can I={manage} a={Api} team={this.props.currentTeam}>
+      accessor: (api) => api.published,
+      Cell: ({ cell: { row: {original} } }) => {
+        const api = original;
+        return (<Can I={manage} a={Api} team={this.props.currentTeam}>
           <SwitchButton
             onSwitch={() => this.togglePublish(api)}
             checked={api.published}
@@ -36,15 +37,17 @@ class TeamApisComponent extends Component {
             large
             noText
           />
-        </Can>
-      ),
+        </Can>)
+      },
     },
     {
       Header: t('Actions', this.props.currentLanguage),
       style: { textAlign: 'center'},
       notFilterable: true,
       accessor: (item) => item._id,
-      Cell: (a, api) => (
+      Cell: ({ cell: { row: { original } } }) => {
+        const api = original;
+        return (
         <div className="btn-group">
           <Link
             rel="noopener"
@@ -84,7 +87,7 @@ class TeamApisComponent extends Component {
             )}
           </Can>
         </div>
-      ),
+      )},
     },
   ];
 
