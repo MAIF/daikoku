@@ -27,7 +27,7 @@ export class SwitchButton extends Component {
     const id = label ? label.replace(/\s/gi, '') : uuidv4();
     return (
       <div
-        className={classNames({
+        className={classNames('d-flex justify-content-center ', {
           'switch--loading': this.state.loading,
           'switch--loaded': !this.state.loading,
           'switch--disabled': this.props.disabled,

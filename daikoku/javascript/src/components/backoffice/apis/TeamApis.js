@@ -25,7 +25,7 @@ class TeamApisComponent extends Component {
     },
     {
       Header: t('Published', this.props.currentLanguage),
-      style: { justifyContent: 'center', alignItems: 'center',display:'flex'},
+      style: { textAlign: 'center'},
       accessor: (api) => (api.published ? 'yes' : 'no'),
       Cell: (a, api) => (
         <Can I={manage} a={Api} team={this.props.currentTeam}>
