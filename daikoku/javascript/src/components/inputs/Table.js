@@ -32,6 +32,7 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, currentL
 
     update();
 
+    debugger
     return () => {
       window.removeEventListener('resize', sizeListener);
     };
@@ -50,10 +51,13 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, currentL
   const update = () => {
     setLoading(true);
     return fetchItems()
-      .then(
-        (rawItems) => {
+      .then(rawItems => {
+        if (rawItems.error) {
+          setHasError(true)
+        } else {
           setItems(rawItems);
-        },
+        }
+      },
         () => setHasError(true));
   };
 
