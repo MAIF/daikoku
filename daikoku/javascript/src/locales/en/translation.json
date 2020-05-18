@@ -648,5 +648,9 @@
     "keyboard.shortcuts.arrow.right": "Arrow-Right: next step",
     "keyboard.shortcuts.arrow.left": "Arrow-Left: previous step",
     "keyboard.shortcuts.tab": "Tab: focus on api name",
-    "Finish": "Finish"
+    "Finish": "Finish",
+    "Hours": "Hours",
+    "Days": "Days",
+    "Months": "Months",
+    "Years": "Years"
 }

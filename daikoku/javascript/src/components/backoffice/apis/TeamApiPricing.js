@@ -7,6 +7,7 @@ import classNames from 'classnames';
 
 import { Spinner, newPossibleUsagePlan } from '../../utils';
 import { t, Translation } from '../../../locales';
+import * as Services from '../../../services'; 
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -36,7 +37,13 @@ const PRIVATE = 'Private';
 export class TeamApiPricing extends Component {
   state = {
     selected: this.props.value.possibleUsagePlans[0],
+    otoroshiSettings: []
   };
+
+  componentDidMount() {
+    Services.allSimpleOtoroshis(this.props.tenant._id)
+      .then((otoroshiSettings) => this.setState({ otoroshiSettings }))
+  }
 
   otoroshiFlow = (_found) => {
     if (
@@ -83,7 +90,7 @@ export class TeamApiPricing extends Component {
           type: 'select',
           props: {
             label: t('Otoroshi instance', this.props.currentLanguage),
-            possibleValues: this.props.otoroshiSettings.map((s) => ({
+            possibleValues: this.state.otoroshiSettings.map((s) => ({
               label: s.url,
               value: s._id,
             })),
@@ -106,7 +113,7 @@ export class TeamApiPricing extends Component {
         type: 'select',
         props: {
           label: t('Otoroshi instance', this.props.currentLanguage),
-          possibleValues: this.props.otoroshiSettings.map((s) => ({
+          possibleValues: this.state.otoroshiSettings.map((s) => ({
             label: s.url,
             value: s._id,
           })),
@@ -443,10 +450,10 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Billing every', this.props.currentLanguage),
           possibleValues: [
-            { label: 'Hours', value: 'hours' },
-            { label: 'Days', value: 'days' },
-            { label: 'Months', value: 'months' },
-            { label: 'Years', value: 'years' },
+            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
+            { label: t('Days', this.props.currentLanguage), value: 'Day' },
+            { label: t('Months', this.props.currentLanguage), value: 'Month' },
+            { label: t('Years', this.props.currentLanguage), value: 'Year' },
           ],
         },
       },
@@ -562,10 +569,10 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Billing every', this.props.currentLanguage),
           possibleValues: [
-            { label: 'Hours', value: 'hours' },
-            { label: 'Days', value: 'days' },
-            { label: 'Months', value: 'months' },
-            { label: 'Years', value: 'years' },
+            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
+            { label: t('Days', this.props.currentLanguage), value: 'Day' },
+            { label: t('Months', this.props.currentLanguage), value: 'Month' },
+            { label: t('Years', this.props.currentLanguage), value: 'Year' },
           ],
         },
       },
@@ -707,10 +714,10 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Billing every', this.props.currentLanguage),
           possibleValues: [
-            { label: 'Hours', value: 'hours' },
-            { label: 'Days', value: 'days' },
-            { label: 'Months', value: 'months' },
-            { label: 'Years', value: 'years' },
+            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
+            { label: t('Days', this.props.currentLanguage), value: 'Day' },
+            { label: t('Months', this.props.currentLanguage), value: 'Month' },
+            { label: t('Years', this.props.currentLanguage), value: 'Year' },
           ],
         },
       },
@@ -728,14 +735,14 @@ export class TeamApiPricing extends Component {
         },
       },
       'trialPeriod.unit': {
-        type: 'number',
+        type: 'select',
         props: {
           label: t('Trial period unit', this.props.currentLanguage),
           possibleValues: [
-            { label: 'Hours', value: 'hours' }, //todo: maybe translate label ???
-            { label: 'Days', value: 'days' },
-            { label: 'Months', value: 'months' },
-            { label: 'Years', value: 'years' },
+            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
+            { label: t('Days', this.props.currentLanguage), value: 'Day' },
+            { label: t('Months', this.props.currentLanguage), value: 'Month' },
+            { label: t('Years', this.props.currentLanguage), value: 'Year' },
           ],
         },
       },
@@ -889,10 +896,10 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Billing every', this.props.currentLanguage),
           possibleValues: [
-            { label: 'Hours', value: 'hours' },
-            { label: 'Days', value: 'days' },
-            { label: 'Months', value: 'months' },
-            { label: 'Years', value: 'years' },
+            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
+            { label: t('Days', this.props.currentLanguage), value: 'Day' },
+            { label: t('Months', this.props.currentLanguage), value: 'Month' },
+            { label: t('Years', this.props.currentLanguage), value: 'Year' },
           ],
         },
       },
@@ -910,14 +917,14 @@ export class TeamApiPricing extends Component {
         },
       },
       'trialPeriod.unit': {
-        type: 'number',
+        type: 'select',
         props: {
           label: t('Trial period unit', this.props.currentLanguage),
           possibleValues: [
-            { label: 'Hours', value: 'hours' },
-            { label: 'Days', value: 'days' },
-            { label: 'Months', value: 'months' },
-            { label: 'Years', value: 'years' },
+            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
+            { label: t('Days', this.props.currentLanguage), value: 'Day' },
+            { label: t('Months', this.props.currentLanguage), value: 'Month' },
+            { label: t('Years', this.props.currentLanguage), value: 'Year' },
           ],
         },
       },
@@ -1098,10 +1105,10 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Billing every', this.props.currentLanguage),
           possibleValues: [
-            { label: 'Hours', value: 'hours' },
-            { label: 'Days', value: 'days' },
-            { label: 'Months', value: 'months' },
-            { label: 'Years', value: 'years' },
+            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
+            { label: t('Days', this.props.currentLanguage), value: 'Day' },
+            { label: t('Months', this.props.currentLanguage), value: 'Month' },
+            { label: t('Years', this.props.currentLanguage), value: 'Year' },
           ],
         },
       },
@@ -1123,10 +1130,10 @@ export class TeamApiPricing extends Component {
         props: {
           label: t('Trial period unit', this.props.currentLanguage),
           possibleValues: [
-            { label: 'Hours', value: 'hours' },
-            { label: 'Days', value: 'days' },
-            { label: 'Months', value: 'months' },
-            { label: 'Years', value: 'years' },
+            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
+            { label: t('Days', this.props.currentLanguage), value: 'Day' },
+            { label: t('Months', this.props.currentLanguage), value: 'Month' },
+            { label: t('Years', this.props.currentLanguage), value: 'Year' },
           ],
         },
       },

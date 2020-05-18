@@ -409,6 +409,7 @@ class TeamApiComponent extends Component {
                         value={editedApi}
                         onChange={(api) => this.setState({ api })}
                         otoroshiSettings={this.state.otoroshiSettings}
+                        {...this.props}
                       />
                     )}
                     {editedApi && this.state.tab === 'plans' && (

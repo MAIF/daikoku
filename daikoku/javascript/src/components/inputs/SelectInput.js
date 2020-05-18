@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Select from 'react-select';
 import { Help } from './Help';
+import { Option } from '../utils';
 
 const valueToSelectOption = (value) => {
   if (value === null) {
@@ -16,7 +17,7 @@ export class SelectInput extends Component {
   state = {
     error: null,
     loading: false,
-    value: valueToSelectOption(this.props.value),
+    value: Option(this.props.possibleValues.find(v => v.value === this.props.value)).getOrElse(valueToSelectOption(this.props.value)),
     values: (this.props.possibleValues || []).map(valueToSelectOption),
   };
 

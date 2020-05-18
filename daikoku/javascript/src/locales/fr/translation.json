@@ -648,5 +648,9 @@
   "keyboard.shortcuts.arrow.right": "Flèche droite: prochaine étape",
   "keyboard.shortcuts.arrow.left": "Flèche gauche: étape précédente",
   "keyboard.shortcuts.tab": "Tab: focus sur le nom de l'api",
-  "Finish": "Terminer"
+  "Finish": "Terminer",
+  "Hours": "Heures",
+  "Days": "Jours",
+  "Months": "Mois",
+  "Years": "Années"
 }
