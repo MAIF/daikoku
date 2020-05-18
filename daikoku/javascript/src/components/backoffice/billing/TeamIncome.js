@@ -91,6 +91,7 @@ class TeamIncomeComponent extends Component {
                             )
                           }
                           value={this.state.date}
+                          currentLanguage={this.props.currentLanguage}
                         />
                         <button className="btn btn-sm btn-access-negative" onClick={this.sync}>
                           <i className="fas fa-sync-alt" />

@@ -1,30 +1,45 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // import DatePicker from 'antd/lib/date-picker';
 import { ConfigProvider, DatePicker } from 'antd';
-import enUS from 'antd/lib/locale-provider/en_US';
-import 'antd/lib/date-picker/style/index.css';
+import enUS from 'antd/es/locale/en_US';
+import frFr from 'antd/es/locale/fr_FR';
+import "moment/locale/fr";
 
-export class MonthPicker extends Component {
-  onChange = (value) => {
+const getDateFormat = (language) => {
+  switch (language.toUpperCase()) {
+    case 'FR': 
+      return {
+        locale: frFr,
+        format: 'MMM. YYYY'
+      }
+    case 'EN':
+      default: 
+      return {
+        locale: enUS,
+        format: 'MMM., YYYY'
+      }
+  }
+}
+
+export const MonthPicker = ({ currentLanguage, updateDate, value }) => {
+  const dateFormat = getDateFormat(currentLanguage);
+
+  const onChange = (value) => {
     const date = value;
-    if (date && this.props.updateDate && !this.props.value.isSame(date)) {
-      this.props.updateDate(date.endOf('month'));
+    if (date && updateDate && !value.isSame(date)) {
+      updateDate(date.endOf('month'));
     }
   };
 
-  render() {
-    const dateFormat = 'MMM. YYYY';
-    return (
-      <ConfigProvider locale={enUS}>
+  return (
+      <ConfigProvider locale={dateFormat.locale}>
         <DatePicker.MonthPicker
-          defaultValue={this.props.value}
-          placeholder="Select month"
-          onChange={(v) => this.onChange(v)}
-          format={dateFormat}
+          defaultValue={value}
+          onChange={(v) => onChange(v)}
+          format={dateFormat.format}
           onOk={(value) => value}
         />
       </ConfigProvider>
     );
   }
-}

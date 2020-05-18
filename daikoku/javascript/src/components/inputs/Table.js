@@ -32,7 +32,6 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, currentL
 
     update();
 
-    debugger
     return () => {
       window.removeEventListener('resize', sizeListener);
     };

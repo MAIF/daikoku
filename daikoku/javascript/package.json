@@ -22,7 +22,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "5.13.0",
     "@xstate/react": "0.8.1",
-    "antd": "3.26.16",
+    "antd": "4.2.4",
     "asciidoctor": "2.2.0",
     "bcryptjs": "2.4.3",
     "bootstrap": "4.4.1",

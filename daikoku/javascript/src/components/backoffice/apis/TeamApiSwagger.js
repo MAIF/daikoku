@@ -64,6 +64,9 @@ export class TeamApiSwagger extends Component {
 
   render() {
     const swagger = this.props.value.swagger;
+    if (!swagger) {
+      return null;
+    }
     return (
       <form>
         {!swagger.content && (
