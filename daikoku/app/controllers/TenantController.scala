@@ -270,6 +270,7 @@ class TenantController(DaikokuAction: DaikokuAction,
               .deleteAllLogically()
             _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAllLogically()
             _ <- env.dataStore.tenantRepo.save(tenant.copy(deleted = true))
+            _ <- env.dataStore.userRepo.updateMany(Json.obj("lastTenant" -> tenant.id.asJson), Json.obj("lastTenant" -> JsNull))
           } yield {
             Ok(tenant.copy(deleted = true).asJson)
           }

@@ -105,7 +105,7 @@ object TenantHelper {
           case Some(tenant) => f(tenant)
         }
       }
-      case TenantProvider.Hostname => {
+      case TenantProvider.Hostname =>
         val host = request.headers
           .get("Otoroshi-Proxied-Host")
           .orElse(request.headers.get("X-Forwarded-Host"))
@@ -133,14 +133,13 @@ object TenantHelper {
                                          tenant)
             case Some(tenant) => f(tenant)
           }
-      }
-      case TenantProvider.Local => {
+      case TenantProvider.Local =>
         // Try to find user id early, maybe we should cache it then
         val tenantIdF: Future[TenantId] =
           request.session.get("sessionId") match {
             case None =>
               FastFuture.successful(Tenant.Default)
-            case Some(sessionId) => {
+            case Some(sessionId) =>
               env.dataStore.userSessionRepo
                 .findOne(Json.obj("sessionId" -> sessionId))
                 .flatMap {
@@ -150,24 +149,24 @@ object TenantHelper {
                       if session.expires.isBefore(DateTime.now()) =>
                     FastFuture.successful(Tenant.Default)
                   case Some(session)
-                      if session.expires.isAfter(DateTime.now()) => {
+                      if session.expires.isAfter(DateTime.now()) =>
                     env.dataStore.userRepo
                       .findByIdNotDeleted(session.userId)
                       .flatMap {
                         case None =>
                           FastFuture.successful(Tenant.Default)
-                        case Some(user) => {
+                        case Some(user) =>
                           user.lastTenant match {
                             case None =>
                               FastFuture.successful(Tenant.Default)
                             case Some(tenantId) =>
-                              FastFuture.successful(tenantId)
+                              env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).map {
+                                case Some(tenant) => tenant.id
+                                case None => Tenant.Default
+                              }
                           }
-                        }
                       }
-                  }
                 }
-            }
           }
         tenantIdF
           .flatMap(env.dataStore.tenantRepo.findByIdNotDeleted(_))
@@ -187,7 +186,6 @@ object TenantHelper {
                                          tenant)
             case Some(tenant) => f(tenant)
           }
-      }
     }
   }
 }
