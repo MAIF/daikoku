@@ -142,7 +142,7 @@
   "Subscribe": "Souscrire",
   "team.selection.title": "Sélectionner une équipe pour souscrire",
   "team.selection.desc": "Vous êtes en train de souscrire à une api. Pour quelles équipes souhaitez-vous souscrire ?",
-  "teamapi.select.title": "Choisissez l'équipe qui peut voir votre clé d'api",
+  "teamapi.select.title": "Choisissez une équipe pour laquelle voir vos clés d'api",
   "free.without.quotas.desc": "Vous ne payez  rien et faites ce que vous voulez :)",
   "free.with.quotas.desc": "Vous ne payez rien mais vous n'avez que %s requêtes autorisées par mois",
   "quotas.with.limits.desc": "Vous payez %s %s et vous avez %s requêtes autorisées par mois",

@@ -116,7 +116,7 @@ export class ApiCartidge extends Component {
           {moment(api.lastUpdate).format(t('moment.date.format.short', this.props.currentLanguage))}
         </small>
 
-        {
+        {!!subscribingTeams.length &&
           <Can I={read} a={apikey}>
             <ActionWithTeamSelector
               title={t(
