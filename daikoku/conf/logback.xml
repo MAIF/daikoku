@@ -26,7 +26,6 @@
 
   <logger name="play" level="INFO" />
   <logger name="application" level="DEBUG" />
-  <logger name="MongoDataStore" level="DEBUG" />
   <logger name="daikoku-action-maybe-without-user" level="DEBUG" />
 
   <!-- Off these ones as they are annoying, and anyway we manage configuration ourselves -->

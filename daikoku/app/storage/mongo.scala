@@ -129,7 +129,7 @@ case class MongoTenantCapableConsumptionRepo(
 
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
-      json.validate[JsObject]
+      json.validate[JsObject](Reads.JsObjectReads)
 
     override def writes(o: JsObject): JsObject = o
   }
@@ -665,11 +665,11 @@ abstract class MongoRepo[Of, Id <: ValueType](
                                                reactiveMongoApi: ReactiveMongoApi)
   extends Repo[Of, Id] {
 
-  val logger = Logger(s"MongoTenantAwareRepo")
+  val logger = Logger(s"MongoRepo")
 
   implicit val jsObjectFormat = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
-      json.validate[JsObject]
+      json.validate[JsObject](Reads.JsObjectReads)
 
     override def writes(o: JsObject): JsObject = o
   }
@@ -1000,7 +1000,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
-      json.validate[JsObject]
+      json.validate[JsObject](Reads.JsObjectReads)
 
     override def writes(o: JsObject): JsObject = o
   }
@@ -1205,6 +1205,10 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         .one[JsObject](ReadPreference.primaryPreferred)
         .map(_.map(format.reads).collect {
           case JsSuccess(e, _) => e
+        })
+        .recover(e => {
+          logger.error("findOneError", e)
+          None
         })
   }
 
