@@ -167,6 +167,14 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
     return <Spinner />;
   }
 
+  const customStyles = {
+    control: base => ({
+      ...base,
+      height: 30,
+      minHeight: 30
+    })
+  };
+
   return (
     <div>
       <div>
@@ -195,7 +203,7 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
                           "--sort-desc": column.isSorted && column.isSortedDesc
                         })}>
                         <div {...column.getHeaderProps(column.getSortByToggleProps())}>{column.render("Header")}</div>
-                          <div>{column.canFilter ? column.render('Filter') : null}</div>
+                          <div className="my-2">{column.canFilter ? column.render('Filter') : null}</div>
                         </th>
                     ))}
                   </tr>
@@ -219,11 +227,21 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
             </tbody>
           </table>
 
-          <div className="d-flex flex-row justify-content-around align-items-baseline">
+          <div className="d-flex flex-row align-items-baseline justify-content-end mr-3">
+            <span>XXX results</span>
+            <span className="ml-4">Show :</span>
+            <Select
+                className="reactSelect col-1 mr-3"
+                value={{ label: pageSize, value: pageSize }}
+                options={[2, 10, 20, 50, 100].map(x => ({ label:  `${x}`, value: x }))} //todo: remove "2" option aafter tests
+              onChange={(e) => setPageSize(Number(e.value))}
+              classNamePrefix="reactSelect"
+                styles={customStyles}
+            />
             <Pagination
               containerClassName="col-9"
-              previousLabel={t('Previous', currentLanguage)}
-              nextLabel={t('Next', currentLanguage)}
+              previousLabel={t('<', currentLanguage)}
+              nextLabel={t('>', currentLanguage)}
               breakLabel={'...'}
               breakClassName={'break'}
               pageCount={pageOptions.length}
@@ -234,13 +252,7 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
               pageClassName={'page-selector'}
               activeClassName={'active'}
             />
-            <Select
-              className="reactSelect col-3"
-              value={{ label: pageSize, value: pageSize }}
-              options={[2, 10, 20, 50, 100].map(x => ({ label: `show ${x}`, value: x }))} //todo: remove "2" option aafter tests
-              onChange={(e) => setPageSize(Number(e.value))}
-              classNamePrefix="reactSelect"
-            />
+
             
           </div>
           

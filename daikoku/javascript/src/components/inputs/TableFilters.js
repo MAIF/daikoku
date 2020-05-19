@@ -15,13 +15,22 @@ export const DefaultColumnFilter = ({
   const count = preFilteredRows.length
 
   return (
-    <input
-      value={filterValue || ''}
-      onChange={e => {
-        setFilter(e.target.value || undefined) // Set undefined to remove the filter entirely
-      }}
-      placeholder={`Search ${count} records...`}
-    />
+      <div className="form-group pb-0">
+          <div className="input-group input-group-sm mb-2 pr-2">
+              <div className="input-group-prepend">
+                  <div className="input-group-text"><i className="fas fa-search" /></div>
+              </div>
+            <input
+              value={filterValue || ''}
+              onChange={e => {
+                setFilter(e.target.value || undefined) // Set undefined to remove the filter entirely
+              }}
+              placeholder={`Search`}
+              className="form-control form-control-sm mr-2"
+              style={{borderColor: '#9ab0c5'}}
+            />
+          </div>
+      </div>
   )
 }
 
