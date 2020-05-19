@@ -6,6 +6,7 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
+import { t, Translation } from '../../../locales';
 
 class TeamApiKeyConsumptionComponent extends Component {
   state = {
@@ -16,7 +17,7 @@ class TeamApiKeyConsumptionComponent extends Component {
     {
       type: 'LineChart',
       label: (data, max) => this.getLabelForDataIn(data, max),
-      title: 'Data In',
+      title: t('Data In', this.props.currentLanguage),
       formatter: (data) =>
         data.map((item) => ({
           date: moment(item.from).format('DD MMM.'),
@@ -27,7 +28,7 @@ class TeamApiKeyConsumptionComponent extends Component {
     },
     {
       type: 'Global',
-      label: 'Global informations',
+      label: t('Global informations', this.props.currentLanguage),
       formatter: (data) => (data.length ? data[data.length - 1].globalInformations : []),
     },
   ];
@@ -35,31 +36,24 @@ class TeamApiKeyConsumptionComponent extends Component {
   getLabelForDataIn = (datas, max) => {
     let hits = datas.length ? datas.reduce((acc, data) => acc + data.hits, 0) : 0;
 
-    if (!max) {
-      return (
-        <div>
-          <div>{'Usage'}</div>
-          <div>
-            {hits.prettify()} hit{hits > 1 ? 's' : ''}
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div>
-        <div>{'Usage'}</div>
         <div>
-          {hits.prettify()} hit{hits > 1 ? 's' : ''} / {max} max.
+          <Translation i18nkey="Usage" language={this.props.currentLanguage}>
+            Usage
+            </Translation>
         </div>
         <div>
+          {hits.prettify()} <Translation i18nkey="Hit" language={this.props.currentLanguage} isPlural={hits > 1}>hits</Translation>
+        </div>
+        {!!max && <div>
           <Progress
             status="normal"
             percent={(hits / max) * 100}
             default={'default'}
             showInfo={false}
           />
-        </div>
+        </div>}
       </div>
     );
   };
@@ -98,6 +92,7 @@ class TeamApiKeyConsumptionComponent extends Component {
                     ).then((c) => c.consumptions)
                   }
                   mappers={this.mappers}
+                  currentLanguage={this.props.currentLanguage}
                   forConsumer={true}
                 />
               </div>

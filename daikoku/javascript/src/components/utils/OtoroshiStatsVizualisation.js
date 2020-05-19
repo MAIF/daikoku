@@ -7,6 +7,7 @@ import Select from 'react-select';
 import _ from 'lodash';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Spinner } from './Spinner';
+import { t } from '../../locales';
 
 Number.prototype.prettify = function () {
   return this.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ');
@@ -39,47 +40,47 @@ class Period {
   };
 }
 
-const periods = {
+const periods = (currentLanguage) => ({
   today: new Period({
     from: moment().startOf('day'),
     to: () => moment().add(1, 'day').startOf('day'),
     unitTime: 'day',
-    label: 'Today',
+    label: t('Today', currentLanguage),
     value: 'TODAY',
   }),
   yesterday: new Period({
     from: moment().subtract(1, 'day').startOf('day'),
     to: () => moment().startOf('day'),
     unitTime: 'day',
-    label: 'Yesterday',
+    label: t('Yesterday', currentLanguage),
     value: 'YESTERDAY',
   }),
   last7days: new Period({
     from: moment().subtract(7, 'days').startOf('day'),
     to: () => moment(),
-    label: 'Last 7 days',
+    label: t('Last 7 days', currentLanguage),
     value: 'LAST7',
   }),
   last30days: new Period({
     from: moment().subtract(30, 'days').startOf('day'),
     to: () => moment(),
-    label: 'Last 30 days',
+    label: t('Last 30 days', currentLanguage),
     value: 'LAST30',
   }),
   billingPeriod: new Period({
     from: moment().startOf('month'),
     to: () => moment().endOf('month'),
     unitTime: 'month',
-    label: 'Billing period',
+    label: t('Billing period', currentLanguage),
     value: 'BILLING',
   }),
-};
+});
 
 export class OtoroshiStatsVizualization extends Component {
   state = {
     tab: 0,
     consumptions: null,
-    period: { ...periods.today },
+    period: { ...periods(this.props.currentLanguage).today },
     loading: true,
     error: false,
   };
@@ -170,6 +171,7 @@ export class OtoroshiStatsVizualization extends Component {
       case 'Global':
         return (
           <GlobalDataConsumption
+            currentLanguage={this.props.currentLanguage}
             data={formatter ? formatter(this.state.consumptions) : this.state.consumptions}
           />
         );
@@ -226,7 +228,7 @@ export class OtoroshiStatsVizualization extends Component {
             className="col col-sm-3 reactSelect period-select"
             value={{ value: this.state.period.value, label: this.state.period.label }}
             clearable={false}
-            options={Object.keys(periods).map((k) => periods[k])}
+            options={Object.values(periods(this.props.currentLanguage))}
             onChange={(period) => {
               this.setState({ period }, () => {
                 this.updateConsumption(period.from, period.to());
@@ -307,11 +309,11 @@ export class GlobalDataConsumption extends Component {
     const avgOverhead = data.avgOverhead ? data.avgOverhead.toFixed(3) : 0;
 
     return [
-      this.row(hits, ' hits'),
-      this.row(totalDataIn, ' in'),
-      this.row(totalDataOut, ' out'),
-      this.row(avgDuration, ' ms. average duration'),
-      this.row(avgOverhead, ' ms. average overhead'),
+      this.row(hits, ' ' + t('Hit', this.props.currentLanguage, data.hits > 1 )),
+      this.row(totalDataIn, ' ' + t('in', this.props.currentLanguage)),
+      this.row(totalDataOut, ' ' + t('out', this.props.currentLanguage)),
+      this.row(avgDuration, ' ' + t('ms. average duration', this.props.currentLanguage)),
+      this.row(avgOverhead, ' ' + t('ms. average overhead', this.props.currentLanguage)),
     ];
   }
 }

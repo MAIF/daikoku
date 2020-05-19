@@ -6,6 +6,7 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import { TeamBackOffice } from '../..';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
+import { t } from '../../../locales';
 
 class TeamPlanConsumptionComponent extends Component {
   state = {
@@ -17,9 +18,9 @@ class TeamPlanConsumptionComponent extends Component {
       type: 'LineChart',
       label: (data) => {
         const totalHits = data.reduce((acc, cons) => acc + cons.hits, 0);
-        return `Data In (${totalHits})`;
+        return t('data.in.plus.hits', this.props.currentLanguage, false, `Data In (${totalHits})`, totalHits);
       },
-      title: 'Data In',
+      title: t('Data In', this.props.currentLanguage),
       formatter: (data) =>
         data.reduce((acc, item) => {
           const date = moment(item.to).format('DD MMM.');
@@ -31,8 +32,8 @@ class TeamPlanConsumptionComponent extends Component {
     },
     {
       type: 'RoundChart',
-      label: 'Hits by apikeys',
-      title: 'Hits by apikey',
+      label: t('Hits by apikey', this.props.currentLanguage),
+      title: t('Hits by apikey', this.props.currentLanguage),
       formatter: (data) =>
         data.reduce((acc, item) => {
           const value = acc.find((a) => a.name === item.clientId) || { count: 0 };
@@ -49,7 +50,7 @@ class TeamPlanConsumptionComponent extends Component {
     },
     {
       type: 'Global',
-      label: 'Global informations',
+      label: t('Global informations', this.props.currentLanguage),
       formatter: (data) => this.sumGlobalInformations(data),
     },
   ];
@@ -121,6 +122,7 @@ class TeamPlanConsumptionComponent extends Component {
               )
             }
             mappers={this.mappers}
+            currentLanguage={this.props.currentLanguage}
           />
         </div>
       </TeamBackOffice>

@@ -16,15 +16,15 @@ export const getCurrencySymbol = (code) => {
 export const formatPlanType = (plan, language) => {
   switch (plan.type) {
     case 'FreeWithoutQuotas':
-      return t('FreeWithoutQuotas', language, false, 'Free without quotas');
+      return t('FreeWithoutQuotas', language);
     case 'FreeWithQuotas':
-      return t('FreeWithQuotas', language, false, 'Free with quotas');
+      return t('FreeWithQuotas', language);
     case 'QuotasWithLimits':
-      return t('QuotasWithLimits', language, false, 'Quotas only');
+      return t('QuotasWithLimits', language);
     case 'QuotasWithoutLimits':
-      return t('Quotas / pay per use', language, false, 'Quotas / pay per use');
+      return t('Quotas / pay per use', language);
     case 'PayPerUse':
-      return t('Pay per use', language, false, 'Pay per use');
+      return t('Pay per use', language);
   }
 };
 

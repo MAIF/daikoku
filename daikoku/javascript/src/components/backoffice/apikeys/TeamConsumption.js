@@ -5,13 +5,14 @@ import * as _ from 'lodash';
 import { OtoroshiStatsVizualization } from '../../utils';
 import { TeamBackOffice } from '../TeamBackOffice';
 import * as Services from '../../../services';
+import { t } from '../../../locales';
 
 class TeamConsumptionComponent extends Component {
   mappers = [
     {
       type: 'DoubleRoundChart',
-      label: 'Hits by api/plan',
-      title: 'Hits by api/plan',
+      label: t('Hits by api/plan', this.props.currentLanguage),
+      title: t('Hits by api/plan', this.props.currentLanguage),
       formatter: (data) =>
         _.sortBy(
           data.reduce((acc, item) => {
@@ -56,6 +57,7 @@ class TeamConsumptionComponent extends Component {
                 )
               }
               mappers={this.mappers}
+              currentLanguage={this.props.currentLanguage}
             />
           </div>
         </div>

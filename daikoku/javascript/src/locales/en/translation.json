@@ -652,5 +652,24 @@
     "Hours": "Hours",
     "Days": "Days",
     "Months": "Months",
-    "Years": "Years"
+    "Years": "Years",
+    "Hits by api/plan": "Hits by api/plan",
+    "Today": "Today",
+    "Yesterday": "Yesterday",
+    "Last 30 days": "Last 30 days",
+    "Last 7 days": "Last 7 days",
+    "Billing period": "Billing period",
+    "Usage": "Usage",
+    "Global informations": "Global informations",
+    "Hit": {
+        "s": "Hit",
+        "p": "Hits"
+    },
+    "data.in.plus.hits": "Data In (%s)",
+    "Data in": "Data in",
+    "Hits by apikey": "Hits by apikey",
+    "in": "in",
+    "out": "out",
+    "ms. average duration": "ms. average duration",
+    "ms. average overhead": "ms. average overhead"
 }

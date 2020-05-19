@@ -8,7 +8,8 @@ import * as Services from '../../../services';
 
 import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
 import { currencies } from '../../../services/currencies';
-import { GlobalDataConsumption, Spinner, Can, read, stat } from '../../utils';
+import { GlobalDataConsumption, Spinner, Can, read, stat, formatPlanType } from '../../utils';
+import { t } from '../../../locales';
 
 const Currency = ({ plan }) => {
   const cur = _.find(currencies, (c) => c.code === plan.currency.code);
@@ -44,9 +45,9 @@ class TeamApiConsumptionComponent extends Component {
       type: 'LineChart',
       label: (data) => {
         const totalHits = data.reduce((acc, cons) => acc + cons.hits, 0);
-        return `Data In (${totalHits})`;
+        return t("data.in.plus.hits", this.props.currentLanguage, false, `Data In (${totalHits})`, totalHits);
       },
-      title: 'Data In',
+      title: t('Data In', this.props.currentLanguage),
       formatter: (data) =>
         data.reduce((acc, item) => {
           const date = moment(item.to).format('DD MMM.');
@@ -58,8 +59,8 @@ class TeamApiConsumptionComponent extends Component {
     },
     {
       type: 'RoundChart',
-      label: 'Hits by apikeys',
-      title: 'Hits by apikey',
+      label: t('Hits by apikey', this.props.currentLanguage),
+      title: t('Hits by apikey', this.props.currentLanguage),
       formatter: (data) =>
         data.reduce((acc, item) => {
           const value = acc.find((a) => a.clientId === item.clientId) || { count: 0 };
@@ -78,11 +79,11 @@ class TeamApiConsumptionComponent extends Component {
     },
     {
       type: 'Global',
-      label: 'Global informations',
+      label: t('Global informations', this.props.currentLanguage),
       formatter: (data) => sumGlobalInformations(data),
     },
     {
-      label: 'Plans',
+      label: t('Plans', this.props.currentLanguage, true),
       formatter: (data) => (
         <div className="row">
           {this.state.api.possibleUsagePlans.map((plan) => (
@@ -99,6 +100,7 @@ class TeamApiConsumptionComponent extends Component {
                     `/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${this.state.api._humanReadableId}/plan/${plan._id}`
                   )
                 }
+                currentLanguage={this.props.currentLanguage}
               />
             </div>
           ))}
@@ -140,6 +142,7 @@ class TeamApiConsumptionComponent extends Component {
                         to.valueOf()
                       )
                     }
+                    currentLanguage={this.props.currentLanguage}
                     mappers={this.mappers}
                   />
                 </div>
@@ -228,11 +231,7 @@ class PlanLightConsumption extends Component {
         </div>
         <div className="card-body">
           {customName && <h3>{customName}</h3>}
-          {!customName && type === 'FreeWithoutQuotas' && <h3>Free without quotas</h3>}
-          {!customName && type === 'FreeWithQuotas' && <h3>Free with quotas</h3>}
-          {!customName && type === 'QuotasWithLimits' && <h3>Quotas only</h3>}
-          {!customName && type === 'QuotasWithoutLimits' && <h3>Quotas / pay per use</h3>}
-          {!customName && type === 'PayPerUse' && <h3>Pay per use</h3>}
+          {!customName && <h3>{formatPlanType(plan, this.props.currentLanguage)}</h3>}
           <p className="card-text text-justify">
             {customDescription && <span>{customDescription}</span>}
             {!customDescription && type === 'FreeWithoutQuotas' && this.renderFreeWithoutQuotas()}
