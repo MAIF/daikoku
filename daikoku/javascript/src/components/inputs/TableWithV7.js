@@ -195,13 +195,13 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
         <div className="rrow section">
           <table {...getTableProps()} className="reactTableV7">
             <thead>
-              {headerGroups.map(headerGroup => (
-                  <tr {...headerGroup.getHeaderGroupProps()}>
-                    {headerGroup.headers.map(column => (
-                        <th className={classNames({
+              {headerGroups.map((headerGroup, idx) => (
+                  <tr key={`thead-tr-${idx}`} {...headerGroup.getHeaderGroupProps()}>
+                    {headerGroup.headers.map((column, idx) => (
+                        <th key={`thead-th-${idx}`} className={classNames({
                           "--sort-asc": column.isSorted && !column.isSortedDesc,
                           "--sort-desc": column.isSorted && column.isSortedDesc
-                        })}>
+                        })} style={column.style}>
                         <div {...column.getHeaderProps(column.getSortByToggleProps())}>{column.render("Header")}</div>
                           <div className="my-2">{column.canFilter ? column.render('Filter') : null}</div>
                         </th>
@@ -228,14 +228,13 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
           </table>
 
           <div className="d-flex flex-row align-items-baseline justify-content-end mr-3">
-            <span>XXX results</span>
-            <span className="ml-4">Show :</span>
+            <span>{rows.length} results</span>
             <Select
-                className="reactSelect col-1 mr-3"
-                value={{ label: pageSize, value: pageSize }}
-                options={[2, 10, 20, 50, 100].map(x => ({ label:  `${x}`, value: x }))} //todo: remove "2" option aafter tests
-              onChange={(e) => setPageSize(Number(e.value))}
-              classNamePrefix="reactSelect"
+                className="reactSelect col-2 mr-3"
+                value={{ label: `Show ${pageSize}`, value: pageSize }}
+                options={[2, 10, 20, 50, 100].map(x => ({ label:  `Show ${x}`, value: x }))} //todo: remove "2" option aafter tests
+                onChange={(e) => setPageSize(Number(e.value))}
+                classNamePrefix="reactSelect"
                 styles={customStyles}
             />
             <Pagination
