@@ -46,6 +46,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
             .getOrElse(plan.typeName)
             .urlPathSegmentSanitized
         }-${team.humanReadableId}-${System.currentTimeMillis()}"
+      val integrationToken =  IdGenerator.token(64)
       val apiSubscription = ApiSubscription(
         id = ApiSubscriptionId(BSONObjectID.generate().stringify),
         tenant = tenant.id,
@@ -57,7 +58,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
         by = user.id,
         customName = None,
         rotation = plan.autoRotation.map(rotation => ApiSubscriptionRotation(enabled = rotation)),
-        integrationToken = IdGenerator.token(64)
+        integrationToken = integrationToken
       )
       val ctx = Map(
         "user.id" -> user.id.value,
@@ -104,7 +105,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
           "daikoku_created_with" -> api.name,
           "daikoku_created_for_team_id" -> team.id.value,
           "daikoku_created_for_team" -> team.name,
-          "daikoku_created_on_tenant" -> tenant.id.value
+          "daikoku_created_on_tenant" -> tenant.id.value,
+          "daikoku_integration_token" -> integrationToken
         ) ++ plan.otoroshiTarget
           .map(_.processedMetadata(ctx))
           .getOrElse(Map.empty[String, String]),

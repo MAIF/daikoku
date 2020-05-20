@@ -320,10 +320,9 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                             .map {
                                               case (key, value) =>
                                                 (key,
-                                                 OtoroshiTarget
-                                                   .processValue(value, ctx))
-                                            }
-                                            .map(_._2)
+                                                  OtoroshiTarget
+                                                    .processValue(value, ctx))
+                                            }.values
                                             .toSeq
                                         val newTags
                                           : Seq[String] = newDaikokuTags ++ apk.tags
@@ -348,7 +347,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                             key.startsWith(prefix)
                                         }
                                         val newMeta
-                                          : Map[String, String] = apk.metadata ++ allDaikokuMeta
+                                          : Map[String, String] = (apk.metadata ++ allDaikokuMeta ++ Map("daikoku_integration_token" -> subscription.integrationToken))
                                           .map {
                                             case (key, value)
                                                 if key.startsWith(prefix) =>
@@ -359,7 +358,6 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                               (key, value) // should never happens
                                           }
 
-                                        Logger.debug(plan.maxRequestPerSecond.getOrElse(apk.throttlingQuota).toString)
                                         val newApk = apk.copy(
                                           tags = newTags,
                                           metadata = newMeta,
