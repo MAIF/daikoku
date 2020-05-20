@@ -326,7 +326,7 @@ const ApiKeyCard = ({
   };
 
   const abort = () => {
-    setRotation(subscription.rotation.enabled);
+    setRotation(Option(subscription.rotation).map(rotation => rotation.enabled).getOrElse(false));
     setSettingMode(false);
   };
 
