@@ -178,21 +178,48 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
   return (
     <div>
       <div>
-        <div className="row" style={{ marginBottom: 10 }}>
-          <div className="col-md-12">
-            <button
-              type="button"
-              className="btn btn-sm btn-access-negative float-right"
-              title={t('Reload the table content', currentLanguage)}
-              onClick={update}>
-              <span className="fas fa-sync-alt" />
-            </button>
-            {injectTopBar && (
-              <div style={{ fontSize: 14 }}>{injectTopBar()}</div>
-            )}
-          </div>
-        </div>
+
         <div className="rrow section">
+          <div className="row" style={{ marginBottom: 10 }}>
+            <div className="col-md-12">
+              <div className="d-flex flex-row align-items-baseline justify-content-end mr-3">
+                <span>{rows.length} Results</span>
+                <Select
+                    className="reactSelect reactSelect-pagination col-2 ml-3 mr-3"
+                    value={{ label: `Show ${pageSize}`, value: pageSize }}
+                    options={[2, 10, 20, 50, 100].map(x => ({ label:  `Show ${x}`, value: x }))} //todo: remove "2" option aafter tests
+                    onChange={(e) => setPageSize(Number(e.value))}
+                    classNamePrefix="reactSelect"
+                    styles={customStyles}
+                />
+                <Pagination
+                    containerClassName="col-9"
+                    previousLabel={t('<', currentLanguage)}
+                    nextLabel={t('>', currentLanguage)}
+                    breakLabel={'...'}
+                    breakClassName={'break'}
+                    pageCount={pageOptions.length}
+                    marginPagesDisplayed={1}
+                    pageRangeDisplayed={5}
+                    onPageChange={({ selected }) => gotoPage(selected)}
+                    containerClassName={'pagination'}
+                    pageClassName={'page-selector'}
+                    activeClassName={'active'}
+                />
+                <button
+                    type="button"
+                    className="ml-3 btn btn-sm btn-access-negative float-right"
+                    title={t('Reload the table content', currentLanguage)}
+                    onClick={update}>
+                  <span className="fas fa-sync-alt" />
+                </button>
+                {injectTopBar && (
+                    <div style={{ fontSize: 14 }}>{injectTopBar()}</div>
+                )}
+
+              </div>
+            </div>
+          </div>
           <table {...getTableProps()} className="reactTableV7">
             <thead>
               {headerGroups.map((headerGroup, idx) => (
@@ -228,9 +255,9 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
           </table>
 
           <div className="d-flex flex-row align-items-baseline justify-content-end mr-3">
-            <span>{rows.length} results</span>
+            <span>{rows.length} Results</span>
             <Select
-                className="reactSelect col-2 mr-3"
+                className="reactSelect reactSelect-pagination col-2 ml-3 mr-3"
                 value={{ label: `Show ${pageSize}`, value: pageSize }}
                 options={[2, 10, 20, 50, 100].map(x => ({ label:  `Show ${x}`, value: x }))} //todo: remove "2" option aafter tests
                 onChange={(e) => setPageSize(Number(e.value))}
@@ -252,6 +279,16 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
               activeClassName={'active'}
             />
 
+            <button
+                type="button"
+                className="ml-3 btn btn-sm btn-access-negative float-right"
+                title={t('Reload the table content', currentLanguage)}
+                onClick={update}>
+              <span className="fas fa-sync-alt" />
+            </button>
+            {injectTopBar && (
+                <div style={{ fontSize: 14 }}>{injectTopBar()}</div>
+            )}
             
           </div>
           

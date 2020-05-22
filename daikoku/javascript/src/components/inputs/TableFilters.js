@@ -1,5 +1,5 @@
 import React from 'react';
-import { XSquare } from 'react-feather'
+import { Sliders } from 'react-feather'
 
 import { SwitchButton } from './Switch'
 
@@ -50,7 +50,9 @@ export const BooleanColumnFilter = ({
         large
         noText
       />
-      {filterValue !== undefined && <XSquare style={{ color: 'red' }} onClick={() => setFilter(undefined)} />}
+      {filterValue !== undefined && <span className="mt-2 btn btn-xs btn-danger-negative table-filter-suppress" >
+                                        <Sliders onClick={() => setFilter(undefined)} />
+                                    </span>}
     </>
   )
 }

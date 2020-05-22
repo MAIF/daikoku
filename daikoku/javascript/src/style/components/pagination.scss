@@ -5,15 +5,15 @@
   list-style-type: none;
   justify-content: center;
   align-items: center;
-  margin-top: 50px;
+  margin-top: 20px;
 
   li, li:not(.next,.previous) a {
     color: $pagination-text-color;
   }
 
   li.page-selector {
-    min-width: 36px;
-    height: 36px;
+    min-width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -49,8 +49,8 @@
   li.next, li.previous {
     padding: 0.5rem;
     border: 1px solid $pagination-border-color;
-    min-width: 36px;
-    height: 36px;
+    min-width: 30px;
+        height: 30px;
     cursor: pointer;
     display: flex;
     align-items: center;
