@@ -8,7 +8,7 @@ import Select from 'react-select';
 
 import { t } from '../../locales';
 import { Spinner } from '../utils';
-import {fuzzyTextFilterFn, DefaultColumnFilter} from './'
+import { fuzzyTextFilterFn, DefaultColumnFilter } from './'
 
 export function useForceUpdate() {
   const [, setTick] = useState(0);
@@ -108,14 +108,15 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
       defaultColumn,
       filterTypes,
       initialState: {
-        pageSize: 2,
+        pageSize: 10,
         pageIndex: 0,
         sortBy: useMemo(() => [
           {
             id: defaultSort || columns[0].title,
             desc: defaultSortDesc || false,
           },
-        ], [])}
+        ], [])
+      }
     },
     useFilters,
     useSortBy,
@@ -175,6 +176,43 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
     })
   };
 
+  const tablePagination = <div className="d-flex flex-row align-items-baseline justify-content-end mr-3">
+    <span>{rows.length} Results</span>
+    <Select
+      className="reactSelect reactSelect-pagination col-2 ml-3 mr-3"
+      value={{ label: `Show ${pageSize}`, value: pageSize }}
+      options={[10, 20, 50, 100].map(x => ({ label: `Show ${x}`, value: x }))}
+      onChange={(e) => setPageSize(Number(e.value))}
+      classNamePrefix="reactSelect"
+      styles={customStyles}
+    />
+    <Pagination
+      containerClassName="col-9"
+      previousLabel={t('<', currentLanguage)}
+      nextLabel={t('>', currentLanguage)}
+      breakLabel={'...'}
+      breakClassName={'break'}
+      pageCount={pageOptions.length}
+      marginPagesDisplayed={1}
+      pageRangeDisplayed={5}
+      onPageChange={({ selected }) => gotoPage(selected)}
+      containerClassName={'pagination'}
+      pageClassName={'page-selector'}
+      activeClassName={'active'}
+    />
+    <button
+      type="button"
+      className="ml-3 btn btn-sm btn-access-negative float-right"
+      title={t('Reload the table content', currentLanguage)}
+      onClick={update}>
+      <span className="fas fa-sync-alt" />
+    </button>
+    {injectTopBar && (
+      <div style={{ fontSize: 14 }}>{injectTopBar()}</div>
+    )}
+
+  </div>
+
   return (
     <div>
       <div>
@@ -182,58 +220,23 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
         <div className="rrow section">
           <div className="row" style={{ marginBottom: 10 }}>
             <div className="col-md-12">
-              <div className="d-flex flex-row align-items-baseline justify-content-end mr-3">
-                <span>{rows.length} Results</span>
-                <Select
-                    className="reactSelect reactSelect-pagination col-2 ml-3 mr-3"
-                    value={{ label: `Show ${pageSize}`, value: pageSize }}
-                    options={[2, 10, 20, 50, 100].map(x => ({ label:  `Show ${x}`, value: x }))} //todo: remove "2" option aafter tests
-                    onChange={(e) => setPageSize(Number(e.value))}
-                    classNamePrefix="reactSelect"
-                    styles={customStyles}
-                />
-                <Pagination
-                    containerClassName="col-9"
-                    previousLabel={t('<', currentLanguage)}
-                    nextLabel={t('>', currentLanguage)}
-                    breakLabel={'...'}
-                    breakClassName={'break'}
-                    pageCount={pageOptions.length}
-                    marginPagesDisplayed={1}
-                    pageRangeDisplayed={5}
-                    onPageChange={({ selected }) => gotoPage(selected)}
-                    containerClassName={'pagination'}
-                    pageClassName={'page-selector'}
-                    activeClassName={'active'}
-                />
-                <button
-                    type="button"
-                    className="ml-3 btn btn-sm btn-access-negative float-right"
-                    title={t('Reload the table content', currentLanguage)}
-                    onClick={update}>
-                  <span className="fas fa-sync-alt" />
-                </button>
-                {injectTopBar && (
-                    <div style={{ fontSize: 14 }}>{injectTopBar()}</div>
-                )}
-
-              </div>
+              {tablePagination}
             </div>
           </div>
           <table {...getTableProps()} className="reactTableV7">
             <thead>
               {headerGroups.map((headerGroup, idx) => (
-                  <tr key={`thead-tr-${idx}`} {...headerGroup.getHeaderGroupProps()}>
-                    {headerGroup.headers.map((column, idx) => (
-                        <th key={`thead-th-${idx}`} className={classNames({
-                          "--sort-asc": column.isSorted && !column.isSortedDesc,
-                          "--sort-desc": column.isSorted && column.isSortedDesc
-                        })} style={column.style}>
-                        <div {...column.getHeaderProps(column.getSortByToggleProps())}>{column.render("Header")}</div>
-                          <div className="my-2">{column.canFilter ? column.render('Filter') : null}</div>
-                        </th>
-                    ))}
-                  </tr>
+                <tr key={`thead-tr-${idx}`} {...headerGroup.getHeaderGroupProps()}>
+                  {headerGroup.headers.map((column, idx) => (
+                    <th key={`thead-th-${idx}`} className={classNames({
+                      "--sort-asc": column.isSorted && !column.isSortedDesc,
+                      "--sort-desc": column.isSorted && column.isSortedDesc
+                    })} style={column.style}>
+                      <div {...column.getHeaderProps(column.getSortByToggleProps())}>{column.render("Header")}</div>
+                      <div className="my-2">{column.canFilter ? column.render('Filter') : null}</div>
+                    </th>
+                  ))}
+                </tr>
               ))}
             </thead>
             <tbody {...getTableBodyProps()}>
@@ -253,48 +256,10 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
               })}
             </tbody>
           </table>
-
-          <div className="d-flex flex-row align-items-baseline justify-content-end mr-3">
-            <span>{rows.length} Results</span>
-            <Select
-                className="reactSelect reactSelect-pagination col-2 ml-3 mr-3"
-                value={{ label: `Show ${pageSize}`, value: pageSize }}
-                options={[2, 10, 20, 50, 100].map(x => ({ label:  `Show ${x}`, value: x }))} //todo: remove "2" option aafter tests
-                onChange={(e) => setPageSize(Number(e.value))}
-                classNamePrefix="reactSelect"
-                styles={customStyles}
-            />
-            <Pagination
-              containerClassName="col-9"
-              previousLabel={t('<', currentLanguage)}
-              nextLabel={t('>', currentLanguage)}
-              breakLabel={'...'}
-              breakClassName={'break'}
-              pageCount={pageOptions.length}
-              marginPagesDisplayed={1}
-              pageRangeDisplayed={5}
-              onPageChange={({ selected }) => gotoPage(selected)}
-              containerClassName={'pagination'}
-              pageClassName={'page-selector'}
-              activeClassName={'active'}
-            />
-
-            <button
-                type="button"
-                className="ml-3 btn btn-sm btn-access-negative float-right"
-                title={t('Reload the table content', currentLanguage)}
-                onClick={update}>
-              <span className="fas fa-sync-alt" />
-            </button>
-            {injectTopBar && (
-                <div style={{ fontSize: 14 }}>{injectTopBar()}</div>
-            )}
-            
-          </div>
-          
-        </div>
+          {tablePagination}
         </div>
       </div>
+    </div>
   );
 };
 
