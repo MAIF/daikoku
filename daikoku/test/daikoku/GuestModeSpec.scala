@@ -9,23 +9,12 @@ import org.scalatestplus.play.PlaySpec
 import play.api.Configuration
 import play.api.libs.json.JsArray
 
-class GuestModeSpec(configurationSpec: => Configuration)
+class GuestModeSpec()
   extends PlaySpec
     with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfterEach {
-
-  override def getConfiguration(configuration: Configuration): Configuration =
-    configuration withFallback configurationSpec withFallback Configuration(
-      ConfigFactory.parseString(
-        s"""
-									  |{
-									  |  http.port=$port
-									  |  play.server.http.port=$port
-									  |}
-     """.stripMargin).resolve()
-    )
 
   "A guest user" can {
     "access to team list" in {

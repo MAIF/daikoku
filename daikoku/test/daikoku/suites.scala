@@ -9,8 +9,6 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import com.auth0.jwt.algorithms.Algorithm
 import com.themillhousegroup.scoup.Scoup
-import com.typesafe.config.ConfigFactory
-import daikoku.ConsumptionControllerSpec
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
@@ -25,7 +23,7 @@ import org.scalatest.{BeforeAndAfterAll, Suite, TestSuite}
 import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
-import play.api.{ApplicationLoader, BuiltInComponents, Configuration, Logger}
+import play.api.{Application, BuiltInComponents, Logger}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration._
@@ -35,80 +33,33 @@ import scala.util.{Failure, Success, Try}
 
 class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
 
-  val defaultTestConfig = Configuration(
-    ConfigFactory
-      .parseString(s"""
-       |{
-       |  daikoku.tenants.provider = "hostname"
-       |  mongodb {
-       |    # uri = "mongodb://localhost:27017/daikoku-tests-${System
-                        .currentTimeMillis()}"
-       |    uri = "mongodb://localhost:27017/daikoku-tests"
-       |  }
-       |}
-     """.stripMargin)
-      .resolve())
-
-  def getSuites(): Seq[Suite] = {
-    Seq(
-      new BasicUsageSpec(defaultTestConfig),
-      new ApiControllerSpec(defaultTestConfig),
-      new TeamControllerSpec(defaultTestConfig),
-      new UserControllerSpec(defaultTestConfig),
-      new NotificationControllerSpec(defaultTestConfig),
-      new ConsumptionControllerSpec(defaultTestConfig),
-      new TenantControllerSpec(defaultTestConfig),
-      new GuestModeSpec(defaultTestConfig)
-    )
-  }
-
   override protected def beforeAll(): Unit = {}
 
   override protected def afterAll(): Unit = {}
 
-  override val nestedSuites
-    : collection.immutable.IndexedSeq[Suite] = Vector.empty ++ getSuites()
 
   override def toString: String = thisSuite.toString
 }
 
 object utils {
-
-  trait AddConfiguration {
-    def getConfiguration(configuration: Configuration): Configuration
-  }
-
-  class DaikokuTestComponentsInstances(context: ApplicationLoader.Context,
-                                       conf: Configuration => Configuration)
-      extends DaikokuComponentsInstances(context) {
-    override def configuration = conf(super.configuration)
-  }
-
   trait OneServerPerSuiteWithMyComponents
       extends OneServerPerSuiteWithComponents
-      with ScalaFutures
-      with AddConfiguration {
+      with ScalaFutures {
     this: TestSuite =>
 
-    val daikokuComponents = {
+    lazy val daikokuComponents = {
       val components =
-        new DaikokuTestComponentsInstances(context, getConfiguration)
+        new DaikokuComponentsInstances(context)
       println(s"Using env ${components.env}") // WARNING: important to keep, needed to switch env between suites
       components
     }
 
     override def components: BuiltInComponents = daikokuComponents
-  }
 
-  //trait OneServerPerTestWithMyComponents extends OneServerPerTestWithComponents with ScalaFutures with AddConfiguration {
-  //  this: TestSuite =>
-  //  val daikokuComponents = {
-  //    val components = new DaikokuTestComponentsInstances(context, getConfiguration)
-  //    println(s"Using env ${components.env}") // WARNING: important to keep, needed to switch env between suites
-  //    components
-  //  }
-  //  override def components: BuiltInComponents = daikokuComponents
-  //}
+    override def fakeApplication(): Application = {
+      daikokuComponents.application
+    }
+  }
 
   trait DaikokuSpecHelper { suite: OneServerPerSuiteWithMyComponents =>
 

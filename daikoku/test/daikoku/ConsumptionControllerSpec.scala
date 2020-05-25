@@ -19,22 +19,12 @@ import play.api.libs.json.{JsArray, JsObject, Json}
 
 import scala.util.Random
 
-class ConsumptionControllerSpec(configurationSpec: => Configuration)
+class ConsumptionControllerSpec()
     extends PlaySpec
     with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfterEach {
-
-  override def getConfiguration(configuration: Configuration): Configuration =
-    configuration withFallback configurationSpec withFallback Configuration(
-      ConfigFactory.parseString(s"""
-									 |{
-									 |  http.port=$port
-									 |  play.server.http.port=$port
-									 |}
-     """.stripMargin).resolve()
-    )
 
   lazy val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
   override def beforeEach(): Unit = {

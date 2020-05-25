@@ -180,7 +180,7 @@ case class MongoTenantCapableConsumptionRepo(
             json =>
               col
                 .find(Json.obj("clientId" -> (json \ "_id").as[String],
-                  "from" -> (json \ "maxFrom").as[Long]),
+                  "from" -> (json \ "maxFrom" \ "$long").as[Long]),
                   None)
                 .one[JsObject](ReadPreference.primaryPreferred)
                 .map { results =>

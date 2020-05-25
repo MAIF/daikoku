@@ -11,21 +11,11 @@ import play.api.Configuration
 
 import scala.util.Random
 
-class UserControllerSpec(configurationSpec: => Configuration)
+class UserControllerSpec()
     extends PlaySpec
     with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience {
-
-  override def getConfiguration(configuration: Configuration) =
-    configuration withFallback configurationSpec withFallback Configuration(
-      ConfigFactory.parseString(s"""
-									 |{
-									 |  http.port=$port
-									 |  play.server.http.port=$port
-									 |}
-     """.stripMargin).resolve()
-    )
 
   "a daikoku admin" can {
     "list all tenant user" in {

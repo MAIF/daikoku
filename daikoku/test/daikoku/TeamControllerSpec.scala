@@ -12,21 +12,11 @@ import play.api.libs.json._
 
 import scala.util.Random
 
-class TeamControllerSpec(configurationSpec: => Configuration)
+class TeamControllerSpec()
     extends PlaySpec
     with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience {
-
-  override def getConfiguration(configuration: Configuration) =
-    configuration withFallback configurationSpec withFallback Configuration(
-      ConfigFactory.parseString(s"""
-									 |{
-									 |  http.port=$port
-									 |  play.server.http.port=$port
-									 |}
-     """.stripMargin).resolve()
-    )
 
   "a daikoku admin" can {
     "create, update or delete a team" in {

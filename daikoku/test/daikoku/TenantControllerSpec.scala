@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
-import fr.maif.otoroshi.daikoku.domain.{ApiId, ApiVisibility, ConsoleMailerSettings, DaikokuStyle, OtoroshiSettings, OtoroshiSettingsId, TeamId, TeamPermission, TeamType, Tenant, TenantId, UserWithPermission}
+import fr.maif.otoroshi.daikoku.domain.{ApiId, ApiVisibility, ConsoleMailerSettings, DaikokuStyle, OtoroshiSettings, OtoroshiSettingsId, TeamId, TeamPermission, TeamType, Tenant, TenantId, UserId, UserWithPermission}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
@@ -11,20 +11,11 @@ import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
 
-class TenantControllerSpec(configurationSpec: => Configuration)
+class TenantControllerSpec()
   extends PlaySpec
     with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience {
-  override def getConfiguration(configuration: Configuration) =
-    configuration withFallback configurationSpec withFallback Configuration(
-      ConfigFactory.parseString(s"""
-									 |{
-									 |  http.port=$port
-									 |  play.server.http.port=$port
-									 |}
-     """.stripMargin).resolve()
-    )
 
   "create a tenant" must {
     "create an admin team and an admin api" in {
@@ -67,10 +58,10 @@ class TenantControllerSpec(configurationSpec: => Configuration)
       val createdTenant = tryCreatedTenant.get
       val createdAdminApiId = createdTenant.adminApi
 
-      val sessionNewTenant = loginWithBlocking(daikokuAdmin, testTenant)
+      val sessionNewTenant = loginWithBlocking(daikokuAdmin, createdTenant)
       val respTeams =
         httpJsonCallBlocking(s"/api/me/teams")(
-          testTenant,
+          createdTenant,
           sessionNewTenant)
       val tryMyTeams =
         fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads(respTeams.json)
@@ -81,10 +72,9 @@ class TenantControllerSpec(configurationSpec: => Configuration)
       val adminTeam = myTeams.filter(_.`type` == TeamType.Admin).head
 
       adminTeam.`type` mustBe TeamType.Admin
-      //todo: c'est un peu faux il n'est plus membre de l'équipe d'admin :((
       val respAdminApi =
         httpJsonCallBlocking(s"/api/me/visible-apis/${createdAdminApiId.value}")(
-          testTenant,
+          createdTenant,
           sessionNewTenant)
       val tryAdminApi =
         fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(respAdminApi.json)
