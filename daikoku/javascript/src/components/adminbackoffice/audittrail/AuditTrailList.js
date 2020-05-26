@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Table } from '../../inputs';
+import { TableWithV7 } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
 import * as Services from '../../../services';
 import moment from 'moment';
@@ -17,53 +17,52 @@ export class AuditTrailList extends Component {
 
   columns = [
     {
-      title: 'Date',
-      content: (item) => item['@timestamp'],
-      style: { textAlign: 'center', width: 200, alignItems: 'center', display: 'flex' },
+      Header: 'Date',
+      accessor: (item) => item['@timestamp'],
+      style: { textAlign: 'left' },
       cell: (value) => {
         return moment(value).format('YYYY-MM-DD HH:mm:ss.SSS');
       },
     },
     {
-      title: 'Name',
-      style: { textAlign: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      content: (item) => item.user.name,
+      Header: 'Name',
+      style: { textAlign: 'left' },
+      accessor: (item) => item.user.name,
     },
     {
-      title: 'Impersonator',
-      style: { textAlign: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      content: (item) => (item.impersonator ? item.impersonator.name : ''),
+      Header: 'Impersonator',
+      style: { textAlign: 'left'},
+      accessor: (item) => (item.impersonator ? item.impersonator.name : ''),
     },
     {
-      title: 'Message',
-      style: {
-        alignItems: 'center',
-        display: 'flex',
-        wordBreak: 'break-all',
-        whiteSpace: 'initial',
+      Header: 'Message',
+      style: {  textAlign: 'left' },
+      accessor: (item) => item.message,
+    },
+    {
+      Header: 'Actions',
+      style: {  textAlign: 'center'},
+      disableSortBy: true,
+      disableFilters: true,
+      accessor: (item) => item._id,
+      Cell: ({ cell: { row: {original} } }) => {
+        const value=original;
+        return (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => {
+              window.alert(
+                <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
+                  {JSON.stringify(value, null, 2)}
+                </pre>,
+                'Event details'
+              );
+            }}>
+            Details
+          </button>
+        )
       },
-      content: (item) => item.message,
-    },
-    {
-      title: 'Actions',
-      style: { justifyContent: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      notFilterable: true,
-      content: (item) => item._id,
-      cell: (a, value) => (
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-primary"
-          onClick={() => {
-            window.alert(
-              <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
-                {JSON.stringify(value, null, 2)}
-              </pre>,
-              'Event details'
-            );
-          }}>
-          Details
-        </button>
-      ),
     },
   ];
 
@@ -164,7 +163,7 @@ export class AuditTrailList extends Component {
                   </div>
                 </div>
                 <div className="p-2">
-                  <Table
+                  <TableWithV7
                     selfUrl="audit"
                     defaultTitle="Audit trail"
                     defaultValue={() => ({})}

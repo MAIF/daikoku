@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid';
 import faker from 'faker';
 
 import * as Services from '../../../services';
-import { Table } from '../../inputs';
+import { TableWithV7 } from '../../inputs';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 import { t, Translation } from '../../../locales';
@@ -18,43 +18,46 @@ export class TenantOtoroshisComponent extends Component {
 
   columns = [
     {
-      title: t('Url', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (item) => item.url,
+      Header: t('Url', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (item) => item.url,
     },
     {
-      title: t('Host', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (item) => item.host,
+      Header: t('Host', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (item) => item.host,
     },
     {
-      title: t('Actions', this.props.currentLanguage),
-      style: { textAlign: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      notFilterable: true,
-      content: (item) => item._id,
-      cell: (a, otoroshi) => (
-        <div className="btn-group">
-          {this.isTenantAdmin() && (
-            <Link to={`/settings/otoroshis/${otoroshi._id}`}>
+      Header: t('Actions', this.props.currentLanguage),
+      style: { textAlign: 'center'},
+      disableSortBy: true,
+      disableFilters: true,
+      accessor: (item) => item._id,
+      Cell: ({ cell: { row: {original} } }) => {
+        const otoroshi = original;
+        return (
+          <div className="btn-group">
+            {this.isTenantAdmin() && (
+              <Link to={`/settings/otoroshis/${otoroshi._id}`}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  title={t('Edit this settings', this.props.currentLanguage)}>
+                  <i className="fas fa-edit" />
+                </button>
+              </Link>
+            )}
+            {this.isTenantAdmin() && (
               <button
                 type="button"
-                className="btn btn-sm btn-outline-primary"
-                title={t('Edit this settings', this.props.currentLanguage)}>
-                <i className="fas fa-edit" />
+                className="btn btn-sm btn-outline-danger"
+                title={t('Delete this settings', this.props.currentLanguage)}
+                onClick={() => this.delete(otoroshi._id)}>
+                <i className="fas fa-trash" />
               </button>
-            </Link>
-          )}
-          {this.isTenantAdmin() && (
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-danger"
-              title={t('Delete this settings', this.props.currentLanguage)}
-              onClick={() => this.delete(otoroshi._id)}>
-              <i className="fas fa-trash" />
-            </button>
-          )}
-        </div>
-      ),
+            )}
+          </div>
+        )},
     },
   ];
 
@@ -125,11 +128,12 @@ export class TenantOtoroshisComponent extends Component {
                 </a>
               </h1>
               <div className="section p-2">
-                <Table
+                <TableWithV7
                   currentLanguage={this.props.currentLanguage}
                   selfUrl="otoroshis"
                   defaultTitle="Otoroshi instances"
                   defaultValue={() => ({})}
+                  defaultSort="Url"
                   itemName="otoroshi"
                   columns={this.columns}
                   fetchItems={() => Services.allOtoroshis(this.props.tenant._id)}

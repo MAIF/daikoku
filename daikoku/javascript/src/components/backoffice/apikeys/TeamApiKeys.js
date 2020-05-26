@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
-import { Table } from '../../inputs';
+import { TableWithV7 } from '../../inputs';
 import { Can, read, apikey, isUserIsTeamAdmin } from '../../utils';
 import { t, Translation } from '../../../locales';
 
@@ -18,33 +18,38 @@ export class TeamApiKeysComponent extends Component {
 
   columns = [
     {
-      title: t('Api Name', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (api) => api.name,
+      Header: t('Api Name', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (api) => api.name,
     },
     {
-      title: t('Version', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (api) => api.currentVersion,
+      Header: t('Version', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (api) => api.currentVersion,
     },
     {
-      title: t('Actions', this.props.currentLanguage),
-      style: { textAlign: 'center', width: 150, alignItems: 'center', display: 'flex' },
-      notFilterable: true,
-      content: (item) => item._id,
-      cell: (a, api) =>
-        this.state.showApiKey && (
-          <div style={{ width: 100 }}>
-            <Link
-              to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}`}
-              className="btn btn-sm btn-access-negative">
-              <i className="fas fa-eye mr-1" />
-              <Translation i18nkey="Api keys" language={this.props.currentLanguage}>
-                Api keys
-              </Translation>
-            </Link>
-          </div>
-        ),
+      Header: t('Actions', this.props.currentLanguage),
+      style: { textAlign: 'center'},
+      disableSortBy: true,
+      disableFilters: true,
+      accessor: (item) => item._id,
+      Cell: ({ cell: { row: {original} } }) => {
+        const api = original;
+        return (
+            this.state.showApiKey && (
+                <div style={{width: 100}}>
+                  <Link
+                      to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}`}
+                      className="btn btn-sm btn-access-negative">
+                    <i className="fas fa-eye mr-1"/>
+                    <Translation i18nkey="Api keys" language={this.props.currentLanguage}>
+                      Api keys
+                    </Translation>
+                  </Link>
+                </div>
+            )
+        )
+      },
     },
   ];
 
@@ -86,11 +91,12 @@ export class TeamApiKeysComponent extends Component {
                 </Translation>
               </Link>
               <div className="section p-2">
-                <Table
+                <TableWithV7
                   currentLanguage={this.props.currentLanguage}
                   selfUrl="apikeys"
                   defaultTitle="Apikeys"
                   defaultValue={() => ({})}
+                  defaultSort="name"
                   itemName="apikey"
                   columns={this.columns}
                   fetchItems={() => Services.subscribedApis(this.props.currentTeam._id)}

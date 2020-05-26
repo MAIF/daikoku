@@ -6,48 +6,52 @@ import * as Services from '../../../services';
 
 import { t, Translation } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
-import { Table } from '../../inputs';
+import { TableWithV7 } from '../../inputs';
 import { Can, manage, daikoku } from '../../utils';
 
 class SessionListComponent extends Component {
   columns = [
     {
-      title: t('User', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (item) => item.userName + ' - ' + item.userEmail,
+      Header: t('User', this.props.currentLanguage),
+      style: { textAlign: 'left'},
+      accessor: (item) => item.userName + ' - ' + item.userEmail,
     },
     {
-      title: t('Impersonator', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (item) =>
+      Header: t('Impersonator', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (item) =>
         item.impersonatorId ? `${item.impersonatorName} - ${item.impersonatorEmail}` : '',
     },
     {
-      title: t('Created at', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (item) => moment(item.created).format('YYYY-MM-DD HH:mm:ss.SSS'),
+      Header: t('Created at', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (item) => moment(item.created).format('YYYY-MM-DD HH:mm:ss.SSS'),
     },
     {
-      title: t('Expires', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (item) => moment(item.expires).format('YYYY-MM-DD HH:mm:ss.SSS'),
+      Header: t('Expires', this.props.currentLanguage),
+      style: { textAlign: 'left'},
+      accessor: (item) => moment(item.expires).format('YYYY-MM-DD HH:mm:ss.SSS'),
     },
     {
-      title: t('Actions', this.props.currentLanguage),
-      style: { justifyContent: 'center', width: 150, alignItems: 'center', display: 'flex' },
-      notFilterable: true,
+      Header: t('Actions', this.props.currentLanguage),
+      style: { textAlign:'center' },
+      disableSortBy: true,
+      disableFilters: true,
       content: (item) => item._id,
-      cell: (a, session) => (
-        <div className="btn-group">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-danger"
-            title="Delete this session"
-            onClick={() => this.deleteSession(session)}>
-            <i className="fas fa-trash" />
-          </button>
-        </div>
-      ),
+      Cell: ({ cell: { row: {original} } }) => {
+        const session = original;
+        return (
+            <div className="btn-group">
+              <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  title="Delete this session"
+                  onClick={() => this.deleteSession(session)}>
+                <i className="fas fa-trash"/>
+              </button>
+            </div>
+        )
+      },
     },
   ];
 
@@ -107,7 +111,7 @@ class SessionListComponent extends Component {
                 </Translation>
               </h1>
               <div className="section p-2">
-                <Table
+                <TableWithV7
                   currentLanguage={this.props.currentLanguage}
                   selfUrl="sessions"
                   defaultTitle="User sessions"
