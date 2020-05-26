@@ -43,16 +43,16 @@ export const BooleanColumnFilter = ({
 }) => {
 
   return (
-    <>
+    <span className="d-flex justify-content-around">
       <SwitchButton
         onSwitch={enabled => setFilter(enabled)}
         checked={filterValue || false}
         large
         noText
       />
-      {filterValue !== undefined && <span className="mt-2 btn btn-xs btn-danger-negative table-filter-suppress" >
+      {filterValue !== undefined && <span className="btn btn-sm btn-danger-negative table-filter-suppress" >
                                         <Sliders onClick={() => setFilter(undefined)} />
                                     </span>}
-    </>
+    </span>
   )
 }
