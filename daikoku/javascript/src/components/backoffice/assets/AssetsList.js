@@ -4,7 +4,7 @@ import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { TeamBackOffice, UserBackOffice } from '..';
-import { Table } from '../../inputs';
+import { TableWithV7 } from '../../inputs';
 import { Can, manage, asset, tenant, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
 import { openWysywygModal } from '../../../core/modal';
@@ -251,24 +251,26 @@ class AssetsListComponent extends Component {
 
   columns = [
     {
-      title: t('Filename', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (item) => (item.meta && item.meta.filename ? item.meta.filename : '--'),
+      Header: t('Filename', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (item) => (item.meta && item.meta.filename ? item.meta.filename : '--'),
     },
     {
-      title: t('Title', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (item) => (item.meta && item.meta.title ? item.meta.title : '--'),
+      Header: t('Title', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (item) => (item.meta && item.meta.title ? item.meta.title : '--'),
     },
     {
-      title: t('Description', this.props.currentLanguage),
-      style: { alignItems: 'center', justifyContent: 'center', display: 'flex' },
-      content: (item) => (item.meta && item.meta.desc ? item.meta.desc : '--'),
+      Header: t('Description', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (item) => (item.meta && item.meta.desc ? item.meta.desc : '--'),
     },
     {
-      title: t('Thumbnail', this.props.currentLanguage),
-      style: { alignItems: 'center', justifyContent: 'center', display: 'flex', width: 86 },
-      content: (item) => {
+      Header: t('Thumbnail', this.props.currentLanguage),
+      style: { textAlign: 'left'},
+      accessor: (item) => item._id,
+      Cell: ({ cell: { row: { original } } }) => {
+        const item=original;
         const type = item.meta['content-type'];
         if (
           type === 'image/gif' ||
@@ -302,15 +304,20 @@ class AssetsListComponent extends Component {
       },
     },
     {
-      title: t('Content-Type', this.props.currentLanguage),
-      style: { alignItems: 'center', justifyContent: 'center', display: 'flex' },
-      content: (item) =>
+      Header: t('Content-Type', this.props.currentLanguage),
+      style: { textAlign: 'left' },
+      accessor: (item) =>
         item.meta && item.meta['content-type'] ? item.meta['content-type'] : '--',
     },
     {
-      title: t('Actions', this.props.currentLanguage),
-      style: { justifyContent: 'flex-end', alignItems: 'center', display: 'flex', width: 150 },
-      content: (item) => (
+      Header: t('Actions', this.props.currentLanguage),
+      disableSortBy: true,
+      disableFilters: true,
+      style: {textAlign: 'center' },
+      accessor: (item) => item._id,
+      Cell: ({ cell: { row: { original } } }) => {
+        const item = original;
+        return (
         <div className="btn-group">
           {item.contentType.startsWith('text') && (
             <button
@@ -346,7 +353,7 @@ class AssetsListComponent extends Component {
             <i className="fas fa-trash" />
           </button>
         </div>
-      ),
+      )},
     },
   ];
 
@@ -571,7 +578,7 @@ class AssetsListComponent extends Component {
           </div>
           <div className="row">
             <div className="col">
-              <Table
+              <TableWithV7
                 selfUrl="assets"
                 defaultTitle="Team assets"
                 defaultValue={() => ({})}
