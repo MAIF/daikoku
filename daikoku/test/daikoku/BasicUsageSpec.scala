@@ -19,21 +19,11 @@ import com.themillhousegroup.scoup.ScoupImplicits._
 
 import scala.concurrent.duration._
 
-class BasicUsageSpec(configurationSpec: => Configuration)
+class BasicUsageSpec()
     extends PlaySpec
     with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience {
-
-  override def getConfiguration(configuration: Configuration) =
-    configuration ++ configurationSpec ++ Configuration(
-      ConfigFactory.parseString(s"""
-     |{
-     |  http.port=$port
-     |  play.server.http.port=$port
-     |}
-     """.stripMargin).resolve()
-    )
 
   s"Daikoku basics" should {
 

@@ -15,7 +15,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
+import org.apache.kafka.clients.producer.{Callback, KafkaProducer, Producer, ProducerRecord, RecordMetadata}
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.config.internals.BrokerSecurityConfigs
 import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
@@ -516,7 +516,7 @@ class KafkaEventProducer(_env: Env,
 
   private lazy val producerSettings =
     KafkaSettings.producerSettings(_env, config)
-  private lazy val producer: KafkaProducer[Array[Byte], String] =
+  private lazy val producer: Producer[Array[Byte], String] =
     producerSettings.createKafkaProducer
 
   def publish(event: JsValue): Future[Done] = {
@@ -600,7 +600,7 @@ object ElasticTemplates {
 
 object ElasticWritesAnalytics {
 
-  import collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   val clusterInitializedCache = new ConcurrentHashMap[String, Boolean]()
 

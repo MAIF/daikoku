@@ -2,6 +2,7 @@ package fr.maif.otoroshi.daikoku.audit.config
 
 import play.api.libs.json._
 
+import scala.collection.MapView
 import scala.util.Try
 
 case class ElasticAnalyticsConfig(
@@ -17,17 +18,19 @@ case class ElasticAnalyticsConfig(
 
 object ElasticAnalyticsConfig {
   val format = new Format[ElasticAnalyticsConfig] {
-    override def writes(o: ElasticAnalyticsConfig) = Json.obj(
-      "clusterUri" -> o.clusterUri,
-      "index" -> o.index.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "type" -> o.`type`.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "user" -> o.user.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "password" -> o.password
-        .map(JsString.apply)
-        .getOrElse(JsNull)
-        .as[JsValue],
-      "headers" -> JsObject(o.headers.mapValues(JsString.apply)),
-    )
+    override def writes(o: ElasticAnalyticsConfig) = {
+      Json.obj(
+        "clusterUri" -> o.clusterUri,
+        "index" -> o.index.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "type" -> o.`type`.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "user" -> o.user.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "password" -> o.password
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "headers" -> JsObject(o.headers.view.mapValues(JsString.apply).toSeq),
+      )
+    }
     override def reads(json: JsValue) =
       Try {
         JsSuccess(

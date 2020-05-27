@@ -1,7 +1,7 @@
 package storage
 
 import akka.NotUsed
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
@@ -206,10 +206,10 @@ trait DataStore {
   def passwordResetRepo: PasswordResetRepo
   def accountCreationRepo: AccountCreationRepo
   def exportAsStream(pretty: Boolean)(implicit ec: ExecutionContext,
-                                      mat: ActorMaterializer,
+                                      mat: Materializer,
                                       env: Env): Source[ByteString, _]
   def importFromStream(source: Source[ByteString, _])(
       implicit ec: ExecutionContext,
-      mat: ActorMaterializer,
+      mat: Materializer,
       env: Env): Future[Unit]
 }

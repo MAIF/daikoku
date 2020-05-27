@@ -2,7 +2,7 @@ package storage
 
 import akka.NotUsed
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
 import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
@@ -11,13 +11,12 @@ import fr.maif.otoroshi.daikoku.env.Env
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.commands.{MultiBulkWriteResult, WriteResult}
+import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.Index
-import reactivemongo.api.{Cursor, QueryOpts, ReadConcern, ReadPreference}
+import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util._
 
 trait MongoTenantCapableRepo[A, Id <: ValueType]
   extends TenantCapableRepo[A, Id] {
@@ -128,16 +127,14 @@ case class MongoTenantCapableConsumptionRepo(
                                             ) extends MongoTenantCapableRepo[ApiKeyConsumption, MongoId]
   with ConsumptionRepo {
 
-  implicit val jsObjectFormat = new OFormat[JsObject] {
+  implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
-      json.validate[JsObject]
+      json.validate[JsObject](Reads.JsObjectReads)
 
     override def writes(o: JsObject): JsObject = o
   }
 
-  val jsObjectWrites: OWrites[JsObject] = new OWrites[JsObject] {
-    override def writes(o: JsObject): JsObject = o
-  }
+  val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
   override def tenantRepo(
                            tenant: TenantId): MongoTenantAwareRepo[ApiKeyConsumption, MongoId] =
@@ -160,9 +157,21 @@ case class MongoTenantCapableConsumptionRepo(
       import AggregationFramework.{Group, Match, MaxField}
 
       col
-        .aggregatorContext[JsObject](
-          Match(filter),
-          List(Group(JsString("$clientId"))("maxFrom" -> MaxField("from"))))
+          .aggregatorContext[JsObject](
+              firstOperator = Match(filter),
+              otherOperators = List(Group(JsString("$clientId"))("maxFrom" -> MaxField("from"))),
+              explain = false,
+              allowDiskUse = false,
+              bypassDocumentValidation = false,
+              readConcern = ReadConcern.Majority,
+              readPreference = ReadPreference.primaryPreferred,
+              writeConcern = WriteConcern.Default,
+              batchSize = None,
+              cursorOptions = CursorOptions.empty,
+              maxTime = None,
+              hint = None,
+              comment = None,
+              collation = None)
         .prepared
         .cursor
         .collect[List](-1, Cursor.FailOnError[List[JsObject]]())
@@ -171,7 +180,7 @@ case class MongoTenantCapableConsumptionRepo(
             json =>
               col
                 .find(Json.obj("clientId" -> (json \ "_id").as[String],
-                  "from" -> (json \ "maxFrom").as[Long]),
+                  "from" -> (json \ "maxFrom" \ "$long").as[Long]),
                   None)
                 .one[JsObject](ReadPreference.primaryPreferred)
                 .map { results =>
@@ -289,7 +298,7 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
 
   override def exportAsStream(pretty: Boolean)(
     implicit ec: ExecutionContext,
-    mat: ActorMaterializer,
+    mat: Materializer,
     env: Env): Source[ByteString, _] = {
     val collections: List[Repo[_, _]] = List(
       tenantRepo,
@@ -324,7 +333,7 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
 
   override def importFromStream(source: Source[ByteString, _])(
     implicit ec: ExecutionContext,
-    mat: ActorMaterializer,
+    mat: Materializer,
     env: Env): Future[Unit] = {
     for {
       _ <- env.dataStore.tenantRepo.deleteAll()
@@ -656,11 +665,11 @@ abstract class MongoRepo[Of, Id <: ValueType](
                                                reactiveMongoApi: ReactiveMongoApi)
   extends Repo[Of, Id] {
 
-  val logger = Logger(s"MongoTenantAwareRepo")
+  val logger = Logger(s"MongoRepo")
 
   implicit val jsObjectFormat = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
-      json.validate[JsObject]
+      json.validate[JsObject](Reads.JsObjectReads)
 
     override def writes(o: JsObject): JsObject = o
   }
@@ -671,7 +680,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   def collectionName: String
 
-  def indices: Seq[Index] = Seq.empty
+  def indices: Seq[Index.Default] = Seq.empty
 
   override def ensureIndices(implicit ec: ExecutionContext): Future[Unit] =
     for {
@@ -700,7 +709,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
     collection.flatMap { col =>
       logger.debug(s"$collectionName.find(${Json.prettyPrint(query)})")
       sort match {
-        case None => {
+        case None =>
           col
             .find(query, None)
             .cursor[JsObject](ReadPreference.primaryPreferred)
@@ -709,8 +718,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
             .map(_.map(format.reads).collect {
               case JsSuccess(e, _) => e
             })
-        }
-        case Some(s) => {
+        case Some(s) =>
           col
             .find(query, None)
             .sort(s)
@@ -720,7 +728,6 @@ abstract class MongoRepo[Of, Id <: ValueType](
             .map(_.map(format.reads).collect {
               case JsSuccess(e, _) => e
             })
-        }
       }
     }
 
@@ -735,7 +742,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
     Source
-      .fromFuture(collection.flatMap { col =>
+      .future(collection.flatMap { col =>
         logger.debug(s"$collectionName.streamAll({})")
         col
           .find(Json.obj(), None)
@@ -746,10 +753,9 @@ abstract class MongoRepo[Of, Id <: ValueType](
               .map(format.reads)
               .map {
                 case j@JsSuccess(_, _) => j
-                case j@JsError(_) => {
+                case j@JsError(_) =>
                   println(s"error: $j")
                   j
-                }
               }
               .collect {
                 case JsSuccess(e, _) => e
@@ -760,7 +766,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed] =
     Source
-      .fromFuture(collection.flatMap { col =>
+      .future(collection.flatMap { col =>
         logger.debug(s"$collectionName.streamAllRaw({})")
         col
           .find(Json.obj(), None)
@@ -785,7 +791,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
     implicit ec: ExecutionContext): Future[WriteResult] = collection.flatMap {
     col =>
       logger.debug(s"$collectionName.delete(${Json.prettyPrint(query)})")
-      col.delete(true).one(query)
+      col.delete(ordered = true).one(query)
   }
 
   override def save(value: Of)(
@@ -801,7 +807,18 @@ abstract class MongoRepo[Of, Id <: ValueType](
         s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
       )
       col
-        .findAndUpdate(query, value, upsert = true)
+        .findAndUpdate(
+          selector = query,
+          update = value,
+          fetchNewObject = false,
+          upsert = true,
+          sort = None,
+          fields = None,
+          bypassDocumentValidation = false,
+          writeConcern = WriteConcern.Default,
+          maxTime = None,
+          collation = None,
+          arrayFilters = Seq.empty)
         .map(_.lastError.isDefined)
     }
 
@@ -810,7 +827,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
     collection.flatMap { col =>
       val payloads = values.map(v => format.writes(v).as[JsObject])
       col
-        .insert[JsObject](true)(jsObjectWrites)
+        .insert(true)
         .many(payloads)
         .map(_.n)
     }
@@ -926,13 +943,13 @@ abstract class MongoRepo[Of, Id <: ValueType](
   ): Future[(Seq[Of], Long)] = collection.flatMap { col =>
     logger.debug(
       s"$collectionName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
-    val options = QueryOpts(skipN = page * pageSize, pageSize)
     for {
       count <- col.count(Some(query), None, 0, None, ReadConcern.Majority)
       queryRes <- col
         .find(query, None)
         .sort(Json.obj("_id" -> -1))
-        .options(options)
+        .skip(page * pageSize)
+        .batchSize(pageSize)
         .cursor[JsObject](ReadPreference.primaryPreferred)
         .collect[Seq](maxDocs = pageSize, Cursor.FailOnError[Seq[JsObject]]())
         .map(_.map(format.reads).collect {
@@ -979,22 +996,20 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
                                                           tenant: TenantId)
   extends Repo[Of, Id] {
 
-  val logger = Logger(s"MongoTenantAwareRepo")
+  val logger: Logger = Logger(s"MongoTenantAwareRepo")
 
-  implicit val jsObjectFormat = new OFormat[JsObject] {
+  implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
-      json.validate[JsObject]
+      json.validate[JsObject](Reads.JsObjectReads)
 
     override def writes(o: JsObject): JsObject = o
   }
 
-  val jsObjectWrites: OWrites[JsObject] = new OWrites[JsObject] {
-    override def writes(o: JsObject): JsObject = o
-  }
+  val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
   def collectionName: String
 
-  def indices: Seq[Index] = Seq.empty
+  def indices: Seq[Index.Default] = Seq.empty
 
   override def ensureIndices(implicit ec: ExecutionContext): Future[Unit] =
     for {
@@ -1085,7 +1100,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
           query ++ Json.obj("_tenant" -> tenant.value))
       })")
       sort match {
-        case None => {
+        case None =>
           col
             .find(query ++ Json.obj("_tenant" -> tenant.value), None)
             .cursor[JsObject](ReadPreference.primaryPreferred)
@@ -1095,17 +1110,15 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
               _.map(format.reads)
                 .map {
                   case j@JsSuccess(_, _) => j
-                  case j@JsError(_) => {
+                  case j@JsError(_) =>
                     println(s"error: $j")
                     j
-                  }
                 }
                 .collect {
                   case JsSuccess(e, _) => e
                 }
             )
-        }
-        case Some(s) => {
+        case Some(s) =>
           col
             .find(query ++ Json.obj("_tenant" -> tenant.value), None)
             .sort(s)
@@ -1116,16 +1129,14 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
               _.map(format.reads)
                 .map {
                   case j@JsSuccess(_, _) => j
-                  case j@JsError(_) => {
+                  case j@JsError(_) =>
                     println(s"error: $j")
                     j
-                  }
                 }
                 .collect {
                   case JsSuccess(e, _) => e
                 }
             )
-        }
       }
     }
 
@@ -1143,7 +1154,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
     Source
-      .fromFuture(collection.flatMap { col =>
+      .future(collection.flatMap { col =>
         logger.debug(s"$collectionName.streamAll(${
           Json.prettyPrint(
             Json.obj("_tenant" -> tenant.value))
@@ -1157,10 +1168,9 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
               .map(format.reads)
               .map {
                 case j@JsSuccess(_, _) => j
-                case j@JsError(_) => {
+                case j@JsError(_) =>
                   println(s"error: $j")
                   j
-                }
               }
               .collect {
                 case JsSuccess(e, _) => e
@@ -1171,7 +1181,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed] =
     Source
-      .fromFuture(collection.flatMap { col =>
+      .future(collection.flatMap { col =>
         logger.debug(s"$collectionName.streamAllRaw(${
           Json.prettyPrint(
             Json.obj("_tenant" -> tenant.value))
@@ -1196,6 +1206,10 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         .map(_.map(format.reads).collect {
           case JsSuccess(e, _) => e
         })
+        .recover(e => {
+          logger.error("findOneError", e)
+          None
+        })
   }
 
   override def delete(query: JsObject)(
@@ -1205,7 +1219,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         Json.prettyPrint(
           query ++ Json.obj("_tenant" -> tenant.value))
       })")
-      col.delete(true).one(query ++ Json.obj("_tenant" -> tenant.value))
+      col.delete(ordered = true).one(query ++ Json.obj("_tenant" -> tenant.value))
   }
 
   override def save(value: Of)(
@@ -1221,7 +1235,18 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
       )
       col
-        .findAndUpdate(query, value, upsert = true)
+        .findAndUpdate(
+          selector = query,
+          update = value,
+          fetchNewObject = false,
+          upsert = true,
+          sort = None,
+          fields = None,
+          bypassDocumentValidation = false,
+          writeConcern = WriteConcern.Default,
+          maxTime = None,
+          collation = None,
+          arrayFilters = Seq.empty)
         .map(_.lastError.isDefined)
     }
 
@@ -1231,7 +1256,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       val payloads = values.map(v =>
         format.writes(v).as[JsObject] ++ Json.obj("_tenant" -> tenant.value))
       col
-        .insert[JsObject](true)(jsObjectWrites)
+        .insert(true)
         .many(payloads)
         .map(_.n)
     }
@@ -1306,13 +1331,13 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   ): Future[(Seq[Of], Long)] = collection.flatMap { col =>
     logger.debug(
       s"$collectionName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
-    val options = QueryOpts(skipN = page * pageSize, pageSize)
     for {
       count <- col.count(Some(query), None, 0, None, ReadConcern.Majority)
       queryRes <- col
         .find(query, None)
         .sort(Json.obj("_id" -> -1))
-        .options(options)
+        .batchSize(pageSize)
+        .skip(page * pageSize)
         .cursor[JsObject](ReadPreference.primaryPreferred)
         .collect[Seq](maxDocs = pageSize, Cursor.FailOnError[Seq[JsObject]]())
         .map(_.map(format.reads).collect {

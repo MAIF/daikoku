@@ -5,7 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.{Done, NotUsed}
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.{ActorMaterializer, ClosedShape, FlowShape, SourceShape}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.stream.{ActorMaterializer, ClosedShape, FlowShape, Materializer, SourceShape}
 import akka.stream.scaladsl.{Broadcast, Flow, Framing, GraphDSL, JsonFraming, Merge, Partition, Sink, Source}
 import akka.util.ByteString
 import cats.data.EitherT
@@ -21,6 +22,7 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import jobs.ApiKeyStatsJob
 import org.joda.time.DateTime
@@ -377,7 +379,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                             r.header("Content-Length").map(_.toLong),
                             r.header("Content-Type"))
                         )
-                        .withHeaders(r.headers.mapValues(_.head).toSeq: _*)
+                        .withHeaders(r.headers.view.mapValues(_.head).toSeq: _*)
                         .as(page.contentType) //r.header("Content-Type").getOrElse(page.contentType))
                     }
                 }
@@ -549,13 +551,13 @@ class ApiController(DaikokuAction: DaikokuAction,
 
       val transformFlow = Flow[ApiSubscription]
         .map(_.apiKey.clientName)
-        .map(json => ByteString(json))
+        .map(json => ByteString(Json.stringify(JsString(json))))
         .intersperse(ByteString("["), ByteString(","), ByteString("]"))
         .watchTermination() { (mt, d) =>
           d.onComplete {
-            case Success(done) => Logger.debug(s"$done")
+            case Success(done) => AppLogger.debug(s"init subscirptions for tenant ${tenant.id.value} is $done")
             case Failure(exception) =>
-              Logger.error("Error processing stream", exception)
+              AppLogger.error("Error processing stream", exception)
           }
           mt
         }
@@ -614,7 +616,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     TenantAdminOnly(AuditTrailEvent(s"@{user.name} has init apis"))(ctx.tenant.id.value, ctx) { (_, _) => {
       val source = ctx.request.body
         .grouped(10)
-        .alsoTo(Sink.foreach(seq => Logger.debug(s"${seq.length} apis process")))
+        .alsoTo(Sink.foreach(seq => AppLogger.debug(s"${seq.length} apis process")))
         .flatMapConcat(seq => {
           Source(seq)
             .mapAsync(10) { api =>
@@ -628,9 +630,9 @@ class ApiController(DaikokuAction: DaikokuAction,
         .intersperse(ByteString("["), ByteString(","), ByteString("]"))
         .watchTermination() { (mt, d) =>
           d.onComplete {
-            case Success(done) => Logger.debug(s"$done")
+            case Success(done) => AppLogger.debug(s"$done")
             case Failure(exception) =>
-              Logger.error("Error processing stream", exception)
+              AppLogger.error("Error processing stream", exception)
           }
           mt
         }
@@ -1303,7 +1305,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def deleteApiOfTeam(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
-    implicit val mat: ActorMaterializer = env.defaultMaterializer
+    implicit val mat: Materializer = env.defaultMaterializer
 
     TeamApiEditorOnly(
       AuditTrailEvent(s"@{user.name} has delete api @{api.name} - @{api.id} of team @{team.name} - @{team.id}")
@@ -1629,7 +1631,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     })
 
   def deleteApiPlansSubscriptions(plans: Seq[UsagePlan], api: Api, tenant: Tenant, user: User): Future[Done] = {
-    implicit val mat: ActorMaterializer = env.defaultMaterializer
+    implicit val mat: Materializer = env.defaultMaterializer
 
     Source(plans.toList)
       .mapAsync(1)(plan =>
@@ -1640,7 +1642,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       .runWith(Sink.ignore)
       .recover {
         case e =>
-          Logger.error(s"Error while deleting api subscriptions", e)
+          AppLogger.error(s"Error while deleting api subscriptions", e)
           Done
       }
   }

@@ -4,21 +4,21 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader}
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.CannedAcl
 import akka.stream.alpakka.s3.scaladsl.S3
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.regions.AwsRegionProvider
 import fr.maif.otoroshi.daikoku.domain._
 import play.api.libs.json._
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
-import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 class BadFileContentFromContentType()
     extends RuntimeException("Bad file content")
@@ -58,7 +58,7 @@ case class S3Configuration(
 }
 
 object S3Configuration {
-  val format = new Format[S3Configuration] {
+  val format: Format[S3Configuration] = new Format[S3Configuration] {
     override def reads(json: JsValue): JsResult[S3Configuration] =
       Try {
         JsSuccess(
@@ -89,23 +89,25 @@ object S3Configuration {
 }
 
 class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
-                                                mat: ActorMaterializer) {
+                                                mat: Materializer) {
 
   private def s3ClientSettingsAttrs(implicit conf: S3Configuration) = {
-    val awsCredentials = new AWSStaticCredentialsProvider(
-      new BasicAWSCredentials(conf.access, conf.secret))
+    val awsCredentials = StaticCredentialsProvider.create(
+  AwsBasicCredentials.create(conf.access, conf.secret)
+    )
     //val url = new URL(conf.endpoint)
     //val proxy = Option(Proxy(url.getHost, url.getPort, url.getProtocol))
     //val settings = new S3Settings(MemoryBufferType, proxy, awsCredentials, conf.region, true)
     val settings = S3Settings(
       bufferType = MemoryBufferType,
       credentialsProvider = awsCredentials,
-      s3RegionProvider = new AwsRegionProvider() {
-        override def getRegion: String = conf.region
+      s3RegionProvider = new AwsRegionProvider {
+        override def getRegion: Region = Region.of(conf.region)
       },
       listBucketApiVersion = ApiVersion.ListBucketVersion2
-    ).withEndpointUrl(conf.endpoint)
-      .withPathStyleAccess(true)
+    )
+      .withEndpointUrl(conf.endpoint)
+//      .withPathStyleAccess //todo: fix this issue
     S3Attributes.settings(settings)
   }
 
@@ -169,16 +171,6 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
       }
       .toMat(sink)(Keep.right)
       .run()
-    // S3.putObject(
-    //   conf.bucket,
-    //   s"/${tenant.value}/teams/${team.value}/assets/${asset.value}.test",
-    //   Source.single(ByteString("hello")), 5,
-    //   ContentTypes.`text/plain(UTF-8)`,
-    //   S3Headers.create()
-    //     .withCannedAcl(CannedAcl.Private)
-    //     .withMetaHeaders(meta)
-    //     .withStorageClass(StorageClass.Standard)
-    // ).withAttributes(s3ClientSettingsAttrs).runForeach(e => println(e))
   }
 
   def listAssets(tenant: TenantId, team: TeamId)(

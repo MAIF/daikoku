@@ -2,22 +2,20 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
-import controllers.AppError.{ApiNotFound, ForbiddenAction, NotificationNotFound, TeamNotFound, UserNotFound}
+import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.audit.AuthorizationLevel.NotAuthorized
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, OtoroshiClient}
-import play.api.Logger
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class NotificationController(
                               DaikokuAction: DaikokuAction,
@@ -29,8 +27,8 @@ class NotificationController(
   extends AbstractController(cc)
   with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def unreadNotificationsCountOfTeam(teamId: String) = DaikokuAction.async {
     ctx =>
@@ -453,7 +451,7 @@ class NotificationController(
         messagesApi("mail.acceptation.title"),
         Seq(sender.email),
         messagesApi("mail.user.invitation.acceptation.body", invitedUser.name, team.name)))
-    } yield Right(Unit)
+    } yield Right(())
 
     r.value
   }

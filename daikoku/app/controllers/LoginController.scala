@@ -4,14 +4,11 @@ import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
@@ -22,7 +19,7 @@ import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 
 class LoginController(DaikokuAction: DaikokuAction,
@@ -31,8 +28,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                       cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def loginPage(provider: String) = DaikokuTenantAction.async { ctx =>
     AuthProvider(provider) match {
@@ -53,8 +50,8 @@ class LoginController(DaikokuAction: DaikokuAction,
       case Some(p) =>
         p match {
           case Otoroshi => FastFuture.successful(Redirect("/"))
-          case OAuth2 => {
-            implicit val req = ctx.request
+          case OAuth2 =>
+            implicit val req: Request[AnyContent] = ctx.request
             val authConfig = OAuth2Config
               .fromJson(ctx.tenant.authProviderSettings)
               .toOption
@@ -72,7 +69,6 @@ class LoginController(DaikokuAction: DaikokuAction,
               ).addingToSession(
                 s"redirect" -> redirect.getOrElse("/")
               ))
-          }
           case _ =>
             FastFuture.successful(
               Ok(views.html.login(p, ctx.tenant, ctx.request.domain, env)))
@@ -92,7 +88,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                                    None,
                                    env,
                                    tenant)
-      case Some(user) => {
+      case Some(user) =>
         val session = UserSession(
           id = MongoId(BSONObjectID.generate().stringify),
           userId = user.id,
@@ -114,7 +110,6 @@ class LoginController(DaikokuAction: DaikokuAction,
             )
             .removingFromSession("redirect")(request)
         }
-      }
     }
   }
 
@@ -136,7 +131,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                                    None,
                                    env,
                                    ctx.tenant)
-      case Some(p) => {
+      case Some(p) =>
         ctx.request.body.asFormUrlEncoded match {
           case None =>
             Errors.craftResponseResult("No credentials found",
@@ -145,11 +140,11 @@ class LoginController(DaikokuAction: DaikokuAction,
                                        None,
                                        env,
                                        ctx.tenant)
-          case Some(form) => {
+          case Some(form) =>
             (form.get("username").map(_.last), form.get("password").map(_.last)) match {
-              case (Some(username), Some(password)) => {
+              case (Some(username), Some(password)) =>
                 p match {
-                  case AuthProvider.Local => {
+                  case AuthProvider.Local =>
                     val localConfig = LocalLoginConfig.fromJsons(
                       ctx.tenant.authProviderSettings)
                     bindUser(localConfig.sessionMaxAge,
@@ -159,8 +154,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                                                         password,
                                                         ctx.tenant,
                                                         env))
-                  }
-                  case AuthProvider.Otoroshi => {
+                  case AuthProvider.Otoroshi =>
                     // as otoroshi already done the job, nothing to do here
                     FastFuture.successful(
                       Redirect(
@@ -169,8 +163,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                           "redirect"
                         )(ctx.request)
                     )
-                  }
-                  case AuthProvider.LDAP => {
+                  case AuthProvider.LDAP =>
                     val ldapConfig =
                       LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
                     bindUser(
@@ -178,34 +171,37 @@ class LoginController(DaikokuAction: DaikokuAction,
                       ctx.tenant,
                       ctx.request,
                       LdapSupport.bindUser(username, password, ctx.tenant, env))
-                  }
-                  case AuthProvider.OAuth2 => {
-                    val authConfig = OAuth2Config
+                  case AuthProvider.OAuth2 =>
+                    val maybeOAuth2Config = OAuth2Config
                       .fromJson(ctx.tenant.authProviderSettings)
-                      .right
-                      .get
-                    bindUser(
-                      authConfig.sessionMaxAge,
-                      ctx.tenant,
-                      ctx.request,
-                      OAuth2Support
-                        .bindUser(ctx.request, authConfig, ctx.tenant, env)
-                        .map(_.toOption))
-                  }
+
+                    maybeOAuth2Config match {
+                      case Right(authConfig) => bindUser(
+                        authConfig.sessionMaxAge,
+                        ctx.tenant,
+                        ctx.request,
+                        OAuth2Support
+                          .bindUser(ctx.request, authConfig, ctx.tenant, env)
+                          .map(_.toOption))
+                      case Left(e) =>
+                        AppLogger.error("Error during OAuthConfig read", e)
+                        Errors.craftResponseResult("Invalid OAuth Config",
+                          Results.BadRequest,
+                          ctx.request,
+                          None,
+                          env,
+                          ctx.tenant)
+                    }
                 }
-              }
-              case _ => {
+              case _ =>
                 Errors.craftResponseResult("No credentials found",
                                            Results.BadRequest,
                                            ctx.request,
                                            None,
                                            env,
                                            ctx.tenant)
-              }
             }
-          }
         }
-      }
     }
   }
 
@@ -233,19 +229,17 @@ class LoginController(DaikokuAction: DaikokuAction,
       case Some(AuthProvider.OAuth2) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
-          val cfg =
-            OAuth2Config.fromJson(ctx.tenant.authProviderSettings).right.get
-          val actualRedirectUrl = cfg.logoutUrl
+          val actualRedirectUrl = OAuth2Config.fromJson(ctx.tenant.authProviderSettings).getOrElse(OAuth2Config()) //todo: pas sur de moi
+            .logoutUrl
             .replace("${redirect}", URLEncoder.encode(redirect, "UTF-8"))
           Redirect(actualRedirectUrl).removingFromSession("sessionId")(
             ctx.request)
         }
-      case _ => {
+      case _ =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
           Redirect(redirect).removingFromSession("sessionId")(ctx.request)
         }
-      }
     }
   }
 

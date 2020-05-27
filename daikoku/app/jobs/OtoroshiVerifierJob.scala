@@ -7,13 +7,14 @@ import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{OtoroshiSyncApiError, OtoroshiSyncSubscriptionError}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{ConsoleMailer, IdGenerator, Mailer, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -23,8 +24,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
 
   private val ref = new AtomicReference[Cancellable]()
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   private val jobUser = User(
     id = UserId("otoroshi-verifier-job"),
@@ -45,8 +46,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
           .get() == null) {
       ref.set(
         env.defaultActorSystem.scheduler
-          .schedule(10.seconds, env.config.otoroshiSyncInterval) {
-            verify()
+          .scheduleAtFixedRate(10.seconds, env.config.otoroshiSyncInterval) {
+            () => verify()
           })
     }
   }
@@ -94,7 +95,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
           mailer.send(
             "Otoroshi synchronizer error",
             users.map(_.email),
-            s"""<p>An error occured during the Otoroshi synchronization job for team ${teamId.value} on tenant ${tenantId.value} for ${otoHost}</p>
+            s"""<p>An error occured during the Otoroshi synchronization job for team ${teamId.value} on tenant ${tenantId.value} for $otoHost</p>
             |<p>${err.message}</p>
             |<strong>Details</strong>
             |<pre>${Json.prettyPrint(err.json)}</pre>
@@ -132,12 +133,12 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                     "Tenant does not exist anymore"),
                                   api.team,
                                   api.tenant)
-          case Some(tenant) => {
+          case Some(tenant) =>
             api.possibleUsagePlans.map { plan =>
               plan.otoroshiTarget match {
                 case None =>
                   () // sendErrorNotification(NotificationAction.OtoroshiSyncApiError(api, "No Otoroshi target specified"), api.team, api.tenant)
-                case Some(target) => {
+                case Some(target) =>
                   tenant.otoroshiSettings
                     .find(_.id == target.otoroshiSettings) match {
                     case None =>
@@ -147,11 +148,11 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                           "Otoroshi settings does not exist anymore"),
                         api.team,
                         api.tenant)
-                    case Some(otoroshi) => {
+                    case Some(otoroshi) =>
                       client
                         .getServiceGroup(target.serviceGroup.value)(otoroshi)
                         .andThen {
-                          case Failure(e) =>
+                          case Failure(_) =>
                             sendErrorNotification(
                               NotificationAction.OtoroshiSyncApiError(
                                 api,
@@ -159,12 +160,9 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                               api.team,
                               api.tenant)
                         }
-                    }
                   }
-                }
               }
             }
-          }
         }
       }
     }
@@ -173,7 +171,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
   private def verifyIfOtoroshiApiKeysStillExists(): Future[Unit] = {
     env.dataStore.apiSubscriptionRepo.forAllTenant().findAllNotDeleted().map {
       subscriptions =>
-        Logger.debug(subscriptions.map(_.id.value).mkString(" - "))
+        AppLogger.debug(subscriptions.map(_.id.value).mkString(" - "))
         subscriptions.map { subscription =>
           env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant).map {
             case None =>
@@ -183,7 +181,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                   "Tenant does not exist anymore"),
                 subscription.team,
                 subscription.tenant)
-            case Some(tenant) => {
+            case Some(tenant) =>
               env.dataStore.apiRepo
                 .forAllTenant()
                 .findByIdNotDeleted(subscription.api)
@@ -195,7 +193,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                         "API does not exist anymore"),
                       subscription.team,
                       subscription.tenant)
-                  case Some(api) => {
+                  case Some(api) =>
                     api.possibleUsagePlans
                       .find(_.id == subscription.plan) match {
                       case None =>
@@ -205,11 +203,11 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                             "Usage plan does not exist anymore"),
                           subscription.team,
                           subscription.tenant)
-                      case Some(plan) => {
+                      case Some(plan) =>
                         plan.otoroshiTarget match {
                           case None =>
                             () // sendErrorNotification(NotificationAction.OtoroshiSyncSubscriptionError(subscription, "No Otoroshi target specified"), subscription.team, subscription.tenant)
-                          case Some(target) => {
+                          case Some(target) =>
                             tenant.otoroshiSettings.find(
                               _.id == target.otoroshiSettings) match {
                               case None =>
@@ -219,7 +217,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                     "Otoroshi settings does not exist anymore"),
                                   subscription.team,
                                   subscription.tenant)
-                              case Some(settings) => {
+                              case Some(settings) =>
                                 client
                                   .getApikey(
                                     target.serviceGroup.value,
@@ -247,7 +245,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         Some(settings.host)
                                       )
                                     case Success(Right(apk))
-                                        if apk.clientId != subscription.apiKey.clientId || (!subscription.rotation.exists(_.enabled) && apk.clientSecret != subscription.apiKey.clientSecret) => {
+                                        if apk.clientId != subscription.apiKey.clientId || (!subscription.rotation.exists(_.enabled) && apk.clientSecret != subscription.apiKey.clientSecret) =>
                                       sendErrorNotification(
                                         NotificationAction
                                           .OtoroshiSyncSubscriptionError(
@@ -257,8 +255,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         subscription.tenant,
                                         Some(settings.host)
                                       )
-                                    }
-                                    case Success(Right(apk)) => {
+                                    case Success(Right(apk)) =>
 
                                       import cats.data.OptionT
                                       import cats.implicits._
@@ -410,17 +407,11 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                                 e)
                                           }
                                       }
-                                    }
                                   }
-                              }
                             }
-                          }
                         }
-                      }
                     }
-                  }
                 }
-            }
           }
         }
     }
@@ -438,7 +429,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                   "Tenant does not exist anymore"),
                 subscription.team,
                 subscription.tenant)
-            case Some(tenant) => {
+            case Some(tenant) =>
               env.dataStore.apiRepo
                 .forAllTenant()
                 .findByIdNotDeleted(subscription.api)
@@ -450,7 +441,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                         "API does not exist anymore"),
                       subscription.team,
                       subscription.tenant)
-                  case Some(api) => {
+                  case Some(api) =>
                     api.possibleUsagePlans
                       .find(_.id == subscription.plan) match {
                       case None =>
@@ -460,11 +451,11 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                             "Usage plan does not exist anymore"),
                           subscription.team,
                           subscription.tenant)
-                      case Some(plan) => {
+                      case Some(plan) =>
                         plan.otoroshiTarget match {
                           case None =>
                             () // sendErrorNotification(NotificationAction.OtoroshiSyncSubscriptionError(subscription, "No Otoroshi target specified"), subscription.team, subscription.tenant)
-                          case Some(target) => {
+                          case Some(target) =>
                             tenant.otoroshiSettings.find(
                               _.id == target.otoroshiSettings) match {
                               case None =>
@@ -474,7 +465,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                     "Otoroshi settings does not exist anymore"),
                                   subscription.team,
                                   subscription.tenant)
-                              case Some(settings) => {
+                              case Some(settings) =>
                                 client
                                   .getApikey(
                                     target.serviceGroup.value,
@@ -551,15 +542,10 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         } yield ()
                                       }
                                   }
-                              }
                             }
-                          }
                         }
-                      }
                     }
-                  }
                 }
-            }
           }
         }
       }

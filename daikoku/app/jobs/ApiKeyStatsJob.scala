@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.Cancellable
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 import fr.maif.otoroshi.daikoku.domain.BillingTimeUnit.{Day, Hour, Month, Year}
@@ -12,6 +12,7 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.DateTimeFormat
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import org.joda.time.{DateTime, Days}
 import play.api.Logger
@@ -30,21 +31,21 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  implicit val mat: ActorMaterializer = env.defaultMaterializer
+  implicit val mat: Materializer = env.defaultMaterializer
 
   def start(): Unit = {
     logger.info("Scrapping apikey stats from otoroshi")
     if (ref.get() == null) {
       ref.set(
         env.defaultActorSystem.scheduler
-          .schedule(1.seconds, env.config.apikeysStatsSyncInterval) {
-            syncAll()
+          .scheduleAtFixedRate(1.seconds, env.config.apikeysStatsSyncInterval) {
+            () => syncAll()
           })
     }
   }
 
-  def getStats(): Future[Done] = {
-    Logger.info("Scrapping apikey stats from otoroshi")
+  def getStats: Future[Done] = {
+    AppLogger.info("Scrapping apikey stats from otoroshi")
     syncAll()
   }
 
@@ -296,12 +297,12 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
         .runWith(Sink.seq)
         .recover {
           case e =>
-            Logger.error("[apikey stats job] Error during sync consumption", e)
+            AppLogger.error("[apikey stats job] Error during sync consumption", e)
             Seq.empty
         }
     }.recover {
       case e =>
-        Logger.error("[apikey stats job] Error during sync consumptions", e)
+        AppLogger.error("[apikey stats job] Error during sync consumptions", e)
         Seq.empty
     }).getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption]))
   }

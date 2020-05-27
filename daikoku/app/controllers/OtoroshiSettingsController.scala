@@ -344,7 +344,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                       Status(res.status)
                         .sendEntity(
                           HttpEntity.Streamed(
-                            Source.lazily(() => res.bodyAsSource),
+                            Source.lazySource(() => res.bodyAsSource),
                             res.headers
                               .get("Content-Length")
                               .flatMap(_.lastOption)
@@ -356,6 +356,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                         )
                         .withHeaders(
                           res.headers
+                            .view
                             .mapValues(_.head)
                             .toSeq
                             .filter(_._1 != "Content-Type")

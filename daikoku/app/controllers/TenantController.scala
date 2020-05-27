@@ -38,8 +38,7 @@ class TenantController(DaikokuAction: DaikokuAction,
 
   def namesOfTenants() = DaikokuAction.async(parse.json) { ctx =>
     val tenantIdsJs: JsArray = ctx.request.body.as[JsArray]
-    val tenantIds: Seq[String] =
-      ctx.request.body.as[JsArray].value.map(_.as[String])
+    val tenantIds = ctx.request.body.as[JsArray].value.map(_.as[String])
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has accessed tenant names for ${tenantIds.mkString(", ")}"))(
       ctx) {

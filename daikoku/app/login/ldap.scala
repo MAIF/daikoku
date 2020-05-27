@@ -15,26 +15,25 @@ import scala.util.Try
 
 object LdapConfig {
 
-  lazy val logger = Logger("ldap-config")
+  lazy val logger: Logger = Logger("ldap-config")
 
   def fromJsons(value: JsValue): LdapConfig =
     try {
       _fmt.reads(value).get
     } catch {
-      case e: Throwable => {
+      case e: Throwable =>
         logger.error(s"Try to deserialize ${Json.prettyPrint(value)}")
         throw e
-      }
     }
 
-  val _fmt = new Format[LdapConfig] {
+  val _fmt: Format[LdapConfig] = new Format[LdapConfig] {
 
-    override def reads(json: JsValue) = fromJson(json) match {
+    override def reads(json: JsValue): JsResult[LdapConfig] = fromJson(json) match {
       case Left(e)  => JsError(e.getMessage)
       case Right(v) => JsSuccess(v.asInstanceOf[LdapConfig])
     }
 
-    override def writes(o: LdapConfig) = o.asJson
+    override def writes(o: LdapConfig): JsObject = o.asJson
   }
 
   def fromJson(json: JsValue): Either[Throwable, LdapConfig] =
@@ -78,7 +77,7 @@ case class LdapConfig(
     emailField: String = "mail",
     pictureField: Option[String] = None
 ) {
-  def asJson = Json.obj(
+  def asJson: JsObject = Json.obj(
     "type" -> "ldap",
     "sessionMaxAge" -> this.sessionMaxAge,
     "serverUrl" -> this.serverUrl,
@@ -125,7 +124,7 @@ object LdapSupport {
     import javax.naming.directory._
     import javax.naming.ldap._
 
-    import collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     val ldapConfig = LdapConfig.fromJsons(tenant.authProviderSettings)
 
@@ -188,9 +187,7 @@ object LdapSupport {
     val boundUser: Future[Option[User]] = if (res.hasMore) {
       val item = res.next()
       val dn = item.getNameInNamespace
-      if (ldapConfig.adminGroupFilter
-            .map(_ => usersInAdminGroup.contains(dn))
-            .getOrElse(false)) {
+      if (ldapConfig.adminGroupFilter.exists(_ => usersInAdminGroup.contains(dn))) {
         val attrs = item.getAttributes
         val env2 = new util.Hashtable[String, AnyRef]
         env2.put(Context.INITIAL_CONTEXT_FACTORY,
@@ -215,7 +212,7 @@ object LdapSupport {
               )
             )
             .flatMap {
-              case Some(user) => {
+              case Some(user) =>
                 val newUser = user.copy(
                   name = name,
                   email = email,
@@ -234,8 +231,7 @@ object LdapSupport {
                 } yield {
                   Some(newUser)
                 }
-              }
-              case None => {
+              case None =>
                 val userId = UserId(BSONObjectID.generate().stringify)
                 val team = Team(
                   id = TeamId(BSONObjectID.generate().stringify),
@@ -269,14 +265,11 @@ object LdapSupport {
                 } yield {
                   Some(user)
                 }
-              }
             }
         } recover {
           case _ => FastFuture.successful(None)
         } get
-      } else if (ldapConfig.groupFilter
-                   .map(_ => usersInGroup.contains(dn))
-                   .getOrElse(true)) {
+      } else if (ldapConfig.groupFilter.forall(_ => usersInGroup.contains(dn))) {
         val attrs = item.getAttributes
         val env2 = new util.Hashtable[String, AnyRef]
         env2.put(Context.INITIAL_CONTEXT_FACTORY,
@@ -301,7 +294,7 @@ object LdapSupport {
               )
             )
             .flatMap {
-              case Some(user) => {
+              case Some(user) =>
                 val newUser = user.copy(
                   name = name,
                   email = email,
@@ -317,8 +310,7 @@ object LdapSupport {
                 } yield {
                   Some(newUser)
                 }
-              }
-              case None => {
+              case None =>
                 val userId = UserId(BSONObjectID.generate().stringify)
                 val team = Team(
                   id = TeamId(BSONObjectID.generate().stringify),
@@ -339,11 +331,9 @@ object LdapSupport {
                   picture = ldapConfig.pictureField
                     .map(f => attrs.get(f).toString.split(":").last.trim)
                     .getOrElse(email.gravatar),
-                  isDaikokuAdmin = false,
                   lastTenant = Some(tenant.id),
                   personalToken = Some(IdGenerator.token(32)),
                   defaultLanguage = None
-                  // lastTeams = Map((tenant.id, team.id))
                 )
                 for {
                   _ <- _env.dataStore.teamRepo.forTenant(tenant.id).save(team)
@@ -351,7 +341,6 @@ object LdapSupport {
                 } yield {
                   Some(user)
                 }
-              }
             }
         } recover {
           case _ => FastFuture.successful(None)

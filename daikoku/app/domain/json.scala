@@ -15,6 +15,7 @@ import fr.maif.otoroshi.daikoku.domain.TranslationElement._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
@@ -59,7 +60,8 @@ object json {
   val DateTimeFormat = new Format[DateTime] {
     override def reads(json: JsValue) =
       Try {
-        JsSuccess(new DateTime(json.as[Long]))
+        val longDate: Long = ((json \ "$long").asOpt[Long]).getOrElse(json.as[Long])
+        JsSuccess(new DateTime(longDate))
       } recover {
         case e => JsError(e.getMessage)
       } get
@@ -867,21 +869,21 @@ object json {
               .map(
                 _.value.map(p => ApiKeyRestrictionPathFormat.reads(p)).collect {
                   case JsSuccess(rp, _) => rp
-                })
+                }.toSeq)
               .getOrElse(Seq.empty),
             forbidden = (json \ "forbidden")
               .asOpt[JsArray]
               .map(
                 _.value.map(p => ApiKeyRestrictionPathFormat.reads(p)).collect {
                   case JsSuccess(rp, _) => rp
-                })
+                }.toSeq)
               .getOrElse(Seq.empty),
             notFound = (json \ "notFound")
               .asOpt[JsArray]
               .map(
                 _.value.map(p => ApiKeyRestrictionPathFormat.reads(p)).collect {
                   case JsSuccess(rp, _) => rp
-                })
+                }.toSeq)
               .getOrElse(Seq.empty)
           )
         )
@@ -1017,7 +1019,7 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "remoteContentHeaders" -> JsObject(
-        o.remoteContentHeaders.mapValues(JsString.apply)),
+        o.remoteContentHeaders.view.mapValues(JsString.apply).toSeq),
       // "api" -> o.api.asJson,
     )
   }
@@ -1318,7 +1320,7 @@ object json {
         .as[JsValue],
       "hardwareKeyRegistrations" -> JsArray(o.hardwareKeyRegistrations),
       "lastTenant" -> o.lastTenant.map(_.asJson).getOrElse(JsNull).as[JsValue],
-      "metadata" -> JsObject(o.metadata.mapValues(JsString.apply)),
+      "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "isGuest" -> o.isGuest
@@ -1377,7 +1379,7 @@ object json {
       "authorizedOtoroshiGroups" -> JsArray(
         o.authorizedOtoroshiGroups.map(OtoroshiGroupFormat.writes).toSeq),
       "showApiKeyOnlyToAdmins" -> o.showApiKeyOnlyToAdmins,
-      "metadata" -> JsObject(o.metadata.mapValues(JsString.apply)),
+      "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
     )
   }
 
@@ -1568,7 +1570,7 @@ object json {
         "throttlingQuota" -> apk.throttlingQuota,
         "dailyQuota" -> apk.dailyQuota,
         "monthlyQuota" -> apk.monthlyQuota,
-        "metadata" -> JsObject(apk.metadata.mapValues(JsString.apply)),
+        "metadata" -> JsObject(apk.metadata.view.mapValues(JsString.apply).toSeq),
         "tags" -> JsArray(apk.tags.map(JsString.apply)),
         "restrictions" -> apk.restrictions.asJson,
         "rotation" -> apk.rotation
@@ -1604,7 +1606,7 @@ object json {
               .getOrElse(false),
             tags = (json \ "tags")
               .asOpt[JsArray]
-              .map(_.value.map(_.as[String]))
+              .map(_.value.map(_.as[String]).toSeq)
               .getOrElse(Seq.empty[String]),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
             rotation = (json \ "rotation").asOpt(ApiKeyRotationFormat)
@@ -1960,7 +1962,8 @@ object json {
 
   val UserSessionFormat = new Format[UserSession] {
 
-    override def reads(json: JsValue): JsResult[UserSession] =
+    override def reads(json: JsValue): JsResult[UserSession] = {
+
       Try {
         JsSuccess(
           UserSession(
@@ -1989,6 +1992,7 @@ object json {
       } recover {
         case e => JsError(e.getMessage)
       } get
+    }
 
     override def writes(o: UserSession): JsValue = Json.obj(
       "_id" -> o.id.asJson,

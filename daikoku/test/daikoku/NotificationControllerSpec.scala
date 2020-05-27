@@ -16,22 +16,12 @@ import org.scalatestplus.play.PlaySpec
 import play.api.Configuration
 import play.api.libs.json.JsArray
 
-class NotificationControllerSpec(configurationSpec: => Configuration)
+class NotificationControllerSpec()
     extends PlaySpec
     with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfterEach {
-
-  override def getConfiguration(configuration: Configuration): Configuration =
-    configuration ++ configurationSpec ++ Configuration(
-      ConfigFactory.parseString(s"""
-									 |{
-									 |  http.port=$port
-									 |  play.server.http.port=$port
-									 |}
-     """.stripMargin).resolve()
-    )
 
   val treatedNotification = Notification(
     id = NotificationId("treated-notification"),

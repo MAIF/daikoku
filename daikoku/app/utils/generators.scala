@@ -50,7 +50,7 @@ object IdGenerator {
     lastTimestamp.set(timestamp)
     counter.compareAndSet(4095, -1L)
     (((timestamp - minus) << 22L) | (generatorId << 10L) | counter
-      .incrementAndGet()) + append
+      .incrementAndGet()).toString + append
   }
 
   def uuid: String =
@@ -66,8 +66,8 @@ object IdGenerator {
 
   def token(characters: Array[String], size: Int): String =
     (for {
-      i <- 0 to size - 1
-    } yield characters(Random.nextInt(characters.size))).mkString("")
+      _ <- 0 until size
+    } yield characters(Random.nextInt(characters.length))).mkString("")
 
   def token(size: Int): String = token(CHARACTERS, size)
   def token: String = token(64)

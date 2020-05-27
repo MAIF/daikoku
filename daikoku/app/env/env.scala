@@ -1,33 +1,28 @@
 package fr.maif.otoroshi.daikoku.env
 
 import java.nio.file.Paths
-import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.{ActorRef, ActorSystem, Cancellable, PoisonPill}
+import akka.actor.{Actor, ActorRef, ActorSystem, ClassicActorSystemProvider, PoisonPill}
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{FileIO, Framing, Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.util.ByteString
-import com.auth0.jwt.JWT
+import akka.stream.{Materializer, SystemMaterializer}
+import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
+import com.auth0.jwt.{JWT, JWTVerifier}
 import com.auth0.jwt.algorithms.Algorithm
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.Tenant
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
-import play.api.libs.ws.WSClient
-import play.api.Logger
 import play.api.i18n.MessagesApi
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
-import play.api.{Configuration, Environment}
+import play.api.{Configuration, Environment, Logger}
 import play.modules.reactivemongo.ReactiveMongoApi
 import storage.{DataStore, MongoDataStore}
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 sealed trait DaikokuMode {
@@ -127,12 +122,12 @@ object AdminApiConfig {
 
 class Config(val underlying: Configuration) {
 
-  lazy val port = underlying
+  lazy val port: Int = underlying
     .getOptional[Int]("play.server.http.port")
     .orElse(underlying.getOptional[Int]("http.port"))
     .getOrElse(9000)
 
-  lazy val exposedPort = underlying
+  lazy val exposedPort: Int = underlying
     .getOptional[Int]("daikoku.exposedOn")
     .getOrElse(port)
 
@@ -142,22 +137,22 @@ class Config(val underlying: Configuration) {
       case _           => DaikokuMode.Prod
     }
 
-  lazy val secret = underlying
+  lazy val secret: String = underlying
     .getOptional[String]("play.http.secret.key")
     .getOrElse("secret")
 
   lazy val signingKey: String =
     underlying.get[String]("daikoku.signingKey")
 
-  lazy val hmac512Alg = Algorithm.HMAC512(signingKey)
+  lazy val hmac512Alg: Algorithm = Algorithm.HMAC512(signingKey)
 
-  lazy val tenantJwtAlgo = Algorithm.HMAC512(signingKey)
+  lazy val tenantJwtAlgo: Algorithm = Algorithm.HMAC512(signingKey)
 
-  lazy val tenantJwtVerifier = JWT.require(tenantJwtAlgo).build()
+  lazy val tenantJwtVerifier: JWTVerifier = JWT.require(tenantJwtAlgo).build()
 
-  lazy val isProd = mode == DaikokuMode.Prod
-  lazy val isDev = mode == DaikokuMode.Dev
-  lazy val tenantProvider = underlying
+  lazy val isProd: Boolean = mode == DaikokuMode.Prod
+  lazy val isDev: Boolean = mode == DaikokuMode.Dev
+  lazy val tenantProvider: TenantProvider = underlying
     .getOptional[String]("daikoku.tenants.provider")
     .flatMap(TenantProvider.apply)
     .getOrElse(TenantProvider.Local)
@@ -166,17 +161,17 @@ class Config(val underlying: Configuration) {
     .getOptional[Long]("daikoku.otoroshi.sync.interval")
     .map(v => v.millis)
     .getOrElse(1.hour)
-  lazy val otoroshiSyncMaster = underlying
+  lazy val otoroshiSyncMaster: Boolean = underlying
     .getOptional[Boolean]("daikoku.otoroshi.sync.master")
     .getOrElse(
       underlying
         .getOptional[Int]("daikoku.otoroshi.sync.instance")
         .getOrElse(-1) == 0
     )
-  lazy val otoroshiSyncByCron = underlying
+  lazy val otoroshiSyncByCron: Boolean = underlying
     .getOptional[Boolean]("daikoku.otoroshi.sync.cron")
     .getOrElse(false)
-  lazy val otoroshiSyncKey = underlying
+  lazy val otoroshiSyncKey: String = underlying
     .getOptional[String]("daikoku.otoroshi.sync.key")
     .getOrElse("secret")
   lazy val otoroshiGroupNamePrefix: Option[String] =
@@ -184,7 +179,7 @@ class Config(val underlying: Configuration) {
   lazy val otoroshiGroupIdPrefix: Option[String] =
     underlying.getOptional[String]("daikoku.otoroshi.groups.idPrefix")
 
-  lazy val apikeysStatsByCron =
+  lazy val apikeysStatsByCron: Boolean =
     underlying.getOptional[Boolean]("daikoku.stats.sync.cron").getOrElse(false)
   lazy val apikeysStatsSyncInterval: FiniteDuration = underlying
     .getOptional[Long]("daikoku.stats.sync.interval")
@@ -207,7 +202,7 @@ sealed trait Env {
   def snowflakeGenerator: IdGenerator
   def auditActor: ActorRef
   def defaultActorSystem: ActorSystem
-  def defaultMaterializer: ActorMaterializer
+  def defaultMaterializer: Materializer
   def defaultExecutionContext: ExecutionContext
   def dataStore: DataStore
   def assetsStore: AssetsDataStore
@@ -226,15 +221,14 @@ class DaikokuEnv(ws: WSClient,
                  messagesApi: MessagesApi)
     extends Env {
 
-  val logger = Logger("DaikokuEnv")
+  val logger: Logger = Logger("DaikokuEnv")
 
-  val actorSystem = ActorSystem("daikoku")
-  val materializer = ActorMaterializer.create(actorSystem)
-  val snowflakeSeed =
-    configuration.getOptional[Long]("daikoku.snowflake.seed").get
-  val snowflakeGenerator = IdGenerator(snowflakeSeed)
+  val actorSystem: ActorSystem = ActorSystem("daikoku")
+  val materializer: Materializer = Materializer.createMaterializer(actorSystem)
+  val snowflakeSeed: Long = configuration.getOptional[Long]("daikoku.snowflake.seed").get
+  val snowflakeGenerator: IdGenerator = IdGenerator(snowflakeSeed)
 
-  val auditActor = actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
+  val auditActor: ActorRef = actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
 
   private val daikokuConfig = new Config(configuration)
   private val mongoDataStore = new MongoDataStore(this, reactiveMongoApi)
@@ -244,15 +238,13 @@ class DaikokuEnv(ws: WSClient,
   override def defaultExecutionContext: ExecutionContext =
     actorSystem.dispatcher
   override def defaultActorSystem: ActorSystem = actorSystem
-  override def defaultMaterializer: ActorMaterializer = materializer
+  override def defaultMaterializer: Materializer = materializer
   override def dataStore: DataStore = mongoDataStore
   override def wsClient: WSClient = ws
   override def config: Config = daikokuConfig
   override def assetsStore: AssetsDataStore = s3assetsStore
 
   override def onStartup(): Unit = {
-
-    import fr.maif.otoroshi.daikoku.domain.json._
 
     implicit val ec: ExecutionContext = defaultExecutionContext
 
@@ -262,13 +254,12 @@ class DaikokuEnv(ws: WSClient,
           config.init.data.from match {
             case Some(path)
                 if path.startsWith("http://") || path
-                  .startsWith("https://") => {
-              logger.warn("")
+                  .startsWith("https://") =>
               logger.warn(
-                s"Main dataStore seems to be empty, importing from ${path} ...")
-              implicit val ec = defaultExecutionContext
-              implicit val mat = defaultMaterializer
-              implicit val env = this
+                s"Main dataStore seems to be empty, importing from $path ...")
+              implicit val ec: ExecutionContext = defaultExecutionContext
+              implicit val mat: Materializer = defaultMaterializer
+              implicit val env: DaikokuEnv = this
               val initialDataFu = wsClient
                 .url(path)
                 .withHttpHeaders(config.init.data.headers.toSeq: _*)
@@ -280,30 +271,28 @@ class DaikokuEnv(ws: WSClient,
                     dataStore.importFromStream(resp.bodyAsSource)
                   case resp =>
                     FastFuture.failed(new RuntimeException(
-                      s"Bad response from ${path}: ${resp.status} - ${resp.body}"))
+                      s"Bad response from $path: ${resp.status} - ${resp.body}"))
                 }
               Await.result(initialDataFu, 10 seconds)
-            }
-            case Some(path) => {
-              logger.warn("")
+            case Some(path) =>
               logger.warn(
-                s"Main dataStore seems to be empty, importing from ${path} ...")
-              implicit val ec = defaultExecutionContext
-              implicit val mat = defaultMaterializer
-              implicit val env = this
+                s"Main dataStore seems to be empty, importing from $path ...")
+              implicit val ec: ExecutionContext = defaultExecutionContext
+              implicit val mat: Materializer = defaultMaterializer
+              implicit val env: DaikokuEnv = this
               val initialDataFu =
                 dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
               Await.result(initialDataFu, 10 seconds)
-            }
-            case _ => {
+            case _ =>
 
               import fr.maif.otoroshi.daikoku.domain._
               import fr.maif.otoroshi.daikoku.login._
               import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+              import org.mindrot.jbcrypt.BCrypt
               import play.api.libs.json._
               import reactivemongo.bson.BSONObjectID
+
               import scala.concurrent._
-              import org.mindrot.jbcrypt.BCrypt
 
               logger.warn("")
               logger.warn(
@@ -416,7 +405,6 @@ class DaikokuEnv(ws: WSClient,
               logger.warn(
                 "Please avoid using the default tenant for anything else than configuring Daikoku")
               logger.warn("")
-            }
           }
         case false =>
       }

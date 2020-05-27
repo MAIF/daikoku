@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.{Sink, Source}
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
@@ -28,7 +28,7 @@ class TeamController(DaikokuAction: DaikokuAction,
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  implicit val mat: ActorMaterializer = env.defaultMaterializer
+  implicit val mat: Materializer = env.defaultMaterializer
 
   def team(teamId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
