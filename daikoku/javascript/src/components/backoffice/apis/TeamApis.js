@@ -7,27 +7,33 @@ import faker from 'faker';
 import * as Services from '../../../services';
 import { Can, read, manage, stat, api as Api, administrator } from '../../utils';
 import { TeamBackOffice } from '../..';
-import { Table, SwitchButton } from '../../inputs';
+import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { t } from '../../../locales';
 
 class TeamApisComponent extends Component {
   columns = [
     {
-      title: t('Name', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (api) => api.name,
+      id: "name",
+      Header: t('Name', this.props.currentLanguage),
+      style: { textAlign: 'left'},
+      accessor: (api) => api.name,
+      sortType: "basic",
     },
     {
-      title: t('Description', this.props.currentLanguage),
-      style: { textAlign: 'left', alignItems: 'center', display: 'flex' },
-      content: (api) => api.smallDescription,
+      Header: t('Description', this.props.currentLanguage),
+      style: { textAlign: 'left'},
+      accessor: (api) => api.smallDescription,
     },
     {
-      title: t('Published', this.props.currentLanguage),
-      style: { justifyContent: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      content: (api) => (api.published ? 'yes' : 'no'),
-      cell: (a, api) => (
-        <Can I={manage} a={Api} team={this.props.currentTeam}>
+      Header: t('Published', this.props.currentLanguage),
+      style: { textAlign: 'center'},
+      accessor: (api) => api.published,
+      disableSortBy: true,
+      Filter: BooleanColumnFilter,
+      filter: 'equals',
+      Cell: ({ cell: { row: {original} } }) => {
+        const api = original;
+        return (<Can I={manage} a={Api} team={this.props.currentTeam}>
           <SwitchButton
             onSwitch={() => this.togglePublish(api)}
             checked={api.published}
@@ -35,15 +41,18 @@ class TeamApisComponent extends Component {
             large
             noText
           />
-        </Can>
-      ),
+        </Can>)
+      },
     },
     {
-      title: t('Actions', this.props.currentLanguage),
-      style: { textAlign: 'center', width: 180, alignItems: 'center', display: 'flex' },
-      notFilterable: true,
-      content: (item) => item._id,
-      cell: (a, api) => (
+      Header: t('Actions', this.props.currentLanguage),
+      style: { textAlign: 'center'},
+      disableSortBy: true,
+      disableFilters: true,
+      accessor: (item) => item._id,
+      Cell: ({ cell: { row: { original } } }) => {
+        const api = original;
+        return (
         <div className="btn-group">
           <Link
             rel="noopener"
@@ -83,7 +92,7 @@ class TeamApisComponent extends Component {
             )}
           </Can>
         </div>
-      ),
+      )},
     },
   ];
 
@@ -178,12 +187,13 @@ class TeamApisComponent extends Component {
                   </Can>
                 )}
               </h1>
-              <div className="section p-2">
+              <div className="p-2">
                 <Table
                   currentLanguage={this.props.currentLanguage}
                   selfUrl="apis"
                   defaultTitle="Team Apis"
                   defaultValue={() => ({})}
+                  defaultSort="name"
                   itemName="api"
                   columns={this.columns}
                   fetchItems={() => Services.teamApis(this.props.currentTeam._id)}

@@ -6,6 +6,7 @@ export * from './BooleanInput';
 export * from './TextInput';
 export * from './NumberInput';
 export * from './Table';
+export * from './TableFilters';
 export * from './LabelInput';
 export * from './Help';
 export * from './Switch';

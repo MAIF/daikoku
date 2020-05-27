@@ -17,53 +17,52 @@ export class AuditTrailList extends Component {
 
   columns = [
     {
-      title: 'Date',
-      content: (item) => item['@timestamp'],
-      style: { textAlign: 'center', width: 200, alignItems: 'center', display: 'flex' },
-      cell: (value) => {
+      Header: 'Date',
+      accessor: (item) => item['@timestamp']['$long'], //todo: try to remove this $long prop from reactivemongo
+      style: { textAlign: 'left' },
+      Cell: ({value}) => {
         return moment(value).format('YYYY-MM-DD HH:mm:ss.SSS');
+      }
+    },
+    {
+      Header: 'Name',
+      style: { textAlign: 'left' },
+      accessor: (item) => item.user.name,
+    },
+    {
+      Header: 'Impersonator',
+      style: { textAlign: 'left'},
+      accessor: (item) => (item.impersonator ? item.impersonator.name : ''),
+    },
+    {
+      Header: 'Message',
+      style: {  textAlign: 'left' },
+      accessor: (item) => item.message,
+    },
+    {
+      Header: 'Actions',
+      style: {  textAlign: 'center'},
+      disableSortBy: true,
+      disableFilters: true,
+      accessor: (item) => item._id,
+      Cell: ({ cell: { row: {original} } }) => {
+        const value=original;
+        return (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => {
+              window.alert(
+                <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
+                  {JSON.stringify(value, null, 2)}
+                </pre>,
+                'Event details'
+              );
+            }}>
+            Details
+          </button>
+        )
       },
-    },
-    {
-      title: 'Name',
-      style: { textAlign: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      content: (item) => item.user.name,
-    },
-    {
-      title: 'Impersonator',
-      style: { textAlign: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      content: (item) => (item.impersonator ? item.impersonator.name : ''),
-    },
-    {
-      title: 'Message',
-      style: {
-        alignItems: 'center',
-        display: 'flex',
-        wordBreak: 'break-all',
-        whiteSpace: 'initial',
-      },
-      content: (item) => item.message,
-    },
-    {
-      title: 'Actions',
-      style: { justifyContent: 'center', width: 100, alignItems: 'center', display: 'flex' },
-      notFilterable: true,
-      content: (item) => item._id,
-      cell: (a, value) => (
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-primary"
-          onClick={() => {
-            window.alert(
-              <pre style={{ backgroundColor: '#eeeeee', padding: 10 }}>
-                {JSON.stringify(value, null, 2)}
-              </pre>,
-              'Event details'
-            );
-          }}>
-          Details
-        </button>
-      ),
     },
   ];
 
@@ -97,40 +96,11 @@ export class AuditTrailList extends Component {
 
   topBar = () => {
     return (
-      <>
-        <button
-          type="button"
-          className="btn btn-xs btn-outline-primary ml-2 mr-1"
-          onClick={this.previous}>
-          <i className="fas fa-arrow-left" />
-        </button>
-        ,<span> page </span>,
-        <input
-          type="number mr-1"
-          style={{ width: 60, textAlign: 'center' }}
-          value={this.state.page}
-          onChange={(e) => {
-            this.setState({ page: e.target.value });
-            this.table.update();
-          }}
-        />
-        ,<span> on {(this.state.total / this.state.size).toFixed(0)} with </span>,
-        <input
-          type="number"
-          className="mr-1"
-          style={{ width: 60, textAlign: 'center' }}
-          value={this.state.size}
-          onChange={(e) => {
-            this.setState({ size: e.target.value });
-            this.table.update();
-          }}
-        />
-        ,<span> items per fetch</span>,
-        <button type="button" className="btn btn-xs btn-outline-primary ml-1" onClick={this.next}>
-          <i className="fas fa-arrow-right" />
-        </button>
-        ,
-      </>
+      <OtoDatePicker
+        updateDateRange={this.updateDateRange}
+        from={this.state.from}
+        to={this.state.to}
+      />
     );
   };
 
@@ -154,15 +124,6 @@ export class AuditTrailList extends Component {
             <div className="col">
               <h1>Audit trail </h1>
               <div className="section">
-                <div className="d-flex justify-content-end p-2">
-                  <div className="section">
-                    <OtoDatePicker
-                      updateDateRange={this.updateDateRange}
-                      from={this.state.from}
-                      to={this.state.to}
-                    />
-                  </div>
-                </div>
                 <div className="p-2">
                   <Table
                     selfUrl="audit"
