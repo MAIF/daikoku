@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTable, usePagination, useSortBy, useFilters } from 'react-table';
+import { useTable, usePagination, useSortBy, useFilters, useBlockLayout, useResizeColumns } from 'react-table';
 import classNames from 'classnames';
 import _ from 'lodash';
 import PropTypes from 'prop-types';
@@ -176,10 +176,10 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
     })
   };
 
-  const tablePagination = <div className="d-flex flex-row align-items-baseline justify-content-end mr-3">
+  const tablePagination = <div className="d-flex flex-row align-items-baseline justify-content-end flex-grow-1">
     <span>{rows.length} Results</span>
     <Select
-      className="reactSelect reactSelect-pagination col-2 ml-3 mr-3"
+      className="reactSelect reactSelect-pagination col-3 ml-3 mr-3"
       value={{ label: `Show ${pageSize}`, value: pageSize }}
       options={[10, 20, 50, 100].map(x => ({ label: `Show ${x}`, value: x }))}
       onChange={(e) => setPageSize(Number(e.value))}
@@ -207,10 +207,6 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
       onClick={update}>
       <span className="fas fa-sync-alt" />
     </button>
-    {injectTopBar && (
-      <div style={{ fontSize: 14 }}>{injectTopBar()}</div>
-    )}
-
   </div>
 
   return (
@@ -219,7 +215,10 @@ export const TableWithV7 = ({ fetchItems, columns, injectTopBar, injectTable, de
 
         <div className="rrow section">
           <div className="row" style={{ marginBottom: 10 }}>
-            <div className="col-md-12">
+            <div className="col-md-12 d-flex">
+              { injectTopBar && (
+                <div style={{ fontSize: 14 }}>{injectTopBar()}</div>
+              )}
               {tablePagination}
             </div>
           </div>

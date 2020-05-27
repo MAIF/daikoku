@@ -18,11 +18,11 @@ export class AuditTrailList extends Component {
   columns = [
     {
       Header: 'Date',
-      accessor: (item) => item['@timestamp'],
+      accessor: (item) => item['@timestamp']['$long'], //todo: try to remove this $long prop from reactivemongo
       style: { textAlign: 'left' },
-      cell: (value) => {
+      Cell: ({value}) => {
         return moment(value).format('YYYY-MM-DD HH:mm:ss.SSS');
-      },
+      }
     },
     {
       Header: 'Name',
@@ -96,40 +96,11 @@ export class AuditTrailList extends Component {
 
   topBar = () => {
     return (
-      <>
-        <button
-          type="button"
-          className="btn btn-xs btn-outline-primary ml-2 mr-1"
-          onClick={this.previous}>
-          <i className="fas fa-arrow-left" />
-        </button>
-        ,<span> page </span>,
-        <input
-          type="number mr-1"
-          style={{ width: 60, textAlign: 'center' }}
-          value={this.state.page}
-          onChange={(e) => {
-            this.setState({ page: e.target.value });
-            this.table.update();
-          }}
-        />
-        ,<span> on {(this.state.total / this.state.size).toFixed(0)} with </span>,
-        <input
-          type="number"
-          className="mr-1"
-          style={{ width: 60, textAlign: 'center' }}
-          value={this.state.size}
-          onChange={(e) => {
-            this.setState({ size: e.target.value });
-            this.table.update();
-          }}
-        />
-        ,<span> items per fetch</span>,
-        <button type="button" className="btn btn-xs btn-outline-primary ml-1" onClick={this.next}>
-          <i className="fas fa-arrow-right" />
-        </button>
-        ,
-      </>
+      <OtoDatePicker
+        updateDateRange={this.updateDateRange}
+        from={this.state.from}
+        to={this.state.to}
+      />
     );
   };
 
@@ -153,15 +124,6 @@ export class AuditTrailList extends Component {
             <div className="col">
               <h1>Audit trail </h1>
               <div className="section">
-                <div className="d-flex justify-content-end p-2">
-                  <div className="section">
-                    <OtoDatePicker
-                      updateDateRange={this.updateDateRange}
-                      from={this.state.from}
-                      to={this.state.to}
-                    />
-                  </div>
-                </div>
                 <div className="p-2">
                   <TableWithV7
                     selfUrl="audit"

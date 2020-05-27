@@ -508,7 +508,7 @@ class AssetsListComponent extends Component {
                 });
               })
             )
-            .catch((error) => toastr.error(error));
+            .catch(({error}) => toastr.error(error));
         }
       } else {
         toastr.error(
