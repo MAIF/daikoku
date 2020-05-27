@@ -551,11 +551,11 @@ class ApiController(DaikokuAction: DaikokuAction,
 
       val transformFlow = Flow[ApiSubscription]
         .map(_.apiKey.clientName)
-        .map(json => ByteString(json))
+        .map(json => ByteString(Json.stringify(JsString(json))))
         .intersperse(ByteString("["), ByteString(","), ByteString("]"))
         .watchTermination() { (mt, d) =>
           d.onComplete {
-            case Success(done) => AppLogger.debug(s"$done")
+            case Success(done) => AppLogger.debug(s"init subscirptions for tenant ${tenant.id.value} is $done")
             case Failure(exception) =>
               AppLogger.error("Error processing stream", exception)
           }

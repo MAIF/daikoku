@@ -4,7 +4,6 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import com.typesafe.config.ConfigFactory
 import controllers.AppError
 import controllers.AppError.PlanUnauthorized
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
@@ -16,7 +15,6 @@ import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.Configuration
 import play.api.libs.json.{JsArray, JsObject, Json}
 
 class ApiControllerSpec()
@@ -76,7 +74,7 @@ class ApiControllerSpec()
 
       def generateInitSubJson(apikeyValue: String, apiId: ApiId, usagePlanId: UsagePlanId, teamId: TeamId): JsObject =
         Json.obj(
-          "apikey"  -> OtoroshiApiKey(apikeyValue, apikeyValue, apikeyValue).asJson,
+          "apikey"  -> OtoroshiApiKey(s"${teamId.value}.${apiId.value}.${usagePlanId.value}.$apikeyValue", apikeyValue, apikeyValue).asJson,
           "api" -> apiId.asJson,
           "plan" -> usagePlanId.asJson,
           "team" -> teamId.asJson
