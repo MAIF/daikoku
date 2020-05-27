@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { TableWithV7 } from '../../inputs';
+import { Table } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
 import * as Services from '../../../services';
 import moment from 'moment';
@@ -125,7 +125,7 @@ export class AuditTrailList extends Component {
               <h1>Audit trail </h1>
               <div className="section">
                 <div className="p-2">
-                  <TableWithV7
+                  <Table
                     selfUrl="audit"
                     defaultTitle="Audit trail"
                     defaultValue={() => ({})}

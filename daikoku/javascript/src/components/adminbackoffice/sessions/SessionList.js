@@ -6,7 +6,7 @@ import * as Services from '../../../services';
 
 import { t, Translation } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
-import { TableWithV7 } from '../../inputs';
+import { Table } from '../../inputs';
 import { Can, manage, daikoku } from '../../utils';
 
 class SessionListComponent extends Component {
@@ -111,7 +111,7 @@ class SessionListComponent extends Component {
                 </Translation>
               </h1>
               <div className="section p-2">
-                <TableWithV7
+                <Table
                   currentLanguage={this.props.currentLanguage}
                   selfUrl="sessions"
                   defaultTitle="User sessions"

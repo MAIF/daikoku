@@ -7,7 +7,7 @@ import faker from 'faker';
 import * as Services from '../../../services';
 import { Can, read, manage, stat, api as Api, administrator } from '../../utils';
 import { TeamBackOffice } from '../..';
-import { SwitchButton, TableWithV7, BooleanColumnFilter } from '../../inputs';
+import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { t } from '../../../locales';
 
 class TeamApisComponent extends Component {
@@ -188,7 +188,7 @@ class TeamApisComponent extends Component {
                 )}
               </h1>
               <div className="p-2">
-                <TableWithV7
+                <Table
                   currentLanguage={this.props.currentLanguage}
                   selfUrl="apis"
                   defaultTitle="Team Apis"

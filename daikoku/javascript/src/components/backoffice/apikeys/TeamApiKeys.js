@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
-import { TableWithV7 } from '../../inputs';
+import { Table } from '../../inputs';
 import { Can, read, apikey, isUserIsTeamAdmin } from '../../utils';
 import { t, Translation } from '../../../locales';
 
@@ -91,7 +91,7 @@ export class TeamApiKeysComponent extends Component {
                 </Translation>
               </Link>
               <div className="section p-2">
-                <TableWithV7
+                <Table
                   currentLanguage={this.props.currentLanguage}
                   selfUrl="apikeys"
                   defaultTitle="Apikeys"

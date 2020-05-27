@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid';
 import faker from 'faker';
 
 import * as Services from '../../../services';
-import { TableWithV7 } from '../../inputs';
+import { Table } from '../../inputs';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 import { t, Translation } from '../../../locales';
@@ -128,7 +128,7 @@ export class TenantOtoroshisComponent extends Component {
                 </a>
               </h1>
               <div className="section p-2">
-                <TableWithV7
+                <Table
                   currentLanguage={this.props.currentLanguage}
                   selfUrl="otoroshis"
                   defaultTitle="Otoroshi instances"

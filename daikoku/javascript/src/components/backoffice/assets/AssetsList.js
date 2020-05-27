@@ -4,7 +4,7 @@ import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { TeamBackOffice, UserBackOffice } from '..';
-import { TableWithV7 } from '../../inputs';
+import { Table } from '../../inputs';
 import { Can, manage, asset, tenant, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
 import { openWysywygModal } from '../../../core/modal';
@@ -578,7 +578,7 @@ class AssetsListComponent extends Component {
           </div>
           <div className="row">
             <div className="col">
-              <TableWithV7
+              <Table
                 selfUrl="assets"
                 defaultTitle="Team assets"
                 defaultValue={() => ({})}
