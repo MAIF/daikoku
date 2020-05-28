@@ -21,7 +21,7 @@ export function useForceUpdate() {
 export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultSort, defaultSortDesc, search, pageSizee = 15, mobileSize = 767, currentLanguage }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState(undefined);
   const forceUpdate = useForceUpdate();
 
   const filterTypes = React.useMemo(
@@ -141,27 +141,31 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
   }, []);
 
   useEffect(() => {
-    if (hasError) {
+    if (error) {
       setLoading(false);
     }
-  }, [hasError]);
+  }, [error]);
 
   useEffect(() => {
     setLoading(false);
+    setError(undefined)
   }, [items]);
 
   const update = () => {
     setLoading(true);
     return fetchItems()
-      .then(
-        (rawItems) => {
-          setItems(rawItems);
+      .then((rawItems) => {
+          if (rawItems.error) {
+            setError(rawItems)
+          } else {
+            setItems(rawItems);
+          }
         },
-        () => setHasError(true));
+        (e) => setError(e));
   };
 
-  if (hasError) {
-    return <h3>Something went wrong !!!</h3>;
+  if (error) {
+    return <h3>{`Something went wrong: ${error.error}`}</h3>;
   }
 
   if (loading) {
@@ -212,7 +216,6 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
   return (
     <div>
       <div>
-
         <div className="rrow section">
           <div className="row" style={{ marginBottom: 10 }}>
             <div className="col-md-12 d-flex">

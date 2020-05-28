@@ -100,7 +100,7 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
                 BadRequest(Json.obj("error" -> "Bad file content"))
               case e =>
                 AppLogger.error(
-                  s"Error during tenant asset storage: ${e.getMessage}",
+                  s"Error during team asset storage: ${e.getMessage}",
                   e)
                 InternalServerError(Json.obj("error" -> e.toString))
             }

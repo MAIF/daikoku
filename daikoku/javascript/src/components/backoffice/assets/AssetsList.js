@@ -268,6 +268,8 @@ class AssetsListComponent extends Component {
     {
       Header: t('Thumbnail', this.props.currentLanguage),
       style: { textAlign: 'left'},
+      disableSortBy: true,
+      disableFilters: true,
       accessor: (item) => item._id,
       Cell: ({ cell: { row: { original } } }) => {
         const item=original;
