@@ -95,9 +95,6 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
     val awsCredentials = StaticCredentialsProvider.create(
   AwsBasicCredentials.create(conf.access, conf.secret)
     )
-    //val url = new URL(conf.endpoint)
-    //val proxy = Option(Proxy(url.getHost, url.getPort, url.getProtocol))
-    //val settings = new S3Settings(MemoryBufferType, proxy, awsCredentials, conf.region, true)
     val settings = S3Settings(
       bufferType = MemoryBufferType,
       credentialsProvider = awsCredentials,
@@ -107,7 +104,6 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
       listBucketApiVersion = ApiVersion.ListBucketVersion2
     )
       .withEndpointUrl(conf.endpoint)
-//      .withPathStyleAccess //todo: fix this issue
     S3Attributes.settings(settings)
   }
 
@@ -145,6 +141,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
         chunkingParallelism = 1
       )
       .withAttributes(s3ClientSettingsAttrs)
+
     content
       .map { byteString =>
         if (!validated.get()) {
