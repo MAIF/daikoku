@@ -1,14 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
-
-import akka.{Done, NotUsed}
 import akka.http.scaladsl.util.FastFuture
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.stream.{ActorMaterializer, ClosedShape, FlowShape, Materializer, SourceShape}
-import akka.stream.scaladsl.{Broadcast, Flow, Framing, GraphDSL, JsonFraming, Merge, Partition, Sink, Source}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, JsonFraming, Merge, Partition, Sink, Source}
+import akka.stream.{FlowShape, Materializer, SourceShape}
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import cats.data.EitherT
 import controllers.AppError
 import controllers.AppError._
@@ -544,7 +540,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         val merge = b.add(Merge[ApiSubscription](2))
 
         subSource ~> createSubFlow ~> broadcast ~> updateTeamConcurrentFlow ~> merge
-                                      broadcast ~> updateApisConcurrentFlow ~> merge
+        broadcast ~> updateApisConcurrentFlow ~> merge
 
         SourceShape(merge.out)
       })
@@ -564,33 +560,6 @@ class ApiController(DaikokuAction: DaikokuAction,
 
 
       FastFuture.successful(Created.sendEntity(HttpEntity.Streamed(source.via(transformFlow), None, Some("application/json"))))
-    }
-  }
-
-  def initApiKey(apiId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has init an apikey for @{api.name} - @{api.id}"))(ctx.tenant.id.value, ctx) { (tenant, team) =>
-      val teamId: TeamId = (ctx.request.body \ "team").as(TeamIdFormat)
-      val planId: UsagePlanId = (ctx.request.body \ "plan" \ "_id").as(UsagePlanIdFormat) //todo: change  it in  javascript to just send planId
-      val clientId: String = (ctx.request.body \ "apikey" \ "clientId").as[String]
-      val clientSecret: String = (ctx.request.body \ "apikey" \ "clientSecret").as[String]
-      val clientName: String = (ctx.request.body \ "apikey" \ "clientName").as[String]
-
-      val apiSubscription = ApiSubscription(
-        id = ApiSubscriptionId(BSONObjectID.generate().stringify),
-        tenant = tenant.id,
-        apiKey = OtoroshiApiKey(clientName, clientId, clientSecret),
-        plan = planId,
-        createdAt = DateTime.now(),
-        team = teamId,
-        api = ApiId(apiId),
-        by = ctx.user.id,
-        customName = None,
-        rotation = None,
-        integrationToken = IdGenerator.token(64)
-      )
-
-      env.dataStore.apiSubscriptionRepo.forTenant(tenant.id).save(apiSubscription)
-        .map(done => Created(Json.obj("done" -> done)))
     }
   }
 
@@ -615,6 +584,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   def initApis() = DaikokuAction.async(sourceApiBodyParser) { ctx =>
     TenantAdminOnly(AuditTrailEvent(s"@{user.name} has init apis"))(ctx.tenant.id.value, ctx) { (_, _) => {
       val source = ctx.request.body
+        .filter(api => api.tenant == ctx.tenant.id)
         .grouped(10)
         .alsoTo(Sink.foreach(seq => AppLogger.debug(s"${seq.length} apis process")))
         .flatMapConcat(seq => {
@@ -654,7 +624,8 @@ class ApiController(DaikokuAction: DaikokuAction,
           NotFound(Json.obj("error" -> "api not found")))
         plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(pp => pp.id.value == planId),
           NotFound(Json.obj("error" -> "plan not found")))
-        error: EitherT[Future, Result, Result] = EitherT.leftT[Future, Result](Forbidden(Json.obj("error" -> "You're not authorized to subscribed to an unpublished api")))
+        unpublishedError: EitherT[Future, Result, Result] = EitherT.leftT[Future, Result](Forbidden(Json.obj("error" -> "You're not authorized to subscribed to an unpublished api")))
+        adminError: EitherT[Future, Result, Result] = EitherT.leftT[Future, Result](Forbidden(Json.obj("error" -> "You're not authorized to subscribed to an admin api")))
         value: EitherT[Future, Result, Result] = EitherT
           .liftF(
             Future
@@ -672,7 +643,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                             )
                           case Some(team) if plan.visibility == Private && team.id != api.team =>
                             Future.successful(
-                              Json.obj("error" -> s"You're not authorized on this plan")
+                              Json.obj("error" -> s"${team.name} is not authorized on this plan")
                             )
                           case Some(team) =>
                             env.dataStore.apiSubscriptionRepo
@@ -700,7 +671,9 @@ class ApiController(DaikokuAction: DaikokuAction,
               )
               .map(objs => Ok(JsArray(objs)))
           )
-        result <- if (api.published) value else error
+        result <- if (!api.published) unpublishedError
+        else if (api.visibility == ApiVisibility.AdminOnly && !ctx.user.isDaikokuAdmin) adminError
+        else value
       } yield result
 
       results.value

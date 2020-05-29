@@ -514,6 +514,8 @@ object utils {
     val otoroshiPathDeleteSub = s"/api/groups/[\\w-]*/apikeys/[\\w-]*"
     def otoroshiDeleteApikeyPath(groupId: String, clientId: String) =
       s"/api/groups/$groupId/apikeys/$clientId"
+    def otoroshiUpdateApikeyPath(groupId: String, clientId: String) =
+      s"/api/groups/$groupId/apikeys/$clientId"
 
     lazy val wireMockUrl = s"http://$stubHost:$stubPort"
     val stubPort = 11112
@@ -623,6 +625,17 @@ object utils {
       subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
+    val tenant2AdminTeam = Team(
+      id = TeamId(IdGenerator.token),
+      tenant = TenantId("tenant2"),
+      `type` = TeamType.Admin,
+      name = s"default-admin-team-II",
+      description = s"The admin team for the tenant II",
+      avatar = None,
+      users = Set(UserWithPermission(user.id, Administrator)),
+      subscriptions = Seq.empty,
+      authorizedOtoroshiGroups = Set.empty
+    )
     val adminApi = Api(
       id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
       tenant = Tenant.Default,
@@ -653,10 +666,40 @@ object utils {
       defaultUsagePlan = UsagePlanId("1"),
       authorizedTeams = Seq(defaultAdminTeam.id)
     )
+    val adminApi2 = Api(
+      id = ApiId(s"admin-api-tenant-tenant-II"),
+      tenant = TenantId("tenant2"),
+      team = tenant2AdminTeam.id,
+      name = s"admin-api-tenant-Tenant-II",
+      lastUpdate = DateTime.now(),
+      smallDescription = "admin api II",
+      description = "admin api II",
+      currentVersion = Version("1.0.0"),
+      published = true,
+      documentation = ApiDocumentation(
+        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        tenant = Tenant.Default,
+        pages = Seq.empty[ApiDocumentationPageId],
+        lastModificationAt = DateTime.now()
+      ),
+      swagger = None,
+      possibleUsagePlans = Seq(
+        Admin(
+          id = UsagePlanId("admin"),
+          customName = Some("admin"),
+          customDescription = None,
+          otoroshiTarget = None
+        )
+      ),
+      tags = Set("Administration"),
+      visibility = ApiVisibility.AdminOnly,
+      defaultUsagePlan = UsagePlanId("1"),
+      authorizedTeams = Seq(tenant2AdminTeam.id)
+    )
     val tenant = Tenant(
       id = Tenant.Default,
       name = "Test Corp.",
-      domain = "localhost",
+      domain = "localhost.default",
       style = Some(
         DaikokuStyle(
           title = "Test Corp."
@@ -685,6 +728,39 @@ object utils {
       adminApi = adminApi.id,
       adminSubscriptions = Seq.empty,
       contact = "contact@test-corp.foo.bar"
+    )
+    val tenant2 = Tenant(
+      id = TenantId("tenant2"),
+      name = "Test Corp. II",
+      domain = "localhost.tenant2",
+      style = Some(
+        DaikokuStyle(
+          title = "Test Corp. II"
+        )),
+      mailerSettings = Some(ConsoleMailerSettings()),
+      authProvider = AuthProvider.Local,
+      authProviderSettings = Json.obj(
+        "sessionMaxAge" -> 86400
+      ),
+      bucketSettings = None,
+      otoroshiSettings = Set(
+        OtoroshiSettings(
+          id = OtoroshiSettingsId("wiremock"),
+          url = s"$wireMockUrl",
+          host = "otoroshi-api.foo.bar",
+          clientSecret = "admin-api-apikey-id"
+        ),
+        OtoroshiSettings(
+          id = OtoroshiSettingsId("default"),
+          url = s"http://127.0.0.1:${port}/fakeotoroshi",
+          host = "otoroshi-api.foo.bar",
+          clientSecret = "admin-api-apikey-id"
+        )
+      ),
+      defaultLanguage = Some("fr"),
+      adminApi = adminApi2.id,
+      adminSubscriptions = Seq.empty,
+      contact = "contactII@test-corp.foo.bar"
     )
 
     def generateApi(version: String = "0",

@@ -11,7 +11,6 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
-import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.{Result, Results}
 import reactivemongo.bson.BSONObjectID
