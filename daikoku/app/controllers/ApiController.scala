@@ -75,7 +75,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         case Some(team) =>
           ctx.setCtxValue("team.name", team.name)
           env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(apiId).flatMap {
-            case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found (1)")))
+            case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
             case Some(api) if api.visibility == ApiVisibility.Public =>
               ctx.setCtxValue("api.name", api.name)
               fetchSwagger(api)
@@ -184,7 +184,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       team =>
         val r: EitherT[Future, Result, Result] = for {
           api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId),
-            NotFound(Json.obj("error" -> "Api not found (3)")))
+            NotFound(Json.obj("error" -> "Api not found")))
           pendingRequests <- if (api.team == team.id) EitherT.liftF(FastFuture.successful(Seq.empty[Notification]))
           else if (api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id))
             EitherT.leftT[Future, Seq[Notification]](
@@ -284,7 +284,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       AuditTrailEvent(s"@{user.name} has accessed documentation page for @{api.name} - @{api.id} - $pageId")
     )(ctx) {
       env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId).flatMap {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found (4)")))
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         case Some(api) =>
           ctx.setCtxValue("api.id", api.id)
           ctx.setCtxValue("api.name", api.name)
@@ -337,7 +337,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       )
     )(ctx) {
       env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId).flatMap {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found (4)")))
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         case Some(api) =>
           ctx.setCtxValue("api.id", api.id)
           ctx.setCtxValue("api.name", api.name)
@@ -389,7 +389,7 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   private def getDocumentationDetailsImpl(tenant: Tenant, apiId: String): Future[Either[JsValue, JsValue]] = {
     env.dataStore.apiRepo.forTenant(tenant.id).findByIdOrHrId(apiId).flatMap {
-      case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found (5)")))
+      case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
       case Some(api) => {
         val doc = api.documentation
         env.dataStore.apiDocumentationPageRepo
@@ -811,7 +811,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               .forTenant(ctx.tenant.id)
               .findByIdOrHrId(apiId)
               .flatMap {
-                case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found (6)")))
+                case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
                 case Some(api)
                   if api.visibility == ApiVisibility.Public || api.authorizedTeams.diff(myTeams.map(_.id)).isEmpty =>
                   findSubscriptions(api, myTeams)
@@ -888,7 +888,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         }
 
         env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
-          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found (7)")))
+          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
           case Some(api) if api.visibility == ApiVisibility.Public => checkTeam(api)
           case Some(api) if api.team == team.id => checkTeam(api)
           case Some(api) if api.visibility != ApiVisibility.Public && api.authorizedTeams.contains(team.id) =>

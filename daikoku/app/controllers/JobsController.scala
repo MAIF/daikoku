@@ -29,7 +29,7 @@ class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
       }
     } else {
       FastFuture.successful(
-        NotFound(Json.obj("error" -> "API not found ! (1)")))
+        NotFound(Json.obj("error" -> "API not found")))
     }
   }
 
@@ -38,7 +38,7 @@ class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
       apiKeyStatsJob.getStats.map(_ => Ok(Json.obj("done" -> true)))
     } else {
       FastFuture.successful(
-        NotFound(Json.obj("error" -> "API not found ! (2)")))
+        NotFound(Json.obj("error" -> "API not found")))
     }
   }
 }

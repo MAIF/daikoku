@@ -6,10 +6,13 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
 import controllers.AppError.PlanUnauthorized
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithoutQuotas, PayPerUse, QuotasWithLimits}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.ApiSubscriptionIdFormat
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
@@ -2030,6 +2033,139 @@ class ApiControllerSpec()
       )(tenant, session)
       respClean.status mustBe 403
     }
+
+    "get his team visible apis" in {
+      val planSubId = UsagePlanId("1")
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("test"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = planSubId,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.id,
+        by = daikokuAdminId,
+        customName = Some("custom name"),
+        rotation = None,
+        integrationToken = "test",
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner,
+          teamConsumer.copy(subscriptions = Seq(sub.id))),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(sub),
+        notifications = Seq(Notification(
+          id = NotificationId("untreated-notification"),
+          tenant = tenant.id,
+          team = Some(teamOwnerId),
+          sender = user,
+          notificationType = AcceptOrReject,
+          action = ApiSubscriptionDemand(defaultApi.id,
+            UsagePlanId("2"),
+            teamConsumerId)
+        )))
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}"
+      )(tenant, session)
+      resp.status mustBe 200
+
+      val pendingRequests = (resp.json \ "pendingRequestPlan").as[JsArray].value.map(_.as(json.UsagePlanIdFormat))
+      val subscriptions = (resp.json \ "subscriptions").as[JsArray]
+
+
+      pendingRequests.length mustBe 1
+      pendingRequests.head mustBe UsagePlanId("2")
+
+      subscriptions.value.length mustBe 1
+      (subscriptions.value.head \ "_id").as(json.ApiSubscriptionIdFormat) mustBe ApiSubscriptionId("test")
+    }
+
+    "not get team visible apis if he's not a member of this team" in {
+      val planSubId = UsagePlanId("1")
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("test"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = planSubId,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.id,
+        by = daikokuAdminId,
+        customName = Some("custom name"),
+        rotation = None,
+        integrationToken = "test",
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner,
+          teamConsumer.copy(subscriptions = Seq(sub.id), users = Set(UserWithPermission(userApiEditor.id, Administrator)))),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(sub),
+        notifications = Seq(Notification(
+          id = NotificationId("untreated-notification"),
+          tenant = tenant.id,
+          team = Some(teamOwnerId),
+          sender = user,
+          notificationType = AcceptOrReject,
+          action = ApiSubscriptionDemand(defaultApi.id,
+            UsagePlanId("2"),
+            teamConsumerId)
+        )))
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}"
+      )(tenant, session)
+      resp.status mustBe 403
+    }
+
+    "not get team visible apis if this aipi doesn't exists" in {
+      val planSubId = UsagePlanId("1")
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("test"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = planSubId,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.id,
+        by = daikokuAdminId,
+        customName = Some("custom name"),
+        rotation = None,
+        integrationToken = "test",
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner,
+          teamConsumer.copy(subscriptions = Seq(sub.id))),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(sub),
+        notifications = Seq(Notification(
+          id = NotificationId("untreated-notification"),
+          tenant = tenant.id,
+          team = Some(teamOwnerId),
+          sender = user,
+          notificationType = AcceptOrReject,
+          action = ApiSubscriptionDemand(defaultApi.id,
+            UsagePlanId("2"),
+            teamConsumerId)
+        )))
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/me/teams/${teamConsumerId.value}/visible-apis/another-api"
+      )(tenant, session)
+      resp.status mustBe 404
+    }
   }
 
   "a subscription" should {
@@ -2464,7 +2600,7 @@ class ApiControllerSpec()
 
       resp.status mustBe 200
       val result = (resp.json \ 0).as[JsObject]
-      (result \ "error").as[String] mustBe "You're not authorized on this plan"
+      (result \ "error").as[String] mustBe "Consumer Team is not authorized on this plan"
     }
 
     //    todo: add this test in normal plan test
@@ -2912,9 +3048,7 @@ class ApiControllerSpec()
           Json.obj("plan" -> "admin", "teams" -> Json.arr(teamConsumer.id.asJson)))
       )(tenant, session)
 
-      resp.status mustBe 200
-      val result = (resp.json \ 0).as[JsObject]
-      result mustBe AppError.toJson(PlanUnauthorized)
+      resp.status mustBe 403
     }
 
     "be available for daikoku admin" in {
@@ -3011,6 +3145,55 @@ class ApiControllerSpec()
       adminPlan.otoroshiTarget.isDefined mustBe true
       adminPlan.otoroshiTarget.get.otoroshiSettings mustBe OtoroshiSettingsId("default")
       adminPlan.otoroshiTarget.get.serviceGroup mustBe OtoroshiServiceGroupId("nice-group")
+    }
+  }
+
+  "Anyone" can {
+    "ask access for an api" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(
+          teamOwner.copy(users = Set(UserWithPermission(userAdmin.id, Administrator))),
+          teamConsumer.copy(users = Set(UserWithPermission(user.id, Administrator)))),
+        apis = Seq(defaultApi.copy(visibility = ApiVisibility.PublicWithAuthorizations, authorizedTeams = Seq.empty)),
+      )
+
+      val userSession = loginWithBlocking(user, tenant)
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+
+      //test access denied
+      val respApiDenied = httpJsonCallBlocking(s"/api/me/visible-apis/${defaultApi.id.value}")(tenant, userSession)
+      respApiDenied.status mustBe 401
+
+      //ask access
+      val resp = httpJsonCallBlocking(
+        path = s"/api/apis/${defaultApi.id.value}/access",
+        method ="POST",
+        body = Some(Json.obj("teams"  -> Json.arr(teamConsumerId.asJson)))
+
+      )(tenant, userSession)
+      resp.status mustBe 200
+
+      //get notifications for teamOwner and accept it
+      val respNotif = httpJsonCallBlocking(s"/api/me/notifications")(tenant, adminSession)
+      respNotif.status mustBe 200
+      (respNotif.json \ "count").as[Long] mustBe 1
+      val eventualNotifications = json.SeqNotificationFormat.reads(
+        (respNotif.json \ "notifications").as[JsArray])
+      eventualNotifications.isSuccess mustBe true
+      val notifId = eventualNotifications.get.head.id
+
+      val respAccept = httpJsonCallBlocking(
+        path =
+          s"/api/notifications/${notifId.value}/accept",
+        method = "PUT"
+      )(tenant, adminSession)
+      resp.status mustBe 200
+
+      //test access ok
+      val respApiOk = httpJsonCallBlocking(s"/api/me/visible-apis/${defaultApi.id.value}")(tenant, userSession)
+      respApiOk.status mustBe 200
     }
   }
 }
