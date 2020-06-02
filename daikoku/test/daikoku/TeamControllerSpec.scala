@@ -1,10 +1,12 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{TeamAccess, TeamInvitation}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionDemand, TeamAccess, TeamInvitation}
+import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
-import fr.maif.otoroshi.daikoku.domain.{TeamType, UserWithPermission}
+import fr.maif.otoroshi.daikoku.domain.{ApiSubscription, ApiSubscriptionId, Notification, NotificationId, OtoroshiApiKey, TeamPermission, TeamType, UsagePlanId, UserWithPermission}
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.{Configuration, Logger}
@@ -74,6 +76,68 @@ class TeamControllerSpec()
       )(tenant, session)
       respDeleteNotFound.status mustBe 404
     }
+
+    "not ask join a personal team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, user),
+        teams = Seq(teamOwner)
+      )
+      val dkAdminSession = loginWithBlocking(daikokuAdmin, tenant)
+      val userSession = loginWithBlocking(user, tenant)
+
+      val respMyTeam =
+        httpJsonCallBlocking("/api/me/teams/own")(tenant, userSession)
+      respMyTeam.status mustBe 200
+      val userTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
+      userTeam.isSuccess mustBe true
+      val userTeamId = userTeam.get.id
+
+      val respJoinDenied = httpJsonCallBlocking(
+        path = s"/api/teams/${userTeamId.value}/join",
+        method = "POST"
+      )(tenant, dkAdminSession)
+
+      respJoinDenied.status mustBe 403
+    }
+
+    "not add/remove member from a personal team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, user),
+        teams = Seq(teamOwner)
+      )
+      val dkAdminSession = loginWithBlocking(daikokuAdmin, tenant)
+      val userSession = loginWithBlocking(user, tenant)
+
+      val respMyTeam =
+        httpJsonCallBlocking("/api/me/teams/own")(tenant, userSession)
+      respMyTeam.status mustBe 200
+      val userTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
+      userTeam.isSuccess mustBe true
+      val userTeamId = userTeam.get.id
+
+      val respRemoveDenied = httpJsonCallBlocking(
+        path = s"/api/teams/${userTeamId.value}/members/${user.id.value}",
+        method = "DELETE"
+      )(tenant, dkAdminSession)
+
+      respRemoveDenied.status mustBe 409
+
+      val respAddDenied = httpJsonCallBlocking(
+        path = s"/api/teams/${userTeamId.value}/members",
+        method = "POST",
+        body = Some(Json.obj("members" -> Json.arr(daikokuAdmin.id.asJson)))
+      )(tenant, dkAdminSession)
+
+      respAddDenied.status mustBe 409
+
+
+    }
+    "not update permission member of team admin" in {}
+    "not update apikey visibility for team admin" in {}
   }
 
   "a team administrator" can {
@@ -595,6 +659,62 @@ class TeamControllerSpec()
         )(tenant, session)
       resp.status mustBe 409
     }
+
+    "get his team home information" in {
+      val subPlanId = UsagePlanId("5")
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("test"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = subPlanId,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = defaultApi.id,
+        by = daikokuAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        teams = Seq(teamOwner, teamConsumer.copy(users = Set.empty)),
+        users = Seq(userAdmin, randomUser),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(sub),
+        notifications = Seq(Notification(
+          id = NotificationId("untreated-notification"),
+          tenant = tenant.id,
+          team = Some(teamOwnerId),
+          sender = user,
+          notificationType = AcceptOrReject,
+          action = ApiSubscriptionDemand(defaultApi.id,
+            UsagePlanId("2"),
+            teamConsumerId)
+        ))
+      )
+      val session = loginWithBlocking(randomUser, tenant)
+      val resp =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/home",
+        )(tenant, session)
+      resp.status mustBe 200
+
+      val team =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(resp.json)
+      team.isSuccess mustBe true
+      team.get.name mustBe teamOwner.name
+
+      (resp.json  \ "apisCount").as[Int] mustBe 1
+      (resp.json  \ "subscriptionsCount").as[Int] mustBe 1
+      (resp.json  \ "notificationCount").as[Int] mustBe 1
+
+
+      val respDenied =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamConsumerId.value}/home",
+        )(tenant, session)
+      respDenied.status mustBe 403
+    }
   }
 
   "a tenant admin team" can {
@@ -665,5 +785,50 @@ class TeamControllerSpec()
       )(tenant, session)
       respUser.status mustBe 403
     }
+
+    "not see its apikey visibility updated" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam),
+        apis = Seq(adminApi)
+      )
+
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+
+      defaultAdminTeam.showApiKeyOnlyToAdmins mustBe true
+      val resp =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${defaultAdminTeam.id.value}/apiKeys/visibility",
+          method = "POST",
+          body = Some(Json.obj("showApiKeyOnlyToAdmins" -> false))
+        )(tenant, session)
+      logger.debug(Json.stringify(resp.json))
+      resp.status mustBe 409
+    }
+
+    "not see its member permission updated" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam.copy(users = Set(
+          UserWithPermission(tenantAdmin.id, Administrator),
+          UserWithPermission(user.id, Administrator))))
+      )
+
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${defaultAdminTeam.id.value}/members/_permission",
+        method = "POST",
+        body = Some(
+          Json.obj(
+            "members" -> Json.arr(user.id.value),
+            "permission" -> TeamPermission.TeamUser.name
+          )
+        )
+      )(tenant, session)
+      resp.status mustBe 409
+    }
+
   }
 }
