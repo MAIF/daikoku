@@ -1,6 +1,7 @@
 import React, { Component, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import _ from 'lodash';
 
 import * as Services from '../../../services';
 import { TeamBackOffice, UserBackOffice } from '..';
@@ -92,7 +93,7 @@ const handleAssetType = (tenantMode, type, currentLanguage) => {
         type === 'text/css' ||
         type === 'text/javascript' ||
         type === 'application/x-javascript',
-      type === 'font/openntype')
+        type === 'font/openntype')
     ) {
       return reject(t('content type is not allowed', currentLanguage));
     } else {
@@ -153,126 +154,135 @@ const ReplaceButton = (props) => {
   );
 };
 
-class FileInput extends Component {
-  state = { uploading: false };
+const FileInput = (props) => {
+  const [uploading, setUploading] = useState(false);
+  const [input, setInput] = useState(undefined)
 
-  setFiles = (e) => {
+  const setFiles = (e) => {
     const files = e.target.files;
-    this.setState({ uploading: true }, () => {
-      this.props.setFiles(files).then(() => {
-        this.setState({ uploading: false });
-      });
-    });
+    setUploading(true);
+    props.setFiles(files)
+      .then(() => setUploading(false));
   };
 
-  trigger = () => {
-    this.input.click();
+  const trigger = () => {
+    input.click();
   };
 
-  render() {
-    return (
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-        <input
-          ref={(r) => (this.input = r)}
-          type="file"
-          multiple
-          className="form-control hide"
-          onChange={this.setFiles}
-        />
+  return (
+    <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+      <input
+        ref={(r) => setInput(r)}
+        type="file"
+        multiple
+        className="form-control hide"
+        onChange={setFiles}
+      />
+      <button
+        type="button"
+        className="btn btn-outline-success pl"
+        disabled={uploading}
+        onClick={trigger}>
+        {uploading && <i className="fas fa-spinner mr-1" />}
+        {!uploading && <i className="fas fa-upload mr-1" />}
+        <Translation i18nkey="Select file" language={props.currentLanguage}>
+          Select file
+          </Translation>
+      </button>
+    </div>
+  );
+}
+
+const AddAsset = props => {
+  return (
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label" />
+      <div className="col-sm-10">
         <button
           type="button"
-          className="btn btn-outline-success pl"
-          disabled={this.state.uploading}
-          onClick={this.trigger}>
-          {this.state.uploading && <i className="fas fa-spinner mr-1" />}
-          {!this.state.uploading && <i className="fas fa-upload mr-1" />}
-          <Translation i18nkey="Select file" language={this.props.currentLanguage}>
-            Select file
-          </Translation>
+          className="btn btn-access-negative"
+          title={t('Add asset', props.currentLanguage)}
+          disabled={props.disabled ? 'disabled' : undefined}
+          onClick={() => props.addAsset()}>
+          <i className="fas fa-plus mr-1" />
+          <Translation i18nkey="Add asset" language={props.currentLanguage}>
+            Add asset
+            </Translation>
         </button>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
-class AddAsset extends Component {
-  render() {
-    return (
-      <div className="form-group row">
-        <label className="col-xs-12 col-sm-2 col-form-label" />
-        <div className="col-sm-10">
-          <button
-            type="button"
-            className="btn btn-access-negative"
-            title={t('Add asset', this.props.currentLanguage)}
-            onClick={() => this.props.addAsset()}>
-            <i className="fas fa-plus mr-1" />
-            <Translation i18nkey="Add asset" language={this.props.currentLanguage}>
-              Add asset
-            </Translation>
-          </button>
-        </div>
-      </div>
-    );
-  }
-}
+const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal, currentLanguage }) => {
+  const [assets, setAssets] = useState([]);
+  const [newAsset, setNewAsset] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [assetList, setAssetList] = useState([]);
+  const [error, setError] = useState(undefined);
 
-class AssetsListComponent extends Component {
-  state = {
-    assets: [],
-    newAsset: {},
-    loading: false,
-  };
+  useEffect(() => {
+    setLoading(false);
+  }, [error, assetList]);
 
-  flow = ['filename', 'title', 'description', 'contentType', 'input', 'add'];
+  useEffect(() => {
+    fetchAssets()
+  }, [])
 
-  schema = {
-    filename: { type: 'string', props: { label: t('Asset filename', this.props.currentLanguage) } },
-    title: { type: 'string', props: { label: t('Asset title', this.props.currentLanguage) } },
-    description: { type: 'string', props: { label: t('Description', this.props.currentLanguage) } },
+
+  const flow = ['filename', 'title', 'description', 'contentType', 'input', 'add'];
+
+  const schema = {
+    filename: { type: 'string', props: { label: t('Asset filename', currentLanguage) } },
+    title: { type: 'string', props: { label: t('Asset title', currentLanguage) } },
+    description: { type: 'string', props: { label: t('Description', currentLanguage) } },
     contentType: {
       type: 'select',
       props: {
-        label: t('Content-Type', this.props.currentLanguage),
+        label: t('Content-Type', currentLanguage),
         possibleValues: mimeTypes
-          .filter((mt) => (this.props.tenantMode ? true : !mt.tenantModeOnly))
+          .filter((mt) => (tenantMode ? true : !mt.tenantModeOnly))
           .map(({ label, value }) => ({ label, value })),
       },
     },
     input: {
       type: FileInput,
-      props: { setFiles: (f) => this.setFiles(f), currentLanguage: this.props.currentLanguage },
+      props: { setFiles: (f) => setFiles(f), currentLanguage: currentLanguage },
     },
     add: {
       type: AddAsset,
-      props: { addAsset: () => this.addAsset(), currentLanguage: this.props.currentLanguage },
+      disabled: Object.keys(newAsset).length === 0,
+      props: {
+        addAsset: () => addAsset(),
+        currentLanguage: currentLanguage
+      },
     },
   };
 
-  columns = [
+  const columns = [
     {
-      Header: t('Filename', this.props.currentLanguage),
+      Header: t('Filename', currentLanguage),
       style: { textAlign: 'left' },
       accessor: (item) => (item.meta && item.meta.filename ? item.meta.filename : '--'),
     },
     {
-      Header: t('Title', this.props.currentLanguage),
+      Header: t('Title', currentLanguage),
       style: { textAlign: 'left' },
       accessor: (item) => (item.meta && item.meta.title ? item.meta.title : '--'),
     },
     {
-      Header: t('Description', this.props.currentLanguage),
+      Header: t('Description', currentLanguage),
       style: { textAlign: 'left' },
       accessor: (item) => (item.meta && item.meta.desc ? item.meta.desc : '--'),
     },
     {
-      Header: t('Thumbnail', this.props.currentLanguage),
-      style: { textAlign: 'left'},
+      Header: t('Thumbnail', currentLanguage),
+      style: { textAlign: 'left' },
       disableSortBy: true,
       disableFilters: true,
       accessor: (item) => item._id,
       Cell: ({ cell: { row: { original } } }) => {
-        const item=original;
+        const item = original;
         const type = item.meta['content-type'];
         if (
           type === 'image/gif' ||
@@ -291,9 +301,9 @@ class AssetsListComponent extends Component {
         } else if (type === 'image/svg+xml') {
           return (
             <img
-              src={`/team-assets/${this.props.currentTeam._id}/${
+              src={`/team-assets/${currentTeam._id}/${
                 item.meta.asset
-              }?${new Date().getTime()}`}
+                }?${new Date().getTime()}`}
               width="64"
               height="64"
               alt="thumbnail"
@@ -306,65 +316,64 @@ class AssetsListComponent extends Component {
       },
     },
     {
-      Header: t('Content-Type', this.props.currentLanguage),
+      Header: t('Content-Type', currentLanguage),
       style: { textAlign: 'left' },
       accessor: (item) =>
         item.meta && item.meta['content-type'] ? item.meta['content-type'] : '--',
     },
     {
-      Header: t('Actions', this.props.currentLanguage),
+      Header: t('Actions', currentLanguage),
       disableSortBy: true,
       disableFilters: true,
-      style: {textAlign: 'center' },
+      style: { textAlign: 'center' },
       accessor: (item) => item._id,
       Cell: ({ cell: { row: { original } } }) => {
         const item = original;
         return (
-        <div className="btn-group">
-          {item.contentType.startsWith('text') && (
+          <div className="btn-group">
+            {item.contentType.startsWith('text') && (
+              <button
+                type="button"
+                onClick={() => readAndUpdate(item)}
+                className="btn btn-sm btn-outline-primary">
+                <i className="fas fa-pen" />
+              </button>
+            )}
+            <ReplaceButton
+              asset={item}
+              tenantMode={tenantMode}
+              teamId={currentTeam ? currentTeam._id : undefined}
+              displayError={(error) => toastr.error(error)}
+              currentLanguage={currentLanguage}
+              postAction={() => {
+                fetchAssets()
+              }}
+            />
+            <a href={assetLink(item.meta.asset)} target="_blank" rel="noreferrer noopener">
+              <button
+                className="btn btn-sm btn-outline-primary mr-1"
+                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
+                <i className="fas fa-eye" />
+              </button>
+            </a>
             <button
               type="button"
-              onClick={() => this.readAndUpdate(item)}
-              className="btn btn-sm btn-outline-primary">
-              <i className="fas fa-pen" />
+              onClick={() => deleteAsset(item)}
+              className="btn btn-sm btn-outline-danger">
+              <i className="fas fa-trash" />
             </button>
-          )}
-          <ReplaceButton
-            asset={item}
-            tenantMode={this.props.tenantMode}
-            teamId={this.props.currentTeam ? this.props.currentTeam._id : undefined}
-            displayError={(error) => toastr.error(error)}
-            currentLanguage={this.props.currentLanguage}
-            postAction={() => {
-              if (this.table) {
-                this.table.update();
-              }
-            }}
-          />
-          <a href={this.assetLink(item.meta.asset)} target="_blank" rel="noreferrer noopener">
-            <button
-              className="btn btn-sm btn-outline-primary mr-1"
-              style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
-              <i className="fas fa-eye" />
-            </button>
-          </a>
-          <button
-            type="button"
-            onClick={() => this.deleteAsset(item)}
-            className="btn btn-sm btn-outline-danger">
-            <i className="fas fa-trash" />
-          </button>
-        </div>
-      )},
+          </div>
+        )
+      },
     },
   ];
 
-  readAndUpdate = (asset) => {
+  const readAndUpdate = (asset) => {
     let link;
-    if (this.props.tenantMode) {
+    if (tenantMode) {
       link = `/tenant-assets/${asset.meta.asset}?download=true`;
     } else {
-      link = `/api/teams/${this.props.currentTeam._id}/assets/${asset.meta.asset}?download=true`;
+      link = `/api/teams/${currentTeam._id}/assets/${asset.meta.asset}?download=true`;
     }
 
     fetch(link, {
@@ -373,16 +382,16 @@ class AssetsListComponent extends Component {
     })
       .then((response) => response.text())
       .then((value) =>
-        this.props.openWysywygModal({
+        openWysywygModal({
           action: (value) => {
             const textFileAsBlob = new Blob([value], { type: 'text/plain' });
             const file = new File([textFileAsBlob], asset.filename);
 
-            if (this.props.tenantMode) {
+            if (tenantMode) {
               Services.updateTenantAsset(asset.meta.asset, asset.contentType, file);
             } else {
               Services.updateAsset(
-                this.props.currentTeam._id,
+                currentTeam._id,
                 asset.meta.asset,
                 asset.contentType,
                 file
@@ -391,126 +400,107 @@ class AssetsListComponent extends Component {
           },
           title: asset.meta.filename,
           value,
-          team: this.props.currentTeam,
-          currentLanguage: this.props.currentLanguage,
+          team: currentTeam,
+          currentLanguage: currentLanguage,
         })
       );
   };
 
-  assetLink = (asset) => {
-    if (this.props.tenantMode) {
+  const assetLink = (asset) => {
+    if (tenantMode) {
       return `/tenant-assets/${asset}?download=true`;
     } else {
-      return `/api/teams/${this.props.currentTeam._id}/assets/${asset}?download=true`;
+      return `/api/teams/${currentTeam._id}/assets/${asset}?download=true`;
     }
   };
 
-  serviceDelete = (asset) => {
-    if (this.props.tenantMode) {
+  const serviceDelete = (asset) => {
+    if (tenantMode) {
       return Services.deleteTenantAsset(asset);
     } else {
-      return Services.deleteAsset(this.props.currentTeam._id, asset);
+      return Services.deleteAsset(currentTeam._id, asset);
     }
   };
 
-  deleteAsset = (asset) => {
+  const deleteAsset = (asset) => {
     window
       .confirm(
         t(
           'delete asset',
-          this.props.currentLanguage,
+          currentLanguage,
           'Are you sure you want to delete that asset ?'
         )
       )
       .then((ok) => {
         if (ok) {
-          this.serviceDelete(asset.meta.asset).then(() => {
-            if (this.table) {
-              this.table.update();
-            }
+          serviceDelete(asset.meta.asset).then(() => {
+            fetchAssets()
           });
         }
       });
   };
 
-  componentDidMount() {
-    this.updateAssets();
+  const fetchAssets = () => {
+    let getAssets;
+    if (tenantMode) {
+      getAssets = Services.listTenantAssets()
+    } else {
+      getAssets = Services.listAssets(currentTeam._id)
+    }
+    setLoading(true)
+    getAssets
+      .then((assets) => {
+        if (assets.error) {
+          setError(assets.error)
+        } else {
+          setAssetList(assets)
+        }
+      })
+      .catch((e) => {
+        setError(e)
+      })
   }
 
-  updateAssets = () => {
-    if (this.table) {
-      this.table.update();
-    }
-  };
-
-  fetchAssets = () => {
-    if (this.props.currentTeam) {
-      if (this.props.tenantMode) {
-        return Services.listTenantAssets().then((assets) => {
-          return assets;
-        });
-      } else {
-        return Services.listAssets(this.props.currentTeam._id).then((assets) => {
-          return assets;
-        });
-      }
-    } else {
-      if (this.props.tenantMode) {
-        return Services.listTenantAssets().then((assets) => {
-          return assets;
-        });
-      } else {
-        return Promise.resolve([]);
-      }
-    }
-  };
-
-  addAsset = () => {
-    const multiple = this.state.assets.length > 1;
-    const files = [...this.state.assets];
-    this.setState({ loading: true });
+  const addAsset = () => {
+    const multiple = assets.length > 1;
+    const files = [...assets];
+    setLoading(true);
     const promises = files.map((file) => {
       const formData = file;
-      if (formData && this.state.newAsset.filename && this.state.newAsset.title) {
-        if (this.props.tenantMode) {
+      if (formData && newAsset.filename && newAsset.title) {
+        if (tenantMode) {
           return Services.storeTenantAsset(
-            multiple ? file.name : this.state.newAsset.filename || '--',
+            multiple ? file.name : newAsset.filename || '--',
             multiple
               ? file.name.slice(0, file.name.lastIndexOf('.'))
-              : this.state.newAsset.title || '--',
-            this.state.newAsset.description || '--',
-            multiple ? file.type : this.state.newAsset.contentType,
+              : newAsset.title || '--',
+            newAsset.description || '--',
+            multiple ? file.type : newAsset.contentType,
             formData
           ).then((asset) => {
             return maybeCreateThumbnail(asset.id, formData).then(() => {
-              this.setState({ newAsset: {} });
-              if (this.table) {
-                this.table.update();
-              }
+              setNewAsset({});
             });
           });
         } else {
-          return handleAssetType(this.props.tenantMode, file.type, this.props.currentLanguage)
+          return handleAssetType(tenantMode, file.type, currentLanguage)
             .then(() =>
               Services.storeAsset(
-                this.props.currentTeam._id,
-                multiple ? file.name : this.state.newAsset.filename || '--',
+                currentTeam._id,
+                multiple ? file.name : newAsset.filename || '--',
                 multiple
                   ? file.name.slice(0, file.name.lastIndexOf('.'))
-                  : this.state.newAsset.title || '--',
-                this.state.newAsset.description || '--',
-                multiple ? file.type : this.state.newAsset.contentType,
+                  : newAsset.title || '--',
+                newAsset.description || '--',
+                multiple ? file.type : newAsset.contentType,
                 formData
               ).then((asset) => {
                 return maybeCreateThumbnail(asset.id, formData).then(() => {
-                  this.setState({ newAsset: {} });
-                  if (this.table) {
-                    this.table.update();
-                  }
+                  setNewAsset({});
                 });
               })
             )
-            .catch(({error}) => toastr.error(error));
+            .catch(({ error }) => toastr.error(error));
         }
       } else {
         toastr.error(
@@ -522,83 +512,81 @@ class AssetsListComponent extends Component {
     });
     Promise.all(promises)
       .then(() => {
-        this.setState({ loading: false });
+        fetchAssets()
       })
-      .catch(() => this.setState({ loading: false }));
+      .catch(() => setLoading(false));
   };
 
-  setFiles = (assets) =>
+  const setFiles = (assets) =>
     new Promise((resolve, reject) => {
       const file = assets[0];
       if (!file) {
-        reject(t('no file found', this.props.currentLanguage));
+        reject(t('no file found', currentLanguage));
       } else {
-        this.setState(
-          {
-            assets,
-            newAsset: {
-              filename: file.name,
-              title: file.name.slice(0, file.name.lastIndexOf('.')),
-              contentType: file.type,
-            },
-          },
-          () => resolve()
-        );
+        setAssets(assets)
+        setNewAsset({
+          filename: file.name,
+          title: file.name.slice(0, file.name.lastIndexOf('.')),
+          contentType: file.type,
+        })
+        resolve();
       }
     });
 
-  render() {
-    const BackOffice = this.props.tenantMode ? UserBackOffice : TeamBackOffice;
-    return (
-      <BackOffice tab="Assets" apiId={this.props.match.params.apiId}>
-        <Can
-          I={manage}
-          a={this.props.tenantMode ? tenant : asset}
-          team={this.props.currentTeam}
-          dispatchError>
-          <div className="row">
-            <div className="col">
-              <h1>
-                {this.props.tenantMode
-                  ? t('Tenant', this.props.currentLanguage)
-                  : this.props.currentTeam.name}{' '}
-                {t('asset', this.props.currentLanguage, true)}
-              </h1>
-            </div>
+  const BackOffice = tenantMode ? UserBackOffice : TeamBackOffice;
+  return (
+    <BackOffice tab="Assets" apiId={match.params.apiId}>
+      <Can
+        I={manage}
+        a={tenantMode ? tenant : asset}
+        team={currentTeam}
+        dispatchError>
+        <div className="row">
+          <div className="col">
+            <h1>
+              {tenantMode
+                ? t('Tenant', currentLanguage)
+                : currentTeam.name}{' '}
+              {t('asset', currentLanguage, true)}
+            </h1>
           </div>
-          <div className="row">
-            <div className="col-12 mb-3 d-flex justify-content-start">
-              <React.Suspense fallback={<Spinner />}>
-                <LazyForm
-                  flow={this.flow}
-                  schema={this.schema}
-                  value={this.state.newAsset}
-                  onChange={(newAsset) => this.setState({ newAsset })}
+        </div>
+        {loading && <Spinner />}
+        {error && <div className="alert alert-danger">{error}</div>}
+        {!loading && !error && (
+          <>
+            <div className="row">
+              <div className="col-12 mb-3 d-flex justify-content-start">
+                <React.Suspense fallback={<Spinner />}>
+                  <LazyForm
+                    flow={flow}
+                    schema={schema}
+                    value={newAsset}
+                    onChange={(newAsset) => setNewAsset(newAsset)}
+                  />
+                </React.Suspense>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col">
+                <Table
+                  selfUrl="assets"
+                  defaultTitle="Team assets"
+                  defaultValue={() => ({})}
+                  itemName="asset"
+                  columns={columns}
+                  fetchItems={() => Promise.resolve(assetList)}
+                  showActions={false}
+                  showLink={false}
+                  extractKey={(item) => item.key}
+                  currentLanguage={currentLanguage}
                 />
-              </React.Suspense>
+              </div>
             </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <Table
-                selfUrl="assets"
-                defaultTitle="Team assets"
-                defaultValue={() => ({})}
-                itemName="asset"
-                columns={this.columns}
-                fetchItems={this.fetchAssets}
-                showActions={false}
-                showLink={false}
-                extractKey={(item) => item.key}
-                injectTable={(t) => (this.table = t)}
-                currentLanguage={this.props.currentLanguage}
-              />
-            </div>
-          </div>
-        </Can>
-      </BackOffice>
-    );
-  }
+          </>)}
+      </Can>
+    </BackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

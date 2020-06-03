@@ -159,6 +159,7 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
             setError(rawItems)
           } else {
             setItems(rawItems);
+            setLoading(false)
           }
         },
         (e) => setError(e));
