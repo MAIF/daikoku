@@ -16,7 +16,7 @@ export class NumberInput extends Component {
     return (
       <div className="form-group row">
         <label htmlFor={`input-${this.props.label}`} className="col-xs-12 col-sm-2 col-form-label">
-          {this.props.label} <Help text={this.props.help} />
+          <Help text={this.props.help} label={this.props.label} />
         </label>
         <div className="col-sm-10">
           {(this.props.prefix || this.props.suffix) && (
@@ -81,7 +81,7 @@ export class VerticalNumberInput extends Component {
       <div className="form-group row">
         <div className="col-xs-12">
           <label htmlFor={`input-${this.props.label}`} className="col-form-label">
-            {this.props.label} <Help text={this.props.help} />
+            <Help text={this.props.help} label={this.props.label} />
           </label>
           <div>
             {(this.props.prefix || this.props.suffix) && (
@@ -148,7 +148,7 @@ export class NumberRangeInput extends Component {
     return (
       <div className="form-group row">
         <label htmlFor={`input-${this.props.label}`} className="col-xs-12 col-sm-2 col-form-label">
-          {this.props.label} <Help text={this.props.help} />
+          <Help text={this.props.help} label={this.props.label} />
         </label>
         <div className="col-sm-10">
           {(this.props.prefixFrom || this.props.suffixFrom) && (

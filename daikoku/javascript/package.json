@@ -22,7 +22,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "5.13.0",
     "@xstate/react": "0.8.1",
-    "antd": "4.2.4",
+    "antd": "4.3.1",
     "asciidoctor": "2.2.0",
     "bcryptjs": "2.4.3",
     "bootstrap": "4.4.1",
@@ -54,7 +54,7 @@
     "react-select": "3.1.0",
     "react-step-wizard": "5.3.2",
     "react-table": "7.0.4",
-    "react-table-6": "6.11.0",
+    "react-tooltip": "4.2.6",
     "recharts": "1.8.5",
     "redux": "4.0.5",
     "redux-logger": "3.0.6",

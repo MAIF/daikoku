@@ -47,7 +47,7 @@ export class ObjectInput extends Component {
             <label
               htmlFor={`input-${this.props.label}`}
               className="col-xs-12 col-sm-2 col-form-label">
-              {this.props.label} <Help text={this.props.help} />
+              <Help text={this.props.help} label={this.props.label} />
             </label>
             <div className="col-sm-10">
               <button
@@ -64,7 +64,7 @@ export class ObjectInput extends Component {
           <div key={`form-group-${idx}`} className="row mb-2">
             {idx === 0 && (
               <label className="col-xs-12 col-sm-2 col-form-label">
-                {this.props.label} <Help text={this.props.help} />
+                <Help text={this.props.help} label={this.props.label} />
               </label>
             )}
             {idx > 0 && <label className="col-xs-12 col-sm-2 col-form-label">&nbsp;</label>}
@@ -158,7 +158,7 @@ export class VerticalObjectInput extends Component {
           <div className="form-group row">
             <div className="col-xs-12">
               <label htmlFor={`input-${this.props.label}`} className="col-form-label">
-                {this.props.label} <Help text={this.props.help} />
+                <Help text={this.props.help} label={this.props.label} />
               </label>
               <div>
                 <button
@@ -180,7 +180,7 @@ export class VerticalObjectInput extends Component {
             <div className="col-xs-12">
               {idx === 0 && (
                 <label className="col-form-label">
-                  {this.props.label} <Help text={this.props.help} />
+                  <Help text={this.props.help} label={this.props.label} />
                 </label>
               )}
               {idx > 0 && false && <label className="col-form-label">&nbsp;</label>}

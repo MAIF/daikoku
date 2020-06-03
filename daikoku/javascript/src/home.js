@@ -5,7 +5,6 @@ import { Provider } from 'react-redux';
 
 import { store } from './core';
 
-import 'react-table-6/react-table.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';
 

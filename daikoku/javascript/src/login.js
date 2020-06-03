@@ -2,7 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import jQuery from 'jquery';
 
-import 'react-table-6/react-table.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';
 

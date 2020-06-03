@@ -34,7 +34,7 @@ export default class CodeInput extends Component {
     return (
       <div className="form-group row">
         <label htmlFor={`input-${this.props.label}`} className="col-sm-2 control-label">
-          {this.props.label} <Help text={this.props.help} />
+          <Help text={this.props.help} label={this.props.label} />
         </label>
         <div className="col-sm-10">
           <AceEditor

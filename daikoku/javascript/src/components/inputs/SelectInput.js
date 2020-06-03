@@ -107,7 +107,7 @@ export class SelectInput extends Component {
           <label
             htmlFor={`input-${this.props.label}`}
             className="col-xs-12 col-sm-2 col-form-label">
-            {this.props.label} <Help text={this.props.help} />
+            <Help text={this.props.help} label={this.props.label} />
           </label>
           <div className="col-sm-10">
             <div style={{ width: '100%' }}>
@@ -123,7 +123,7 @@ export class SelectInput extends Component {
           <label
             htmlFor={`input-${this.props.label}`}
             className="col-xs-12 col-sm-2 col-form-label">
-            {this.props.label} <Help text={this.props.help} />
+            <Help text={this.props.help} label={this.props.label} />
           </label>
           <div className="col-sm-10">
             <div style={{ width: '100%' }}>
@@ -146,7 +146,7 @@ export class SelectInput extends Component {
     return (
       <div className="form-group row">
         <label htmlFor={`input-${this.props.label}`} className="col-xs-12 col-sm-2 col-form-label">
-          {this.props.label} <Help text={this.props.help} />
+          <Help text={this.props.help} label={this.props.label} />
         </label>
         <div className="col-sm-10">
           <div style={{ width: '100%' }} className="input-select">
