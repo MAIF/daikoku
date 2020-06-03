@@ -16,6 +16,13 @@ lazy val root = (project in file("."))
 
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy (x)
+}
+
 libraryDependencies ++= Seq(
   ws,
   filters,
