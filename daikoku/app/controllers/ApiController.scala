@@ -390,7 +390,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   private def getDocumentationDetailsImpl(tenant: Tenant, apiId: String): Future[Either[JsValue, JsValue]] = {
     env.dataStore.apiRepo.forTenant(tenant.id).findByIdOrHrId(apiId).flatMap {
       case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
-      case Some(api) => {
+      case Some(api) =>
         val doc = api.documentation
         env.dataStore.apiDocumentationPageRepo
           .forTenant(tenant.id)
@@ -413,12 +413,11 @@ class ApiController(DaikokuAction: DaikokuAction,
               }
             Right(
               Json.obj(
-                "pages" -> JsArray(pages.map(p => JsString((p \ "_humanReadableId").as[String]))),
+                "pages" -> JsArray(pages.map(p => JsString((p \ "_id").as[String]))),
                 "titles" -> JsArray(pages)
               )
             )
           }
-      }
     }
   }
 
