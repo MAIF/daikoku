@@ -1,13 +1,12 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.audit.AuthorizationLevel.AuthorizedTeamAdmin
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.Configuration
+import play.api.libs.json.Json
 
 import scala.util.Random
 
@@ -128,6 +127,46 @@ class UserControllerSpec()
                                                                     session)
       resp.status mustBe 303
       //todo: test it
+    }
+
+    "set admin status" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin, user),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+      val resp =
+        httpJsonCallBlocking(
+          path = s"/api/admin/users/${user.id.value}/_admin",
+          method = "PUT",
+          body = Some(Json.obj("isDaikokuAdmin" -> true)))(tenant, session)
+      resp.status mustBe 200
+
+      val respVerif = httpJsonCallBlocking(
+        s"/api/admin/users/${user.id.value}")(tenant, session)
+      respVerif.status mustBe 200
+      val eventualUser =
+        fr.maif.otoroshi.daikoku.domain.json.UserFormat.reads(resp.json)
+      eventualUser.isSuccess mustBe true
+      eventualUser.get.id mustBe user.id
+      eventualUser.get.isDaikokuAdmin mustBe true
+
+      val resp2 =
+        httpJsonCallBlocking(
+          path = s"/api/admin/users/${user.id.value}/_admin",
+          method = "PUT",
+          body = Some(Json.obj("isDaikokuAdmin" -> false)))(tenant, session)
+      resp2.status mustBe 200
+      val respRemove = httpJsonCallBlocking(
+        s"/api/admin/users/${user.id.value}")(tenant, session)
+      respRemove.status mustBe 200
+      logger.debug(Json.stringify(resp2.json))
+      val eventualUser2 =
+        fr.maif.otoroshi.daikoku.domain.json.UserFormat.reads(resp2.json)
+      eventualUser2.isSuccess mustBe true
+      eventualUser2.get.id mustBe user.id
+      eventualUser2.get.isDaikokuAdmin mustBe false
     }
   }
 
@@ -259,6 +298,21 @@ class UserControllerSpec()
         httpJsonCallBlocking(
           s"/api/admin/users/${daikokuAdmin.id.value}/_impersonate")(tenant,
                                                                      session)
+      resp.status mustBe 401
+    }
+
+    "not set admin status" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(user, tenant)
+      val resp =
+        httpJsonCallBlocking(
+          path = s"/api/admin/users/${userAdmin.id.value}/_admin",
+          method = "PUT",
+          body = Some(Json.obj("isDaikokuAdmin" -> true)))(tenant, session)
       resp.status mustBe 401
     }
   }

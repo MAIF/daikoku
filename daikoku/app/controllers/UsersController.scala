@@ -71,7 +71,7 @@ class UsersController(DaikokuAction: DaikokuAction,
                   } yield {
                     Ok(userToSave.asJson)
                   }
-                case None => FastFuture.successful(BadRequest(Json.obj("error" -> "")))
+                case None => FastFuture.successful(BadRequest(Json.obj("error" -> "No admin team found, please contact support")))
               }
               case None => FastFuture.successful(NotFound(Json.obj("error" -> "User not found")))
             }
