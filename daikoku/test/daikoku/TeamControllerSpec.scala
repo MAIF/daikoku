@@ -1,15 +1,13 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionDemand, TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
-import fr.maif.otoroshi.daikoku.domain.{ApiSubscription, ApiSubscriptionId, Notification, NotificationId, OtoroshiApiKey, TeamPermission, TeamType, UsagePlanId, UserWithPermission}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.{Configuration, Logger}
 import play.api.libs.json._
 
 import scala.util.Random

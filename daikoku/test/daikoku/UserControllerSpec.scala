@@ -1,11 +1,8 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import com.typesafe.config.ConfigFactory
-import fr.maif.otoroshi.daikoku.audit.AuthorizationLevel.AuthorizedTeamAdmin
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.Configuration
 import play.api.libs.json.Json
 
 import scala.util.Random
