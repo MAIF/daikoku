@@ -1381,7 +1381,7 @@ class MockController(DaikokuAction: DaikokuAction,
               .forAllTenant()
               .findByIdNotDeleted(sub.api)
               .map {
-                case None => NotFound(Json.obj("error" -> "api not found (1)"))
+                case None => NotFound(Json.obj("error" -> "api not found"))
                 case Some(api) =>
                   Ok(Json.obj("hits" -> Json.obj("count" -> r.nextInt(100))))
               }
@@ -1400,7 +1400,7 @@ class MockController(DaikokuAction: DaikokuAction,
             NotFound(Json.obj("error" -> "subscription not found")))
         case Some(sub) =>
           env.dataStore.apiRepo.forAllTenant().findByIdNotDeleted(sub.api).map {
-            case None => NotFound(Json.obj("error" -> "api not found (2)"))
+            case None => NotFound(Json.obj("error" -> "api not found"))
             case Some(api) =>
               api.possibleUsagePlans
                 .find(pp => pp.id == sub.plan)

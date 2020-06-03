@@ -1,23 +1,13 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.Configuration
-import play.api.libs.json.Json
 import reactivemongo.bson.BSONObjectID
-
-import com.themillhousegroup.scoup.ScoupImplicits._
-
-import scala.concurrent.duration._
 
 class BasicUsageSpec()
     extends PlaySpec
