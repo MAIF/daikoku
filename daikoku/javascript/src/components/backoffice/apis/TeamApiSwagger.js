@@ -1,27 +1,26 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { t } from '../../../locales';
 import { TextInput, BooleanInput, ObjectInput } from '../../inputs';
 
-export class TeamApiSwagger extends Component {
-  componentDidMount() {
-    if (this.props.value.swagger.content) {
-      this.initSwaggerEditor(this.props.value.swagger.content);
-    }
-  }
+export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
+  const [lastContent, setLastContent] = useState(undefined);
+  let unsubscribe = () => {};
 
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    if (!this.props.value.swagger.content && !!nextProps.value.swagger.content) {
-      this.initSwaggerEditor(nextProps.value.swagger.content);
+  useEffect(() => {
+    if (!!value.swagger.content) {
+      initSwaggerEditor(value.swagger.content);
     } else {
-      if (!nextProps.value.swagger.content) {
-        this.killSwaggerEditor();
-      }
+      killSwaggerEditor();
     }
-  }
 
-  initSwaggerEditor = (content) => {
-    console.log('initSwaggerEditor');
+    return () => {
+      killSwaggerEditor()
+    }
+  }, [value]);
+
+  const initSwaggerEditor = (content) => {
+    console.log("init swagger editor")
     window.editor = SwaggerEditorBundle({ // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
       layout: 'StandaloneLayout',
@@ -32,112 +31,82 @@ export class TeamApiSwagger extends Component {
       swagger2ConverterUrl: 'https://converter.swagger.io/api/convert',
       spec: content,
     });
-    this.lastContent = content;
     window.editor.specActions.updateSpec(content);
-    this.unsubscribe = window.editor.getStore().subscribe(() => {
+    setLastContent(content)
+    unsubscribe = window.editor.getStore().subscribe(() => {
       const ctt = window.editor.specSelectors.specStr();
-      if (ctt !== this.lastContent) {
-        this.updateStateFromSwaggerEditor();
-        this.lastContent = ctt;
+      if (ctt !== lastContent) {
+        updateStateFromSwaggerEditor();
+        setLastContent(ctt);
       }
-    });
+    })
   };
 
-  updateStateFromSwaggerEditor = () => {
+  const updateStateFromSwaggerEditor = () => {
     console.log('updateStateFromSwaggerEditor');
-    const spec = window.editor.specSelectors.specStr();
-    const value = this.props.value;
-    value.swagger.content = spec;
-    this.props.onChange(value);
+    const content = window.editor.specSelectors.specStr();
+    onChange({ ...value, swagger: { ...value.swagger, content } });
   };
 
-  killSwaggerEditor = () => {
+  const killSwaggerEditor = () => {
     console.log('killSwaggerEditor');
-    if (this.unsubscribe) {
-      this.unsubscribe();
+    if (unsubscribe) {
+      unsubscribe();
     }
   };
 
-  componentWillUnmount() {
-    this.killSwaggerEditor();
+  const swagger = value.swagger;
+  if (!swagger) {
+    return null;
   }
 
-  render() {
-    const swagger = this.props.value.swagger;
-    if (!swagger) {
-      return null;
-    }
-    return (
-      <form>
-        {!swagger.content && (
-          <TextInput
-            label={t('URL', this.props.currentLanguage)}
-            placeholder="The url of the swagger file"
-            value={swagger.url}
-            help="..."
-            onChange={(e) => {
-              const value = this.props.value;
-              value.swagger.url = e;
-              this.props.onChange(value);
-            }}
-          />
-        )}
-        {!swagger.content && (
-          <ObjectInput
-            label={t('Headers', this.props.currentLanguage)}
-            value={swagger.headers}
-            help="..."
-            onChange={(e) => {
-              const value = this.props.value;
-              value.swagger.headers = e;
-              this.props.onChange(value);
-            }}
-          />
-        )}
-        <BooleanInput
-          label={t('Use swagger content', this.props.currentLanguage)}
-          value={!!swagger.content}
-          help="..."
-          onChange={(e) => {
-            const value = this.props.value;
-            if (e) {
-              value.swagger.content = JSON.stringify(
-                {
-                  swagger: '2.0',
-                  info: {
-                    description: '...',
-                    version: '1.0.0',
-                    title: '...',
-                  },
-                  host: 'api.foo.bar',
-                  basePath: '/',
-                },
-                null,
-                2
-              );
-            } else {
-              value.swagger.content = null;
-            }
-            this.props.onChange(value);
-          }}
+  return (
+    <form>
+      {!swagger.content && (
+        <TextInput
+          key={"test"}
+          label={t('URL', currentLanguage)}
+          placeholder="The url of the swagger file"
+          value={swagger.url}
+          onChange={(url) => onChange({ ...value, swagger: { ...value.swagger, url } })}
         />
-        {/*!!swagger.content && (
-          <div style={{ width: '100%', marginBottom: 20 }}>
-            <SingleJsonInput
-              height={window.innerHeight - 300 + 'px'}
-              value={swagger.content}
-              onChange={code => {
-                const value = this.props.value;
-                value.swagger.content = code;
-                this.props.onChange(value);
-              }}
-            />
-          </div>
-            )*/}
-        {!!swagger.content && (
-          <div id="swagger-editor" style={{ height: window.outerHeight - 60 - 58 }}></div>
-        )}
-      </form>
-    );
-  }
+      )}
+      {!swagger.content && (
+        <ObjectInput
+          label={t('Headers', currentLanguage)}
+          value={swagger.headers}
+          onChange={(headers) => onChange({ ...value, swagger: { ...value.swagger, headers } })}
+        />
+      )}
+      <BooleanInput
+        label={t('Use swagger content', currentLanguage)}
+        value={!!swagger.content}
+        onChange={(e) => {
+          let content;
+          if (e) {
+            content = JSON.stringify(
+              {
+                swagger: '2.0',
+                info: {
+                  description: '...',
+                  version: '1.0.0',
+                  title: '...',
+                },
+                host: 'api.foo.bar',
+                basePath: '/',
+              },
+              null,
+              2
+            );
+          } else {
+            content = null;
+          }
+          onChange({ ...value, swagger: { ...value.swagger, content } })
+        }}
+      />
+      {!!swagger.content && (
+        <div id="swagger-editor" style={{ height: window.outerHeight - 60 - 58 }}></div>
+      )}
+    </form>
+  );
 }

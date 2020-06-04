@@ -17,13 +17,11 @@ const OffSwitch = (props) => (
 
 export class BooleanInput extends Component {
   toggleOff = (e) => {
-    console.debug({ e });
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChange(false);
   };
 
   toggleOn = (e) => {
-    console.debug({ e });
     if (e && e.preventDefault) e.preventDefault();
     this.props.onChange(true);
   };
@@ -61,13 +59,11 @@ export class BooleanInput extends Component {
 export class SimpleBooleanInput extends Component {
   toggleOff = (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    console.log('off');
     this.props.onChange(false);
   };
 
   toggleOn = (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    console.log('on');
     this.props.onChange(true);
   };
 
