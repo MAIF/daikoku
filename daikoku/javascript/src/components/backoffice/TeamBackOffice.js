@@ -108,16 +108,21 @@ class TeamBackOfficeHomeComponent extends Component {
                       ? '#'
                       : `/${this.props.currentTeam._humanReadableId}/settings/members`
                   }
-                  className="home-tile">
-                  <span className="home-tile-number">{this.state.team.users.length}</span>
-                  <span className="home-tile-text">
-                    <Translation
-                      i18nkey="members"
-                      language={this.props.currentLanguage}
-                      count={this.state.team.users.length}>
-                      members
-                    </Translation>
-                  </span>
+                  className="home-tile"
+                  disabled={this.props.currentTeam.type === 'Personal' ? "disabled" : null}>
+                  {this.props.currentTeam.type !== 'Personal' && (
+                    <>
+                      <span className="home-tile-number">{this.state.team.users.length}</span>
+                      <span className="home-tile-text">
+                        <Translation
+                          i18nkey="members"
+                          language={this.props.currentLanguage}
+                          count={this.state.team.users.length}>
+                          members
+                        </Translation>
+                      </span>
+                    </>
+                  )}
                 </Link>
                 <Link to={'/notifications'} className="home-tile">
                   <span className="home-tile-number">{this.state.team.notificationCount}</span>

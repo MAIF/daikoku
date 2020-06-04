@@ -3,6 +3,10 @@
   text-decoration: none;
 }
 
+.home-tile:disabled, .home-tile[disabled] {
+  cursor: auto;
+}
+
 .home-tiles .alert {
   padding-top: 0.3rem;
   padding-bottom: 0.3rem;
