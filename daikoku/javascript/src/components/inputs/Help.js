@@ -16,5 +16,5 @@ export const Help = ({ label, text, place }) => {
       </BeautifulTitle>
     );
   }
-  return null;
+  return label;
 }
