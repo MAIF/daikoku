@@ -1,4 +1,6 @@
 import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
+import com.typesafe.sbt.packager.docker.DockerChmodType
+import com.typesafe.sbt.packager.docker.DockerPermissionStrategy
 
 name := """daikoku"""
 organization := "fr.maif.otoroshi"
@@ -115,22 +117,16 @@ dockerExposedPorts := Seq(
   8080
 )
 packageName in Docker := "daikoku"
-
 maintainer in Docker := "MAIF OSS Team <oss@maif.fr>"
-
 dockerBaseImage := "openjdk:11-jre-slim"
-
 dockerUsername := Some("maif")
-
 dockerUpdateLatest := true
-
-dockerCommands :=
-  dockerCommands.value.flatMap {
-    case ExecCmd("ENTRYPOINT", args @ _*) =>
-      Seq(Cmd("ENTRYPOINT", args.mkString(" ")))
-    case v => Seq(v)
-  }
-
+dockerCommands := dockerCommands.value.filterNot {
+  case ExecCmd("CMD", args @ _*) => true
+  case cmd                       => false
+}
+dockerPackageMappings in Docker += (baseDirectory.value / "docker" / "start.sh") -> "/opt/docker/bin/start.sh"
+dockerEntrypoint := Seq("/opt/docker/bin/start.sh")
 dockerUpdateLatest := true
 
 // swaggerDomainNameSpaces := Seq("fr.maif.otoroshi.daikoku.domain")
