@@ -17,10 +17,13 @@ lazy val root = (project in file("."))
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 
 assemblyMergeStrategy in assembly := {
-  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case PathList("org", "apache", "commons", "logging", xs @ _*)=> MergeStrategy.first
+  case PathList(ps @ _*) if ps.contains("module-info.class")          => MergeStrategy.first // ???
+  case PathList(ps @ _*) if ps.contains("ModuleUtil.class")           => MergeStrategy.first // ???
+  case PathList(ps @ _*) if ps.contains("reflection-config.json")     => MergeStrategy.first // ???
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
-    oldStrategy (x)
+    oldStrategy(x)
 }
 
 libraryDependencies ++= Seq(
@@ -42,7 +45,7 @@ libraryDependencies ++= Seq(
   "com.softwaremill.macwire"  %% "macros"                   % "2.3.4" % "provided",
   "javax.xml.bind"            % "jaxb-api"                  % "2.3.1",
   "com.sun.xml.bind"          % "jaxb-core"                 % "2.3.0.1",
-  "com.sun.xml.bind"          % "jaxb-impl"                 % "2.3.3",
+  "com.sun.xml.bind"          % "jaxb-impl"                 % "2.3.0.1",
   "org.reactivemongo"         %% "play2-reactivemongo"      % s"$reactiveMongoVersion-play28",
   "org.reactivemongo"         %% "reactivemongo-play-json"  % s"$reactiveMongoVersion-play28",
   "org.reactivemongo"         %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",
