@@ -829,4 +829,55 @@ class TeamControllerSpec()
     }
 
   }
+
+  "a personal team" must {
+    "have always thhe same informations than it user" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(user)
+      )
+
+      val session = loginWithBlocking(user, tenant)
+      val resp = httpJsonCallBlocking(s"/api/me/teams/own")(tenant, session)
+      resp.status mustBe 200
+      val myTeam: JsResult[Team] = json.TeamFormat.reads(resp.json)
+      myTeam.isSuccess mustBe true
+      //not now because team is created by suite not by daikoku login
+
+      val respUpdate = httpJsonCallBlocking(
+        path = s"/api/admin/users/${user.id.value}",
+        method = "PUT",
+        body = Some(user.copy(name = "Jon Snow").asJson)
+      )(tenant, session)
+      respUpdate.status mustBe 200
+      logger.debug(Json.stringify(respUpdate.json))
+
+      val resp2 = httpJsonCallBlocking(s"/api/me/teams/own")(tenant, session)
+      resp2.status mustBe 200
+      val myTeamUpdated: JsResult[Team] = json.TeamFormat.reads(resp2.json)
+      myTeamUpdated.isSuccess mustBe true
+      myTeamUpdated.get.name mustBe "Jon Snow"
+      myTeamUpdated.get.avatar.get mustBe user.picture
+      myTeamUpdated.get.contact mustBe user.email
+    }
+    "not be updated" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(user)
+      )
+
+      val session = loginWithBlocking(user, tenant)
+      val resp = httpJsonCallBlocking(s"/api/me/teams/own")(tenant, session)
+      resp.status mustBe 200
+      val myTeam: JsResult[Team] = json.TeamFormat.reads(resp.json)
+      myTeam.isSuccess mustBe true
+
+      val respUpdate = httpJsonCallBlocking(
+        path = s"/api/teams/${myTeam.get.id.value}",
+        method = "PUT",
+        body = Some(myTeam.get.copy(name = "test").asJson)
+      )(tenant, session)
+      respUpdate.status mustBe 403
+    }
+  }
 }
