@@ -74,7 +74,7 @@ class TeamIncomeComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="Income" language={this.props.currentLanguage}>
+                <Translation i18nkey="Team Income" language={this.props.currentLanguage}>
                   Income
                 </Translation>
               </h1>
