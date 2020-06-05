@@ -145,6 +145,7 @@ class TeamController(DaikokuAction: DaikokuAction,
               .findByIdNotDeleted(teamId)
               .flatMap {
                 case Some(team) if team.`type` == TeamType.Admin => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to update this team")))
+                case Some(team) if team.`type` == TeamType.Personal => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to update this team")))
                 case Some(team) =>
                   ctx.setCtxValue("team.id", team.id)
                   ctx.setCtxValue("team.name", team.name)

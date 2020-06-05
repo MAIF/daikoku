@@ -6,6 +6,7 @@ import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
@@ -98,7 +99,33 @@ class UsersController(DaikokuAction: DaikokuAction,
                   val userToSave =
                     if (ctx.user.isDaikokuAdmin) newUser
                     else newUser.copy(metadata = user.metadata)
-                  env.dataStore.userRepo.save(userToSave).map { _ =>
+                  for {
+                    maybePersonalTeam <- env.dataStore.teamRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj(
+                      "type" -> TeamType.Personal.name,
+                      "users.userId" -> ctx.user.id.asJson
+                    ))
+                    _                 <- env.dataStore.userRepo.save(userToSave)
+                    _                 <- env.dataStore.teamRepo.forTenant(ctx.tenant).save(
+                      maybePersonalTeam
+                        .map(team => team.copy(
+                          name = userToSave.name,
+                          description = s"The personal team of ${userToSave.name}",
+                          avatar = Some(userToSave.picture),
+                          contact = userToSave.email))
+                        .getOrElse(Team(
+                        id = TeamId(BSONObjectID.generate().stringify),
+                        tenant = ctx.tenant.id,
+                        `type` = TeamType.Personal,
+                        name = s"${userToSave.name}",
+                        description = s"The personal team of ${userToSave.name}",
+                        users = Set(UserWithPermission(user.id, Administrator)),
+                        subscriptions = Seq.empty,
+                        authorizedOtoroshiGroups = Set.empty,
+                        contact = userToSave.email,
+                        avatar = Some(userToSave.picture)
+                      ))
+                    )
+                  } yield {
                     Ok(userToSave.asJson)
                   }
                 case None =>

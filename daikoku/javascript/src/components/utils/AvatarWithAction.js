@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { v4 as uuidv4 } from 'uuid';
-import { BeautifulTitle } from './BeautifulTitle';
 import ReactToolTip from 'react-tooltip';
 
 const placements = ['topRight', 'topLeft', 'bottomRight', 'bottomLeft'];

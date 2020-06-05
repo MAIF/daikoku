@@ -223,7 +223,9 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
         description = s"The personal team of ${user.name}",
         users = Set(UserWithPermission(user.id, Administrator)),
         subscriptions = Seq.empty,
-        authorizedOtoroshiGroups = Set.empty
+        authorizedOtoroshiGroups = Set.empty,
+        contact = user.email,
+        avatar = Some(user.picture)
       )
       theMaybeTeam: Option[Team] <- if (maybePersonnalTeam.isDefined)
         FastFuture.successful(maybePersonnalTeam)

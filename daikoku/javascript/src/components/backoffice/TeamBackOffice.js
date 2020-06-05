@@ -197,7 +197,7 @@ class TeamBackOfficeComponent extends Component {
                     <Link to={`/${currentTeam._humanReadableId}/settings`}>
                       {this.props.currentTeam.name}
                     </Link>
-                    {this.props.currentTeam.type !== 'Admin' && (
+                    {this.props.currentTeam.type === 'Organization' && (
                       <Can I={manage} a={team} team={this.props.currentTeam}>
                         <Link
                           to={`/${this.props.currentTeam._humanReadableId}/settings/edition`}
