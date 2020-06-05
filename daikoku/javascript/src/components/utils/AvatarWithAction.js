@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { Tooltip } from 'antd';
 import { v4 as uuidv4 } from 'uuid';
+import { BeautifulTitle } from './BeautifulTitle';
+import ReactToolTip from 'react-tooltip';
 
 const placements = ['topRight', 'topLeft', 'bottomRight', 'bottomLeft'];
 
@@ -22,50 +23,47 @@ export const AvatarWithAction = (props) => {
 
     if (Array.isArray(action.action)) {
       ActionComponent = (
-        <span className="avatar-with-action__action" key={uuid}>
           <Link to={action.link}>
             <i className={action.iconClass} onClick={() => setSecondaryActions(action.action)} />
           </Link>
-        </span>
       );
     } else if (action.link) {
       ActionComponent = (
-        <span className="avatar-with-action__action" key={uuid}>
           <a href={action.link}>
             <i className={action.iconClass} onClick={() => handleAction(action.action)} />
           </a>
-        </span>
       );
     } else if (action.redirect) {
       ActionComponent = (
-        <span className="avatar-with-action__action" key={uuid}>
           <span onClick={() => action.redirect()}>
             <i className={action.iconClass} />
           </span>
-        </span>
       );
     } else {
       ActionComponent = (
-        <span className="avatar-with-action__action" key={uuid}>
           <i className={action.iconClass} onClick={() => handleAction(action.action)} />
-        </span>
       );
     }
 
     if (action.tooltip) {
       return (
-        <Tooltip key={uuid} placement={placements[idx]} title={action.tooltip}>
-          {ActionComponent}
-        </Tooltip>
+        <span className="avatar-with-action__action" key={uuid}>
+          <span data-tip={action.tooltip}>{ActionComponent}</span>
+        </span>
       );
     }
-    return ActionComponent;
+    return (
+      <span className="avatar-with-action__action" key={uuid}>
+        {ActionComponent}
+      </span>
+    );
   };
 
   return (
     <div className="avatar-with-action">
       <div className="container">
         <div className="overlay" />
+        <ReactToolTip place={'bottom'} />
         <div className="avatar-with-action__container">
           <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />
         </div>
