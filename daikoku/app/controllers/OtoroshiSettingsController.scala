@@ -112,7 +112,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
   }
 
   def otoroshiGroupsFor(teamId: String, oto: String) = DaikokuAction.async { ctx =>
-      TeamAdminOnly(AuditTrailEvent(
+      TeamApiEditorOnly(AuditTrailEvent(
         s"@{user.name} has accessed groups of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(teamId, ctx) { team =>
         ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>

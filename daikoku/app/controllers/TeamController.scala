@@ -34,15 +34,13 @@ class TeamController(DaikokuAction: DaikokuAction,
     DaikokuActionMaybeWithGuest.async { ctx =>
       UberPublicUserAccess(
         AuditTrailEvent(
-          s"@{user.get.name} has accessed the team @{team.name} - @{team.id}"))(
+          s"@{user.name} has accessed the team @{team.name} - @{team.id}"))(
         ctx) {
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
           .findByIdOrHrId(teamId)
           .map {
             case Some(team) =>
-//          ctx.setCtxValue("team.id", team.id)
-//          ctx.setCtxValue("team.name", team.name)
               Ok(team.asSimpleJson)
             case None => NotFound(Json.obj("error" -> "Team not found"))
           }
@@ -136,7 +134,7 @@ class TeamController(DaikokuAction: DaikokuAction,
 
   def updateTeam(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
     TeamAdminOnly(AuditTrailEvent(
-      "@{user.name} has updated team @{team.name} - @{team.id"))(teamId, ctx) {
+      "@{user.name} has updated team @{team.name} - @{team.id}"))(teamId, ctx) {
       _ =>
         json.TeamFormat.reads(ctx.request.body) match {
           case JsSuccess(newTeam, _) =>

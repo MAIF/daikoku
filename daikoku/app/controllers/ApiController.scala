@@ -229,7 +229,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   def getVisibleApi(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     import cats.implicits._
 
-    UberPublicUserAccess(AuditTrailEvent("@{user.name} is accessing team @{team.name} visible api @{api.name}"))(ctx) {
+    UberPublicUserAccess(AuditTrailEvent("@{user.name} is accessing visible api @{api.name}"))(ctx) {
       val r: EitherT[Future, Result, Result] = for {
         myTeams <- EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
         api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId),
@@ -269,6 +269,7 @@ class ApiController(DaikokuAction: DaikokuAction,
           ) ++ Json.obj(
             "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
           )
+          ctx.setCtxValue("api.name", api.name)
           Ok(betterApis)
         } else {
           Unauthorized(Json.obj("error" -> "You're not authorized on this api"))
@@ -422,9 +423,10 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def getDocumentationDetails(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
-    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed documentation details for @{api.name} - @{api.id}"))(
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed documentation details for @{api.id}"))(
       ctx
     ) {
+      ctx.setCtxValue("api.id", apiId)
       getDocumentationDetailsImpl(ctx.tenant, apiId).map {
         case Left(r) => NotFound(r)
         case Right(r) => Ok(r)
@@ -1088,7 +1090,7 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def verifyNameUniqueness() = DaikokuAction.async(parse.json) { ctx =>
     PublicUserAccess(
-      AuditTrailEvent(s"@{user.name} is checking if api name (@{api.name}) is unique @{team.name} - @{team.id}")
+      AuditTrailEvent(s"@{user.name} is checking if api name (@{api.name}) is unique")
     )(ctx) {
       import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 
@@ -1358,6 +1360,8 @@ class ApiController(DaikokuAction: DaikokuAction,
             case JsSuccess(api, _) if oldApi.visibility == ApiVisibility.AdminOnly =>
               val oldAdminPlan = oldApi.possibleUsagePlans.head
               val planToSave = api.possibleUsagePlans.find(_.id == oldAdminPlan.id)
+              ctx.setCtxValue("api.name", api.name)
+              ctx.setCtxValue("api.id", api.id)
               planToSave match {
                 case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api Plan not found")))
                 case Some(plan) =>
@@ -1382,6 +1386,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                 apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
                 _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
               } yield {
+                ctx.setCtxValue("api.name", api.name)
+                ctx.setCtxValue("api.id", api.id)
                 Ok(apiToSave.asJson)
               }
           }

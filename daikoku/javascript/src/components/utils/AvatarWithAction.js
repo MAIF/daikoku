@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { v4 as uuidv4 } from 'uuid';
 import ReactToolTip from 'react-tooltip';
-
-const placements = ['topRight', 'topLeft', 'bottomRight', 'bottomLeft'];
 
 export const AvatarWithAction = (props) => {
   const [secondaryActions, setSecondaryActions] = useState([]);
@@ -22,9 +20,12 @@ export const AvatarWithAction = (props) => {
 
     if (Array.isArray(action.action)) {
       ActionComponent = (
-          <Link to={action.link}>
-            <i className={action.iconClass} onClick={() => setSecondaryActions(action.action)} />
-          </Link>
+          <span>
+            <i className={action.iconClass} onClick={() => {
+              ReactToolTip.hide();
+              setSecondaryActions(action.action)
+              }} />
+          </span>
       );
     } else if (action.link) {
       ActionComponent = (

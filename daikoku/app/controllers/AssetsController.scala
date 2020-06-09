@@ -183,7 +183,7 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
 
   def listAssets(teamId: String) = DaikokuAction.async { ctx =>
     TeamAdminOrTenantAdminOnly(
-      AuditTrailEvent(s"@{user.name} listed assets of team @{team.id}"))(teamId,
+      AuditTrailEvent(s"@{user.name} listed assets of team @{team.name} - @{team.id}"))(teamId,
                                                                          ctx) {
       team =>
         ctx.tenant.bucketSettings match {

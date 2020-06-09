@@ -14,7 +14,6 @@ import play.api.mvc._
 import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import play.api.Logger
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration.FiniteDuration
@@ -70,9 +69,6 @@ object IdentityAttrs {
 }
 
 object TenantHelper {
-
-  val logger = Logger("TenantHelper")
-
   def extractTenantId(request: RequestHeader)(implicit env: Env): TenantId = {
     request.headers
       .get("Daikoku-Tenant")
@@ -86,6 +82,7 @@ object TenantHelper {
   def withTenant(request: RequestHeader, env: Env)(f: Tenant => Future[Result])(
       implicit ec: ExecutionContext): Future[Result] = {
 
+    AppLogger.debug(env.config.tenantProvider.name)
     env.config.tenantProvider match {
       case TenantProvider.Header => {
         val tenantId = TenantHelper.extractTenantId(request)(env)
@@ -192,8 +189,6 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                             ec: ExecutionContext)
     extends Filter {
 
-  val logger = Logger("LoginFilter")
-
   import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
   implicit class RegexOps(sc: StringContext) {
     def r = new util.matching.Regex(sc.parts.mkString)
@@ -258,7 +253,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
   def apply(nextFilter: RequestHeader => Future[Result])(
       request: RequestHeader): Future[Result] = {
 
-    logger.debug(
+    AppLogger.debug(
       s"Filtering on ${request.method.toLowerCase()} => ${request.relativeUri}")
 
     (request.method.toLowerCase(), request.relativeUri) match {
@@ -307,7 +302,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                       .getQueryString("token")
                       .orElse(request.headers.get("X-Personal-Token")) match {
                       case None =>
-                        logger.info("No personal token found")
+                        AppLogger.info("No personal token found")
                         FastFuture.successful(
                           Results.Unauthorized(
                             Json.obj("error" -> "not authorized"))
@@ -317,7 +312,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                           .findOneNotDeleted(Json.obj("personalToken" -> token))
                           .flatMap {
                             case None =>
-                              logger.info("No user found")
+                              AppLogger.info("No user found")
                               FastFuture.successful(
                                 Results.Unauthorized(
                                   Json.obj("error" -> "not authorized"))
@@ -341,7 +336,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                               )
                               findUserTeam(tenant.id, user).flatMap {
                                 case None =>
-                                  logger.info("No team found")
+                                  AppLogger.info("No team found")
                                   FastFuture.successful(
                                     Results
                                       .Redirect(
@@ -387,7 +382,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         )
                     )
                   case (_, _) =>
-                    logger.info("No session id found")
+                    AppLogger.info("No session id found")
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                 }
               case Some(sessionId) =>
@@ -410,7 +405,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         request.addAttr(IdentityAttrs.TenantKey, tenant))
                     case Some(session)
                         if session.expires.isBeforeNow =>
-                      logger.info("Session expired")
+                      AppLogger.info("Session expired")
                       FastFuture.successful(
                         Results
                           .Redirect(
@@ -427,7 +422,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         .findByIdNotDeleted(session.userId)
                         .flatMap {
                           case None =>
-                            logger.info("No user found")
+                            AppLogger.info("No user found")
                             FastFuture.successful(
                               Results
                                 .Redirect(fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
@@ -443,7 +438,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                               _user.copy(tenants = _user.tenants + tenant.id)
                             findUserTeam(tenant.id, user).flatMap {
                               case None =>
-                                logger.info("No team found")
+                                AppLogger.info("No team found")
                                 FastFuture.successful(
                                   Results
                                     .Redirect(

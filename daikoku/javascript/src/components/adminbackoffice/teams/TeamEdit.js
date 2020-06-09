@@ -67,7 +67,7 @@ class TeamEditForAdministrationComponent extends Component {
   save = () => {
     if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
       Services.createTeam(this.state.team)
-        .then((team) =>
+        .then((team) => {
           toastr.success(
             t(
               'team.created',
@@ -75,11 +75,11 @@ class TeamEditForAdministrationComponent extends Component {
               false,
               `Team ${team.name} successfully created`,
               team.name
-            )
-          )
-        )
-        .then(() => {
-          this.props.history.push(`/settings/teams/${this.state.team._humanReadableId}/members`);
+            ))
+            return team;
+          })
+        .then(team => {
+          this.props.history.push(`/settings/teams/${team._humanReadableId}/members`);
         });
     } else {
       Services.updateTeam(this.state.team).then((team) =>

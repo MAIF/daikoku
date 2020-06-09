@@ -2,22 +2,23 @@ package fr.maif.otoroshi.daikoku.env
 
 import java.nio.file.Paths
 
-import akka.actor.{Actor, ActorRef, ActorSystem, ClassicActorSystemProvider, PoisonPill}
+import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.{Materializer, SystemMaterializer}
+import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
-import com.auth0.jwt.{JWT, JWTVerifier}
 import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
-import play.api.{Configuration, Environment, Logger}
+import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoApi
 import storage.{DataStore, MongoDataStore}
 
@@ -221,8 +222,6 @@ class DaikokuEnv(ws: WSClient,
                  messagesApi: MessagesApi)
     extends Env {
 
-  val logger: Logger = Logger("DaikokuEnv")
-
   val actorSystem: ActorSystem = ActorSystem("daikoku")
   val materializer: Materializer = Materializer.createMaterializer(actorSystem)
   val snowflakeSeed: Long = configuration.getOptional[Long]("daikoku.snowflake.seed").get
@@ -255,7 +254,7 @@ class DaikokuEnv(ws: WSClient,
             case Some(path)
                 if path.startsWith("http://") || path
                   .startsWith("https://") =>
-              logger.warn(
+              AppLogger.warn(
                 s"Main dataStore seems to be empty, importing from $path ...")
               implicit val ec: ExecutionContext = defaultExecutionContext
               implicit val mat: Materializer = defaultMaterializer
@@ -275,7 +274,7 @@ class DaikokuEnv(ws: WSClient,
                 }
               Await.result(initialDataFu, 10 seconds)
             case Some(path) =>
-              logger.warn(
+              AppLogger.warn(
                 s"Main dataStore seems to be empty, importing from $path ...")
               implicit val ec: ExecutionContext = defaultExecutionContext
               implicit val mat: Materializer = defaultMaterializer
@@ -294,8 +293,8 @@ class DaikokuEnv(ws: WSClient,
 
               import scala.concurrent._
 
-              logger.warn("")
-              logger.warn(
+              AppLogger.warn("")
+              AppLogger.warn(
                 "Main dataStore seems to be empty, generating initial data ...")
               val userId = UserId(BSONObjectID.generate().stringify)
               val adminApiDefaultTenantId = ApiId(s"admin-api-tenant-${Tenant.Default.value}")
@@ -398,13 +397,13 @@ class DaikokuEnv(ws: WSClient,
               } yield ()
 
               Await.result(initialDataFu, 10 seconds)
-              logger.warn("")
-              logger.warn(
+              AppLogger.warn("")
+              AppLogger.warn(
                 s"You can log in with admin@daikoku.io / ${config.init.admin.password}")
-              logger.warn("")
-              logger.warn(
+              AppLogger.warn("")
+              AppLogger.warn(
                 "Please avoid using the default tenant for anything else than configuring Daikoku")
-              logger.warn("")
+              AppLogger.warn("")
           }
         case false =>
       }
