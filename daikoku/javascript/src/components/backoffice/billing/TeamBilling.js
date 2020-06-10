@@ -109,7 +109,11 @@ class TeamBillingComponent extends Component {
                 <div className="col apis">
                   <div className="row month__and__total">
                     <div className="col-12 month__selector d-flex align-items-center">
-                      <MonthPicker updateDate={this.getBilling} value={this.state.date} currentLanguage={this.props.currentLanguage}/>
+                      <MonthPicker
+                        updateDate={this.getBilling}
+                        value={this.state.date}
+                        currentLanguage={this.props.currentLanguage}
+                      />
                       <button className="btn btn-sm btn-access-negative" onClick={this.sync}>
                         <i className="fas fa-sync-alt ml-1" />
                       </button>

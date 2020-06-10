@@ -109,7 +109,7 @@ class TeamBackOfficeHomeComponent extends Component {
                       : `/${this.props.currentTeam._humanReadableId}/settings/members`
                   }
                   className="home-tile"
-                  disabled={this.props.currentTeam.type === 'Personal' ? "disabled" : null}>
+                  disabled={this.props.currentTeam.type === 'Personal' ? 'disabled' : null}>
                   {this.props.currentTeam.type !== 'Personal' && (
                     <>
                       <span className="home-tile-number">{this.state.team.users.length}</span>

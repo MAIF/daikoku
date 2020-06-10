@@ -1,7 +1,6 @@
-import React, { Component, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import _ from 'lodash';
 
 import * as Services from '../../../services';
 import { TeamBackOffice, UserBackOffice } from '..';
@@ -93,7 +92,7 @@ const handleAssetType = (tenantMode, type, currentLanguage) => {
         type === 'text/css' ||
         type === 'text/javascript' ||
         type === 'application/x-javascript',
-        type === 'font/openntype')
+      type === 'font/openntype')
     ) {
       return reject(t('content type is not allowed', currentLanguage));
     } else {
@@ -156,13 +155,12 @@ const ReplaceButton = (props) => {
 
 const FileInput = (props) => {
   const [uploading, setUploading] = useState(false);
-  const [input, setInput] = useState(undefined)
+  const [input, setInput] = useState(undefined);
 
   const setFiles = (e) => {
     const files = e.target.files;
     setUploading(true);
-    props.setFiles(files)
-      .then(() => setUploading(false));
+    props.setFiles(files).then(() => setUploading(false));
   };
 
   const trigger = () => {
@@ -187,13 +185,13 @@ const FileInput = (props) => {
         {!uploading && <i className="fas fa-upload mr-1" />}
         <Translation i18nkey="Select file" language={props.currentLanguage}>
           Select file
-          </Translation>
+        </Translation>
       </button>
     </div>
   );
-}
+};
 
-const AddAsset = props => {
+const AddAsset = (props) => {
   return (
     <div className="form-group row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
@@ -207,14 +205,20 @@ const AddAsset = props => {
           <i className="fas fa-plus mr-1" />
           <Translation i18nkey="Add asset" language={props.currentLanguage}>
             Add asset
-            </Translation>
+          </Translation>
         </button>
       </div>
     </div>
   );
-}
+};
 
-const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal, currentLanguage }) => {
+const AssetsListComponent = ({
+  match,
+  currentTeam,
+  tenantMode,
+  openWysywygModal,
+  currentLanguage,
+}) => {
   const [assets, setAssets] = useState([]);
   const [newAsset, setNewAsset] = useState({});
   const [loading, setLoading] = useState(true);
@@ -226,9 +230,8 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
   }, [error, assetList]);
 
   useEffect(() => {
-    fetchAssets()
-  }, [])
-
+    fetchAssets();
+  }, []);
 
   const flow = ['filename', 'title', 'description', 'contentType', 'input', 'add'];
 
@@ -254,7 +257,7 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
       disabled: Object.keys(newAsset).length === 0,
       props: {
         addAsset: () => addAsset(),
-        currentLanguage: currentLanguage
+        currentLanguage: currentLanguage,
       },
     },
   };
@@ -281,7 +284,11 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
       disableSortBy: true,
       disableFilters: true,
       accessor: (item) => item._id,
-      Cell: ({ cell: { row: { original } } }) => {
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
         const item = original;
         const type = item.meta['content-type'];
         if (
@@ -301,9 +308,7 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
         } else if (type === 'image/svg+xml') {
           return (
             <img
-              src={`/team-assets/${currentTeam._id}/${
-                item.meta.asset
-                }?${new Date().getTime()}`}
+              src={`/team-assets/${currentTeam._id}/${item.meta.asset}?${new Date().getTime()}`}
               width="64"
               height="64"
               alt="thumbnail"
@@ -327,7 +332,11 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
       disableFilters: true,
       style: { textAlign: 'center' },
       accessor: (item) => item._id,
-      Cell: ({ cell: { row: { original } } }) => {
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
         const item = original;
         return (
           <div className="btn-group">
@@ -346,7 +355,7 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
               displayError={(error) => toastr.error(error)}
               currentLanguage={currentLanguage}
               postAction={() => {
-                fetchAssets()
+                fetchAssets();
               }}
             />
             <a href={assetLink(item.meta.asset)} target="_blank" rel="noreferrer noopener">
@@ -363,7 +372,7 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
               <i className="fas fa-trash" />
             </button>
           </div>
-        )
+        );
       },
     },
   ];
@@ -390,12 +399,7 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
             if (tenantMode) {
               Services.updateTenantAsset(asset.meta.asset, asset.contentType, file);
             } else {
-              Services.updateAsset(
-                currentTeam._id,
-                asset.meta.asset,
-                asset.contentType,
-                file
-              );
+              Services.updateAsset(currentTeam._id, asset.meta.asset, asset.contentType, file);
             }
           },
           title: asset.meta.filename,
@@ -424,17 +428,11 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
 
   const deleteAsset = (asset) => {
     window
-      .confirm(
-        t(
-          'delete asset',
-          currentLanguage,
-          'Are you sure you want to delete that asset ?'
-        )
-      )
+      .confirm(t('delete asset', currentLanguage, 'Are you sure you want to delete that asset ?'))
       .then((ok) => {
         if (ok) {
           serviceDelete(asset.meta.asset).then(() => {
-            fetchAssets()
+            fetchAssets();
           });
         }
       });
@@ -443,23 +441,23 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
   const fetchAssets = () => {
     let getAssets;
     if (tenantMode) {
-      getAssets = Services.listTenantAssets()
+      getAssets = Services.listTenantAssets();
     } else {
-      getAssets = Services.listAssets(currentTeam._id)
+      getAssets = Services.listAssets(currentTeam._id);
     }
-    setLoading(true)
+    setLoading(true);
     getAssets
       .then((assets) => {
         if (assets.error) {
-          setError(assets.error)
+          setError(assets.error);
         } else {
-          setAssetList(assets)
+          setAssetList(assets);
         }
       })
       .catch((e) => {
-        setError(e)
-      })
-  }
+        setError(e);
+      });
+  };
 
   const addAsset = () => {
     const multiple = assets.length > 1;
@@ -471,9 +469,7 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
         if (tenantMode) {
           return Services.storeTenantAsset(
             multiple ? file.name : newAsset.filename || '--',
-            multiple
-              ? file.name.slice(0, file.name.lastIndexOf('.'))
-              : newAsset.title || '--',
+            multiple ? file.name.slice(0, file.name.lastIndexOf('.')) : newAsset.title || '--',
             newAsset.description || '--',
             multiple ? file.type : newAsset.contentType,
             formData
@@ -488,9 +484,7 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
               Services.storeAsset(
                 currentTeam._id,
                 multiple ? file.name : newAsset.filename || '--',
-                multiple
-                  ? file.name.slice(0, file.name.lastIndexOf('.'))
-                  : newAsset.title || '--',
+                multiple ? file.name.slice(0, file.name.lastIndexOf('.')) : newAsset.title || '--',
                 newAsset.description || '--',
                 multiple ? file.type : newAsset.contentType,
                 formData
@@ -512,7 +506,7 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
     });
     Promise.all(promises)
       .then(() => {
-        fetchAssets()
+        fetchAssets();
       })
       .catch(() => setLoading(false));
   };
@@ -523,12 +517,12 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
       if (!file) {
         reject(t('no file found', currentLanguage));
       } else {
-        setAssets(assets)
+        setAssets(assets);
         setNewAsset({
           filename: file.name,
           title: file.name.slice(0, file.name.lastIndexOf('.')),
           contentType: file.type,
-        })
+        });
         resolve();
       }
     });
@@ -536,17 +530,11 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
   const BackOffice = tenantMode ? UserBackOffice : TeamBackOffice;
   return (
     <BackOffice tab="Assets" apiId={match.params.apiId}>
-      <Can
-        I={manage}
-        a={tenantMode ? tenant : asset}
-        team={currentTeam}
-        dispatchError>
+      <Can I={manage} a={tenantMode ? tenant : asset} team={currentTeam} dispatchError>
         <div className="row">
           <div className="col">
             <h1>
-              {tenantMode
-                ? t('Tenant', currentLanguage)
-                : currentTeam.name}{' '}
+              {tenantMode ? t('Tenant', currentLanguage) : currentTeam.name}{' '}
               {t('asset', currentLanguage, true)}
             </h1>
           </div>
@@ -583,11 +571,12 @@ const AssetsListComponent = ({ match, currentTeam, tenantMode, openWysywygModal,
                 />
               </div>
             </div>
-          </>)}
+          </>
+        )}
       </Can>
     </BackOffice>
   );
-}
+};
 
 const mapStateToProps = (state) => ({
   ...state.context,

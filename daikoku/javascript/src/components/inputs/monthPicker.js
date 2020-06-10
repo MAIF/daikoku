@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import moment from 'moment';
+import React from 'react';
 
 import DatePicker from 'antd/lib/date-picker';
 
 const getDateFormat = (language) => {
   switch (language.toUpperCase()) {
-    case 'FR': 
+    case 'FR':
       return {
-        format: 'MMM. YYYY'
-      }
+        format: 'MMM. YYYY',
+      };
     case 'EN':
-      default: 
+    default:
       return {
-        format: 'MMM., YYYY'
-      }
+        format: 'MMM., YYYY',
+      };
   }
-}
+};
 
 export const MonthPicker = ({ currentLanguage, updateDate, value }) => {
   const dateFormat = getDateFormat(currentLanguage);
@@ -28,11 +27,11 @@ export const MonthPicker = ({ currentLanguage, updateDate, value }) => {
   };
 
   return (
-        <DatePicker.MonthPicker
-          defaultValue={value}
-          onChange={(v) => onChange(v)}
-          format={dateFormat.format}
-          onOk={(value) => value}
-        />
-    );
-  }
+    <DatePicker.MonthPicker
+      defaultValue={value}
+      onChange={(v) => onChange(v)}
+      format={dateFormat.format}
+      onOk={(value) => value}
+    />
+  );
+};

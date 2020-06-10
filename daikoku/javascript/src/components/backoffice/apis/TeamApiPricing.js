@@ -7,7 +7,7 @@ import classNames from 'classnames';
 
 import { Spinner, newPossibleUsagePlan } from '../../utils';
 import { t, Translation } from '../../../locales';
-import * as Services from '../../../services'; 
+import * as Services from '../../../services';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -37,12 +37,13 @@ const PRIVATE = 'Private';
 export class TeamApiPricing extends Component {
   state = {
     selected: this.props.value.possibleUsagePlans[0],
-    otoroshiSettings: []
+    otoroshiSettings: [],
   };
 
   componentDidMount() {
-    Services.allSimpleOtoroshis(this.props.tenant._id)
-      .then((otoroshiSettings) => this.setState({ otoroshiSettings }))
+    Services.allSimpleOtoroshis(this.props.tenant._id).then((otoroshiSettings) =>
+      this.setState({ otoroshiSettings })
+    );
   }
 
   otoroshiFlow = (_found) => {

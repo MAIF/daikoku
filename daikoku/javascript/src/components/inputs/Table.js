@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTable, usePagination, useSortBy, useFilters, useBlockLayout, useResizeColumns } from 'react-table';
+import {
+  useTable,
+  usePagination,
+  useSortBy,
+  useFilters,
+  useBlockLayout,
+  useResizeColumns,
+} from 'react-table';
 import classNames from 'classnames';
 import _ from 'lodash';
 import PropTypes from 'prop-types';
@@ -8,17 +15,28 @@ import Select from 'react-select';
 
 import { t } from '../../locales';
 import { Spinner } from '../utils';
-import { fuzzyTextFilterFn, DefaultColumnFilter } from '.'
+import { DefaultColumnFilter } from '.';
 
 export function useForceUpdate() {
   const [, setTick] = useState(0);
   const update = React.useCallback(() => {
-    setTick(tick => tick + 1);
+    setTick((tick) => tick + 1);
   }, []);
   return update;
 }
 
-export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultSort, defaultSortDesc, search, pageSizee = 15, mobileSize = 767, currentLanguage }) => {
+export const Table = ({
+  fetchItems,
+  columns,
+  injectTopBar,
+  injectTable,
+  defaultSort,
+  defaultSortDesc,
+  search,
+  pageSizee = 15,
+  mobileSize = 767,
+  currentLanguage,
+}) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(undefined);
@@ -26,23 +44,18 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
 
   const filterTypes = React.useMemo(
     () => ({
-      // Add a new fuzzyTextFilterFn filter type.
-      fuzzyText: fuzzyTextFilterFn,
-      // Or, override the default text filter to use
       // "startWith"
       text: (rows, id, filterValue) => {
-        return rows.filter(row => {
-          const rowValue = row.values[id]
+        return rows.filter((row) => {
+          const rowValue = row.values[id];
           return rowValue !== undefined
-            ? String(rowValue)
-              .toLowerCase()
-              .startsWith(String(filterValue).toLowerCase())
-            : true
-        })
+            ? String(rowValue).toLowerCase().startsWith(String(filterValue).toLowerCase())
+            : true;
+        });
       },
     }),
     []
-  )
+  );
   const EditableCell = ({
     value: initialValue,
     row: { index },
@@ -51,28 +64,28 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
     editable,
   }) => {
     // We need to keep and update the state of the cell normally
-    const [value, setValue] = React.useState(initialValue)
+    const [value, setValue] = React.useState(initialValue);
 
-    const onChange = e => {
-      setValue(e.target.value)
-    }
+    const onChange = (e) => {
+      setValue(e.target.value);
+    };
 
     // We'll only update the external data when the input is blurred
     const onBlur = () => {
-      updateMyData(index, id, value)
-    }
+      updateMyData(index, id, value);
+    };
 
     // If the initialValue is changed externall, sync it up with our state
     React.useEffect(() => {
-      setValue(initialValue)
-    }, [initialValue])
+      setValue(initialValue);
+    }, [initialValue]);
 
     if (!editable) {
-      return `${initialValue}`
+      return `${initialValue}`;
     }
 
-    return <input value={value} onChange={onChange} onBlur={onBlur} />
-  }
+    return <input value={value} onChange={onChange} onBlur={onBlur} />;
+  };
   const defaultColumn = React.useMemo(
     () => ({
       // Let's set up our default Filter UI
@@ -81,8 +94,7 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
       Cell: EditableCell,
     }),
     []
-  )
-
+  );
 
   const {
     getTableProps,
@@ -100,7 +112,7 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
     nextPage,
     previousPage,
     setPageSize,
-    state: { pageIndex, pageSize, sortBy, filters }
+    state: { pageIndex, pageSize, sortBy, filters },
   } = useTable(
     {
       columns: useMemo(() => columns, []),
@@ -110,17 +122,20 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
       initialState: {
         pageSize: 10,
         pageIndex: 0,
-        sortBy: useMemo(() => [
-          {
-            id: defaultSort || columns[0].title,
-            desc: defaultSortDesc || false,
-          },
-        ], [])
-      }
+        sortBy: useMemo(
+          () => [
+            {
+              id: defaultSort || columns[0].title,
+              desc: defaultSortDesc || false,
+            },
+          ],
+          []
+        ),
+      },
     },
     useFilters,
     useSortBy,
-    usePagination,
+    usePagination
   );
 
   useEffect(() => {
@@ -148,21 +163,22 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
 
   useEffect(() => {
     setLoading(false);
-    setError(undefined)
+    setError(undefined);
   }, [items]);
 
   const update = () => {
     setLoading(true);
-    return fetchItems()
-      .then((rawItems) => {
-          if (rawItems.error) {
-            setError(rawItems)
-          } else {
-            setItems(rawItems);
-            setLoading(false)
-          }
-        },
-        (e) => setError(e));
+    return fetchItems().then(
+      (rawItems) => {
+        if (rawItems.error) {
+          setError(rawItems);
+        } else {
+          setItems(rawItems);
+          setLoading(false);
+        }
+      },
+      (e) => setError(e)
+    );
   };
 
   if (error) {
@@ -174,45 +190,46 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
   }
 
   const customStyles = {
-    control: base => ({
+    control: (base) => ({
       ...base,
       height: 30,
-      minHeight: 30
-    })
+      minHeight: 30,
+    }),
   };
 
-  const tablePagination = <div className="d-flex flex-row align-items-baseline justify-content-end flex-grow-1">
-    <span>{rows.length} Results</span>
-    <Select
-      className="reactSelect reactSelect-pagination col-3 ml-3 mr-3"
-      value={{ label: `Show ${pageSize}`, value: pageSize }}
-      options={[10, 20, 50, 100].map(x => ({ label: `Show ${x}`, value: x }))}
-      onChange={(e) => setPageSize(Number(e.value))}
-      classNamePrefix="reactSelect"
-      styles={customStyles}
-    />
-    <Pagination
-      containerClassName="col-9"
-      previousLabel={t('<', currentLanguage)}
-      nextLabel={t('>', currentLanguage)}
-      breakLabel={'...'}
-      breakClassName={'break'}
-      pageCount={pageOptions.length}
-      marginPagesDisplayed={1}
-      pageRangeDisplayed={5}
-      onPageChange={({ selected }) => gotoPage(selected)}
-      containerClassName={'pagination'}
-      pageClassName={'page-selector'}
-      activeClassName={'active'}
-    />
-    <button
-      type="button"
-      className="ml-3 btn btn-sm btn-access-negative float-right"
-      title={t('Reload the table content', currentLanguage)}
-      onClick={update}>
-      <span className="fas fa-sync-alt" />
-    </button>
-  </div>
+  const tablePagination = (
+    <div className="d-flex flex-row align-items-baseline justify-content-end flex-grow-1">
+      <span>{rows.length} Results</span>
+      <Select
+        className="reactSelect reactSelect-pagination col-3 ml-3 mr-3"
+        value={{ label: `Show ${pageSize}`, value: pageSize }}
+        options={[10, 20, 50, 100].map((x) => ({ label: `Show ${x}`, value: x }))}
+        onChange={(e) => setPageSize(Number(e.value))}
+        classNamePrefix="reactSelect"
+        styles={customStyles}
+      />
+      <Pagination
+        containerClassName="col-9"
+        previousLabel={t('<', currentLanguage)}
+        nextLabel={t('>', currentLanguage)}
+        breakLabel={'...'}
+        breakClassName={'break'}
+        pageCount={pageOptions.length}
+        marginPagesDisplayed={1}
+        pageRangeDisplayed={5}
+        onPageChange={({ selected }) => gotoPage(selected)}
+        pageClassName={'page-selector'}
+        activeClassName={'active'}
+      />
+      <button
+        type="button"
+        className="ml-3 btn btn-sm btn-access-negative float-right"
+        title={t('Reload the table content', currentLanguage)}
+        onClick={update}>
+        <span className="fas fa-sync-alt" />
+      </button>
+    </div>
+  );
 
   return (
     <div>
@@ -220,9 +237,7 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
         <div className="rrow section">
           <div className="row" style={{ marginBottom: 10 }}>
             <div className="col-md-12 d-flex">
-              { injectTopBar && (
-                <div style={{ fontSize: 14 }}>{injectTopBar()}</div>
-              )}
+              {injectTopBar && <div style={{ fontSize: 14 }}>{injectTopBar()}</div>}
               {tablePagination}
             </div>
           </div>
@@ -231,12 +246,19 @@ export const Table = ({ fetchItems, columns, injectTopBar, injectTable, defaultS
               {headerGroups.map((headerGroup, idx) => (
                 <tr key={`thead-tr-${idx}`} {...headerGroup.getHeaderGroupProps()}>
                   {headerGroup.headers.map((column, idx) => (
-                    <th key={`thead-th-${idx}`} className={classNames({
-                      "--sort-asc": column.isSorted && !column.isSortedDesc,
-                      "--sort-desc": column.isSorted && column.isSortedDesc
-                    })} style={column.style}>
-                      <div {...column.getHeaderProps(column.getSortByToggleProps())}>{column.render("Header")}</div>
-                      <div className="my-2">{column.canFilter ? column.render('Filter') : null}</div>
+                    <th
+                      key={`thead-th-${idx}`}
+                      className={classNames({
+                        '--sort-asc': column.isSorted && !column.isSortedDesc,
+                        '--sort-desc': column.isSorted && column.isSortedDesc,
+                      })}
+                      style={column.style}>
+                      <div {...column.getHeaderProps(column.getSortByToggleProps())}>
+                        {column.render('Header')}
+                      </div>
+                      <div className="my-2">
+                        {column.canFilter ? column.render('Filter') : null}
+                      </div>
                     </th>
                   ))}
                 </tr>

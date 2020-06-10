@@ -13,7 +13,7 @@ class SessionListComponent extends Component {
   columns = [
     {
       Header: t('User', this.props.currentLanguage),
-      style: { textAlign: 'left'},
+      style: { textAlign: 'left' },
       accessor: (item) => item.userName + ' - ' + item.userEmail,
     },
     {
@@ -29,28 +29,32 @@ class SessionListComponent extends Component {
     },
     {
       Header: t('Expires', this.props.currentLanguage),
-      style: { textAlign: 'left'},
+      style: { textAlign: 'left' },
       accessor: (item) => moment(item.expires).format('YYYY-MM-DD HH:mm:ss.SSS'),
     },
     {
       Header: t('Actions', this.props.currentLanguage),
-      style: { textAlign:'center' },
+      style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
       content: (item) => item._id,
-      Cell: ({ cell: { row: {original} } }) => {
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
         const session = original;
         return (
-            <div className="btn-group">
-              <button
-                  type="button"
-                  className="btn btn-sm btn-outline-danger"
-                  title="Delete this session"
-                  onClick={() => this.deleteSession(session)}>
-                <i className="fas fa-trash"/>
-              </button>
-            </div>
-        )
+          <div className="btn-group">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-danger"
+              title="Delete this session"
+              onClick={() => this.deleteSession(session)}>
+              <i className="fas fa-trash" />
+            </button>
+          </div>
+        );
       },
     },
   ];

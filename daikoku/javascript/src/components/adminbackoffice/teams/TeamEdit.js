@@ -75,10 +75,11 @@ class TeamEditForAdministrationComponent extends Component {
               false,
               `Team ${team.name} successfully created`,
               team.name
-            ))
-            return team;
-          })
-        .then(team => {
+            )
+          );
+          return team;
+        })
+        .then((team) => {
           this.props.history.push(`/settings/teams/${team._humanReadableId}/members`);
         });
     } else {
@@ -124,13 +125,9 @@ class TeamEditForAdministrationComponent extends Component {
                   borderRadius: '50px',
                   border: '3px solid #fff',
                   boxShadow: '0px 0px 0px 3px lightgrey',
-                  overflow:'hidden'
+                  overflow: 'hidden',
                 }}>
-                <img
-                  src={this.state.team.avatar}
-                  className="img-fluid"
-                  alt="avatar"
-                />
+                <img src={this.state.team.avatar} className="img-fluid" alt="avatar" />
               </div>
             )}
             <h1 className="h1-rwd-reduce ml-2">Team - {this.state.team.name}</h1>

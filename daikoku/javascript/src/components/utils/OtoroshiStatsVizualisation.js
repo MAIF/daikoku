@@ -309,7 +309,7 @@ export class GlobalDataConsumption extends Component {
     const avgOverhead = data.avgOverhead ? data.avgOverhead.toFixed(3) : 0;
 
     return [
-      this.row(hits, ' ' + t('Hit', this.props.currentLanguage, data.hits > 1 )),
+      this.row(hits, ' ' + t('Hit', this.props.currentLanguage, data.hits > 1)),
       this.row(totalDataIn, ' ' + t('in', this.props.currentLanguage)),
       this.row(totalDataOut, ' ' + t('out', this.props.currentLanguage)),
       this.row(avgDuration, ' ' + t('ms. average duration', this.props.currentLanguage)),

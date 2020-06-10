@@ -17,4 +17,4 @@ export const Help = ({ label, text, place }) => {
     );
   }
   return label || null;
-}
+};

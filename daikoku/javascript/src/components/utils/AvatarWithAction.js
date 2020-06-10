@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { v4 as uuidv4 } from 'uuid';
 import ReactToolTip from 'react-tooltip';
@@ -20,28 +19,31 @@ export const AvatarWithAction = (props) => {
 
     if (Array.isArray(action.action)) {
       ActionComponent = (
-          <span>
-            <i className={action.iconClass} onClick={() => {
+        <span>
+          <i
+            className={action.iconClass}
+            onClick={() => {
               ReactToolTip.hide();
-              setSecondaryActions(action.action)
-              }} />
-          </span>
+              setSecondaryActions(action.action);
+            }}
+          />
+        </span>
       );
     } else if (action.link) {
       ActionComponent = (
-          <a href={action.link}>
-            <i className={action.iconClass} onClick={() => handleAction(action.action)} />
-          </a>
+        <a href={action.link}>
+          <i className={action.iconClass} onClick={() => handleAction(action.action)} />
+        </a>
       );
     } else if (action.redirect) {
       ActionComponent = (
-          <span onClick={() => action.redirect()}>
-            <i className={action.iconClass} />
-          </span>
+        <span onClick={() => action.redirect()}>
+          <i className={action.iconClass} />
+        </span>
       );
     } else {
       ActionComponent = (
-          <i className={action.iconClass} onClick={() => handleAction(action.action)} />
+        <i className={action.iconClass} onClick={() => handleAction(action.action)} />
       );
     }
 

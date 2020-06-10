@@ -315,9 +315,14 @@ export class UserEditComponent extends Component {
                   borderRadius: '50px',
                   border: '3px solid #fff',
                   boxShadow: '0px 0px 0px 3px lightgrey',
-                  overflow:'hidden'
+                  overflow: 'hidden',
                 }}>
-                <img src={this.state.user.picture} className="img-fluid" alt="avatar" style={{minWidth:'100px'}}/>
+                <img
+                  src={this.state.user.picture}
+                  className="img-fluid"
+                  alt="avatar"
+                  style={{ minWidth: '100px' }}
+                />
               </div>
             )}
             {!this.state.user && <h1>User</h1>}

@@ -41,19 +41,24 @@ class TeamApiKeyConsumptionComponent extends Component {
         <div>
           <Translation i18nkey="Usage" language={this.props.currentLanguage}>
             Usage
-            </Translation>
+          </Translation>
         </div>
         <div>
-          {hits.prettify()} <Translation i18nkey="Hit" language={this.props.currentLanguage} isPlural={hits > 1}>hits</Translation>
+          {hits.prettify()}{' '}
+          <Translation i18nkey="Hit" language={this.props.currentLanguage} isPlural={hits > 1}>
+            hits
+          </Translation>
         </div>
-        {!!max && <div>
-          <Progress
-            status="normal"
-            percent={(hits / max) * 100}
-            default={'default'}
-            showInfo={false}
-          />
-        </div>}
+        {!!max && (
+          <div>
+            <Progress
+              status="normal"
+              percent={(hits / max) * 100}
+              default={'default'}
+              showInfo={false}
+            />
+          </div>
+        )}
       </div>
     );
   };

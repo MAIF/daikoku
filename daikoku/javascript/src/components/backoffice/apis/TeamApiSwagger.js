@@ -8,20 +8,20 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
   let unsubscribe = () => {};
 
   useEffect(() => {
-    if (!!value.swagger.content) {
+    if (value.swagger.content) {
       initSwaggerEditor(value.swagger.content);
     } else {
       killSwaggerEditor();
     }
 
     return () => {
-      killSwaggerEditor()
-    }
+      killSwaggerEditor();
+    };
   }, [value]);
 
   const initSwaggerEditor = (content) => {
-    console.log("init swagger editor")
-    window.editor = SwaggerEditorBundle({ // eslint-disable-line no-undef
+    console.log('init swagger editor');
+    window.editor = SwaggerEditorBundle({  // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
       layout: 'StandaloneLayout',
       presets: [SwaggerEditorStandalonePreset], // eslint-disable-line no-undef
@@ -32,14 +32,14 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
       spec: content,
     });
     window.editor.specActions.updateSpec(content);
-    setLastContent(content)
+    setLastContent(content);
     unsubscribe = window.editor.getStore().subscribe(() => {
       const ctt = window.editor.specSelectors.specStr();
       if (ctt !== lastContent) {
         updateStateFromSwaggerEditor();
         setLastContent(ctt);
       }
-    })
+    });
   };
 
   const updateStateFromSwaggerEditor = () => {
@@ -64,7 +64,7 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
     <form>
       {!swagger.content && (
         <TextInput
-          key={"test"}
+          key={'test'}
           label={t('URL', currentLanguage)}
           placeholder="The url of the swagger file"
           value={swagger.url}
@@ -101,7 +101,7 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
           } else {
             content = null;
           }
-          onChange({ ...value, swagger: { ...value.swagger, content } })
+          onChange({ ...value, swagger: { ...value.swagger, content } });
         }}
       />
       {!!swagger.content && (
@@ -109,4 +109,4 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
       )}
     </form>
   );
-}
+};

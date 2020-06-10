@@ -29,11 +29,15 @@ export class TenantOtoroshisComponent extends Component {
     },
     {
       Header: t('Actions', this.props.currentLanguage),
-      style: { textAlign: 'center'},
+      style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
       accessor: (item) => item._id,
-      Cell: ({ cell: { row: {original} } }) => {
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
         const otoroshi = original;
         return (
           <div className="btn-group">
@@ -57,7 +61,8 @@ export class TenantOtoroshisComponent extends Component {
               </button>
             )}
           </div>
-        )},
+        );
+      },
     },
   ];
 

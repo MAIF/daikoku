@@ -116,7 +116,7 @@ export class ApiCartidge extends Component {
           {moment(api.lastUpdate).format(t('moment.date.format.short', this.props.currentLanguage))}
         </small>
 
-        {!!subscribingTeams.length &&
+        {!!subscribingTeams.length && (
           <Can I={read} a={apikey}>
             <ActionWithTeamSelector
               title={t(
@@ -137,7 +137,7 @@ export class ApiCartidge extends Component {
               </button>
             </ActionWithTeamSelector>
           </Can>
-        }
+        )}
         {defaultPlan && defaultPlan.otoroshiTarget && isPending && (
           <button type="button" className="btn btn-sm btn-access-negative mt-5">
             <Translation i18nkey="Request in progress" language={this.props.currentLanguage}>

@@ -18,7 +18,7 @@ export class SelectInput extends Component {
     error: null,
     loading: false,
     value: Option(this.props.possibleValues)
-      .map(maybeValues => maybeValues.find(v => v.value === this.props.value))
+      .map((maybeValues) => maybeValues.find((v) => v.value === this.props.value))
       .getOrElse(valueToSelectOption(this.props.value)),
     values: (this.props.possibleValues || []).map(valueToSelectOption),
   };

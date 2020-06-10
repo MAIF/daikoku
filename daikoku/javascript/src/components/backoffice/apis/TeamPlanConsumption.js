@@ -18,7 +18,13 @@ class TeamPlanConsumptionComponent extends Component {
       type: 'LineChart',
       label: (data) => {
         const totalHits = data.reduce((acc, cons) => acc + cons.hits, 0);
-        return t('data.in.plus.hits', this.props.currentLanguage, false, `Data In (${totalHits})`, totalHits);
+        return t(
+          'data.in.plus.hits',
+          this.props.currentLanguage,
+          false,
+          `Data In (${totalHits})`,
+          totalHits
+        );
       },
       title: t('Data In', this.props.currentLanguage),
       formatter: (data) =>

@@ -22,8 +22,7 @@ export class ApiDocumentationCartidge extends Component {
           {this.props.details.titles.map((obj) => {
             return (
               <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
-                <Link
-                  to={`/${this.props.match.params.teamId}/${apiId}/documentation/${obj._id}`}>
+                <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${obj._id}`}>
                   {obj.title}
                 </Link>
               </li>

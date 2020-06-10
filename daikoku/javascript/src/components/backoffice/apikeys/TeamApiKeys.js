@@ -29,26 +29,30 @@ export class TeamApiKeysComponent extends Component {
     },
     {
       Header: t('Actions', this.props.currentLanguage),
-      style: { textAlign: 'center'},
+      style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
       accessor: (item) => item._id,
-      Cell: ({ cell: { row: {original} } }) => {
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
         const api = original;
         return (
-            this.state.showApiKey && (
-                <div style={{width: 100}}>
-                  <Link
-                      to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}`}
-                      className="btn btn-sm btn-access-negative">
-                    <i className="fas fa-eye mr-1"/>
-                    <Translation i18nkey="Api keys" language={this.props.currentLanguage}>
-                      Api keys
-                    </Translation>
-                  </Link>
-                </div>
-            )
-        )
+          this.state.showApiKey && (
+            <div style={{ width: 100 }}>
+              <Link
+                to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}`}
+                className="btn btn-sm btn-access-negative">
+                <i className="fas fa-eye mr-1" />
+                <Translation i18nkey="Api keys" language={this.props.currentLanguage}>
+                  Api keys
+                </Translation>
+              </Link>
+            </div>
+          )
+        );
       },
     },
   ];

@@ -13,86 +13,97 @@ import { t } from '../../../locales';
 class TeamApisComponent extends Component {
   columns = [
     {
-      id: "name",
+      id: 'name',
       Header: t('Name', this.props.currentLanguage),
-      style: { textAlign: 'left'},
+      style: { textAlign: 'left' },
       accessor: (api) => api.name,
-      sortType: "basic",
+      sortType: 'basic',
     },
     {
       Header: t('Description', this.props.currentLanguage),
-      style: { textAlign: 'left'},
+      style: { textAlign: 'left' },
       accessor: (api) => api.smallDescription,
     },
     {
       Header: t('Published', this.props.currentLanguage),
-      style: { textAlign: 'center'},
+      style: { textAlign: 'center' },
       accessor: (api) => api.published,
       disableSortBy: true,
       Filter: BooleanColumnFilter,
       filter: 'equals',
-      Cell: ({ cell: { row: {original} } }) => {
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
         const api = original;
-        return (<Can I={manage} a={Api} team={this.props.currentTeam}>
-          <SwitchButton
-            onSwitch={() => this.togglePublish(api)}
-            checked={api.published}
-            disabled={api.visibility === 'AdminOnly'}
-            large
-            noText
-          />
-        </Can>)
+        return (
+          <Can I={manage} a={Api} team={this.props.currentTeam}>
+            <SwitchButton
+              onSwitch={() => this.togglePublish(api)}
+              checked={api.published}
+              disabled={api.visibility === 'AdminOnly'}
+              large
+              noText
+            />
+          </Can>
+        );
       },
     },
     {
       Header: t('Actions', this.props.currentLanguage),
-      style: { textAlign: 'center'},
+      style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
       accessor: (item) => item._id,
-      Cell: ({ cell: { row: { original } } }) => {
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
         const api = original;
         return (
-        <div className="btn-group">
-          <Link
-            rel="noopener"
-            to={`/${this.props.currentTeam._humanReadableId}/${api._humanReadableId}`}
-            className="btn btn-sm btn-access-negative"
-            title="View this Api">
-            <i className="fas fa-eye" />
-          </Link>
-          {api.published && (
-            <Can I={read} a={stat} team={this.props.currentTeam}>
-              <Link
-                key={`consumption-${api._humanReadableId}`}
-                to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}`}
-                className="btn btn-sm btn-access-negative"
-                title={t('View this api consumption', this.props.currentLanguage)}>
-                <i className="fas fa-chart-bar" />
-              </Link>
-            </Can>
-          )}
-          <Can I={manage} a={Api} team={this.props.currentTeam}>
+          <div className="btn-group">
             <Link
-              key={`edit-${api._humanReadableId}`}
-              to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/infos`}
+              rel="noopener"
+              to={`/${this.props.currentTeam._humanReadableId}/${api._humanReadableId}`}
               className="btn btn-sm btn-access-negative"
-              title="Edit this Api">
-              <i className="fas fa-edit" />
+              title="View this Api">
+              <i className="fas fa-eye" />
             </Link>
-            {api.visibility !== 'AdminOnly' && (
-              <button
-                key={`delete-${api._humanReadableId}`}
-                type="button"
-                className="btn btn-sm btn-access-negative"
-                title="Delete this Api"
-                onClick={() => this.delete(api)}>
-                <i className="fas fa-trash" />
-              </button>
+            {api.published && (
+              <Can I={read} a={stat} team={this.props.currentTeam}>
+                <Link
+                  key={`consumption-${api._humanReadableId}`}
+                  to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}`}
+                  className="btn btn-sm btn-access-negative"
+                  title={t('View this api consumption', this.props.currentLanguage)}>
+                  <i className="fas fa-chart-bar" />
+                </Link>
+              </Can>
             )}
-          </Can>
-        </div>
-      )},
+            <Can I={manage} a={Api} team={this.props.currentTeam}>
+              <Link
+                key={`edit-${api._humanReadableId}`}
+                to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/infos`}
+                className="btn btn-sm btn-access-negative"
+                title="Edit this Api">
+                <i className="fas fa-edit" />
+              </Link>
+              {api.visibility !== 'AdminOnly' && (
+                <button
+                  key={`delete-${api._humanReadableId}`}
+                  type="button"
+                  className="btn btn-sm btn-access-negative"
+                  title="Delete this Api"
+                  onClick={() => this.delete(api)}>
+                  <i className="fas fa-trash" />
+                </button>
+              )}
+            </Can>
+          </div>
+        );
+      },
     },
   ];
 
