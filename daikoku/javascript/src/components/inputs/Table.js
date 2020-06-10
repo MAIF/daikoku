@@ -209,7 +209,7 @@ export const Table = ({
         styles={customStyles}
       />
       <Pagination
-        containerClassName="col-9"
+        containerClassName="pagination"
         previousLabel={t('<', currentLanguage)}
         nextLabel={t('>', currentLanguage)}
         breakLabel={'...'}
