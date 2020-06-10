@@ -39,7 +39,8 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       ref.set(
         env.defaultActorSystem.scheduler
           .scheduleAtFixedRate(1.seconds, env.config.apikeysStatsSyncInterval) {
-            () => syncAll()
+            () =>
+              syncAll()
           })
     }
   }
@@ -297,7 +298,8 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
         .runWith(Sink.seq)
         .recover {
           case e =>
-            AppLogger.error("[apikey stats job] Error during sync consumption", e)
+            AppLogger.error("[apikey stats job] Error during sync consumption",
+                            e)
             Seq.empty
         }
     }.recover {
@@ -377,7 +379,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                   hits + consumptions.map(_.hits).sum,
                   p.costPerRequest)
               )
-            case p:Admin => ApiKeyBilling(0, 0)
+            case p: Admin => ApiKeyBilling(0, 0)
           }
         }
       )

@@ -5,7 +5,6 @@ import { SwitchButton } from './Switch';
 
 // Define a default UI for filtering
 export const DefaultColumnFilter = ({ column: { filterValue, preFilteredRows, setFilter } }) => {
-
   return (
     <div className="form-group pb-0">
       <div className="input-group input-group-sm mb-2 pr-2">

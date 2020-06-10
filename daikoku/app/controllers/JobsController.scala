@@ -28,8 +28,7 @@ class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
             Ok(Json.obj("error" -> "you're not authorized here !")))
       }
     } else {
-      FastFuture.successful(
-        NotFound(Json.obj("error" -> "API not found")))
+      FastFuture.successful(NotFound(Json.obj("error" -> "API not found")))
     }
   }
 
@@ -37,8 +36,7 @@ class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
     if (env.config.apikeysStatsByCron) {
       apiKeyStatsJob.getStats.map(_ => Ok(Json.obj("done" -> true)))
     } else {
-      FastFuture.successful(
-        NotFound(Json.obj("error" -> "API not found")))
+      FastFuture.successful(NotFound(Json.obj("error" -> "API not found")))
     }
   }
 }

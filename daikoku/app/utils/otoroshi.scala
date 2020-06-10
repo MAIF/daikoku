@@ -77,7 +77,7 @@ class OtoroshiClient(env: Env) {
   }
 
   def getServices()(
-    implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
+      implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
     client(s"/api/services").get().flatMap { resp =>
       if (resp.status == 200) {
         val res = resp.json.as[JsArray]
@@ -91,7 +91,7 @@ class OtoroshiClient(env: Env) {
   }
 
   def getApiKeys()(
-    implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
+      implicit otoroshiSettings: OtoroshiSettings): Future[JsArray] = {
     client(s"/api/apikeys").get().flatMap { resp =>
       if (resp.status == 200) {
         val res = resp.json.as[JsArray]

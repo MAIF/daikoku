@@ -59,9 +59,19 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), Some(session), Some(imper), Some(user), Some(isTenantAdmin)) =>
+      case (Some(tenant),
+            Some(session),
+            Some(imper),
+            Some(user),
+            Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          block(DaikokuActionContext(request, user, tenant, session, imper, isTenantAdmin))
+          block(
+            DaikokuActionContext(request,
+                                 user,
+                                 tenant,
+                                 session,
+                                 imper,
+                                 isTenantAdmin))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -98,11 +108,22 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), Some(session), Some(imper), Some(user), Some(isTenantAdmin)) =>
+      case (Some(tenant),
+            Some(session),
+            Some(imper),
+            Some(user),
+            Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          block(DaikokuActionContext(request, user, tenant, session, imper, isTenantAdmin))
+          block(
+            DaikokuActionContext(request,
+                                 user,
+                                 tenant,
+                                 session,
+                                 imper,
+                                 isTenantAdmin))
         } else {
-          logger.info(s"User ${user.email} is not registered on tenant ${tenant.name}")
+          logger.info(
+            s"User ${user.email} is not registered on tenant ${tenant.name}")
           session.invalidate()(ec, env).map { _ =>
             Results.Redirect("/")
           }
@@ -161,7 +182,11 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), Some(session), Some(imper), Some(user), Some(isTenantAdmin)) =>
+      case (Some(tenant),
+            Some(session),
+            Some(imper),
+            Some(user),
+            Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
           block(
             DaikokuActionMaybeWithoutUserContext(request,

@@ -616,7 +616,8 @@ class MockController(DaikokuAction: DaikokuAction,
         UserWithPermission(user1.id, TeamPermission.Administrator),
         UserWithPermission(user2.id, TeamPermission.Administrator),
         UserWithPermission(user3.id, TeamPermission.Administrator),
-        UserWithPermission(user4.id, TeamPermission.Administrator)),
+        UserWithPermission(user4.id, TeamPermission.Administrator)
+      ),
       subscriptions = Seq.empty,
       authorizedOtoroshiGroups = Set.empty
     )
@@ -964,7 +965,9 @@ class MockController(DaikokuAction: DaikokuAction,
           adminApi = adminApiTenant2.id
         )
       )
-      _ <- env.dataStore.apiRepo.forTenant(Tenant.Default).save(adminApiDefaultTenant)
+      _ <- env.dataStore.apiRepo
+        .forTenant(Tenant.Default)
+        .save(adminApiDefaultTenant)
       _ <- env.dataStore.apiRepo.forTenant(tenant2Id).save(adminApiTenant2)
       _ <- teamRepo1.save(
         Team(

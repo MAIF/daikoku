@@ -31,26 +31,27 @@ class AuditTrailController(DaikokuAction: DaikokuAction,
     val size = ctx.request.getQueryString("size").map(_.toInt).getOrElse(500)
     val position = (page - 1) * size
 
-
     TenantAdminOnly(
       AuditTrailEvent(
         s"@{user.name} has accessed audit trail from ${new DateTime(from)
-          .toString()} to ${new DateTime(to).toString()}"))(ctx.tenant.id.value, ctx) { (tenant, _) =>
-      env.dataStore.auditTrailRepo
-        .forTenant(tenant.id)
-        .find(Json.obj(
-                "@timestamp" -> Json.obj(
-                  "$gte" -> from,
-                  "$lte" -> to
-                )
-              ),
-              Some(Json.obj("@timestamp" -> -1)))
-        .map { events =>
-          Ok(
-            Json.obj(
-              "size" -> events.size,
-              "events" -> JsArray(events.slice(position, position + size))))
-        }
+          .toString()} to ${new DateTime(to).toString()}"))(ctx.tenant.id.value,
+                                                            ctx) {
+      (tenant, _) =>
+        env.dataStore.auditTrailRepo
+          .forTenant(tenant.id)
+          .find(Json.obj(
+                  "@timestamp" -> Json.obj(
+                    "$gte" -> from,
+                    "$lte" -> to
+                  )
+                ),
+                Some(Json.obj("@timestamp" -> -1)))
+          .map { events =>
+            Ok(
+              Json.obj(
+                "size" -> events.size,
+                "events" -> JsArray(events.slice(position, position + size))))
+          }
     }
   }
 }

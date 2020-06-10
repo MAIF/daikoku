@@ -8,7 +8,11 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.Public
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
+  Administrator,
+  ApiEditor,
+  TeamUser
+}
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -146,7 +150,11 @@ case class Tenant(
         .map(a => JsString(a.unloggedHome))
         .getOrElse(JsNull)
         .as[JsValue],
-      "footer" -> style.flatMap(_.footer).map(f => JsString(f)).getOrElse(JsNull).as[JsValue],
+      "footer" -> style
+        .flatMap(_.footer)
+        .map(f => JsString(f))
+        .getOrElse(JsNull)
+        .as[JsValue],
       "logo" -> style.map(a => JsString(a.logo)).getOrElse(JsNull).as[JsValue],
       "mode" -> env.config.mode.name,
       "authProvider" -> authProvider.name,
@@ -618,11 +626,11 @@ sealed trait UsagePlan {
 
 case object UsagePlan {
   case class Admin(
-    id: UsagePlanId,
-    customName: Option[String] = Some("Administration plan"),
-    customDescription: Option[String] = Some("access to admin api"),
-    otoroshiTarget: Option[OtoroshiTarget],
-    override val authorizedTeams: Seq[TeamId] = Seq.empty
+      id: UsagePlanId,
+      customName: Option[String] = Some("Administration plan"),
+      customDescription: Option[String] = Some("access to admin api"),
+      otoroshiTarget: Option[OtoroshiTarget],
+      override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def costPerMonth: BigDecimal = BigDecimal(0)
     override def maxRequestPerSecond: Option[Long] = None
@@ -633,7 +641,8 @@ case object UsagePlan {
     override def costFor(requests: Long): BigDecimal = BigDecimal(0)
     override def currency: Currency = Currency(code = "Eur")
     override def trialPeriod: Option[BillingDuration] = None
-    override def billingDuration: BillingDuration = BillingDuration(1, BillingTimeUnit.Year)
+    override def billingDuration: BillingDuration =
+      BillingDuration(1, BillingTimeUnit.Year)
     override def typeName: String = "Admin"
     override def visibility: UsagePlanVisibility = UsagePlanVisibility.Private
     override def addAutorizedTeam(teamId: TeamId): UsagePlan =
@@ -644,8 +653,10 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
-    override def subscriptionProcess: SubscriptionProcess = SubscriptionProcess.Automatic
-    override def integrationProcess: IntegrationProcess = IntegrationProcess.ApiKey
+    override def subscriptionProcess: SubscriptionProcess =
+      SubscriptionProcess.Automatic
+    override def integrationProcess: IntegrationProcess =
+      IntegrationProcess.ApiKey
   }
   case class FreeWithoutQuotas(
       id: UsagePlanId,
@@ -1132,17 +1143,17 @@ case class Api(
 }
 
 case class ApiKeyRotation(
-  enabled: Boolean = true,
-  rotationEvery: Long = 31 * 24,
-  gracePeriod: Long = 7 * 24,
-  nextSecret: Option[String] = None
+    enabled: Boolean = true,
+    rotationEvery: Long = 31 * 24,
+    gracePeriod: Long = 7 * 24,
+    nextSecret: Option[String] = None
 )
 
 case class ApiSubscriptionRotation(
-  enabled: Boolean = true,
-  rotationEvery: Long = 31 * 24,
-  gracePeriod: Long = 7 * 24,
-  pendingRotation: Boolean = false
+    enabled: Boolean = true,
+    rotationEvery: Long = 31 * 24,
+    gracePeriod: Long = 7 * 24,
+    pendingRotation: Boolean = false
 )
 
 case class ApiSubscription(
@@ -1161,12 +1172,17 @@ case class ApiSubscription(
     integrationToken: String
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
-  def asAuthorizedJson(permission: TeamPermission, planIntegration: IntegrationProcess, isDaikokuAdmin: Boolean): JsValue = (permission, planIntegration) match {
-    case (_, _) if isDaikokuAdmin => json.ApiSubscriptionFormat.writes(this)
-    case (Administrator, _) => json.ApiSubscriptionFormat.writes(this)
-    case (_, IntegrationProcess.ApiKey) => json.ApiSubscriptionFormat.writes(this)
-    case (_, IntegrationProcess.Automatic) => json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
-  }
+  def asAuthorizedJson(permission: TeamPermission,
+                       planIntegration: IntegrationProcess,
+                       isDaikokuAdmin: Boolean): JsValue =
+    (permission, planIntegration) match {
+      case (_, _) if isDaikokuAdmin => json.ApiSubscriptionFormat.writes(this)
+      case (Administrator, _)       => json.ApiSubscriptionFormat.writes(this)
+      case (_, IntegrationProcess.ApiKey) =>
+        json.ApiSubscriptionFormat.writes(this)
+      case (_, IntegrationProcess.Automatic) =>
+        json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
+    }
   def asSimpleJson: JsValue = Json.obj(
     "_id" -> json.ApiSubscriptionIdFormat.writes(id),
     "_tenant" -> json.TenantIdFormat.writes(tenant),
@@ -1232,7 +1248,8 @@ object NotificationAction {
 
   case class TeamAccess(team: TeamId) extends NotificationAction
 
-  case class TeamInvitation(team: TeamId, user: UserId) extends NotificationAction
+  case class TeamInvitation(team: TeamId, user: UserId)
+      extends NotificationAction
 
   case class ApiSubscriptionDemand(api: ApiId, plan: UsagePlanId, team: TeamId)
       extends NotificationAction
@@ -1252,11 +1269,16 @@ object NotificationAction {
                "errMessage" -> message,
                "api" -> api.asJson)
   }
-  case class ApiKeyDeletionInformation(api: String, clientId: String) extends NotificationAction
+  case class ApiKeyDeletionInformation(api: String, clientId: String)
+      extends NotificationAction
 
-  case class ApiKeyRotationInProgress(clientId: String, api: String, plan: String) extends NotificationAction
+  case class ApiKeyRotationInProgress(clientId: String,
+                                      api: String,
+                                      plan: String)
+      extends NotificationAction
 
-  case class ApiKeyRotationEnded(clientId: String, api: String, plan: String) extends NotificationAction
+  case class ApiKeyRotationEnded(clientId: String, api: String, plan: String)
+      extends NotificationAction
 }
 
 sealed trait NotificationType {

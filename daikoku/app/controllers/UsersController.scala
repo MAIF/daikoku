@@ -52,33 +52,50 @@ class UsersController(DaikokuAction: DaikokuAction,
 
   def setAdminStatus(id: String) = DaikokuAction.async(parse.json) { ctx =>
     DaikokuAdminOnly(
-      AuditTrailEvent("@{user.name} has updated user profile of @{u.email} (@{u.id})"))(ctx) {
-        (ctx.request.body \ "isDaikokuAdmin").asOpt[Boolean] match {
-          case Some(isDaikokuAdmin) =>
-            env.dataStore.userRepo.findByIdNotDeleted(id).flatMap {
-              case Some(user) if user.isDaikokuAdmin == isDaikokuAdmin =>
-                  FastFuture.successful(Conflict(Json.obj("error" -> "user have already this status")))
-              case Some(user) => env.dataStore.teamRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("type" -> "Admin" )).flatMap {
-                case Some(adminTeam) =>
-                  val userToSave = user.copy(isDaikokuAdmin = isDaikokuAdmin)
-                  val admins: Set[UserWithPermission] = if (isDaikokuAdmin)
-                    adminTeam.users + UserWithPermission(user.id, TeamPermission.Administrator)
-                  else
-                    adminTeam.users - UserWithPermission(user.id, TeamPermission.Administrator)
+      AuditTrailEvent(
+        "@{user.name} has updated user profile of @{u.email} (@{u.id})"))(ctx) {
+      (ctx.request.body \ "isDaikokuAdmin").asOpt[Boolean] match {
+        case Some(isDaikokuAdmin) =>
+          env.dataStore.userRepo.findByIdNotDeleted(id).flatMap {
+            case Some(user) if user.isDaikokuAdmin == isDaikokuAdmin =>
+              FastFuture.successful(
+                Conflict(Json.obj("error" -> "user have already this status")))
+            case Some(user) =>
+              env.dataStore.teamRepo
+                .forTenant(ctx.tenant)
+                .findOneNotDeleted(Json.obj("type" -> "Admin"))
+                .flatMap {
+                  case Some(adminTeam) =>
+                    val userToSave = user.copy(isDaikokuAdmin = isDaikokuAdmin)
+                    val admins: Set[UserWithPermission] =
+                      if (isDaikokuAdmin)
+                        adminTeam.users + UserWithPermission(
+                          user.id,
+                          TeamPermission.Administrator)
+                      else
+                        adminTeam.users - UserWithPermission(
+                          user.id,
+                          TeamPermission.Administrator)
 
-                  for {
-                    _ <- env.dataStore.userRepo.save(userToSave)
-                    _ <- env.dataStore.teamRepo.forTenant(ctx.tenant).save(adminTeam.copy(users = admins))
-                  } yield {
-                    Ok(userToSave.asJson)
-                  }
-                case None => FastFuture.successful(BadRequest(Json.obj("error" -> "No admin team found, please contact support")))
-              }
-              case None => FastFuture.successful(NotFound(Json.obj("error" -> "User not found")))
-            }
-          case None => FastFuture.successful(
-            BadRequest(Json.obj("error" -> "body error")))
-        }
+                    for {
+                      _ <- env.dataStore.userRepo.save(userToSave)
+                      _ <- env.dataStore.teamRepo
+                        .forTenant(ctx.tenant)
+                        .save(adminTeam.copy(users = admins))
+                    } yield {
+                      Ok(userToSave.asJson)
+                    }
+                  case None =>
+                    FastFuture.successful(BadRequest(Json.obj(
+                      "error" -> "No admin team found, please contact support")))
+                }
+            case None =>
+              FastFuture.successful(
+                NotFound(Json.obj("error" -> "User not found")))
+          }
+        case None =>
+          FastFuture.successful(BadRequest(Json.obj("error" -> "body error")))
+      }
     }
   }
 
@@ -100,31 +117,41 @@ class UsersController(DaikokuAction: DaikokuAction,
                     if (ctx.user.isDaikokuAdmin) newUser
                     else newUser.copy(metadata = user.metadata)
                   for {
-                    maybePersonalTeam <- env.dataStore.teamRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj(
-                      "type" -> TeamType.Personal.name,
-                      "users.userId" -> ctx.user.id.asJson
-                    ))
-                    _                 <- env.dataStore.userRepo.save(userToSave)
-                    _                 <- env.dataStore.teamRepo.forTenant(ctx.tenant).save(
-                      maybePersonalTeam
-                        .map(team => team.copy(
-                          name = userToSave.name,
-                          description = s"The personal team of ${userToSave.name}",
-                          avatar = Some(userToSave.picture),
-                          contact = userToSave.email))
-                        .getOrElse(Team(
-                        id = TeamId(BSONObjectID.generate().stringify),
-                        tenant = ctx.tenant.id,
-                        `type` = TeamType.Personal,
-                        name = s"${userToSave.name}",
-                        description = s"The personal team of ${userToSave.name}",
-                        users = Set(UserWithPermission(user.id, Administrator)),
-                        subscriptions = Seq.empty,
-                        authorizedOtoroshiGroups = Set.empty,
-                        contact = userToSave.email,
-                        avatar = Some(userToSave.picture)
-                      ))
-                    )
+                    maybePersonalTeam <- env.dataStore.teamRepo
+                      .forTenant(ctx.tenant)
+                      .findOneNotDeleted(
+                        Json.obj(
+                          "type" -> TeamType.Personal.name,
+                          "users.userId" -> ctx.user.id.asJson
+                        ))
+                    _ <- env.dataStore.userRepo.save(userToSave)
+                    _ <- env.dataStore.teamRepo
+                      .forTenant(ctx.tenant)
+                      .save(
+                        maybePersonalTeam
+                          .map(
+                            team =>
+                              team.copy(
+                                name = userToSave.name,
+                                description =
+                                  s"The personal team of ${userToSave.name}",
+                                avatar = Some(userToSave.picture),
+                                contact = userToSave.email))
+                          .getOrElse(Team(
+                            id = TeamId(BSONObjectID.generate().stringify),
+                            tenant = ctx.tenant.id,
+                            `type` = TeamType.Personal,
+                            name = s"${userToSave.name}",
+                            description =
+                              s"The personal team of ${userToSave.name}",
+                            users =
+                              Set(UserWithPermission(user.id, Administrator)),
+                            subscriptions = Seq.empty,
+                            authorizedOtoroshiGroups = Set.empty,
+                            contact = userToSave.email,
+                            avatar = Some(userToSave.picture)
+                          ))
+                      )
                   } yield {
                     Ok(userToSave.asJson)
                   }

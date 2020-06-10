@@ -224,10 +224,12 @@ class DaikokuEnv(ws: WSClient,
 
   val actorSystem: ActorSystem = ActorSystem("daikoku")
   val materializer: Materializer = Materializer.createMaterializer(actorSystem)
-  val snowflakeSeed: Long = configuration.getOptional[Long]("daikoku.snowflake.seed").get
+  val snowflakeSeed: Long =
+    configuration.getOptional[Long]("daikoku.snowflake.seed").get
   val snowflakeGenerator: IdGenerator = IdGenerator(snowflakeSeed)
 
-  val auditActor: ActorRef = actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
+  val auditActor: ActorRef =
+    actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
 
   private val daikokuConfig = new Config(configuration)
   private val mongoDataStore = new MongoDataStore(this, reactiveMongoApi)
@@ -283,7 +285,6 @@ class DaikokuEnv(ws: WSClient,
                 dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
               Await.result(initialDataFu, 10 seconds)
             case _ =>
-
               import fr.maif.otoroshi.daikoku.domain._
               import fr.maif.otoroshi.daikoku.login._
               import fr.maif.otoroshi.daikoku.utils.StringImplicits._
@@ -297,7 +298,8 @@ class DaikokuEnv(ws: WSClient,
               AppLogger.warn(
                 "Main dataStore seems to be empty, generating initial data ...")
               val userId = UserId(BSONObjectID.generate().stringify)
-              val adminApiDefaultTenantId = ApiId(s"admin-api-tenant-${Tenant.Default.value}")
+              val adminApiDefaultTenantId =
+                ApiId(s"admin-api-tenant-${Tenant.Default.value}")
               val adminApiDefaultTenant = Api(
                 id = adminApiDefaultTenantId,
                 tenant = Tenant.Default,
@@ -391,8 +393,12 @@ class DaikokuEnv(ws: WSClient,
               val initialDataFu = for {
                 _ <- dataStore.tenantRepo.save(tenant)
                 _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
-                _ <- dataStore.teamRepo.forTenant(tenant.id).save(defaultAdminTeam)
-                _ <- dataStore.apiRepo.forTenant(tenant.id).save(adminApiDefaultTenant)
+                _ <- dataStore.teamRepo
+                  .forTenant(tenant.id)
+                  .save(defaultAdminTeam)
+                _ <- dataStore.apiRepo
+                  .forTenant(tenant.id)
+                  .save(adminApiDefaultTenant)
                 _ <- dataStore.userRepo.save(user)
               } yield ()
 

@@ -3,7 +3,10 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
@@ -13,7 +16,12 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents
+}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -32,10 +40,8 @@ class TeamController(DaikokuAction: DaikokuAction,
 
   def team(teamId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
-      UberPublicUserAccess(
-        AuditTrailEvent(
-          s"@{user.name} has accessed the team @{team.name} - @{team.id}"))(
-        ctx) {
+      UberPublicUserAccess(AuditTrailEvent(
+        s"@{user.name} has accessed the team @{team.name} - @{team.id}"))(ctx) {
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
           .findByIdOrHrId(teamId)
@@ -108,7 +114,8 @@ class TeamController(DaikokuAction: DaikokuAction,
           ctx.setCtxValue("team.id", team.id)
           ctx.setCtxValue("team.name", team.name)
 
-          val teamToSave = team.copy(users = Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator)))
+          val teamToSave = team.copy(users =
+            Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator)))
 
           env.dataStore.teamRepo
             .forTenant(ctx.tenant)
@@ -142,8 +149,12 @@ class TeamController(DaikokuAction: DaikokuAction,
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(teamId)
               .flatMap {
-                case Some(team) if team.`type` == TeamType.Admin => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to update this team")))
-                case Some(team) if team.`type` == TeamType.Personal => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to update this team")))
+                case Some(team) if team.`type` == TeamType.Admin =>
+                  FastFuture.successful(Forbidden(Json.obj(
+                    "error" -> "You're not authorized to update this team")))
+                case Some(team) if team.`type` == TeamType.Personal =>
+                  FastFuture.successful(Forbidden(Json.obj(
+                    "error" -> "You're not authorized to update this team")))
                 case Some(team) =>
                   ctx.setCtxValue("team.id", team.id)
                   ctx.setCtxValue("team.name", team.name)
@@ -171,7 +182,10 @@ class TeamController(DaikokuAction: DaikokuAction,
       AuditTrailEvent(
         s"@{user.name} has deleted team @{team.name} - @{team.id}"))(ctx) {
       env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId) flatMap {
-        case Some(team) if team.`type` == TeamType.Admin => FastFuture.successful(Forbidden(Json.obj("error" -> "You're not authorized to delete this team")))
+        case Some(team) if team.`type` == TeamType.Admin =>
+          FastFuture.successful(
+            Forbidden(
+              Json.obj("error" -> "You're not authorized to delete this team")))
         case Some(team) =>
           ctx.setCtxValue("team.id", team.id)
           ctx.setCtxValue("team.name", team.name)
@@ -279,7 +293,10 @@ class TeamController(DaikokuAction: DaikokuAction,
             _ <- ctx.tenant.mailer.send(
               messagesApi("mail.team.access.title"),
               admins.map(admin => admin.email),
-              messagesApi("mail.team.access.body", ctx.user.name, team.name, s"${ctx.tenant.domain}/notifications")
+              messagesApi("mail.team.access.body",
+                          ctx.user.name,
+                          team.name,
+                          s"${ctx.tenant.domain}/notifications")
             )
           } yield {
             Ok(Json.obj("done" -> saved))
@@ -293,27 +310,36 @@ class TeamController(DaikokuAction: DaikokuAction,
   def addableUsersForTeam(teamId: String) = DaikokuAction.async { ctx =>
     TeamAdminOrTenantAdminOnly(AuditTrailEvent(
       s"@{user.name} has accessed list of addable members to team @{team.name} - @{team.id}"))(
-      teamId, ctx) { team =>
-
+      teamId,
+      ctx) { team =>
       val teamUserId = team.users.map(_.userId).toSeq
 
       for {
-        pendingNotif <- env.dataStore.notificationRepo.forTenant(ctx.tenant).find(Json.obj(
-          "status.status" -> NotificationStatus.Pending.toString,
-          "action.team" -> teamId,
-          "action.type" -> "TeamInvitation"
-        ))
+        pendingNotif <- env.dataStore.notificationRepo
+          .forTenant(ctx.tenant)
+          .find(
+            Json.obj(
+              "status.status" -> NotificationStatus.Pending.toString,
+              "action.team" -> teamId,
+              "action.type" -> "TeamInvitation"
+            ))
         pendingUsersId = pendingNotif
           .map(_.action)
           .map(_.asInstanceOf[NotificationAction.TeamInvitation])
           .map(_.user)
-        pendingUsers <- env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(pendingUsersId.map(_.asJson)))))
-        addableUsers <- env.dataStore.userRepo.findNotDeleted(Json.obj("_id" -> Json.obj("$nin" -> JsArray(teamUserId.map(_.asJson)))))
+        pendingUsers <- env.dataStore.userRepo.findNotDeleted(
+          Json.obj(
+            "_id" -> Json.obj("$in" -> JsArray(pendingUsersId.map(_.asJson)))))
+        addableUsers <- env.dataStore.userRepo.findNotDeleted(
+          Json.obj(
+            "_id" -> Json.obj("$nin" -> JsArray(teamUserId.map(_.asJson)))))
       } yield {
-        Ok(Json.obj(
-          "addableUsers" ->  JsArray(addableUsers.diff(pendingUsers).map(_.asSimpleJson)),
-          "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
-        ))
+        Ok(
+          Json.obj(
+            "addableUsers" -> JsArray(
+              addableUsers.diff(pendingUsers).map(_.asSimpleJson)),
+            "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
+          ))
       }
     }
   }
@@ -330,8 +356,8 @@ class TeamController(DaikokuAction: DaikokuAction,
               Conflict(Json.obj(
                 "error" -> "Team type doesn't accept to remove members")))
           case TeamType.Admin =>
-            FastFuture.successful(
-              Forbidden(Json.obj("error" -> "Team type doesn't accept to remove members from this way")))
+            FastFuture.successful(Forbidden(Json.obj(
+              "error" -> "Team type doesn't accept to remove members from this way")))
           case TeamType.Organization =>
             for {
               teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)
@@ -366,10 +392,9 @@ class TeamController(DaikokuAction: DaikokuAction,
               Conflict(
                 Json.obj("error" -> "Team type doesn't accept to add members")))
           case TeamType.Admin =>
-            FastFuture.successful(
-              Forbidden(Json.obj("error" -> "Team type doesn't accept to add members from this way")))
+            FastFuture.successful(Forbidden(Json.obj(
+              "error" -> "Team type doesn't accept to add members from this way")))
           case TeamType.Organization =>
-
             Source(members.value.toList)
               .mapAsync(5)(member => {
                 val userId = UserId(member.as[String])
@@ -384,22 +409,30 @@ class TeamController(DaikokuAction: DaikokuAction,
 
                 for {
                   maybeUser <- env.dataStore.userRepo.findByIdNotDeleted(userId)
-                  _ <- env.dataStore.notificationRepo.forTenant(ctx.tenant).save(notification)
+                  _ <- env.dataStore.notificationRepo
+                    .forTenant(ctx.tenant)
+                    .save(notification)
                   _ <- maybeUser.traverse(user => {
-                    implicit val lang: Lang = Lang(user.defaultLanguage.orElse(ctx.tenant.defaultLanguage).getOrElse("en"))
+                    implicit val lang: Lang = Lang(
+                      user.defaultLanguage
+                        .orElse(ctx.tenant.defaultLanguage)
+                        .getOrElse("en"))
                     ctx.tenant.mailer.send(
                       messagesApi("mail.team.invitation.title"),
                       Seq(user.email),
-                      messagesApi("mail.team.invitation.body", ctx.user.name, team.name, s"${ctx.tenant.domain}/notifications")
+                      messagesApi("mail.team.invitation.body",
+                                  ctx.user.name,
+                                  team.name,
+                                  s"${ctx.tenant.domain}/notifications")
                     )
                   })
                 } yield (userId)
               })
               .runWith(Sink.seq[UserId])
-            .map(users => Ok(Json.obj(
-              "done" -> true,
-              "team" -> team.asJson,
-              "pendingUsers" -> JsArray(users.map(_.asJson)))))
+              .map(users =>
+                Ok(Json.obj("done" -> true,
+                            "team" -> team.asJson,
+                            "pendingUsers" -> JsArray(users.map(_.asJson)))))
         }
       }
   }
@@ -428,7 +461,8 @@ class TeamController(DaikokuAction: DaikokuAction,
                 "error" -> "Team type doesn't accept to update permission")))
           case TeamType.Admin =>
             FastFuture.successful(
-              Conflict(Json.obj("error" -> "Team type doesn't accept to update permission")))
+              Conflict(Json.obj(
+                "error" -> "Team type doesn't accept to update permission")))
           case TeamType.Organization =>
             for {
               teamRepo <- env.dataStore.teamRepo.forTenantF(ctx.tenant.id)

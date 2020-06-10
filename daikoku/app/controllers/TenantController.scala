@@ -4,7 +4,10 @@ import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.util.FastFuture
 import com.nimbusds.jose.jwk.KeyType
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -155,7 +158,10 @@ class TenantController(DaikokuAction: DaikokuAction,
 
   def oneTenant(tenantId: String) = DaikokuAction.async { ctx =>
     TenantAdminOnly(
-      AuditTrailEvent( s"@{user.name} has accessed one tenant @{tenant.name} - @{tenant.id}"))(tenantId, ctx) { (tenant, _) =>
+      AuditTrailEvent(
+        s"@{user.name} has accessed one tenant @{tenant.name} - @{tenant.id}"))(
+      tenantId,
+      ctx) { (tenant, _) =>
       env.dataStore.translationRepo
         .forTenant(ctx.tenant)
         .find(Json.obj("element.id" -> tenant.id.asJson))
@@ -164,8 +170,7 @@ class TenantController(DaikokuAction: DaikokuAction,
             .groupBy(t => t.language)
             .map {
               case (k, v) =>
-                Json.obj(
-                  k -> JsObject(v.map(t => t.key -> JsString(t.value))))
+                Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
             }
             .fold(Json.obj())(_ deepMerge _)
           val translation = Json.obj("translation" -> translationAsJsObject)
@@ -237,9 +242,13 @@ class TenantController(DaikokuAction: DaikokuAction,
           val tenantForCreation = tenant.copy(adminApi = adminApi.id)
 
           for {
-            _       <- env.dataStore.tenantRepo.save(tenantForCreation)
-            _       <- env.dataStore.teamRepo.forTenant(tenantForCreation).save(adminTeam)
-            _       <- env.dataStore.apiRepo.forTenant(tenantForCreation).save(adminApi)
+            _ <- env.dataStore.tenantRepo.save(tenantForCreation)
+            _ <- env.dataStore.teamRepo
+              .forTenant(tenantForCreation)
+              .save(adminTeam)
+            _ <- env.dataStore.apiRepo
+              .forTenant(tenantForCreation)
+              .save(adminApi)
           } yield {
             Created(tenantForCreation.asJsonWithJwt)
           }
@@ -269,7 +278,9 @@ class TenantController(DaikokuAction: DaikokuAction,
               .deleteAllLogically()
             _ <- env.dataStore.teamRepo.forTenant(tenant).deleteAllLogically()
             _ <- env.dataStore.tenantRepo.save(tenant.copy(deleted = true))
-            _ <- env.dataStore.userRepo.updateMany(Json.obj("lastTenant" -> tenant.id.asJson), Json.obj("lastTenant" -> JsNull))
+            _ <- env.dataStore.userRepo.updateMany(
+              Json.obj("lastTenant" -> tenant.id.asJson),
+              Json.obj("lastTenant" -> JsNull))
           } yield {
             Ok(tenant.copy(deleted = true).asJson)
           }
@@ -282,24 +293,29 @@ class TenantController(DaikokuAction: DaikokuAction,
   }
 
   def saveTenant(tenantId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TenantAdminOnly(AuditTrailEvent(
-      s"@{user.name} has updated tenant @{tenant.name} - @{tenant.id}"))(tenantId, ctx) { (_, adminTeam) =>
+    TenantAdminOnly(
+      AuditTrailEvent(
+        s"@{user.name} has updated tenant @{tenant.name} - @{tenant.id}"))(
+      tenantId,
+      ctx) { (_, adminTeam) =>
       TenantFormat.reads(ctx.request.body) match {
         case JsError(e) =>
           FastFuture.successful(
             BadRequest(Json.obj("error" -> "Error while parsing payload",
-              "msg" -> e.toString)))
+                                "msg" -> e.toString)))
         case JsSuccess(tenant, _) => {
           ctx.setCtxValue("tenant.name", tenant.name)
           ctx.setCtxValue("tenant.id", tenant.id)
           for {
             _ <- env.dataStore.tenantRepo.save(tenant)
-            _ <- env.dataStore.teamRepo.forTenant(tenant)
-              .save(adminTeam.copy(
-                name = s"${tenant.humanReadableId}-admin-team",
-                contact = tenant.contact,
-                avatar = tenant.style.map(_.logo)
-              ))
+            _ <- env.dataStore.teamRepo
+              .forTenant(tenant)
+              .save(
+                adminTeam.copy(
+                  name = s"${tenant.humanReadableId}-admin-team",
+                  contact = tenant.contact,
+                  avatar = tenant.style.map(_.logo)
+                ))
           } yield {
             Ok(tenant.asJsonWithJwt)
           }
@@ -389,117 +405,181 @@ class TenantController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def contact(tenantId: String) = DaikokuActionMaybeWithGuest.async(parse.json) {ctx =>
-    UberPublicUserAccess(AuditTrailEvent(s"@{name} - @{email} send a contact email to @{contact}"))(ctx) {
+  def contact(tenantId: String) =
+    DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
+      UberPublicUserAccess(
+        AuditTrailEvent(
+          s"@{name} - @{email} send a contact email to @{contact}"))(ctx) {
 
-      val tenantLanguage = ctx.tenant.defaultLanguage
-      .getOrElse("en")
+        val tenantLanguage = ctx.tenant.defaultLanguage
+          .getOrElse("en")
 
-      val currentLanguage = ctx.request.headers.toSimpleMap
-        .find(test => test._1 == "X-contact-language")
-        .map(h => h._2)
-        .orElse(ctx.tenant.defaultLanguage)
-        .getOrElse("en")
+        val currentLanguage = ctx.request.headers.toSimpleMap
+          .find(test => test._1 == "X-contact-language")
+          .map(h => h._2)
+          .orElse(ctx.tenant.defaultLanguage)
+          .getOrElse("en")
 
-      val body = ctx.request.body
+        val body = ctx.request.body
 
-      val name = (body \ "name").as[String]
-      val email = (body \ "email").as[String]
-      val subject = (body \ "subject").as[String]
-      val mailBody = (body \ "body").as[String]
-      val teamId = (body \ "teamId").asOpt[String]
-      val apiId = (body \ "apiId").asOpt[String]
+        val name = (body \ "name").as[String]
+        val email = (body \ "email").as[String]
+        val subject = (body \ "subject").as[String]
+        val mailBody = (body \ "body").as[String]
+        val teamId = (body \ "teamId").asOpt[String]
+        val apiId = (body \ "apiId").asOpt[String]
 
-      ctx.setCtxValue("email", email)
-      ctx.setCtxValue("name", name)
+        ctx.setCtxValue("email", email)
+        ctx.setCtxValue("name", name)
 
-      val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
+        val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
 
-      val titleToSender: String = messagesApi("mail.contact.title")(Lang(currentLanguage))
-      val titleToContact: String = messagesApi("mail.contact.title")(Lang(tenantLanguage))
-      val mailToSender: String = messagesApi("mail.contact.sender", name, email, subject, sanitizeBody)(Lang(currentLanguage))
-      val mailToContact: String = messagesApi("mail.contact.contact", name, email, subject, sanitizeBody)(Lang(tenantLanguage))
+        val titleToSender: String =
+          messagesApi("mail.contact.title")(Lang(currentLanguage))
+        val titleToContact: String =
+          messagesApi("mail.contact.title")(Lang(tenantLanguage))
+        val mailToSender: String =
+          messagesApi("mail.contact.sender",
+                      name,
+                      email,
+                      subject,
+                      sanitizeBody)(Lang(currentLanguage))
+        val mailToContact: String =
+          messagesApi("mail.contact.contact",
+                      name,
+                      email,
+                      subject,
+                      sanitizeBody)(Lang(tenantLanguage))
 
-      def sendMail: String => Future[Result] = (contact: String) => {
-        for {
-          _ <- ctx.tenant.mailer.send(titleToSender, Seq(email), mailToSender)
-          _ <- ctx.tenant.mailer.send(titleToContact, Seq(contact), mailToContact)
-        } yield {
-          ctx.setCtxValue("contact", contact)
-          Ok(Json.obj("send" -> true))
-        }
-      }
-
-      (teamId, apiId) match {
-        case (Some(id), _) => env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)
-          .flatMap {
-            case Some(team) => sendMail(team.contact)
-            case None => FastFuture.successful(NotFound(Json.obj("error" -> "team not found")))
+        def sendMail: String => Future[Result] = (contact: String) => {
+          for {
+            _ <- ctx.tenant.mailer.send(titleToSender, Seq(email), mailToSender)
+            _ <- ctx.tenant.mailer.send(titleToContact,
+                                        Seq(contact),
+                                        mailToContact)
+          } yield {
+            ctx.setCtxValue("contact", contact)
+            Ok(Json.obj("send" -> true))
           }
-        case (_, Some(id)) => env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)
-          .flatMap {
-            case Some(api) =>  env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(api.team)
+        }
+
+        (teamId, apiId) match {
+          case (Some(id), _) =>
+            env.dataStore.teamRepo
+              .forTenant(ctx.tenant)
+              .findByIdNotDeleted(id)
               .flatMap {
                 case Some(team) => sendMail(team.contact)
-                case None => FastFuture.successful(NotFound(Json.obj("error" -> "team not found")))
+                case None =>
+                  FastFuture.successful(
+                    NotFound(Json.obj("error" -> "team not found")))
               }
-            case None => FastFuture.successful(NotFound(Json.obj("error" -> "api not found")))
-          }
-        case (None, None) => sendMail(ctx.tenant.contact)
+          case (_, Some(id)) =>
+            env.dataStore.apiRepo
+              .forTenant(ctx.tenant)
+              .findByIdNotDeleted(id)
+              .flatMap {
+                case Some(api) =>
+                  env.dataStore.teamRepo
+                    .forTenant(ctx.tenant)
+                    .findByIdNotDeleted(api.team)
+                    .flatMap {
+                      case Some(team) => sendMail(team.contact)
+                      case None =>
+                        FastFuture.successful(
+                          NotFound(Json.obj("error" -> "team not found")))
+                    }
+                case None =>
+                  FastFuture.successful(
+                    NotFound(Json.obj("error" -> "api not found")))
+              }
+          case (None, None) => sendMail(ctx.tenant.contact)
+        }
       }
     }
-  }
 
   def admins(tenantId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(tenantId, ctx) { (tenant, adminTeam) =>
+    TenantAdminOnly(
+      AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(
+      tenantId,
+      ctx) { (tenant, adminTeam) =>
       env.dataStore.userRepo
-        .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(adminTeam.users.map(_.userId.asJson).toList))))
-        .map(admins => Ok(Json.obj("team" -> adminTeam.asSimpleJson, "admins" -> JsArray(admins.map(_.asSimpleJson).toList))))
+        .findNotDeleted(Json.obj("_id" -> Json.obj(
+          "$in" -> JsArray(adminTeam.users.map(_.userId.asJson).toList))))
+        .map(admins =>
+          Ok(Json.obj("team" -> adminTeam.asSimpleJson,
+                      "admins" -> JsArray(admins.map(_.asSimpleJson).toList))))
     }
   }
 
   def addableAdmins(tenantId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(tenantId, ctx) { (tenant, adminTeam) =>
+    TenantAdminOnly(
+      AuditTrailEvent(s"@{user.name} has accessed the current tenant admins"))(
+      tenantId,
+      ctx) { (tenant, adminTeam) =>
       env.dataStore.userRepo
-        .findNotDeleted(Json.obj("_id" -> Json.obj("$nin" -> JsArray(adminTeam.users.map(_.userId.asJson).toSeq))))
-        .map(addableAdmins => Ok(JsArray(addableAdmins.map(_.asSimpleJson).toList)))
+        .findNotDeleted(Json.obj("_id" -> Json.obj(
+          "$nin" -> JsArray(adminTeam.users.map(_.userId.asJson).toSeq))))
+        .map(addableAdmins =>
+          Ok(JsArray(addableAdmins.map(_.asSimpleJson).toList)))
     }
   }
 
-  def addAdminsToTenant(tenantId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has added a new tenant admin - @{ids}"))(tenantId, ctx) { (tenant, adminTeam) =>
-      val admins = (ctx.request.body).as[JsArray].value.map(id => UserWithPermission(UserId(id.as[String]), TeamPermission.Administrator))
-      val updatedTeam = adminTeam.copy(users = adminTeam.users ++ admins)
+  def addAdminsToTenant(tenantId: String) = DaikokuAction.async(parse.json) {
+    ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has added a new tenant admin - @{ids}"))(
+        tenantId,
+        ctx) { (tenant, adminTeam) =>
+        val admins = (ctx.request.body)
+          .as[JsArray]
+          .value
+          .map(id =>
+            UserWithPermission(UserId(id.as[String]),
+                               TeamPermission.Administrator))
+        val updatedTeam = adminTeam.copy(users = adminTeam.users ++ admins)
 
-      env.dataStore.teamRepo.forTenant(tenant).save(updatedTeam)
-        .map(done => {
-          if(done) {
-            Ok(updatedTeam.asSimpleJson)
-          } else {
-            BadRequest(Json.obj("error" -> "Failure"))
-          }
-        })
-
-    }
-  }
-
-  def removeAdminFromTenant(tenantId: String, adminId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has added a new tenant admins - @{admin.id}"))(tenantId, ctx) { (tenant, adminTeam) =>
-      if(adminTeam.users.size == 1 && adminTeam.users.exists(u => u.userId.value == adminId)) {
-        FastFuture.successful(Conflict(Json.obj("error" -> "There must be at least one administrator on the team")))
-      } else if (adminId == ctx.user.id.value) {
-        FastFuture.successful(Conflict(Json.obj("error" -> "You can't remove yourself your tenant admin rights")))
-      } else {
-        val updatedTeam = adminTeam.copy(users = adminTeam.users.filterNot(_.userId.value == adminId))
-        env.dataStore.teamRepo.forTenant(tenant).save(updatedTeam)
+        env.dataStore.teamRepo
+          .forTenant(tenant)
+          .save(updatedTeam)
           .map(done => {
-            if(done) {
+            if (done) {
               Ok(updatedTeam.asSimpleJson)
             } else {
               BadRequest(Json.obj("error" -> "Failure"))
             }
           })
+
+      }
+  }
+
+  def removeAdminFromTenant(tenantId: String, adminId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(AuditTrailEvent(
+        s"@{user.name} has added a new tenant admins - @{admin.id}"))(tenantId,
+                                                                      ctx) {
+        (tenant, adminTeam) =>
+          if (adminTeam.users.size == 1 && adminTeam.users.exists(u =>
+                u.userId.value == adminId)) {
+            FastFuture.successful(Conflict(Json.obj(
+              "error" -> "There must be at least one administrator on the team")))
+          } else if (adminId == ctx.user.id.value) {
+            FastFuture.successful(Conflict(Json.obj(
+              "error" -> "You can't remove yourself your tenant admin rights")))
+          } else {
+            val updatedTeam = adminTeam.copy(
+              users = adminTeam.users.filterNot(_.userId.value == adminId))
+            env.dataStore.teamRepo
+              .forTenant(tenant)
+              .save(updatedTeam)
+              .map(done => {
+                if (done) {
+                  Ok(updatedTeam.asSimpleJson)
+                } else {
+                  BadRequest(Json.obj("error" -> "Failure"))
+                }
+              })
+          }
       }
     }
-  }
 }

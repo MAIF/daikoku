@@ -283,12 +283,14 @@ class CredentialsAdminApiController(DaikokuApiAction: DaikokuApiAction,
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
 
-
   def getCredentials(token: String) = DaikokuApiAction.async { ctx =>
-    env.dataStore.apiSubscriptionRepo.forAllTenant().findOne(Json.obj("integrationToken" -> token)).map {
-      case None     => NotFound(Json.obj("error" -> "Subscription not found"))
-      case Some(sub)=> Ok(sub.apiKey.asJson)
-    }
+    env.dataStore.apiSubscriptionRepo
+      .forAllTenant()
+      .findOne(Json.obj("integrationToken" -> token))
+      .map {
+        case None      => NotFound(Json.obj("error" -> "Subscription not found"))
+        case Some(sub) => Ok(sub.apiKey.asJson)
+      }
   }
 }
 

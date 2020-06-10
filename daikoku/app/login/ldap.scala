@@ -28,10 +28,11 @@ object LdapConfig {
 
   val _fmt: Format[LdapConfig] = new Format[LdapConfig] {
 
-    override def reads(json: JsValue): JsResult[LdapConfig] = fromJson(json) match {
-      case Left(e)  => JsError(e.getMessage)
-      case Right(v) => JsSuccess(v.asInstanceOf[LdapConfig])
-    }
+    override def reads(json: JsValue): JsResult[LdapConfig] =
+      fromJson(json) match {
+        case Left(e)  => JsError(e.getMessage)
+        case Right(v) => JsSuccess(v.asInstanceOf[LdapConfig])
+      }
 
     override def writes(o: LdapConfig): JsObject = o.asJson
   }
@@ -187,7 +188,8 @@ object LdapSupport {
     val boundUser: Future[Option[User]] = if (res.hasMore) {
       val item = res.next()
       val dn = item.getNameInNamespace
-      if (ldapConfig.adminGroupFilter.exists(_ => usersInAdminGroup.contains(dn))) {
+      if (ldapConfig.adminGroupFilter.exists(_ =>
+            usersInAdminGroup.contains(dn))) {
         val attrs = item.getAttributes
         val env2 = new util.Hashtable[String, AnyRef]
         env2.put(Context.INITIAL_CONTEXT_FACTORY,

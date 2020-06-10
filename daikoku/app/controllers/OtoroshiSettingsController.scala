@@ -40,80 +40,120 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
   implicit val ev = env
 
   def otoroshisSettings(tenantId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed otoroshi settings list"))(tenantId, ctx) { (tenant, _) =>
-      FastFuture.successful(Ok(JsArray(tenant.otoroshiSettings.map(_.asJson).toSeq)))
+    TenantAdminOnly(
+      AuditTrailEvent(s"@{user.name} has accessed otoroshi settings list"))(
+      tenantId,
+      ctx) { (tenant, _) =>
+      FastFuture.successful(
+        Ok(JsArray(tenant.otoroshiSettings.map(_.asJson).toSeq)))
     }
   }
 
   def otoroshisSettingsSimple(tenantId: String) = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed otoroshi settings simple list"))(ctx) {
-      FastFuture.successful(Ok(JsArray(ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq)))
+    PublicUserAccess(
+      AuditTrailEvent(
+        s"@{user.name} has accessed otoroshi settings simple list"))(ctx) {
+      FastFuture.successful(
+        Ok(JsArray(ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq)))
     }
   }
 
-  def otoroshiSettings(tenantId: String, otoroshiId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed one otoroshi settings ($otoroshiId)"))(tenantId, ctx) { (tenant, _) =>
-      tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "OtoroshiSettings not found")))
-        case Some(oto) => FastFuture.successful(Ok(oto.asJson))
+  def otoroshiSettings(tenantId: String, otoroshiId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed one otoroshi settings ($otoroshiId)"))(
+        tenantId,
+        ctx) { (tenant, _) =>
+        tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "OtoroshiSettings not found")))
+          case Some(oto) => FastFuture.successful(Ok(oto.asJson))
+        }
       }
     }
-  }
 
-  def deleteOtoroshiSettings(tenantId: String, otoroshiId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(
-        s"@{user.name} has deleted one otoroshi settings ($otoroshiId)"))(tenantId, ctx) { (tenant, _) =>
-      ctx.tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
-        case Some(otoroshiSettings) =>
-          env.dataStore.tenantRepo
-            .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings.filterNot(_.id == otoroshiSettings.id)))
-            .map { _ =>
-              Ok(Json.obj("done" -> true))
-            }
-        case None =>
-          FastFuture.successful(
-            NotFound(Json.obj("error" -> "Otoroshi not found")))
-      }
-    }
-  }
-
-  def saveOtoroshiSettings(tenantId: String, otoroshiId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TenantAdminOnly(AuditTrailEvent(
-      s"@{user.name} has updated one otoroshi settings ($otoroshiId)"))(tenantId, ctx) { (tenant, _) =>
-      tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "OtoroshiSettings not found")))
-        case Some(_) => OtoroshiSettingsFormat.reads(ctx.request.body) match {
-          case JsError(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "Error while parsing payload")))
-          case JsSuccess(settings, _) =>
+  def deleteOtoroshiSettings(tenantId: String, otoroshiId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has deleted one otoroshi settings ($otoroshiId)"))(
+        tenantId,
+        ctx) { (tenant, _) =>
+        ctx.tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
+          case Some(otoroshiSettings) =>
             env.dataStore.tenantRepo
-              .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings
-                .filterNot(_.id == settings.id) + settings)
-              )
+              .save(tenant.copy(otoroshiSettings =
+                tenant.otoroshiSettings.filterNot(_.id == otoroshiSettings.id)))
               .map { _ =>
-                Ok(settings.asJson)
+                Ok(Json.obj("done" -> true))
+              }
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "Otoroshi not found")))
+        }
+      }
+    }
+
+  def saveOtoroshiSettings(tenantId: String, otoroshiId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has updated one otoroshi settings ($otoroshiId)"))(
+        tenantId,
+        ctx) { (tenant, _) =>
+        tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "OtoroshiSettings not found")))
+          case Some(_) =>
+            OtoroshiSettingsFormat.reads(ctx.request.body) match {
+              case JsError(_) =>
+                FastFuture.successful(
+                  BadRequest(
+                    Json.obj("error" -> "Error while parsing payload")))
+              case JsSuccess(settings, _) =>
+                env.dataStore.tenantRepo
+                  .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings
+                    .filterNot(_.id == settings.id) + settings))
+                  .map { _ =>
+                    Ok(settings.asJson)
+                  }
+            }
+        }
+      }
+    }
+
+  def createOtoroshiSettings(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has created one otoroshi settings (@{otoroshi.id})"))(
+        tenantId,
+        ctx) { (tenant, _) =>
+        OtoroshiSettingsFormat.reads(ctx.request.body) match {
+          case JsError(_) =>
+            FastFuture.successful(
+              BadRequest(Json.obj("error" -> "Error while parsing payload")))
+          case JsSuccess(settings, _) =>
+            ctx.setCtxValue("otoroshi.id", settings.id)
+            env.dataStore.tenantRepo
+              .save(tenant.copy(
+                otoroshiSettings = tenant.otoroshiSettings + settings))
+              .map { _ =>
+                Created(settings.asJson)
               }
         }
       }
     }
-  }
 
-  def createOtoroshiSettings(tenantId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TenantAdminOnly(AuditTrailEvent(
-      s"@{user.name} has created one otoroshi settings (@{otoroshi.id})"))(tenantId, ctx) { (tenant, _) =>
-      OtoroshiSettingsFormat.reads(ctx.request.body) match {
-        case JsError(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "Error while parsing payload")))
-        case JsSuccess(settings, _) =>
-          ctx.setCtxValue("otoroshi.id", settings.id)
-          env.dataStore.tenantRepo
-            .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings + settings))
-            .map { _ => Created(settings.asJson) }
-      }
-    }
-  }
-
-  def otoroshiGroupsFor(teamId: String, oto: String) = DaikokuAction.async { ctx =>
+  def otoroshiGroupsFor(teamId: String, oto: String) = DaikokuAction.async {
+    ctx =>
       TeamApiEditorOnly(AuditTrailEvent(
-        s"@{user.name} has accessed groups of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(teamId, ctx) { team =>
+        s"@{user.name} has accessed groups of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(
+        teamId,
+        ctx) { team =>
         ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
@@ -126,33 +166,60 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
   }
 
-  def otoroshiGroupsForTenant(tenantId: String, oto: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(tenantId, ctx) { (tenant, _) =>
-      tenant.otoroshiSettings.find(s => s.id.value == oto) match {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> s"Settings $oto not found")))
-        case Some(settings) => otoroshiClient.getServiceGroups()(settings)
-          .map(Ok(_))
+  def otoroshiGroupsForTenant(tenantId: String, oto: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(
+        tenantId,
+        ctx) { (tenant, _) =>
+        tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+          case Some(settings) =>
+            otoroshiClient
+              .getServiceGroups()(settings)
+              .map(Ok(_))
+        }
       }
     }
-  }
-  def otoroshiServicesForTenant(tenantId: String, oto: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(tenantId, ctx) { (tenant, _) =>
-      tenant.otoroshiSettings.find(s => s.id.value == oto) match {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> s"Settings $oto not found")))
-        case Some(settings) => otoroshiClient.getServices()(settings)
-          .map(Ok(_))
+  def otoroshiServicesForTenant(tenantId: String, oto: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(
+        tenantId,
+        ctx) { (tenant, _) =>
+        tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+          case Some(settings) =>
+            otoroshiClient
+              .getServices()(settings)
+              .map(Ok(_))
+        }
       }
     }
-  }
-  def otoroshiApiKeysForTenant(tenantId: String, oto: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(tenantId, ctx) { (tenant, _) =>
-      tenant.otoroshiSettings.find(s => s.id.value == oto) match {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> s"Settings $oto not found")))
-        case Some(settings) => otoroshiClient.getApiKeys()(settings)
-          .map(Ok(_))
+  def otoroshiApiKeysForTenant(tenantId: String, oto: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(
+        tenantId,
+        ctx) { (tenant, _) =>
+        tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+          case Some(settings) =>
+            otoroshiClient
+              .getApiKeys()(settings)
+              .map(Ok(_))
+        }
       }
     }
-  }
 
   def createTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) {
     ctx =>
@@ -355,8 +422,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                           )
                         )
                         .withHeaders(
-                          res.headers
-                            .view
+                          res.headers.view
                             .mapValues(_.head)
                             .toSeq
                             .filter(_._1 != "Content-Type")

@@ -37,7 +37,6 @@ class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
 
   override protected def afterAll(): Unit = {}
 
-
   override def toString: String = thisSuite.toString
 }
 
@@ -405,7 +404,8 @@ object utils {
       val payload: String = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(Json.toBytes(payloadJson))
       val signatureBytes: Array[Byte] = algorithm.sign(
-        header.getBytes(StandardCharsets.UTF_8), payload.getBytes(StandardCharsets.UTF_8))
+        header.getBytes(StandardCharsets.UTF_8),
+        payload.getBytes(StandardCharsets.UTF_8))
       val signature: String = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(signatureBytes)
       String.format("%s.%s.%s", header, payload, signature)
@@ -520,8 +520,6 @@ object utils {
     lazy val wireMockUrl = s"http://$stubHost:$stubPort"
     val stubPort = 11112
     val stubHost = "localhost"
-
-
 
     val teamOwnerId = TeamId("team-owner")
     val teamConsumerId = TeamId("team-consumer")

@@ -157,7 +157,7 @@ export class SignupComponent extends Component {
         error: t(
           'account.creation.error',
           this.props.currentLanguage,
-          'Your account creation request is not valid anymore (it\'s only valid for 15 minutes). Please creates a new request.'
+          "Your account creation request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
         ),
       });
     }
@@ -312,7 +312,7 @@ export class ResetPasswordComponent extends Component {
         error: t(
           'account.reset.error',
           this.props.currentLanguage,
-          'Your password reset request is not valid anymore (it\'s only valid for 15 minutes). Please creates a new request.'
+          "Your password reset request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
         ),
       });
     }

@@ -1,10 +1,21 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionDemand, TeamAccess, TeamInvitation}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiSubscriptionDemand,
+  TeamAccess,
+  TeamInvitation
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
+  Administrator,
+  ApiEditor,
+  TeamUser
+}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -132,7 +143,6 @@ class TeamControllerSpec()
 
       respAddDenied.status mustBe 409
 
-
     }
     "not update permission member of team admin" in {}
     "not update apikey visibility for team admin" in {}
@@ -238,14 +248,13 @@ class TeamControllerSpec()
       //todo: test invit is ok
       val userSession = loginWithBlocking(user, tenant)
       val respNotification =
-        httpJsonCallBlocking(
-          path = s"/api/me/notifications")(
-          tenant,
-          userSession)
+        httpJsonCallBlocking(path = s"/api/me/notifications")(tenant,
+                                                              userSession)
       respNotification.status mustBe 200
 
-      val notifications = fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
-        .reads((respNotification.json \ "notifications").as[JsArray])
+      val notifications =
+        fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
+          .reads((respNotification.json \ "notifications").as[JsArray])
       notifications.isSuccess mustBe true
       notifications.get.size mustBe 1
       notifications.get.head.action.isInstanceOf[TeamInvitation] mustBe true
@@ -395,7 +404,9 @@ class TeamControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
 
       var respGet =
-        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant, session)
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant,
+                                                                     session)
       respGet.status mustBe 200
       var addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "addableUsers").as[JsArray])
@@ -414,8 +425,9 @@ class TeamControllerSpec()
           session)
       respInvit.status mustBe 200
 
-      respGet =
-        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant, session)
+      respGet = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant,
+                                                                   session)
       respGet.status mustBe 200
       addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "addableUsers").as[JsArray])
@@ -425,17 +437,17 @@ class TeamControllerSpec()
       pendingUsers.get.size mustBe 1
       addableUsers.get.size mustBe 1
 
-      respInvit =
-        httpJsonCallBlocking(
-          path = s"/api/teams/${teamOwnerId.value}/members",
-          method = "POST",
-          body = Some(Json.obj("members" -> Json.arr(userApiEditorId.asJson))))(
-          tenant,
-          session)
+      respInvit = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/members",
+        method = "POST",
+        body = Some(Json.obj("members" -> Json.arr(userApiEditorId.asJson))))(
+        tenant,
+        session)
       respInvit.status mustBe 200
 
-      respGet =
-        httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant, session)
+      respGet = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant,
+                                                                   session)
       respGet.status mustBe 200
       addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "addableUsers").as[JsArray])
@@ -679,16 +691,17 @@ class TeamControllerSpec()
         users = Seq(userAdmin, randomUser),
         apis = Seq(defaultApi),
         subscriptions = Seq(sub),
-        notifications = Seq(Notification(
-          id = NotificationId("untreated-notification"),
-          tenant = tenant.id,
-          team = Some(teamOwnerId),
-          sender = user,
-          notificationType = AcceptOrReject,
-          action = ApiSubscriptionDemand(defaultApi.id,
-            UsagePlanId("2"),
-            teamConsumerId)
-        ))
+        notifications = Seq(
+          Notification(
+            id = NotificationId("untreated-notification"),
+            tenant = tenant.id,
+            team = Some(teamOwnerId),
+            sender = user,
+            notificationType = AcceptOrReject,
+            action = ApiSubscriptionDemand(defaultApi.id,
+                                           UsagePlanId("2"),
+                                           teamConsumerId)
+          ))
       )
       val session = loginWithBlocking(randomUser, tenant)
       val resp =
@@ -702,10 +715,9 @@ class TeamControllerSpec()
       team.isSuccess mustBe true
       team.get.name mustBe teamOwner.name
 
-      (resp.json  \ "apisCount").as[Int] mustBe 1
-      (resp.json  \ "subscriptionsCount").as[Int] mustBe 1
-      (resp.json  \ "notificationCount").as[Int] mustBe 1
-
+      (resp.json \ "apisCount").as[Int] mustBe 1
+      (resp.json \ "subscriptionsCount").as[Int] mustBe 1
+      (resp.json \ "notificationCount").as[Int] mustBe 1
 
       val respDenied =
         httpJsonCallBlocking(
@@ -809,9 +821,10 @@ class TeamControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
-        teams = Seq(defaultAdminTeam.copy(users = Set(
-          UserWithPermission(tenantAdmin.id, Administrator),
-          UserWithPermission(user.id, Administrator))))
+        teams = Seq(
+          defaultAdminTeam.copy(
+            users = Set(UserWithPermission(tenantAdmin.id, Administrator),
+                        UserWithPermission(user.id, Administrator))))
       )
 
       val session = loginWithBlocking(daikokuAdmin, tenant)

@@ -17,7 +17,8 @@ object HtmlSanitizer {
     .allowElements("p")
     .allowElements("a")
     .allowUrlProtocols("https")
-    .allowAttributes("href").onElements("a")
+    .allowAttributes("href")
+    .onElements("a")
     .requireRelNofollowOnLinks()
     .toFactory()
 
@@ -61,7 +62,8 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
   def send(title: String, to: Seq[String], body: String)(
       implicit ec: ExecutionContext): Future[Unit] = {
 
-    val templatedBody = settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
+    val templatedBody =
+      settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
 
     wsClient
       .url(s"https://api.mailgun.net/v3/${settings.domain}/messages")
@@ -90,7 +92,8 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
   def send(title: String, to: Seq[String], body: String)(
       implicit ec: ExecutionContext): Future[Unit] = {
 
-    val templatedBody = settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
+    val templatedBody =
+      settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
     wsClient
       .url(s"https://api.mailjet.com/v3.1/send")
       .withAuth(settings.apiKeyPublic,

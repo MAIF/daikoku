@@ -91,7 +91,7 @@ class TeamApiKeysForApiComponent extends Component {
           'rotation.error.message',
           this.props.currentLanguage,
           false,
-          'You can\'t toggle rotation because of plan rotation is forced to enabled'
+          "You can't toggle rotation because of plan rotation is forced to enabled"
         )
       );
     }
@@ -303,7 +303,7 @@ const ApiKeyCard = ({
 
   useEffect(() => {
     if (rotationEvery < 0) {
-      setError({ ...error, rotationEvery: 'value can\'t be negative' });
+      setError({ ...error, rotationEvery: "value can't be negative" });
     } else {
       delete error.rotationEvery;
       setError(error);
@@ -312,9 +312,9 @@ const ApiKeyCard = ({
 
   useEffect(() => {
     if (gracePeriod < 0) {
-      setError({ ...error, gracePeriod: 'value can\'t be negative' });
+      setError({ ...error, gracePeriod: "value can't be negative" });
     } else if (gracePeriod > rotationEvery) {
-      setError({ ...error, gracePeriod: 'value can\'t be bigger than rotationEvery' });
+      setError({ ...error, gracePeriod: "value can't be bigger than rotationEvery" });
     } else {
       delete error.gracePeriod;
       setError(error);

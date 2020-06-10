@@ -30,9 +30,9 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
   implicit val ev: Env = env
 
   def getSubscriptionConsumption(subscriptionId: String,
-                           teamId: String,
-                           from: Option[Long],
-                           to: Option[Long]): Action[AnyContent] =
+                                 teamId: String,
+                                 from: Option[Long],
+                                 to: Option[Long]): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(AuditTrailEvent(
         s"@{user.name} has accessed to apikey consumption for subscription @{subscriptionId}"))(
@@ -47,11 +47,13 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
           .findById(subscriptionId)
-            .flatMap {
+          .flatMap {
             case None =>
               FastFuture.successful(NotFound(Json.obj(
                 "error" -> "subscription not found for the given clientId")))
-            case Some(subscription) if team.id != subscription.team => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this subscription")))
+            case Some(subscription) if team.id != subscription.team =>
+              FastFuture.successful(Unauthorized(Json.obj(
+                "error" -> "You're not authorized on this subscription")))
             case Some(subscription) =>
               env.dataStore.apiRepo
                 .forTenant(ctx.tenant.id)
@@ -102,7 +104,9 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
             case None =>
               FastFuture.successful(NotFound(Json.obj(
                 "error" -> "subscription not found for the given clientId")))
-            case Some(subscription) if team.id != subscription.team => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this subscription")))
+            case Some(subscription) if team.id != subscription.team =>
+              FastFuture.successful(Unauthorized(Json.obj(
+                "error" -> "You're not authorized on this subscription")))
             case Some(subscription) =>
               apiKeyStatsJob
                 .syncForSubscription(subscription, ctx.tenant)

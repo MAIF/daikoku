@@ -93,7 +93,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
 
   private def s3ClientSettingsAttrs(implicit conf: S3Configuration) = {
     val awsCredentials = StaticCredentialsProvider.create(
-  AwsBasicCredentials.create(conf.access, conf.secret)
+      AwsBasicCredentials.create(conf.access, conf.secret)
     )
     val settings = S3Settings(
       bufferType = MemoryBufferType,
@@ -102,8 +102,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
         override def getRegion: Region = Region.of(conf.region)
       },
       listBucketApiVersion = ApiVersion.ListBucketVersion2
-    )
-      .withEndpointUrl(conf.endpoint)
+    ).withEndpointUrl(conf.endpoint)
     S3Attributes.settings(settings)
   }
 

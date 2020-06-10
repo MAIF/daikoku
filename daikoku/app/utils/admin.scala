@@ -8,7 +8,11 @@ import akka.util.ByteString
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
+import fr.maif.otoroshi.daikoku.env.{
+  Env,
+  LocalAdminApiConfig,
+  OtoroshiAdminApiConfig
+}
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
 import play.api.Logger
@@ -29,13 +33,15 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
 
   implicit lazy val ec = env.defaultExecutionContext
 
-  def decodeBase64(encoded: String): String = new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
+  def decodeBase64(encoded: String): String =
+    new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
   def extractUsernamePassword(header: String): Option[(String, String)] = {
     val base64 = header.replace("Basic ", "").replace("basic ", "")
     Option(base64)
       .map(decodeBase64)
       .map(_.split(":").toSeq)
-      .flatMap(a => a.headOption.flatMap(head => a.lastOption.map(last => (head, last))))
+      .flatMap(a =>
+        a.headOption.flatMap(head => a.lastOption.map(last => (head, last))))
   }
 
   override def invokeBlock[A](
@@ -69,22 +75,28 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
           request.headers.get("Authorization") match {
             case Some(auth) if auth.startsWith("Basic ") =>
               extractUsernamePassword(auth) match {
-                case None => Errors.craftResponseResult("No api key provided",
-                  Results.Unauthorized,
-                  request,
-                  None,
-                  env)
+                case None =>
+                  Errors.craftResponseResult("No api key provided",
+                                             Results.Unauthorized,
+                                             request,
+                                             None,
+                                             env)
                 case Some((clientId, clientSecret)) =>
-                  env.dataStore.apiSubscriptionRepo.forTenant(tenant)
-                    .findNotDeleted(Json.obj("apiKey.clientId" -> clientId, "apiKey.clientSecret" -> clientSecret))
+                  env.dataStore.apiSubscriptionRepo
+                    .forTenant(tenant)
+                    .findNotDeleted(
+                      Json.obj("apiKey.clientId" -> clientId,
+                               "apiKey.clientSecret" -> clientSecret))
                     .map(_.length == 1)
                     .flatMap({
-                      case done if done => block(DaikokuApiActionContext[A](request, tenant))
-                      case _              => Errors.craftResponseResult("No api key provided",
-                        Results.Unauthorized,
-                        request,
-                        None,
-                        env)
+                      case done if done =>
+                        block(DaikokuApiActionContext[A](request, tenant))
+                      case _ =>
+                        Errors.craftResponseResult("No api key provided",
+                                                   Results.Unauthorized,
+                                                   request,
+                                                   None,
+                                                   env)
                     })
               }
           }
@@ -293,10 +305,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
     val value: Future[Result] = fu.flatMap {
       case None =>
         Errors.craftResponseResult(s"Entity $entityName not found",
-          Results.NotFound,
-          ctx.request,
-          None,
-          env)
+                                   Results.NotFound,
+                                   ctx.request,
+                                   None,
+                                   env)
       case Some(entity) =>
         val currentJson = toJson(entity)
 
@@ -307,17 +319,17 @@ abstract class AdminApiController[Of, Id <: ValueType](
           case Failure(e) =>
             logger.error(s"Bad $entityName format", new RuntimeException(e))
             Errors.craftResponseResult(s"Bad $entityName format",
-              Results.BadRequest,
-              ctx.request,
-              None,
-              env)
+                                       Results.BadRequest,
+                                       ctx.request,
+                                       None,
+                                       env)
           case Success(Left(e)) =>
             logger.error(s"Bad $entityName format", new RuntimeException(e))
             Errors.craftResponseResult(s"Bad $entityName format",
-              Results.BadRequest,
-              ctx.request,
-              None,
-              env)
+                                       Results.BadRequest,
+                                       ctx.request,
+                                       None,
+                                       env)
           case Success(Right(newNewEntity)) =>
             entityStore(ctx.tenant, env.dataStore)
               .save(newNewEntity)

@@ -7,7 +7,12 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuTenantAction}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuTenantAction
+}
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
@@ -22,7 +27,10 @@ import play.api.i18n.I18nSupport
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc._
 import play.api.routing.Router
-import play.modules.reactivemongo.{ReactiveMongoApi, ReactiveMongoApiFromContext}
+import play.modules.reactivemongo.{
+  ReactiveMongoApi,
+  ReactiveMongoApiFromContext
+}
 import router.Routes
 
 import scala.concurrent.{ExecutionContext, Future}

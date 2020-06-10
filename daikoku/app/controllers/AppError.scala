@@ -49,9 +49,11 @@ object AppError {
     case OtoroshiError(e) => BadRequest(e)
     case SubscriptionConflict =>
       Conflict(Json.obj("error" -> "conflict with subscription request"))
-    case ApiKeyRotationConflict => Conflict(Json.obj("error" -> "Api have already setup apikey rotation"))
+    case ApiKeyRotationConflict =>
+      Conflict(Json.obj("error" -> "Api have already setup apikey rotation"))
     case ApiKeyRotationError(e) => BadRequest(e)
-    case ForbiddenAction => Forbidden(Json.obj("error" -> "You're not authorized to do this action"))
+    case ForbiddenAction =>
+      Forbidden(Json.obj("error" -> "You're not authorized to do this action"))
 
   }
 
@@ -77,8 +79,10 @@ object AppError {
     case OtoroshiError(e) => e
     case SubscriptionConflict =>
       Json.obj("error" -> "conflict with subscription request")
-    case ApiKeyRotationConflict => Json.obj("error" -> "conflict, Api have already setup apikey rotation")
+    case ApiKeyRotationConflict =>
+      Json.obj("error" -> "conflict, Api have already setup apikey rotation")
     case ApiKeyRotationError(e) => e
-    case ForbiddenAction => Json.obj("error" -> "You're not authorized to do this action")
+    case ForbiddenAction =>
+      Json.obj("error" -> "You're not authorized to do this action")
   }
 }

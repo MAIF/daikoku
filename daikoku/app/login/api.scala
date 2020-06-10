@@ -65,7 +65,8 @@ object IdentityAttrs {
   val SessionKey: TypedKey[UserSession] =
     TypedKey.apply[UserSession]("daikoku-session")
   val TeamKey: TypedKey[Team] = TypedKey.apply[Team]("daikoku-team")
-  val TenantAdminKey: TypedKey[Boolean] = TypedKey.apply[Boolean]("daikoku-tenant-admin")
+  val TenantAdminKey: TypedKey[Boolean] =
+    TypedKey.apply[Boolean]("daikoku-tenant-admin")
 }
 
 object TenantHelper {
@@ -143,11 +144,9 @@ object TenantHelper {
                 .flatMap {
                   case None =>
                     FastFuture.successful(Tenant.Default)
-                  case Some(session)
-                      if !session.expires.isAfterNow =>
+                  case Some(session) if !session.expires.isAfterNow =>
                     FastFuture.successful(Tenant.Default)
-                  case Some(session)
-                      if session.expires.isAfterNow =>
+                  case Some(session) if session.expires.isAfterNow =>
                     env.dataStore.userRepo
                       .findByIdNotDeleted(session.userId)
                       .flatMap {
@@ -245,7 +244,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
       case "/daikoku.min.js.map"        => "/"
       case "/daikoku.home.min.js.map"   => "/"
       case "/daikoku.login.min.js.map"  => "/"
-      case r"/assets/.*"              => "/"
+      case r"/assets/.*"                => "/"
       case _                            => uri
     }
   }
@@ -257,13 +256,13 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
       s"Filtering on ${request.method.toLowerCase()} => ${request.relativeUri}")
 
     (request.method.toLowerCase(), request.relativeUri) match {
-      case (_, r"/fakeotoroshi/.*")         => nextFilter(request)
-      case (_, r"/assets/.*")               => nextFilter(request)
-      case ("get", r"/auth/.*/login")       => nextFilter(request)
-      case (_, r"/auth/.*/callback")        => nextFilter(request)
-      case ("post", r"/api/reset")                  => nextFilter(request)
-      case ("post", r"/api/reset")                  => nextFilter(request)
-      case ("post", r"/api/jobs/.*")        => nextFilter(request)
+      case (_, r"/fakeotoroshi/.*")               => nextFilter(request)
+      case (_, r"/assets/.*")                     => nextFilter(request)
+      case ("get", r"/auth/.*/login")             => nextFilter(request)
+      case (_, r"/auth/.*/callback")              => nextFilter(request)
+      case ("post", r"/api/reset")                => nextFilter(request)
+      case ("post", r"/api/reset")                => nextFilter(request)
+      case ("post", r"/api/jobs/.*")              => nextFilter(request)
       case ("post", r"/admin-api/state/import.*") => nextFilter(request)
       case _ =>
         TenantHelper.withTenant(request, env) { tenant =>
@@ -349,23 +348,32 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                       )
                                   )
                                 case Some(team) =>
-                                  env.dataStore.userRepo.save(user).flatMap { _ =>
-                                    env.dataStore.teamRepo.forTenant(tenant).exists(Json.obj("type" -> "Admin", "users.userId" -> user.id.asJson))
-                                      .flatMap(isTenantAdmin => {
-                                        nextFilter(
-                                          request
-                                            .addAttr(IdentityAttrs.TeamKey, team)
-                                            .addAttr(IdentityAttrs.UserKey, user)
-                                            .addAttr(IdentityAttrs.TenantAdminKey, isTenantAdmin)
-                                            .addAttr(
-                                              IdentityAttrs.ImpersonatorKey,
-                                              None)
-                                            .addAttr(IdentityAttrs.TenantKey,
-                                              tenant)
-                                            .addAttr(IdentityAttrs.SessionKey,
-                                              session)
-                                        )
-                                      })
+                                  env.dataStore.userRepo.save(user).flatMap {
+                                    _ =>
+                                      env.dataStore.teamRepo
+                                        .forTenant(tenant)
+                                        .exists(Json.obj(
+                                          "type" -> "Admin",
+                                          "users.userId" -> user.id.asJson))
+                                        .flatMap(isTenantAdmin => {
+                                          nextFilter(
+                                            request
+                                              .addAttr(IdentityAttrs.TeamKey,
+                                                       team)
+                                              .addAttr(IdentityAttrs.UserKey,
+                                                       user)
+                                              .addAttr(
+                                                IdentityAttrs.TenantAdminKey,
+                                                isTenantAdmin)
+                                              .addAttr(
+                                                IdentityAttrs.ImpersonatorKey,
+                                                None)
+                                              .addAttr(IdentityAttrs.TenantKey,
+                                                       tenant)
+                                              .addAttr(IdentityAttrs.SessionKey,
+                                                       session)
+                                          )
+                                        })
                                   }
                               }
                           }
@@ -403,8 +411,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                     case None =>
                       nextFilter(
                         request.addAttr(IdentityAttrs.TenantKey, tenant))
-                    case Some(session)
-                        if session.expires.isBeforeNow =>
+                    case Some(session) if session.expires.isBeforeNow =>
                       AppLogger.info("Session expired")
                       FastFuture.successful(
                         Results
@@ -416,8 +423,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                             "redirect" -> cleanupRedirect(request.relativeUri)
                           )
                       )
-                    case Some(session)
-                        if session.expires.isAfterNow =>
+                    case Some(session) if session.expires.isAfterNow =>
                       env.dataStore.userRepo
                         .findByIdNotDeleted(session.userId)
                         .flatMap {
@@ -452,9 +458,13 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                 )
                               case Some(team) =>
                                 for {
-                                  _             <- env.dataStore.userRepo.save(user)
-                                  isTenantAdmin <- env.dataStore.teamRepo.forTenant(tenant).exists(Json.obj("type" -> "Admin", "users.userId" -> user.id.asJson))
-                                  result        <- session.impersonatorId
+                                  _ <- env.dataStore.userRepo.save(user)
+                                  isTenantAdmin <- env.dataStore.teamRepo
+                                    .forTenant(tenant)
+                                    .exists(Json.obj(
+                                      "type" -> "Admin",
+                                      "users.userId" -> user.id.asJson))
+                                  result <- session.impersonatorId
                                     .map(id =>
                                       env.dataStore.userRepo.findByIdNotDeleted(
                                         id))
@@ -464,7 +474,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                         request
                                           .addAttr(IdentityAttrs.TeamKey, team)
                                           .addAttr(IdentityAttrs.UserKey, user)
-                                          .addAttr(IdentityAttrs.TenantAdminKey, isTenantAdmin)
+                                          .addAttr(IdentityAttrs.TenantAdminKey,
+                                                   isTenantAdmin)
                                           .addAttr(
                                             IdentityAttrs.ImpersonatorKey,
                                             maybeImpersonator)

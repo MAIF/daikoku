@@ -2,7 +2,10 @@ package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.concurrent.IntegrationPatience

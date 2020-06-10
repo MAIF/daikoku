@@ -21,7 +21,8 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
 
   const initSwaggerEditor = (content) => {
     console.log('init swagger editor');
-    window.editor = SwaggerEditorBundle({  // eslint-disable-line no-undef
+    window.editor = SwaggerEditorBundle({
+      // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
       layout: 'StandaloneLayout',
       presets: [SwaggerEditorStandalonePreset], // eslint-disable-line no-undef

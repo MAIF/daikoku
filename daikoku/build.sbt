@@ -19,10 +19,14 @@ lazy val root = (project in file("."))
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 
 assemblyMergeStrategy in assembly := {
-  case PathList("org", "apache", "commons", "logging", xs @ _*)=> MergeStrategy.first
-  case PathList(ps @ _*) if ps.contains("module-info.class")          => MergeStrategy.first // ???
-  case PathList(ps @ _*) if ps.contains("ModuleUtil.class")           => MergeStrategy.first // ???
-  case PathList(ps @ _*) if ps.contains("reflection-config.json")     => MergeStrategy.first // ???
+  case PathList("org", "apache", "commons", "logging", xs @ _*) =>
+    MergeStrategy.first
+  case PathList(ps @ _*) if ps.contains("module-info.class") =>
+    MergeStrategy.first // ???
+  case PathList(ps @ _*) if ps.contains("ModuleUtil.class") =>
+    MergeStrategy.first // ???
+  case PathList(ps @ _*) if ps.contains("reflection-config.json") =>
+    MergeStrategy.first // ???
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
@@ -31,33 +35,32 @@ assemblyMergeStrategy in assembly := {
 libraryDependencies ++= Seq(
   ws,
   filters,
-  "org.scalatestplus.play"    %% "scalatestplus-play"       % "5.0.0"         % Test,
-  "com.themillhousegroup"     %% "scoup"                    % "0.4.7"         % Test,
-  "com.github.tomakehurst"    % "wiremock"                  % wiremockVersion % Test,
-  "com.github.tomakehurst"    % "wiremock-jre8"             % wiremockVersion % Test,
-
-  "org.apache.commons"        % "commons-lang3"             % "3.10",
-  "org.bouncycastle"          % "bcprov-jdk15on"            % "1.65",
-  "org.gnieh"                 %% "diffson-play-json"        % "4.0.2" excludeAll ExclusionRule(organization = "com.typesafe.akka"),
-  "com.typesafe.play"         %% "play-json"                % "2.8.1",
-  "com.typesafe.play"         %% "play-json-joda"           % "2.8.1",
-  "com.auth0"                 % "java-jwt"                  % "3.10.3",
-  "com.auth0"                 % "jwks-rsa"                  % "0.11.0", // https://github.com/auth0/jwks-rsa-java
-  "com.nimbusds"              % "nimbus-jose-jwt"           % "8.16",
-  "com.softwaremill.macwire"  %% "macros"                   % "2.3.4" % "provided",
-  "javax.xml.bind"            % "jaxb-api"                  % "2.3.1",
-  "com.sun.xml.bind"          % "jaxb-core"                 % "2.3.0.1",
-  "com.sun.xml.bind"          % "jaxb-impl"                 % "2.3.0.1",
-  "org.reactivemongo"         %% "play2-reactivemongo"      % s"$reactiveMongoVersion-play28",
-  "org.reactivemongo"         %% "reactivemongo-play-json"  % s"$reactiveMongoVersion-play28",
-  "org.reactivemongo"         %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",
-  "com.typesafe.akka"         %% "akka-stream-kafka"        % "2.0.2",
-  "org.typelevel"             %% "cats-core"                % "2.1.1",
-  "de.svenkubiak"             % "jBCrypt"                   % "0.4.1",
-  "com.lightbend.akka"        %% "akka-stream-alpakka-s3"   % "2.0.0",
-  "com.amazonaws"             % "aws-java-sdk-core"         % "1.11.779",
+  "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test,
+  "com.themillhousegroup" %% "scoup" % "0.4.7" % Test,
+  "com.github.tomakehurst" % "wiremock" % wiremockVersion % Test,
+  "com.github.tomakehurst" % "wiremock-jre8" % wiremockVersion % Test,
+  "org.apache.commons" % "commons-lang3" % "3.10",
+  "org.bouncycastle" % "bcprov-jdk15on" % "1.65",
+  "org.gnieh" %% "diffson-play-json" % "4.0.2" excludeAll ExclusionRule(
+    organization = "com.typesafe.akka"),
+  "com.typesafe.play" %% "play-json" % "2.8.1",
+  "com.typesafe.play" %% "play-json-joda" % "2.8.1",
+  "com.auth0" % "java-jwt" % "3.10.3",
+  "com.auth0" % "jwks-rsa" % "0.11.0", // https://github.com/auth0/jwks-rsa-java
+  "com.nimbusds" % "nimbus-jose-jwt" % "8.16",
+  "com.softwaremill.macwire" %% "macros" % "2.3.4" % "provided",
+  "javax.xml.bind" % "jaxb-api" % "2.3.1",
+  "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1",
+  "com.sun.xml.bind" % "jaxb-impl" % "2.3.0.1",
+  "org.reactivemongo" %% "play2-reactivemongo" % s"$reactiveMongoVersion-play28",
+  "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",
+  "org.reactivemongo" %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",
+  "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.2",
+  "org.typelevel" %% "cats-core" % "2.1.1",
+  "de.svenkubiak" % "jBCrypt" % "0.4.1",
+  "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "2.0.0",
+  "com.amazonaws" % "aws-java-sdk-core" % "1.11.779",
   "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1"
-
 )
 
 scalacOptions ++= Seq(

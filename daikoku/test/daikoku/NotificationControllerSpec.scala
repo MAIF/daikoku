@@ -1,13 +1,21 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand,
+  TeamAccess,
+  TeamInvitation
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.QuotasWithLimits
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -148,8 +156,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/accept",
+        path = s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -177,8 +184,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/reject",
+        path = s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -205,8 +211,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/accept",
+        path = s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -235,8 +240,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/reject",
+        path = s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -258,26 +262,27 @@ class NotificationControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamConsumer, teamOwner),
-        apis = Seq(defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
-          UsagePlanId("3"),
-          10000,
-          10000,
-          10000,
-          BigDecimal(10.0),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
-          customDescription = None,
-          otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-              OtoroshiServiceGroupId("12345"))
-          ),
-          allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Manual,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
-        )))),
+        apis = Seq(
+          defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+            UsagePlanId("3"),
+            10000,
+            10000,
+            10000,
+            BigDecimal(10.0),
+            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+            trialPeriod = None,
+            currency = Currency("EUR"),
+            customName = None,
+            customDescription = None,
+            otoroshiTarget = Some(
+              OtoroshiTarget(OtoroshiSettingsId("default"),
+                             OtoroshiServiceGroupId("12345"))
+            ),
+            allowMultipleKeys = Some(false),
+            subscriptionProcess = SubscriptionProcess.Manual,
+            integrationProcess = IntegrationProcess.ApiKey,
+            autoRotation = Some(false)
+          )))),
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
@@ -287,8 +292,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/accept",
+        path = s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -309,26 +313,27 @@ class NotificationControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamConsumer, teamOwner),
-        apis = Seq(defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
-          UsagePlanId("3"),
-          10000,
-          10000,
-          10000,
-          BigDecimal(10.0),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
-          customDescription = None,
-          otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-              OtoroshiServiceGroupId("12345"))
-          ),
-          allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Manual,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
-        )))),
+        apis = Seq(
+          defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+            UsagePlanId("3"),
+            10000,
+            10000,
+            10000,
+            BigDecimal(10.0),
+            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+            trialPeriod = None,
+            currency = Currency("EUR"),
+            customName = None,
+            customDescription = None,
+            otoroshiTarget = Some(
+              OtoroshiTarget(OtoroshiSettingsId("default"),
+                             OtoroshiServiceGroupId("12345"))
+            ),
+            allowMultipleKeys = Some(false),
+            subscriptionProcess = SubscriptionProcess.Manual,
+            integrationProcess = IntegrationProcess.ApiKey,
+            autoRotation = Some(false)
+          )))),
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
@@ -338,8 +343,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/reject",
+        path = s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -420,8 +424,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/accept",
+        path = s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -449,8 +452,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/reject",
+        path = s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -477,8 +479,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/accept",
+        path = s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -507,8 +508,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/reject",
+        path = s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -530,26 +530,27 @@ class NotificationControllerSpec()
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
         teams = Seq(teamConsumer, teamOwner),
-        apis = Seq(defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
-          UsagePlanId("3"),
-          10000,
-          10000,
-          10000,
-          BigDecimal(10.0),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
-          customDescription = None,
-          otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-              OtoroshiServiceGroupId("12345"))
-          ),
-          allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Manual,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
-        )))),
+        apis = Seq(
+          defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+            UsagePlanId("3"),
+            10000,
+            10000,
+            10000,
+            BigDecimal(10.0),
+            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+            trialPeriod = None,
+            currency = Currency("EUR"),
+            customName = None,
+            customDescription = None,
+            otoroshiTarget = Some(
+              OtoroshiTarget(OtoroshiSettingsId("default"),
+                             OtoroshiServiceGroupId("12345"))
+            ),
+            allowMultipleKeys = Some(false),
+            subscriptionProcess = SubscriptionProcess.Manual,
+            integrationProcess = IntegrationProcess.ApiKey,
+            autoRotation = Some(false)
+          )))),
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
@@ -559,8 +560,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/accept",
+        path = s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -581,26 +581,27 @@ class NotificationControllerSpec()
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
         teams = Seq(teamConsumer, teamOwner),
-        apis = Seq(defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
-          UsagePlanId("3"),
-          10000,
-          10000,
-          10000,
-          BigDecimal(10.0),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
-          customDescription = None,
-          otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-              OtoroshiServiceGroupId("12345"))
-          ),
-          allowMultipleKeys = Some(false),
-          subscriptionProcess = SubscriptionProcess.Manual,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
-        )))),
+        apis = Seq(
+          defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+            UsagePlanId("3"),
+            10000,
+            10000,
+            10000,
+            BigDecimal(10.0),
+            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+            trialPeriod = None,
+            currency = Currency("EUR"),
+            customName = None,
+            customDescription = None,
+            otoroshiTarget = Some(
+              OtoroshiTarget(OtoroshiSettingsId("default"),
+                             OtoroshiServiceGroupId("12345"))
+            ),
+            allowMultipleKeys = Some(false),
+            subscriptionProcess = SubscriptionProcess.Manual,
+            integrationProcess = IntegrationProcess.ApiKey,
+            autoRotation = Some(false)
+          )))),
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
@@ -610,8 +611,7 @@ class NotificationControllerSpec()
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/reject",
+        path = s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 200
@@ -717,45 +717,45 @@ class NotificationControllerSpec()
         tenants = Seq(tenant),
         users = Seq(user, userAdmin),
         teams = Seq(
-          teamConsumer.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))),
           teamOwner.copy(
-            users = Set(UserWithPermission(userTeamAdminId, Administrator)))),
+            users = Set(UserWithPermission(userTeamAdminId, Administrator)))
+        ),
         apis = Seq(defaultApi),
-        notifications =
-          Seq(
-            untreatedNotification.copy(action = TeamAccess(teamOwnerId)),
-            Notification(
-              id = NotificationId("untreated-team-invitation"),
-              tenant = tenant.id,
-              team = None,
-              sender = userAdmin,
-              notificationType = AcceptOrReject,
-              action = TeamInvitation(teamConsumerId, user.id)
-            ))
+        notifications = Seq(
+          untreatedNotification.copy(action = TeamAccess(teamOwnerId)),
+          Notification(
+            id = NotificationId("untreated-team-invitation"),
+            tenant = tenant.id,
+            team = None,
+            sender = userAdmin,
+            notificationType = AcceptOrReject,
+            action = TeamInvitation(teamConsumerId, user.id)
+          )
+        )
       )
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/accept",
+        path = s"/api/notifications/${untreatedNotification.id.value}/accept",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 403
 
       val respInvit = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/untreated-team-invitation/accept",
+        path = s"/api/notifications/untreated-team-invitation/accept",
         method = "PUT"
       )(tenant, session)
       respInvit.status mustBe 200
 
       val adminSession = loginWithBlocking(userAdmin, tenant)
       val getTeam = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamConsumer.id.value}/_full"
+        path = s"/api/teams/${teamConsumer.id.value}/_full"
       )(tenant, adminSession)
       getTeam.status mustBe 200
-      val maybeUsers = fr.maif.otoroshi.daikoku.domain.json.SetUserWithPermissionFormat
-        .reads((getTeam.json \ "users").as[JsArray])
+      val maybeUsers =
+        fr.maif.otoroshi.daikoku.domain.json.SetUserWithPermissionFormat
+          .reads((getTeam.json \ "users").as[JsArray])
 
       maybeUsers.isSuccess mustBe true
       maybeUsers.get.size mustBe 2
@@ -766,46 +766,45 @@ class NotificationControllerSpec()
         tenants = Seq(tenant),
         users = Seq(user, userAdmin),
         teams = Seq(
-          teamConsumer.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))),
           teamOwner.copy(
-            users = Set(UserWithPermission(userTeamAdminId, Administrator)))),
+            users = Set(UserWithPermission(userTeamAdminId, Administrator)))
+        ),
         apis = Seq(defaultApi),
-        notifications =
-          Seq(
-            untreatedNotification.copy(action = TeamAccess(teamOwnerId)),
-            Notification(
-              id = NotificationId("untreated-team-invitation"),
-              tenant = tenant.id,
-              team = None,
-              sender = userAdmin,
-              notificationType = AcceptOrReject,
-              action = TeamInvitation(teamConsumerId, user.id)
-            )
+        notifications = Seq(
+          untreatedNotification.copy(action = TeamAccess(teamOwnerId)),
+          Notification(
+            id = NotificationId("untreated-team-invitation"),
+            tenant = tenant.id,
+            team = None,
+            sender = userAdmin,
+            notificationType = AcceptOrReject,
+            action = TeamInvitation(teamConsumerId, user.id)
           )
+        )
       )
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/${untreatedNotification.id.value}/reject",
+        path = s"/api/notifications/${untreatedNotification.id.value}/reject",
         method = "PUT"
       )(tenant, session)
       resp.status mustBe 403
 
       val respInvit = httpJsonCallBlocking(
-        path =
-          s"/api/notifications/untreated-team-invitation/reject",
+        path = s"/api/notifications/untreated-team-invitation/reject",
         method = "PUT"
       )(tenant, session)
       respInvit.status mustBe 200
 
       val adminSession = loginWithBlocking(userAdmin, tenant)
       val getTeam = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamConsumer.id.value}/_full"
+        path = s"/api/teams/${teamConsumer.id.value}/_full"
       )(tenant, adminSession)
       getTeam.status mustBe 200
-      val maybeUsers = fr.maif.otoroshi.daikoku.domain.json.SetUserWithPermissionFormat
-        .reads((getTeam.json \ "users").as[JsArray])
+      val maybeUsers =
+        fr.maif.otoroshi.daikoku.domain.json.SetUserWithPermissionFormat
+          .reads((getTeam.json \ "users").as[JsArray])
 
       maybeUsers.isSuccess mustBe true
       maybeUsers.get.size mustBe 1

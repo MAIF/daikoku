@@ -4,7 +4,11 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.alpakka.s3.ObjectMetadata
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuTenantAction
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.AssetId
@@ -14,7 +18,12 @@ import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{AbstractController, Action, BodyParser, ControllerComponents}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  BodyParser,
+  ControllerComponents
+}
 
 import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
@@ -43,28 +52,31 @@ trait NormalizeSupport {
 
 object NormalizeSupport extends NormalizeSupport
 
-class TeamAssetsController(DaikokuAction: DaikokuAction,
-                           DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
-                           env: Env,
-                           cc: ControllerComponents)
+class TeamAssetsController(
+    DaikokuAction: DaikokuAction,
+    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    env: Env,
+    cc: ControllerComponents)
     extends AbstractController(cc)
     with NormalizeSupport {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  val bodyParser: BodyParser[Source[ByteString, _]] = BodyParser("Assets parser") { _ =>
-    Accumulator.source[ByteString].map(Right.apply)
-  }
+  val bodyParser: BodyParser[Source[ByteString, _]] =
+    BodyParser("Assets parser") { _ =>
+      Accumulator.source[ByteString].map(Right.apply)
+    }
 
   val illegalTeamAssetContentTypes: Seq[String] =
     Seq("text/html", "text/css", "text/javascript", "application/x-javascript")
 
-  def storeAsset(teamId: String): Action[Source[ByteString, _]] = DaikokuAction.async(bodyParser) { ctx =>
-    TeamApiEditorOnly(
-      AuditTrailEvent(s"@{user.name} stores asset in team @{team.id}"))(teamId,
-                                                                        ctx) {
-      team =>
+  def storeAsset(teamId: String): Action[Source[ByteString, _]] =
+    DaikokuAction.async(bodyParser) { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(s"@{user.name} stores asset in team @{team.id}"))(
+        teamId,
+        ctx) { team =>
         val contentType = ctx.request.headers
           .get("Asset-Content-Type")
           .orElse(ctx.request.contentType)
@@ -105,10 +117,11 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
                 InternalServerError(Json.obj("error" -> e.toString))
             }
         }
+      }
     }
-  }
 
-  def replaceAsset(teamId: String, assetId: String): Action[Source[ByteString, _]] =
+  def replaceAsset(teamId: String,
+                   assetId: String): Action[Source[ByteString, _]] =
     DaikokuAction.async(bodyParser) { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(s"@{user.name} replace asset in team @{team.id}"))(
@@ -182,9 +195,9 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
     }
 
   def listAssets(teamId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOrTenantAdminOnly(
-      AuditTrailEvent(s"@{user.name} listed assets of team @{team.name} - @{team.id}"))(teamId,
-                                                                         ctx) {
+    TeamAdminOrTenantAdminOnly(AuditTrailEvent(
+      s"@{user.name} listed assets of team @{team.name} - @{team.id}"))(teamId,
+                                                                        ctx) {
       team =>
         ctx.tenant.bucketSettings match {
           case None =>
@@ -218,63 +231,64 @@ class TeamAssetsController(DaikokuAction: DaikokuAction,
       }
   }
 
-  def getAsset(teamId: String, assetId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
-    // TODO: validate if usser has right to see the asset based on team and api
-    UberPublicUserAccess(
-      AuditTrailEvent(
-        s"@{user.name} accessed asset @{assetId} on team @{teamId}"))(ctx) {
-      ctx.setCtxValue("teamId", teamId)
-      ctx.setCtxValue("assetId", assetId)
-      ctx.tenant.bucketSettings match {
-        case None =>
-          FastFuture.successful(
-            NotFound(Json.obj("error" -> "No bucket config found !")))
-        case Some(cfg) =>
-          env.dataStore.teamRepo
-            .forTenant(ctx.tenant)
-            .findById(teamId)
-            .flatMap {
-              case None =>
-                FastFuture.successful(
-                  NotFound(Json.obj("error" -> "Team not found!")))
-              case Some(team) =>
-                env.assetsStore
-                  .getAsset(ctx.tenant.id, team.id, AssetId(assetId))(cfg)
-                  .map {
-                    case Some((source, meta)) =>
-                      val filename = meta.metadata
-                        .filter(_.name().startsWith("x-amz-meta-"))
-                        .find(_.name() == "x-amz-meta-filename")
-                        .map(_.value())
-                        .getOrElse("asset.txt")
-                      val disposition = ("Content-Disposition" -> s"""attachment; filename="$filename"""")
-                      if (ctx.request
-                            .getQueryString("download")
-                            .exists(_ == "true")) {
-                        Ok.sendEntity(
+  def getAsset(teamId: String, assetId: String) =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      // TODO: validate if usser has right to see the asset based on team and api
+      UberPublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} accessed asset @{assetId} on team @{teamId}"))(ctx) {
+        ctx.setCtxValue("teamId", teamId)
+        ctx.setCtxValue("assetId", assetId)
+        ctx.tenant.bucketSettings match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "No bucket config found !")))
+          case Some(cfg) =>
+            env.dataStore.teamRepo
+              .forTenant(ctx.tenant)
+              .findById(teamId)
+              .flatMap {
+                case None =>
+                  FastFuture.successful(
+                    NotFound(Json.obj("error" -> "Team not found!")))
+                case Some(team) =>
+                  env.assetsStore
+                    .getAsset(ctx.tenant.id, team.id, AssetId(assetId))(cfg)
+                    .map {
+                      case Some((source, meta)) =>
+                        val filename = meta.metadata
+                          .filter(_.name().startsWith("x-amz-meta-"))
+                          .find(_.name() == "x-amz-meta-filename")
+                          .map(_.value())
+                          .getOrElse("asset.txt")
+                        val disposition = ("Content-Disposition" -> s"""attachment; filename="$filename"""")
+                        if (ctx.request
+                              .getQueryString("download")
+                              .exists(_ == "true")) {
+                          Ok.sendEntity(
+                              HttpEntity.Streamed(
+                                source,
+                                None,
+                                meta.contentType
+                                  .map(Some.apply)
+                                  .getOrElse(Some("application/octet-stream"))))
+                            .withHeaders(disposition)
+                        } else {
+                          Ok.sendEntity(
                             HttpEntity.Streamed(
                               source,
                               None,
                               meta.contentType
                                 .map(Some.apply)
                                 .getOrElse(Some("application/octet-stream"))))
-                          .withHeaders(disposition)
-                      } else {
-                        Ok.sendEntity(
-                          HttpEntity.Streamed(
-                            source,
-                            None,
-                            meta.contentType
-                              .map(Some.apply)
-                              .getOrElse(Some("application/octet-stream"))))
-                      }
-                    case None =>
-                      NotFound(Json.obj("error" -> "Asset not found!"))
-                  }
-            }
+                        }
+                      case None =>
+                        NotFound(Json.obj("error" -> "Asset not found!"))
+                    }
+              }
+        }
       }
     }
-  }
 }
 
 class TenantAssetsController(DaikokuAction: DaikokuAction,
@@ -287,13 +301,16 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  val bodyParser: BodyParser[Source[ByteString, _]] = BodyParser("Assets parser") { _ =>
-    Accumulator.source[ByteString].map(Right.apply)
-  }
+  val bodyParser: BodyParser[Source[ByteString, _]] =
+    BodyParser("Assets parser") { _ =>
+      Accumulator.source[ByteString].map(Right.apply)
+    }
 
   def storeAsset() = DaikokuAction.async(bodyParser) { ctx =>
     TenantAdminOnly(
-      AuditTrailEvent(s"@{user.name} stores asset in team @{team.id}"))(ctx.tenant.id.value, ctx) { (_, _) =>
+      AuditTrailEvent(s"@{user.name} stores asset in team @{team.id}"))(
+      ctx.tenant.id.value,
+      ctx) { (_, _) =>
       val contentType = ctx.request.headers
         .get("Asset-Content-Type")
         .orElse(ctx.request.contentType)
@@ -320,7 +337,8 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
               Ok(Json.obj("done" -> true, "id" -> assetId.value))
             } recover {
             case e =>
-              AppLogger.error(s"Error during tenant asset storage: ${filename}", e)
+              AppLogger.error(s"Error during tenant asset storage: ${filename}",
+                              e)
               InternalServerError(Json.obj("error" -> ec.toString))
           }
       }
@@ -329,8 +347,9 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
 
   def replaceAsset(assetId: String) = DaikokuAction.async(bodyParser) { ctx =>
     TenantAdminOnly(
-      AuditTrailEvent(s"@{user.name} replace asset in team @{team.id}"))(ctx.tenant.id.value, ctx) { (_, _) =>
-
+      AuditTrailEvent(s"@{user.name} replace asset in team @{team.id}"))(
+      ctx.tenant.id.value,
+      ctx) { (_, _) =>
       def getMetaHeaderValue(metadata: ObjectMetadata,
                              headerName: String): Option[String] = {
         metadata.headers.asScala
@@ -371,8 +390,8 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
                     Ok(Json.obj("done" -> true, "id" -> assetId))
                   } recover {
                   case e =>
-                    AppLogger.error(s"Error during update tenant asset: $filename",
-                                 e)
+                    AppLogger
+                      .error(s"Error during update tenant asset: $filename", e)
                     InternalServerError(Json.obj("error" -> ec.toString))
                 }
             }
@@ -399,7 +418,9 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
         }
       case None =>
         TenantAdminOnly(
-          AuditTrailEvent(s"@{user.name} listed assets of team @{team.id}"))(ctx.tenant.id.value, ctx) { (_, _) =>
+          AuditTrailEvent(s"@{user.name} listed assets of team @{team.id}"))(
+          ctx.tenant.id.value,
+          ctx) { (_, _) =>
           ctx.tenant.bucketSettings match {
             case None =>
               FastFuture.successful(
@@ -414,7 +435,10 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
   }
 
   def deleteAsset(assetId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(AuditTrailEvent(s"@{user.name} deleted asset @{assetId} of @{team.id}"))(ctx.tenant.id.value, ctx) { (_, _) =>
+    TenantAdminOnly(
+      AuditTrailEvent(s"@{user.name} deleted asset @{assetId} of @{team.id}"))(
+      ctx.tenant.id.value,
+      ctx) { (_, _) =>
       ctx.setCtxValue("assetId", assetId)
       ctx.tenant.bucketSettings match {
         case None =>
@@ -478,9 +502,10 @@ class UserAssetsController(DaikokuAction: DaikokuAction,
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  val bodyParser: BodyParser[Source[ByteString, _]] = BodyParser("Assets parser") { _ =>
-    Accumulator.source[ByteString].map(Right.apply)
-  }
+  val bodyParser: BodyParser[Source[ByteString, _]] =
+    BodyParser("Assets parser") { _ =>
+      Accumulator.source[ByteString].map(Right.apply)
+    }
 
   def storeAsset() = DaikokuAction.async(bodyParser) { ctx =>
     PublicUserAccess(
@@ -561,9 +586,10 @@ class AssetsThumbnailController(DaikokuAction: DaikokuAction,
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  val bodyParser: BodyParser[Source[ByteString, _]] = BodyParser("Assets parser") { _ =>
-    Accumulator.source[ByteString].map(Right.apply)
-  }
+  val bodyParser: BodyParser[Source[ByteString, _]] =
+    BodyParser("Assets parser") { _ =>
+      Accumulator.source[ByteString].map(Right.apply)
+    }
 
   def storeAsset(id: String) = DaikokuAction.async(bodyParser) { ctx =>
     PublicUserAccess(AuditTrailEvent(s"@{user.name} stores thumbnail"))(ctx) {

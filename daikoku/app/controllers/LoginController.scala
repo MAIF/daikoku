@@ -4,7 +4,11 @@ import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuTenantAction, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -176,21 +180,22 @@ class LoginController(DaikokuAction: DaikokuAction,
                       .fromJson(ctx.tenant.authProviderSettings)
 
                     maybeOAuth2Config match {
-                      case Right(authConfig) => bindUser(
-                        authConfig.sessionMaxAge,
-                        ctx.tenant,
-                        ctx.request,
-                        OAuth2Support
-                          .bindUser(ctx.request, authConfig, ctx.tenant, env)
-                          .map(_.toOption))
+                      case Right(authConfig) =>
+                        bindUser(
+                          authConfig.sessionMaxAge,
+                          ctx.tenant,
+                          ctx.request,
+                          OAuth2Support
+                            .bindUser(ctx.request, authConfig, ctx.tenant, env)
+                            .map(_.toOption))
                       case Left(e) =>
                         AppLogger.error("Error during OAuthConfig read", e)
                         Errors.craftResponseResult("Invalid OAuth Config",
-                          Results.BadRequest,
-                          ctx.request,
-                          None,
-                          env,
-                          ctx.tenant)
+                                                   Results.BadRequest,
+                                                   ctx.request,
+                                                   None,
+                                                   env,
+                                                   ctx.tenant)
                     }
                 }
               case _ =>
@@ -229,7 +234,9 @@ class LoginController(DaikokuAction: DaikokuAction,
       case Some(AuthProvider.OAuth2) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
-          val actualRedirectUrl = OAuth2Config.fromJson(ctx.tenant.authProviderSettings).getOrElse(OAuth2Config()) //todo: pas sur de moi
+          val actualRedirectUrl = OAuth2Config
+            .fromJson(ctx.tenant.authProviderSettings)
+            .getOrElse(OAuth2Config()) //todo: pas sur de moi
             .logoutUrl
             .replace("${redirect}", URLEncoder.encode(redirect, "UTF-8"))
           Redirect(actualRedirectUrl).removingFromSession("sessionId")(
