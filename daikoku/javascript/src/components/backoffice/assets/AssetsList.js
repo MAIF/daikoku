@@ -92,7 +92,7 @@ const handleAssetType = (tenantMode, type, currentLanguage) => {
         type === 'text/css' ||
         type === 'text/javascript' ||
         type === 'application/x-javascript',
-      type === 'font/openntype')
+        type === 'font/openntype')
     ) {
       return reject(t('content type is not allowed', currentLanguage));
     } else {
@@ -295,20 +295,12 @@ const AssetsListComponent = ({
           type === 'image/gif' ||
           type === 'image/png' ||
           type === 'image/jpeg' ||
-          type === 'image.jpg'
+          type === 'image.jpg' ||
+          type === 'image/svg+xml'
         ) {
           return (
             <img
               src={`/asset-thumbnails/${item.meta.asset}?${new Date().getTime()}`}
-              width="64"
-              height="64"
-              alt="thumbnail"
-            />
-          );
-        } else if (type === 'image/svg+xml') {
-          return (
-            <img
-              src={`/team-assets/${currentTeam._id}/${item.meta.asset}?${new Date().getTime()}`}
               width="64"
               height="64"
               alt="thumbnail"
@@ -489,10 +481,11 @@ const AssetsListComponent = ({
                 multiple ? file.type : newAsset.contentType,
                 formData
               ).then((asset) => {
-                return maybeCreateThumbnail(asset.id, formData).then(() => {
-                  setNewAsset({});
-                });
+                return maybeCreateThumbnail(asset.id, formData);
               })
+                .then(() => {
+                  setNewAsset({});
+                })
             )
             .catch(({ error }) => toastr.error(error));
         }
