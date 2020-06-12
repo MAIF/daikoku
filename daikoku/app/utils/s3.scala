@@ -332,7 +332,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
     val sink = S3
       .multipartUpload(
         bucket = conf.bucket,
-        key = s"/${tenant.value}/users/${user.value}/${asset.value}",
+        key = s"/users/${asset.value}",
         contentType = ctype,
         metaHeaders = meta,
         cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
@@ -347,7 +347,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
     : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
     S3.download(conf.bucket,
-                s"/${tenant.value}/users/${user.value}/${asset.value}")
+                s"/users/${asset.value}")
       .withAttributes(s3ClientSettingsAttrs)
       .runFold(none)((_, opt) => opt)
   }

@@ -294,7 +294,7 @@ class MyProfileComponent extends Component {
     })
       .then((r) => r.json())
       .then((res) => {
-        this.setState({ user: { ...this.state.user, picture: `/user-assets/${res.id}` } });
+        this.setState({ user: { ...this.state.user, picture: `/user-assets/${this.props.tenant._humanReadableId}/${res.id}` } });
       });
   };
 

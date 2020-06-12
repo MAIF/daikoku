@@ -185,7 +185,7 @@ POST    /tenant-assets                                  fr.maif.otoroshi.daikoku
 POST    /tenant-assets/:assetId/_replace                fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.replaceAsset(assetId)
 
 ### NoDocs ###
-GET     /user-assets/:assetId                           fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.getAsset(assetId)
+GET     /user-assets/:tenantId/:assetId                 fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.getAsset(tenantId, assetId)
 ### NoDocs ###
 POST    /user-assets                                    fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.storeAsset()
 
