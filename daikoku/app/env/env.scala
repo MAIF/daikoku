@@ -157,6 +157,9 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.tenants.provider")
     .flatMap(TenantProvider.apply)
     .getOrElse(TenantProvider.Local)
+  lazy val tenantHostHeaderKey: String = underlying
+    .getOptional[String]("daikoku.tenants.hostheaderName")
+    .getOrElse("Otoroshi-Proxied-Host")
 
   lazy val otoroshiSyncInterval: FiniteDuration = underlying
     .getOptional[Long]("daikoku.otoroshi.sync.interval")

@@ -22,6 +22,7 @@ or
 |`daikoku.exposedOn`|String|http.port| the http port exposed by Daikoku  |
 |`daikoku.singingkey`|String|"secret"| the secret used for signing the JWT token |
 |`daikoku.tenants.provider` | string | "local" | the way to get the tenant to display. Supported values are `local`, `header` or `hostname`|
+|`daikoku.tenants.hostheaderName` | string | Otoroshi-Proxied-Host | the header key to get host, in case of daikoku.tenants.provider is `hostname` |
 |`daikoku.exposition.provider` | string | "none" | activate the exchange protocol. Supported values are `otoroshi` (for [Otoroshi Exchange Protocol](https://maif.github.io/otoroshi/manual/usage/2-services.html#otoroshi-exchange-protocol) and `none` |
 |`daikoku.snowflake.seed` | number | 0 | this number will is used to generate unique ids across the cluster. Each Otorshi instance must have a unique seed. |
 

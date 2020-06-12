@@ -106,7 +106,7 @@ object TenantHelper {
       }
       case TenantProvider.Hostname =>
         val host = request.headers
-          .get("Otoroshi-Proxied-Host")
+          .get(env.config.tenantHostHeaderKey)
           .orElse(request.headers.get("X-Forwarded-Host"))
           .getOrElse(request.host)
         val domain = if (host.contains(":")) host.split(":").apply(0) else host
