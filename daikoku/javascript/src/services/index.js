@@ -1234,6 +1234,20 @@ export function storeTenantAsset(filename, title, desc, contentType, formData) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+// USER ASSETS
+//////////////////////////////////////////////////////////////////////////////////////
+export function storeUserAvatar(filename, contentType, file) {
+  return fetch(`/user-avatar?filename=${filename}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': contentType,
+      'Asset-Content-Type': contentType,
+    },
+    body: file,
+  }).then((r) => r.json())
+}
+//////////////////////////////////////////////////////////////////////////////////////
 
 export function uploadExportFile(file) {
   return fetch('/api/state/import', {

@@ -10,6 +10,7 @@ import { configuration } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
 import { Spinner, validatePassword, ValidateEmail } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { fileToObject } from 'antd/lib/upload/utils';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -283,18 +284,9 @@ class MyProfileComponent extends Component {
     const file = files[0];
     const filename = file.name;
     const contentType = file.type;
-    return fetch(`/user-assets?filename=${filename}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': contentType,
-        'Asset-Content-Type': contentType,
-      },
-      body: file,
-    })
-      .then((r) => r.json())
+    return Services.storeUserAvatar(filename, contentType, file)
       .then((res) => {
-        this.setState({ user: { ...this.state.user, picture: `/user-assets/${this.props.tenant._humanReadableId}/${res.id}` } });
+        this.setState({ user: { ...this.state.user, picture: `/user-avatar/${this.props.tenant._humanReadableId}/${res.id}` } }, () => this.forceUpdate());
       });
   };
 
@@ -367,7 +359,7 @@ class MyProfileComponent extends Component {
                   marginBottom: 20,
                 }}>
                 <img
-                  src={this.state.user.picture}
+                  src={`${this.state.user.picture}?${Date.now()}`}
                   style={{
                     width: 200,
                     borderRadius: '50%',

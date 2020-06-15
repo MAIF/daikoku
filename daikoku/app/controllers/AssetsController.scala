@@ -498,16 +498,16 @@ class UserAssetsController(DaikokuAction: DaikokuAction,
       Accumulator.source[ByteString].map(Right.apply)
     }
 
-  def storeAsset() = DaikokuAction.async(bodyParser) { ctx =>
+  def storeAvatar() = DaikokuAction.async(bodyParser) { ctx =>
     PublicUserAccess(
-      AuditTrailEvent(s"@{user.name} stores asset in team @{team.id}"))(ctx) {
+      AuditTrailEvent(s"@{user.name} stores his avatar from tenant @{tenant.id} - @{assetId}"))(ctx) {
       val contentType = ctx.request.headers
         .get("Asset-Content-Type")
         .orElse(ctx.request.contentType)
         .getOrElse("image/jpg")
       val filename =
         ctx.request.getQueryString("filename").getOrElse(IdGenerator.token(16))
-      val assetId = AssetId(IdGenerator.uuid)
+      val assetId = AssetId(ctx.user.id.value)
       ctx.tenant.bucketSettings match {
         case None =>
           FastFuture.successful(
@@ -521,6 +521,7 @@ class UserAssetsController(DaikokuAction: DaikokuAction,
               contentType,
               ctx.request.body)(cfg)
             .map { _ =>
+              ctx.setCtxValue("assetId", assetId)
               Ok(Json.obj("done" -> true, "id" -> assetId.value))
             } recover {
             case e => InternalServerError(Json.obj("error" -> ec.toString))
@@ -529,7 +530,7 @@ class UserAssetsController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getAsset(tenantId: String, assetId: String) = DaikokuAction.async { ctx =>
+  def getAvatar(tenantId: String, assetId: String) = DaikokuAction.async { ctx =>
     env.dataStore.tenantRepo.findByIdOrHrIdNotDeleted(tenantId)
       .map(maybeTenant => maybeTenant.flatMap(t => t.bucketSettings))
       .flatMap {

@@ -185,9 +185,9 @@ POST    /tenant-assets                                  fr.maif.otoroshi.daikoku
 POST    /tenant-assets/:assetId/_replace                fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.replaceAsset(assetId)
 
 ### NoDocs ###
-GET     /user-assets/:tenantId/:assetId                 fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.getAsset(tenantId, assetId)
+GET     /user-avatar/:tenantId/:assetId                 fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.getAvatar(tenantId, assetId)
 ### NoDocs ###
-POST    /user-assets                                    fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.storeAsset()
+POST    /user-avatar                                    fr.maif.otoroshi.daikoku.ctrls.UserAssetsController.storeAvatar()
 
 ### NoDocs ###
 GET     /asset-thumbnails/:assetId                      fr.maif.otoroshi.daikoku.ctrls.AssetsThumbnailController.getAsset(assetId)
