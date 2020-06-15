@@ -83,13 +83,17 @@ class TeamEditForAdministrationComponent extends Component {
           this.props.history.push(`/settings/teams/${team._humanReadableId}/members`);
         });
     } else {
-      Services.updateTeam(this.state.team).then((team) =>
-        this.setState({ team }, () =>
-          toastr.success(
-            t('team.updated', this.props.currentLanguage, false, 'Team successfully updated')
+      Services.updateTeam(this.state.team)
+        .then((team) => {
+          this.setState({ team }, () => {
+            if (team._humanReadableId !== this.state._humanReadableId) {
+              this.props.history.push(`/${team._humanReadableId}/settings/edition`)
+            }
+            toastr.success(
+              t('team.updated', this.props.currentLanguage, false, 'Team successfully updated')
+            )}
           )
-        )
-      );
+        });
     }
   };
 

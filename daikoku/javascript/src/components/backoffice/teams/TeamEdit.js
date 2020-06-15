@@ -112,17 +112,21 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
   };
 
   const save = () => {
-    Services.updateTeam(team).then(() =>
-      toastr.success(
-        t(
-          'team.updated.success',
-          currentLanguage,
-          false,
-          `team ${team.name} successfully updated`,
-          team.name
+    Services.updateTeam(team)
+      .then((updatedTeam) => {
+        if (team._humanReadableId !== updatedTeam._humanReadableId) {
+          history.push(`/${updatedTeam._humanReadableId}/settings/edition`)
+        }
+        toastr.success(
+          t(
+            'team.updated.success',
+            currentLanguage,
+            false,
+            `team ${team.name} successfully updated`,
+            team.name
+          )
         )
-      )
-    );
+      });
   };
 
   return (
