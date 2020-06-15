@@ -284,10 +284,17 @@ class MyProfileComponent extends Component {
     const file = files[0];
     const filename = file.name;
     const contentType = file.type;
-    return Services.storeUserAvatar(filename, contentType, file)
-      .then((res) => {
-        this.setState({ user: { ...this.state.user, picture: `/user-avatar/${this.props.tenant._humanReadableId}/${res.id}` } }, () => this.forceUpdate());
-      });
+    return Services.storeUserAvatar(filename, contentType, file).then((res) => {
+      this.setState(
+        {
+          user: {
+            ...this.state.user,
+            picture: `/user-avatar/${this.props.tenant._humanReadableId}/${res.id}`,
+          },
+        },
+        () => this.forceUpdate()
+      );
+    });
   };
 
   componentDidMount() {

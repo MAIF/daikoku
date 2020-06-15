@@ -346,8 +346,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
       implicit conf: S3Configuration)
     : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.download(conf.bucket,
-                s"/users/${asset.value}")
+    S3.download(conf.bucket, s"/users/${asset.value}")
       .withAttributes(s3ClientSettingsAttrs)
       .runFold(none)((_, opt) => opt)
   }

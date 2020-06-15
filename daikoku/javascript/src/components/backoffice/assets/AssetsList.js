@@ -92,7 +92,7 @@ const handleAssetType = (tenantMode, type, currentLanguage) => {
         type === 'text/css' ||
         type === 'text/javascript' ||
         type === 'application/x-javascript',
-        type === 'font/openntype')
+      type === 'font/openntype')
     ) {
       return reject(t('content type is not allowed', currentLanguage));
     } else {
@@ -480,9 +480,10 @@ const AssetsListComponent = ({
                 newAsset.description || '--',
                 multiple ? file.type : newAsset.contentType,
                 formData
-              ).then((asset) => {
-                return maybeCreateThumbnail(asset.id, formData);
-              })
+              )
+                .then((asset) => {
+                  return maybeCreateThumbnail(asset.id, formData);
+                })
                 .then(() => {
                   setNewAsset({});
                 })

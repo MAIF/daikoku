@@ -1245,7 +1245,7 @@ export function storeUserAvatar(filename, contentType, file) {
       'Asset-Content-Type': contentType,
     },
     body: file,
-  }).then((r) => r.json())
+  }).then((r) => r.json());
 }
 //////////////////////////////////////////////////////////////////////////////////////
 
