@@ -14,4 +14,4 @@ docker-compose up
 
 ## Log into the UI
 
-Go to <a href="http://daikoku.oto.tools/" target="_blank">http://daikoku.oto.tools/</a> and log in with the **following credential** admin@daikoku.io/password.
+Go to <a href="http://daikoku.oto.tools/" target="_blank">http://daikoku.oto.tools/</a> and log in with the **following credential** admin@daikoku.io/Pa$$w0rd (The other users have the same password).
