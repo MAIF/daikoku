@@ -214,7 +214,7 @@
     "id": "/quickstart.md",
     "url": "/quickstart.html",
     "title": "Try Daikoku in 5 minutes",
-    "content": "# Try Daikoku in 5 minutes\nwhat you will need :\n\n* Docker\n* Docker-Compose\n* 5 minutes of free time\n\nYou can start a sandboxed environment with the following command : \n\n```sh\ncd demo\ndocker-compose up\n```\n\n## Log into the UI\n\nGo to <a href=\"http://daikoku.oto.tools/\" target=\"_blank\">http://daikoku.oto.tools/</a> and log in with the **following credential** admin@daikoku.io/password.\n"
+    "content": "# Try Daikoku in 5 minutes\nwhat you will need :\n\n* Docker\n* Docker-Compose\n* 5 minutes of free time\n\nYou can start a sandboxed environment with the following command : \n\n```sh\ncd demo\ndocker-compose up\n```\n\n## Log into the UI\n\nGo to <a href=\"http://daikoku.oto.tools/\" target=\"_blank\">http://daikoku.oto.tools/</a> and log in with the **following credential** admin@daikoku.io/Pa$$w0rd (The other users have the same password).\n"
   },
   {
     "name": "admin.md",
