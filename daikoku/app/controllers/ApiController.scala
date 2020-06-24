@@ -470,7 +470,7 @@ class ApiController(DaikokuAction: DaikokuAction,
           team = data.team,
           api = data.api,
           by = ctx.user.id,
-          customName = None,
+          customName = Some(data.apiKey.clientName),
           rotation = None,
           integrationToken = IdGenerator.token(64)
         ))

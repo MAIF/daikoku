@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
+import _ from 'lodash';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
@@ -169,6 +170,7 @@ class TeamApiKeysForApiComponent extends Component {
               return formatPlanType(this.currentPlan(subs)).toLowerCase().includes(searched);
             }
           });
+    const sortedApiKeys = _.sortBy(filteredApiKeys, ["plan", "customName"])
 
     return (
       <TeamBackOffice
@@ -207,7 +209,7 @@ class TeamApiKeysForApiComponent extends Component {
               <div className="col-12">
                 <PaginatedComponent
                   currentLanguage={this.props.currentLanguage}
-                  items={filteredApiKeys}
+                  items={sortedApiKeys}
                   count={5}
                   formatter={(subscription) => {
                     const plan = this.currentPlan(subscription);
@@ -407,7 +409,7 @@ const ApiKeyCard = ({
             <div>
               <div className="d-flex justify-content-between mb-3">
                 <div className="flex-grow-1 justify-content-around">
-                  <span className="badge badge-secondary">{formatPlanType(plan)}</span>
+                  <span className="badge badge-secondary">{Option(plan.customName).getOrElse(formatPlanType(plan))}</span>
                 </div>
                 <div className="d-flex justify-content-around">
                   <BeautifulTitle title={t('Reset secret', currentLanguage, false, 'Reset secret')}>
