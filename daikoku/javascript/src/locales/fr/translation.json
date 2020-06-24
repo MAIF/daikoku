@@ -671,5 +671,6 @@
   "in": "entrant",
   "out": "sortant",
   "ms. average duration": "ms. durée moyenne",
-  "ms. average overhead": "ms. overhead moyen"
+  "ms. average overhead": "ms. overhead moyen",
+  "Duplicate plan": "Dupliquer le plpan"
 }

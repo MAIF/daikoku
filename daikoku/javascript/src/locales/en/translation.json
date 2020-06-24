@@ -671,5 +671,6 @@
     "in": "in",
     "out": "out",
     "ms. average duration": "ms. average duration",
-    "ms. average overhead": "ms. average overhead"
+    "ms. average overhead": "ms. average overhead",
+    "Duplicate plan": "Duplicate plan"
 }
