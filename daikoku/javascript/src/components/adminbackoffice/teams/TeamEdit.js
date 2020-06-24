@@ -86,7 +86,7 @@ class TeamEditForAdministrationComponent extends Component {
       Services.updateTeam(this.state.team).then((team) => {
         this.setState({ team }, () => {
           if (team._humanReadableId !== this.state._humanReadableId) {
-            this.props.history.push(`/${team._humanReadableId}/settings/edition`);
+            this.props.history.push(`/settings/teams/${team._humanReadableId}`);
           }
           toastr.success(
             t('team.updated', this.props.currentLanguage, false, 'Team successfully updated')
