@@ -1176,6 +1176,16 @@ export class TeamApiPricing extends Component {
     this.select(newPlan);
   };
 
+  clonePlan = () => {
+    let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
+    const clone = { ..._.cloneDeep(this.state.selected), _id: faker.random.alphaNumeric(32), customName: `${this.state.selected.customName} (copy)`}
+    plans.push(clone);
+    const value = _.cloneDeep(this.props.value);
+    value.possibleUsagePlans = plans;
+    this.props.onChange(value);
+    this.select(clone);
+  }
+
   deletePlan = () => {
     window
       .confirm(
@@ -1337,6 +1347,17 @@ export class TeamApiPricing extends Component {
                         Make it public
                       </Translation>
                     )}
+                  </button>
+                )}
+                {this.props.value.visibility !== 'AdminOnly' && (
+                  <button
+                    onClick={this.clonePlan}
+                    type="button"
+                    className="btn btn-sm btn-outline-primary mb-2 mr-1">
+                    <i className="fas fa-clone mr-1" />
+                    <Translation i18nkey="Duplicate plan" language={this.props.currentLanguage}>
+                      Duplicate plan
+                    </Translation>
                   </button>
                 )}
                 {this.props.value.visibility !== 'AdminOnly' && (
