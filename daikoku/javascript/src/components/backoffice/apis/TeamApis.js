@@ -82,6 +82,17 @@ class TeamApisComponent extends Component {
                 </Link>
               </Can>
             )}
+            {api.published && (
+              <Can I={manage} a={api} team={this.props.currentTeam}>
+                <Link
+                  key={`apikeys-${api._humanReadableId}`}
+                  to={`/${this.props.currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}`}
+                  className="btn btn-sm btn-access-negative"
+                  title={t('View this api subscriptions', this.props.currentLanguage)}>
+                  <i className="fas fa-key" />
+                </Link>
+              </Can>
+            )}
             <Can I={manage} a={Api} team={this.props.currentTeam}>
               <Link
                 key={`edit-${api._humanReadableId}`}

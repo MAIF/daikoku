@@ -276,8 +276,6 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
   def archiveApiKey(tenant: Tenant,
                     subscription: ApiSubscription,
                     plan: UsagePlan,
-                    api: Api,
-                    team: Team,
                     enabled: Boolean): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 

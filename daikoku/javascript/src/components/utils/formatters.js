@@ -1,3 +1,5 @@
+import moment from 'moment';
+
 import { currencies } from '../../services/currencies';
 import { t } from '../../locales';
 
@@ -32,4 +34,9 @@ export const teamPermissions = {
   administrator: 'Administrator',
   ApiEditor: 'ApiEditor',
   user: 'User',
+};
+
+export const formatDate = (date, currentLanguage, format = 'l LT') => {
+  moment.locale(currentLanguage);
+  return moment(date).format(format);
 };

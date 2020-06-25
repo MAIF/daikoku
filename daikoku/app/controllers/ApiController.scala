@@ -847,7 +847,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getApiSubscriptions(apiId: String, teamId: String) = DaikokuAction.async { ctx =>
+  def getApiSubscriptionsForTeam(apiId: String, teamId: String) = DaikokuAction.async { ctx =>
     TeamMemberOnly(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(teamId, ctx) {
       team =>
         def findSubscriptions(api: Api, team: Team): Future[Result] = {
@@ -934,8 +934,29 @@ class ApiController(DaikokuAction: DaikokuAction,
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
         ctx.setCtxValue("subscription", subscription)
-        toggleSubscription(api, plan, subscription, ctx.tenant, team, enabled.getOrElse(false))
+        toggleSubscription(plan, subscription, ctx.tenant, enabled.getOrElse(false))
       })
+    }
+  }
+
+  def toggleApiSubscriptionByApiOwner(teamId: String, subscriptionId: String, enabled: Option[Boolean]) = DaikokuAction.async { ctx =>
+    TeamApiEditorOnly(
+      AuditTrailEvent(s"@{user.name} has archived api subscription @{subscription.id} of @{team.name} - @{team.id}")
+    )(teamId, ctx) { team =>
+      import cats.implicits._
+
+      env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId).flatMap {
+        case Some(sub) => env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(sub.api).flatMap {
+          case Some(api) if api.team != team.id => FastFuture.successful(Forbidden(Json.obj("error" -> "You'r not authorized to access to this subscription")))
+          case Some(api) => EitherT(toggleSubscription(api.possibleUsagePlans.find(p => p.id == sub.plan).get, sub, ctx.tenant, enabled.getOrElse(false)))
+              .leftMap(appError => AppError.render(appError))
+              .map(r => Ok(r))
+              .merge
+
+          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Subscribed AIP not found")))
+        }
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> "ApiSubscription not found")))
+      }
     }
   }
 
@@ -1012,15 +1033,13 @@ class ApiController(DaikokuAction: DaikokuAction,
       }
   }
 
-  def toggleSubscription(api: Api,
-                         plan: UsagePlan,
+  def toggleSubscription(plan: UsagePlan,
                          subscription: ApiSubscription,
                          tenant: Tenant,
-                         team: Team,
                          enabled: Boolean): Future[Either[AppError, JsObject]] = {
     for {
       _ <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
-      delete <- apiService.archiveApiKey(tenant, subscription, plan, api, team, enabled)
+      delete <- apiService.archiveApiKey(tenant, subscription, plan, enabled)
     } yield delete
   }
 
@@ -1623,6 +1642,18 @@ class ApiController(DaikokuAction: DaikokuAction,
           AppLogger.error(s"Error while deleting api subscriptions", e)
           Done
       }
+  }
+
+  def getApiSubscriptions(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"))(teamId, ctx){ team =>
+      env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(apiId).flatMap {
+        case Some(api) if api.team != team.id => FastFuture.successful(Unauthorized(Json.obj("error" -> "Unauthorized to access to this api")))
+        case Some(api) => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+          .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(api.subscriptions.map(_.asJson)))))
+          .map(subs => Ok(JsArray(subs.map(_.asSafeJson))))
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
+      }
+    }
   }
 }
 

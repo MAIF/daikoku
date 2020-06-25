@@ -672,5 +672,12 @@
   "out": "sortant",
   "ms. average duration": "ms. durée moyenne",
   "ms. average overhead": "ms. overhead moyen",
-  "Duplicate plan": "Dupliquer le plpan"
+  "Duplicate plan": "Dupliquer le plan",
+  "Api subscriptions": "Souscriptions à l'API",
+  "Result": {
+    "s": "Resultat",
+    "p": "Resultats"
+  },
+  "Show.results": "Afficher %s",
+  "Update metadata": "Mettre à jour les métadonnées"
 }

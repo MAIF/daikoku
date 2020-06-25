@@ -6,13 +6,8 @@ import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
-import fr.maif.otoroshi.daikoku.domain.ApiVisibility.Public
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
-  Administrator,
-  ApiEditor,
-  TeamUser
-}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -20,7 +15,6 @@ import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.libs.json._
-import play.api.mvc.Result
 import play.twirl.api.Html
 import reactivemongo.bson.BSONObjectID
 
@@ -1183,6 +1177,25 @@ case class ApiSubscription(
       case (_, IntegrationProcess.Automatic) =>
         json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
     }
+  def asSafeJson: JsValue = Json.obj(
+    "_id" -> ApiSubscriptionIdFormat.writes(id),
+    "_tenant" -> tenant.asJson,
+    "apiKey" -> Json.obj("clientName" -> apiKey.clientName),
+    "plan" -> UsagePlanIdFormat.writes(plan),
+    "team" -> TeamIdFormat.writes(team),
+    "api" -> ApiIdFormat.writes(api),
+    "createdAt" -> DateTimeFormat.writes(createdAt),
+    "by" -> UserIdFormat.writes(by),
+    "customName" -> customName
+      .map(id => JsString(id))
+      .getOrElse(JsNull)
+      .as[JsValue],
+    "enabled" -> enabled,
+    "rotation" -> rotation
+      .map(ApiSubscriptionyRotationFormat.writes)
+      .getOrElse(JsNull)
+      .as[JsValue]
+  )
   def asSimpleJson: JsValue = Json.obj(
     "_id" -> json.ApiSubscriptionIdFormat.writes(id),
     "_tenant" -> json.TenantIdFormat.writes(tenant),

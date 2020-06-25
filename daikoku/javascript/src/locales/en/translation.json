@@ -672,5 +672,12 @@
     "out": "out",
     "ms. average duration": "ms. average duration",
     "ms. average overhead": "ms. average overhead",
-    "Duplicate plan": "Duplicate plan"
+    "Duplicate plan": "Duplicate plan",
+    "Api subscriptions": "Api subscriptions",
+    "Result": {
+        "s": "Result",
+        "p": "Results"
+    },
+    "Show.results": "Show %s",
+    "Update metadata": "Update metadata"
 }

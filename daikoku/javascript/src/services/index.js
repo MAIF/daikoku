@@ -1050,6 +1050,28 @@ export function apiGlobalConsumption(apiId, teamId, from, to) {
   }).then((r) => r.json());
 }
 
+export function apiSubscriptions(apiId, teamId) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/subscriptions`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function archiveSubscriptionByOwner(ownerId, subscriptionId, enabled) {
+  return fetch(`/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
 export function getSubscriptionInformations(subscription, teamId) {
   return fetch(`/api/teams/${teamId}/subscription/${subscription}/informations`, {
     method: 'GET',
