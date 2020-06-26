@@ -333,9 +333,7 @@ export class TopBarComponent extends Component {
                   <img
                     src={this.props.tenant.logo}
                     style={{
-                      maxWidth: 28,
-                      maxHeight: 28,
-                      borderRadius: '50%',
+                      maxHeight: 54,
                       marginRight: 5,
                       width: '100%',
                     }}

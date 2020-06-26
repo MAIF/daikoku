@@ -3,11 +3,14 @@ import _ from 'lodash';
 import { currencies } from '../../../services/currencies';
 import faker from 'faker';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import classNames from 'classnames';
 
-import { Spinner, newPossibleUsagePlan } from '../../utils';
+import { Spinner, newPossibleUsagePlan, Option } from '../../utils';
 import { t, Translation } from '../../../locales';
 import * as Services from '../../../services';
+import { Help } from '../../inputs';
+import { toastr } from 'react-redux-toastr';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -70,6 +73,7 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.apikeyCustomization.dynamicPrefix',
       'otoroshiTarget.apikeyCustomization.tags',
       'otoroshiTarget.apikeyCustomization.metadata',
+      'otoroshiTarget.apikeyCustomization.askedMetadata',
       'otoroshiTarget.apikeyCustomization.restrictions.enabled',
       'otoroshiTarget.apikeyCustomization.restrictions.allowLast',
       'otoroshiTarget.apikeyCustomization.restrictions.allowed',
@@ -161,7 +165,14 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.apikeyCustomization.metadata': {
         type: 'object',
         props: {
-          label: t('Apikey metadata', this.props.currentLanguage),
+          label: t('Automatic Apikey metadata', this.props.currentLanguage),
+        },
+      },
+      'otoroshiTarget.apikeyCustomization.askedMetadata': {
+        type: AskedMetadataInput,
+        props: {
+          label: t('Asked Apikey metadata', this.props.currentLanguage),
+          toastr: () => toastr.info(t('sub.process.update.to.manual', this.props.currentLanguage))
         },
       },
       'otoroshiTarget.apikeyCustomization.tags': {
@@ -218,6 +229,7 @@ export class TeamApiPricing extends Component {
   };
 
   securityForm = (_found) => {
+    console.debug({_found})
     return {
       autoRotation: {
         type: 'bool',
@@ -227,6 +239,7 @@ export class TeamApiPricing extends Component {
       },
       subscriptionProcess: {
         type: 'select',
+        disabled: !!_found.otoroshiTarget.apikeyCustomization.askedMetadata.length,
         props: {
           label: t('Subscription', this.props.currentLanguage),
           possibleValues: [
@@ -1178,7 +1191,7 @@ export class TeamApiPricing extends Component {
 
   clonePlan = () => {
     let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
-    const clone = { ..._.cloneDeep(this.state.selected), _id: faker.random.alphaNumeric(32), customName: `${this.state.selected.customName} (copy)`}
+    const clone = { ..._.cloneDeep(this.state.selected), _id: faker.random.alphaNumeric(32), customName: `${this.state.selected.customName} (copy)` };
     plans.push(clone);
     const value = _.cloneDeep(this.props.value);
     value.possibleUsagePlans = plans;
@@ -1248,8 +1261,8 @@ export class TeamApiPricing extends Component {
             <i className="fas fa-mask" /> {plan.customName || plan.type}
           </span>
         ) : (
-          <span>{plan.customName || plan.type}</span>
-        ),
+              <span>{plan.customName || plan.type}</span>
+            ),
       default: this.props.value.defaultUsagePlan === plan._id,
       value: plan._id,
       plan,
@@ -1390,3 +1403,113 @@ export class TeamApiPricing extends Component {
     );
   }
 }
+
+const AskedMetadataInput = props => {
+  const changeValue = (possibleValues, key) => {
+    const oldValue = Option(props.value.find(x => x.key === key)).getOrElse({ '': '' });
+    const newValues = [...props.value.filter(x => x.key !== key), { ...oldValue, key, possibleValues }];
+    props.onChange(newValues);
+  };
+
+  const changeKey = (e, oldName) => {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const oldValue = Option(props.value.find(x => x.key === oldName)).getOrElse({ '': '' });
+    const newValues = [...props.value.filter(x => x.key !== oldName), { ...oldValue, key: e.target.value }];
+    props.onChange(newValues);
+  };
+
+  const addFirst = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!props.value || props.value.length === 0) {
+      props.onChange([{ key: '', possibleValues: [] }]);
+      props.changeValue('subscriptionProcess', 'Manual');
+      props.toastr();
+    }
+  };
+
+  const addNext = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const newItem = { key: '', possibleValues: [] };
+    const newValues = [...props.value, newItem];
+    props.onChange(newValues);
+  };
+
+  const remove = (e, key) => {
+    if (e && e.preventDefault) e.preventDefault();
+
+    props.onChange(props.value.filter(x => x.key !== key));
+  };
+
+  return (
+    <div>
+      {props.value.length === 0 && (
+        <div className="form-group row">
+          <label
+            htmlFor={`input-${props.label}`}
+            className="col-xs-12 col-sm-2 col-form-label">
+            <Help text={props.help} label={props.label} />
+          </label>
+          <div className="col-sm-10">
+            <button
+              disabled={props.disabled}
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={addFirst}>
+              <i className="fas fa-plus" />{' '}
+            </button>
+          </div>
+        </div>
+      )}
+      { props.value.map(({key, possibleValues}, idx) => (
+        <div key={`form-group-${idx}`} className="row mb-2">
+          {idx === 0 && (
+            <label className="col-xs-12 col-sm-2 col-form-label">
+              <Help text={props.help} label={props.label} />
+            </label>
+          )}
+          {idx > 0 && <label className="col-xs-12 col-sm-2 col-form-label">&nbsp;</label>}
+          <div className="col-sm-10 d-flex">
+            <div className="input-group">
+              <input
+                disabled={props.disabled}
+                type="text"
+                className="form-control"
+                placeholder={props.placeholderKey}
+                value={key}
+                onChange={(e) => changeKey(e, key)}
+              />
+              <CreatableSelect
+                isMulti
+                onChange={e => changeValue(e.map(({ value }) => value), key)}
+                options={undefined}
+                value={possibleValues.map(value => ({label: value, value}))}
+                className="input-select reactSelect"
+                classNamePrefix="reactSelect"
+              />
+              
+              <span className="input-group-append">
+                <button
+                  disabled={props.disabled}
+                  type="button"
+                  className="btn btn-outline-danger"
+                  onClick={(e) => remove(e, key)}>
+                  <i className="fas fa-trash" />
+                </button>
+                {idx === props.value.length - 1 && (
+                  <button
+                    disabled={props.disabled}
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={addNext}>
+                    <i className="fas fa-plus" />{' '}
+                  </button>
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};

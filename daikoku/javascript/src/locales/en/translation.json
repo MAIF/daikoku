@@ -679,5 +679,6 @@
         "p": "Results"
     },
     "Show.results": "Show %s",
-    "Update metadata": "Update metadata"
+    "Update metadata": "Update metadata",
+    "sub.process.update.to.manual": "Due to your choice, the subscription process has been set automatically to Manual"
 }

@@ -679,5 +679,6 @@
     "p": "Resultats"
   },
   "Show.results": "Afficher %s",
-  "Update metadata": "Mettre à jour les métadonnées"
+  "Update metadata": "Mettre à jour les métadonnées",
+  "sub.process.update.to.manual": "En raison de votre choix, le processus de souscription a été automatiquement réglé sur Manuel"
 }

@@ -299,12 +299,16 @@ case class ApiKeyRestrictions(
   def asJson: JsValue = json.ApiKeyRestrictionsFormat.writes(this)
 }
 
+case class AskedMetadata(key: String, possibleValues: Set[String] = Set.empty) extends CanJson[AskedMetadata] {
+  def asJson: JsValue = json.AskedMetadataFormat.writes(this)
+}
 case class ApikeyCustomization(
     dynamicPrefix: Option[String] = None,
     clientIdOnly: Boolean = false,
     readOnly: Boolean = false,
     constrainedServicesOnly: Boolean = false,
     metadata: JsObject = play.api.libs.json.Json.obj(),
+    askedMetadata: Seq[AskedMetadata] = Seq.empty,
     tags: JsArray = play.api.libs.json.Json.arr(),
     restrictions: ApiKeyRestrictions = ApiKeyRestrictions()
 ) extends CanJson[ApikeyCustomization] {
