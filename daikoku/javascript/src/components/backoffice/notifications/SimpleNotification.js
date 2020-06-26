@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import moment from 'moment';
 
 import { t, Translation } from '../../../locales';
+import { formatPlanType, Option } from '../../utils';
 
 export class SimpleNotification extends Component {
   typeFormatter = (type) => {
@@ -157,7 +158,7 @@ export class SimpleNotification extends Component {
     let infos = {};
     if (['ApiAccess', 'ApiSubscription'].includes(notification.action.type)) {
       const api = getApi(notification.action.api);
-      const plan = api.possibleUsagePlans.find((p) => p._id === notification.action.plan);
+      const plan = api.possibleUsagePlans.find(p => p._id === notification.action.plan);
 
       infos = { api, plan };
     }
@@ -197,7 +198,7 @@ export class SimpleNotification extends Component {
                     <Translation
                       i18nkey="notif.api.subscription"
                       language={this.props.currentLanguage}
-                      replacements={[infos.api.name, infos.api.plan]}>
+                      replacements={[infos.api.name, Option(infos.plan.customName).getOrElse(formatPlanType(infos.plan))]}>
                       Request subscription to {infos.api.name} for plan {infos.plan.type}
                     </Translation>
                   </div>

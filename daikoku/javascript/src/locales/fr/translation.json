@@ -110,7 +110,7 @@
   "notif.api.subscription": "Souscription à %s pour le plan %s",
   "notif.api.access": "demande d'accès à %s",
   "notif.membership.team": "Demande d'adhésion a votre équipe",
-  "notif.apikey.deletion": "Voter cléd'api avec l'identifiant client %s pour api %s a été supprimée",
+  "notif.apikey.deletion": "Votre clé d'api avec l'identifiant client %s pour api %s a été supprimée",
   "api.access.request": "Vous aller envoyer une demande d'accès à l'api %s. Pour quelle équipe voulez-vous envoyer cette demande ?",
   "FreeWithoutQuotas": "Gratuit sans quotas",
   "FreeWithQuotas": "Gratuit avec quotas",

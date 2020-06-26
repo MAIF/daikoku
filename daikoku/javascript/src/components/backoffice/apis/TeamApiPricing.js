@@ -229,7 +229,6 @@ export class TeamApiPricing extends Component {
   };
 
   securityForm = (_found) => {
-    console.debug({_found})
     return {
       autoRotation: {
         type: 'bool',
