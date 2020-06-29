@@ -1167,7 +1167,8 @@ case class ApiSubscription(
     customName: Option[String],
     enabled: Boolean = true,
     rotation: Option[ApiSubscriptionRotation],
-    integrationToken: String
+    integrationToken: String,
+    customMetadata: Option[JsObject] = None
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(permission: TeamPermission,

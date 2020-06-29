@@ -167,13 +167,15 @@ export function myUnreadNotificationsCount() {
   );
 }
 
-export function acceptNotificationOfTeam(NotificationId) {
+export function acceptNotificationOfTeam(NotificationId, values) {
   return fetch(`/api/notifications/${NotificationId}/accept`, {
     method: 'PUT',
     credentials: 'include',
     headers: {
       Accept: 'application/json',
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify(values)
   }).then((r) => r.json());
 }
 

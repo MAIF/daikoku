@@ -1580,7 +1580,8 @@ object json {
             customName = (json \ "customName").asOpt[String],
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
-            integrationToken = (json \ "integrationToken").as[String]
+            integrationToken = (json \ "integrationToken").as[String],
+            customMetadata = (json \ "customMetadata").asOpt[JsObject]
           )
         )
       } recover {
@@ -1605,7 +1606,8 @@ object json {
         .map(ApiSubscriptionyRotationFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue],
-      "integrationToken" -> o.integrationToken
+      "integrationToken" -> o.integrationToken,
+      "customMetadata" -> o.customMetadata
     )
   }
 

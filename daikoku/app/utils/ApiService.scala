@@ -23,7 +23,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                      user: User,
                      api: Api,
                      planId: String,
-                     team: Team): Future[Either[AppError, JsObject]] = {
+                     team: Team,
+                     customMetadata: Option[JsObject]): Future[Either[AppError, JsObject]] = {
     val defaultPlanOpt =
       api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
     val askedUsagePlan = api.possibleUsagePlans.find(p => p.id.value == planId)
@@ -58,7 +59,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
         by = user.id,
         customName = None,
         rotation = plan.autoRotation.map(rotation => ApiSubscriptionRotation(enabled = rotation)),
-        integrationToken = integrationToken
+        integrationToken = integrationToken,
+        customMetadata = customMetadata
       )
       val ctx = Map(
         "user.id" -> user.id.value,
@@ -109,6 +111,9 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
           "daikoku_integration_token" -> integrationToken
         ) ++ plan.otoroshiTarget
           .map(_.processedMetadata(ctx))
+          .getOrElse(Map.empty[String, String])
+        ++ customMetadata
+          .flatMap(_.asOpt[Map[String, String]])
           .getOrElse(Map.empty[String, String]),
         rotation = plan.autoRotation.map(_ => ApiKeyRotation())
       )

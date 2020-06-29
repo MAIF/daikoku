@@ -697,7 +697,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id => EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) => plan.subscriptionProcess match {
         case SubscriptionProcess.Manual => EitherT(notifyApiSubscription(tenant, user, api, planId, team))
-        case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team))
+        case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team, None))
       }
     }
   }
