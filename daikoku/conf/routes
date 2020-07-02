@@ -87,6 +87,10 @@ POST    /api/teams/:teamId/subscriptions/:id/name       fr.maif.otoroshi.daikoku
 DELETE  /api/teams/:teamId/subscriptions/:id/_delete    fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiSubscription(teamId, id)
 ### NoDocs ###
 PUT		  /api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
+
+
+### NoDocs ###
+PUT		  /api/teams/:teamId/subscriptions/:id            fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiSubscription(teamId, id)
 ### NoDocs ###
 PUT		  /api/teams/:teamId/subscriptions/:id/_archiveByOwner   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscriptionByApiOwner(teamId, id, enabled: Option[Boolean] ?= Some(false))
 ### NoDocs ###

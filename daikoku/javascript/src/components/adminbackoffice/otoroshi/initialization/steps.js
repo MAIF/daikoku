@@ -476,7 +476,6 @@ export const ApiKeyStep = (props) => {
           serviceGroup: props.apikey.authorizedGroup,
         },
       };
-      console.debug({ newPossiblePlan, plan });
       plans.push(plan);
       const value = _.cloneDeep(selectedApi);
       value.possibleUsagePlans = plans;

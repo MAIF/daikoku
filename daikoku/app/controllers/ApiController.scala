@@ -847,6 +847,30 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def updateApiSubscription(teamId: String, subscriptionId: String) = DaikokuAction.async(parse.json) { ctx =>
+
+    TeamMemberOnly(AuditTrailEvent(s"@{user.name} has updated subscription for @{subscription.id}"))(teamId, ctx) { _ =>
+
+      env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscriptionId).flatMap {
+        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Subscription not found")))
+        case Some(sub) => env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(sub.api).flatMap {
+          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
+          case Some(api) if api.id != sub.api => FastFuture.successful(Forbidden(Json.obj("error" -> "Subscription api is not your")))
+          case Some(api) =>
+            val subToSave = sub.copy(
+              customMetadata = (ctx.request.body.as[JsObject] \ "customMetadata").asOpt[JsObject]
+              //todo: maybe add authorizedGroup (otorshi update) and quotas
+            )
+            apiService.updateSubscription(ctx.tenant, subToSave, api)
+              .map {
+                case Left(err) => AppError.render(err)
+                case Right(sub) => Ok(sub)
+              }
+        }
+      }
+    }
+  }
+
   def getApiSubscriptionsForTeam(apiId: String, teamId: String) = DaikokuAction.async { ctx =>
     TeamMemberOnly(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(teamId, ctx) {
       team =>
@@ -949,9 +973,9 @@ class ApiController(DaikokuAction: DaikokuAction,
         case Some(sub) => env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(sub.api).flatMap {
           case Some(api) if api.team != team.id => FastFuture.successful(Forbidden(Json.obj("error" -> "You'r not authorized to access to this subscription")))
           case Some(api) => EitherT(toggleSubscription(api.possibleUsagePlans.find(p => p.id == sub.plan).get, sub, ctx.tenant, enabled.getOrElse(false)))
-              .leftMap(appError => AppError.render(appError))
-              .map(r => Ok(r))
-              .merge
+            .leftMap(appError => AppError.render(appError))
+            .map(r => Ok(r))
+            .merge
 
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Subscribed AIP not found")))
         }
@@ -1645,7 +1669,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def getApiSubscriptions(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"))(teamId, ctx){ team =>
+    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"))(teamId, ctx) { team =>
       env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(apiId).flatMap {
         case Some(api) if api.team != team.id => FastFuture.successful(Unauthorized(Json.obj("error" -> "Unauthorized to access to this api")))
         case Some(api) => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)

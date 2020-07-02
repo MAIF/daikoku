@@ -5,7 +5,8 @@ import { TeamBackOffice } from '../TeamBackOffice';
 import { Can, manage, api as API, BeautifulTitle, formatPlanType, Option, formatDate } from '../../utils';
 import * as Services from '../../../services';
 import { Translation, t } from '../../../locales';
-import {Table, BooleanColumnFilter, SwitchButton} from '../../inputs';
+import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
+import { openSubMetadataModal } from '../../../core';
 
 const TeamApiSubscriptionsComponent = props => {
   const [api, setApi] = useState(undefined);
@@ -108,9 +109,15 @@ const TeamApiSubscriptionsComponent = props => {
     }
   }, [table]);
 
-  const updateMeta = (sub) => console.debug({sub});
+  const updateMeta = (sub) => props.openSubMetadataModal({
+    save: customMetadata => Services.updateSubscription(props.currentTeam, { ...sub, customMetadata })
+      .then(() => table.update()),
+    api: sub.api,
+    plan: sub.plan,
+    team: teams.find(t => t._id === sub.team),
+    subscription: sub
+  });
 
-  console.debug({columns});
   return (
     <TeamBackOffice tab="Apis" apiId={props.match.params.apiId} isLoading={loading}>
       <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
@@ -150,4 +157,8 @@ const mapStateToProps = (state) => ({
   ...state.context,
 });
 
-export const TeamApiSubscriptions = connect(mapStateToProps)(TeamApiSubscriptionsComponent);
+const mapDispatchToProps = {
+  openSubMetadataModal: (modalProps) => openSubMetadataModal(modalProps),
+};
+
+export const TeamApiSubscriptions = connect(mapStateToProps, mapDispatchToProps)(TeamApiSubscriptionsComponent);

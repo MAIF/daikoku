@@ -46,7 +46,6 @@ class NotificationListComponent extends Component {
   }
 
   acceptNotification(notificationId, values) {
-    console.debug({notificationId, values})
     this.setState({
       notifications: this.state.notifications.map((n) => {
         n.fade = n._id === notificationId;

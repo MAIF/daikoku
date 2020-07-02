@@ -1199,7 +1199,8 @@ case class ApiSubscription(
     "rotation" -> rotation
       .map(ApiSubscriptionyRotationFormat.writes)
       .getOrElse(JsNull)
-      .as[JsValue]
+      .as[JsValue],
+    "customMetadata" -> customMetadata
   )
   def asSimpleJson: JsValue = Json.obj(
     "_id" -> json.ApiSubscriptionIdFormat.writes(id),

@@ -1296,6 +1296,19 @@ export function updateSubscriptionCustomName(team, subscription, customName) {
   }).then((r) => r.json());
 }
 
+export function updateSubscription(team, subscription) {
+  return fetch(`/api/teams/${team._id}/subscriptions/${subscription._id}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(subscription),
+  })
+  .then((r) => r.json());
+}
+
 export function storeThumbnail(id, formData) {
   return fetch(`/asset-thumbnails/${id}`, {
     method: 'POST',

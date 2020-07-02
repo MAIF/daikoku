@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PropTypes } from 'prop-types';
 import Select from 'react-select';
 
-import { Spinner, formatPlanType } from '../../utils';
+import { Spinner, formatPlanType, Option } from '../../utils';
 import * as Services from '../../../services';
 import {ObjectInput} from '../../inputs';
 
@@ -27,9 +27,18 @@ export const SubscriptionMetadataModal = (props) => {
 
   useEffect(() => {
     if (plan) {
-      const entries = plan.otoroshiTarget.apikeyCustomization.askedMetadata.map(({ key, _ }) => ([key, undefined]));
-      const metadata = Object.fromEntries(new Map(entries));
-      setMetadata(metadata);
+      const maybeMetadata = Object.fromEntries(Option(props.subscription.customMetadata)
+        .map(v => Object.entries(v))
+        .getOrElse([])
+        .filter(([key]) => !!plan.otoroshiTarget.apikeyCustomization.askedMetadata.some(x => x.key === key)));
+
+      const maybeCustomMetadata = Object.fromEntries(Option(props.subscription.customMetadata)
+        .map(v => Object.entries(v))
+        .getOrElse([])
+        .filter(([key]) => !plan.otoroshiTarget.apikeyCustomization.askedMetadata.some(x => x.key === key)));
+
+      setMetadata(maybeMetadata);
+      setCustomMetadata(maybeCustomMetadata);
     }
   }, [plan]);
 
