@@ -1342,6 +1342,205 @@ class ApiControllerSpec()
       (simpleSub \ "customName").as[String] mustBe sub.customName.get
       (simplePlan \ "customName").as[String] mustBe "new plan name"
     }
+
+    "update a subscription to his api" in {
+      val planSubId = UsagePlanId("1")
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("test"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = planSubId,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.id,
+        by = daikokuAdminId,
+        customName = Some("custom name"),
+        rotation = None,
+        integrationToken = "test",
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id), users = Set(UserWithPermission(user.id, Administrator)))),
+        apis = Seq(
+          defaultApi.copy(possibleUsagePlans = Seq(FreeWithoutQuotas(
+            id = UsagePlanId("1"),
+            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+            currency = Currency("EUR"),
+            customName = Some("new plan name"),
+            customDescription = None,
+            otoroshiTarget = Some(
+              OtoroshiTarget(OtoroshiSettingsId("default"),
+                OtoroshiServiceGroupId("12345"))
+            ),
+            allowMultipleKeys = Some(false),
+            subscriptionProcess = SubscriptionProcess.Automatic,
+            integrationProcess = IntegrationProcess.ApiKey,
+            autoRotation = Some(false)
+          )))),
+        subscriptions = Seq(sub)
+      )
+
+
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == planSubId).get
+      val otoroshiTarget = plan.otoroshiTarget
+      val otoApiKey = ActualOtoroshiApiKey(
+        clientId = sub.apiKey.clientId,
+        clientSecret = sub.apiKey.clientSecret,
+        clientName = sub.apiKey.clientName,
+        authorizedGroup = otoroshiTarget.get.serviceGroup.value,
+        throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
+        dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
+        monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
+        tags = Seq(),
+        restrictions = ApiKeyRestrictions(),
+        metadata = Map(),
+        rotation = None
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      wireMockServer.isRunning mustBe true
+      val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
+        sub.apiKey.clientId)
+
+      val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
+      stubFor(
+        get(urlMatching(s"$groupPath.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  otoApiKey.asJson.as[JsObject] ++
+                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
+                      "name" -> otoroshiTarget.get.serviceGroup.value)
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      stubFor(
+        put(urlMatching(s"$path.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  otoApiKey.copy(enabled = false).asJson
+                )
+              )
+              .withStatus(201)
+          )
+      )
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
+        method = "PUT",
+        body = Some(sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson)
+      )(tenant, session)
+
+      resp.status mustBe 200
+
+      (resp.json \ "done").as[Boolean] mustBe true
+      (resp.json \ "subscription" \ "customMetadata").as[JsObject] mustBe Json.obj("foo" -> "bar")
+      (resp.json \ "subscription" \ "apiKey").as[JsObject] mustBe Json.obj("clientName" -> otoApiKey.clientName)
+    }
+
+    "not update a subscription to another api (even if it's own)" in {
+      val planSubId = UsagePlanId("1")
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("test"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = planSubId,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.id,
+        by = daikokuAdminId,
+        customName = Some("custom name"),
+        rotation = None,
+        integrationToken = "test",
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id))),
+        apis = Seq(
+          defaultApi.copy(possibleUsagePlans = Seq(FreeWithoutQuotas(
+            id = UsagePlanId("1"),
+            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+            currency = Currency("EUR"),
+            customName = Some("new plan name"),
+            customDescription = None,
+            otoroshiTarget = Some(
+              OtoroshiTarget(OtoroshiSettingsId("default"),
+                OtoroshiServiceGroupId("12345"))
+            ),
+            allowMultipleKeys = Some(false),
+            subscriptionProcess = SubscriptionProcess.Automatic,
+            integrationProcess = IntegrationProcess.ApiKey,
+            autoRotation = Some(false)
+          )))),
+        subscriptions = Seq(sub)
+      )
+
+
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == planSubId).get
+      val otoroshiTarget = plan.otoroshiTarget
+      val otoApiKey = ActualOtoroshiApiKey(
+        clientId = sub.apiKey.clientId,
+        clientSecret = sub.apiKey.clientSecret,
+        clientName = sub.apiKey.clientName,
+        authorizedGroup = otoroshiTarget.get.serviceGroup.value,
+        throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
+        dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
+        monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
+        tags = Seq(),
+        restrictions = ApiKeyRestrictions(),
+        metadata = Map(),
+        rotation = None
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      wireMockServer.isRunning mustBe true
+      val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
+        sub.apiKey.clientId)
+
+      val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
+      stubFor(
+        get(urlMatching(s"$groupPath.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  otoApiKey.asJson.as[JsObject] ++
+                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
+                      "name" -> otoroshiTarget.get.serviceGroup.value)
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      stubFor(
+        put(urlMatching(s"$path.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  otoApiKey.copy(enabled = false).asJson
+                )
+              )
+              .withStatus(201)
+          )
+      )
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}",
+        method = "PUT",
+        body = Some(sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson)
+      )(tenant, session)
+
+      logger.debug(Json.stringify(resp.json))
+      resp.status mustBe 403
+    }
   }
 
   "a api editor" can {
@@ -3320,7 +3519,8 @@ class ApiControllerSpec()
 
       val respAccept = httpJsonCallBlocking(
         path = s"/api/notifications/${notifId.value}/accept",
-        method = "PUT"
+        method = "PUT",
+        body = Some(Json.obj())
       )(tenant, adminSession)
       resp.status mustBe 200
 

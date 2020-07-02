@@ -848,14 +848,12 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def updateApiSubscription(teamId: String, subscriptionId: String) = DaikokuAction.async(parse.json) { ctx =>
-
-    TeamMemberOnly(AuditTrailEvent(s"@{user.name} has updated subscription for @{subscription.id}"))(teamId, ctx) { _ =>
-
+    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has updated subscription for @{subscription.id}"))(teamId, ctx) { team =>
       env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscriptionId).flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Subscription not found")))
         case Some(sub) => env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(sub.api).flatMap {
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-          case Some(api) if api.id != sub.api => FastFuture.successful(Forbidden(Json.obj("error" -> "Subscription api is not your")))
+          case Some(api) if api.team != team.id => FastFuture.successful(Forbidden(Json.obj("error" -> "Subscription api is not your")))
           case Some(api) =>
             val subToSave = sub.copy(
               customMetadata = (ctx.request.body.as[JsObject] \ "customMetadata").asOpt[JsObject]

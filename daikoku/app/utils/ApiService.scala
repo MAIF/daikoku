@@ -273,7 +273,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                     )
                   } yield {
                     Json.obj("done" -> true,
-                      "subscription" -> subscription.asJson)
+                      "subscription" -> subscription.asSafeJson)
                   }
 
                   r.value
