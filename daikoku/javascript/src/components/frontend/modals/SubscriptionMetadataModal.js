@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { PropTypes } from 'prop-types';
 import Select from 'react-select';
+import { toastr } from 'react-redux-toastr';
 
 import { Spinner, formatPlanType, Option } from '../../utils';
 import * as Services from '../../../services';
-import {ObjectInput} from '../../inputs';
+import { ObjectInput, Collapse } from '../../inputs';
 
 export const SubscriptionMetadataModal = (props) => {
   const [loading, setLoading] = useState(true);
   const [api, setApi] = useState(undefined);
   const [plan, setPlan] = useState(undefined);
-  const [error, setError] = useState(undefined);
   const [metadata, setMetadata] = useState({});
   const [customMetadata, setCustomMetadata] = useState({});
   const [isValid, setIsValid] = useState(false);
@@ -27,22 +27,24 @@ export const SubscriptionMetadataModal = (props) => {
 
   useEffect(() => {
     if (plan) {
-      const maybeMetadata = Object.fromEntries(Option(props.subscription.customMetadata)
+      const maybeSubMetadata = Option(props.subscription)
+        .map(s => s.customMetadata)
         .map(v => Object.entries(v))
-        .getOrElse([])
-        .filter(([key]) => !!plan.otoroshiTarget.apikeyCustomization.askedMetadata.some(x => x.key === key)));
+        .getOrElse([]);
 
-      const maybeCustomMetadata = Object.fromEntries(Option(props.subscription.customMetadata)
-        .map(v => Object.entries(v))
-        .getOrElse([])
-        .filter(([key]) => !plan.otoroshiTarget.apikeyCustomization.askedMetadata.some(x => x.key === key)));
+      const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(([accMeta, accCustomMeta], item) => {
+        if (plan.otoroshiTarget.apikeyCustomization.askedMetadata.some(x => x.key === item[0])) {
+          return [[...accMeta, item], accCustomMeta];
+        }
+        return [accMeta, [...accCustomMeta, item]];
+      }, [[], []]);
 
-      setMetadata(maybeMetadata);
-      setCustomMetadata(maybeCustomMetadata);
+      setMetadata(Object.fromEntries(maybeMetadata));
+      setCustomMetadata(Object.fromEntries(maybeCustomMetadata));
     }
   }, [plan]);
 
-  const validate = () => Object.entries({...customMetadata, ...metadata}).every(([_, value]) => !!value);
+  const validate = () => Object.entries({ ...customMetadata, ...metadata }).every(([_, value]) => !!value) && plan && plan.otoroshiTarget.apikeyCustomization.askedMetadata.length === Object.keys(metadata).length;
 
   useEffect(() => {
     setIsValid(validate());
@@ -53,7 +55,8 @@ export const SubscriptionMetadataModal = (props) => {
     Services.getVisibleApi(props.api)
       .then((api) => {
         if (api.error) {
-          setError(api.error);
+          toastr.error(api.error);
+          props.closeModal();
         } else {
           setApi(api);
         }
@@ -62,26 +65,31 @@ export const SubscriptionMetadataModal = (props) => {
   }, []);
 
   const actionAndClose = (action) => {
-    if (action instanceof Promise) {
-      action({...customMetadata, ...metadata}).then(() => props.closeModal());
-    } else {
-      props.closeModal();
-      action({ ...customMetadata, ...metadata });
+    if (isValid()) {
+      if (action instanceof Promise) {
+        action({ ...customMetadata, ...metadata }).then(() => props.closeModal());
+      } else {
+        props.closeModal();
+        action({ ...customMetadata, ...metadata });
+      }
     }
   };
 
   const renderInput = (key, possibleValues) => {
+
     if (!possibleValues || possibleValues.length == 0) {
       return (
         <input
-          value={metadata[key]}
+          className="form-control flex-grow-1"
+          value={metadata[key] || ''}
           onChange={e => setMetadata({ ...metadata, [key]: e.target.value })}
+          required
         />
       );
     } else {
       return (
         <Select
-          className="reactSelect mb-1 col-4"
+          className="reactSelect flex-grow-1"
           value={{ label: metadata[key], value: metadata[key] }}
           placeholder="Select a value"
           options={possibleValues.map((v) => ({ label: v, value: v }))}
@@ -101,41 +109,45 @@ export const SubscriptionMetadataModal = (props) => {
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      {!!loading && <div className="modal-body"><Spinner /></div>}
-      {!loading && !!api && !!plan && (
-        <>
-          <div className="modal-body">
-            <div className="modal-description">{props.team.name} ask you an apikey for plan: {plan.customName || formatPlanType(plan)}</div>
-            <div>You must populate some metadata or just add ones if you want</div>
-            <ul>
+      <div className="modal-body">
+        {loading && <Spinner />}
+        {!loading && !!api && !!plan && (
+          <>
+            {props.creationMode && <div className="modal-description">{props.team.name} ask you an apikey for plan {plan.customName || formatPlanType(plan)}</div>}
+            {!props.creationMode && <div className="modal-description">Team: {props.team.name} - Plan: {plan.customName || formatPlanType(plan)}</div>}
+            <Collapse label={`Mandatory metadata (${plan.otoroshiTarget.apikeyCustomization.askedMetadata.length})`} collapsed={false}>
               {plan.otoroshiTarget.apikeyCustomization.askedMetadata.map(({ key, possibleValues }, idx) => {
                 return (
-                  <li key={idx} >{key}: {renderInput(key, possibleValues)}</li>
+                  <div className="d-flex flex-row mb-1" key={idx}>
+                    <input className="form-control col-5 mr-1" value={key} disabled='disabled' />
+                    {renderInput(key, possibleValues)}
+                  </div>
                 );
               })}
-            </ul>
-            <ObjectInput
-              label='other custom metadata'
-              value={customMetadata}
-              onChange={(values) => {
-                setCustomMetadata({ ...values });
-              }}
-            />
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-              Cancel
+            </Collapse>
+            <Collapse label="Custom metadata" collapsed={true}>
+              <ObjectInput
+                value={customMetadata}
+                onChange={(values) => {
+                  setCustomMetadata({ ...values });
+                }}
+              />
+            </Collapse>
+          </>
+        )}
+        <div className="modal-footer">
+          <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
+            Cancel
             </button>
-            <button
-              type="button"
-              className="btn btn-outline-success"
-              disabled={isValid ? undefined : 'disabled'}
-              onClick={() => actionAndClose(props.save)}>
-              Accept
-            </button>
-          </div>
-        </>
-      )}
+          <button
+            type="button"
+            className="btn btn-outline-success"
+            disabled={isValid ? undefined : 'disabled'}
+            onClick={() => actionAndClose(props.save)}>
+            {props.creationMode ? 'Accept' : 'Update'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
