@@ -56,7 +56,7 @@ Depending on chosen plan type, certain custom properties may be accessibles.
   * ApiKey: subscribers have access to an apikey to call api
   * Automatic: Subscribers have just access to a token, which link to a real apikey,  accessible by admin api. It's a perfect solution to integrate automatically your apikey in your prod environment if rotation is activated.
 
-@@@ info { title='API key Metadata' }
+@@@ note { title='API key Metadata' }
 As Otoroshi does, it's possible to add metadata on API keys. __Automatic metadata__ will be calculated and added after subscription validation. __Asked metadata__ will switch the plan subscription mode to manual then, on susbcription acceptation, a team admin will have to add the metadata manually. 
 @@@
 
