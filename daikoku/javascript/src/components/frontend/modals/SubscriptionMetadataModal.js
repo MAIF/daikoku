@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { PropTypes } from 'prop-types';
-import Select from 'react-select';
+import Creatable from 'react-select/creatable';
 import { toastr } from 'react-redux-toastr';
+import _ from 'lodash';
 
 import { Spinner, formatPlanType, Option } from '../../utils';
 import * as Services from '../../../services';
 import { ObjectInput, Collapse } from '../../inputs';
-import {t, Translation} from '../../../locales';
+import { t, Translation } from '../../../locales';
 
 export const SubscriptionMetadataModal = (props) => {
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,7 @@ export const SubscriptionMetadataModal = (props) => {
   const [metadata, setMetadata] = useState({});
   const [customMetadata, setCustomMetadata] = useState({});
   const [isValid, setIsValid] = useState(false);
+  const [loadingInput, setLoadingInput] = useState(false);
 
   useEffect(() => {
     setLoading(false);
@@ -40,8 +42,8 @@ export const SubscriptionMetadataModal = (props) => {
         return [accMeta, [...accCustomMeta, item]];
       }, [[], []]);
 
-      setMetadata(Object.fromEntries(maybeMetadata));
-      setCustomMetadata(Object.fromEntries(maybeCustomMetadata));
+      setMetadata({...Object.fromEntries(maybeMetadata), ...metadata});
+      setCustomMetadata({...Object.fromEntries(maybeCustomMetadata), ...customMetadata});
     }
   }, [plan]);
 
@@ -78,6 +80,34 @@ export const SubscriptionMetadataModal = (props) => {
 
   const renderInput = (key, possibleValues) => {
 
+    const createOption = newValue => {
+      setLoadingInput(true);
+      Services.saveTeamApi(api.team,
+        {
+          ...api,
+          possibleUsagePlans: [
+            ...api.possibleUsagePlans.filter(p => p._id !== props.plan),
+            {
+              ...plan,
+              otoroshiTarget: {
+                ...plan.otoroshiTarget,
+                apikeyCustomization: {
+                  ...plan.otoroshiTarget.apikeyCustomization,
+                  customMetadata: [
+                    ...plan.otoroshiTarget.apikeyCustomization.customMetadata.filter(m => m.key !== key),
+                    { key, possibleValues: [...possibleValues, newValue] }
+                  ]
+                }
+              }
+            }]
+        })
+        .then(api => {
+          setMetadata({ ...metadata, [key]: newValue });
+          setLoadingInput(false);
+          setApi(api);
+        });
+    };
+
     if (!possibleValues || possibleValues.length == 0) {
       return (
         <input
@@ -89,12 +119,18 @@ export const SubscriptionMetadataModal = (props) => {
       );
     } else {
       return (
-        <Select
+        <Creatable
           className="reactSelect flex-grow-1"
-          value={{ label: metadata[key], value: metadata[key] }}
-          placeholder="Select a value"
-          options={possibleValues.map((v) => ({ label: v, value: v }))}
+          isClearable={true}
+          isDisabled={loadingInput}
+          isLoading={loadingInput}
           onChange={e => setMetadata({ ...metadata, [key]: e.value })}
+          onCreateOption={v => createOption(v)}
+          options={possibleValues.sort().map((v) => ({ label: v, value: v }))}
+          value={{ label: metadata[key], value: metadata[key] }}
+          formatCreateLabel={(value) =>
+            t('create.metadata.option.label', props.currentLanguage, false, `Create option ${value}`, value)
+          }
           classNamePrefix="reactSelect"
         />
       );
@@ -115,8 +151,8 @@ export const SubscriptionMetadataModal = (props) => {
         {!loading && !!api && !!plan && (
           <>
             {props.creationMode && <div className="modal-description">
-              <Translation i18nkey="subscription.metadata.modal.creation.description" 
-                language={props.currentLanguage} 
+              <Translation i18nkey="subscription.metadata.modal.creation.description"
+                language={props.currentLanguage}
                 replacements={[props.team.name, plan.customName || formatPlanType(plan)]}>
                 {props.team.name} ask you an apikey for plan {plan.customName || formatPlanType(plan)}
               </Translation>
@@ -129,9 +165,9 @@ export const SubscriptionMetadataModal = (props) => {
                 Team: {props.team.name} - Plan: {plan.customName || formatPlanType(plan)}
               </Translation>
             </div>}
-            <Collapse 
+            <Collapse
               label={t('mandatory.metadata.label', props.currentLanguage, false, `Mandatory metadata (${plan.otoroshiTarget.apikeyCustomization.customMetadata.length})`, plan.otoroshiTarget.apikeyCustomization.customMetadata.length)} collapsed={false}>
-              {plan.otoroshiTarget.apikeyCustomization.customMetadata.map(({ key, possibleValues }, idx) => {
+              {_.sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key']).map(({ key, possibleValues }, idx) => {
                 return (
                   <div className="d-flex flex-row mb-1" key={idx}>
                     <input className="form-control col-5 mr-1" value={key} disabled='disabled' />

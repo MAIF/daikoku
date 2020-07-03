@@ -691,6 +691,7 @@
     "subscription.metadata.modal.creation.description": "%s ask you an apikey for plan %s",
     "subscription.metadata.modal.update.description": "Team: %s - Plan: %s",
     "mandatory.metadata.label": "Mandatory metadata (%s)",
-    "Additional metadata": "Additional metadata"
+    "Additional metadata": "Additional metadata",
+    "create.metadata.option.label": "Create option %s"
     
 }
