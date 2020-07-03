@@ -684,7 +684,7 @@
     "Automatic API key metadata": "Automatic API key metadata",
     "automatic.metadata.help": "Automatic metadata will be calculated on subscription acceptation",
     "Custom Apikey metadata": "Custom Apikey metadata",
-    "custom.metadata.help": "custom metadata will have to be filled during subscription validation. Subscription process will be switched to manual",
+    "custom.metadata.help": "custom metadata will have to be filled during subscription validation. Subscription process will be switched to manual. (nothing = free input)",
     "array.input.placeholder": "Type something and press enter...",
     "Subscription metadata": "Subscription metadata",
     "Subscription metadata title": "Subscription metadata - %s",

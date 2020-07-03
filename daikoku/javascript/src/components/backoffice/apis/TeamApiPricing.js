@@ -1486,7 +1486,7 @@ const CustomMetadataInput = props => {
               <input
                 disabled={props.disabled}
                 type="text"
-                className="form-control"
+                className="form-control col-5 mr-1"
                 placeholder={props.placeholderKey}
                 value={key}
                 onChange={(e) => changeKey(e, key)}
@@ -1496,11 +1496,11 @@ const CustomMetadataInput = props => {
                 onChange={e => changeValue(e.map(({ value }) => value), key)}
                 options={undefined}
                 value={possibleValues.map(value => ({label: value, value}))}
-                className="input-select reactSelect"
+                className="input-select reactSelect flex-grow-1"
                 classNamePrefix="reactSelect"
               />
               
-              <span className="input-group-append">
+              <span className="input-group-append" style={{ height: 'calc(1.5em + 0.75rem + 2px)'}}>
                 <button
                   disabled={props.disabled}
                   type="button"

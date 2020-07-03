@@ -684,7 +684,7 @@
   "Automatic API key metadata": "Métadonnées automatiques",
   "automatic.metadata.help": "Les métadonnées automatiques seront calculées à l'acceptation de la souscription",
   "Custom Apikey metadata": "Métadonnées personnalisées",
-  "custom.metadata.help": "Les Métadonnées personnalisées devront être renseignées lors de la validation de la souscription. Le process de souscription sera basculé sur manuel",
+  "custom.metadata.help": "Les Métadonnées personnalisées devront être renseignées lors de la validation de la souscription. Le process de souscription sera basculé sur manuel. (rien = champ libre)",
   "array.input.placeholder": "Saisir quelque chose et appuyer sur entrée/tab",
   "Subscription metadata": "Métadonnées de souscription",
   "Subscription metadata title": "Métadonnées de souscription - %s",
