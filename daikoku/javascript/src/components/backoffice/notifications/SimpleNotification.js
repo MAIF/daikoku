@@ -102,7 +102,8 @@ export class SimpleNotification extends Component {
                     plan: this.props.notification.action.plan,
                     team: this.props.getTeam(this.props.notification.action.team),
                     notification: this.props.notification,
-                    creationMode: true
+                    creationMode: true,
+                    currentLanguage: this.props.currentLanguage
                   })}>
                   <i className="fas fa-check" />
                 </a>

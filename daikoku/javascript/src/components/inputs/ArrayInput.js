@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { Help } from './Help';
+import { t } from '../../locales';
 
 const valueToSelectOption = (value) => {
   if (value === null) {
@@ -133,7 +134,7 @@ export class ArrayInput extends Component {
                   onInputChange={this.handleInputChange}
                   onKeyDown={this.handleKeyDown}
                   options={this.props.options}
-                  placeholder="Type something and press enter..."
+                  placeholder={t('array.input.placeholder', this.props.currentLanguage)}
                   value={this.state.value}
                   className="input-select reactSelect"
                   classNamePrefix="reactSelect"
@@ -150,7 +151,7 @@ export class ArrayInput extends Component {
                   onInputChange={this.handleInputChange}
                   onKeyDown={this.handleKeyDown}
                   options={this.state.values}
-                  placeholder="Type something and press enter..."
+                  placeholder={t('array.input.placeholder', this.props.currentLanguages)}
                   value={this.state.value}
                 />
               )}

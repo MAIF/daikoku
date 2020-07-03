@@ -73,7 +73,7 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.apikeyCustomization.dynamicPrefix',
       'otoroshiTarget.apikeyCustomization.tags',
       'otoroshiTarget.apikeyCustomization.metadata',
-      'otoroshiTarget.apikeyCustomization.askedMetadata',
+      'otoroshiTarget.apikeyCustomization.customMetadata',
       'otoroshiTarget.apikeyCustomization.restrictions.enabled',
       'otoroshiTarget.apikeyCustomization.restrictions.allowLast',
       'otoroshiTarget.apikeyCustomization.restrictions.allowed',
@@ -158,6 +158,7 @@ export class TeamApiPricing extends Component {
           help: t(
             'dynamic.prefix.help',
             this.props.currentLanguage,
+            false,
             'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
           ),
         },
@@ -165,14 +166,26 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.apikeyCustomization.metadata': {
         type: 'object',
         props: {
-          label: t('Automatic Apikey metadata', this.props.currentLanguage),
+          label: t('Automatic API key metadata', this.props.currentLanguage),
+          help: t(
+            'automatic.metadata.help',
+            this.props.currentLanguage,
+            false,
+            'Automatic metadata will be calculated on subscription acceptation'
+          ),
         },
       },
-      'otoroshiTarget.apikeyCustomization.askedMetadata': {
-        type: AskedMetadataInput,
+      'otoroshiTarget.apikeyCustomization.customMetadata': {
+        type: CustomMetadataInput,
         props: {
-          label: t('Asked Apikey metadata', this.props.currentLanguage),
-          toastr: () => toastr.info(t('sub.process.update.to.manual', this.props.currentLanguage))
+          label: t('Custom Apikey metadata', this.props.currentLanguage),
+          toastr: () => toastr.info(t('sub.process.update.to.manual', this.props.currentLanguage)),
+          help: t(
+            'custom.metadata.help',
+            this.props.currentLanguage,
+            false,
+            'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
+          )
         },
       },
       'otoroshiTarget.apikeyCustomization.tags': {
@@ -238,7 +251,7 @@ export class TeamApiPricing extends Component {
       },
       subscriptionProcess: {
         type: 'select',
-        disabled: !!_found.otoroshiTarget.apikeyCustomization.askedMetadata.length,
+        disabled: !!_found.otoroshiTarget.apikeyCustomization.customMetadata.length,
         props: {
           label: t('Subscription', this.props.currentLanguage),
           possibleValues: [
@@ -380,7 +393,7 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
       </React.Suspense>
     );
   };
@@ -495,7 +508,7 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
       </React.Suspense>
     );
   };
@@ -635,7 +648,7 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
       </React.Suspense>
     );
   };
@@ -816,7 +829,7 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
       </React.Suspense>
     );
   };
@@ -1005,7 +1018,7 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
       </React.Suspense>
     );
   };
@@ -1169,7 +1182,7 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
       </React.Suspense>
     );
   };
@@ -1403,7 +1416,7 @@ export class TeamApiPricing extends Component {
   }
 }
 
-const AskedMetadataInput = props => {
+const CustomMetadataInput = props => {
   const changeValue = (possibleValues, key) => {
     const oldValue = Option(props.value.find(x => x.key === key)).getOrElse({ '': '' });
     const newValues = [...props.value.filter(x => x.key !== key), { ...oldValue, key, possibleValues }];

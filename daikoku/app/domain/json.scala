@@ -836,11 +836,11 @@ object json {
       "code" -> o.code,
     )
   }
-  val AskedMetadataFormat = new Format[AskedMetadata] {
-    override def reads(json: JsValue): JsResult[AskedMetadata] =
+  val CustomMetadataFormat = new Format[CustomMetadata] {
+    override def reads(json: JsValue): JsResult[CustomMetadata] =
       Try {
         JsSuccess(
-          AskedMetadata(
+          CustomMetadata(
             key = (json \ "key").as[String],
             possibleValues = (json \ "possibleValues")
               .asOpt[Seq[String]]
@@ -851,7 +851,7 @@ object json {
       } recover {
         case e => JsError(e.getMessage)
       } get
-    override def writes(o: AskedMetadata): JsValue = Json.obj(
+    override def writes(o: CustomMetadata): JsValue = Json.obj(
       "key" -> o.key,
       "possibleValues" -> JsArray(o.possibleValues.map(JsString.apply).toSeq)
     )
@@ -870,7 +870,7 @@ object json {
               .asOpt[Boolean]
               .getOrElse(false),
             metadata = (json \ "metadata").asOpt[JsObject].getOrElse(Json.obj()),
-            askedMetadata = (json \ "askedMetadata").as(SeqAskedMetadataFormat),
+            customMetadata = (json \ "customMetadata").as(SeqCustomMetadataFormat),
             tags = (json \ "tags").asOpt[JsArray].getOrElse(Json.arr()),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
           )
@@ -887,7 +887,7 @@ object json {
       "constrainedServicesOnly" -> o.constrainedServicesOnly,
       "readOnly" -> o.readOnly,
       "metadata" -> o.metadata,
-      "askedMetadata" -> JsArray(o.askedMetadata.map(AskedMetadataFormat.writes)),
+      "customMetadata" -> JsArray(o.customMetadata.map(CustomMetadataFormat.writes)),
       "tags" -> o.tags,
       "restrictions" -> o.restrictions.asJson
     )
@@ -2445,6 +2445,6 @@ object json {
     Format(Reads.seq(ApiSubscriptionFormat), Writes.seq(ApiSubscriptionFormat))
   val SeqTranslationFormat =
     Format(Reads.seq(TranslationFormat), Writes.seq(TranslationFormat))
-  val SeqAskedMetadataFormat =
-    Format(Reads.seq(AskedMetadataFormat), Writes.seq(AskedMetadataFormat))
+  val SeqCustomMetadataFormat =
+    Format(Reads.seq(CustomMetadataFormat), Writes.seq(CustomMetadataFormat))
 }

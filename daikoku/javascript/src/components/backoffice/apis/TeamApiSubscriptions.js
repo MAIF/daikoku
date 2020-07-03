@@ -115,7 +115,8 @@ const TeamApiSubscriptionsComponent = props => {
     api: sub.api,
     plan: sub.plan,
     team: teams.find(t => t._id === sub.team),
-    subscription: sub
+    subscription: sub,
+    currentLanguage: props.currentLanguage
   });
 
   return (
