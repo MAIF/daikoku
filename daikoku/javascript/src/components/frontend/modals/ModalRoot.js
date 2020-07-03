@@ -13,6 +13,7 @@ export const MODAL_TYPES = {
   saveOrCancelModal: Modals.SaverOrCancelModal,
   teamCreation: Modals.TeamCreationModal,
   contactModal: Modals.ContactModal,
+  subscriptionMetadataModal: Modals.SubscriptionMetadataModal,
 };
 
 const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {

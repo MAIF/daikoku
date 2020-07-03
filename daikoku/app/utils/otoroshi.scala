@@ -7,7 +7,6 @@ import controllers.AppError.OtoroshiError
 import fr.maif.otoroshi.daikoku.domain.json.ActualOtoroshiApiKeyFormat
 import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, OtoroshiSettings}
 import fr.maif.otoroshi.daikoku.env.Env
-import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.api.mvc._
@@ -166,7 +165,7 @@ class OtoroshiClient(env: Env) {
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     validateGroupNameFromId(groupId) {
       client(s"/api/groups/$groupId/apikeys").post(key.asJson).map { resp =>
-        if (resp.status == 200) {
+        if (resp.status == 201 || resp.status == 200) {
           resp.json.validate(ActualOtoroshiApiKeyFormat) match {
             case JsSuccess(k, _) => Right(k)
             case e: JsError      => Left(OtoroshiError(JsError.toJson(e)))

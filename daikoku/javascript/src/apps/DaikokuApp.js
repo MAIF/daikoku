@@ -43,6 +43,7 @@ import {
   TeamIncome,
   TeamEdit,
   AssetsList,
+  TeamApiSubscriptions,
 } from '../components/backoffice';
 
 import {
@@ -364,6 +365,13 @@ class DaikokuAppComponent extends Component {
               path={['/teams/:teamId/settings/apikeys/:apiId', '/:teamId/settings/apikeys/:apiId']}
               render={smartRedirect((p) => (
                 <TeamApiKeysForApi match={p.match} history={p.history} location={p.location} />
+              ))}
+            />
+            <TeamBackOfficeRoute
+              exact
+              path={['/:teamId/settings/subscriptions/apis/:apiId']}
+              render={smartRedirect((p) => (
+                <TeamApiSubscriptions match={p.match} history={p.history} location={p.location} />
               ))}
             />
             <TeamBackOfficeRoute

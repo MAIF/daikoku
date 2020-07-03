@@ -125,6 +125,7 @@ export default class Form extends Component {
               value={this.getValue(name, [])}
               {...props}
               onChange={(v) => this.changeValue(name, v)}
+              currentLanguage={this.props.currentLanguage}
             />
           );
         } else if (type === 'object') {

@@ -344,12 +344,16 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                                 Map.empty[String, String]))
                                             .getOrElse(
                                               Map.empty[String, String])
+                                        val subCustomMeta: Map[String, String] =
+                                          subscription.customMetadata
+                                            .flatMap(_.asOpt[Map[String, String]])
+                                            .getOrElse(Map.empty[String, String])
                                         val allDaikokuMeta
                                           : Map[String, String] = (apk.metadata
                                           .filterNot {
                                             case (key, _) =>
-                                              planMeta.contains(key)
-                                          } ++ planMeta) filter {
+                                              planMeta.contains(key) || subCustomMeta.contains(key)
+                                          } ++ planMeta ++ subCustomMeta) filter {
                                           case (key, _) =>
                                             key.startsWith(prefix)
                                         }

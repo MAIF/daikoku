@@ -2,6 +2,9 @@ import React, { Component } from 'react';
 import moment from 'moment';
 
 import { t, Translation } from '../../../locales';
+import { formatPlanType, Option } from '../../utils';
+
+
 
 export class SimpleNotification extends Component {
   typeFormatter = (type) => {
@@ -81,29 +84,60 @@ export class SimpleNotification extends Component {
     }
   };
 
+  //todo: faire popup une modal pour créer ou ajouter des metadata
   actionFormatter({ status, date }, notificationType) {
     switch (status) {
       case 'Pending':
-        return (
-          <div>
-            <a
-              className="btn btn-outline-success btn-sm mr-1"
-              href="#"
-              title={t('Accept')}
-              onClick={() => this.props.accept()}>
-              <i className="fas fa-check" />
-            </a>
-            {notificationType === 'AcceptOrReject' && (
-              <a
-                className="btn btn-outline-danger btn-sm"
-                href="#"
-                title={t('Reject')}
-                onClick={() => this.props.reject()}>
-                <i className="fas fa-times" />
-              </a>
-            )}
-          </div>
-        );
+        switch (this.props.notification.action.type) {
+          case 'ApiSubscription':
+            return (
+              <div>
+                <a
+                  className="btn btn-outline-success btn-sm mr-1"
+                  href="#"
+                  title={t('Accept')}
+                  onClick={() => this.props.openSubMetadataModal({
+                    save: this.props.accept,
+                    api: this.props.notification.action.api,
+                    plan: this.props.notification.action.plan,
+                    team: this.props.getTeam(this.props.notification.action.team),
+                    notification: this.props.notification,
+                    creationMode: true,
+                    currentLanguage: this.props.currentLanguage
+                  })}>
+                  <i className="fas fa-check" />
+                </a>
+                <a
+                  className="btn btn-outline-danger btn-sm"
+                  href="#"
+                  title={t('Reject')}
+                  onClick={() => this.props.reject()}>
+                  <i className="fas fa-times" />
+                </a>
+              </div>
+            );
+          default:
+            return (
+              <div>
+                <a
+                  className="btn btn-outline-success btn-sm mr-1"
+                  href="#"
+                  title={t('Accept')}
+                  onClick={() => this.props.accept()}>
+                  <i className="fas fa-check" />
+                </a>
+                {notificationType === 'AcceptOrReject' && (
+                  <a
+                    className="btn btn-outline-danger btn-sm"
+                    href="#"
+                    title={t('Reject')}
+                    onClick={() => this.props.reject()}>
+                    <i className="fas fa-times" />
+                  </a>
+                )}
+              </div>
+            );
+        }
       case 'Accepted':
         return (
           <a
@@ -157,7 +191,7 @@ export class SimpleNotification extends Component {
     let infos = {};
     if (['ApiAccess', 'ApiSubscription'].includes(notification.action.type)) {
       const api = getApi(notification.action.api);
-      const plan = api.possibleUsagePlans.find((p) => p._id === notification.action.plan);
+      const plan = api.possibleUsagePlans.find(p => p._id === notification.action.plan);
 
       infos = { api, plan };
     }
@@ -166,6 +200,8 @@ export class SimpleNotification extends Component {
     if (this.props.fade) {
       style = { opacity: 0.3 };
     }
+
+    moment.locale(this.props.currentLanguage);
     return (
       <div style={style}>
         <div className="alert section" role="alert">
@@ -197,7 +233,7 @@ export class SimpleNotification extends Component {
                     <Translation
                       i18nkey="notif.api.subscription"
                       language={this.props.currentLanguage}
-                      replacements={[infos.api.name, infos.api.plan]}>
+                      replacements={[infos.api.name, Option(infos.plan.customName).getOrElse(formatPlanType(infos.plan))]}>
                       Request subscription to {infos.api.name} for plan {infos.plan.type}
                     </Translation>
                   </div>

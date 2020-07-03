@@ -23,7 +23,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                      user: User,
                      api: Api,
                      planId: String,
-                     team: Team): Future[Either[AppError, JsObject]] = {
+                     team: Team,
+                     customMetadata: Option[JsObject]): Future[Either[AppError, JsObject]] = {
     val defaultPlanOpt =
       api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
     val askedUsagePlan = api.possibleUsagePlans.find(p => p.id.value == planId)
@@ -46,7 +47,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
             .getOrElse(plan.typeName)
             .urlPathSegmentSanitized
         }-${team.humanReadableId}-${System.currentTimeMillis()}"
-      val integrationToken =  IdGenerator.token(64)
+      val integrationToken = IdGenerator.token(64)
       val apiSubscription = ApiSubscription(
         id = ApiSubscriptionId(BSONObjectID.generate().stringify),
         tenant = tenant.id,
@@ -58,7 +59,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
         by = user.id,
         customName = None,
         rotation = plan.autoRotation.map(rotation => ApiSubscriptionRotation(enabled = rotation)),
-        integrationToken = integrationToken
+        integrationToken = integrationToken,
+        customMetadata = customMetadata
       )
       val ctx = Map(
         "user.id" -> user.id.value,
@@ -109,6 +111,9 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
           "daikoku_integration_token" -> integrationToken
         ) ++ plan.otoroshiTarget
           .map(_.processedMetadata(ctx))
+          .getOrElse(Map.empty[String, String])
+          ++ customMetadata
+          .flatMap(_.asOpt[Map[String, String]])
           .getOrElse(Map.empty[String, String]),
         rotation = plan.autoRotation.map(_ => ApiKeyRotation())
       )
@@ -198,7 +203,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
               api.copy(subscriptions = api.subscriptions :+ apiSubscription.id))
         )
         _ <- EitherT.liftF(
-          env.dataStore.tenantRepo.save(tenant.copy(adminSubscriptions = tenant.adminSubscriptions :+ apiSubscription.id ))
+          env.dataStore.tenantRepo.save(tenant.copy(adminSubscriptions = tenant.adminSubscriptions :+ apiSubscription.id))
         )
       } yield {
         Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson)
@@ -221,6 +226,60 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
               .getServiceGroup(groupId.value)
               .flatMap(group => createKey(api, plan, team, group))
         }
+    }
+  }
+
+  def updateSubscription(tenant: Tenant,
+                         subscription: ApiSubscription,
+                         api: Api): Future[Either[AppError, JsObject]] = {
+    import cats.implicits._
+
+    api.possibleUsagePlans.find(plan => plan.id == subscription.plan) match {
+      case None => FastFuture.successful(Left(PlanNotFound))
+      case Some(plan) => plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+        tenant.otoroshiSettings.find(_.id == id)
+      } match {
+        case None => Future.successful(Left(OtoroshiSettingsNotFound))
+        case Some(otoSettings) =>
+          implicit val otoroshiSettings: OtoroshiSettings = otoSettings
+          plan.otoroshiTarget.map(_.serviceGroup) match {
+            case None => Future.successful(Left(ApiNotLinked))
+            case Some(groupId) =>
+              otoroshiClient
+                .getServiceGroup(groupId.value)
+                .flatMap(group => {
+                  val groupId = (group \ "id").as[String]
+
+                  val r: EitherT[Future, AppError, JsObject] = for {
+                    apiKey <- EitherT(
+                      otoroshiClient.getApikey(groupId,
+                        subscription.apiKey.clientId))
+                      .leftMap(err => OtoroshiError(JsError.toJson(err)))
+                    _ <- EitherT.liftF(
+                      otoroshiClient.updateApiKey(groupId,
+                        apiKey.copy(
+                          authorizedGroup = groupId,
+                          throttlingQuota = apiKey.throttlingQuota,
+                          dailyQuota = apiKey.dailyQuota,
+                          monthlyQuota = apiKey.monthlyQuota,
+                          metadata = apiKey.metadata ++ subscription.customMetadata
+                            .flatMap(_.asOpt[Map[String, String]])
+                            .getOrElse(Map.empty[String, String])
+                        )))
+                    _ <- EitherT.liftF(
+                      env.dataStore.apiSubscriptionRepo
+                        .forTenant(tenant.id)
+                        .save(subscription)
+                    )
+                  } yield {
+                    Json.obj("done" -> true,
+                      "subscription" -> subscription.asSafeJson)
+                  }
+
+                  r.value
+                })
+          }
+      }
     }
   }
 
@@ -276,8 +335,6 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
   def archiveApiKey(tenant: Tenant,
                     subscription: ApiSubscription,
                     plan: UsagePlan,
-                    api: Api,
-                    team: Team,
                     enabled: Boolean): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
@@ -384,7 +441,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
     if (api.visibility == ApiVisibility.AdminOnly) {
       Future.successful(Left(ApiKeyRotationConflict))
     } else if (plan.autoRotation.getOrElse(false)) {
-     Future.successful(Left(ApiKeyRotationConflict))
+      Future.successful(Left(ApiKeyRotationConflict))
     } else if (rotationEvery <= gracePeriod) {
       FastFuture.successful(Left(ApiKeyRotationError(Json.obj("error" -> "Rotation period can't ben less or equal to grace period"))))
     } else if (rotationEvery <= 0) {

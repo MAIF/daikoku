@@ -7,7 +7,7 @@ import Select from 'react-select';
 
 export const TeamApiTranslation = ({ value, onChange }) => {
   const getTranslatedValue = (key, lng, orElse = value[key]) => {
-    console.debug({ t: value.translation });
+    
     return Option(value.translation)
       .map((t) => t[lng])
       .map((t) => t[`${value._id}.${key}`])

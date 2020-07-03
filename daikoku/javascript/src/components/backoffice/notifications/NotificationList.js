@@ -7,7 +7,7 @@ import * as Services from '../../../services';
 import { UserBackOffice } from '../';
 import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
-import { updateNotications } from '../../../core';
+import { updateNotications, openSubMetadataModal } from '../../../core';
 import { Translation } from '../../../locales';
 
 class NotificationListComponent extends Component {
@@ -45,14 +45,14 @@ class NotificationListComponent extends Component {
     );
   }
 
-  acceptNotification(notificationId) {
+  acceptNotification(notificationId, values) {
     this.setState({
       notifications: this.state.notifications.map((n) => {
         n.fade = n._id === notificationId;
         return n;
       }),
     });
-    Services.acceptNotificationOfTeam(notificationId)
+    Services.acceptNotificationOfTeam(notificationId, values)
       .then(() => Services.myNotifications(0, this.state.notifications.length))
       .then(({ notifications, count }) =>
         this.setState(
@@ -226,11 +226,12 @@ class NotificationListComponent extends Component {
                             key={notification._id}
                             notification={notification}
                             fade={notification.fade}
-                            accept={() => this.acceptNotification(notification._id)}
+                            accept={(values) => this.acceptNotification(notification._id, values)}
                             reject={() => this.rejectNotification(notification._id)}
                             getTeam={(id) => this.state.teams.find((team) => team._id === id)}
                             getApi={(id) => this.state.apis.find((a) => a._id === id)}
                             currentLanguage={this.props.currentLanguage}
+                            openSubMetadataModal={this.props.openSubMetadataModal}
                           />
                         ))}
                     </div>
@@ -261,6 +262,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   updateNotifications: (count) => updateNotications(count),
+  openSubMetadataModal: (modalProps) => openSubMetadataModal(modalProps),
 };
 
 export const NotificationList = connect(

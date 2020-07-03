@@ -167,13 +167,15 @@ export function myUnreadNotificationsCount() {
   );
 }
 
-export function acceptNotificationOfTeam(NotificationId) {
+export function acceptNotificationOfTeam(NotificationId, values = {}) {
   return fetch(`/api/notifications/${NotificationId}/accept`, {
     method: 'PUT',
     credentials: 'include',
     headers: {
       Accept: 'application/json',
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify(values)
   }).then((r) => r.json());
 }
 
@@ -1050,6 +1052,28 @@ export function apiGlobalConsumption(apiId, teamId, from, to) {
   }).then((r) => r.json());
 }
 
+export function apiSubscriptions(apiId, teamId) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/subscriptions`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function archiveSubscriptionByOwner(ownerId, subscriptionId, enabled) {
+  return fetch(`/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
 export function getSubscriptionInformations(subscription, teamId) {
   return fetch(`/api/teams/${teamId}/subscription/${subscription}/informations`, {
     method: 'GET',
@@ -1270,6 +1294,19 @@ export function updateSubscriptionCustomName(team, subscription, customName) {
     },
     body: JSON.stringify({ customName }),
   }).then((r) => r.json());
+}
+
+export function updateSubscription(team, subscription) {
+  return fetch(`/api/teams/${team._id}/subscriptions/${subscription._id}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(subscription),
+  })
+  .then((r) => r.json());
 }
 
 export function storeThumbnail(id, formData) {

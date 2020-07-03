@@ -76,7 +76,7 @@ DELETE  /api/me                                         fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
 ### NoDocs ###
-GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(apiId, teamId)
+GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId)
 ### NoDocs ###
 GET     /api/apis/:apiId/pages/:id/content              fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPageRemoteContent(apiId, id)
 ### NoDocs ###
@@ -87,6 +87,12 @@ POST    /api/teams/:teamId/subscriptions/:id/name       fr.maif.otoroshi.daikoku
 DELETE  /api/teams/:teamId/subscriptions/:id/_delete    fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiSubscription(teamId, id)
 ### NoDocs ###
 PUT		  /api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
+
+
+### NoDocs ###
+PUT		  /api/teams/:teamId/subscriptions/:id            fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiSubscription(teamId, id)
+### NoDocs ###
+PUT		  /api/teams/:teamId/subscriptions/:id/_archiveByOwner   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscriptionByApiOwner(teamId, id, enabled: Option[Boolean] ?= Some(false))
 ### NoDocs ###
 DELETE  /api/teams/:teamId/subscriptions/_clean			    fr.maif.otoroshi.daikoku.ctrls.ApiController.cleanArchivedSubscriptions(teamId)
 ### NoDocs ###
@@ -127,7 +133,9 @@ GET     /api/teams/:teamId/consumptions                          fr.maif.otorosh
 ### NoDocs ###
 GET     /api/teams/:teamId/billings                              fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.billings(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 ### NoDocs ###
-GET     /api/teams/:teamId/income                               fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+GET     /api/teams/:teamId/income                                fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
+### NoDocs ###
+GET     /api/teams/:teamId/apis/:apiId/subscriptions             fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(teamId, apiId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)

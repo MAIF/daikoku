@@ -836,6 +836,27 @@ object json {
       "code" -> o.code,
     )
   }
+  val CustomMetadataFormat = new Format[CustomMetadata] {
+    override def reads(json: JsValue): JsResult[CustomMetadata] =
+      Try {
+        JsSuccess(
+          CustomMetadata(
+            key = (json \ "key").as[String],
+            possibleValues = (json \ "possibleValues")
+              .asOpt[Seq[String]]
+              .map(_.toSet)
+              .getOrElse(Set.empty)
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: CustomMetadata): JsValue = Json.obj(
+      "key" -> o.key,
+      "possibleValues" -> JsArray(o.possibleValues.map(JsString.apply).toSeq)
+    )
+
+  }
   val ApikeyCustomizationFormat = new Format[ApikeyCustomization] {
     override def reads(json: JsValue): JsResult[ApikeyCustomization] =
       Try {
@@ -849,6 +870,7 @@ object json {
               .asOpt[Boolean]
               .getOrElse(false),
             metadata = (json \ "metadata").asOpt[JsObject].getOrElse(Json.obj()),
+            customMetadata = (json \ "customMetadata").as(SeqCustomMetadataFormat),
             tags = (json \ "tags").asOpt[JsArray].getOrElse(Json.arr()),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
           )
@@ -865,6 +887,7 @@ object json {
       "constrainedServicesOnly" -> o.constrainedServicesOnly,
       "readOnly" -> o.readOnly,
       "metadata" -> o.metadata,
+      "customMetadata" -> JsArray(o.customMetadata.map(CustomMetadataFormat.writes)),
       "tags" -> o.tags,
       "restrictions" -> o.restrictions.asJson
     )
@@ -1557,7 +1580,8 @@ object json {
             customName = (json \ "customName").asOpt[String],
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
-            integrationToken = (json \ "integrationToken").as[String]
+            integrationToken = (json \ "integrationToken").as[String],
+            customMetadata = (json \ "customMetadata").asOpt[JsObject]
           )
         )
       } recover {
@@ -1582,7 +1606,8 @@ object json {
         .map(ApiSubscriptionyRotationFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue],
-      "integrationToken" -> o.integrationToken
+      "integrationToken" -> o.integrationToken,
+      "customMetadata" -> o.customMetadata
     )
   }
 
@@ -2420,4 +2445,6 @@ object json {
     Format(Reads.seq(ApiSubscriptionFormat), Writes.seq(ApiSubscriptionFormat))
   val SeqTranslationFormat =
     Format(Reads.seq(TranslationFormat), Writes.seq(TranslationFormat))
+  val SeqCustomMetadataFormat =
+    Format(Reads.seq(CustomMetadataFormat), Writes.seq(CustomMetadataFormat))
 }

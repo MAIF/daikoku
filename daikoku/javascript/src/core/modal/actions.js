@@ -40,6 +40,14 @@ export const openSaveOrCancelModal = (modalProps) => (dispatch) => {
   });
 };
 
+export const openSubMetadataModal = (modalProps) => (dispatch) => {
+  return dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'subscriptionMetadataModal',
+  });
+};
+
 export const openContactModal = (
   name = undefined,
   email = undefined,

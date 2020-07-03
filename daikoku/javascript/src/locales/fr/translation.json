@@ -110,7 +110,7 @@
   "notif.api.subscription": "Souscription à %s pour le plan %s",
   "notif.api.access": "demande d'accès à %s",
   "notif.membership.team": "Demande d'adhésion a votre équipe",
-  "notif.apikey.deletion": "Voter cléd'api avec l'identifiant client %s pour api %s a été supprimée",
+  "notif.apikey.deletion": "Votre clé d'api avec l'identifiant client %s pour api %s a été supprimée",
   "api.access.request": "Vous aller envoyer une demande d'accès à l'api %s. Pour quelle équipe voulez-vous envoyer cette demande ?",
   "FreeWithoutQuotas": "Gratuit sans quotas",
   "FreeWithQuotas": "Gratuit avec quotas",
@@ -672,5 +672,25 @@
   "out": "sortant",
   "ms. average duration": "ms. durée moyenne",
   "ms. average overhead": "ms. overhead moyen",
-  "Duplicate plan": "Dupliquer le plpan"
+  "Duplicate plan": "Dupliquer le plan",
+  "Api subscriptions": "Souscriptions à l'API",
+  "Result": {
+    "s": "Resultat",
+    "p": "Resultats"
+  },
+  "Show.results": "Afficher %s",
+  "Update metadata": "Mettre à jour les métadonnées",
+  "sub.process.update.to.manual": "En raison de votre choix, le processus de souscription a été automatiquement réglé sur Manuel",
+  "Automatic API key metadata": "Métadonnées automatiques",
+  "automatic.metadata.help": "Les métadonnées automatiques seront calculées à l'acceptation de la souscription",
+  "Custom Apikey metadata": "Métadonnées personnalisées",
+  "custom.metadata.help": "Les Métadonnées personnalisées devront être renseignées lors de la validation de la souscription. Le process de souscription sera basculé sur manuel. (rien = champ libre)",
+  "array.input.placeholder": "Saisir quelque chose et appuyer sur entrée/tab",
+  "Subscription metadata": "Métadonnées de souscription",
+  "Subscription metadata title": "Métadonnées de souscription - %s",
+  "subscription.metadata.modal.creation.description": "%s a demandé une clé d'api pour le plan %s",
+  "subscription.metadata.modal.update.description": "Équipe: %s - Plan: %s",
+  "mandatory.metadata.label": "Métadonnées obligatoires (%s)",
+  "Additional metadata": "Métadonnées additionelles",
+  "create.metadata.option.label": "Créer l'option %s"
 }
