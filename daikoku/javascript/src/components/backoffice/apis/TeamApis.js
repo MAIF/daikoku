@@ -8,7 +8,7 @@ import * as Services from '../../../services';
 import { Can, read, manage, stat, api as Api, administrator } from '../../utils';
 import { TeamBackOffice } from '../..';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
-import { t } from '../../../locales';
+import { t, Translation } from '../../../locales';
 
 class TeamApisComponent extends Component {
   columns = [
@@ -193,7 +193,9 @@ class TeamApisComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                Team apis
+                <Translation i18nkey="Team apis" language={this.props.currentLanguage}>
+                  Team APIs
+                </Translation>
                 {this.props.currentTeam.type !== 'Admin' && (
                   <Can I={manage} a={Api} team={this.props.currentTeam}>
                     <a

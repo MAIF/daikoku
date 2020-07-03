@@ -692,5 +692,6 @@
   "subscription.metadata.modal.update.description": "Équipe: %s - Plan: %s",
   "mandatory.metadata.label": "Métadonnées obligatoires (%s)",
   "Additional metadata": "Métadonnées additionelles",
-  "create.metadata.option.label": "Créer l'option %s"
+  "create.metadata.option.label": "Créer l'option %s",
+  "Team apis": "APIs d'équipe"
 }

@@ -692,6 +692,6 @@
     "subscription.metadata.modal.update.description": "Team: %s - Plan: %s",
     "mandatory.metadata.label": "Mandatory metadata (%s)",
     "Additional metadata": "Additional metadata",
-    "create.metadata.option.label": "Create option %s"
-    
+    "create.metadata.option.label": "Create option %s",
+    "Team apis": "Team APIs"
 }
