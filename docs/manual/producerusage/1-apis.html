@@ -242,7 +242,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li>You can force the integration process :</li>
   <li>ApiKey: subscribers have access to an apikey to call api</li>
   <li>Automatic: Subscribers have just access to a token, which link to a real apikey, accessible by admin api. It&rsquo;s a perfect solution to integrate automatically your apikey in your prod environment if rotation is activated.</li>
-</ul>
+</ul><div class="callout note "><div class="callout-title">API key Metadata</div>
+<p>As Otoroshi does, it&rsquo;s possible to add metadata on API keys. <strong>Automatic metadata</strong> will be calculated and added after subscription validation. <strong>Asked metadata</strong> will switch the plan subscription mode to manual then, on susbcription acceptation, a team admin will have to add the metadata manually. </p></div>
 <h3><a href="#swagger" name="swagger" class="anchor"><span class="anchor-link"></span></a>Swagger</h3>
 <p>The swagger can be provided as a url or just some content paste on the UI.</p>
 <h3><a href="#testing" name="testing" class="anchor"><span class="anchor-link"></span></a>Testing</h3>
