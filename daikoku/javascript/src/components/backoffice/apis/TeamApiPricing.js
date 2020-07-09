@@ -2,7 +2,7 @@ import React, { Component, useState, useEffect } from 'react';
 import _ from 'lodash';
 import { currencies } from '../../../services/currencies';
 import faker from 'faker';
-import Select from 'react-select';
+import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import classNames from 'classnames';
 
@@ -37,6 +37,87 @@ const SUBSCRIPTION_PLAN_TYPES = {
 const PUBLIC = 'Public';
 const PRIVATE = 'Private';
 
+
+const OtoroshiServicesAndGroupSelector = props => {
+  const [loading, setLoading] = useState(true);
+  const [groups, setGroups] = useState(undefined);
+  const [services, setServices] = useState(undefined);
+  const [disabled, setDisabled] = useState(true);
+  const [value, setValue] = useState(undefined);
+
+  useEffect(() => {
+    Promise.all([
+      Services.getOtoroshiGroups(props.tenant._id, props._found.otoroshiTarget.otoroshiSettings),
+      Services.getOtoroshiServices(props.tenant._id, props._found.otoroshiTarget.otoroshiSettings)
+    ]).then(([groups, services]) => {
+      setGroups(groups.map(g => ({ label: g.name, value: g.id, type: 'group' })));
+      setServices(services.map(g => ({ label: g.name, value: g.id, type: 'service' })));
+    });
+  }, []);
+
+  useEffect(() => {
+    if (groups && services) {
+      setLoading(false);
+    }
+  }, [services, groups]);
+
+  useEffect(() => {
+    if (!!groups && !!services && !!props._found.otoroshiTarget.authorizedEntities) {
+      const value = [...props._found.otoroshiTarget.authorizedEntities.groups.map(authGroup => groups.find(g => g.value === authGroup)),
+      ...props._found.otoroshiTarget.authorizedEntities.services.map(authService => services.find(g => g.value === authService))];
+      setValue(value);
+    }
+  }, [props._found, groups, services]);
+
+  useEffect(() => {
+    const otoroshiTarget = props._found.otoroshiTarget;
+    setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
+  }, [props._found.otoroshiTarget, loading]);
+
+  const onChange = v => {
+
+    if (!v) {
+      props.onChange(null);
+      setValue(undefined);
+    } else {
+      const value = v.reduce((acc, entitie) => {
+        switch (entitie.type) {
+          case 'group':
+            return { ...acc, groups: [...acc.groups, groups.find(g => g.value === entitie.value).value] };
+          case 'service':
+            return { ...acc, services: [...acc.services, services.find(s => s.value === entitie.value).value] };
+        }
+      }, { groups: [], services: [] });
+      setValue(value);
+      props.onChange(value);
+    }
+  };
+
+  return (
+    <div className="form-group row">
+      <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
+        <Help text={props.help} label={props.label} />
+      </label>
+      <div className="col-sm-10">
+        <Select
+          id={`input-${props.label}`}
+          isMulti
+          name={`${props.label}-search`}
+          isLoading={loading}
+          isDisabled={disabled && !loading}
+          placeholder={props.placeholder}
+          components={(props) => <components.Group {...props} />}
+          options={[{ label: 'Service groups', options: groups }, { label: 'Services', options: services }]}
+          value={value}
+          onChange={onChange}
+          classNamePrefix="reactSelect"
+          className="reactSelect"
+        />
+      </div>
+    </div>
+  );
+};
+
 export class TeamApiPricing extends Component {
   state = {
     selected: this.props.value.possibleUsagePlans[0],
@@ -54,19 +135,19 @@ export class TeamApiPricing extends Component {
       !(
         !!_found.otoroshiTarget &&
         !!_found.otoroshiTarget.otoroshiSettings &&
-        !!_found.otoroshiTarget.serviceGroup
+        !!_found.otoroshiTarget.authorizedEntities
       )
     ) {
       return [
         `>>> ${t('Otoroshi', this.props.currentLanguage)}`,
         'otoroshiTarget.otoroshiSettings',
-        'otoroshiTarget.serviceGroup',
+        'otoroshiTarget.authorizedEntities',
       ];
     }
     return [
       `>>> ${t('Otoroshi', this.props.currentLanguage)}`,
       'otoroshiTarget.otoroshiSettings',
-      'otoroshiTarget.serviceGroup',
+      'otoroshiTarget.authorizedEntities',
       'otoroshiTarget.apikeyCustomization.clientIdOnly',
       'otoroshiTarget.apikeyCustomization.readOnly',
       'otoroshiTarget.apikeyCustomization.constrainedServicesOnly',
@@ -83,37 +164,7 @@ export class TeamApiPricing extends Component {
   };
 
   otoroshiForm = (_found) => {
-    if (
-      !(
-        !!_found.otoroshiTarget &&
-        !!_found.otoroshiTarget.otoroshiSettings &&
-        !!_found.otoroshiTarget.serviceGroup
-      )
-    ) {
-      return {
-        'otoroshiTarget.otoroshiSettings': {
-          type: 'select',
-          props: {
-            label: t('Otoroshi instance', this.props.currentLanguage),
-            possibleValues: this.state.otoroshiSettings.map((s) => ({
-              label: s.url,
-              value: s._id,
-            })),
-          },
-        },
-        'otoroshiTarget.serviceGroup': {
-          type: 'select',
-          props: {
-            label: t('Service group', this.props.currentLanguage),
-            valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${_found.otoroshiTarget.otoroshiSettings}/groups`,
-            transformer: (s) => ({ label: s.name, value: s.id }),
-            fetchCondition: () => !!_found.otoroshiTarget.otoroshiSettings,
-          },
-        },
-      };
-    }
-    const found = _found;
-    return {
+    const firstPartOfOtoroshiForm = {
       'otoroshiTarget.otoroshiSettings': {
         type: 'select',
         props: {
@@ -124,15 +175,29 @@ export class TeamApiPricing extends Component {
           })),
         },
       },
-      'otoroshiTarget.serviceGroup': {
-        type: 'select',
+      'otoroshiTarget.authorizedEntities': {
+        type: OtoroshiServicesAndGroupSelector,
         props: {
-          label: t('Service group', this.props.currentLanguage),
-          valuesFrom: `/api/teams/${this.props.teamId}/tenant/otoroshis/${found.otoroshiTarget.otoroshiSettings}/groups`,
-          transformer: (s) => ({ label: s.name, value: s.id }),
-          fetchCondition: () => !!found.otoroshiTarget.otoroshiSettings,
+          label: t('Authorized entities', this.props.currentLanguage),
+          _found,
+          placeholder: t('Authorized.entities.placeholder', this.props.currentLanguage),
+          tenant: this.props.tenant,
+          help: t('authorized.entities.help', this.props.currentLanguage),
+
         },
       },
+    };
+    if (
+      !(
+        !!_found.otoroshiTarget &&
+        !!_found.otoroshiTarget.otoroshiSettings &&
+        !!_found.otoroshiTarget.authorizedEntities
+      )
+    ) {
+      return firstPartOfOtoroshiForm;
+    }
+    return {
+      ...firstPartOfOtoroshiForm,
       'otoroshiTarget.apikeyCustomization.clientIdOnly': {
         type: 'bool',
         props: {

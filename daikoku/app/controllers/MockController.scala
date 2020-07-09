@@ -1382,10 +1382,25 @@ class MockController(DaikokuAction: DaikokuAction,
       "description" -> "A nice group (with prefix)"
     )
   )
+  val services: Seq[JsObject] = Seq(
+    Json.obj(
+      "id" -> "s_12345",
+      "name" -> "nice-service",
+      "description" -> "A nice servcie"
+    ),
+    Json.obj(
+      "id" -> "s_12346",
+      "name" -> "daikoku_nice-service",
+      "description" -> "A nice service (with prefix)"
+    )
+  )
   var apikeys: Seq[JsObject] = Seq()
 
   def fakeOtoroshiGroups() = Action {
     Ok(JsArray(groups))
+  }
+  def fakeOtoroshiServices() = Action {
+    Ok(JsArray(services))
   }
 
   def fakeOtoroshiGroup(groupId: String) = Action {

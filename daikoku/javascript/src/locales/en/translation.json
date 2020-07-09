@@ -900,5 +900,8 @@
     "smtp_client.port": "The SMTP server port to connect to",
     "send_grid.api_key": "Api Key",
     "send_grid.from_email": "Sender email",
-    "audittrail.export.label": "Export audit trail"
+    "audittrail.export.label": "Export audit trail",
+    "Authorized entities": "Authorized entities",
+    "Authorized.entities.placeholder": "Select Otoroshi service groups and/or services",
+    "authorized.entities.help": "Select otoroshi service groups and/or services on which the key is authorized"
 }

@@ -463,6 +463,8 @@ GET     /fakeotoroshi/api/groups/:groupId/apikeys                    fr.maif.oto
 GET     /fakeotoroshi/api/groups/:groupId                            fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroup(groupId)
 ### NoDocs ###
 GET     /fakeotoroshi/api/groups                                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroups()
+### NoDocs ###
+GET     /fakeotoroshi/api/services                                   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiServices()
 
 GET     /admin-api/swagger.json                                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
 
