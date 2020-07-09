@@ -251,7 +251,7 @@ export class TeamApiPricing extends Component {
       },
       subscriptionProcess: {
         type: 'select',
-        disabled: !!_found.otoroshiTarget.apikeyCustomization.customMetadata.length,
+        disabled: _found.otoroshiTarget.apikeyCustomization.customMetadata && !!_found.otoroshiTarget.apikeyCustomization.customMetadata.length,
         props: {
           label: t('Subscription', this.props.currentLanguage),
           possibleValues: [
