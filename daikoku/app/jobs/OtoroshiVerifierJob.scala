@@ -133,6 +133,34 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
   }
 
   private def verifyIfOtoroshiGroupsStillExists(): Future[Unit] = {
+    def checkEntities(entities: AuthorizedEntities, otoroshi: OtoroshiSettings, api: Api): Unit = {
+      entities.groups.map(group => client
+        .getServiceGroup(group.value)(otoroshi)
+        .andThen {
+          case Failure(_) =>
+            sendErrorNotification(
+              NotificationAction.OtoroshiSyncApiError(
+                api,
+                s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore"),
+              api.team,
+              api.tenant)
+        }) ++
+        entities.services.map(service => client
+          .getServices()(otoroshi)
+          .andThen {
+            case Failure(_) =>
+              sendErrorNotification(
+                NotificationAction.OtoroshiSyncApiError(
+                  api,
+                  s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"),
+                api.team,
+                api.tenant)
+          }
+        )
+    }
+
+
+
     env.dataStore.apiRepo.forAllTenant().findAllNotDeleted().map { apis =>
       apis.map { api =>
         env.dataStore.tenantRepo.findByIdNotDeleted(api.tenant).map {
@@ -158,17 +186,11 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                         api.team,
                         api.tenant)
                     case Some(otoroshi) =>
-                      client
-                        .getServiceGroup(target.serviceGroup.value)(otoroshi)
-                        .andThen {
-                          case Failure(_) =>
-                            sendErrorNotification(
-                              NotificationAction.OtoroshiSyncApiError(
-                                api,
-                                s"Unable to fetch service group from otoroshi. Maybe it doesn't exists anymore"),
-                              api.team,
-                              api.tenant)
-                        }
+                      target.authorizedEntities match {
+                        case None => ()
+                        case Some(authorizedEntities) if authorizedEntities.isEmpty => ()
+                        case Some(authorizedEntities) => checkEntities(authorizedEntities, otoroshi, api)
+                      }
                   }
               }
             }
@@ -229,7 +251,6 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                               case Some(settings) =>
                                 client
                                   .getApikey(
-                                    target.serviceGroup.value,
                                     subscription.apiKey.clientId)(settings)
                                   .andThen {
                                     case Failure(e) =>
@@ -292,8 +313,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                           "tenant.id" -> tenant.id.value,
                                           "tenant.name" -> tenant.name,
                                           "client.id" -> apk.clientId,
-                                          "client.name" -> apk.clientName,
-                                          "group.id" -> target.serviceGroup.value
+                                          "client.name" -> apk.clientName
                                         ) ++ team.metadata.map(t =>
                                           ("team.metadata." + t._1, t._2)) ++ user.metadata
                                           .map(t =>
@@ -472,9 +492,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                         }
 
                                         client
-                                          .updateApiKey(
-                                            target.serviceGroup.value,
-                                            newApk)(settings)
+                                          .updateApiKey(newApk)(settings)
                                           .andThen {
                                             case Success(_) =>
                                               logger.info(
@@ -554,7 +572,6 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                     case Some(settings) =>
                                       client
                                         .getApikey(
-                                          target.serviceGroup.value,
                                           subscription.apiKey.clientId)(
                                           settings)
                                         .andThen {

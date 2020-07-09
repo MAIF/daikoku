@@ -94,7 +94,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         clientId = clientId,
         clientSecret = clientSecret,
         clientName = clientName,
-        authorizedGroup = groupId,
+        authorizedEntities = AuthorizedEntities(groups = Set(OtoroshiServiceGroupId(groupId))), //FIXME: [#119]
         throttlingQuota = 1000,
         dailyQuota = RemainingQuotas.MaxValue,
         monthlyQuota = RemainingQuotas.MaxValue,
@@ -224,9 +224,13 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        plan.otoroshiTarget match {
+        plan.otoroshiTarget.map(_.authorizedEntities) match {
           case None => Future.successful(Left(ApiNotLinked))
-          case Some(target) =>
+          case Some(authorizedEntities) if authorizedEntities.isEmpty => Future.successful(Left(ApiNotLinked))
+          case Some(authorizedEntities) => ??? //FIXME: [#119]
+
+            /*
+
             val customMetadataKeys = target.apikeyCustomization.customMetadata.map(_.key)
             val isCustomMetadataProvided =
               customMetadataKeys.intersect(customMetadata.map(_.keys.toSeq).getOrElse(Seq.empty)) == customMetadataKeys &&
@@ -239,6 +243,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
             } else {
               FastFuture.successful(Left(ApiKeyCustomMetadataNotPrivided))
             }
+             */
         }
     }
   }
@@ -256,10 +261,13 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         case None => Future.successful(Left(OtoroshiSettingsNotFound))
         case Some(otoSettings) =>
           implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-          plan.otoroshiTarget.map(_.serviceGroup) match {
+          plan.otoroshiTarget.map(_.authorizedEntities) match {
             case None => Future.successful(Left(ApiNotLinked))
-            case Some(groupId) =>
-              otoroshiClient
+            case Some(authorizedEntities) if authorizedEntities.isEmpty => Future.successful(Left(ApiNotLinked))
+            case Some(authorizedEntities) => ??? //FIXME: [#119]
+
+            /*
+            otoroshiClient
                 .getServiceGroup(groupId.value)
                 .flatMap(group => {
                   val groupId = (group \ "id").as[String]
@@ -293,6 +301,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
 
                   r.value
                 })
+             */
           }
       }
     }
@@ -337,12 +346,10 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        plan.otoroshiTarget.map(_.serviceGroup) match {
+        plan.otoroshiTarget.map(_.authorizedEntities) match {
           case None => Future.successful(Left(ApiNotLinked))
-          case Some(groupId) =>
-            otoroshiClient
-              .getServiceGroup(groupId.value)
-              .flatMap(group => deleteKey(api, team, group))
+          case Some(authorizedEntities) if authorizedEntities.isEmpty => Future.successful(Left(ApiNotLinked))
+          case Some(authorizedEntities) => ??? //FIXME: [#119]
         }
     }
   }
@@ -359,9 +366,12 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        plan.otoroshiTarget.map(_.serviceGroup) match {
+        plan.otoroshiTarget.map(_.authorizedEntities) match {
           case None => Future.successful(Left(ApiNotLinked))
-          case Some(groupId) =>
+          case Some(authorizedEntities) if authorizedEntities.isEmpty => FastFuture.successful(Left(ApiNotLinked))
+          case Some(authorizedEntities) => ??? //FIXME: [#119]
+
+            /*
             otoroshiClient
               .getServiceGroup(groupId.value)
               .flatMap(group => {
@@ -387,6 +397,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
 
                 r.value
               })
+             */
         }
     }
   }
@@ -412,9 +423,11 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        plan.otoroshiTarget.map(_.serviceGroup) match {
+        plan.otoroshiTarget.map(_.authorizedEntities) match {
           case None => Future.successful(Left(ApiNotLinked))
-          case Some(groupId) =>
+          case Some(authorizedEntities) if authorizedEntities.isEmpty => Future.successful(Left(ApiNotLinked))
+          case Some(authorizedEntities) => ??? //FIXME: [#119]
+            /*
             otoroshiClient
               .getServiceGroup(groupId.value)
               .flatMap(group => {
@@ -478,6 +491,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                 }
                 r.value
               })
+             */
         }
     }
   }
@@ -508,9 +522,11 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         case None => Future.successful(Left(OtoroshiSettingsNotFound))
         case Some(otoSettings) =>
           implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-          plan.otoroshiTarget.map(_.serviceGroup) match {
+          plan.otoroshiTarget.map(_.authorizedEntities) match {
             case None => Future.successful(Left(ApiNotLinked))
-            case Some(groupId) =>
+            case Some(authorizedEntities) if authorizedEntities.isEmpty => Future.successful(Left(ApiNotLinked))
+            case Some(authorizedEntities) => ??? //FIXME: [#119]
+              /*
               otoroshiClient
                 .getServiceGroup(groupId.value)
                 .flatMap(group => {
@@ -543,6 +559,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                   }
                   r.value
                 })
+               */
           }
       }
     }

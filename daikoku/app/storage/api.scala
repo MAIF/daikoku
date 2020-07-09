@@ -227,6 +227,8 @@ trait TenantRepo extends Repo[Tenant, TenantId]
 
 trait UserRepo extends Repo[User, UserId]
 
+trait EvolutionRepo extends Repo[Evolution, MongoId]
+
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
   def myTeams(tenant: Tenant, user: User)(
       implicit env: Env,
@@ -318,6 +320,8 @@ trait DataStore {
   def accountCreationRepo: AccountCreationRepo
 
   def messageRepo: MessageRepo
+
+  def evolutionRepo: EvolutionRepo
 
   def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,

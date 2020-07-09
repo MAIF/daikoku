@@ -9,15 +9,8 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.{
-  ActualOtoroshiApiKey,
-  ApiKeyRestrictions,
-  TestingAuth
-}
-import fr.maif.otoroshi.daikoku.domain.json.{
-  OtoroshiSettingsFormat,
-  OtoroshiSettingsIdFormat
-}
+import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, ApiKeyRestrictions, AuthorizedEntities, OtoroshiServiceGroupId, TestingAuth}
+import fr.maif.otoroshi.daikoku.domain.json.OtoroshiSettingsFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import org.apache.commons.codec.binary.Base64
@@ -26,12 +19,7 @@ import play.api.http.HttpEntity
 import play.api.libs.json.JsError.toJson
 import play.api.libs.json.{JsArray, JsError, JsObject, JsSuccess, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{
-  AbstractController,
-  BodyParser,
-  ControllerComponents,
-  Request
-}
+import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request}
 
 import scala.util.Try
 
@@ -330,10 +318,10 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                           clientId = clientId,
                           clientSecret = clientSecret,
                           clientName = clientName,
-                          authorizedGroup = serviceGroup,
-                          throttlingQuota = maxPerSecondOpt.getOrElse(10),
-                          dailyQuota = maxPerDayOpt.getOrElse(10000),
-                          monthlyQuota = maxPerMonthOpt.getOrElse(300000),
+                          authorizedEntities = AuthorizedEntities(groups = Set(OtoroshiServiceGroupId(serviceGroup))),
+                          throttlingQuota = 10,
+                          dailyQuota = 10000,
+                          monthlyQuota = 300000,
                           constrainedServicesOnly = true,
                           tags = Seq(tag),
                           restrictions = ApiKeyRestrictions(),

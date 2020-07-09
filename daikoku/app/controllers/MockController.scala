@@ -312,8 +312,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -331,8 +332,10 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))) //FIXME: [#119]
+          )
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -352,8 +355,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -374,8 +378,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -393,8 +398,9 @@ class MockController(DaikokuAction: DaikokuAction,
         customName = None,
         customDescription = None,
         otoroshiTarget = Some(
-          OtoroshiTarget(OtoroshiSettingsId("default"),
-                         OtoroshiServiceGroupId("12345"))
+          OtoroshiTarget(
+            otoroshiSettings = OtoroshiSettingsId("default"),
+            authorizedEntities = Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
         ),
         allowMultipleKeys = Some(false),
         authorizedTeams = authorizedTeams,
@@ -1403,7 +1409,7 @@ class MockController(DaikokuAction: DaikokuAction,
         clientId = clientId,
         clientSecret = "",
         clientName = "",
-        authorizedGroup = groupId,
+        authorizedEntities = AuthorizedEntities(groups = Set(OtoroshiServiceGroupId(groupId))),
         throttlingQuota = 10,
         dailyQuota = 10000,
         monthlyQuota = 300000,

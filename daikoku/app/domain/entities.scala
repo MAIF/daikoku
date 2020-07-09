@@ -420,7 +420,7 @@ object OtoroshiTarget {
 
 case class OtoroshiTarget(
     otoroshiSettings: OtoroshiSettingsId,
-    serviceGroup: OtoroshiServiceGroupId,
+    authorizedEntities: Option[AuthorizedEntities],
     apikeyCustomization: ApikeyCustomization = ApikeyCustomization()
 ) extends CanJson[OtoroshiTarget] {
   def asJson: JsValue = json.OtoroshiTargetFormat.writes(this)
@@ -1439,11 +1439,17 @@ object RemainingQuotas {
   val MaxValue: Long = 10000000L
 }
 
+case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty, groups: Set[OtoroshiServiceGroupId] = Set.empty)
+  extends CanJson[AuthorizedEntities] {
+  def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
+  def isEmpty: Boolean = services.isEmpty && groups.isEmpty
+}
+
 case class ActualOtoroshiApiKey(
     clientId: String = IdGenerator.token(16),
     clientSecret: String = IdGenerator.token(64),
     clientName: String,
-    authorizedGroup: String,
+    authorizedEntities: AuthorizedEntities,
     enabled: Boolean = true,
     allowClientIdOnly: Boolean = false,
     readOnly: Boolean = false,
@@ -1684,6 +1690,14 @@ case class Translation(id: DatastoreId,
       key -> value,
     )
   }
+}
+
+case class Evolution(id: MongoId,
+                     version: String,
+                     applied: Boolean,
+                     date: DateTime = new DateTime())
+extends CanJson[Evolution] {
+  override def asJson: JsValue = json.EvolutionFormat.writes(this)
 }
 
 sealed trait MessageType {
