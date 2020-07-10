@@ -152,6 +152,7 @@ class TeamApiComponent extends Component {
           constrainedServicesOnly: false,
           tags: [],
           metadata: {},
+          customMetadata:[],
           restrictions: {
             enabled: false,
             allowLast: true,
@@ -215,6 +216,7 @@ class TeamApiComponent extends Component {
           constrainedServicesOnly: false,
           tags: [],
           metadata: {},
+          customMetadta: [],
           restrictions: {
             enabled: false,
             allowLast: true,
