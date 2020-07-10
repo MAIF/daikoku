@@ -172,20 +172,18 @@ class OtoroshiClient(env: Env) {
     }
   }
 
-  def createApiKey(groupId: String, key: ActualOtoroshiApiKey)(
-      implicit otoroshiSettings: OtoroshiSettings
+  def createApiKey(key: ActualOtoroshiApiKey)(
+    implicit otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
-    validateGroupNameFromId(groupId) {
-      client(s"/api/groups/$groupId/apikeys").post(key.asJson).map { resp =>
-        if (resp.status == 201 || resp.status == 200) {
-          resp.json.validate(ActualOtoroshiApiKeyFormat) match {
-            case JsSuccess(k, _) => Right(k)
-            case e: JsError      => Left(OtoroshiError(JsError.toJson(e)))
-          }
-        } else {
-          Left(OtoroshiError(Json.obj(
-            "error" -> s"Error while creating otoroshi apikey: ${resp.status} - ${resp.body}")))
+    client(s"/api/apikeys").post(key.asJson).map { resp =>
+      if (resp.status == 201 || resp.status == 200) {
+        resp.json.validate(ActualOtoroshiApiKeyFormat) match {
+          case JsSuccess(k, _) => Right(k)
+          case e: JsError => Left(OtoroshiError(JsError.toJson(e)))
         }
+      } else {
+        Left(OtoroshiError(Json.obj(
+          "error" -> s"Error while creating otoroshi apikey: ${resp.status} - ${resp.body}")))
       }
     }
   }

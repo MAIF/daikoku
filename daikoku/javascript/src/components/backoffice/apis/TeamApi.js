@@ -149,7 +149,7 @@ class TeamApiComponent extends Component {
     const def = {
       otoroshiTarget: {
         otoroshiSettings: null,
-        serviceGroup: null,
+        authorizedEntities: {groups: [], services: []},
         apikeyCustomization: {
           clientIdOnly: false,
           constrainedServicesOnly: false,
@@ -186,7 +186,7 @@ class TeamApiComponent extends Component {
     const def = {
       otoroshiTarget: {
         otoroshiSettings: null,
-        serviceGroup: null,
+        authorizedEntities: { groups: [], services: [] },
         apikeyCustomization: {
           clientIdOnly: false,
           constrainedServicesOnly: false,

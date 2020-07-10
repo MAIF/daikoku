@@ -269,6 +269,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         ctx) { team =>
         val otoroshiSettingsOpt =
           (ctx.request.body \ "otoroshiSettings").asOpt[String]
+        //fIXME:#119
         val serviceGroupOpt = (ctx.request.body \ "serviceGroup").asOpt[String]
         val clientNameOpt = (ctx.request.body \ "clientName").asOpt[String]
         val tagOpt = (ctx.request.body \ "tag").asOpt[String]
@@ -343,7 +344,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                           readOnly = readOnlyOpt.getOrElse(false)
                         )
                         otoroshiClient
-                          .createApiKey(serviceGroup, apiKey)(settings)
+                          .createApiKey(apiKey)(settings)
                           .map {
                             case Left(err) => AppError.render(err)
                             case Right(apiKey) =>
