@@ -88,7 +88,8 @@ const OtoroshiServicesAndGroupSelector = props => {
             return { ...acc, services: [...acc.services, services.find(s => s.value === entitie.value).value] };
         }
       }, { groups: [], services: [] });
-      setValue(value);
+      setValue([...value.groups.map(authGroup => groups.find(g => g.value === authGroup)),
+      ...value.services.map(authService => services.find(g => g.value === authService))]);
       props.onChange(value);
     }
   };
@@ -98,7 +99,7 @@ const OtoroshiServicesAndGroupSelector = props => {
       <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
         <Help text={props.help} label={props.label} />
       </label>
-      <div className="col-sm-10">
+      <div className="col-sm-10 d-flex flex-column">
         <Select
           id={`input-${props.label}`}
           isMulti
@@ -113,6 +114,24 @@ const OtoroshiServicesAndGroupSelector = props => {
           classNamePrefix="reactSelect"
           className="reactSelect"
         />
+        <div className="col-12 d-flex flex-row">
+          <div className="d-flex flex-column flex-grow-1">
+            <strong className="font-italic">
+              <Translation i18nkey="Authorized Groups" language={props.currentLanguage}>
+                Authorized Groups
+              </Translation>
+            </strong>
+            {!!value && value.filter(x => x.type === 'group').map((g, idx) => <span className="font-italic" key={idx}>{g.label}</span>)}
+          </div>
+          <div className="d-flex flex-column flex-grow-1">
+            <strong className="font-italic">
+              <Translation i18nkey="Authorized Groups" language={props.currentLanguage}>
+                Authorized Groups
+              </Translation>
+            </strong>
+            {!!value && value.filter(x => x.type === 'service').map((g, idx) => <span className="font-italic" key={idx}>{g.label}</span>)}
+          </div>
+        </div>
       </div>
     </div>
   );
