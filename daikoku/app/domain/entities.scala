@@ -1444,6 +1444,7 @@ case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty, grou
   def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
   def asOtoroshiJson: JsValue = json.AuthorizedEntitiesOtoroshiFormat.writes(this)
   def isEmpty: Boolean = services.isEmpty && groups.isEmpty
+  def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean = services.forall(s => a.services.contains(s)) && groups.forall(g => a.groups.contains(g))
 }
 
 case class ActualOtoroshiApiKey(
