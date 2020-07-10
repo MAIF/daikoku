@@ -9,6 +9,7 @@ const apikeyCustomization = {
   constrainedServicesOnly: false,
   readOnly: false,
   metadata: {},
+  customMetadata: [],
   tags: [],
   restrictions: {
     enabled: false,
@@ -211,7 +212,7 @@ export const theMachine = Machine({
                     ...pp,
                     otoroshiTarget: {
                       otoroshiSettings: context.otoroshi,
-                      serviceGroup: api.groupId,
+                      authorizedEntities: {groups: [], services: [api.id]},
                       apikeyCustomization,
                     },
                   })),

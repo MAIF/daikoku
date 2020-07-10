@@ -627,6 +627,20 @@ const ApiKey = (props) => {
     }
   }, [newTeam]);
 
+  const getAuthorizedEntitiesFromOtoroshiApiKey = (autorizedOn) => {
+    const regex = /(group|service)_(.*)/;
+    return autorizedOn.reduce(({ groups, services }, entitie) => {
+      // eslint-disable-next-line no-unused-vars
+      const [_value, type, id] = entitie.match(regex);
+      switch (type) {
+        case 'group':
+          return { groups: [...groups, id], services };
+        case 'service':
+          return { groups, services: [...services, id] };
+      }
+    }, { groups: [], services: [] });
+  };
+
   //add new plan effect
   useEffect(() => {
     if (newPlan) {
@@ -637,7 +651,7 @@ const ApiKey = (props) => {
         otoroshiTarget: {
           ...newPossiblePlan.otoroshiTarget,
           otoroshiSettings: props.otoroshi,
-          serviceGroup: props.apikey.authorizedGroup,
+          authorizedEntities: getAuthorizedEntitiesFromOtoroshiApiKey(props.apikey.authorizedEntities)
         },
       };
       plans.push(plan);
