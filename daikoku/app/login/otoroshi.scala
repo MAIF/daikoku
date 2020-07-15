@@ -196,7 +196,6 @@ object OtoroshiIdentityFilter {
                         val updatedUser = u.copy(
                           name = name,
                           email = email,
-                          picture = picture,
                           tenants = u.tenants + tenant.id,
                           origins = u.origins + AuthProvider.Otoroshi,
                           isDaikokuAdmin = isDaikokuAdmin

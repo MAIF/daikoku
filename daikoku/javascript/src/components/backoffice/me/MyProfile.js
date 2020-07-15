@@ -366,7 +366,7 @@ class MyProfileComponent extends Component {
                   marginBottom: 20,
                 }}>
                 <img
-                  src={`${this.state.user.picture}?${Date.now()}`}
+                  src={`${this.state.user.picture}${this.state.user.picture.startsWith('http') ? '' : `?${Date.now()}`}`}
                   style={{
                     width: 200,
                     borderRadius: '50%',
