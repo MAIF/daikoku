@@ -35,6 +35,5 @@ export const newPossibleUsagePlan = (customName) => ({
         notFound: [],
       },
     },
-    
   },
 });
