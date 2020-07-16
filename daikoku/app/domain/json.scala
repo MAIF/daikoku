@@ -48,7 +48,7 @@ object json {
       Try {
         JsSuccess(
           BillingDuration(
-            value = (json \ "value").as[Long],
+            value = (json \ "value").as(LongFormat),
             unit = (json \ "unit").as(BillingTimeUnitFormat)
           )
         )
@@ -59,6 +59,19 @@ object json {
       "value" -> o.value,
       "unit" -> o.unit.asJson,
     )
+  }
+
+  val LongFormat = new Format[Long] {
+    override def reads(json: JsValue): JsResult[Long] =
+      Try {
+        val long: Long =
+          ((json \ "$long").asOpt[Long]).getOrElse(json.as[Long])
+        JsSuccess(long)
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: Long): JsValue = JsNumber(o)
   }
 
   val DateTimeFormat = new Format[DateTime] {
@@ -512,9 +525,9 @@ object json {
         JsSuccess(
           FreeWithQuotas(
             id = (json \ "_id").as(UsagePlanIdFormat),
-            maxPerSecond = (json \ "maxPerSecond").as[Long],
-            maxPerDay = (json \ "maxPerDay").as[Long],
-            maxPerMonth = (json \ "maxPerMonth").as[Long],
+            maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
+            maxPerDay = (json \ "maxPerDay").as(LongFormat),
+            maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
             currency = (json \ "currency").as(CurrencyFormat),
             customName = (json \ "customName").asOpt[String],
             customDescription = (json \ "customDescription").asOpt[String],
@@ -581,9 +594,9 @@ object json {
         JsSuccess(
           QuotasWithLimits(
             id = (json \ "_id").as(UsagePlanIdFormat),
-            maxPerSecond = (json \ "maxPerSecond").as[Long],
-            maxPerDay = (json \ "maxPerDay").as[Long],
-            maxPerMonth = (json \ "maxPerMonth").as[Long],
+            maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
+            maxPerDay = (json \ "maxPerDay").as(LongFormat),
+            maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
             costPerMonth = (json \ "costPerMonth").as[BigDecimal],
             trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
             billingDuration =
@@ -657,9 +670,9 @@ object json {
         JsSuccess(
           QuotasWithoutLimits(
             id = (json \ "_id").as(UsagePlanIdFormat),
-            maxPerSecond = (json \ "maxPerSecond").as[Long],
-            maxPerDay = (json \ "maxPerDay").as[Long],
-            maxPerMonth = (json \ "maxPerMonth").as[Long],
+            maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
+            maxPerDay = (json \ "maxPerDay").as(LongFormat),
+            maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
             costPerMonth = (json \ "costPerMonth").as[BigDecimal],
             costPerAdditionalRequest =
               (json \ "costPerAdditionalRequest").as[BigDecimal],
@@ -1523,8 +1536,8 @@ object json {
           JsSuccess(
             ApiKeyRotation(
               enabled = (json \ "enabled").as[Boolean],
-              rotationEvery = (json \ "rotationEvery").as[Long],
-              gracePeriod = (json \ "gracePeriod").as[Long],
+              rotationEvery = (json \ "rotationEvery").as(LongFormat),
+              gracePeriod = (json \ "gracePeriod").as(LongFormat),
               nextSecret = (json \ "nextSecret").asOpt[String]
             )
           )
@@ -1546,8 +1559,8 @@ object json {
         JsSuccess(
           ApiSubscriptionRotation(
             enabled = (json \ "enabled").as[Boolean],
-            rotationEvery = (json \ "rotationEvery").as[Long],
-            gracePeriod = (json \ "gracePeriod").as[Long],
+            rotationEvery = (json \ "rotationEvery").as(LongFormat),
+            gracePeriod = (json \ "gracePeriod").as(LongFormat),
             pendingRotation = (json \ "pendingRotation").as[Boolean]
           )
         )
@@ -2131,9 +2144,9 @@ object json {
         Try {
           JsSuccess(
             ApiKeyGlobalConsumptionInformations(
-              hits = (json \ "hits").as[Long],
-              dataIn = (json \ "dataIn").as[Long],
-              dataOut = (json \ "dataOut").as[Long],
+              hits = (json \ "hits").as(LongFormat),
+              dataIn = (json \ "dataIn").as(LongFormat),
+              dataOut = (json \ "dataOut").as(LongFormat),
               avgDuration = (json \ "avgDuration").asOpt[Double],
               avgOverhead = (json \ "avgOverhead").asOpt[Double],
             )
@@ -2163,16 +2176,16 @@ object json {
       Try {
         JsSuccess(
           ApiKeyQuotas(
-            authorizedCallsPerSec = (json \ "authorizedCallsPerSec").as[Long],
-            currentCallsPerSec = (json \ "currentCallsPerSec").as[Long],
-            remainingCallsPerSec = (json \ "remainingCallsPerSec").as[Long],
-            authorizedCallsPerDay = (json \ "authorizedCallsPerDay").as[Long],
-            currentCallsPerDay = (json \ "currentCallsPerDay").as[Long],
-            remainingCallsPerDay = (json \ "remainingCallsPerDay").as[Long],
+            authorizedCallsPerSec = (json \ "authorizedCallsPerSec").as(LongFormat),
+            currentCallsPerSec = (json \ "currentCallsPerSec").as(LongFormat),
+            remainingCallsPerSec = (json \ "remainingCallsPerSec").as(LongFormat),
+            authorizedCallsPerDay = (json \ "authorizedCallsPerDay").as(LongFormat),
+            currentCallsPerDay = (json \ "currentCallsPerDay").as(LongFormat),
+            remainingCallsPerDay = (json \ "remainingCallsPerDay").as(LongFormat),
             authorizedCallsPerMonth =
-              (json \ "authorizedCallsPerMonth").as[Long],
-            currentCallsPerMonth = (json \ "currentCallsPerMonth").as[Long],
-            remainingCallsPerMonth = (json \ "remainingCallsPerMonth").as[Long],
+              (json \ "authorizedCallsPerMonth").as(LongFormat),
+            currentCallsPerMonth = (json \ "currentCallsPerMonth").as(LongFormat),
+            remainingCallsPerMonth = (json \ "remainingCallsPerMonth").as(LongFormat),
           ))
       } recover {
         case e => JsError(e.getMessage)
@@ -2196,7 +2209,7 @@ object json {
       Try {
         JsSuccess(
           ApiKeyBilling(
-            hits = (json \ "hits").as[Long],
+            hits = (json \ "hits").as(LongFormat),
             total = (json \ "total").as[BigDecimal]
           )
         )
