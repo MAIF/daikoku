@@ -175,7 +175,7 @@ export function acceptNotificationOfTeam(NotificationId, values = {}) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(values)
+    body: JSON.stringify(values),
   }).then((r) => r.json());
 }
 
@@ -1064,14 +1064,17 @@ export function apiSubscriptions(apiId, teamId) {
 }
 
 export function archiveSubscriptionByOwner(ownerId, subscriptionId, enabled) {
-  return fetch(`/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
+  return fetch(
+    `/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`,
+    {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    }
+  ).then((r) => r.json());
 }
 
 export function getSubscriptionInformations(subscription, teamId) {
@@ -1305,8 +1308,7 @@ export function updateSubscription(team, subscription) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(subscription),
-  })
-  .then((r) => r.json());
+  }).then((r) => r.json());
 }
 
 export function storeThumbnail(id, formData) {

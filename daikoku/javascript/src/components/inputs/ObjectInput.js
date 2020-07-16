@@ -67,7 +67,9 @@ export class ObjectInput extends Component {
                 <Help text={this.props.help} label={this.props.label} />
               </label>
             )}
-            {idx > 0 && this.props.label && <label className="col-xs-12 col-sm-2 col-form-label">&nbsp;</label>}
+            {idx > 0 && this.props.label && (
+              <label className="col-xs-12 col-sm-2 col-form-label">&nbsp;</label>
+            )}
             <div className={`col-sm-${this.props.label ? '10' : '12'}`}>
               <div className="input-group">
                 <input

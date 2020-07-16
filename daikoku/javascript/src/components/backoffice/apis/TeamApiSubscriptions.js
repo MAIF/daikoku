@@ -2,13 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 
 import { TeamBackOffice } from '../TeamBackOffice';
-import { Can, manage, api as API, BeautifulTitle, formatPlanType, Option, formatDate } from '../../utils';
+import {
+  Can,
+  manage,
+  api as API,
+  BeautifulTitle,
+  formatPlanType,
+  Option,
+  formatDate,
+} from '../../utils';
 import * as Services from '../../../services';
 import { Translation, t } from '../../../locales';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
 import { openSubMetadataModal } from '../../../core';
 
-const TeamApiSubscriptionsComponent = props => {
+const TeamApiSubscriptionsComponent = (props) => {
   const [api, setApi] = useState(undefined);
   const [teams, setTeams] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -18,13 +26,12 @@ const TeamApiSubscriptionsComponent = props => {
   useEffect(() => {
     Promise.all([
       Services.teamApi(props.currentTeam._id, props.match.params.apiId),
-      Services.teams()
-    ])
-      .then(([api, teams]) => {
-        setApi(api);
-        setTeams(teams);
-        setLoading(false);
-      });
+      Services.teams(),
+    ]).then(([api, teams]) => {
+      setApi(api);
+      setTeams(teams);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -34,18 +41,27 @@ const TeamApiSubscriptionsComponent = props => {
           id: 'name',
           Header: t('Name', props.currentLanguage),
           style: { textAlign: 'left' },
-          accessor: (sub) => sub.team === props.currentTeam._id ? sub.customName || sub.apiKey.clientName : sub.apiKey.clientName,
+          accessor: (sub) =>
+            sub.team === props.currentTeam._id
+              ? sub.customName || sub.apiKey.clientName
+              : sub.apiKey.clientName,
           sortType: 'basic',
         },
         {
           Header: t('Plan', props.currentLanguage),
           style: { textAlign: 'left' },
-          accessor: (sub) => Option(api.possibleUsagePlans.find(pp => pp._id === sub.plan)).map(p => (p.customName || formatPlanType(p, props.currentLanguage))).getOrNull(),
+          accessor: (sub) =>
+            Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
+              .map((p) => p.customName || formatPlanType(p, props.currentLanguage))
+              .getOrNull(),
         },
         {
           Header: t('Team', props.currentLanguage),
           style: { textAlign: 'left' },
-          accessor: (sub) => Option(teams.find(t => t._id === sub.team)).map(t => t.name).getOrElse('unknown team')
+          accessor: (sub) =>
+            Option(teams.find((t) => t._id === sub.team))
+              .map((t) => t.name)
+              .getOrElse('unknown team'),
         },
         {
           Header: t('Enabled', props.currentLanguage),
@@ -63,8 +79,13 @@ const TeamApiSubscriptionsComponent = props => {
             const sub = original;
             return (
               <SwitchButton
-                onSwitch={() => Services.archiveSubscriptionByOwner(props.currentTeam._id, sub._id, !sub.enabled)
-                  .then(() => table.update())}
+                onSwitch={() =>
+                  Services.archiveSubscriptionByOwner(
+                    props.currentTeam._id,
+                    sub._id,
+                    !sub.enabled
+                  ).then(() => table.update())
+                }
                 checked={sub.enabled}
                 large
                 noText
@@ -75,7 +96,7 @@ const TeamApiSubscriptionsComponent = props => {
         {
           Header: t('Created at', props.currentLanguage),
           style: { textAlign: 'left' },
-          accessor: (sub) => formatDate(sub.createdAt, props.currentLanguage)
+          accessor: (sub) => formatDate(sub.createdAt, props.currentLanguage),
         },
         {
           Header: t('Actions', props.currentLanguage),
@@ -109,15 +130,18 @@ const TeamApiSubscriptionsComponent = props => {
     }
   }, [table]);
 
-  const updateMeta = (sub) => props.openSubMetadataModal({
-    save: customMetadata => Services.updateSubscription(props.currentTeam, { ...sub, customMetadata })
-      .then(() => table.update()),
-    api: sub.api,
-    plan: sub.plan,
-    team: teams.find(t => t._id === sub.team),
-    subscription: sub,
-    currentLanguage: props.currentLanguage
-  });
+  const updateMeta = (sub) =>
+    props.openSubMetadataModal({
+      save: (customMetadata) =>
+        Services.updateSubscription(props.currentTeam, { ...sub, customMetadata }).then(() =>
+          table.update()
+        ),
+      api: sub.api,
+      plan: sub.plan,
+      team: teams.find((t) => t._id === sub.team),
+      subscription: sub,
+      currentLanguage: props.currentLanguage,
+    });
 
   return (
     <TeamBackOffice tab="Apis" apiId={props.match.params.apiId} isLoading={loading}>
@@ -128,7 +152,8 @@ const TeamApiSubscriptionsComponent = props => {
               <h1>
                 <Translation i18nkey="Api subscriptions" language={props.currentLanguage}>
                   Api subscriptions
-                </Translation>{' '}- {api.name}
+                </Translation>{' '}
+                - {api.name}
               </h1>
             </div>
             <div className="col-12">
@@ -140,7 +165,9 @@ const TeamApiSubscriptionsComponent = props => {
                 defaultSort="name"
                 itemName="sub"
                 columns={columns}
-                fetchItems={() => Services.apiSubscriptions(props.match.params.apiId, props.currentTeam._id)}
+                fetchItems={() =>
+                  Services.apiSubscriptions(props.match.params.apiId, props.currentTeam._id)
+                }
                 showActions={false}
                 showLink={false}
                 extractKey={(item) => item._id}
@@ -162,4 +189,7 @@ const mapDispatchToProps = {
   openSubMetadataModal: (modalProps) => openSubMetadataModal(modalProps),
 };
 
-export const TeamApiSubscriptions = connect(mapStateToProps, mapDispatchToProps)(TeamApiSubscriptionsComponent);
+export const TeamApiSubscriptions = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(TeamApiSubscriptionsComponent);

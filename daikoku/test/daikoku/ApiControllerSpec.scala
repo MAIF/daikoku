@@ -1361,7 +1361,11 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer.copy(subscriptions = Seq(sub.id), users = Set(UserWithPermission(user.id, Administrator)))),
+        teams = Seq(
+          teamOwner,
+          teamConsumer.copy(subscriptions = Seq(sub.id),
+                            users =
+                              Set(UserWithPermission(user.id, Administrator)))),
         apis = Seq(
           defaultApi.copy(possibleUsagePlans = Seq(FreeWithoutQuotas(
             id = UsagePlanId("1"),
@@ -1371,7 +1375,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                OtoroshiServiceGroupId("12345"))
+                             OtoroshiServiceGroupId("12345"))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Automatic,
@@ -1380,7 +1384,6 @@ class ApiControllerSpec()
           )))),
         subscriptions = Seq(sub)
       )
-
 
       val plan =
         defaultApi.possibleUsagePlans.find(p => p.id == planSubId).get
@@ -1402,7 +1405,7 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       wireMockServer.isRunning mustBe true
       val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
-        sub.apiKey.clientId)
+                                          sub.apiKey.clientId)
 
       val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
       stubFor(
@@ -1413,7 +1416,7 @@ class ApiControllerSpec()
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
                     Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                      "name" -> otoroshiTarget.get.serviceGroup.value)
+                             "name" -> otoroshiTarget.get.serviceGroup.value)
                 )
               )
               .withStatus(200)
@@ -1434,14 +1437,17 @@ class ApiControllerSpec()
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
         method = "PUT",
-        body = Some(sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson)
+        body = Some(
+          sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson)
       )(tenant, session)
 
       resp.status mustBe 200
 
       (resp.json \ "done").as[Boolean] mustBe true
-      (resp.json \ "subscription" \ "customMetadata").as[JsObject] mustBe Json.obj("foo" -> "bar")
-      (resp.json \ "subscription" \ "apiKey").as[JsObject] mustBe Json.obj("clientName" -> otoApiKey.clientName)
+      (resp.json \ "subscription" \ "customMetadata")
+        .as[JsObject] mustBe Json.obj("foo" -> "bar")
+      (resp.json \ "subscription" \ "apiKey").as[JsObject] mustBe Json.obj(
+        "clientName" -> otoApiKey.clientName)
     }
 
     "not update a subscription to another api (even if it's own)" in {
@@ -1472,7 +1478,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                OtoroshiServiceGroupId("12345"))
+                             OtoroshiServiceGroupId("12345"))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Automatic,
@@ -1481,7 +1487,6 @@ class ApiControllerSpec()
           )))),
         subscriptions = Seq(sub)
       )
-
 
       val plan =
         defaultApi.possibleUsagePlans.find(p => p.id == planSubId).get
@@ -1503,7 +1508,7 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       wireMockServer.isRunning mustBe true
       val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
-        sub.apiKey.clientId)
+                                          sub.apiKey.clientId)
 
       val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
       stubFor(
@@ -1514,7 +1519,7 @@ class ApiControllerSpec()
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
                     Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                      "name" -> otoroshiTarget.get.serviceGroup.value)
+                             "name" -> otoroshiTarget.get.serviceGroup.value)
                 )
               )
               .withStatus(200)
@@ -1533,9 +1538,11 @@ class ApiControllerSpec()
           )
       )
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}",
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}",
         method = "PUT",
-        body = Some(sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson)
+        body = Some(
+          sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson)
       )(tenant, session)
 
       logger.debug(Json.stringify(resp.json))
@@ -1587,8 +1594,8 @@ class ApiControllerSpec()
         notifications = Seq(
           untreatedNotification.copy(
             action = ApiSubscriptionDemand(defaultApi.id,
-              UsagePlanId("3"),
-              teamConsumerId))
+                                           UsagePlanId("3"),
+                                           teamConsumerId))
         )
       )
       val session = loginWithBlocking(userAdmin, tenant)
@@ -1599,7 +1606,8 @@ class ApiControllerSpec()
       )(tenant, session)
       logger.warn(Json.stringify(resp.json))
       resp.status mustBe 400
-      (resp.json \ "error").as[String] mustBe "You need to provide custom metadata"
+      (resp.json \ "error")
+        .as[String] mustBe "You need to provide custom metadata"
     }
 
   }

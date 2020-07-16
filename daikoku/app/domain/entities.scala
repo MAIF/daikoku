@@ -299,7 +299,8 @@ case class ApiKeyRestrictions(
   def asJson: JsValue = json.ApiKeyRestrictionsFormat.writes(this)
 }
 
-case class CustomMetadata(key: String, possibleValues: Set[String] = Set.empty) extends CanJson[CustomMetadata] {
+case class CustomMetadata(key: String, possibleValues: Set[String] = Set.empty)
+    extends CanJson[CustomMetadata] {
   def asJson: JsValue = json.CustomMetadataFormat.writes(this)
 }
 case class ApikeyCustomization(

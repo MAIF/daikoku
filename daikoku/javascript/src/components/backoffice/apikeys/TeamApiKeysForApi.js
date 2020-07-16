@@ -92,7 +92,7 @@ class TeamApiKeysForApiComponent extends Component {
           'rotation.error.message',
           this.props.currentLanguage,
           false,
-          'You can\'t toggle rotation because of plan rotation is forced to enabled'
+          "You can't toggle rotation because of plan rotation is forced to enabled"
         )
       );
     }
@@ -305,7 +305,7 @@ const ApiKeyCard = ({
 
   useEffect(() => {
     if (rotationEvery < 0) {
-      setError({ ...error, rotationEvery: 'value can\'t be negative' });
+      setError({ ...error, rotationEvery: "value can't be negative" });
     } else {
       delete error.rotationEvery;
       setError(error);
@@ -314,9 +314,9 @@ const ApiKeyCard = ({
 
   useEffect(() => {
     if (gracePeriod < 0) {
-      setError({ ...error, gracePeriod: 'value can\'t be negative' });
+      setError({ ...error, gracePeriod: "value can't be negative" });
     } else if (gracePeriod > rotationEvery) {
-      setError({ ...error, gracePeriod: 'value can\'t be bigger than rotationEvery' });
+      setError({ ...error, gracePeriod: "value can't be bigger than rotationEvery" });
     } else {
       delete error.gracePeriod;
       setError(error);
@@ -409,7 +409,9 @@ const ApiKeyCard = ({
             <div>
               <div className="d-flex justify-content-between mb-3">
                 <div className="flex-grow-1 justify-content-around">
-                  <span className="badge badge-secondary">{Option(plan.customName).getOrElse(formatPlanType(plan))}</span>
+                  <span className="badge badge-secondary">
+                    {Option(plan.customName).getOrElse(formatPlanType(plan))}
+                  </span>
                 </div>
                 <div className="d-flex justify-content-around">
                   <BeautifulTitle title={t('Reset secret', currentLanguage, false, 'Reset secret')}>

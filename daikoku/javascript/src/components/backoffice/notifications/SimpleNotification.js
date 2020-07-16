@@ -4,8 +4,6 @@ import moment from 'moment';
 import { t, Translation } from '../../../locales';
 import { formatPlanType, Option } from '../../utils';
 
-
-
 export class SimpleNotification extends Component {
   typeFormatter = (type) => {
     switch (type) {
@@ -96,15 +94,17 @@ export class SimpleNotification extends Component {
                   className="btn btn-outline-success btn-sm mr-1"
                   href="#"
                   title={t('Accept')}
-                  onClick={() => this.props.openSubMetadataModal({
-                    save: this.props.accept,
-                    api: this.props.notification.action.api,
-                    plan: this.props.notification.action.plan,
-                    team: this.props.getTeam(this.props.notification.action.team),
-                    notification: this.props.notification,
-                    creationMode: true,
-                    currentLanguage: this.props.currentLanguage
-                  })}>
+                  onClick={() =>
+                    this.props.openSubMetadataModal({
+                      save: this.props.accept,
+                      api: this.props.notification.action.api,
+                      plan: this.props.notification.action.plan,
+                      team: this.props.getTeam(this.props.notification.action.team),
+                      notification: this.props.notification,
+                      creationMode: true,
+                      currentLanguage: this.props.currentLanguage,
+                    })
+                  }>
                   <i className="fas fa-check" />
                 </a>
                 <a
@@ -191,7 +191,7 @@ export class SimpleNotification extends Component {
     let infos = {};
     if (['ApiAccess', 'ApiSubscription'].includes(notification.action.type)) {
       const api = getApi(notification.action.api);
-      const plan = api.possibleUsagePlans.find(p => p._id === notification.action.plan);
+      const plan = api.possibleUsagePlans.find((p) => p._id === notification.action.plan);
 
       infos = { api, plan };
     }
@@ -233,7 +233,10 @@ export class SimpleNotification extends Component {
                     <Translation
                       i18nkey="notif.api.subscription"
                       language={this.props.currentLanguage}
-                      replacements={[infos.api.name, Option(infos.plan.customName).getOrElse(formatPlanType(infos.plan))]}>
+                      replacements={[
+                        infos.api.name,
+                        Option(infos.plan.customName).getOrElse(formatPlanType(infos.plan)),
+                      ]}>
                       Request subscription to {infos.api.name} for plan {infos.plan.type}
                     </Translation>
                   </div>

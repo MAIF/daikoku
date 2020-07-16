@@ -199,10 +199,18 @@ export const Table = ({
 
   const tablePagination = (
     <div className="d-flex flex-row align-items-baseline justify-content-end flex-grow-1">
-      <span>{rows.length} <Translation i18nkey="Result" language={currentLanguage} isPlural={rows.length > 1}>Results</Translation></span>
+      <span>
+        {rows.length}{' '}
+        <Translation i18nkey="Result" language={currentLanguage} isPlural={rows.length > 1}>
+          Results
+        </Translation>
+      </span>
       <Select
         className="reactSelect reactSelect-pagination col-3 ml-3 mr-3"
-        value={{ label: t('Show.results', currentLanguage, false, `Show ${pageSize}`, pageSize), value: pageSize }}
+        value={{
+          label: t('Show.results', currentLanguage, false, `Show ${pageSize}`, pageSize),
+          value: pageSize,
+        }}
         options={[10, 20, 50, 100].map((x) => ({ label: `Show ${x}`, value: x }))}
         onChange={(e) => setPageSize(Number(e.value))}
         classNamePrefix="reactSelect"

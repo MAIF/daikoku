@@ -185,7 +185,7 @@ export class TeamApiPricing extends Component {
             this.props.currentLanguage,
             false,
             'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
-          )
+          ),
         },
       },
       'otoroshiTarget.apikeyCustomization.tags': {
@@ -251,7 +251,9 @@ export class TeamApiPricing extends Component {
       },
       subscriptionProcess: {
         type: 'select',
-        disabled: _found.otoroshiTarget.apikeyCustomization.customMetadata && !!_found.otoroshiTarget.apikeyCustomization.customMetadata.length,
+        disabled:
+          _found.otoroshiTarget.apikeyCustomization.customMetadata &&
+          !!_found.otoroshiTarget.apikeyCustomization.customMetadata.length,
         props: {
           label: t('Subscription', this.props.currentLanguage),
           possibleValues: [
@@ -393,7 +395,13 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
+        <LazyForm
+          flow={flow}
+          schema={schema}
+          value={found}
+          onChange={this.onChange}
+          currentLanguage={this.props.currentLanguage}
+        />
       </React.Suspense>
     );
   };
@@ -508,7 +516,13 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
+        <LazyForm
+          flow={flow}
+          schema={schema}
+          value={found}
+          onChange={this.onChange}
+          currentLanguage={this.props.currentLanguage}
+        />
       </React.Suspense>
     );
   };
@@ -648,7 +662,13 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
+        <LazyForm
+          flow={flow}
+          schema={schema}
+          value={found}
+          onChange={this.onChange}
+          currentLanguage={this.props.currentLanguage}
+        />
       </React.Suspense>
     );
   };
@@ -829,7 +849,13 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
+        <LazyForm
+          flow={flow}
+          schema={schema}
+          value={found}
+          onChange={this.onChange}
+          currentLanguage={this.props.currentLanguage}
+        />
       </React.Suspense>
     );
   };
@@ -1018,7 +1044,13 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
+        <LazyForm
+          flow={flow}
+          schema={schema}
+          value={found}
+          onChange={this.onChange}
+          currentLanguage={this.props.currentLanguage}
+        />
       </React.Suspense>
     );
   };
@@ -1182,7 +1214,13 @@ export class TeamApiPricing extends Component {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm flow={flow} schema={schema} value={found} onChange={this.onChange} currentLanguage={this.props.currentLanguage}/>
+        <LazyForm
+          flow={flow}
+          schema={schema}
+          value={found}
+          onChange={this.onChange}
+          currentLanguage={this.props.currentLanguage}
+        />
       </React.Suspense>
     );
   };
@@ -1203,13 +1241,17 @@ export class TeamApiPricing extends Component {
 
   clonePlan = () => {
     let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
-    const clone = { ..._.cloneDeep(this.state.selected), _id: faker.random.alphaNumeric(32), customName: `${this.state.selected.customName} (copy)` };
+    const clone = {
+      ..._.cloneDeep(this.state.selected),
+      _id: faker.random.alphaNumeric(32),
+      customName: `${this.state.selected.customName} (copy)`,
+    };
     plans.push(clone);
     const value = _.cloneDeep(this.props.value);
     value.possibleUsagePlans = plans;
     this.props.onChange(value);
     this.select(clone);
-  }
+  };
 
   deletePlan = () => {
     window
@@ -1273,8 +1315,8 @@ export class TeamApiPricing extends Component {
             <i className="fas fa-mask" /> {plan.customName || plan.type}
           </span>
         ) : (
-              <span>{plan.customName || plan.type}</span>
-            ),
+          <span>{plan.customName || plan.type}</span>
+        ),
       default: this.props.value.defaultUsagePlan === plan._id,
       value: plan._id,
       plan,
@@ -1416,18 +1458,24 @@ export class TeamApiPricing extends Component {
   }
 }
 
-const CustomMetadataInput = props => {
+const CustomMetadataInput = (props) => {
   const changeValue = (possibleValues, key) => {
-    const oldValue = Option(props.value.find(x => x.key === key)).getOrElse({ '': '' });
-    const newValues = [...props.value.filter(x => x.key !== key), { ...oldValue, key, possibleValues }];
+    const oldValue = Option(props.value.find((x) => x.key === key)).getOrElse({ '': '' });
+    const newValues = [
+      ...props.value.filter((x) => x.key !== key),
+      { ...oldValue, key, possibleValues },
+    ];
     props.onChange(newValues);
   };
 
   const changeKey = (e, oldName) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    const oldValue = Option(props.value.find(x => x.key === oldName)).getOrElse({ '': '' });
-    const newValues = [...props.value.filter(x => x.key !== oldName), { ...oldValue, key: e.target.value }];
+    const oldValue = Option(props.value.find((x) => x.key === oldName)).getOrElse({ '': '' });
+    const newValues = [
+      ...props.value.filter((x) => x.key !== oldName),
+      { ...oldValue, key: e.target.value },
+    ];
     props.onChange(newValues);
   };
 
@@ -1450,16 +1498,14 @@ const CustomMetadataInput = props => {
   const remove = (e, key) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    props.onChange(props.value.filter(x => x.key !== key));
+    props.onChange(props.value.filter((x) => x.key !== key));
   };
 
   return (
     <div>
       {props.value.length === 0 && (
         <div className="form-group row">
-          <label
-            htmlFor={`input-${props.label}`}
-            className="col-xs-12 col-sm-2 col-form-label">
+          <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
             <Help text={props.help} label={props.label} />
           </label>
           <div className="col-sm-10">
@@ -1473,7 +1519,7 @@ const CustomMetadataInput = props => {
           </div>
         </div>
       )}
-      { props.value.map(({key, possibleValues}, idx) => (
+      {props.value.map(({ key, possibleValues }, idx) => (
         <div key={`form-group-${idx}`} className="row mb-2">
           {idx === 0 && (
             <label className="col-xs-12 col-sm-2 col-form-label">
@@ -1493,14 +1539,21 @@ const CustomMetadataInput = props => {
               />
               <CreatableSelect
                 isMulti
-                onChange={e => changeValue(e.map(({ value }) => value), key)}
+                onChange={(e) =>
+                  changeValue(
+                    e.map(({ value }) => value),
+                    key
+                  )
+                }
                 options={undefined}
-                value={possibleValues.map(value => ({label: value, value}))}
+                value={possibleValues.map((value) => ({ label: value, value }))}
                 className="input-select reactSelect flex-grow-1"
                 classNamePrefix="reactSelect"
               />
-              
-              <span className="input-group-append" style={{ height: 'calc(1.5em + 0.75rem + 2px)'}}>
+
+              <span
+                className="input-group-append"
+                style={{ height: 'calc(1.5em + 0.75rem + 2px)' }}>
                 <button
                   disabled={props.disabled}
                   type="button"

@@ -883,7 +883,8 @@ object json {
               .asOpt[Boolean]
               .getOrElse(false),
             metadata = (json \ "metadata").asOpt[JsObject].getOrElse(Json.obj()),
-            customMetadata = (json \ "customMetadata").as(SeqCustomMetadataFormat),
+            customMetadata =
+              (json \ "customMetadata").as(SeqCustomMetadataFormat),
             tags = (json \ "tags").asOpt[JsArray].getOrElse(Json.arr()),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
           )
@@ -900,7 +901,8 @@ object json {
       "constrainedServicesOnly" -> o.constrainedServicesOnly,
       "readOnly" -> o.readOnly,
       "metadata" -> o.metadata,
-      "customMetadata" -> JsArray(o.customMetadata.map(CustomMetadataFormat.writes)),
+      "customMetadata" -> JsArray(
+        o.customMetadata.map(CustomMetadataFormat.writes)),
       "tags" -> o.tags,
       "restrictions" -> o.restrictions.asJson
     )
@@ -2176,16 +2178,22 @@ object json {
       Try {
         JsSuccess(
           ApiKeyQuotas(
-            authorizedCallsPerSec = (json \ "authorizedCallsPerSec").as(LongFormat),
+            authorizedCallsPerSec =
+              (json \ "authorizedCallsPerSec").as(LongFormat),
             currentCallsPerSec = (json \ "currentCallsPerSec").as(LongFormat),
-            remainingCallsPerSec = (json \ "remainingCallsPerSec").as(LongFormat),
-            authorizedCallsPerDay = (json \ "authorizedCallsPerDay").as(LongFormat),
+            remainingCallsPerSec =
+              (json \ "remainingCallsPerSec").as(LongFormat),
+            authorizedCallsPerDay =
+              (json \ "authorizedCallsPerDay").as(LongFormat),
             currentCallsPerDay = (json \ "currentCallsPerDay").as(LongFormat),
-            remainingCallsPerDay = (json \ "remainingCallsPerDay").as(LongFormat),
+            remainingCallsPerDay =
+              (json \ "remainingCallsPerDay").as(LongFormat),
             authorizedCallsPerMonth =
               (json \ "authorizedCallsPerMonth").as(LongFormat),
-            currentCallsPerMonth = (json \ "currentCallsPerMonth").as(LongFormat),
-            remainingCallsPerMonth = (json \ "remainingCallsPerMonth").as(LongFormat),
+            currentCallsPerMonth =
+              (json \ "currentCallsPerMonth").as(LongFormat),
+            remainingCallsPerMonth =
+              (json \ "remainingCallsPerMonth").as(LongFormat),
           ))
       } recover {
         case e => JsError(e.getMessage)
