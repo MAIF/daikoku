@@ -20,16 +20,21 @@ export const newPossibleUsagePlan = (customName) => ({
   otoroshiTarget: {
     otoroshiSettings: null,
     serviceGroup: null,
-    clientIdOnly: false,
-    constrainedServicesOnly: false,
-    tags: [],
-    metadata: {},
-    restrictions: {
-      enabled: false,
-      allowLast: true,
-      allowed: [],
-      forbidden: [],
-      notFound: [],
+    apikeyCustomization: {
+      dynamicPrefix: 'daikoku_',
+      clientIdOnly: false,
+      constrainedServicesOnly: false,
+      tags: [],
+      metadata: {},
+      customMetadata: [],
+      restrictions: {
+        enabled: false,
+        allowLast: true,
+        allowed: [],
+        forbidden: [],
+        notFound: [],
+      },
     },
+    
   },
 });

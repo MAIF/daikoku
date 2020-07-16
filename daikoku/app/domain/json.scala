@@ -884,7 +884,7 @@ object json {
               .getOrElse(false),
             metadata = (json \ "metadata").asOpt[JsObject].getOrElse(Json.obj()),
             customMetadata =
-              (json \ "customMetadata").as(SeqCustomMetadataFormat),
+              (json \ "customMetadata").asOpt(SeqCustomMetadataFormat).getOrElse(Seq.empty),
             tags = (json \ "tags").asOpt[JsArray].getOrElse(Json.arr()),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
           )
