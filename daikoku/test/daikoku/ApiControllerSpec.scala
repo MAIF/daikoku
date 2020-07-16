@@ -1541,6 +1541,67 @@ class ApiControllerSpec()
       logger.debug(Json.stringify(resp.json))
       resp.status mustBe 403
     }
+
+    "not accept subscription without custom metadata if plan requires it" in {
+      val untreatedNotification = Notification(
+        id = NotificationId("untreated-notification"),
+        tenant = tenant.id,
+        team = Some(teamOwnerId),
+        sender = user,
+        notificationType = AcceptOrReject,
+        action = ApiAccess(defaultApi.id, teamConsumerId)
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamConsumer, teamOwner),
+        apis = Seq(
+          defaultApi.copy(possibleUsagePlans = Seq(QuotasWithLimits(
+            UsagePlanId("3"),
+            10000,
+            10000,
+            10000,
+            BigDecimal(10.0),
+            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+            trialPeriod = None,
+            currency = Currency("EUR"),
+            customName = None,
+            customDescription = None,
+            otoroshiTarget = Some(
+              OtoroshiTarget(
+                OtoroshiSettingsId("default"),
+                OtoroshiServiceGroupId("12345"),
+                ApikeyCustomization(
+                  customMetadata = Seq(
+                    CustomMetadata("meta1", Set.empty)
+                  )
+                )
+              ),
+            ),
+            allowMultipleKeys = Some(false),
+            subscriptionProcess = SubscriptionProcess.Manual,
+            integrationProcess = IntegrationProcess.ApiKey,
+            autoRotation = Some(false)
+          )))),
+        notifications = Seq(
+          untreatedNotification.copy(
+            action = ApiSubscriptionDemand(defaultApi.id,
+              UsagePlanId("3"),
+              teamConsumerId))
+        )
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/notifications/${untreatedNotification.id.value}/accept",
+        method = "PUT",
+        body = Some(Json.obj())
+      )(tenant, session)
+      logger.warn(Json.stringify(resp.json))
+      resp.status mustBe 400
+      (resp.json \ "error").as[String] mustBe "You need to provide custom metadata"
+    }
+
   }
 
   "a api editor" can {

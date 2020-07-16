@@ -55,6 +55,7 @@ fmt_server () {
 test_server () {
   cd $LOCATION/daikoku
   sbt test
+  rc=$?; if [ $rc != 0 ]; then exit $rc; fi
 }
 
 pre_release_daikoku () {

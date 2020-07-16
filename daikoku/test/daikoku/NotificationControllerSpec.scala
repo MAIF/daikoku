@@ -1,25 +1,17 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand,
-  TeamAccess,
-  TeamInvitation
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.QuotasWithLimits
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.JsArray
+import play.api.libs.json.{JsArray, Json}
 
 class NotificationControllerSpec()
     extends PlaySpec
@@ -157,7 +149,8 @@ class NotificationControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/notifications/${untreatedNotification.id.value}/accept",
-        method = "PUT"
+        method = "PUT",
+        body = Some(Json.obj())
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -212,7 +205,8 @@ class NotificationControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/notifications/${untreatedNotification.id.value}/accept",
-        method = "PUT"
+        method = "PUT",
+        body = Some(Json.obj())
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -293,7 +287,8 @@ class NotificationControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/notifications/${untreatedNotification.id.value}/accept",
-        method = "PUT"
+        method = "PUT",
+        body = Some(Json.obj())
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -425,7 +420,8 @@ class NotificationControllerSpec()
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/notifications/${untreatedNotification.id.value}/accept",
-        method = "PUT"
+        method = "PUT",
+        body = Some(Json.obj())
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -480,7 +476,8 @@ class NotificationControllerSpec()
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/notifications/${untreatedNotification.id.value}/accept",
-        method = "PUT"
+        method = "PUT",
+        body = Some(Json.obj())
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -561,7 +558,8 @@ class NotificationControllerSpec()
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/notifications/${untreatedNotification.id.value}/accept",
-        method = "PUT"
+        method = "PUT",
+        body = Some(Json.obj())
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -738,13 +736,15 @@ class NotificationControllerSpec()
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/notifications/${untreatedNotification.id.value}/accept",
-        method = "PUT"
+        method = "PUT",
+        body = Some(Json.obj())
       )(tenant, session)
       resp.status mustBe 403
 
       val respInvit = httpJsonCallBlocking(
         path = s"/api/notifications/untreated-team-invitation/accept",
-        method = "PUT"
+        method = "PUT",
+        body = Some(Json.obj())
       )(tenant, session)
       respInvit.status mustBe 200
 

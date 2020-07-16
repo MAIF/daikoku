@@ -9,7 +9,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
-import play.api.libs.json.{JsError, JsObject, Json}
+import play.api.libs.json.{JsError, JsNull, JsObject, Json}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
@@ -219,12 +219,21 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        plan.otoroshiTarget.map(_.serviceGroup) match {
+        plan.otoroshiTarget match {
           case None => Future.successful(Left(ApiNotLinked))
-          case Some(groupId) =>
-            otoroshiClient
-              .getServiceGroup(groupId.value)
-              .flatMap(group => createKey(api, plan, team, group))
+          case Some(target) =>
+            val customMetadataKeys = target.apikeyCustomization.customMetadata.map(_.key)
+            val isCustomMetadataProvided =
+              customMetadataKeys.intersect(customMetadata.map(_.keys.toSeq).getOrElse(Seq.empty)) == customMetadataKeys &&
+                customMetadata.map(_.values.toSeq).forall(values => !values.contains(JsNull))
+
+            if (isCustomMetadataProvided) {
+              otoroshiClient
+                .getServiceGroup(target.serviceGroup.value)
+                .flatMap(group => createKey(api, plan, team, group))
+            } else {
+              FastFuture.successful(Left(ApiKeyCustomMetadataNotPrivided))
+            }
         }
     }
   }
