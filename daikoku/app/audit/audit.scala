@@ -258,9 +258,14 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi) extends Actor {
              |$titles
              |
          |$email""".stripMargin
-        tenant.mailer.send(s"Otoroshi Alert - ${evts.size} new alerts",
-                           emails,
-                           emailBody)
+
+        if (evts.size > 1) {
+          tenant.mailer.send(s"Otoroshi Alert - ${evts.size} new alerts",
+            emails,
+            emailBody)
+        } else {
+          FastFuture.successful(())
+        }
       }
     }
   }
