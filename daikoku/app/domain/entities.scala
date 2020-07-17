@@ -1169,7 +1169,11 @@ case class ApiSubscription(
     enabled: Boolean = true,
     rotation: Option[ApiSubscriptionRotation],
     integrationToken: String,
-    customMetadata: Option[JsObject] = None
+    customMetadata: Option[JsObject] = None,
+    customMaxPerSecond: Option[Long] = None,
+    customMaxPerDay: Option[Long] = None,
+    customMaxPerMonth: Option[Long] = None,
+    customReadOnly: Option[Boolean] = None
 ) extends CanJson[ApiSubscription] {
   override def asJson: JsValue = json.ApiSubscriptionFormat.writes(this)
   def asAuthorizedJson(permission: TeamPermission,
@@ -1183,26 +1187,8 @@ case class ApiSubscription(
       case (_, IntegrationProcess.Automatic) =>
         json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
     }
-  def asSafeJson: JsValue = Json.obj(
-    "_id" -> ApiSubscriptionIdFormat.writes(id),
-    "_tenant" -> tenant.asJson,
-    "apiKey" -> Json.obj("clientName" -> apiKey.clientName),
-    "plan" -> UsagePlanIdFormat.writes(plan),
-    "team" -> TeamIdFormat.writes(team),
-    "api" -> ApiIdFormat.writes(api),
-    "createdAt" -> DateTimeFormat.writes(createdAt),
-    "by" -> UserIdFormat.writes(by),
-    "customName" -> customName
-      .map(id => JsString(id))
-      .getOrElse(JsNull)
-      .as[JsValue],
-    "enabled" -> enabled,
-    "rotation" -> rotation
-      .map(ApiSubscriptionyRotationFormat.writes)
-      .getOrElse(JsNull)
-      .as[JsValue],
-    "customMetadata" -> customMetadata
-  )
+  def asSafeJson: JsValue = json.ApiSubscriptionFormat
+    .writes(this).as[JsObject] - "apiKey" - "integrationToken" ++ Json.obj("apiKey" -> Json.obj("clientName" -> apiKey.clientName))
   def asSimpleJson: JsValue = Json.obj(
     "_id" -> json.ApiSubscriptionIdFormat.writes(id),
     "_tenant" -> json.TenantIdFormat.writes(tenant),

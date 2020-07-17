@@ -855,9 +855,13 @@ class ApiController(DaikokuAction: DaikokuAction,
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
           case Some(api) if api.team != team.id => FastFuture.successful(Forbidden(Json.obj("error" -> "Subscription api is not your")))
           case Some(api) =>
+            val body = ctx.request.body.as[JsObject]
             val subToSave = sub.copy(
-              customMetadata = (ctx.request.body.as[JsObject] \ "customMetadata").asOpt[JsObject]
-              //todo: maybe add authorizedGroup (otorshi update) and quotas
+              customMetadata = (body \ "customMetadata").asOpt[JsObject],
+              customMaxPerSecond = (body \ "customMaxPerSecond").asOpt[Long],
+              customMaxPerDay = (body \ "customMaxPerDay").asOpt[Long],
+              customMaxPerMonth = (body \ "customMaxPerMonth").asOpt[Long],
+              customReadOnly =  (body \ "customReadOnly").asOpt[Boolean]
             )
             apiService.updateSubscription(ctx.tenant, subToSave, api)
               .map {

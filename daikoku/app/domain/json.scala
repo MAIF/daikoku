@@ -1597,7 +1597,11 @@ object json {
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
             integrationToken = (json \ "integrationToken").as[String],
-            customMetadata = (json \ "customMetadata").asOpt[JsObject]
+            customMetadata = (json \ "customMetadata").asOpt[JsObject],
+            customMaxPerSecond = (json \ "customMaxPerSecond").asOpt(LongFormat),
+            customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
+            customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
+            customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
           )
         )
       } recover {
@@ -1623,7 +1627,20 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "integrationToken" -> o.integrationToken,
-      "customMetadata" -> o.customMetadata
+      "customMetadata" -> o.customMetadata,
+      "customMaxPerSecond" -> o.customMaxPerSecond
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerDay" -> o.customMaxPerDay
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerMonth" -> o.customMaxPerMonth
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customReadOnly" -> o.customReadOnly.map(JsBoolean.apply).getOrElse(JsNull).as[JsValue]
     )
   }
 

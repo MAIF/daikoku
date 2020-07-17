@@ -6,7 +6,7 @@ import _ from 'lodash';
 
 import { Spinner, formatPlanType, Option } from '../../utils';
 import * as Services from '../../../services';
-import { ObjectInput, Collapse, Help } from '../../inputs';
+import { ObjectInput, Collapse, Help, BooleanInput } from '../../inputs';
 import { t, Translation } from '../../../locales';
 
 export const SubscriptionMetadataModal = (props) => {
@@ -18,6 +18,7 @@ export const SubscriptionMetadataModal = (props) => {
   const [customMaxPerSecond, setCustomMaxPerSecond] = useState(undefined);
   const [customMaxPerDay, setCustomMaxPerDay] = useState(undefined);
   const [customMaxPerMonth, setCustomMaxPerMonth] = useState(undefined);
+  const [customReadOnly, setCustomReadOnly] = useState(undefined);
   const [isValid, setIsValid] = useState(false);
   const [loadingInput, setLoadingInput] = useState(false);
 
@@ -59,12 +60,17 @@ export const SubscriptionMetadataModal = (props) => {
       );
       setCustomMaxPerDay(
         Option(props.subscription)
-          .map((s) => s.custommaxPerDay)
+          .map((s) => s.customMaxPerDay)
           .getOrNull()
       );
       setCustomMaxPerMonth(
         Option(props.subscription)
           .map((s) => s.customMaxPerMonth)
+          .getOrNull()
+      );
+      setCustomReadOnly(
+        Option(props.subscription)
+          .map((s) => s.customReadOnly)
           .getOrNull()
       );
     }
@@ -91,25 +97,25 @@ export const SubscriptionMetadataModal = (props) => {
     });
   }, []);
 
+  
   const actionAndClose = (action) => {
-    if (isValid()) {
+    const subProps = {
+      customMetadata: {
+        ...customMetadata,
+        ...metadata
+      },
+      customMaxPerSecond,
+      customMaxPerDay,
+      customMaxPerMonth,
+      customReadOnly
+    };
+    if (isValid) {
       if (action instanceof Promise) {
-        action({
-          ...customMetadata,
-          ...metadata,
-          customMaxPerSecond,
-          customMaxPerDay,
-          customMaxPerMonth,
-        }).then(() => props.closeModal());
+        action(subProps)
+          .then(() => props.closeModal());
       } else {
         props.closeModal();
-        action({
-          ...customMetadata,
-          ...metadata,
-          customMaxPerSecond,
-          customMaxPerDay,
-          customMaxPerMonth,
-        });
+        action(subProps);
       }
     }
   };
@@ -272,7 +278,7 @@ export const SubscriptionMetadataModal = (props) => {
                     id="input-max-request-per-second"
                     placeholder="max request per second"
                     value={customMaxPerSecond}
-                    onChange={(e) => setCustomMaxPerSecond(e.target.value)}
+                    onChange={(e) => setCustomMaxPerSecond(Number(e.target.value))}
                   />
                 </div>
               </div>
@@ -291,7 +297,7 @@ export const SubscriptionMetadataModal = (props) => {
                     id="input-max-request-per-day"
                     placeholder="max request per day"
                     value={customMaxPerDay}
-                    onChange={(e) => setCustomMaxPerDay(e.target.value)}
+                    onChange={(e) => setCustomMaxPerDay(Number(e.target.value))}
                   />
                 </div>
               </div>
@@ -310,7 +316,21 @@ export const SubscriptionMetadataModal = (props) => {
                     id="input-max-request-per-month"
                     placeholder="max request per month"
                     value={customMaxPerMonth}
-                    onChange={(e) => setCustomMaxPerMonth(e.target.value)}
+                    onChange={(e) => setCustomMaxPerMonth(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+            </Collapse>
+            <Collapse label={t('Other custom props', props.currentLanguage)} collapsed={true}>
+              <div className="form-group row">
+                <label
+                  className="col-xs-12 col-sm-2 col-form-label">
+                  <Help text="Help" label="custom read only" />
+                </label>
+                <div className="col-sm-10">
+                  <BooleanInput
+                    value={customReadOnly}
+                    onChange={(readOnly) => setCustomReadOnly(readOnly)}
                   />
                 </div>
               </div>

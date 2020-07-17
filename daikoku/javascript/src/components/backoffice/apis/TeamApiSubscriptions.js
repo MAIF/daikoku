@@ -132,10 +132,12 @@ const TeamApiSubscriptionsComponent = (props) => {
 
   const updateMeta = (sub) =>
     props.openSubMetadataModal({
-      save: (customMetadata) =>
-        Services.updateSubscription(props.currentTeam, { ...sub, customMetadata }).then(() =>
+      save: (updates) => {
+        console.debug({ updates, realUpdate: { ...sub, ...updates }});
+        Services.updateSubscription(props.currentTeam, { ...sub, ...updates }).then(() =>
           table.update()
-        ),
+        );
+      },
       api: sub.api,
       plan: sub.plan,
       team: teams.find((t) => t._id === sub.team),

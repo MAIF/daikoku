@@ -268,12 +268,13 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                       otoroshiClient.updateApiKey(groupId,
                         apiKey.copy(
                           authorizedGroup = groupId,
-                          throttlingQuota = apiKey.throttlingQuota,
-                          dailyQuota = apiKey.dailyQuota,
-                          monthlyQuota = apiKey.monthlyQuota,
+                          throttlingQuota = subscription.customMaxPerSecond.getOrElse(apiKey.throttlingQuota),
+                          dailyQuota = subscription.customMaxPerDay.getOrElse(apiKey.dailyQuota),
+                          monthlyQuota = subscription.customMaxPerMonth.getOrElse(apiKey.monthlyQuota),
                           metadata = apiKey.metadata ++ subscription.customMetadata
                             .flatMap(_.asOpt[Map[String, String]])
-                            .getOrElse(Map.empty[String, String])
+                            .getOrElse(Map.empty[String, String]),
+                          readOnly = subscription.customReadOnly.getOrElse(apiKey.readOnly)
                         )))
                     _ <- EitherT.liftF(
                       env.dataStore.apiSubscriptionRepo

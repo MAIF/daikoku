@@ -384,12 +384,20 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                           restrictions =
                                             target.apikeyCustomization.restrictions,
                                           throttlingQuota =
-                                            plan.maxRequestPerSecond.getOrElse(
-                                              apk.throttlingQuota),
-                                          dailyQuota = plan.maxRequestPerDay
-                                            .getOrElse(apk.dailyQuota),
-                                          monthlyQuota = plan.maxRequestPerMonth
-                                            .getOrElse(apk.monthlyQuota)
+                                            subscription.customMaxPerSecond
+                                              .orElse(plan.maxRequestPerSecond)
+                                              .getOrElse(apk.throttlingQuota),
+                                          dailyQuota =
+                                            subscription.customMaxPerDay
+                                              .orElse(plan.maxRequestPerDay)
+                                              .getOrElse(apk.dailyQuota),
+                                          monthlyQuota =
+                                            subscription.customMaxPerMonth
+                                              .orElse(plan.maxRequestPerMonth)
+                                              .getOrElse(apk.monthlyQuota),
+                                          readOnly = subscription.customReadOnly
+                                              .orElse(plan.otoroshiTarget.map(_.apikeyCustomization.readOnly))
+                                              .getOrElse(apk.readOnly)
                                         )
 
                                         if (subscription.rotation.exists(

@@ -1438,7 +1438,13 @@ class ApiControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
         method = "PUT",
         body = Some(
-          sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson)
+          sub.copy(
+            customMetadata = Some(Json.obj("foo" -> "bar")),
+            customMaxPerSecond = Some(1),
+            customMaxPerDay = Some(2),
+            customMaxPerMonth = Some(42),
+            customReadOnly = Some(true)
+          ).asSafeJson)
       )(tenant, session)
 
       resp.status mustBe 200
@@ -1446,6 +1452,14 @@ class ApiControllerSpec()
       (resp.json \ "done").as[Boolean] mustBe true
       (resp.json \ "subscription" \ "customMetadata")
         .as[JsObject] mustBe Json.obj("foo" -> "bar")
+      (resp.json \ "subscription" \ "customMaxPerSecond")
+        .as[Long] mustBe 1
+      (resp.json \ "subscription" \ "customMaxPerDay")
+        .as[Long] mustBe 2
+      (resp.json \ "subscription" \ "customMaxPerMonth")
+        .as[Long] mustBe 42
+      (resp.json \ "subscription" \ "customReadOnly")
+        .as[Boolean] mustBe true
       (resp.json \ "subscription" \ "apiKey").as[JsObject] mustBe Json.obj(
         "clientName" -> otoApiKey.clientName)
     }
