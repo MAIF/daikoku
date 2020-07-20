@@ -298,7 +298,7 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi) extends Actor {
           val plan = api.possibleUsagePlans.find(p => p.id == subscription.plan).map(p => p.customName.getOrElse(p.typeName))
             .getOrElse(messagesApi("unknown.plan"))
           val title = messagesApi("mail.apikey.rotation.title")
-          val body = messagesApi("mail.rotation.body", api.name, plan)
+          val body = messagesApi("mail.apikey.rotation.body", api.name, plan)
 
           tenant.mailer.send(title, admins.map(_.email), body)
         }

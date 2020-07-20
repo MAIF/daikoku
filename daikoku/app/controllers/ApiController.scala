@@ -616,6 +616,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   def askForApiKey(apiId: String) = DaikokuAction.async(parse.json) { ctx =>
     import cats.implicits._
 
+    implicit val c = ctx;
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has asked for an apikey for @{api.name} - @{api.id}"))(ctx) {
       val teams: Seq[String] = (ctx.request.body \ "teams").as[Seq[String]]
       val planId: String = (ctx.request.body \ "plan").as[String]
@@ -686,7 +687,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                                      user: User,
                                      api: Api,
                                      planId: String,
-                                     team: Team): EitherT[Future, AppError, JsObject] = {
+                                     team: Team)(implicit ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, JsObject] = {
     import cats.implicits._
 
     api.possibleUsagePlans.find(_.id.value == planId) match {
@@ -706,7 +707,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                             user: User,
                             api: Api,
                             planId: String,
-                            team: Team): Future[Either[AppError, JsObject]] = {
+                            team: Team)(implicit ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     val defaultPlanOpt = api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
@@ -724,7 +725,12 @@ class ApiController(DaikokuAction: DaikokuAction,
     val language = tenant.defaultLanguage.getOrElse("en")
     implicit val lang: Lang = Lang(language)
     val title = messagesApi("mail.apikey.demand.title")
-    val body = messagesApi("mail.apikey.demand.body", user.name, api.name, s"${tenant.domain}/notifications")
+    val notificationUrl = env.config.exposedPort match {
+      case 80 => s"http://${tenant.domain}/notifications"
+      case 443 => s"https://${tenant.domain}/notifications"
+      case value => s"http://${tenant.domain}:$value/"
+    }
+    val body = messagesApi("mail.apikey.demand.body", user.name, api.name, notificationUrl)
 
     for {
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
