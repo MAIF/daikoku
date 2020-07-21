@@ -693,5 +693,7 @@
   "mandatory.metadata.label": "Métadonnées obligatoires (%s)",
   "Additional metadata": "Métadonnées additionelles",
   "create.metadata.option.label": "Créer l'option %s",
-  "Team apis": "APIs d'équipe"
+  "Team apis": "APIs d'équipe",
+  "notif.apikey.refresh": "votre souscription %s (%s/%s) a été mise à jour.",
+  "Apikey refresh": "Mise à jour d'une clé d'API"
 }

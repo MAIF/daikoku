@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
+import { toastr } from 'react-redux-toastr';
 
 import { TeamBackOffice } from '../TeamBackOffice';
 import {
@@ -122,6 +123,15 @@ const TeamApiSubscriptionsComponent = (props) => {
                     <i className="fas fa-edit" />
                   </button>
                 </BeautifulTitle>
+                <BeautifulTitle title={t('Refresh secret', props.currentLanguage)}>
+                  <button
+                    key={`edit-meta-${sub._humanReadableId}`}
+                    type="button"
+                    className="btn btn-sm btn-access-negative btn-danger"
+                    onClick={() => regenerateSecret(sub)}>
+                    <i className="fas fa-sync" />
+                  </button>
+                </BeautifulTitle>
               </div>
             );
           },
@@ -144,6 +154,33 @@ const TeamApiSubscriptionsComponent = (props) => {
       subscription: sub,
       currentLanguage: props.currentLanguage,
     });
+
+  const regenerateSecret = (sub) => {
+    window
+      .confirm(
+        t(
+          'secret.refresh.confirm',
+          props.currentLanguage,
+          false,
+          'Are you sure you want to refresh secret for this subscription ?'
+        )
+      )
+      .then((ok) => {
+        if (ok) {
+          Services.regenerateApiKeySecret(props.currentTeam._id, sub._id).then(() => {
+            toastr.success(
+              t(
+                'secret.refresh.success',
+                props.currentLanguage,
+                false,
+                'Secret is successfuly refreshed'
+              )
+            );
+            table.update();
+          });
+        }
+      });
+  };
 
   return (
     <TeamBackOffice tab="Apis" apiId={props.match.params.apiId} isLoading={loading}>

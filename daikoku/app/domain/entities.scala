@@ -1285,6 +1285,9 @@ object NotificationAction {
 
   case class ApiKeyRotationEnded(clientId: String, api: String, plan: String)
       extends NotificationAction
+
+  case class ApiKeyRefresh(subscription: String, api: String, plan: String)
+      extends NotificationAction
 }
 
 sealed trait NotificationType {

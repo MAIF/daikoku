@@ -15,6 +15,9 @@ unknown.plan=Plan inconnu
 mail.apikey.rotation.title=Votre clé d''api a été modifiée
 mail.apikey.rotation.body=Le secret de votre clé d''api pour l''api {0} et le plan {1} a été modifié suite à sa rotation automatique.\
   Si vous ne travaillez pas avec un système d''intégration automatique des secrets, pensez à le modifier.
+mail.apikey.refresh.title=Votre clé d''api a été modifiée
+mail.apikey.refresh.body=Le secret de votre clé d''api pour l''api {0} et le plan {1} a été modifié suite à une demande de régénération.\
+  Si vous ne travaillez pas avec un système d''intégration automatique des secrets, pensez à le modifier.
 mail.apikey.demand.title=Demande de clé d''API
 mail.apikey.demand.body={0} demande une clé d''api pour l'api {1}.\
   Vous recevez ce message car vous êtes administrateur de l'équipe propriétaire.\

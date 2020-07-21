@@ -14,7 +14,10 @@ mail.contact.contact=<div>Somebody send you a contact request:</div>\
 unknown.plan=Unknown plan
 mail.apikey.rotation.title=Your apikey have been updated
 mail.apikey.rotation.body=Your apikey for api {0} and plan {1} have been rotated.\
-  If you don't work with an integration system, please update it usage.
+  If you don't work with an integration system, please update its usage.
+mail.apikey.refresh.title=Your apikey have been updated
+mail.apikey.refresh.body=Your apikey for api {0} and plan {1} have been updated.\
+  If you don't work with an integration system, please update its usage.
 mail.apikey.demand.title=Somebody want an apikey
 mail.apikey.demand.body={0} want an apikey for {1}. \
   You receive this mail because you are a team admin.\

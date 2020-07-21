@@ -1289,6 +1289,108 @@ class ApiControllerSpec()
       eventualSubs.get.head.apiKey.clientSecret mustBe newClientSecret
     }
 
+    "regenerate apikey secret for a subscription to his api" in {
+      val payPerUsePlanId = UsagePlanId("5")
+      val payperUseSub = ApiSubscription(
+        id = ApiSubscriptionId("test"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = payPerUsePlanId,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner,
+          teamConsumer.copy(subscriptions = Seq(payperUseSub.id))),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(payperUseSub)
+      )
+
+      val plan =
+        defaultApi.possibleUsagePlans.find(p => p.id == payPerUsePlanId).get
+      val otoroshiTarget = plan.otoroshiTarget
+      val callPerSec = 100L
+      val callPerDay = 1000L
+      val callPerMonth = 2000L
+
+      val otoApiKey = ActualOtoroshiApiKey(
+        clientId = payperUseSub.apiKey.clientId,
+        clientSecret = payperUseSub.apiKey.clientSecret,
+        clientName = payperUseSub.apiKey.clientName,
+        authorizedGroup = otoroshiTarget.get.serviceGroup.value,
+        throttlingQuota = callPerSec,
+        dailyQuota = callPerDay,
+        monthlyQuota = callPerMonth,
+        constrainedServicesOnly = true,
+        tags = Seq(),
+        restrictions = ApiKeyRestrictions(),
+        metadata = Map(),
+        rotation = None
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      wireMockServer.isRunning mustBe true
+      val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
+        payperUseSub.apiKey.clientId)
+
+      val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
+      stubFor(
+        get(urlMatching(s"$groupPath.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  otoApiKey.asJson.as[JsObject] ++
+                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
+                      "name" -> otoroshiTarget.get.serviceGroup.value)
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      stubFor(
+        put(urlMatching(s"$path.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  otoApiKey.copy(enabled = false).asJson
+                )
+              )
+              .withStatus(200)
+          )
+      )
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${payperUseSub.id.value}/_refresh",
+        method = "POST"
+      )(tenant, session)
+      resp.status mustBe 200
+      (resp.json \ "done").as[Boolean] mustBe true
+      val newClientSecret = (resp.json \ "subscription")
+        .as(json.ApiSubscriptionFormat)
+        .apiKey
+        .clientSecret
+
+      val respVerif = httpJsonCallBlocking(
+        s"/api/apis/${defaultApi.id.value}/subscriptions/teams/${teamConsumerId.value}"
+      )(tenant, session)
+      respVerif.status mustBe 200
+      val eventualSubs = json.SeqApiSubscriptionFormat.reads(respVerif.json)
+      eventualSubs.isSuccess mustBe true
+      eventualSubs.get.length mustBe 1
+      eventualSubs.get.head.apiKey.clientSecret == otoApiKey.clientSecret mustBe false
+      eventualSubs.get.head.apiKey.clientSecret mustBe newClientSecret
+    }
+
     "get subscription informations" in {
       val planSubId = UsagePlanId("1")
       val sub = ApiSubscription(

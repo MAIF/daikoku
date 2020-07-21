@@ -5,7 +5,7 @@ import { toastr } from 'react-redux-toastr';
 import faker from 'faker';
 
 import * as Services from '../../../services';
-import { Can, read, manage, stat, api as Api, administrator } from '../../utils';
+import { Can, read, manage, stat, api as API, administrator } from '../../utils';
 import { TeamBackOffice } from '../..';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { t, Translation } from '../../../locales';
@@ -38,7 +38,7 @@ class TeamApisComponent extends Component {
       }) => {
         const api = original;
         return (
-          <Can I={manage} a={Api} team={this.props.currentTeam}>
+          <Can I={manage} a={API} team={this.props.currentTeam}>
             <SwitchButton
               onSwitch={() => this.togglePublish(api)}
               checked={api.published}
@@ -83,7 +83,7 @@ class TeamApisComponent extends Component {
               </Can>
             )}
             {api.published && (
-              <Can I={manage} a={api} team={this.props.currentTeam}>
+              <Can I={manage} a={API} team={this.props.currentTeam}>
                 <Link
                   key={`apikeys-${api._humanReadableId}`}
                   to={`/${this.props.currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}`}
@@ -93,7 +93,7 @@ class TeamApisComponent extends Component {
                 </Link>
               </Can>
             )}
-            <Can I={manage} a={Api} team={this.props.currentTeam}>
+            <Can I={manage} a={API} team={this.props.currentTeam}>
               <Link
                 key={`edit-${api._humanReadableId}`}
                 to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/infos`}
@@ -189,7 +189,7 @@ class TeamApisComponent extends Component {
   render() {
     return (
       <TeamBackOffice tab="Apis" apiId={this.props.match.params.apiId}>
-        <Can I={read} a={Api} dispatchError={true} team={this.props.currentTeam}>
+        <Can I={read} a={API} dispatchError={true} team={this.props.currentTeam}>
           <div className="row">
             <div className="col">
               <h1>
@@ -197,7 +197,7 @@ class TeamApisComponent extends Component {
                   Team APIs
                 </Translation>
                 {this.props.currentTeam.type !== 'Admin' && (
-                  <Can I={manage} a={Api} team={this.props.currentTeam}>
+                  <Can I={manage} a={API} team={this.props.currentTeam}>
                     <a
                       className="btn btn-sm btn-access-negative mb-1 ml-1"
                       title={t('Create a new API', this.props.currentLanguage)}

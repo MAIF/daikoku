@@ -4,17 +4,19 @@ import akka.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import controllers.AppError
 import controllers.AppError._
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
-import play.api.libs.json.{JsError, JsNull, JsObject, Json}
+import play.api.i18n.{Lang, MessagesApi}
+import play.api.libs.json.{JsArray, JsError, JsNull, JsObject, Json}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
 
-class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
+class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: MessagesApi) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -390,7 +392,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                              subscription: ApiSubscription,
                              plan: UsagePlan,
                              api: Api,
-                             team: Team): Future[Either[AppError, JsObject]] = {
+                             team: Team,
+                             user: User): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
@@ -417,6 +420,20 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                 val updatedSubscription = subscription.copy(apiKey = subscription.apiKey.copy(clientSecret = newClientSecret))
 
                 val r: EitherT[Future, AppError, JsObject] = for {
+                  subscriptionTeam <- EitherT.liftF(
+                    env.dataStore.teamRepo
+                      .forTenant(tenant.id)
+                      .findById(subscription.team))
+                  admins <- EitherT.liftF(
+                    env.dataStore.userRepo.find(
+                      Json.obj("_id" -> Json.obj(
+                        "$in" -> JsArray(subscriptionTeam
+                          .map(_.users
+                            .filter(_.teamPermission == Administrator)
+                            .map(_.userId.asJson)
+                            .toSeq
+                          ).getOrElse(Seq.empty)))))
+                  )
                   apiKey <- EitherT(
                     otoroshiClient.getApikey(groupId,
                       subscription.apiKey.clientId))
@@ -424,6 +441,29 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient) {
                   _ <- EitherT.liftF(
                     otoroshiClient.updateApiKey(groupId,
                       apiKey.copy(clientSecret = newClientSecret)))
+                  _ <- EitherT.liftF(env.dataStore.notificationRepo
+                    .forTenant(tenant.id)
+                    .save(Notification(
+                      id = NotificationId(BSONObjectID
+                        .generate()
+                        .stringify),
+                      tenant = tenant.id,
+                      team = Some(subscription.team),
+                      sender = user,
+                      action = NotificationAction
+                        .ApiKeyRefresh(
+                          subscription.customName.getOrElse(apiKey.clientName),
+                          api.name,
+                          plan.customName.getOrElse(
+                            plan.typeName)),
+                      notificationType =
+                        NotificationType.AcceptOnly
+                    )))
+                  _ <- EitherT.liftF(tenant.mailer.send(
+                    messagesApi("mail.apikey.refresh.title")(Lang(tenant.defaultLanguage.getOrElse("En"))),
+                    admins.map(_.email),
+                    messagesApi("mail.apikey.refresh.body", api.name, plan.customName.getOrElse(plan.typeName))(Lang(tenant.defaultLanguage.getOrElse("En")))
+                  ))
                   _ <- EitherT.liftF(
                     env.dataStore.apiSubscriptionRepo
                       .forTenant(tenant.id)

@@ -1009,7 +1009,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
         ctx.setCtxValue("subscription", subscription)
-        apiService.regenerateApiKeySecret(ctx.tenant, subscription, plan, api, team)
+        apiService.regenerateApiKeySecret(ctx.tenant, subscription, plan, api, team, ctx.user)
       })
     }
   }
@@ -1051,13 +1051,14 @@ class ApiController(DaikokuAction: DaikokuAction,
             .forTenant(tenant)
             .findByIdNotDeleted(subscription.api)
             .flatMap {
+              case Some(api) if api.team != team.id && subscription.team != team.id => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this subscription")))
               case Some(api) =>
                 val r: EitherT[Future, Result, Result] = for {
                   plan <- EitherT.fromOption[Future](api.possibleUsagePlans.find(_.id == subscription.plan),
                     NotFound(Json.obj("error" -> "plan not found")))
-                  deletionResult <- EitherT(action(api, plan, subscription))
+                  result <- EitherT(action(api, plan, subscription))
                     .leftMap(appError => AppError.render(appError))
-                } yield Ok(deletionResult)
+                } yield Ok(result)
                 r.merge
               case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
             }

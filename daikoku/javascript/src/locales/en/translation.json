@@ -693,5 +693,7 @@
     "mandatory.metadata.label": "Mandatory metadata (%s)",
     "Additional metadata": "Additional metadata",
     "create.metadata.option.label": "Create option %s",
-    "Team apis": "Team APIs"
+    "Team apis": "Team APIs",
+    "notif.apikey.refresh": "Your subscription %s (%s/%s) has been refreshed.",
+    "Apikey refresh": "Apikey refresh"
 }

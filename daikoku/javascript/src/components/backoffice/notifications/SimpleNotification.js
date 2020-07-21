@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import moment from 'moment';
 
 import { t, Translation } from '../../../locales';
-import { formatPlanType, Option } from '../../utils';
+import { formatPlanType, Option, BeautifulTitle } from '../../utils';
 
 export class SimpleNotification extends Component {
   typeFormatter = (type) => {
@@ -79,10 +79,17 @@ export class SimpleNotification extends Component {
             title={t('Team invitation', this.props.currentLanguage)}
           />
         );
+      case 'ApiKeyRefresh': 
+        return (
+          <i
+            className="fas fa-sync-alt"
+            style={{ marginRight: 5 }}
+            title={t('Apikey refresh', this.props.currentLanguage)}
+          />
+        );
     }
   };
 
-  //todo: faire popup une modal pour créer ou ajouter des metadata
   actionFormatter({ status, date }, notificationType) {
     switch (status) {
       case 'Pending':
@@ -183,6 +190,8 @@ export class SimpleNotification extends Component {
         return 'Otoroshi verifier job';
       case 'ApiKeyRotationEnded':
         return 'Otoroshi verifier job';
+      case 'ApiKeyRefresh':
+        return `${sender.name}`;
     }
   }
 
@@ -286,6 +295,21 @@ export class SimpleNotification extends Component {
                       ]}>
                       Your apiKey with clientId {notification.action.clientId} (
                       {notification.action.api}/{notification.action.plan}) has ended its rotation.
+                    </Translation>
+                  </div>
+                )}
+                {notification.action.type === 'ApiKeyRefresh' && (
+                  <div>
+                    <Translation
+                      i18nkey="notif.apikey.refresh"
+                      language={this.props.currentLanguage}
+                      replacements={[
+                        notification.action.subscription,
+                        notification.action.api,
+                        notification.action.plan,
+                      ]}>
+                      Your subscription {notification.action.subscription} (
+                      {notification.action.api}/{notification.action.plan}) has been refreshed.
                     </Translation>
                   </div>
                 )}
