@@ -335,7 +335,7 @@ export class TopBarComponent extends Component {
                     style={{
                       maxHeight: 54,
                       marginRight: 5,
-                      width: '100%',
+                      width: 32,
                     }}
                   />
                   {this.props.tenant.name}
