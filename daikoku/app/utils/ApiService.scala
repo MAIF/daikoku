@@ -117,7 +117,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
           ++ customMetadata
           .flatMap(_.asOpt[Map[String, String]])
           .getOrElse(Map.empty[String, String]),
-        rotation = plan.autoRotation.map(_ => ApiKeyRotation())
+        rotation = plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled))
       )
       val tunedApiKey = plan match {
         case _: FreeWithoutQuotas => apiKey
