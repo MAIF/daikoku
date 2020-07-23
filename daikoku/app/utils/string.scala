@@ -27,7 +27,7 @@ object StringImplicits {
           Normalizer
             .normalize(s, Normalizer.Form.NFD)
             .replaceAll("[\\p{InCombiningDiacriticalMarks}]", ""),
-          " -._~!$'()*,;&=@:",
+          " -._~!$'()*,;&=@:/#[]",
           "-"
         )
         .replaceAll("--", "-")
