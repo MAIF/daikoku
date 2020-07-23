@@ -171,33 +171,6 @@ class TeamApiComponent extends Component {
       };
       plan.otoroshiTarget.apikeyCustomization.restrictions = plan.otoroshiTarget.apikeyCustomization
         .restrictions || { ...def.otoroshiTarget.apikeyCustomization.restrictions };
-      plan.otoroshiTarget.apikeyCustomization.restrictions.allowed = plan.otoroshiTarget.apikeyCustomization.restrictions.allowed.map(
-        (v) => {
-          const [method, ...tail] = v.split(':');
-          return {
-            method: method || '*',
-            path: tail ? tail.join('') : '/',
-          };
-        }
-      );
-      plan.otoroshiTarget.apikeyCustomization.restrictions.forbidden = plan.otoroshiTarget.apikeyCustomization.restrictions.forbidden.map(
-        (v) => {
-          const [method, ...tail] = v.split(':');
-          return {
-            method: method || '*',
-            path: tail ? tail.join('') : '/',
-          };
-        }
-      );
-      plan.otoroshiTarget.apikeyCustomization.restrictions.notFound = plan.otoroshiTarget.apikeyCustomization.restrictions.notFound.map(
-        (v) => {
-          const [method, ...tail] = v.split(':');
-          return {
-            method: method || '*',
-            path: tail ? tail.join('') : '/',
-          };
-        }
-      );
       return plan;
     });
     return api;
@@ -235,15 +208,6 @@ class TeamApiComponent extends Component {
       };
       plan.otoroshiTarget.apikeyCustomization.restrictions = plan.otoroshiTarget.apikeyCustomization
         .restrictions || { ...def.otoroshiTarget.apikeyCustomization.restrictions };
-      plan.otoroshiTarget.apikeyCustomization.restrictions.allowed = plan.otoroshiTarget.apikeyCustomization.restrictions.allowed.map(
-        (v) => (v.method && v.path ? `${v.method}:${v.path}` : v)
-      );
-      plan.otoroshiTarget.apikeyCustomization.restrictions.forbidden = plan.otoroshiTarget.apikeyCustomization.restrictions.forbidden.map(
-        (v) => (v.method && v.path ? `${v.method}:${v.path}` : v)
-      );
-      plan.otoroshiTarget.apikeyCustomization.restrictions.notFound = plan.otoroshiTarget.apikeyCustomization.restrictions.notFound.map(
-        (v) => (v.method && v.path ? `${v.method}:${v.path}` : v)
-      );
       return plan;
     });
     return api;

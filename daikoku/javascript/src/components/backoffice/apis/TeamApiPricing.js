@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useState, useEffect } from 'react';
 import _ from 'lodash';
 import { currencies } from '../../../services/currencies';
 import faker from 'faker';
@@ -212,19 +212,19 @@ export class TeamApiPricing extends Component {
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.allowed': {
-        type: 'array',
+        type: OtoroshiPathInput,
         props: {
           label: t('Allowed pathes', this.props.currentLanguage),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.forbidden': {
-        type: 'array',
+        type: OtoroshiPathInput,
         props: {
           label: t('Forbidden pathes', this.props.currentLanguage),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.notFound': {
-        type: 'array',
+        type: OtoroshiPathInput,
         props: {
           label: t('Not found pathes', this.props.currentLanguage),
         },
@@ -1315,8 +1315,8 @@ export class TeamApiPricing extends Component {
             <i className="fas fa-mask" /> {plan.customName || plan.type}
           </span>
         ) : (
-          <span>{plan.customName || plan.type}</span>
-        ),
+              <span>{plan.customName || plan.type}</span>
+            ),
       default: this.props.value.defaultUsagePlan === plan._id,
       value: plan._id,
       plan,
@@ -1567,6 +1567,111 @@ const CustomMetadataInput = (props) => {
                     type="button"
                     className="btn btn-outline-primary"
                     onClick={addNext}>
+                    <i className="fas fa-plus" />{' '}
+                  </button>
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const OtoroshiPathInput = props => {
+  const [pathes, setPathes] = useState(props.value || []);
+
+  useEffect(() => {
+    props.onChange(pathes);
+  }, [pathes]);
+
+  const httpMethods = ['*', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
+
+  const addItem = () => setPathes([...pathes, { method: '*', path: '/*' }]);
+  const removeItem = (idx) => {
+    const _pathes = [...pathes];
+    _pathes.splice(idx - 1, 1);
+    setPathes(_pathes);
+  };
+
+  const changeMethod = (method, idx) => {
+    const _pathes = [...pathes];
+    _pathes.splice(idx, 1, { ...pathes[idx], method });
+    setPathes(_pathes);
+  };
+
+  const changePath = (path, idx) => {
+    const _pathes = [...pathes];
+    _pathes.splice(idx, 1, {...pathes[idx], path });
+    setPathes(_pathes);
+  };
+
+  return (
+    <div>
+      {props.value.length === 0 && (
+        <div className="form-group row">
+          <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
+            <Help text={props.help} label={props.label} />
+          </label>
+          <div className="col-sm-10">
+            <button
+              disabled={props.disabled}
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={addItem}>
+              <i className="fas fa-plus" />{' '}
+            </button>
+          </div>
+        </div>
+      )}
+      {pathes.map(({ method, path }, idx) => (
+        <div key={`form-group-${idx}`} className="row mb-2">
+          {idx === 0 && (
+            <label className="col-xs-12 col-sm-2 col-form-label">
+              <Help text={props.help} label={props.label} />
+            </label>
+          )}
+          {idx > 0 && <label className="col-xs-12 col-sm-2 col-form-label">&nbsp;</label>}
+          <div className="col-sm-10 d-flex">
+            <div className="input-group">
+              <Select
+                placeholder="Select a language"
+                options={httpMethods.sort().map((l) => ({ label: l, value: l }))}
+                type="text"
+                className="reactSelect flex-grow-1 mr-1"
+                value={{ label: method, value: method }}
+                onChange={(e) => changeMethod(e.value, idx)}
+                classNamePrefix="reactSelect"
+              />
+              <input
+                onChange={(e) =>
+                  changePath(
+                    e.target.value,
+                    idx
+                  )
+                }
+                value={path}
+                className="input-select reactSelect flex-grow-1"
+                classNamePrefix="reactSelect"
+              />
+
+              <span
+                className="input-group-append"
+                style={{ height: 'calc(1.5em + 0.75rem + 2px)' }}>
+                <button
+                  disabled={props.disabled}
+                  type="button"
+                  className="btn btn-outline-danger"
+                  onClick={() => removeItem(idx)}>
+                  <i className="fas fa-trash" />
+                </button>
+                {idx === props.value.length - 1 && (
+                  <button
+                    disabled={props.disabled}
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={addItem}>
                     <i className="fas fa-plus" />{' '}
                   </button>
                 )}
