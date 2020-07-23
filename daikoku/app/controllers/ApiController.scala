@@ -20,7 +20,7 @@ import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
-import jobs.ApiKeyStatsJob
+import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.http.HttpEntity
@@ -40,7 +40,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                     apiKeyStatsJob: ApiKeyStatsJob,
                     env: Env,
                     otoroshiClient: OtoroshiClient,
-                    cc: ControllerComponents)
+                    cc: ControllerComponents,
+                    otoroshiSynchronisator: OtoroshiVerifierJob)
   extends AbstractController(cc)
     with I18nSupport {
 
@@ -1437,6 +1438,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                 _ <- deleteApiPlansSubscriptions(deletedPlans, oldApi, ctx.tenant, ctx.user)
                 apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
                 _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
+                _ <- otoroshiSynchronisator.verify(Json.obj("api" -> apiId)) //launch synhro to maybe update customeMetadata & authorizedEntities
               } yield {
                 ctx.setCtxValue("api.name", api.name)
                 ctx.setCtxValue("api.id", api.id)

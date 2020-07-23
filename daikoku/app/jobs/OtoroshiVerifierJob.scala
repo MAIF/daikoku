@@ -177,8 +177,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
     }
   }
 
-  private def verifyIfOtoroshiApiKeysStillExists(): Future[Unit] = {
-    env.dataStore.apiSubscriptionRepo.forAllTenant().findAllNotDeleted().map {
+  private def verifyIfOtoroshiApiKeysStillExists(query: JsObject = Json.obj()): Future[Unit] = {
+    env.dataStore.apiSubscriptionRepo.forAllTenant().findNotDeleted(query).map {
       subscriptions =>
         AppLogger.debug(subscriptions.map(_.id.value).mkString(" - "))
         subscriptions.map { subscription =>
@@ -375,6 +375,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                             }
 
                                         val newApk = apk.copy(
+                                          authorizedGroup = target.serviceGroup.value ,
                                           tags = newTags,
                                           metadata = newMeta,
                                           constrainedServicesOnly =
@@ -397,8 +398,18 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                               .getOrElse(apk.monthlyQuota),
                                           readOnly = subscription.customReadOnly
                                               .orElse(plan.otoroshiTarget.map(_.apikeyCustomization.readOnly))
-                                              .getOrElse(apk.readOnly)
+                                              .getOrElse(apk.readOnly),
+                                          rotation =
+                                            apk.rotation
+                                                .map(r => r.copy(enabled = r.enabled || subscription.rotation.exists(_.enabled) || plan.autoRotation.exists(e => e)))
+                                                .orElse(subscription.rotation.map(r => ApiKeyRotation(
+                                                  enabled = r.enabled || plan.autoRotation.exists(e => e),
+                                                  rotationEvery = r.rotationEvery,
+                                                  gracePeriod = r.gracePeriod
+                                                )))
+                                                .orElse(plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled)))
                                         )
+                                        logger.warn(Json.prettyPrint(apk.asJson))
 
                                         if (subscription.rotation.exists(
                                               _.enabled) && apk.clientSecret != subscription.apiKey.clientSecret) {
@@ -556,19 +567,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                               Some(settings.host)
                                             )
                                           case Success(Right(apk))
-                                              if !apk.rotation.exists(r =>
-                                                r.enabled) =>
-                                            env.dataStore.apiSubscriptionRepo
-                                              .forTenant(subscription.tenant)
-                                              .save(
-                                                Json.obj(
-                                                  "_id" -> subscription.id.asJson),
-                                                subscription
-                                                  .copy(rotation =
-                                                    subscription.rotation.map(
-                                                      _.copy(enabled = false)))
-                                                  .asJson
-                                                  .as[JsObject])
+                                              if !apk.rotation.exists(r => r.enabled) =>
+                                            client.updateApiKey(target.serviceGroup.value, apk.copy(rotation = Some(ApiKeyRotation())))(settings)
                                           case Success(Right(apk)) =>
                                             val otoroshiNextSecret
                                               : Option[String] =
@@ -680,14 +680,14 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
       )
   }
 
-  def verify(): Future[Unit] = {
+  def verify(query: JsObject = Json.obj()): Future[Unit] = {
     logger.info("Verifying sync between daikoku and otoroshi")
     Future
       .sequence(
         Seq(
           verifyRotation(),
           verifyIfOtoroshiGroupsStillExists(),
-          verifyIfOtoroshiApiKeysStillExists(),
+          verifyIfOtoroshiApiKeysStillExists(query),
         ))
       .map(_ => ())
   }
