@@ -79,7 +79,7 @@ export class SimpleNotification extends Component {
             title={t('Team invitation', this.props.currentLanguage)}
           />
         );
-      case 'ApiKeyRefresh': 
+      case 'ApiKeyRefresh':
         return (
           <i
             className="fas fa-sync-alt"

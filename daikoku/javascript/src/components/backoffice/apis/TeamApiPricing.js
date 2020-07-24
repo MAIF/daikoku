@@ -1315,8 +1315,8 @@ export class TeamApiPricing extends Component {
             <i className="fas fa-mask" /> {plan.customName || plan.type}
           </span>
         ) : (
-              <span>{plan.customName || plan.type}</span>
-            ),
+          <span>{plan.customName || plan.type}</span>
+        ),
       default: this.props.value.defaultUsagePlan === plan._id,
       value: plan._id,
       plan,
@@ -1579,14 +1579,25 @@ const CustomMetadataInput = (props) => {
   );
 };
 
-const OtoroshiPathInput = props => {
+const OtoroshiPathInput = (props) => {
   const [pathes, setPathes] = useState(props.value || []);
 
   useEffect(() => {
     props.onChange(pathes);
   }, [pathes]);
 
-  const httpMethods = ['*', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
+  const httpMethods = [
+    '*',
+    'GET',
+    'HEAD',
+    'POST',
+    'PUT',
+    'DELETE',
+    'CONNECT',
+    'OPTIONS',
+    'TRACE',
+    'PATCH',
+  ];
 
   const addItem = () => setPathes([...pathes, { method: '*', path: '/*' }]);
   const removeItem = (idx) => {
@@ -1603,7 +1614,7 @@ const OtoroshiPathInput = props => {
 
   const changePath = (path, idx) => {
     const _pathes = [...pathes];
-    _pathes.splice(idx, 1, {...pathes[idx], path });
+    _pathes.splice(idx, 1, { ...pathes[idx], path });
     setPathes(_pathes);
   };
 
@@ -1645,12 +1656,7 @@ const OtoroshiPathInput = props => {
                 classNamePrefix="reactSelect"
               />
               <input
-                onChange={(e) =>
-                  changePath(
-                    e.target.value,
-                    idx
-                  )
-                }
+                onChange={(e) => changePath(e.target.value, idx)}
                 value={path}
                 className="input-select reactSelect flex-grow-1"
                 classNamePrefix="reactSelect"

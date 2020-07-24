@@ -71,6 +71,8 @@ class ApiControllerSpec()
 
       resp.status mustBe 403
     }
+//todo: Fix Travis issue with this test
+//
 //    "not initialize apis from his tenant for a tenant for which he's not admin" in {
 //      setupEnvBlocking(
 //        tenants = Seq(tenant, tenant2),
@@ -1309,7 +1311,7 @@ class ApiControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner,
-          teamConsumer.copy(subscriptions = Seq(payperUseSub.id))),
+                    teamConsumer.copy(subscriptions = Seq(payperUseSub.id))),
         apis = Seq(defaultApi),
         subscriptions = Seq(payperUseSub)
       )
@@ -1339,7 +1341,7 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       wireMockServer.isRunning mustBe true
       val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
-        payperUseSub.apiKey.clientId)
+                                          payperUseSub.apiKey.clientId)
 
       val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
       stubFor(
@@ -1350,7 +1352,7 @@ class ApiControllerSpec()
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
                     Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                      "name" -> otoroshiTarget.get.serviceGroup.value)
+                             "name" -> otoroshiTarget.get.serviceGroup.value)
                 )
               )
               .withStatus(200)
@@ -1541,13 +1543,15 @@ class ApiControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
         method = "PUT",
         body = Some(
-          sub.copy(
-            customMetadata = Some(Json.obj("foo" -> "bar")),
-            customMaxPerSecond = Some(1),
-            customMaxPerDay = Some(2),
-            customMaxPerMonth = Some(42),
-            customReadOnly = Some(true)
-          ).asSafeJson)
+          sub
+            .copy(
+              customMetadata = Some(Json.obj("foo" -> "bar")),
+              customMaxPerSecond = Some(1),
+              customMaxPerDay = Some(2),
+              customMaxPerMonth = Some(42),
+              customReadOnly = Some(true)
+            )
+            .asSafeJson)
       )(tenant, session)
 
       resp.status mustBe 200

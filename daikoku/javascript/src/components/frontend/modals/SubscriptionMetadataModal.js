@@ -97,22 +97,20 @@ export const SubscriptionMetadataModal = (props) => {
     });
   }, []);
 
-  
   const actionAndClose = (action) => {
     const subProps = {
       customMetadata: {
         ...customMetadata,
-        ...metadata
+        ...metadata,
       },
       customMaxPerSecond,
       customMaxPerDay,
       customMaxPerMonth,
-      customReadOnly
+      customReadOnly,
     };
     if (isValid) {
       if (action instanceof Promise) {
-        action(subProps)
-          .then(() => props.closeModal());
+        action(subProps).then(() => props.closeModal());
       } else {
         props.closeModal();
         action(subProps);
@@ -323,8 +321,7 @@ export const SubscriptionMetadataModal = (props) => {
             </Collapse>
             <Collapse label={t('Other custom props', props.currentLanguage)} collapsed={true}>
               <div className="form-group row">
-                <label
-                  className="col-xs-12 col-sm-2 col-form-label">
+                <label className="col-xs-12 col-sm-2 col-form-label">
                   <Help text="Help" label="custom read only" />
                 </label>
                 <div className="col-sm-10">

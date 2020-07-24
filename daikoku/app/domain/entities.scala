@@ -1187,8 +1187,11 @@ case class ApiSubscription(
       case (_, IntegrationProcess.Automatic) =>
         json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
     }
-  def asSafeJson: JsValue = json.ApiSubscriptionFormat
-    .writes(this).as[JsObject] - "apiKey" - "integrationToken" ++ Json.obj("apiKey" -> Json.obj("clientName" -> apiKey.clientName))
+  def asSafeJson: JsValue =
+    json.ApiSubscriptionFormat
+      .writes(this)
+      .as[JsObject] - "apiKey" - "integrationToken" ++ Json.obj(
+      "apiKey" -> Json.obj("clientName" -> apiKey.clientName))
   def asSimpleJson: JsValue = Json.obj(
     "_id" -> json.ApiSubscriptionIdFormat.writes(id),
     "_tenant" -> json.TenantIdFormat.writes(tenant),

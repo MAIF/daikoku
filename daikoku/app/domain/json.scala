@@ -1640,7 +1640,10 @@ object json {
         .map(JsNumber(_))
         .getOrElse(JsNull)
         .as[JsValue],
-      "customReadOnly" -> o.customReadOnly.map(JsBoolean.apply).getOrElse(JsNull).as[JsValue]
+      "customReadOnly" -> o.customReadOnly
+        .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
 
@@ -1774,8 +1777,9 @@ object json {
         case p: TeamInvitation =>
           TeamInvitationFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "TeamInvitation")
-        case p:ApiKeyRefresh => ApiKeyRefreshFormat.writes(p).as[JsObject] ++ Json.obj(
-          "type" -> "ApiKeyRefresh")
+        case p: ApiKeyRefresh =>
+          ApiKeyRefreshFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "ApiKeyRefresh")
 
       }
     }
