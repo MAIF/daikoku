@@ -91,6 +91,7 @@ class ApiControllerSpec()
         method = "POST",
         body = Some(json.SeqApiFormat.writes(apis)))(tenant, session)
 
+      println(Json.stringify(resp.json))
       resp.status mustBe 201
       val result = resp.json
         .as[JsArray]
