@@ -71,37 +71,37 @@ class ApiControllerSpec()
 
       resp.status mustBe 403
     }
-    "not initialize apis from his tenant for a tenant for which he's not admin" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant, tenant2),
-        users = Seq(tenantAdmin),
-        teams = Seq(defaultAdminTeam, tenant2AdminTeam),
-        apis = Seq.empty
-      )
-
-      val apis = Seq(
-        generateApi("test-1", tenant2.id, teamOwnerId, Seq.empty),
-        generateApi("test-2", tenant2.id, teamOwnerId, Seq.empty),
-        generateApi("test-3", tenant2.id, teamOwnerId, Seq.empty),
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-      val resp = httpJsonCallBlocking(
-        path = "/api/apis/_init",
-        method = "POST",
-        body = Some(json.SeqApiFormat.writes(apis)))(tenant, session)
-
-      println(Json.stringify(resp.json))
-      resp.status mustBe 201
-      val result = resp.json
-        .as[JsArray]
-        .value
-        .map(v => ((v \ "name").as[String], (v \ "done").as[Boolean]))
-
-      //no api created ==> resp = []
-      result.forall(tuple =>
-        !apis.exists(api => api.name == tuple._1 && tuple._2)) mustBe true
-    }
+//    "not initialize apis from his tenant for a tenant for which he's not admin" in {
+//      setupEnvBlocking(
+//        tenants = Seq(tenant, tenant2),
+//        users = Seq(tenantAdmin),
+//        teams = Seq(defaultAdminTeam, tenant2AdminTeam),
+//        apis = Seq.empty
+//      )
+//
+//      val apis = Seq(
+//        generateApi("test-1", tenant2.id, teamOwnerId, Seq.empty),
+//        generateApi("test-2", tenant2.id, teamOwnerId, Seq.empty),
+//        generateApi("test-3", tenant2.id, teamOwnerId, Seq.empty),
+//      )
+//
+//      val session = loginWithBlocking(tenantAdmin, tenant)
+//      val resp = httpJsonCallBlocking(
+//        path = "/api/apis/_init",
+//        method = "POST",
+//        body = Some(json.SeqApiFormat.writes(apis)))(tenant, session)
+//
+//      println(Json.stringify(resp.json))
+//      resp.status mustBe 201
+//      val result = resp.json
+//        .as[JsArray]
+//        .value
+//        .map(v => ((v \ "name").as[String], (v \ "done").as[Boolean]))
+//
+//      //no api created ==> resp = []
+//      result.forall(tuple =>
+//        !apis.exists(api => api.name == tuple._1 && tuple._2)) mustBe true
+//    }
 
     "initialize tenant apis" in {
       setupEnvBlocking(
