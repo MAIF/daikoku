@@ -117,7 +117,7 @@ export class ApiCartidge extends Component {
         </small>
 
         {!!subscribingTeams.length && (
-          <Can I={read} a={apikey}>
+          <Can I={read} a={apikey} teams={subscribingTeams}>
             <ActionWithTeamSelector
               title={t(
                 'teamapi.select.title',
