@@ -3,7 +3,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
+import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -15,7 +15,6 @@ import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
 import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 class UsersController(DaikokuAction: DaikokuAction,
@@ -274,22 +273,20 @@ class UsersController(DaikokuAction: DaikokuAction,
       ctx) {
       ctx.session.impersonatorSessionId match {
         case None => FastFuture.successful(Redirect("/logout"))
-        case Some(sessionId) => {
+        case Some(sessionId) =>
           env.dataStore.userSessionRepo
             .findOne(Json.obj("sessionId" -> sessionId.value))
             .flatMap {
               case Some(session) if session.expires.isAfter(DateTime.now()) => {
-                env.dataStore.userSessionRepo.save(session).map { _ =>
-                  Redirect(ctx.request.session.get("redirect").getOrElse("/"))
-                    .removingFromSession("sessionId", "redirect")(ctx.request)
-                    .withSession(
-                      "sessionId" -> session.sessionId.value
-                    )
-                }
+                env.dataStore.userSessionRepo.delete(Json.obj("impersonatorSessionId" -> sessionId.value))
+                  .map { _ =>
+                    Redirect(ctx.request.session.get("redirect").getOrElse("/"))
+                      .removingFromSession("sessionId", "redirect")(ctx.request)
+                      .withSession(("sessionId", sessionId.value))
+                  }
               }
               case None => FastFuture.successful(Redirect("/logout"))
             }
-        }
       }
     }
   }
