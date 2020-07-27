@@ -282,7 +282,7 @@ class UsersController(DaikokuAction: DaikokuAction,
                   .map { _ =>
                     Redirect(ctx.request.session.get("redirect").getOrElse("/"))
                       .removingFromSession("sessionId", "redirect")(ctx.request)
-                      .withNewSession
+                      .withSession(("sessionId", sessionId.value))
                   }
               }
               case None => FastFuture.successful(Redirect("/logout"))

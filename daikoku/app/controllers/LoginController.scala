@@ -229,8 +229,10 @@ class LoginController(DaikokuAction: DaikokuAction,
         .getOrElse(s"${ctx.request.theProtocol}://$host/")
     AuthProvider(provider) match {
       case Some(AuthProvider.Otoroshi) =>
-        FastFuture.successful(
-          Redirect(s"/.well-known/otoroshi/logout?redirect=$redirect"))
+        val session = ctx.request.attrs(IdentityAttrs.SessionKey)
+        env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+            Redirect(s"/.well-known/otoroshi/logout?redirect=$redirect")
+        }
       case Some(AuthProvider.OAuth2) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>

@@ -314,12 +314,12 @@ object OtoroshiIdentityFilter {
               .get("sessionId")
               .orElse(request.getQueryString("sessionId")) match {
               case None => createSessionFromOtoroshi()
-              case Some(sessionId) =>
+              case Some(_) =>
                 val maybeSession = for {
                   session <- env.dataStore.userSessionRepo
-                    .findOne(Json.obj("sessionId" -> sessionId))
+                    .findOne(Json.obj("userEmail" -> email))
                   impersonatedSession <- env.dataStore.userSessionRepo
-                    .findOne(Json.obj("impersonatorSessionId" -> sessionId))
+                    .findOne(Json.obj("impersonatorEmail" -> email))
                 } yield {
                   impersonatedSession.orElse(session)
                 }
@@ -328,7 +328,11 @@ object OtoroshiIdentityFilter {
                   case None => createSessionFromOtoroshi()
                   case Some(session)
                     if session.expires.isBefore(DateTime.now()) =>
-                    createSessionFromOtoroshi()
+                    for {
+                      _ <- env.dataStore.userSessionRepo.deleteById(session.id)
+                      result <- createSessionFromOtoroshi()
+                    } yield result
+
                   case Some(session)
                     if session.expires.isAfter(DateTime.now()) =>
                     env.dataStore.userRepo
