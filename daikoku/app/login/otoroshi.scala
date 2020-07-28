@@ -261,17 +261,18 @@ object OtoroshiIdentityFilter {
                       expires = DateTime.now().plusSeconds(sessionMaxAge),
                       ttl = FiniteDuration(sessionMaxAge, TimeUnit.SECONDS)
                     ))
-                  val updatedUser = if (session.impersonatorId.isDefined)
-                    user.copy()
-                  else
-                    user.copy(
-                      name = name,
-                      email = email,
-                      picture = picture,
-                      tenants = user.tenants + tenant.id,
-                      origins = user.origins + AuthProvider.Otoroshi,
-                      isDaikokuAdmin = isDaikokuAdmin
-                    )
+                  val updatedUser =
+                    if (session.impersonatorId.isDefined)
+                      user.copy()
+                    else
+                      user.copy(
+                        name = name,
+                        email = email,
+                        picture = picture,
+                        tenants = user.tenants + tenant.id,
+                        origins = user.origins + AuthProvider.Otoroshi,
+                        isDaikokuAdmin = isDaikokuAdmin
+                      )
                   for {
                     tenantTeam <- env.dataStore.teamRepo
                       .forTenant(tenant)
@@ -327,14 +328,14 @@ object OtoroshiIdentityFilter {
                 maybeSession.flatMap {
                   case None => createSessionFromOtoroshi()
                   case Some(session)
-                    if session.expires.isBefore(DateTime.now()) =>
+                      if session.expires.isBefore(DateTime.now()) =>
                     for {
                       _ <- env.dataStore.userSessionRepo.deleteById(session.id)
                       result <- createSessionFromOtoroshi()
                     } yield result
 
                   case Some(session)
-                    if session.expires.isAfter(DateTime.now()) =>
+                      if session.expires.isAfter(DateTime.now()) =>
                     env.dataStore.userRepo
                       .findByIdNotDeleted(session.userId)
                       .flatMap {
@@ -342,9 +343,9 @@ object OtoroshiIdentityFilter {
                           createSessionFromOtoroshi(
                             maybeSession = Some(session))
                         case Some(user) =>
-                          createSessionFromOtoroshi(maybeUser = Some(user),
-                            maybeSession =
-                              Some(session))
+                          createSessionFromOtoroshi(
+                            maybeUser = Some(user),
+                            maybeSession = Some(session))
                       }
                 }
             }

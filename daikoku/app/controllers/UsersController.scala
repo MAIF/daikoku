@@ -278,7 +278,8 @@ class UsersController(DaikokuAction: DaikokuAction,
             .findOne(Json.obj("sessionId" -> sessionId.value))
             .flatMap {
               case Some(session) if session.expires.isAfter(DateTime.now()) => {
-                env.dataStore.userSessionRepo.delete(Json.obj("impersonatorSessionId" -> sessionId.value))
+                env.dataStore.userSessionRepo
+                  .delete(Json.obj("impersonatorSessionId" -> sessionId.value))
                   .map { _ =>
                     Redirect(ctx.request.session.get("redirect").getOrElse("/"))
                       .removingFromSession("sessionId", "redirect")(ctx.request)

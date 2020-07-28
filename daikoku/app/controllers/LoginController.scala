@@ -231,7 +231,7 @@ class LoginController(DaikokuAction: DaikokuAction,
       case Some(AuthProvider.Otoroshi) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
-            Redirect(s"/.well-known/otoroshi/logout?redirect=$redirect")
+          Redirect(s"/.well-known/otoroshi/logout?redirect=$redirect")
         }
       case Some(AuthProvider.OAuth2) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
