@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.0.0-dev
+1.0.5
 </div>
 </div>
 <div class="nav-toc">
@@ -66,13 +66,15 @@
   <li><a href="tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
   <ul>
     <li><a href="tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
+    <li><a href="tenantusage/1.5-initialize.html" class="page">Initialize Tenant from Otoroshi instances</a></li>
     <li><a href="tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="tenantusage/3-assets.html" class="page">Managing assets</a></li>
   </ul></li>
   <li><a href="producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
     <li><a href="producerusage/1-apis.html" class="page">Managing APIs</a></li>
-    <li><a href="producerusage/2-members.html" class="page">Managing team members</a></li>
+    <li><a href="producerusage/2-subscriptions.html" class="page">Managing API subscription</a></li>
+    <li><a href="producerusage/2-members.html" class="page">Managing teams</a></li>
     <li><a href="producerusage/3-assets.html" class="page">Managing team assets</a></li>
     <li><a href="producerusage/4-income.html" class="page">Team earnings</a></li>
   </ul></li>
@@ -154,13 +156,15 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li><a href="tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
   <ul>
     <li><a href="tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
+    <li><a href="tenantusage/1.5-initialize.html" class="page">Initialize Tenant from Otoroshi instances</a></li>
     <li><a href="tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="tenantusage/3-assets.html" class="page">Managing assets</a></li>
   </ul></li>
   <li><a href="producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
     <li><a href="producerusage/1-apis.html" class="page">Managing APIs</a></li>
-    <li><a href="producerusage/2-members.html" class="page">Managing team members</a></li>
+    <li><a href="producerusage/2-subscriptions.html" class="page">Managing API subscription</a></li>
+    <li><a href="producerusage/2-members.html" class="page">Managing teams</a></li>
     <li><a href="producerusage/3-assets.html" class="page">Managing team assets</a></li>
     <li><a href="producerusage/4-income.html" class="page">Team earnings</a></li>
   </ul></li>
@@ -196,17 +200,17 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <blockquote>
   <p><em>In Japan, <a href="https://en.wikipedia.org/wiki/File:Daikoku.jpg" target="blank">Daikokuten</a> (大黒天), the god of great darkness or blackness, or the god of five cereals, is one of the Seven Lucky Gods (Fukujin). Daikokuten evolved from the Buddhist form of the Indian deity Shiva intertwined with the Shinto god Ōkuninushi. The name is the Japanese equivalent of Mahākāla, the Hindu name for Shiva.</em></p>
 </blockquote><div class="centered-img">
-<p><a href="https://travis-ci.org/MAIF/daikoku"><img src="https://travis-ci.org/MAIF/daikoku.svg?branch=master" alt="Build Status" /></a> <a href="https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/MAIF/daikoku.svg" alt="Join the chat at https://gitter.im/MAIF/daikoku" /></a> <a href="https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.jar"> <img src="https://img.shields.io/github/release/MAIF/daikoku.svg" alt="Download" /> </a></p></div><div class="centered-img">
+<p><a href="https://travis-ci.org/MAIF/daikoku"><img src="https://travis-ci.org/MAIF/daikoku.svg?branch=master" alt="Build Status" /></a> <a href="https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/MAIF/daikoku.svg" alt="Join the chat at https://gitter.im/MAIF/daikoku" /></a> <a href="https://github.com/MAIF/daikoku/releases/download/v1.0.5/daikoku-1.0.5.jar"> <img src="https://img.shields.io/github/release/MAIF/daikoku.svg" alt="Download" /> </a></p></div><div class="centered-img">
 <img src="https://github.com/MAIF/daikoku/raw/master/resources/daikoku-logo.png" width="300"></img></div><div class="callout warning "><div class="callout-title">New to Otoroshi ?</div>
 <p>You are not sure of what is <strong>Otoroshi</strong>, you should probably have a look at <a href="https://maif.github.io/otoroshi/manual/quickstart.html">this</a> first.</p></div>
 <h2><a href="#installation" name="installation" class="anchor"><span class="anchor-link"></span></a>Installation</h2>
-<p>You can download the latest build of Daikoku as a <a href="https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.jar">fat jar</a> or as a <a href="https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.zip">zip package</a>.</p>
+<p>You can download the latest build of Daikoku as a <a href="https://github.com/MAIF/daikoku/releases/download/v1.0.5/daikoku-1.0.5.jar">fat jar</a> or as a <a href="https://github.com/MAIF/daikoku/releases/download/v1.0.5/daikoku-1.0.5.zip">zip package</a>.</p>
 <p>You can install and run Otoroshi with this little bash snippet :</p>
-<pre class="prettyprint"><code class="language-sh">curl -L -o daikoku.jar &#39;https://github.com/MAIF/daikoku/releases/download/v1.0.0-rc1/daikoku-1.0.0-rc1.jar&#39;
+<pre class="prettyprint"><code class="language-sh">curl -L -o daikoku.jar &#39;https://github.com/MAIF/daikoku/releases/download/v1.0.5/daikoku-1.0.5.jar&#39;
 java -jar daikoku.jar
 </code></pre>
 <p>or using docker :</p>
-<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; maif/daikoku:1.0.0-rc1
+<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; maif/daikoku:1.0.5
 </code></pre>
 <p>Now, open your browser to <a href="http://localhost:8080/" target="_blank"><a href="http://localhost:8080/">http://localhost:8080/</a></a>, <strong>log in with the credential generated in the logs</strong> and explore <strong>Daikoku</strong> by yourself</p>
 <h2><a href="#documentation" name="documentation" class="anchor"><span class="anchor-link"></span></a>Documentation</h2>
@@ -284,7 +288,7 @@ java -jar daikoku.jar
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2019</span>
+<span class="text">&copy; 2020</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
