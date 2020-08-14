@@ -918,6 +918,7 @@ case class User(
     name: String,
     email: String,
     picture: String = "/assets/images/anonymous.jpg",
+    pictureFromProvider: Boolean = true,
     personalToken: Option[String],
     isDaikokuAdmin: Boolean = false,
     password: Option[String] = None,
@@ -938,7 +939,7 @@ case class User(
       "picture" -> picture
     )
   }
-  def toUiPayload(tenantId: TenantId): JsValue = {
+  def toUiPayload(): JsValue = {
     Json.obj(
       "_id" -> id.value,
       "_humanReadableId" -> email.urlPathSegmentSanitized,
@@ -949,7 +950,6 @@ case class User(
       "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "isGuest" -> isGuest
-      // "lastTeam" -> json.TeamIdFormat.writes(lastTeams.getOrElse(tenantId, Team.Default))
     )
   }
 }

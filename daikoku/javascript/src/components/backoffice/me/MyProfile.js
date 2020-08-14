@@ -10,7 +10,6 @@ import { configuration } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
 import { Spinner, validatePassword, ValidateEmail } from '../../utils';
 import { t, Translation } from '../../../locales';
-import { fileToObject } from 'antd/lib/upload/utils';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -84,29 +83,64 @@ class RefreshToken extends Component {
   }
 }
 
-class Gravatar extends Component {
-  setGravatarLink = () => {
-    const email = this.props.rawValue.email.toLowerCase().trim();
-    const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
-    this.props.changeValue('picture', url);
+const Avatar = ({currentLanguage, value, rawValue, changeValue, label, ...props}) => {
+  const setPictureFromProvider = () => {
+    changeValue('pictureFromProvider', true);
   };
 
-  render() {
-    return (
-      <div className="form-group row">
-        <label className="col-xs-12 col-sm-2 col-form-label" />
-        <div className="col-sm-10">
-          <button type="button" className="btn btn-outline-primary" onClick={this.setGravatarLink}>
-            <i className="fas fa-user-circle mr-1" />
-            <Translation i18nkey="Set avatar from Gravatar" language={this.props.currentLanguage}>
-              Set avatar from Gravatar
-            </Translation>
-          </button>
-        </div>
-      </div>
-    );
+  const changePicture = (picture) => {
+    if (rawValue.pictureFromProvider) {
+      props.onRawChange({ ...rawValue, picture, pictureFromProvider: false});
+    } else {
+      changeValue('picture', picture);
+    }
+  };
+
+  const setGravatarLink = () => {
+    const email = rawValue.email.toLowerCase().trim();
+    const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
+    changePicture(url);
+  };
+
+  const isOtherOriginThanLocal = rawValue.origins.some(o => o.toLowerCase !== 'local');
+
+  if (!isOtherOriginThanLocal) {
+    return null;
   }
-}
+  return (
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label">{label}</label>
+      <div className="col-sm-10">
+        <input type="text" 
+          value={value}
+          onChange={e => changePicture(e.target.value)}
+        />
+      </div>
+      <div className="col-sm-10 offset-sm-2 d-flex">
+        <button 
+          type="button" 
+          className="btn btn-outline-primary mr-1" 
+          onClick={setGravatarLink}>
+          <i className="fas fa-user-circle mr-1" />
+          <Translation i18nkey="Set avatar from Gravatar" language={currentLanguage}>
+            Set avatar from Gravatar
+            </Translation>
+        </button>
+        {isOtherOriginThanLocal && <button 
+          type="button" 
+          className="btn btn-outline-primary" 
+          onClick={setPictureFromProvider} 
+          disabled={rawValue.pictureFromProvider ? 'disabled' : null}>
+          <i className="fas fa-user-circle mr-1" />
+          <Translation i18nkey="Set avatar from auth. provider" language={currentLanguage}>
+            Set avatar from auth. Provider
+          </Translation>
+        </button>}
+      </div>
+    </div>
+  );
+
+};
 
 class TenantList extends Component {
   state = {
@@ -217,12 +251,6 @@ class MyProfileComponent extends Component {
         label: t('Email address', this.props.currentLanguage),
       },
     },
-    picture: {
-      type: 'string',
-      props: {
-        label: t('Avatar', this.props.currentLanguage),
-      },
-    },
     personalToken: {
       type: 'string',
       props: {
@@ -249,11 +277,12 @@ class MyProfileComponent extends Component {
         displayError: (error) => toastr.error(error),
       },
     },
-    gravatar: {
-      type: Gravatar,
+    picture: {
+      type: Avatar,
       props: {
         currentLanguage: this.props.currentLanguage,
-      },
+        label: t('Avatar', this.props.currentLanguage),
+      }
     },
     defaultLanguage: {
       type: 'select',
@@ -274,7 +303,6 @@ class MyProfileComponent extends Component {
     'email',
     'setPassword',
     'picture',
-    'gravatar',
     'personalToken',
     'refreshToken',
     'defaultLanguage',
@@ -285,15 +313,20 @@ class MyProfileComponent extends Component {
     const filename = file.name;
     const contentType = file.type;
     return Services.storeUserAvatar(filename, contentType, file).then((res) => {
-      this.setState(
-        {
-          user: {
-            ...this.state.user,
-            picture: `/user-avatar/${this.props.tenant._humanReadableId}/${res.id}`,
+      if (res.error) {
+        toastr.error(res.error);
+      } else {
+        this.setState(
+          {
+            user: {
+              ...this.state.user,
+              picture: `/user-avatar/${this.props.tenant._humanReadableId}/${res.id}`,
+              pictureFromProvider: false
+            },
           },
-        },
-        () => this.forceUpdate()
-      );
+          () => this.forceUpdate()
+        );
+      }
     });
   };
 
@@ -368,7 +401,7 @@ class MyProfileComponent extends Component {
                 <img
                   src={`${this.state.user.picture}${
                     this.state.user.picture.startsWith('http') ? '' : `?${Date.now()}`
-                  }`}
+                    }`}
                   style={{
                     width: 200,
                     borderRadius: '50%',

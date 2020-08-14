@@ -40,7 +40,7 @@
   <script src="https://unpkg.com/pdfjs-dist/build/pdf.worker.min.js"></script-->
   <script>
     Daikoku.init(
-      @Html(play.api.libs.json.Json.prettyPrint(user.toUiPayload(tenant.id))),
+      @Html(play.api.libs.json.Json.prettyPrint(user.toUiPayload())),
       @Html(play.api.libs.json.Json.prettyPrint(tenant.toUiPayload(env))),
       @Html(play.api.libs.json.Json.prettyPrint(session.impersonatorJson())),
       @Html(play.api.libs.json.Json.prettyPrint(session.asSimpleJson)),

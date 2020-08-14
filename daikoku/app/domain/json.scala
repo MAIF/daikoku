@@ -1352,6 +1352,7 @@ object json {
             picture = (json \ "picture")
               .asOpt[String]
               .getOrElse((json \ "email").as[String].gravatar),
+            pictureFromProvider = (json \ "pictureFromProvider").asOpt[Boolean].getOrElse(true),
             password = (json \ "password").asOpt[String],
             hardwareKeyRegistrations = (json \ "hardwareKeyRegistrations")
               .asOpt[Seq[JsObject]]
@@ -1364,7 +1365,6 @@ object json {
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String]
-            //lastTeams = (json \ "lastTeams").asOpt[Map[String, String]].map(_.map(value => (TenantId(value._1), TeamId(value._2)))).getOrElse(Map.empty)
           )
         )
       } recover {
@@ -1376,10 +1376,10 @@ object json {
       "_deleted" -> o.deleted,
       "tenants" -> SeqTenantIdFormat.writes(o.tenants.toSeq),
       "origins" -> JsArray(o.origins.toSeq.map(o => JsString(o.name))),
-      // "ownTeam" -> TeamIdFormat.writes(o.ownTeam),
       "name" -> o.name,
       "email" -> o.email,
       "picture" -> o.picture,
+      "pictureFromProvider" -> o.pictureFromProvider,
       "password" -> o.password,
       "isDaikokuAdmin" -> o.isDaikokuAdmin,
       "personalToken" -> o.personalToken
@@ -1392,7 +1392,6 @@ object json {
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "isGuest" -> o.isGuest
-      //"lastTeams"                -> o.lastTeams.map(item => (item._1.value, item._2.value))
     )
   }
 
