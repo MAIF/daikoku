@@ -6,10 +6,9 @@ import { connect } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
-import { TopBar, Spinner, Error, Footer } from '../components/utils';
+import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
-import { updateTeamPromise } from '../core';
-import { history } from '../core';
+import { updateTeamPromise, history } from '../core';
 
 import 'react-redux-toastr/src/styles/index.scss';
 
@@ -533,6 +532,15 @@ class DaikokuAppComponent extends Component {
               ))}
             />
           </Switch>
+          <Route
+            path="/"
+            render={(p) => (
+              <Discussion 
+                location={p.location}
+                history={p.history}
+                match={p.match}/> 
+            )}
+          />
           <Route
             path={[
               '/teams',

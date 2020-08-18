@@ -1,0 +1,127 @@
+.dicussion-component {
+  z-index: 1000;
+
+  position: fixed;
+  bottom: 50px;
+  right: 50px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.discussion {
+  width: 300px;
+  margin-bottom: 10px;
+
+  border-radius: 4px;
+  overflow: hidden;
+
+  .discussion-header {
+    background: dodgerblue;
+    color: #fff;
+    padding: 5px 10px;
+
+    width: 100%;
+
+    font-weight: 600;
+  }
+
+  .discussion-stream {
+    background: #fff;
+    width: 100%;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .discussion-form {
+    width: 100%;
+    border-top: 1px solid #ccc;
+    display: flex;
+    flex-direction: row;
+
+    input {
+      border: none;
+      flex-grow: 2;
+      padding: 0 20px;
+      height: 50px;
+    }
+
+    .send-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      flex-grow: 1;
+
+      cursor: pointer;
+      background-color: #fff;
+      color: dodgerblue;
+    }
+  }
+
+}
+
+.discussion-btn {
+  background: dodgerblue;
+  width: 60px; height: 60px;
+  border: 1px solid #fff;
+  border-radius: 30px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.discussion-messages {
+
+
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+
+  .discussion-message {
+    display: inline-block;
+    margin-bottom: 2px;
+    padding: 7px 13px;
+    font-size: 12px;
+    border-radius: 15px;
+    line-height: 1.4;
+  }
+
+  &--send {
+    align-items: flex-start;
+
+    .discussion-message {
+      color: #fff;
+      background-color: #1998e6;
+      border-bottom-left-radius: 5px;
+      border-top-left-radius: 5px;
+
+      &:first-child{
+        border-top-left-radius: 15px;
+      }
+      &:last-child{
+        border-bottom-left-radius: 15px;
+      }
+    }
+  }
+  &--received {
+    align-items: flex-end;
+
+    .discussion-message {
+      color: #000;
+      background-color: #ddd;
+      border-bottom-right-radius: 5px;
+      border-top-right-radius: 5px;
+
+      &:first-child{
+        border-top-right-radius: 15px;
+      }
+      &:last-child{
+        border-bottom-right-radius: 15px;
+      }
+    }
+  }
+}

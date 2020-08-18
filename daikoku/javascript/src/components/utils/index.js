@@ -16,3 +16,4 @@ export * from './Footer';
 export * from './validation';
 export * from './BeautifulTitle';
 export * from './entities';
+export * from './Discussion';
