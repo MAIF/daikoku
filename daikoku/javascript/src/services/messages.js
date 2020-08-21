@@ -7,7 +7,7 @@ const MessagesEvents = {
   start() {
     if (window.EventSource) {
       console.log('Initialising server sent event');
-      eventSource = new EventSource(`${window.__contextPath}/api/messages/_sse`);
+      eventSource = new EventSource('/api/messages/_sse');
       eventSource.addEventListener('open', e => {
         // console.log('SSE opened');
       }, false);

@@ -33,7 +33,8 @@
     padding: 5px;
     display: flex;
     flex-direction: column;
-    //todo: define a max height and then scroll
+    max-height: 250px;
+    overflow-y: scroll;
   }
 
   .discussion-form {

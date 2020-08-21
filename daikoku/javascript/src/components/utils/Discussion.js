@@ -3,8 +3,11 @@ import { connect } from 'react-redux';
 import { MessageCircle, X, Send } from 'react-feather';
 import _ from 'lodash';
 import ClassNames from 'classnames';
+import faker from 'faker';
 
 import * as Services from '../../services';
+import * as MessageEvents from '../../services/messages';
+import {Option} from '../utils';
 
 const DiscussionComponent = props => {
   const [opened, setOpened] = useState(false);
@@ -12,6 +15,10 @@ const DiscussionComponent = props => {
   const [newMessage, setNewMessage] = useState('');
   const [adminTeam, setAdminTeam] = useState(undefined);
   const [loading, setLoading] = useState(true);
+
+  const [receivedMessage, setReceivedMessage] = useState(undefined);
+
+  const sseId = faker.random.alphaNumeric(64);
 
   useEffect(() => {
     Promise.all([
@@ -23,11 +30,30 @@ const DiscussionComponent = props => {
         setAdminTeam(adminTeam);
         setLoading(false);
       });
+
+    MessageEvents.addCallback((m) => handleEvent(m), sseId);
+
+    return () => {
+      MessageEvents.removeCallback(sseId);
+    };
   }, []);
+
+  useEffect(() => {
+    if (receivedMessage) {
+      setMessages([...messages, receivedMessage]);
+      setReceivedMessage(undefined);
+    }
+  }, [receivedMessage]);
+
+  const handleEvent = (m) => {
+    setReceivedMessage(m);
+  };
 
   const sendNewMessage = () => {
     setLoading(true);
-    Services.sendMessage(newMessage, adminTeam._id)
+    const chat = Option(_.head(messages)).map(m => m.chat).getOrNull();
+    console.debug({messages, chat})
+    Services.sendMessage(newMessage, adminTeam._id, chat)
       .then(() => {
         setLoading(false);
         setNewMessage('');
@@ -39,7 +65,7 @@ const DiscussionComponent = props => {
       return [[message]];
     } else {
       const last = _.last(dialog);
-      if (last.some(m => m.sender === message.sender) || last.some(m => m.recipient === message.recipient)) {
+      if (last.some(m => m.sender === message.sender)) {
         return [...dialog.slice(0, dialog.length - 1), [...last, message]];
       } else {
         return [...dialog, [message]];
@@ -73,7 +99,7 @@ const DiscussionComponent = props => {
                   <div
                     key={`discussion-messages-${idx}`}
                     className={ClassNames('discussion-messages', {
-                      'discussion-messages--received': group.every(m => m.recipient.id === props.connectedUser._id),
+                      'discussion-messages--received': group.every(m => m.sender !== props.connectedUser._id),
                       'discussion-messages--send': group.every(m => m.sender === props.connectedUser._id),
                     })}>
                     {group.map((mess, idx) => {

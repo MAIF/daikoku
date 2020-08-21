@@ -1469,7 +1469,7 @@ export function myMessages() {
   }).then((r) => r.json());
 }
 
-export function sendMessage(message, recipient, discussion) {
+export function sendMessage(message, recipient, chat) {
   return fetch('/api/messages/_send', {
     method: 'POST',
     credentials: 'include',
@@ -1479,7 +1479,8 @@ export function sendMessage(message, recipient, discussion) {
     },
     body: JSON.stringify({
       message,
-      recipient
+      recipient,
+      chat
     })
   }).then((r) => r.json());
 }

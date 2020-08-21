@@ -2,18 +2,16 @@ package fr.maif.otoroshi.daikoku.messages
 
 import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
-import fr.maif.otoroshi.daikoku.domain.{Message, Tenant, User}
+import fr.maif.otoroshi.daikoku.domain.{ChatId, Message, Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json.{JsArray, Json}
 
 import scala.concurrent.Future
 
 case class SendMessage(message: Message)
-
 case class StreamMessage(message: Message)
-
 case class GetAllMessage(user: User, tenant: Tenant)
+case class CloseChat(chat: String, tenant: Tenant)
 
 class MessageActor(
                     implicit env: Env
@@ -36,5 +34,8 @@ class MessageActor(
     case SendMessage(message) =>
       val response = env.dataStore.messageRepo.forTenant(message.tenant).save(message)
       response pipeTo sender()
+
+    case CloseChat(chat, tenant) =>
+      env.dataStore.messageRepo.forTenant(tenant).save(Json.obj("chat" -> chat), Json.obj("closed" -> true))
   }
 }

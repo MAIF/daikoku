@@ -442,6 +442,9 @@ case class UserSessionId(value: String)
 case class MongoId(value: String) extends ValueType with CanJson[MongoId] {
   def asJson: JsValue = JsString(value)
 }
+case class ChatId(value: String) extends ValueType with CanJson[ChatId] {
+  def asJson: JsValue = JsString(value)
+}
 
 trait BillingTimeUnit extends CanJson[BillingTimeUnit] {
   def name: String
@@ -1459,12 +1462,15 @@ object Recipient {
   case class User(id: UserId) extends Recipient
 }
 
+//todo: add dialogId prop & closed prop
 case class Message(id: MongoId,
                   tenant: TenantId,
+                  chat: ChatId,
                   date: DateTime,
                   sender: UserId,
                   recipient: Recipient,
                   message: String,
+                  closed: Boolean = false,
                   send: Boolean = false,
                   read: Boolean = false) extends CanJson[Message] {
   override def asJson: JsValue = json.MessageFormat.writes(this)

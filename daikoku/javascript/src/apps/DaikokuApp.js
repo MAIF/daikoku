@@ -65,8 +65,17 @@ import {
 
 import { smartRedirect, smartMatch } from '../services/path';
 import { ResetPassword, Signup } from './DaikokuHomeApp';
+import {MessagesEvents} from '../services/messages';
 
 class DaikokuAppComponent extends Component {
+  componentDidMount() {
+    MessagesEvents.start();
+  }
+
+  componentWillUnmount() {
+    MessagesEvents.stop();
+  }
+
   render() {
     const { user, tenant, loginProvider, loginAction } = this.props;
     if (!user) {

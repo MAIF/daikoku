@@ -203,6 +203,15 @@ object json {
       } get
     override def writes(o: MongoId): JsValue = JsString(o.value)
   }
+  val ChatIdFormat = new Format[ChatId] {
+    override def reads(json: JsValue): JsResult[ChatId] =
+      Try {
+        JsSuccess(ChatId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: ChatId): JsValue = JsString(o.value)
+  }
   val TeamIdFormat = new Format[TeamId] {
     override def reads(json: JsValue): JsResult[TeamId] =
       Try {
@@ -2476,12 +2485,14 @@ object json {
           Message(
             id = (json \ "_id").as(MongoIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
+            chat = (json \ "chat").as(ChatIdFormat),
             date = (json \ "date").as(DateTimeFormat),
             sender = (json \ "sender").as(UserIdFormat),
             recipient = (json \ "recipient").as(RecipientFormat),
             message = (json \ "message").as[String],
             send = (json \ "send").asOpt[Boolean].getOrElse(false),
-            read = (json \ "read").asOpt[Boolean].getOrElse(false)
+            read = (json \ "read").asOpt[Boolean].getOrElse(false),
+            closed = (json \ "closed").asOpt[Boolean].getOrElse(false)
           )
         )
       } recover {
@@ -2493,12 +2504,14 @@ object json {
       override def writes(o: Message): JsValue = Json.obj(
         "_id" -> o.id.value,
         "_tenant" -> o.tenant.value,
+        "chat" -> o.chat.value,
         "date" -> DateTimeFormat.writes(o.date),
         "sender" -> UserIdFormat.writes(o.sender),
         "recipient" -> RecipientFormat.writes(o.recipient),
         "message" -> o.message,
         "send" -> o.send,
-        "read" -> o.read
+        "read" -> o.read,
+        "closed" -> o.closed
       )
     }
 
