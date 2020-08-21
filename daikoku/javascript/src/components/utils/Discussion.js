@@ -11,6 +11,7 @@ const DiscussionComponent = props => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [adminTeam, setAdminTeam] = useState(undefined);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -20,12 +21,17 @@ const DiscussionComponent = props => {
       .then(([messages, adminTeam]) => {
         setMessages(messages);
         setAdminTeam(adminTeam);
+        setLoading(false);
       });
   }, []);
 
   const sendNewMessage = () => {
-    Services.sendMessage(newMessage, adminTeam._id);
-
+    setLoading(true);
+    Services.sendMessage(newMessage, adminTeam._id)
+      .then(() => {
+        setLoading(false);
+        setNewMessage('');
+      });
   };
 
   const fromMessagesToDialog = () => _.orderBy(messages, ['date']).reduce((dialog, message) => {
@@ -40,6 +46,16 @@ const DiscussionComponent = props => {
       }
     }
   }, []);
+
+  const handleKeyDown = (event) => {
+    if (!newMessage.trim()) return;
+
+    switch (event.key) {
+      case 'Enter':
+        sendNewMessage();
+        event.preventDefault();
+    }
+  };
 
   if (opened) {
     const dialog = fromMessagesToDialog();
@@ -73,7 +89,12 @@ const DiscussionComponent = props => {
             }
           </div>
           <div className="discussion-form">
-            <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} />
+            <input
+              disabled={loading ? 'disabled' : null}
+              type="text"
+              value={loading ? '...' : newMessage}
+              onKeyDown={handleKeyDown}
+              onChange={e => setNewMessage(e.target.value)} />
             <button className="send-button" onClick={sendNewMessage}>
               <Send />
             </button>

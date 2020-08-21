@@ -56,9 +56,14 @@
 
       flex-grow: 1;
 
+      border: none;
       cursor: pointer;
       background-color: #fff;
       color: dodgerblue;
+
+      &:hover {
+        color: lighten($color: dodgerblue, $amount: 20) ;
+      }
     }
   }
 
