@@ -2469,6 +2469,61 @@ object json {
       )
     }
 
+  val MessageFormat: Format[Message] =
+    new Format[Message] {
+      override def reads(json: JsValue): JsResult[Message] = Try {
+        JsSuccess(
+          Message(
+            id = (json \ "_id").as(MongoIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            date = (json \ "date").as(DateTimeFormat),
+            sender = (json \ "sender").as(UserIdFormat),
+            recipient = (json \ "recipient").as(RecipientFormat),
+            message = (json \ "message").as[String],
+            send = (json \ "send").asOpt[Boolean].getOrElse(false),
+            read = (json \ "read").asOpt[Boolean].getOrElse(false)
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+      override def writes(o: Message): JsValue = Json.obj(
+        "_id" -> o.id.value,
+        "_tenant" -> o.tenant.value,
+        "date" -> DateTimeFormat.writes(o.date),
+        "sender" -> UserIdFormat.writes(o.sender),
+        "recipient" -> RecipientFormat.writes(o.recipient),
+        "message" -> o.message,
+        "send" -> o.send,
+        "read" -> o.read
+      )
+    }
+
+  val RecipientFormat: Format[Recipient] =
+    new Format[Recipient] {
+      override def reads(json: JsValue): JsResult[Recipient] =
+        (json \ "type").as[String] match {
+          case "User"    => UserIdFormat.reads((json \ "id").as[JsValue])
+            .map(id => Recipient.User(id))
+          case "Team"   => TeamIdFormat.reads((json \ "id").as[JsValue])
+            .map(id => Recipient.Team(id))
+          case str      => JsError(s"Bad recipient value: $str")
+        }
+      override def writes(o: Recipient): JsValue = o match {
+        case p: Recipient.User => Json.obj(
+          "type" -> "User",
+          "id" -> UserIdFormat.writes(o.id.asInstanceOf[UserId])
+        )
+        case p: Recipient.Team => Json.obj(
+          "type" -> "Team",
+          "id" -> TeamIdFormat.writes(o.id.asInstanceOf[TeamId])
+        )
+      }
+    }
+
   val SeqOtoroshiSettingsFormat = Format(Reads.seq(OtoroshiSettingsFormat),
                                          Writes.seq(OtoroshiSettingsFormat))
   val SeqVersionFormat =

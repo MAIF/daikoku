@@ -1449,3 +1449,23 @@ case class Translation(id: MongoId,
     )
   }
 }
+
+sealed trait Recipient {
+  def id: ValueType
+}
+
+object Recipient {
+  case class Team(id: TeamId) extends Recipient
+  case class User(id: UserId) extends Recipient
+}
+
+case class Message(id: MongoId,
+                  tenant: TenantId,
+                  date: DateTime,
+                  sender: UserId,
+                  recipient: Recipient,
+                  message: String,
+                  send: Boolean = false,
+                  read: Boolean = false) extends CanJson[Message] {
+  override def asJson: JsValue = json.MessageFormat.writes(this)
+}

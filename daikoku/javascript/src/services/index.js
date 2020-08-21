@@ -1457,3 +1457,40 @@ export function removeAdminFromTenant(tenantId, adminId) {
     },
   }).then((r) => r.json());
 }
+
+export function myMessages() {
+  return fetch('/api/me/messages', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function sendMessage(message, recipient, discussion) {
+  return fetch('/api/messages/_send', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message,
+      recipient
+    })
+  }).then((r) => r.json());
+}
+
+export function messageSSE() {
+  return fetch('/api/messages/_sse', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}

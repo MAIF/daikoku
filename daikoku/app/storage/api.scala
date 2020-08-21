@@ -188,6 +188,7 @@ trait ConsumptionRepo extends TenantCapableRepo[ApiKeyConsumption, MongoId] {
   }
 }
 trait TranslationRepo extends TenantCapableRepo[Translation, MongoId]
+trait MessageRepo extends TenantCapableRepo[Message, MongoId]
 
 trait DataStore {
   def start(): Future[Unit]
@@ -206,6 +207,7 @@ trait DataStore {
   def translationRepo: TranslationRepo
   def passwordResetRepo: PasswordResetRepo
   def accountCreationRepo: AccountCreationRepo
+  def messageRepo: MessageRepo
   def exportAsStream(pretty: Boolean)(implicit ec: ExecutionContext,
                                       mat: Materializer,
                                       env: Env): Source[ByteString, _]

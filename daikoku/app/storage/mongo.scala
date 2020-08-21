@@ -127,6 +127,17 @@ case class MongoTenantCapableTranslationRepo(
   override def repo(): MongoRepo[Translation, MongoId] = _repo()
 }
 
+case class MongoTenantCapableMessageRepo(
+    _repo: () => MongoRepo[Message, MongoId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[Message, MongoId]
+) extends MongoTenantCapableRepo[Message, MongoId]
+  with MessageRepo {
+  override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[Message, MongoId] =
+    _tenantRepo(tenant)
+
+  override def repo(): MongoRepo[Message, MongoId] = _repo()
+}
+
 case class MongoTenantCapableConsumptionRepo(
     _repo: () => MongoRepo[ApiKeyConsumption, MongoId],
     _tenantRepo: TenantId => MongoTenantAwareRepo[ApiKeyConsumption, MongoId]
@@ -259,9 +270,14 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
   private val _accountCreationRepo: AccountCreationRepo =
     new MongoAccountCreationRepo(env, reactiveMongoApi)
   private val _translationRepo: TranslationRepo =
-    new MongoTenantCapableTranslationRepo(
+    MongoTenantCapableTranslationRepo(
       () => new MongoTranslationRepo(env, reactiveMongoApi),
       t => new MongoTenantTranslationRepo(env, reactiveMongoApi, t))
+  private val _messageRepo: MessageRepo =
+    MongoTenantCapableMessageRepo(
+      () => new MongoMessageRepo(env, reactiveMongoApi),
+      t => new MongoTenantMessageRepo(env, reactiveMongoApi, t)
+    )
 
   override def tenantRepo: TenantRepo = _tenantRepo
 
@@ -289,6 +305,8 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def accountCreationRepo: AccountCreationRepo = _accountCreationRepo
 
   override def translationRepo: TranslationRepo = _translationRepo
+
+  override def messageRepo: MessageRepo = _messageRepo
 
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
@@ -486,6 +504,19 @@ class MongoTenantTranslationRepo(env: Env,
   override def extractId(value: Translation): String = value.id.value
 }
 
+class MongoTenantMessageRepo(env: Env,
+                                 reactiveMongoApi: ReactiveMongoApi,
+                                 tenant: TenantId)
+    extends MongoTenantAwareRepo[Message, MongoId](env,
+                                                       reactiveMongoApi,
+                                                       tenant) {
+  override def collectionName: String = "Messages"
+
+  override def format: Format[Message] = json.MessageFormat
+
+  override def extractId(value: Message): String = value.id.value
+}
+
 class MongoTenantApiSubscriptionRepo(env: Env,
                                      reactiveMongoApi: ReactiveMongoApi,
                                      tenant: TenantId)
@@ -589,6 +620,15 @@ class MongoTranslationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def format: Format[Translation] = json.TranslationFormat
 
   override def extractId(value: Translation): String = value.id.value
+}
+
+class MongoMessageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[Message, MongoId](env, reactiveMongoApi) {
+  override def collectionName: String = "Messages"
+
+  override def format: Format[Message] = json.MessageFormat
+
+  override def extractId(value: Message): String = value.id.value
 }
 
 class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
