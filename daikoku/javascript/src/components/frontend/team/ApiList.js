@@ -457,7 +457,7 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
           .map((team) => {
             return (
               <span
-                className="p-1 cursor-pointer underline-on-hover"
+                className="p-1 cursor-pointer underline-on-hover text-break"
                 key={team._id}
                 onClick={() => redirectToTeam(team)}>
                 {team.name}
