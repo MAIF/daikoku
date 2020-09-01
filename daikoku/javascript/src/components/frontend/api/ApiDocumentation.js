@@ -110,7 +110,7 @@ export class ApiDocumentation extends Component {
           <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
             {prevId && (
               <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${prevId}`}>
-                <i className="fas fa-chevron-left" />
+                <i className="fas fa-chevron-left mr-1" />
                 <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
                   Previous page
                 </Translation>
@@ -121,7 +121,7 @@ export class ApiDocumentation extends Component {
                 <Translation i18nkey="Next page" language={this.props.currentLanguage}>
                   Next page
                 </Translation>
-                <i className="fas fa-chevron-right" />
+                <i className="fas fa-chevron-right ml-1" />
               </Link>
             )}
           </div>
@@ -145,7 +145,7 @@ export class ApiDocumentation extends Component {
           <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
             {prevId && (
               <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${prevId}`}>
-                <i className="fas fa-chevron-left" />
+                <i className="fas fa-chevron-left mr-1" />
                 <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
                   Previous page
                 </Translation>
@@ -156,7 +156,7 @@ export class ApiDocumentation extends Component {
                 <Translation i18nkey="Next page" language={this.props.currentLanguage}>
                   Next page
                 </Translation>
-                <i className="fas fa-chevron-right" />
+                <i className="fas fa-chevron-right ml-1" />
               </Link>
             )}
           </div>
