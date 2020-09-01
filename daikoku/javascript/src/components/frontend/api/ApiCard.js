@@ -140,7 +140,7 @@ export class ApiCard extends Component {
         <div className="col-12 d-flex mt-2">
           {this.props.teamVisible && (
             <small
-              className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline"
+              className="cursor-pointer underline-on-hover a-fake d-flex align-items-center"
               onClick={() => this.props.redirectToTeamPage(team)}>
               <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
               {team.name}
