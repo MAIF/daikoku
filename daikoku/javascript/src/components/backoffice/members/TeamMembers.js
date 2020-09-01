@@ -284,7 +284,7 @@ export class TeamMembersSimpleComponent extends Component {
             </div>
           </Can>
         </div>
-        <div className="container">
+        <div className="container-fluid">
           <div className="row">
             <div className="col mt-3 onglets">
               <ul className="nav nav-tabs flex-column flex-sm-row">
