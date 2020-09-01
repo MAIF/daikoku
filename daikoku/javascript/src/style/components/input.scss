@@ -40,3 +40,7 @@
 .reactSelect__option:hover{
     cursor: pointer;
 }
+
+.reactSelect__group-heading{
+    color:$form-select-heading-color !important;
+}
