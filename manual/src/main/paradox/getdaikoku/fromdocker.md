@@ -5,7 +5,7 @@ If you're a Docker aficionado, Daikoku is provided as a Docker image that your c
 Fetch the last Docker image of Daikoku :
 
 ```sh
-docker pull maif/daikoku:1.0.5
+docker pull maif/daikoku:1.0.6
 # or 
 docker pull maif/daikoku:latest
 ```
