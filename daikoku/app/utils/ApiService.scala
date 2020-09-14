@@ -26,7 +26,11 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                      api: Api,
                      planId: String,
                      team: Team,
-                     customMetadata: Option[JsObject]): Future[Either[AppError, JsObject]] = {
+                     customMetadata: Option[JsObject] = None,
+                     customMaxPerSecond: Option[Long] = None,
+                     customMaxPerDay: Option[Long] = None,
+                     customMaxPerMonth: Option[Long] = None,
+                     customReadOnly: Option[Boolean] = None): Future[Either[AppError, JsObject]] = {
     val defaultPlanOpt =
       api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
     val askedUsagePlan = api.possibleUsagePlans.find(p => p.id.value == planId)
@@ -62,7 +66,11 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         customName = None,
         rotation = plan.autoRotation.map(rotation => ApiSubscriptionRotation(enabled = rotation)),
         integrationToken = integrationToken,
-        customMetadata = customMetadata
+        customMetadata = customMetadata,
+        customMaxPerSecond = customMaxPerSecond,
+        customMaxPerDay = customMaxPerDay,
+        customMaxPerMonth = customMaxPerMonth,
+        customReadOnly = customReadOnly
       )
       val ctx = Map(
         "user.id" -> user.id.value,
@@ -92,7 +100,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         monthlyQuota = RemainingQuotas.MaxValue,
         allowClientIdOnly =
           plan.otoroshiTarget.exists(_.apikeyCustomization.clientIdOnly),
-        readOnly = plan.otoroshiTarget.exists(_.apikeyCustomization.readOnly),
+        readOnly = customReadOnly.getOrElse(plan.otoroshiTarget.exists(_.apikeyCustomization.readOnly)),
         constrainedServicesOnly = plan.otoroshiTarget.exists(
           _.apikeyCustomization.constrainedServicesOnly),
         tags = plan.otoroshiTarget
@@ -122,17 +130,20 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       val tunedApiKey = plan match {
         case _: FreeWithoutQuotas => apiKey
         case p: FreeWithQuotas =>
-          apiKey.copy(throttlingQuota = p.maxPerSecond,
-            dailyQuota = p.maxPerDay,
-            monthlyQuota = p.maxPerMonth)
+          apiKey.copy(
+            throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
+            dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
+            monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
         case p: QuotasWithLimits =>
-          apiKey.copy(throttlingQuota = p.maxPerSecond,
-            dailyQuota = p.maxPerDay,
-            monthlyQuota = p.maxPerMonth)
+          apiKey.copy(
+            throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
+            dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
+            monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
         case p: QuotasWithoutLimits =>
-          apiKey.copy(throttlingQuota = p.maxPerSecond,
-            dailyQuota = p.maxPerDay,
-            monthlyQuota = p.maxPerMonth)
+          apiKey.copy(
+            throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
+            dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
+            monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
         case _: PayPerUse => apiKey
         case _: Admin => apiKey
       }
