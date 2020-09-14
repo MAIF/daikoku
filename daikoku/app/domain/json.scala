@@ -1352,7 +1352,8 @@ object json {
             picture = (json \ "picture")
               .asOpt[String]
               .getOrElse((json \ "email").as[String].gravatar),
-            pictureFromProvider = (json \ "pictureFromProvider").asOpt[Boolean].getOrElse(true),
+            pictureFromProvider =
+              (json \ "pictureFromProvider").asOpt[Boolean].getOrElse(true),
             password = (json \ "password").asOpt[String],
             hardwareKeyRegistrations = (json \ "hardwareKeyRegistrations")
               .asOpt[Seq[JsObject]]

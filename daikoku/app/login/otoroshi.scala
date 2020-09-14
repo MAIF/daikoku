@@ -268,7 +268,9 @@ object OtoroshiIdentityFilter {
                       user.copy(
                         name = name,
                         email = email,
-                        picture = if (user.pictureFromProvider) picture else user.picture,
+                        picture =
+                          if (user.pictureFromProvider) picture
+                          else user.picture,
                         tenants = user.tenants + tenant.id,
                         origins = user.origins + AuthProvider.Otoroshi,
                         isDaikokuAdmin = isDaikokuAdmin

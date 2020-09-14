@@ -83,14 +83,14 @@ class RefreshToken extends Component {
   }
 }
 
-const Avatar = ({currentLanguage, value, rawValue, changeValue, label, ...props}) => {
+const Avatar = ({ currentLanguage, value, rawValue, changeValue, label, ...props }) => {
   const setPictureFromProvider = () => {
     changeValue('pictureFromProvider', true);
   };
 
   const changePicture = (picture) => {
     if (rawValue.pictureFromProvider) {
-      props.onRawChange({ ...rawValue, picture, pictureFromProvider: false});
+      props.onRawChange({ ...rawValue, picture, pictureFromProvider: false });
     } else {
       changeValue('picture', picture);
     }
@@ -102,7 +102,7 @@ const Avatar = ({currentLanguage, value, rawValue, changeValue, label, ...props}
     changePicture(url);
   };
 
-  const isOtherOriginThanLocal = rawValue.origins.some(o => o.toLowerCase !== 'local');
+  const isOtherOriginThanLocal = rawValue.origins.some((o) => o.toLowerCase !== 'local');
 
   if (!isOtherOriginThanLocal) {
     return null;
@@ -111,35 +111,30 @@ const Avatar = ({currentLanguage, value, rawValue, changeValue, label, ...props}
     <div className="form-group row">
       <label className="col-xs-12 col-sm-2 col-form-label">{label}</label>
       <div className="col-sm-10">
-        <input type="text" 
-          value={value}
-          onChange={e => changePicture(e.target.value)}
-        />
+        <input type="text" value={value} onChange={(e) => changePicture(e.target.value)} />
       </div>
       <div className="col-sm-10 offset-sm-2 d-flex">
-        <button 
-          type="button" 
-          className="btn btn-outline-primary mr-1" 
-          onClick={setGravatarLink}>
+        <button type="button" className="btn btn-outline-primary mr-1" onClick={setGravatarLink}>
           <i className="fas fa-user-circle mr-1" />
           <Translation i18nkey="Set avatar from Gravatar" language={currentLanguage}>
             Set avatar from Gravatar
-            </Translation>
-        </button>
-        {isOtherOriginThanLocal && <button 
-          type="button" 
-          className="btn btn-outline-primary" 
-          onClick={setPictureFromProvider} 
-          disabled={rawValue.pictureFromProvider ? 'disabled' : null}>
-          <i className="fas fa-user-circle mr-1" />
-          <Translation i18nkey="Set avatar from auth. provider" language={currentLanguage}>
-            Set avatar from auth. Provider
           </Translation>
-        </button>}
+        </button>
+        {isOtherOriginThanLocal && (
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={setPictureFromProvider}
+            disabled={rawValue.pictureFromProvider ? 'disabled' : null}>
+            <i className="fas fa-user-circle mr-1" />
+            <Translation i18nkey="Set avatar from auth. provider" language={currentLanguage}>
+              Set avatar from auth. Provider
+            </Translation>
+          </button>
+        )}
       </div>
     </div>
   );
-
 };
 
 class TenantList extends Component {
@@ -282,7 +277,7 @@ class MyProfileComponent extends Component {
       props: {
         currentLanguage: this.props.currentLanguage,
         label: t('Avatar', this.props.currentLanguage),
-      }
+      },
     },
     defaultLanguage: {
       type: 'select',
@@ -321,7 +316,7 @@ class MyProfileComponent extends Component {
             user: {
               ...this.state.user,
               picture: `/user-avatar/${this.props.tenant._humanReadableId}/${res.id}`,
-              pictureFromProvider: false
+              pictureFromProvider: false,
             },
           },
           () => this.forceUpdate()
@@ -401,7 +396,7 @@ class MyProfileComponent extends Component {
                 <img
                   src={`${this.state.user.picture}${
                     this.state.user.picture.startsWith('http') ? '' : `?${Date.now()}`
-                    }`}
+                  }`}
                   style={{
                     width: 200,
                     borderRadius: '50%',
