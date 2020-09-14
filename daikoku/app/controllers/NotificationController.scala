@@ -245,7 +245,7 @@ class NotificationController(
                                         ctx.tenant,
                                         ctx.user,
                                         notification.sender,
-                                        ctx.request.body.asOpt[JsObject]))
+                                        ctx.request.body.asOpt[JsObject].flatMap(o => (o \ "customMetadata").asOpt[JsObject])))
               case TeamInvitation(_, user) if user != ctx.user.id =>
                 EitherT.leftT[Future, Unit](ForbiddenAction)
               case TeamInvitation(team, user) =>
