@@ -239,7 +239,7 @@ class ApiHomeComponent extends Component {
             </div>
           </div>
         </div>
-        <div className="album py-2 col-12">
+        <div className="album py-2 col-12 min-vh-100">
           <div className="container">
             <div className="row pt-3">
               {['pricing', 'description'].includes(tab) && (

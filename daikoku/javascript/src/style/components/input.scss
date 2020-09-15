@@ -35,8 +35,13 @@
 .reactSelect__option--is-selected{
     background-color: $form-select-focused-color !important;
     color:$form-select-focused-text-color !important;
+    font-weight: bolder!important;
 }
 
 .reactSelect__option:hover{
     cursor: pointer;
+}
+
+.reactSelect__group-heading{
+    color:$form-select-heading-color !important;
 }

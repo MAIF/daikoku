@@ -73,7 +73,9 @@
   border: none;
   background-color: $menu-bg-color;
   margin: 0;
- // height: 250px;
+  border-radius:0;
+  border-bottom-left-radius: 5px ;
+  border-bottom-right-radius: 5px ;
   overflow: scroll;
 }
 

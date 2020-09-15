@@ -534,7 +534,7 @@
     "Set font family from asset": "Set font family from asset",
     "Public": "Public",
     "Private": "Private",
-    "PublicWithAuthorizations": "Public With Authorizations",
+    "PublicWithAuthorizations": "Public with authorizations",
     "Automatic": "Automatic",
     "Manual": "Manual",
     "team.created.success": "Team %s created successfully",

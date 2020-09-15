@@ -18,7 +18,7 @@
     align-items: center;
     justify-content: center;
     transition: color .35s ease-in-out;
-    border: 1px solid $menu-text-color;
+    border: 1px solid $pagination-border-color;
     margin-left: -1px;
     &:hover {
       color:$menu-text-color;

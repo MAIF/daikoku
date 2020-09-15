@@ -111,7 +111,7 @@ export class TeamApiInfo extends Component {
               'PublicWithAuthorizations',
               this.props.currentLanguage,
               false,
-              'Public With Authorizations'
+              'Public with authorizations'
             ),
             value: 'PublicWithAuthorizations',
           },

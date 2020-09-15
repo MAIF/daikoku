@@ -35,31 +35,33 @@ export class ImportExportComponent extends Component {
                   Import / Export
                 </Translation>
               </h1>
-              <a
-                href="/api/state/export?download=true"
-                target="_blank"
-                className="btn btn-outline-primary">
-                <i className="fas fa-download mr-1" />
-                <Translation i18nkey="download state" language={this.props.currentLanguage}>
-                  download state
-                </Translation>
-              </a>
-              <button
-                type="button"
-                style={{ marginLeft: 10 }}
-                onClick={this.importState}
-                className="btn btn-outline-primary">
-                <i className="fas fa-upload mr-1" />
-                {this.state.uploading
-                  ? t('importing ...', this.props.currentLanguage)
-                  : t('import state', this.props.currentLanguage)}
-              </button>
-              <input
-                type="file"
-                className="hide"
-                ref={(r) => (this.input = r)}
-                onChange={this.actuallyImportState}
-              />
+              <div className="section p-3">
+                <a
+                  href="/api/state/export?download=true"
+                  target="_blank"
+                  className="btn btn-outline-primary">
+                  <i className="fas fa-download mr-1" />
+                  <Translation i18nkey="download state" language={this.props.currentLanguage}>
+                    download state
+                  </Translation>
+                </a>
+                <button
+                  type="button"
+                  style={{ marginLeft: 10 }}
+                  onClick={this.importState}
+                  className="btn btn-outline-primary">
+                  <i className="fas fa-upload mr-1" />
+                  {this.state.uploading
+                    ? t('importing ...', this.props.currentLanguage)
+                    : t('import state', this.props.currentLanguage)}
+                </button>
+                <input
+                  type="file"
+                  className="hide"
+                  ref={(r) => (this.input = r)}
+                  onChange={this.actuallyImportState}
+                />
+              </div>
             </div>
           </div>
         </Can>
