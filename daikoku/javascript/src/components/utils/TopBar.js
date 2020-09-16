@@ -11,6 +11,7 @@ import * as Services from '../../services';
 import { logout, updateNotications, udpateLanguage } from '../../core/context/actions';
 import { t, Translation, languages } from '../../locales';
 import { Can, manage, daikoku, tenant } from '../utils';
+import { MessagesTopBarTools } from '../backoffice/messages';
 
 const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) => {
   const [login, setLogin] = useState('');
@@ -405,6 +406,7 @@ export class TopBarComponent extends Component {
                     title={t('Access to the notifications', this.props.currentLanguage)}>
                     <i className="fas fa-bell" />
                   </Link>
+                  <MessagesTopBarTools currentLanguage={this.props.currentLanguage}/>
                   <div className="dropdown">
                     <img
                       style={{ width: 38, marginLeft: '5px', ...impersonatorStyle }}

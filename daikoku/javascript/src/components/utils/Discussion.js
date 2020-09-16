@@ -52,7 +52,6 @@ const DiscussionComponent = props => {
   const sendNewMessage = () => {
     setLoading(true);
     const chat = Option(_.head(messages)).map(m => m.chat).getOrNull();
-    console.debug({messages, chat})
     Services.sendMessage(newMessage, adminTeam._id, chat)
       .then(() => {
         setLoading(false);

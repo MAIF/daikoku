@@ -48,7 +48,7 @@ class MessageController(DaikokuAction: DaikokuAction,
       val body = ctx.request.body
       val line: String = (body \ "message").as[String]
       val recipient: TeamId = (body \ "recipient").as(TeamIdFormat) //todo: be careful with this line...maybe we want to sue this same method to respond
-      val chat = (body \ "chat").asOpt[String].getOrElse(BSONObjectID.generate().stringify)
+      val chat = (body \ "chat").asOpt[String].getOrElse(ctx.user.id.value)
 
       val message = Message(
         id = MongoId(BSONObjectID.generate().stringify),

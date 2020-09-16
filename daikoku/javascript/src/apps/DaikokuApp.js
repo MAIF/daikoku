@@ -177,6 +177,14 @@ class DaikokuAppComponent extends Component {
                 <NotificationList match={p.match} history={p.history} location={p.location} />
               )}
             />
+            <Route 
+              exact
+              path="/messages"
+              render={(p) => (
+                <NotificationList match={p.match} history={p.history} location={p.location} />
+              )}
+            />
+
             {/* <FrontOfficeRoute exact path="/" render={p => <MyHome match={p.match} history={p.history} />} /> */}
             <FrontOfficeRoute
               exact
