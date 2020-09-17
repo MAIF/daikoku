@@ -319,6 +319,7 @@ export class TopBarComponent extends Component {
       ]);
     };
 
+    const isDefaultLogo = this.props.tenant.logo === '/assets/images/daikoku.svg';
     return (
       <header className={impersonator ? 'impersonator-topbar-mb' : ''}>
         {}
@@ -330,15 +331,15 @@ export class TopBarComponent extends Component {
                   to="/"
                   className="navbar-brand d-flex align-items-center mr-4"
                   title="Daikoku home">
-                  <img
+                  { this.props.tenant.logo && !isDefaultLogo && <img
                     src={this.props.tenant.logo}
                     style={{
                       maxHeight: 54,
                       marginRight: 5,
                       width: 32,
                     }}
-                  />
-                  {this.props.tenant.name}
+                  />}
+                  { (!this.props.tenant.logo || !!isDefaultLogo) && this.props.tenant.name}
                 </Link>
               </div>
               {!this.props.connectedUser.isGuest && (
