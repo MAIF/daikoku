@@ -330,13 +330,17 @@ export class TopBarComponent extends Component {
                 <Link
                   to="/"
                   className="navbar-brand d-flex align-items-center mr-4"
-                  title="Daikoku home">
+                  title="Daikoku home"
+                  style={{
+                    maxWidth: '59px',
+                    maxHeight: '38px'
+                  }}
+                  >
                   { this.props.tenant.logo && !isDefaultLogo && <img
                     src={this.props.tenant.logo}
                     style={{
-                      maxHeight: 54,
-                      marginRight: 5,
-                      width: 32,
+                      height: 'auto',
+                      maxWidth: '100%'
                     }}
                   />}
                   { (!this.props.tenant.logo || !!isDefaultLogo) && this.props.tenant.name}
