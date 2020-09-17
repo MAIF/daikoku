@@ -112,6 +112,7 @@ export class ArrayInput extends Component {
   };
 
   render() {
+    const placeholder = t('array.input.placeholder', this.props.currentLanguage || 'En');
     return (
       <div>
         <div className="form-group row" style={{ marginBottom: 15 }}>
@@ -134,7 +135,7 @@ export class ArrayInput extends Component {
                   onInputChange={this.handleInputChange}
                   onKeyDown={this.handleKeyDown}
                   options={this.props.options}
-                  placeholder={t('array.input.placeholder', this.props.currentLanguage)}
+                  placeholder={placeholder}
                   value={this.state.value}
                   className="input-select reactSelect"
                   classNamePrefix="reactSelect"
@@ -151,7 +152,7 @@ export class ArrayInput extends Component {
                   onInputChange={this.handleInputChange}
                   onKeyDown={this.handleKeyDown}
                   options={this.state.values}
-                  placeholder={t('array.input.placeholder', this.props.currentLanguages)}
+                  placeholder={placeholder}
                   value={this.state.value}
                 />
               )}

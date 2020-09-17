@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+
 import { Spinner } from '../utils';
 
 import {
@@ -23,7 +25,7 @@ import { Collapse } from './Collapse';
 import get from 'get-value';
 import set from 'set-value';
 
-export default class Form extends Component {
+class FormComponent extends Component {
   static propTypes = {
     value: PropTypes.object,
     onChange: PropTypes.func,
@@ -280,3 +282,9 @@ export default class Form extends Component {
     );
   }
 }
+
+const mapStateToProps = (state) => ({
+  ...state.context,
+});
+
+export default connect(mapStateToProps)(FormComponent);
