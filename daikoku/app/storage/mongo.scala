@@ -779,6 +779,11 @@ abstract class MongoRepo[Of, Id <: ValueType](
       }
     }
 
+  override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] =
+    collection.flatMap { col =>
+      col.count(Some(query), None, 0, None, ReadConcern.Majority)
+    }
+
   def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
     collection.flatMap { col =>
       logger.debug(s"$collectionName.findAllRaw({})")
@@ -1326,6 +1331,11 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         .one[JsObject](ReadPreference.primaryPreferred)
         .map(_.isDefined)
   }
+
+  override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] =
+    collection.flatMap { col =>
+      col.count(Some(query), None, 0, None, ReadConcern.Majority)
+    }
 
   override def count()(implicit ec: ExecutionContext): Future[Long] =
     collection.flatMap { col =>

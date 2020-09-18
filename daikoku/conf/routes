@@ -168,11 +168,18 @@ POST    /api/teams/:teamId/pages                        fr.maif.otoroshi.daikoku
 POST    /api/teams/:teamId/apis/:apiId/pages/_reorder   fr.maif.otoroshi.daikoku.ctrls.ApiController.reorderApiDocPagesIndex(teamId, apiId)
 
 ### NoDocs ###
+GET  /api/me/messages/admin                             fr.maif.otoroshi.daikoku.ctrls.MessageController.myAdminMessages()
+### NoDocs ###
+GET  /api/me/messages/unread/_count                     fr.maif.otoroshi.daikoku.ctrls.MessageController.countUnreadMessages()
+### NoDocs ###
 GET  /api/me/messages                                   fr.maif.otoroshi.daikoku.ctrls.MessageController.myMessages()
 ### NoDocs ###
 POST /api/messages/_send                                fr.maif.otoroshi.daikoku.ctrls.MessageController.sendMessage()
 ### NoDocs ###
 GET  /api/messages/_sse                                 fr.maif.otoroshi.daikoku.ctrls.MessageController.sse()
+### NoDocs ###
+PUT  /api/messages/_read                                fr.maif.otoroshi.daikoku.ctrls.MessageController.setMessageRead()
+
 
 ### NoDocs ###
 DELETE  /api/teams/:teamId/assets/:assetId              fr.maif.otoroshi.daikoku.ctrls.TeamAssetsController.deleteAsset(teamId, assetId)

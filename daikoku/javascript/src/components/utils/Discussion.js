@@ -22,7 +22,7 @@ const DiscussionComponent = props => {
 
   useEffect(() => {
     Promise.all([
-      Services.myMessages(),
+      Services.myAdminMessages(),
       Services.team('admin')
     ])
       .then(([messages, adminTeam]) => {
@@ -52,7 +52,7 @@ const DiscussionComponent = props => {
   const sendNewMessage = () => {
     setLoading(true);
     const chat = Option(_.head(messages)).map(m => m.chat).getOrNull();
-    Services.sendMessage(newMessage, adminTeam._id, chat)
+    Services.sendMessage(newMessage, [...adminTeam.users.map(u => u.userId), props.connectedUser._id], chat)
       .then(() => {
         setLoading(false);
         setNewMessage('');

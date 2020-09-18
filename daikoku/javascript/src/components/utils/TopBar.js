@@ -395,7 +395,7 @@ export class TopBarComponent extends Component {
                 />
               )}
               {!this.props.connectedUser.isGuest && (
-                <div className="d-flex justify-content-end mt-1 mt-lg-0">
+                <div className="d-flex justify-content-end align-items-center mt-1 mt-lg-0">
                   <DarkModeActivator />
                   <Link
                     className={classNames({
@@ -406,7 +406,9 @@ export class TopBarComponent extends Component {
                     title={t('Access to the notifications', this.props.currentLanguage)}>
                     <i className="fas fa-bell" />
                   </Link>
-                  <MessagesTopBarTools currentLanguage={this.props.currentLanguage}/>
+                  <MessagesTopBarTools 
+                    currentLanguage={this.props.currentLanguage}
+                    connectedUser={this.props.connectedUser} />
                   <div className="dropdown">
                     <img
                       style={{ width: 38, marginLeft: '5px', ...impersonatorStyle }}

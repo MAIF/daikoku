@@ -3,28 +3,27 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.UUID.randomUUID
 
 import akka.actor.{ActorRef, PoisonPill, Props}
-import akka.pattern.ask
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.{CompletionStrategy, OverflowStrategy}
+import akka.pattern.ask
 import akka.stream.scaladsl.Source
+import akka.stream.{CompletionStrategy, OverflowStrategy}
 import akka.util.Timeout
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{PublicUserAccess, TenantAdminOnly}
-import fr.maif.otoroshi.daikoku.domain.json.{ChatIdFormat, TeamIdFormat}
-import fr.maif.otoroshi.daikoku.domain.{ChatId, Message, MongoId, Recipient, TeamId, json}
+import fr.maif.otoroshi.daikoku.domain.{Message, MongoId, UserId}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.messages.{CloseChat, GetAllMessage, MessageActor, MessageStreamActor, SendMessage, StreamMessage}
+import fr.maif.otoroshi.daikoku.messages._
 import org.joda.time.DateTime
+import org.joda.time.format.ISODateTimeFormat
 import play.api.Logger
 import play.api.http.ContentTypes
 import play.api.i18n.I18nSupport
 import play.api.libs.EventSource
-import play.api.libs.json.{JsArray, JsValue, Json}
-import play.api.mvc.{AbstractController, ControllerComponents, Result}
+import play.api.libs.json.{JsArray, JsNull, JsValue, Json}
+import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class MessageController(DaikokuAction: DaikokuAction,
@@ -47,15 +46,17 @@ class MessageController(DaikokuAction: DaikokuAction,
 
       val body = ctx.request.body
       val line: String = (body \ "message").as[String]
-      val recipient: TeamId = (body \ "recipient").as(TeamIdFormat) //todo: be careful with this line...maybe we want to sue this same method to respond
-      val chat = (body \ "chat").asOpt[String].getOrElse(ctx.user.id.value)
+      val participants = (body \ "participants").as[JsArray].value.map(_.as[String]).map(UserId).toSet
+      val chat = (body \ "chat").asOpt[String].map(UserId).getOrElse(ctx.user.id)
+
 
       val message = Message(
         id = MongoId(BSONObjectID.generate().stringify),
         tenant = ctx.tenant.id,
-        chat = ChatId(chat),
         sender = ctx.user.id,
-        recipient = Recipient.Team(recipient),
+        participants = participants,
+        readBy = Set(ctx.user.id),
+        chat = chat,
         date = DateTime.now(),
         message = line,
         send = true
@@ -63,16 +64,29 @@ class MessageController(DaikokuAction: DaikokuAction,
 
       ctx.setCtxValue("message.id", message.id.value)
 
-      env.dataStore.teamRepo.forTenant(ctx.tenant).findById(recipient).flatMap {
-        case Some(_) => (messageActor ? SendMessage(message))
-          .map {
-            case true =>
-              env.defaultActorSystem.eventStream.publish(StreamMessage(message))
-              Ok(message.asJson)
-            case false => BadRequest(Json.obj("error" -> "Failure", "message" -> message.copy(send = false).asJson))
-          }
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "recipient not found")))
-      }
+      (messageActor ? SendMessage(message))
+        .map {
+          case true =>
+            env.defaultActorSystem.eventStream.publish(StreamMessage(message))
+            Ok(message.asJson)
+          case false => BadRequest(Json.obj("error" -> "Failure", "message" -> message.copy(send = false).asJson))
+        }
+    }
+  }
+
+  def countUnreadMessages() = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(ctx) {
+      (messageActor ? CountUnreadMessages(ctx.user, ctx.tenant))
+        .mapTo[Long]
+        .map(count => Ok(Json.obj("count" -> count)))
+    }
+  }
+
+  def myAdminMessages() = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(ctx) {
+      (messageActor ? GetMyAdminMessages(ctx.user, ctx.tenant))
+        .mapTo[Seq[Message]]
+        .map(messages => Ok(JsArray(messages.map(_.asJson))))
     }
   }
 
@@ -90,7 +104,18 @@ class MessageController(DaikokuAction: DaikokuAction,
 
       (messageActor ? CloseChat(chat, ctx.tenant))
         .mapTo[Boolean]
-        .map(done => Ok(Json.obj("done" -> true)))
+        .map(_ => Ok(Json.obj("done" -> true)))
+    }
+  }
+
+  def setMessageRead() = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent("@{user.name} has read his messages from @{date}"))(ctx) {
+      val now = DateTime.now()
+      ctx.setCtxValue("date", ISODateTimeFormat.date().print(DateTime.now()))
+
+      messageActor ! ReadMessages(ctx.user, now, ctx.tenant)
+
+      FastFuture.successful(Ok(Json.obj()))
     }
   }
 
@@ -103,20 +128,17 @@ class MessageController(DaikokuAction: DaikokuAction,
       }
       val failureMatcher: PartialFunction[Any, Throwable] = { case akka.actor.Status.Failure(cause) => cause }
 
-      env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-        .map(teams => teams.map(_.id))
-        .map(teams => {
-          val source: Source[JsValue, ActorRef] = Source
-            .actorRef[JsValue](completionMatcher, failureMatcher, 32, OverflowStrategy.dropHead)
-            .watchTermination() {
-              case (actorRef, terminate) =>
-                val ref = env.defaultActorSystem.actorOf(Props(new MessageStreamActor(actorRef, ctx.user.id, teams)), s"messageStreamActor-${randomUUID().toString}")
-                terminate.onComplete(_ => ref ! PoisonPill)
-                actorRef
-            }
+      val source: Source[JsValue, ActorRef] = Source
+        .actorRef[JsValue](completionMatcher, failureMatcher, 32, OverflowStrategy.dropHead)
+        .keepAlive(10.second, () => JsNull)
+        .watchTermination() {
+          case (actorRef, terminate) =>
+            val ref = env.defaultActorSystem.actorOf(Props(new MessageStreamActor(actorRef, ctx.user.id)), s"messageStreamActor-${randomUUID().toString}")
+            terminate.onComplete(_ => ref ! PoisonPill)
+            actorRef
+        }
 
-          Ok.chunked(source via EventSource.flow).as(ContentTypes.EVENT_STREAM)
-        })
+      FastFuture.successful(Ok.chunked(source via EventSource.flow).as(ContentTypes.EVENT_STREAM))
     }
   }
 }

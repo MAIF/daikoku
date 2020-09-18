@@ -1465,13 +1465,13 @@ object Recipient {
 //todo: add dialogId prop & closed prop
 case class Message(id: MongoId,
                   tenant: TenantId,
-                  chat: ChatId,
+                  participants: Set[UserId],
+                  readBy: Set[UserId],
+                  chat: UserId,
                   date: DateTime,
                   sender: UserId,
-                  recipient: Recipient,
                   message: String,
                   closed: Boolean = false,
-                  send: Boolean = false,
-                  read: Boolean = false) extends CanJson[Message] {
+                  send: Boolean = false) extends CanJson[Message] {
   override def asJson: JsValue = json.MessageFormat.writes(this)
 }

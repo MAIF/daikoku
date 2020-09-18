@@ -1469,7 +1469,29 @@ export function myMessages() {
   }).then((r) => r.json());
 }
 
-export function sendMessage(message, recipient, chat) {
+export function countUnreadMessages() {
+  return fetch('/api/me/messages/unread/_count', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function myAdminMessages() {
+  return fetch('/api/me/messages/admin', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function sendMessage(message, participants, chat) {
   return fetch('/api/messages/_send', {
     method: 'POST',
     credentials: 'include',
@@ -1479,7 +1501,7 @@ export function sendMessage(message, recipient, chat) {
     },
     body: JSON.stringify({
       message,
-      recipient,
+      participants,
       chat
     })
   }).then((r) => r.json());

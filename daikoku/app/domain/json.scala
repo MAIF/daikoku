@@ -2485,13 +2485,13 @@ object json {
           Message(
             id = (json \ "_id").as(MongoIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            chat = (json \ "chat").as(ChatIdFormat),
+            chat = (json \ "chat").as(UserIdFormat),
             date = (json \ "date").as(DateTimeFormat),
             sender = (json \ "sender").as(UserIdFormat),
-            recipient = (json \ "recipient").as(RecipientFormat),
+            participants = (json \ "participants").as(SetUserIdFormat),
+            readBy = (json \ "readBy").as(SetUserIdFormat),
             message = (json \ "message").as[String],
             send = (json \ "send").asOpt[Boolean].getOrElse(false),
-            read = (json \ "read").asOpt[Boolean].getOrElse(false),
             closed = (json \ "closed").asOpt[Boolean].getOrElse(false)
           )
         )
@@ -2507,10 +2507,10 @@ object json {
         "chat" -> o.chat.value,
         "date" -> DateTimeFormat.writes(o.date),
         "sender" -> UserIdFormat.writes(o.sender),
-        "recipient" -> RecipientFormat.writes(o.recipient),
+        "participants" -> SetUserIdFormat.writes(o.participants),
+        "readBy" -> SetUserIdFormat.writes(o.readBy),
         "message" -> o.message,
         "send" -> o.send,
-        "read" -> o.read,
         "closed" -> o.closed
       )
     }

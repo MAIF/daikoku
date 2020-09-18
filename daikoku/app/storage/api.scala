@@ -30,6 +30,7 @@ trait Repo[Of, Id <: ValueType] {
   def format: Format[Of]
   def extractId(value: Of): String
   def count()(implicit ec: ExecutionContext): Future[Long]
+  def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long]
   def findAll()(implicit ec: ExecutionContext): Future[Seq[Of]]
   def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]]
   def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed]

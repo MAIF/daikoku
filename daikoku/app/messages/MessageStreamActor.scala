@@ -4,10 +4,10 @@ import akka.actor.{Actor, ActorRef}
 import fr.maif.otoroshi.daikoku.domain.{TeamId, UserId}
 
 
-class MessageStreamActor (source: ActorRef, user: UserId, teams: Seq[TeamId]) extends Actor {
+class MessageStreamActor (source: ActorRef, user: UserId) extends Actor {
   override def receive = {
     case StreamMessage(message) =>
-      if (message.sender == user || teams.contains(message.recipient.id))
+      if (message.participants.contains(user))
       source ! message.asJson
   }
 
