@@ -377,6 +377,19 @@ class UserBackOfficeComponent extends Component {
                     <ul className="nav flex-column mb-2">
                       <li className="nav-item">
                         <Link
+                          className={`nav-link ${tab === 'Messages' ? 'active' : ''}`}
+                          to={'/settings/messages'}>
+                          <i className="fas fa-comment-alt" />
+                          <Translation
+                            i18nkey="Messages"
+                            language={this.props.currentLanguage}
+                            isPlural>
+                            Messages
+                          </Translation>
+                        </Link>
+                      </li>
+                      <li className="nav-item">
+                        <Link
                           className={`nav-link ${tab === 'Otoroshi' ? 'active' : ''}`}
                           to={'/settings/otoroshis'}>
                           <i className="fas fa-pastafarianism" />

@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import { t } from '../../../locales';
 import * as MessageEvents from '../../../services/messages';
 import * as Services from '../../../services';
+
 export const MessagesTopBarTools = (props) => {
 
   const [opened, setOpened] = useState(false);

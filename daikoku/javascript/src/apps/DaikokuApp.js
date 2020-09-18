@@ -61,6 +61,7 @@ import {
   TeamList,
   TenantAdminList,
   InitializeFromOtoroshi,
+  AdminMessages
 } from '../components/adminbackoffice';
 
 import { smartRedirect, smartMatch } from '../services/path';
@@ -195,6 +196,13 @@ class DaikokuAppComponent extends Component {
               exact
               path="/"
               render={(p) => <MaybeHomePage match={p.match} history={p.history} />}
+            />
+            <Route
+              exact
+              path="/settings/messages"
+              render={(p) => (
+                <AdminMessages match={p.match} history={p.history} location={p.location} />
+              )}
             />
             <Route
               exact
