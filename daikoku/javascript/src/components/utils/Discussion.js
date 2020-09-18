@@ -26,7 +26,7 @@ const DiscussionComponent = props => {
       Services.team('admin')
     ])
       .then(([messages, adminTeam]) => {
-        setMessages(messages);
+        setMessages(messages.reverse());
         setAdminTeam(adminTeam);
         setLoading(false);
       });
@@ -40,10 +40,16 @@ const DiscussionComponent = props => {
 
   useEffect(() => {
     if (receivedMessage) {
-      setMessages([...messages, receivedMessage]);
+      setMessages([receivedMessage, ...messages]);
       setReceivedMessage(undefined);
     }
   }, [receivedMessage]);
+
+  // useEffect(() => {
+  //   if(opened) {
+  //     Services.setMessagesRead();
+  //   }
+  // }, [opened]);
 
   const handleEvent = (m) => {
     setReceivedMessage(m);

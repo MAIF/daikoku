@@ -1517,3 +1517,14 @@ export function messageSSE() {
     },
   }).then((r) => r.json());
 }
+
+export function setMessagesRead() {
+  return fetch('/api/messages/_read', {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
