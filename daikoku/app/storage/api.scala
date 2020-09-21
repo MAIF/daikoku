@@ -61,6 +61,8 @@ trait Repo[Of, Id <: ValueType] {
   def insertMany(values: Seq[Of])(implicit ec: ExecutionContext): Future[Long]
   def updateMany(query: JsObject, Value: JsObject)(
       implicit ec: ExecutionContext): Future[Long]
+  def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
+      implicit ec: ExecutionContext): Future[Long]
   def exists(id: String)(implicit ec: ExecutionContext): Future[Boolean]
   def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean]
   def exists(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean]

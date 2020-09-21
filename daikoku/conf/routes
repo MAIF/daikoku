@@ -178,7 +178,7 @@ POST /api/messages/_send                                fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET  /api/messages/_sse                                 fr.maif.otoroshi.daikoku.ctrls.MessageController.sse()
 ### NoDocs ###
-PUT  /api/messages/_read                                fr.maif.otoroshi.daikoku.ctrls.MessageController.setMessageRead()
+PUT  /api/messages/:chatId/_read                        fr.maif.otoroshi.daikoku.ctrls.MessageController.setMessageRead(chatId)
 
 
 ### NoDocs ###

@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
 import fr.maif.otoroshi.daikoku.domain.{Message, Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
 import play.api.libs.json.Json
 
@@ -21,7 +22,7 @@ case class CountUnreadMessages(user: User, tenant: Tenant)
 
 case class CloseChat(chat: String, tenant: Tenant)
 
-case class ReadMessages(user: User, date: DateTime, tenant: Tenant)
+case class ReadMessages(user: User, chatId:String,  date: DateTime, tenant: Tenant)
 
 class MessageActor(
                     implicit env: Env
@@ -59,11 +60,12 @@ class MessageActor(
     case CloseChat(chat, tenant) =>
       env.dataStore.messageRepo.forTenant(tenant).save(Json.obj("chat" -> chat), Json.obj("closed" -> true))
 
-    case ReadMessages(user, date, tenant) =>
+    case ReadMessages(user, chat, date, tenant) =>
       env.dataStore.messageRepo.forTenant(tenant)
-        .updateMany(Json.obj("$and" -> Json.arr(
-          Json.obj("chat" -> user.id.asJson),
+        .updateManyByQuery(Json.obj("$and" -> Json.arr(
+          Json.obj("chat" -> chat),
+          Json.obj("readBy" -> Json.obj("$ne" -> user.id.asJson)),
           Json.obj("date" -> Json.obj("$lt" -> date.toDate.getTime))
-        )), Json.obj("$addToSet" -> Json.obj("readBy" -> user.id.asJson)))
+        )), Json.obj("$push" -> Json.obj("readBy" -> user.id.asJson)))
   }
 }

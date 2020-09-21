@@ -1518,8 +1518,8 @@ export function messageSSE() {
   }).then((r) => r.json());
 }
 
-export function setMessagesRead() {
-  return fetch('/api/messages/_read', {
+export function setMessagesRead(chatId) {
+  return fetch(`/api/messages/${chatId}/_read`, {
     method: 'PUT',
     credentials: 'include',
     headers: {

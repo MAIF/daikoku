@@ -26,7 +26,7 @@
 
   <logger name="play" level="INFO" />
   <logger name="application" level="INFO" />
-  <logger name="MongoDataStore" level="INFO" />
+  <logger name="MongoDataStore" level="DEBUG" />
   <logger name="daikoku-spec-helper" level="DEBUG" /><!---->
   <logger name="daikoku-action-maybe-without-user" level="DEBUG" />
 

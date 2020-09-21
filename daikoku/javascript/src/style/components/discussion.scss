@@ -36,8 +36,9 @@
     max-height: 250px;
     overflow-y: scroll;
   }
+}
 
-  .discussion-form {
+.discussion-form {
     width: 100%;
     border-top: 1px solid #ccc;
     display: flex;
@@ -55,7 +56,7 @@
       align-items: center;
       justify-content: center;
 
-      flex-grow: 1;
+      width: 70px;
 
       border: none;
       cursor: pointer;
@@ -67,8 +68,6 @@
       }
     }
   }
-
-}
 
 .discussion-btn {
   background: dodgerblue;

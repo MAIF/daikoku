@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 
 let callback = [];
 
@@ -40,3 +42,16 @@ export function addCallback(cb, id) {
 export function removeCallback(id) {
   callback = callback.filter(c => c.id !== id);
 }
+
+export const fromMessagesToDialog = (messages) => _.orderBy(messages, ['date']).reduce((dialog, message) => {
+  if (!dialog.length) {
+    return [[message]];
+  } else {
+    const last = _.last(dialog);
+    if (last.some(m => m.sender === message.sender)) {
+      return [...dialog.slice(0, dialog.length - 1), [...last, message]];
+    } else {
+      return [...dialog, [message]];
+    }
+  }
+}, []);

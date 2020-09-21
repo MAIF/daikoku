@@ -900,6 +900,20 @@ abstract class MongoRepo[Of, Id <: ValueType](
         }
     }
 
+  override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
+    implicit ec: ExecutionContext): Future[Long] =
+    collection.flatMap { col =>
+      val update = col.update(ordered = true)
+      update
+        .element(q = query,
+          u = queryUpdate,
+          upsert = false,
+          multi = true)
+        .flatMap { element =>
+          update.many(List(element)).map(_.nModified)
+        }
+    }
+
   override def deleteByIdLogically(id: String)(
       implicit ec: ExecutionContext): Future[WriteResult] = {
     collection.flatMap { col =>
@@ -1316,6 +1330,20 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
                  u = Json.obj("$set" -> value),
                  upsert = false,
                  multi = true)
+        .flatMap { element =>
+          update.many(List(element)).map(_.nModified)
+        }
+    }
+
+  override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
+    implicit ec: ExecutionContext): Future[Long] =
+    collection.flatMap { col =>
+      val update = col.update(ordered = true)
+      update
+        .element(q = query,
+          u = queryUpdate,
+          upsert = false,
+          multi = true)
         .flatMap { element =>
           update.many(List(element)).map(_.nModified)
         }

@@ -45,12 +45,6 @@ const DiscussionComponent = props => {
     }
   }, [receivedMessage]);
 
-  // useEffect(() => {
-  //   if(opened) {
-  //     Services.setMessagesRead();
-  //   }
-  // }, [opened]);
-
   const handleEvent = (m) => {
     setReceivedMessage(m);
   };
@@ -65,19 +59,6 @@ const DiscussionComponent = props => {
       });
   };
 
-  const fromMessagesToDialog = () => _.orderBy(messages, ['date']).reduce((dialog, message) => {
-    if (!dialog.length) {
-      return [[message]];
-    } else {
-      const last = _.last(dialog);
-      if (last.some(m => m.sender === message.sender)) {
-        return [...dialog.slice(0, dialog.length - 1), [...last, message]];
-      } else {
-        return [...dialog, [message]];
-      }
-    }
-  }, []);
-
   const handleKeyDown = (event) => {
     if (!newMessage.trim()) return;
 
@@ -89,7 +70,7 @@ const DiscussionComponent = props => {
   };
 
   if (opened) {
-    const dialog = fromMessagesToDialog();
+    const dialog = MessageEvents.fromMessagesToDialog(messages);
     return (
       <div className="dicussion-component">
 
@@ -99,7 +80,7 @@ const DiscussionComponent = props => {
         </div>
           <div className="discussion-stream">
             {
-              dialog.map((group, idx) => {
+              dialog.reverse().map((group, idx) => {
                 return (
                   <div
                     key={`discussion-messages-${idx}`}
@@ -140,6 +121,11 @@ const DiscussionComponent = props => {
       </div>
     );
   }
+
+  if (props.connectedUser.isDaikokuAdmin) {
+    return null;
+  }
+
   return (
     <div className="dicussion-component">
       <button
