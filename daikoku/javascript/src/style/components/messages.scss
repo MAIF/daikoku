@@ -11,3 +11,19 @@
   border: 2px solid $navbar-bg-color;
   box-sizing: content-box;
 }
+
+.btn.discussion-btn .notification {
+    width: 25px;
+    height: 25px;
+    display: flex;
+    position: absolute;
+    top: -5%;
+    right: -5%;
+    background-color: tomato;
+    border-radius: 50%;
+    border: 1px solid #fff;
+    box-sizing: content-box;
+    align-items: center;
+    justify-content: center;
+
+}

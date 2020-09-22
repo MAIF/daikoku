@@ -111,7 +111,7 @@ class MessageController(DaikokuAction: DaikokuAction,
   def setMessageRead(chatId: String) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent("@{user.name} has read his messages from @{date}"))(ctx) {
       val now = DateTime.now()
-      ctx.setCtxValue("date", ISODateTimeFormat.date().print(DateTime.now()))
+      ctx.setCtxValue("date", ISODateTimeFormat.dateTimeNoMillis().print(DateTime.now()))
 
       messageActor ! ReadMessages(ctx.user, chatId, now, ctx.tenant)
 

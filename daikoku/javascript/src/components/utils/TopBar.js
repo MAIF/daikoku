@@ -406,9 +406,9 @@ export class TopBarComponent extends Component {
                     title={t('Access to the notifications', this.props.currentLanguage)}>
                     <i className="fas fa-bell" />
                   </Link>
-                  <MessagesTopBarTools 
+                  {this.props.connectedUser.isDaikokuAdmin && <MessagesTopBarTools 
                     currentLanguage={this.props.currentLanguage}
-                    connectedUser={this.props.connectedUser} />
+                    connectedUser={this.props.connectedUser} />}
                   <div className="dropdown">
                     <img
                       style={{ width: 38, marginLeft: '5px', ...impersonatorStyle }}

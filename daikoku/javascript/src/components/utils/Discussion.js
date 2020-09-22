@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { MessageCircle, X, Send } from 'react-feather';
 import _ from 'lodash';
-import ClassNames from 'classnames';
+import classNames from 'classnames';
 import faker from 'faker';
 
 import * as Services from '../../services';
@@ -15,6 +15,7 @@ const DiscussionComponent = props => {
   const [newMessage, setNewMessage] = useState('');
   const [adminTeam, setAdminTeam] = useState(undefined);
   const [loading, setLoading] = useState(true);
+  const [totalUnread, setTotalUnread] = useState(0);
 
   const [receivedMessage, setReceivedMessage] = useState(undefined);
 
@@ -28,6 +29,7 @@ const DiscussionComponent = props => {
       .then(([messages, adminTeam]) => {
         setMessages(messages.reverse());
         setAdminTeam(adminTeam);
+        setTotalUnread(messages.filter(m => !m.readBy.includes(props.connectedUser._id)).length);
         setLoading(false);
       });
 
@@ -42,8 +44,22 @@ const DiscussionComponent = props => {
     if (receivedMessage) {
       setMessages([receivedMessage, ...messages]);
       setReceivedMessage(undefined);
+
+      if (!receivedMessage.readBy.includes(props.connectedUser._id)) {
+        setTotalUnread(totalUnread + 1);
+      } else {
+        setTotalUnread(0);
+      }
     }
-  }, [receivedMessage]);
+  }, [receivedMessage, totalUnread]);
+
+  useEffect(() => {
+    console.debug({test: opened && totalUnread > 0, opened, totalUnread})
+    if (opened && totalUnread > 0) {
+      Services.setMessagesRead(props.connectedUser._id)
+        .then(() => setTotalUnread(0));
+    }
+  }, [opened, totalUnread]);
 
   const handleEvent = (m) => {
     setReceivedMessage(m);
@@ -84,7 +100,7 @@ const DiscussionComponent = props => {
                 return (
                   <div
                     key={`discussion-messages-${idx}`}
-                    className={ClassNames('discussion-messages', {
+                    className={classNames('discussion-messages', {
                       'discussion-messages--received': group.every(m => m.sender !== props.connectedUser._id),
                       'discussion-messages--send': group.every(m => m.sender === props.connectedUser._id),
                     })}>
@@ -133,6 +149,9 @@ const DiscussionComponent = props => {
         onClick={() => setOpened(true)}
       >
         <MessageCircle />
+        {totalUnread > 0 && (
+          <span className="notification">{totalUnread}</span>
+        )}
       </button>
     </div>
   );
