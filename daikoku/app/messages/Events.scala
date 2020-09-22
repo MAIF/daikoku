@@ -49,7 +49,7 @@ class MessageActor(
     case CountUnreadMessages(user, tenant) =>
       val response: Future[Long] =
         env.dataStore.messageRepo.forTenant(tenant)
-          .count(Json.obj("participants" -> user.id.asJson, "closed" -> false))
+          .count(Json.obj("participants" -> user.id.asJson, "closed" -> false, "readBy" -> Json.obj("$ne" -> user.id.asJson)))
 
       response pipeTo sender()
 

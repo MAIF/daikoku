@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import faker from 'faker';
 import classNames from 'classnames';
+import { Link } from 'react-router-dom';
 
 import { t } from '../../../locales';
 import * as MessageEvents from '../../../services/messages';
@@ -39,14 +40,15 @@ export const MessagesTopBarTools = (props) => {
 
   return (
     <div style={{ position: 'relative' }}>
-      <div
+      <Link
+        to="/settings/messages"
         className={classNames('notification-link cursor-pointer', {
           'unread-messages': totalUnread > 0
         })}
         onClick={() => setOpened(!opened)}
         title={t('Access to the messages', props.currentLanguage)}>
         <i className="fas fa-comment-alt" />
-      </div>
+      </Link>
     </div>
   );
 };
