@@ -8,3 +8,4 @@ export * from './me';
 export * from './billing';
 export * from './assets';
 export * from './teams';
+export * from './messages';

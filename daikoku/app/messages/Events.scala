@@ -42,7 +42,7 @@ class MessageActor(
     case GetMyAdminMessages(user, tenant) =>
       val response: Future[Seq[Message]] =
         env.dataStore.messageRepo.forTenant(tenant)
-          .find(Json.obj("chat" -> user.id.asJson, "closed" -> false)) //todo: add message type after prop impl
+          .find(Json.obj("chat" -> user.id.asJson)) //todo: add message type after prop impl
 
       response pipeTo sender()
 

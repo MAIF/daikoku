@@ -4,7 +4,6 @@ import ClassNames from 'classnames';
 import { Send } from 'react-feather';
 import _ from 'lodash';
 
-import { t } from '../../../locales';
 import * as MessagesEvents from '../../../services/messages';
 import * as Services from '../../../services';
 import { Option, partition } from '../../utils';

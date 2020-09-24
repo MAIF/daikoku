@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import { MessageCircle, X, Send } from 'react-feather';
 import _ from 'lodash';
 import classNames from 'classnames';
 import faker from 'faker';
 
+import {MessagesContext} from '../backoffice';
 import * as Services from '../../services';
 import * as MessageEvents from '../../services/messages';
 import {Option} from '../utils';
 
 const DiscussionComponent = props => {
+  const messagesContext = useContext(MessagesContext);
+
+
   const [opened, setOpened] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -54,7 +58,6 @@ const DiscussionComponent = props => {
   }, [receivedMessage, totalUnread]);
 
   useEffect(() => {
-    console.debug({test: opened && totalUnread > 0, opened, totalUnread})
     if (opened && totalUnread > 0) {
       Services.setMessagesRead(props.connectedUser._id)
         .then(() => setTotalUnread(0));
