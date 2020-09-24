@@ -111,7 +111,7 @@ const AdminMessagesComponent = props => {
   return (
     <UserBackOffice tab="Messages">
       <div className="d-flex flex-row">
-        <div className="d-flex flex-column" style={{width: '25%'}}>
+        <div className="d-flex flex-column p-3 mr-2" style={{width: '25%',backgroundColor:'#9bb0c5'}}>
           {orderedMessages.map(({chat, user, messages}, idx) => {
             const unreadCount = messages.filter(m => !m.readBy.includes(props.connectedUser._id)).length;
             return (
@@ -128,7 +128,7 @@ const AdminMessagesComponent = props => {
             );
           })}
         </div>
-        <div className="d-flex flex-column" style={{ width: '75%', maxHeight: '70vh', overflow: 'scroll', borderLeft: '1px solid gray' }}>
+        <div className="d-flex flex-column ml-2" style={{ width: '75%', maxHeight: '70vh', overflow: 'scroll', paddingLeft:'10px',borderLeft: '1px solid gray' }}>
           {dialog.map((group, idx) => {
               return (
                 <div

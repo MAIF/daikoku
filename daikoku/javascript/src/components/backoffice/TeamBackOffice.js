@@ -29,7 +29,7 @@ function elvis(value, f) {
 
 const BackOfficeContent = (props) => {
   return (
-    <div className="pt-5 pr-3 pl-3" style={{ height: '100%' }}>
+    <div className="pt-4 pr-3" style={{ height: '100%' }}>
       {props.error.status && <Error error={props.error} />}
       {!props.error.status && props.children}
     </div>
