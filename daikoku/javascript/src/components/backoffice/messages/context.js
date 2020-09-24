@@ -5,27 +5,29 @@ import _ from 'lodash';
 
 import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
+import { Option } from '../../utils';
 
 
 export const MessagesContext = React.createContext();
 
 const MessagesProviderComponent = ({ children, connectedUser }) => {
   const [messages, setMessages] = useState([]);
+  const [adminTeam, setAdminTeam] = useState(undefined);
   const [receivedMessage, setReceivedMessage] = useState(undefined);
   const [totalUnread, setTotalUnread] = useState(0);
-  const [newMessage, setNewMessage] = useState(undefined);
 
   const sseId = faker.random.alphaNumeric(64);
 
   useEffect(() => {
-    Promise.all([
-      Services.myAdminMessages(),
-      Services.team('admin')
-    ]) //todo: if admin get all my messages
-      .then(([messages, adminTeam]) => {
-        setMessages(messages.reverse());
-        setTotalUnread(messages.filter(m => !m.readBy.includes(connectedUser._id)).length);
-      });
+    Services.team('admin')
+      .then((team) => {
+        setAdminTeam(team);
+        if (team.users.some(u => u.userId === connectedUser._id)) {
+          return Services.myMessages();
+        } 
+          return Services.myAdminMessages();
+      })
+      .then((m) => setMessages(m));
 
     MessageEvents.addCallback((m) => handleEvent(m), sseId);
 
@@ -51,19 +53,17 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
     setReceivedMessage(m);
   };
 
-  const sendNewMessage = () => {
-    const chat = Option(_.head(messages))
-      .map(m => m.chat)
-      .getOrElse(connectedUser._id);
+  const sendNewMessage = (newMessage, participants, chat) => {
+    return Services.sendMessage(newMessage, participants, chat);
+  };
 
-    Services.sendMessage(newMessage, [...adminTeam.users.map(u => u.userId), connectedUser._id], chat)
-      .then(() => {
-        setNewMessage('');
-      });
+  const readMessages = (chat) => {
+    //todo: thnink different !!!
+    Services.setMessagesRead(chat);
   };
 
   return (
-    <MessagesContext.Provider value={{messages, totalUnread}}>
+    <MessagesContext.Provider value={{messages, totalUnread, sendNewMessage, readMessages, adminTeam}}>
       {children}
     </MessagesContext.Provider>
   );

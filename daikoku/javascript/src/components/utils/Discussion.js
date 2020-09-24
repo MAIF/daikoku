@@ -1,91 +1,46 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import { MessageCircle, X, Send } from 'react-feather';
-import _ from 'lodash';
 import classNames from 'classnames';
-import faker from 'faker';
 
-import {MessagesContext} from '../backoffice';
-import * as Services from '../../services';
-import * as MessageEvents from '../../services/messages';
 import {Option} from '../utils';
+import {MessagesContext} from '../backoffice';
+import * as MessageEvents from '../../services/messages';
 
 const DiscussionComponent = props => {
-  const messagesContext = useContext(MessagesContext);
-
+  const { messages, totalUnread, sendNewMessage, readMessages, adminTeam } = useContext(MessagesContext);
 
   const [opened, setOpened] = useState(false);
-  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [adminTeam, setAdminTeam] = useState(undefined);
-  const [loading, setLoading] = useState(true);
-  const [totalUnread, setTotalUnread] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  const [receivedMessage, setReceivedMessage] = useState(undefined);
-
-  const sseId = faker.random.alphaNumeric(64);
-
-  useEffect(() => {
-    Promise.all([
-      Services.myAdminMessages(),
-      Services.team('admin')
-    ])
-      .then(([messages, adminTeam]) => {
-        setMessages(messages.reverse());
-        setAdminTeam(adminTeam);
-        setTotalUnread(messages.filter(m => !m.readBy.includes(props.connectedUser._id)).length);
-        setLoading(false);
-      });
-
-    MessageEvents.addCallback((m) => handleEvent(m), sseId);
-
-    return () => {
-      MessageEvents.removeCallback(sseId);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (receivedMessage) {
-      setMessages([receivedMessage, ...messages]);
-      setReceivedMessage(undefined);
-
-      if (!receivedMessage.readBy.includes(props.connectedUser._id)) {
-        setTotalUnread(totalUnread + 1);
-      } else {
-        setTotalUnread(0);
-      }
-    }
-  }, [receivedMessage, totalUnread]);
 
   useEffect(() => {
     if (opened && totalUnread > 0) {
-      Services.setMessagesRead(props.connectedUser._id)
-        .then(() => setTotalUnread(0));
+      readMessages();
     }
   }, [opened, totalUnread]);
-
-  const handleEvent = (m) => {
-    setReceivedMessage(m);
-  };
-
-  const sendNewMessage = () => {
-    setLoading(true);
-    const chat = Option(_.head(messages)).map(m => m.chat).getOrNull();
-    Services.sendMessage(newMessage, [...adminTeam.users.map(u => u.userId), props.connectedUser._id], chat)
-      .then(() => {
-        setLoading(false);
-        setNewMessage('');
-      });
-  };
 
   const handleKeyDown = (event) => {
     if (!newMessage.trim()) return;
 
     switch (event.key) {
       case 'Enter':
-        sendNewMessage();
+        sendMessage();
         event.preventDefault();
     }
+  };
+
+  const sendMessage = () => {
+    setLoading(true);
+    const chat = Option(messages[0]).map(m => m.chat).getOrElse(props.connectedUser._id);
+    const participants = [...adminTeam.users.map(u => u.userId), props.connectedUser._id];
+    
+    sendNewMessage(newMessage, participants, chat)
+      .then(() => {
+        setNewMessage('');
+        setLoading(false);
+      });
   };
 
   if (opened) {
@@ -126,7 +81,7 @@ const DiscussionComponent = props => {
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
               onChange={e => setNewMessage(e.target.value)} />
-            <button className="send-button" onClick={sendNewMessage}>
+            <button className="send-button" onClick={sendMessage}>
               <Send />
             </button>
           </div>

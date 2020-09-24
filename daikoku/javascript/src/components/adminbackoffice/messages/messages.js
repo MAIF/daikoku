@@ -1,89 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import ClassNames from 'classnames';
 import { Send } from 'react-feather';
 import _ from 'lodash';
 
+import { MessagesContext } from '../../backoffice';
 import * as MessagesEvents from '../../../services/messages';
 import * as Services from '../../../services';
 import { Option, partition } from '../../utils';
 import { UserBackOffice } from '../../backoffice';
 
 const AdminMessagesComponent = props => {
-  const [messages, setMessages] = useState([]);
+  const { messages, sendNewMessage, readMessages } = useContext(MessagesContext);
+
+  const [groupedMessages, setGroupedMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
   const [users, setUsers] = useState([]);
   const [selectedChat, setSelectedChat] = useState(undefined);
   const [loading, setLoading] = useState(undefined);
-  const [newMessage, setNewMessage] = useState('');
-
-  let sseId;
 
   useEffect(() => {
 
-    Promise.all([
-      Services.myMessages(),
-      Services.fetchAllUsers()
-    ])
-      .then(([messages, users]) => {
-        const groupedMessages = messages.reduce((groups, m) => {
-          const { chat } = m;
-          const [actualGroup, others] = partition(groups, g => g.chat === chat);
-          const user = users.find(u => u._id === chat);
-          const updatedGroup = Option(_.head(actualGroup))
-            .map(g => ({ ...g, messages: [...g.messages, m] }))
-            .getOrElse(({ chat, user, messages: [m] }));
-
-          return [...others, updatedGroup];
-
-        }, []);
-
-        setUsers(users);
-        setMessages(groupedMessages);
-      });
+    Services.fetchAllUsers()
+      .then((users) => setUsers(users));
   }, []);
 
   useEffect(() => {
-    MessagesEvents.addCallback((m) => handleEvent(m), sseId);
+    if (users.length) {
+      const groupedMessages = messages.reduce((groups, m) => {
+        const { chat } = m;
+        const [actualGroup, others] = partition(groups, g => g.chat === chat);
+        const user = users.find(u => u._id === chat);
+        const updatedGroup = Option(_.head(actualGroup))
+          .map(g => ({ ...g, messages: [...g.messages, m] }))
+          .getOrElse(({ chat, user, messages: [m] }));
 
-    return () => {
-      MessagesEvents.removeCallback(sseId);
-    };
-  }, [messages]);
+        return [...others, updatedGroup];
+      }, []);
+      setGroupedMessages(groupedMessages);
+    }
+  }, [messages, users]);
 
   useEffect(() => {
     if (selectedChat) {
-      const unreadCount = messages
+      const unreadCount = groupedMessages
         .find(g => g.chat === selectedChat)
         .messages
         .filter(m => !m.readBy.includes(props.connectedUser._id)).length;
       if (unreadCount) {
-        Services.setMessagesRead(selectedChat);
+        readMessages(selectedChat);
       }
     }
   }, [selectedChat]);
 
-  const handleEvent = (m) => {
-    if (m) {
-      const { chat } = m;
-      const [actualGroup, others] = partition(messages, g => g.chat === chat);
-      const user = users.find(u => u._id === chat);
-
-      const updatedGroup = Option(_.head(actualGroup))
-        .map(g => ({ ...g, messages: [...g.messages, m] }))
-        .getOrElse(({ chat, user, messages: [m] }));
-
-      setMessages([...others, updatedGroup]);
-    }
-  };
-
-  const sendNewMessage = () => {
+  const sendMessage = () => {
     setLoading(true);
-    const participants = Option(messages.find(g => g.chat === selectedChat))
+    const participants = Option(groupedMessages.find(g => g.chat === selectedChat))
       .map(g => _.head(g.messages))
       .map(m => m.participants)
       .getOrElse([]);
     
-    Services.sendMessage(newMessage, participants, selectedChat)
+    sendNewMessage(newMessage, participants, selectedChat)
       .then(() => {
         setLoading(false);
         setNewMessage('');
@@ -95,21 +72,23 @@ const AdminMessagesComponent = props => {
 
     switch (event.key) {
       case 'Enter':
-        sendNewMessage();
+        sendMessage();
         event.preventDefault();
     }
   };
 
-  const orderedMessages = _.sortBy(messages, 'chat');
-  if (!orderedMessages.length) {
-    return null;
+
+  //todo: GET a loader waiting users & messages !!!!!!!
+  const orderedMessages = _.sortBy(groupedMessages, 'chat');
+  if (!orderedMessages.length || !users.length) {
+    return null; //todo: not cool....just a white page ????
   }
-  const dialog = Option(messages.find(({chat}) => chat === selectedChat))
+  const dialog = Option(groupedMessages.find(({chat}) => chat === selectedChat))
     .map(g => MessagesEvents.fromMessagesToDialog(g.messages))
     .getOrElse([]);
 
   return (
-    <UserBackOffice tab="Messages">
+    <UserBackOffice tab="Messages" loading>
       <div className="d-flex flex-row">
         <div className="d-flex flex-column p-3 mr-2" style={{width: '25%',backgroundColor:'#9bb0c5'}}>
           {orderedMessages.map(({chat, user, messages}, idx) => {
@@ -154,7 +133,7 @@ const AdminMessagesComponent = props => {
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
               onChange={e => setNewMessage(e.target.value)} />
-            <button className="send-button" onClick={sendNewMessage}>
+            <button className="send-button" onClick={sendMessage}>
               <Send />
             </button>
           </div>
