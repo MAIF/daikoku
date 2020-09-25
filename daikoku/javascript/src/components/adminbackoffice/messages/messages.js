@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import ClassNames from 'classnames';
 import { Send } from 'react-feather';
 import _ from 'lodash';
+import moment from 'moment';
 
 import { MessagesContext } from '../../backoffice';
 import * as MessagesEvents from '../../../services/messages';
@@ -92,6 +93,7 @@ const AdminMessagesComponent = props => {
     .map(g => MessagesEvents.fromMessagesToDialog(g.messages))
     .getOrElse([]);
 
+  moment.locale(props.currentLanguage);
   return (
     <UserBackOffice tab="Messages" loading>
       <div className="d-flex flex-row">
@@ -106,8 +108,8 @@ const AdminMessagesComponent = props => {
                 <h4>{user.name}</h4>
                 <em>{user.email}</em>
 
-                <div>{_.last(messages).date}</div>
-                {unreadCount}
+                <div>{moment(_.last(messages).date).format('L LT')}</div>
+                {unreadCount ? unreadCount : null}
               </div>
             );
           })}
