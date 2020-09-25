@@ -4,7 +4,6 @@ import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
 import fr.maif.otoroshi.daikoku.domain.{Message, Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
 import play.api.libs.json.Json
 
@@ -14,7 +13,7 @@ case class SendMessage(message: Message)
 
 case class StreamMessage(message: Message)
 
-case class GetAllMessage(user: User, tenant: Tenant)
+case class GetAllMessage(user: User, tenant: Tenant, maybeChat: Option[String])
 
 case class GetMyAdminMessages(user: User, tenant: Tenant)
 
@@ -32,10 +31,12 @@ class MessageActor(
   var messages: Seq[Message] = Seq.empty
 
   override def receive: Receive = {
-    case GetAllMessage(user, tenant) =>
+    case GetAllMessage(user, tenant, maybeChat) =>
+      val query = Json.obj("participants" -> user.id.asJson, "closed" -> false) ++
+        maybeChat.fold(Json.obj())(chat => Json.obj("chat" -> chat))
       val response: Future[Seq[Message]] =
         env.dataStore.messageRepo.forTenant(tenant)
-          .find(Json.obj("participants" -> user.id.asJson, "closed" -> false))
+          .find(query)
 
       response pipeTo sender()
 

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import faker from 'faker';
-import _ from 'lodash';
 
 import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
-import { Option } from '../../utils';
+import { partition } from '../../utils';
 
 
 export const MessagesContext = React.createContext();
@@ -40,14 +39,12 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
     if (receivedMessage) {
       setMessages([receivedMessage, ...messages]);
       setReceivedMessage(undefined);
-
-      if (!receivedMessage.readBy.includes(connectedUser._id)) {
-        setTotalUnread(totalUnread + 1);
-      } else {
-        setTotalUnread(0);
-      }
     }
   }, [receivedMessage, totalUnread]);
+
+  useEffect(() => {
+    setTotalUnread(messages.filter(m => !m.readBy.includes(connectedUser._id)).length);
+  }, [messages]);
 
   const handleEvent = (m) => {
     setReceivedMessage(m);
@@ -58,8 +55,12 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
   };
 
   const readMessages = (chat) => {
-    //todo: thnink different !!!
-    Services.setMessagesRead(chat);
+    Services.setMessagesRead(chat)
+      .then(() => Services.myChatMessages(chat))
+      .then((chatMessages) => {
+        const [filterMessages] = partition(messages, m => m.chat !== chat);
+        setMessages([...filterMessages, ...chatMessages]);
+      });
   };
 
   return (

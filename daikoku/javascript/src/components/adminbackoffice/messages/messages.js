@@ -38,6 +38,16 @@ const AdminMessagesComponent = props => {
         return [...others, updatedGroup];
       }, []);
       setGroupedMessages(groupedMessages);
+
+      if (selectedChat) {
+        const unreadCount = groupedMessages
+          .find(g => g.chat === selectedChat)
+          .messages
+          .filter(m => !m.readBy.includes(props.connectedUser._id)).length;
+        if (unreadCount) {
+          readMessages(selectedChat);
+        }
+      }
     }
   }, [messages, users]);
 

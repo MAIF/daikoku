@@ -90,9 +90,9 @@ class MessageController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def myMessages() = DaikokuAction.async { ctx =>
+  def myMessages(chat: Option[String]) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(ctx) {
-      (messageActor ? GetAllMessage(ctx.user, ctx.tenant))
+      (messageActor ? GetAllMessage(ctx.user, ctx.tenant, chat))
         .mapTo[Seq[Message]]
         .map(messages => Ok(JsArray(messages.map(_.asJson))))
     }

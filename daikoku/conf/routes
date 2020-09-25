@@ -172,7 +172,7 @@ GET  /api/me/messages/admin                             fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET  /api/me/messages/unread/_count                     fr.maif.otoroshi.daikoku.ctrls.MessageController.countUnreadMessages()
 ### NoDocs ###
-GET  /api/me/messages                                   fr.maif.otoroshi.daikoku.ctrls.MessageController.myMessages()
+GET  /api/me/messages                                   fr.maif.otoroshi.daikoku.ctrls.MessageController.myMessages(chat: Option[String] ?= None)
 ### NoDocs ###
 POST /api/messages/_send                                fr.maif.otoroshi.daikoku.ctrls.MessageController.sendMessage()
 ### NoDocs ###

@@ -1469,6 +1469,17 @@ export function myMessages() {
   }).then((r) => r.json());
 }
 
+export function myChatMessages(chat) {
+  return fetch(`/api/me/messages?chat=${chat}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
 export function countUnreadMessages() {
   return fetch('/api/me/messages/unread/_count', {
     method: 'GET',
