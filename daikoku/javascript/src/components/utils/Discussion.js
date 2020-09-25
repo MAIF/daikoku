@@ -17,7 +17,7 @@ const DiscussionComponent = props => {
 
   useEffect(() => {
     if (opened && totalUnread > 0) {
-      readMessages();
+      readMessages(messages[0].chat);
     }
   }, [opened, totalUnread]);
 

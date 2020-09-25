@@ -38,20 +38,15 @@ const AdminMessagesComponent = props => {
         return [...others, updatedGroup];
       }, []);
       setGroupedMessages(groupedMessages);
-
-      if (selectedChat) {
-        const unreadCount = groupedMessages
-          .find(g => g.chat === selectedChat)
-          .messages
-          .filter(m => !m.readBy.includes(props.connectedUser._id)).length;
-        if (unreadCount) {
-          readMessages(selectedChat);
-        }
-      }
+      maybeReadMessage();
     }
   }, [messages, users]);
 
   useEffect(() => {
+    maybeReadMessage();
+  }, [selectedChat]);
+
+  const maybeReadMessage = () => {
     if (selectedChat) {
       const unreadCount = groupedMessages
         .find(g => g.chat === selectedChat)
@@ -61,7 +56,7 @@ const AdminMessagesComponent = props => {
         readMessages(selectedChat);
       }
     }
-  }, [selectedChat]);
+  };
 
   const sendMessage = () => {
     setLoading(true);
