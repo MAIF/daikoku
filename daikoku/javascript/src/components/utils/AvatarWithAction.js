@@ -66,7 +66,7 @@ export const AvatarWithAction = (props) => {
       <div className="container">
         <div className="overlay" />
         <ReactToolTip place={'bottom'} />
-        <div className="avatar-with-action__container">
+        <div className="avatar__container">
           <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />
         </div>
         <div className="avatar-with-action__infos">{props.infos}</div>

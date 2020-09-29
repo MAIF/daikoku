@@ -20,18 +20,7 @@ export class UnauthenticatedHomeComponent extends Component {
           <div className="container">
             <div className="row text-center">
               <div className="col-sm-4">
-                <div
-                  style={{
-                    width: '100px',
-                    height: '100px',
-                    borderRadius: '50px',
-                    border: '3px solid #fff',
-                    boxShadow: '0px 0px 0px 3px lightgrey',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    overflow: 'hidden',
-                  }}>
+                <div className="avatar__container">
                   <img
                     src={this.props.tenant ? this.props.tenant.logo : '/assets/images/daikoku.svg'}
                     style={{

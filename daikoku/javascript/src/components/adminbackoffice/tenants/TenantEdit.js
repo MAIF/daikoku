@@ -758,18 +758,7 @@ export class TenantEditComponent extends Component {
           <Can I={manage} a={tenant} dispatchError>
             <div className="row">
               <div className="col-12 d-flex justify-content-start align-items-center mb-2">
-                <div
-                  style={{
-                    width: '100px',
-                    height: '100px',
-                    borderRadius: '50px',
-                    border: '3px solid #fff',
-                    boxShadow: '0px 0px 0px 3px lightgrey',
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    alignItems: 'center',
-                    overflow: 'hidden',
-                  }}>
+                <div className="avatar__container">
                   <img
                     style={{ width: '100%', height: 'auto' }}
                     src={this.state.tenant.style.logo}
