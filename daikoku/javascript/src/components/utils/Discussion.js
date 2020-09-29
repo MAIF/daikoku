@@ -78,6 +78,7 @@ const DiscussionComponent = props => {
             <input
               disabled={loading ? 'disabled' : null}
               type="text"
+              placeholder={'Your message'}
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
               onChange={e => setNewMessage(e.target.value)} />

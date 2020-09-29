@@ -94,12 +94,12 @@ export class TenantStyleEditComponent extends Component {
                 </button>
               </div>
               <div>
-                <button className="btn btn-access-negative mr-2" onClick={() => this.goBack()}>
+                <button className="btn btn-access-negative" onClick={() => this.goBack()}>
                   <Translation i18nkey="Cancel" language={this.props.currentLanguage}>
                     Cancel
                   </Translation>
                 </button>
-                <button className="btn btn-access-negative mrx-2" onClick={() => this.reset()}>
+                <button className="btn btn-access-negative mx-2" onClick={() => this.reset()}>
                   <Translation i18nkey="Reset" language={this.props.currentLanguage}>
                     Reset
                   </Translation>

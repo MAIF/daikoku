@@ -10,6 +10,7 @@ import * as MessagesEvents from '../../../services/messages';
 import * as Services from '../../../services';
 import { Option, partition } from '../../utils';
 import { UserBackOffice } from '../../backoffice';
+import {t, Translation} from '../../../locales';
 
 const AdminMessagesComponent = props => {
   const { messages, sendNewMessage, readMessages } = useContext(MessagesContext);
@@ -96,14 +97,19 @@ const AdminMessagesComponent = props => {
   moment.locale(props.currentLanguage);
   return (
     <UserBackOffice tab="Messages" loading>
-      <div className="d-flex flex-row">
-        <div className="d-flex flex-column p-3 mr-2" style={{width: '25%',backgroundColor:'#9bb0c5'}}>
+      <h1>
+        <Translation i18nkey="Message" language={props.currentLanguage}>
+          Messages
+        </Translation>
+      </h1>
+      <div className="d-flex flex-row messages-container">
+        <div className="d-flex flex-column messages-sender">
           {orderedMessages.map(({chat, user, messages}, idx) => {
             const unreadCount = messages.filter(m => !m.readBy.includes(props.connectedUser._id)).length;
             return (
               <div 
                 key={idx} 
-                className="cursor-pointer" 
+                className="p-3 cursor-pointer messages-sender__active"
                 onClick={() => setSelectedChat(chat)}>
                 <h4>{user.name}</h4>
                 <em>{user.email}</em>
@@ -114,7 +120,7 @@ const AdminMessagesComponent = props => {
             );
           })}
         </div>
-        <div className="d-flex flex-column ml-2" style={{ width: '75%', maxHeight: '70vh', overflow: 'scroll', paddingLeft:'10px',borderLeft: '1px solid gray' }}>
+        <div className="d-flex flex-column ml-2 messages-content">
           {dialog.map((group, idx) => {
               return (
                 <div
@@ -133,13 +139,15 @@ const AdminMessagesComponent = props => {
                 </div>
               );
           })}
-          <div className="discussion-form">
+          <div className="discussion-form discussion-form__message">
             <input
               disabled={loading ? 'disabled' : null}
               type="text"
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
-              onChange={e => setNewMessage(e.target.value)} />
+              onChange={e => setNewMessage(e.target.value)}
+              placeholder={t('Your message', props.currentLanguage)}
+            />
             <button className="send-button" onClick={sendMessage}>
               <Send />
             </button>

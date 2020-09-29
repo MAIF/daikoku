@@ -1,135 +1,152 @@
+.messages-sender{
+  width: 25%;
+  background-color: $aside-bg-color;
+  height: calc(100vh - 160px);
+  &__active:first-child {
+    background-color:$menu-text-hover-bg-color;
+    border-left: 2px solid $danger-color;
+  }
+}
+.messages-content{
+  width: 75%;
+  overflow: scroll;
+  height: calc(100vh - 220px);
+}
+
 .dicussion-component {
-  z-index: 1000;
-
-  position: fixed;
-  bottom: 50px;
-  right: 50px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.discussion {
-  width: 300px;
-  margin-bottom: 10px;
-
-  border-radius: 4px;
-  overflow: hidden;
-
-  .discussion-header {
-    background: dodgerblue;
-    color: #fff;
-    padding: 5px 10px;
-
-    width: 100%;
-
-    font-weight: 600;
-  }
-
-  .discussion-stream {
-    background: #fff;
-    width: 100%;
-    padding: 5px;
+    z-index: 1000;
+    position: fixed;
+    bottom: 50px;
+    right: 50px;
     display: flex;
-    flex-direction: column-reverse;
-    max-height: 250px;
-    overflow-y: scroll;
-    border: 1px solid dodgerblue;
+    flex-direction: column;
+    align-items: flex-end;
   }
-}
 
-.discussion-form {
+  .discussion {
+    width: 300px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    overflow: hidden;
+
+    .discussion-header {
+      background: $info-color;
+      color: #fff;
+      padding: 5px 10px;
+      width: 100%;
+      font-weight: 600;
+    }
+
+    .discussion-stream {
+      background: #fff;
+      width: 100%;
+      padding: 5px;
+      display: flex;
+      flex-direction: column-reverse;
+      max-height: 250px;
+      overflow-y: scroll;
+      border: 1px solid $info-color;
+    }
+  }
+
+  .discussion-form {
     width: 100%;
-    border: 1px solid dodgerblue;
+    border: 1px solid $info-color;
     display: flex;
     flex-direction: row;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
     padding: 10px;
     background: #fff;
-    input {
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    &__message{
+      width: 60%;
+      position: fixed;
+      bottom: 10px;
+      margin-left: -10px ;
+      border:none;
+      border-top: 1px solid $aside-bg-color;
+    }
+  }
+
+.discussion-form,.discussion-form__message{
+  input {
       flex-grow: 2;
       border: 1px solid rgba(30,144,255,0.5);
+      padding: 5px;
     }
 
     .send-button {
       display: flex;
       align-items: center;
       justify-content: center;
-
       width: 70px;
-
       border: none;
       cursor: pointer;
       background-color: #fff;
-      color: dodgerblue;
+      color: $info-color;
       outline: none;
       &:hover {
-        color: lighten($color: dodgerblue, $amount: 20) ;
+        color: lighten(dodgerblue, $amount: 20) ;
       }
     }
   }
 
-.discussion-btn {
-  background: dodgerblue;
-  width: 60px; height: 60px;
-  border: 1px solid #fff;
-  border-radius: 30px;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.discussion-messages {
-
-
-  margin-bottom: 10px;
-  display: flex;
-  flex-direction: column;
-
-  .discussion-message {
-    display: inline-block;
-    margin-bottom: 2px;
-    padding: 7px 13px;
-    font-size: 12px;
-    border-radius: 15px;
-    line-height: 1.4;
+  .discussion-btn {
+    background: $info-color;
+    width: 60px; height: 60px;
+    border: 1px solid #fff;
+    border-radius: 30px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  &--send {
-    align-items: flex-start;
-
+  .discussion-messages {
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
     .discussion-message {
-      color: #fff;
-      background-color: #1998e6;
-      border-bottom-left-radius: 5px;
-      border-top-left-radius: 5px;
+      display: inline-block;
+      margin-bottom: 2px;
+      padding: 7px 13px;
+      font-size: 12px;
+      border-radius: 15px;
+      line-height: 1.4;
+    }
 
-      &:first-child{
-        border-top-left-radius: 15px;
+    &--send {
+      align-items: flex-start;
+      .discussion-message {
+        color: #fff;
+        background-color: $info-color;
+        border-bottom-left-radius: 5px;
+        border-top-left-radius: 5px;
+
+        &:first-child{
+          border-top-left-radius: 15px;
+        }
+        &:last-child{
+          border-bottom-left-radius: 15px;
+        }
       }
-      &:last-child{
-        border-bottom-left-radius: 15px;
+    }
+    &--received {
+      align-items: flex-end;
+
+      .discussion-message {
+        color: #000;
+        background-color: #ddd;
+        border-bottom-right-radius: 5px;
+        border-top-right-radius: 5px;
+
+        &:first-child{
+          border-top-right-radius: 15px;
+        }
+        &:last-child{
+          border-bottom-right-radius: 15px;
+        }
       }
     }
   }
-  &--received {
-    align-items: flex-end;
 
-    .discussion-message {
-      color: #000;
-      background-color: #ddd;
-      border-bottom-right-radius: 5px;
-      border-top-right-radius: 5px;
-
-      &:first-child{
-        border-top-right-radius: 15px;
-      }
-      &:last-child{
-        border-bottom-right-radius: 15px;
-      }
-    }
-  }
-}
