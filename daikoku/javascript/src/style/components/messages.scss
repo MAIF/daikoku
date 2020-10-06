@@ -6,7 +6,7 @@
   position: absolute;
   top: -3px;
   right: 10px;
-  background-color: tomato;
+  background-color: $danger-color;
   border-radius: 50%;
   border: 2px solid $navbar-bg-color;
   box-sizing: content-box;
@@ -19,7 +19,7 @@
     position: absolute;
     top: -5%;
     right: -5%;
-    background-color: tomato;
+    background-color: $danger-color;
     border-radius: 50%;
     border: 1px solid #fff;
     box-sizing: content-box;
