@@ -5,6 +5,7 @@
   &__active:first-child {
     background-color:$menu-text-hover-bg-color;
     border-left: 2px solid $danger-color;
+    color:$menu-text-hover-color;
   }
 }
 .messages-content{
