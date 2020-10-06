@@ -49,12 +49,11 @@ button {
 }
 
 
-.btn-outline-primary:hover, .btn-outline-danger:hover, .btn-outline-success:hover, .btn.btn-danger:hover {
+.btn-outline-primary:hover, .btn-outline-danger:hover,  .btn-outline-success:hover, .btn.btn-danger:hover {
   color: #fff;
 }
 
 .btn-outline-success.disabled,.btn-outline-success:disabled,.btn-outline-primary.disabled, .btn-outline-primary:disabled{
- // background-color: #d1d1d1;
   border-color:#9e9e9e;
   color:#9e9e9e;
   &:hover{
@@ -62,12 +61,44 @@ button {
   }
 }
 
+.btn-outline-success{
+  color:$success-color;
+  border-color: $success-color;
+  &:hover{
+    color: #fff;
+    background-color: $success-color;
+  }
+}
+
+.btn-outline-danger{
+  color:$danger-color;
+  border-color: $danger-color;
+  &:hover{
+    color: #fff;
+    background-color: $danger-color;
+  }
+}
+
+.btn-outline-primary{
+  color:$info-color;
+  border-color: $info-color;
+  &:hover{
+    color: #fff;
+    background-color: $info-color;
+  }
+}
+
+.btn-outline-primary:not(:disabled):not(.disabled):active, .btn-outline-primary:not(:disabled):not(.disabled).active, .show > .btn-outline-primary.dropdown-toggle {
+  color: #fff;
+  border-color: $info-color;
+  background-color: $info-color;
+}
+
 .btn-for-descriptionToolbar{
   text-align: left;
   cursor: pointer;
   height: 22px;
   padding: 4px;
-  // margin: 0px;
   border: none;
   background: none;
   color: #242729;
