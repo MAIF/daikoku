@@ -1539,3 +1539,14 @@ export function setMessagesRead(chatId) {
     },
   }).then((r) => r.json());
 }
+
+export function closeMessageChat(chatId) {
+  return fetch(`/api/messages/${chatId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}

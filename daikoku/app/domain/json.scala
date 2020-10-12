@@ -2485,6 +2485,7 @@ object json {
           Message(
             id = (json \ "_id").as(MongoIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
+            messageType = (json \ "messageType").as(MessageTypeFormat),
             chat = (json \ "chat").as(UserIdFormat),
             date = (json \ "date").as(DateTimeFormat),
             sender = (json \ "sender").as(UserIdFormat),
@@ -2504,6 +2505,7 @@ object json {
       override def writes(o: Message): JsValue = Json.obj(
         "_id" -> o.id.value,
         "_tenant" -> o.tenant.value,
+        "messageType" -> MessageTypeFormat.writes(o.messageType),
         "chat" -> o.chat.value,
         "date" -> DateTimeFormat.writes(o.date),
         "sender" -> UserIdFormat.writes(o.sender),
@@ -2533,6 +2535,22 @@ object json {
         case p: Recipient.Team => Json.obj(
           "type" -> "Team",
           "id" -> TeamIdFormat.writes(o.id.asInstanceOf[TeamId])
+        )
+      }
+    }
+
+  val MessageTypeFormat: Format[MessageType] =
+    new Format[MessageType] {
+      override def reads(json: JsValue): JsResult[MessageType] =
+        (json \ "type").as[String] match {
+          case "tenant"    => TenantIdFormat.reads((json \ "value").as[JsValue])
+            .map(value => MessageType.Tenant(value))
+          case str      => JsError(s"Bad message type value: $str")
+        }
+      override def writes(o: MessageType): JsValue = o match {
+        case t: MessageType.Tenant=> Json.obj(
+          "type" -> "tenant",
+          "value" -> TenantIdFormat.writes(t.value)
         )
       }
     }

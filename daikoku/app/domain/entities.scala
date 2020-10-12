@@ -1462,9 +1462,16 @@ object Recipient {
   case class User(id: UserId) extends Recipient
 }
 
-//todo: add dialogId prop & closed prop
+sealed trait MessageType {
+  def value: ValueType
+}
+object MessageType {
+  case class Tenant(value: TenantId) extends MessageType
+}
+
 case class Message(id: MongoId,
                   tenant: TenantId,
+                  messageType: MessageType,
                   participants: Set[UserId],
                   readBy: Set[UserId],
                   chat: UserId,

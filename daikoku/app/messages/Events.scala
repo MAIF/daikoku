@@ -2,7 +2,7 @@ package fr.maif.otoroshi.daikoku.messages
 
 import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
-import fr.maif.otoroshi.daikoku.domain.{Message, Tenant, User}
+import fr.maif.otoroshi.daikoku.domain.{Message, MessageType, Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env
 import org.joda.time.DateTime
 import play.api.libs.json.Json
@@ -43,7 +43,7 @@ class MessageActor(
     case GetMyAdminMessages(user, tenant) =>
       val response: Future[Seq[Message]] =
         env.dataStore.messageRepo.forTenant(tenant)
-          .find(Json.obj("chat" -> user.id.asJson)) //todo: add message type after prop impl
+          .find(Json.obj("chat" -> user.id.asJson, "messageType.type" -> "tenant")) //todo: add message type after prop impl
 
       response pipeTo sender()
 

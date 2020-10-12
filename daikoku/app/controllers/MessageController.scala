@@ -11,7 +11,7 @@ import akka.util.Timeout
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{PublicUserAccess, TenantAdminOnly}
-import fr.maif.otoroshi.daikoku.domain.{Message, MongoId, UserId}
+import fr.maif.otoroshi.daikoku.domain.{Message, MessageType, MongoId, UserId}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.messages._
 import org.joda.time.DateTime
@@ -43,7 +43,6 @@ class MessageController(DaikokuAction: DaikokuAction,
   def sendMessage() = DaikokuAction.async(parse.json) { ctx =>
     PublicUserAccess(AuditTrailEvent("@{user.name} has send message @{message.id}"))(ctx) {
 
-
       val body = ctx.request.body
       val line: String = (body \ "message").as[String]
       val participants = (body \ "participants").as[JsArray].value.map(_.as[String]).map(UserId).toSet
@@ -53,6 +52,7 @@ class MessageController(DaikokuAction: DaikokuAction,
       val message = Message(
         id = MongoId(BSONObjectID.generate().stringify),
         tenant = ctx.tenant.id,
+        messageType = MessageType.Tenant(ctx.tenant.id), //todo: update it when user can send messages to team admins
         sender = ctx.user.id,
         participants = participants,
         readBy = Set(ctx.user.id),

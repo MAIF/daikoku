@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
-import ClassNames from 'classnames';
+import classNames from 'classnames';
 import { Send } from 'react-feather';
 import _ from 'lodash';
 import moment from 'moment';
@@ -85,18 +85,14 @@ const AdminMessagesComponent = props => {
   };
 
 
-  //todo: GET a loader waiting users & messages !!!!!!!
   const orderedMessages = _.sortBy(groupedMessages, 'chat');
-  if (!orderedMessages.length || !users.length) {
-    return null; //todo: not cool....just a white page ????
-  }
   const dialog = Option(groupedMessages.find(({chat}) => chat === selectedChat))
     .map(g => MessagesEvents.fromMessagesToDialog(g.messages))
     .getOrElse([]);
 
   moment.locale(props.currentLanguage);
   return (
-    <UserBackOffice tab="Messages" loading>
+    <UserBackOffice tab="Messages" isLoading={!orderedMessages.length || !users.length}>
       <h1>
         <Translation i18nkey="Message" language={props.currentLanguage}>
           Messages
@@ -109,7 +105,9 @@ const AdminMessagesComponent = props => {
             return (
               <div 
                 key={idx} 
-                className="p-3 cursor-pointer messages-sender__active"
+                className={classNames('p-3 cursor-pointer', {
+                  'messages-sender__active': selectedChat === chat
+                })}
                 onClick={() => setSelectedChat(chat)}>
                 <h4>{user.name}</h4>
                 <em>{user.email}</em>
@@ -125,7 +123,7 @@ const AdminMessagesComponent = props => {
               return (
                 <div
                   key={`discussion-messages-${idx}`}
-                  className={ClassNames('discussion-messages', {
+                  className={classNames('discussion-messages', {
                     'discussion-messages--received': group.every(m => m.sender === selectedChat),
                     'discussion-messages--send': group.every(m => m.sender !== selectedChat),
                   })}>
@@ -139,7 +137,7 @@ const AdminMessagesComponent = props => {
                 </div>
               );
           })}
-          <div className="discussion-form discussion-form__message">
+          {selectedChat && <div className="discussion-form discussion-form__message">
             <input
               disabled={loading ? 'disabled' : null}
               type="text"
@@ -151,7 +149,7 @@ const AdminMessagesComponent = props => {
             <button className="send-button" onClick={sendMessage}>
               <Send />
             </button>
-          </div>
+          </div>}
         </div>
       </div>
     </UserBackOffice>
