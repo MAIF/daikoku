@@ -66,6 +66,8 @@ trait Repo[Of, Id <: ValueType] {
   def exists(id: String)(implicit ec: ExecutionContext): Future[Boolean]
   def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean]
   def exists(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean]
+  def findMinByQuery(query: JsObject = Json.obj(), field: String)(implicit ec: ExecutionContext): Future[Option[Long]]
+  def findMaxByQuery(query: JsObject = Json.obj(), field: String)(implicit ec: ExecutionContext): Future[Option[Long]]
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   def findByIdOrHrId(id: String, hrid: String)(
       implicit ec: ExecutionContext): Future[Option[Of]] =

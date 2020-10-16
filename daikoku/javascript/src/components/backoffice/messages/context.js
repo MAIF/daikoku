@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import faker from 'faker';
+import moment from 'moment';
 
 import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
-import { partition } from '../../utils';
+import { partition, Option } from '../../utils';
 
 
 export const MessagesContext = React.createContext();
@@ -14,6 +15,7 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
   const [adminTeam, setAdminTeam] = useState(undefined);
   const [receivedMessage, setReceivedMessage] = useState(undefined);
   const [totalUnread, setTotalUnread] = useState(0);
+  const [lastClosedDates, setLastClosedDates] = useState({});
 
   const sseId = faker.random.alphaNumeric(64);
 
@@ -44,6 +46,7 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
 
   useEffect(() => {
     setTotalUnread(messages.filter(m => !m.readBy.includes(connectedUser._id)).length);
+    setLastClosedDates(calcLastClosedDates());
   }, [messages]);
 
   const handleEvent = (m) => {
@@ -63,8 +66,44 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
       });
   };
 
+  const closeChat = (chatid) => {
+    return Services.closeMessageChat(chatid)
+      .then(() => {
+        if (adminTeam.users.some(u => u.userId === connectedUser._id)) {
+          return Services.myMessages();
+        }
+        return Services.myAdminMessages();
+      })
+      .then((m) => setMessages(m));
+  };
+
+  const calcLastClosedDates = () => {
+    return messages.reduce((acc, {chat, closed}) => {
+      if (closed) {
+        const maybeLastDate = acc[chat];
+        if (!maybeLastDate) {
+          return { ...acc, [chat]: closed };
+        } else if (maybeLastDate && closed < maybeLastDate) {
+          return {...acc, [chat]: closed};
+        }
+      }
+      return acc;
+    }, {});
+  };
+
+  const getPreviousMessages = (chat) => {
+    const date = Option(lastClosedDates[chat]).getOrElse(moment().format('x'));
+    Services.lastDateChat(chat, date)
+      .then(({date}) => {
+        if (date) {
+          Services.myChatMessages(chat, date)
+            .then(previousMessages => setMessages([...previousMessages, ...messages]));
+        }
+      });
+  };
+
   return (
-    <MessagesContext.Provider value={{messages, totalUnread, sendNewMessage, readMessages, adminTeam}}>
+    <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates}}>
       {children}
     </MessagesContext.Provider>
   );

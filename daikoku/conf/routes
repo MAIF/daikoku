@@ -172,7 +172,7 @@ GET  /api/me/messages/admin                             fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET  /api/me/messages/unread/_count                     fr.maif.otoroshi.daikoku.ctrls.MessageController.countUnreadMessages()
 ### NoDocs ###
-GET  /api/me/messages                                   fr.maif.otoroshi.daikoku.ctrls.MessageController.myMessages(chat: Option[String] ?= None)
+GET  /api/me/messages                                   fr.maif.otoroshi.daikoku.ctrls.MessageController.myMessages(chat: Option[String] ?= None, date: Option[Long] ?= None)
 ### NoDocs ###
 POST /api/messages/_send                                fr.maif.otoroshi.daikoku.ctrls.MessageController.sendMessage()
 ### NoDocs ###
@@ -181,6 +181,8 @@ GET  /api/messages/_sse                                 fr.maif.otoroshi.daikoku
 PUT  /api/messages/:chatId/_read                        fr.maif.otoroshi.daikoku.ctrls.MessageController.setMessageRead(chatId)
 ### NoDocs ###
 DELETE  /api/messages/:chatId                           fr.maif.otoroshi.daikoku.ctrls.MessageController.closeChat(chatId)
+### NoDocs ###
+GET  /api/messages/:chatId/last-date                    fr.maif.otoroshi.daikoku.ctrls.MessageController.getLastChatDate(chatId, date: Option[Long] ?= None)
 
 
 ### NoDocs ###

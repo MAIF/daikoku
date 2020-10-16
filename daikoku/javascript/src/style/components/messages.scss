@@ -12,7 +12,7 @@
   box-sizing: content-box;
 }
 
-.btn.discussion-btn .notification {
+.btn.discussion-btn .notification, .messages-sender .notification {
     width: 25px;
     height: 25px;
     display: flex;
@@ -25,5 +25,4 @@
     box-sizing: content-box;
     align-items: center;
     justify-content: center;
-
 }

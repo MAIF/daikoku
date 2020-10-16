@@ -2,10 +2,10 @@ package fr.maif.otoroshi.daikoku.messages
 
 import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
-import fr.maif.otoroshi.daikoku.domain.{Message, MessageType, Tenant, User}
+import fr.maif.otoroshi.daikoku.domain.{Message, Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env
 import org.joda.time.DateTime
-import play.api.libs.json.Json
+import play.api.libs.json.{JsNull, JsNumber, JsValue, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -13,15 +13,17 @@ case class SendMessage(message: Message)
 
 case class StreamMessage(message: Message)
 
-case class GetAllMessage(user: User, tenant: Tenant, maybeChat: Option[String])
+case class GetAllMessage(user: User, tenant: Tenant, maybeChat: Option[String], closedDate: Option[Long] = None)
 
-case class GetMyAdminMessages(user: User, tenant: Tenant)
+case class GetMyAdminMessages(user: User, tenant: Tenant, date: Option[DateTime] = None)
 
 case class CountUnreadMessages(user: User, tenant: Tenant)
 
 case class CloseChat(chat: String, tenant: Tenant)
 
-case class ReadMessages(user: User, chatId:String,  date: DateTime, tenant: Tenant)
+case class ReadMessages(user: User, chatId:String, date: DateTime, tenant: Tenant)
+
+case class GetLastChatDate(chat: String, tenant: Tenant, closedDate: Option[Long])
 
 class MessageActor(
                     implicit env: Env
@@ -31,19 +33,26 @@ class MessageActor(
   var messages: Seq[Message] = Seq.empty
 
   override def receive: Receive = {
-    case GetAllMessage(user, tenant, maybeChat) =>
-      val query = Json.obj("participants" -> user.id.asJson, "closed" -> false) ++
-        maybeChat.fold(Json.obj())(chat => Json.obj("chat" -> chat))
+    case GetAllMessage(user, tenant, maybeChat, closed) =>
+      val query = Json.obj("participants" -> user.id.asJson) ++
+        maybeChat.fold(Json.obj("closed" -> JsNull))(chat => {
+          val value: JsValue = closed.map(s => JsNumber(s)).getOrElse(JsNull)
+          Json.obj("chat" -> chat, "closed" -> value)
+        })
       val response: Future[Seq[Message]] =
         env.dataStore.messageRepo.forTenant(tenant)
           .find(query)
 
       response pipeTo sender()
 
-    case GetMyAdminMessages(user, tenant) =>
+    case GetMyAdminMessages(user, tenant, closed) =>
+      val value: JsValue = closed.map(d => JsNumber(d.toDate.getTime)).getOrElse(JsNull)
       val response: Future[Seq[Message]] =
         env.dataStore.messageRepo.forTenant(tenant)
-          .find(Json.obj("chat" -> user.id.asJson, "messageType.type" -> "tenant")) //todo: add message type after prop impl
+          .find(Json.obj(
+            "chat" -> user.id.asJson,
+            "messageType.type" -> "tenant",
+            "closed" -> value))
 
       response pipeTo sender()
 
@@ -59,7 +68,11 @@ class MessageActor(
       response pipeTo sender()
 
     case CloseChat(chat, tenant) =>
-      env.dataStore.messageRepo.forTenant(tenant).save(Json.obj("chat" -> chat), Json.obj("closed" -> true))
+      val response = env.dataStore.messageRepo.forTenant(tenant).updateMany(
+        Json.obj("chat" -> chat, "closed" -> JsNull),
+        Json.obj("closed" -> JsNumber(DateTime.now().toDate.getTime)))
+
+      response pipeTo sender()
 
     case ReadMessages(user, chat, date, tenant) =>
       env.dataStore.messageRepo.forTenant(tenant)
@@ -68,5 +81,12 @@ class MessageActor(
           Json.obj("readBy" -> Json.obj("$ne" -> user.id.asJson)),
           Json.obj("date" -> Json.obj("$lt" -> date.toDate.getTime))
         )), Json.obj("$push" -> Json.obj("readBy" -> user.id.asJson)))
+
+    case GetLastChatDate(chat, tenant, maybeDate) =>
+      val date: Long = maybeDate.getOrElse(DateTime.now().toDate.getTime)
+      val result = env.dataStore.messageRepo.forTenant(tenant)
+        .findMaxByQuery(
+          Json.obj("chat" -> chat, "closed" -> Json.obj("$lt" -> date)), "closed")
+      result pipeTo sender()
   }
 }

@@ -1478,7 +1478,7 @@ case class Message(id: MongoId,
                   date: DateTime,
                   sender: UserId,
                   message: String,
-                  closed: Boolean = false,
+                  closed: Option[DateTime] = None,
                   send: Boolean = false) extends CanJson[Message] {
   override def asJson: JsValue = json.MessageFormat.writes(this)
 }

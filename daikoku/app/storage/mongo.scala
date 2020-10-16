@@ -1,6 +1,7 @@
 package storage
 
 import akka.NotUsed
+import akka.http.scaladsl
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
@@ -8,18 +9,13 @@ import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.Index
-import reactivemongo.api.{
-  Cursor,
-  CursorOptions,
-  ReadConcern,
-  ReadPreference,
-  WriteConcern
-}
+import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -1057,6 +1053,68 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id.value))
+
+  override def findMinByQuery(query: JsObject,  field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+    collection.flatMap { col =>
+        import col.BatchCommands.AggregationFramework
+        import AggregationFramework.{Group, Match, MinField}
+
+        col
+          .aggregatorContext[JsObject](
+            firstOperator = Match(query),
+            otherOperators =
+              List(Group(JsString("$clientId"))("min" -> MinField(field))),
+            explain = false,
+            allowDiskUse = false,
+            bypassDocumentValidation = false,
+            readConcern = ReadConcern.Majority,
+            readPreference = ReadPreference.primaryPreferred,
+            writeConcern = WriteConcern.Default,
+            batchSize = None,
+            cursorOptions = CursorOptions.empty,
+            maxTime = None,
+            hint = None,
+            comment = None,
+            collation = None
+          )
+          .prepared
+          .cursor
+          .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+          .map(agg =>
+            agg.headOption.map(v => (v \ "min").as[Long])
+          )
+    }
+
+  override def findMaxByQuery(query: JsObject, field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+    collection.flatMap { col =>
+      import col.BatchCommands.AggregationFramework
+      import AggregationFramework.{Group, Match, MaxField}
+
+      col
+        .aggregatorContext[JsObject](
+          firstOperator = Match(query),
+          otherOperators =
+            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
+          explain = false,
+          allowDiskUse = false,
+          bypassDocumentValidation = false,
+          readConcern = ReadConcern.Majority,
+          readPreference = ReadPreference.primaryPreferred,
+          writeConcern = WriteConcern.Default,
+          batchSize = None,
+          cursorOptions = CursorOptions.empty,
+          maxTime = None,
+          hint = None,
+          comment = None,
+          collation = None
+        )
+        .prepared
+        .cursor
+        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+        .map(agg =>
+          agg.headOption.map(v => (v \ "max").as[Long])
+        )
+    }
 }
 
 abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
@@ -1359,6 +1417,66 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         .one[JsObject](ReadPreference.primaryPreferred)
         .map(_.isDefined)
   }
+
+  override def findMinByQuery(query: JsObject,  field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+    collection.flatMap { col =>
+      import col.BatchCommands.AggregationFramework
+      import AggregationFramework.{Group, Match, MinField}
+
+      col
+        .aggregatorContext[JsObject](
+          firstOperator = Match(query),
+          otherOperators =
+            List(Group(JsString("$clientId"))("min" -> MinField(field))),
+          explain = false,
+          allowDiskUse = false,
+          bypassDocumentValidation = false,
+          readConcern = ReadConcern.Majority,
+          readPreference = ReadPreference.primaryPreferred,
+          writeConcern = WriteConcern.Default,
+          batchSize = None,
+          cursorOptions = CursorOptions.empty,
+          maxTime = None,
+          hint = None,
+          comment = None,
+          collation = None
+        )
+        .prepared
+        .cursor
+        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+        .map(agg =>
+          agg.headOption.map(v => (v \ "min").as[Long])
+        )
+    }
+
+  override def findMaxByQuery(query: JsObject, field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+    collection.flatMap { col =>
+      import col.BatchCommands.AggregationFramework
+      import AggregationFramework.{Group, Match, MaxField}
+
+      col
+        .aggregatorContext[JsObject](
+          firstOperator = Match(query),
+          otherOperators =
+            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
+          explain = false,
+          allowDiskUse = false,
+          bypassDocumentValidation = false,
+          readConcern = ReadConcern.Majority,
+          readPreference = ReadPreference.primaryPreferred,
+          writeConcern = WriteConcern.Default,
+          batchSize = None,
+          cursorOptions = CursorOptions.empty,
+          maxTime = None,
+          hint = None,
+          comment = None,
+          collation = None
+        )
+        .prepared
+        .cursor
+        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+        .map(agg => agg.headOption.map(v => (v \ "max").as(json.LongFormat)))
+    }
 
   override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] =
     collection.flatMap { col =>

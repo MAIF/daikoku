@@ -2493,7 +2493,7 @@ object json {
             readBy = (json \ "readBy").as(SetUserIdFormat),
             message = (json \ "message").as[String],
             send = (json \ "send").asOpt[Boolean].getOrElse(false),
-            closed = (json \ "closed").asOpt[Boolean].getOrElse(false)
+            closed = (json \ "closed").asOpt(DateTimeFormat)
           )
         )
       } recover {
@@ -2514,6 +2514,9 @@ object json {
         "message" -> o.message,
         "send" -> o.send,
         "closed" -> o.closed
+          .map(DateTimeFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue]
       )
     }
 

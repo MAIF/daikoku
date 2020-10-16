@@ -1469,8 +1469,8 @@ export function myMessages() {
   }).then((r) => r.json());
 }
 
-export function myChatMessages(chat) {
-  return fetch(`/api/me/messages?chat=${chat}`, {
+export function myChatMessages(chat, date) {
+  return fetch(`/api/me/messages?chat=${chat}${date ? `&date=${date}` : ''}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -1543,6 +1543,17 @@ export function setMessagesRead(chatId) {
 export function closeMessageChat(chatId) {
   return fetch(`/api/messages/${chatId}`, {
     method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function lastDateChat(chatId, date) {
+  return fetch(`/api/messages/${chatId}/last-date?date=${date}`, {
+    method: 'GET',
     credentials: 'include',
     headers: {
       Accept: 'application/json',

@@ -90,11 +90,22 @@ class MessageController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def myMessages(chat: Option[String]) = DaikokuAction.async { ctx =>
+  def myMessages(chat: Option[String], date: Option[Long]) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(ctx) {
-      (messageActor ? GetAllMessage(ctx.user, ctx.tenant, chat))
+      (messageActor ? GetAllMessage(ctx.user, ctx.tenant, chat, date))
         .mapTo[Seq[Message]]
         .map(messages => Ok(JsArray(messages.map(_.asJson))))
+    }
+  }
+
+  def getLastChatDate(chat: String, date: Option[Long]) = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(ctx) {
+      (messageActor ? GetLastChatDate(chat, ctx.tenant, date))
+        .mapTo[Option[Long]]
+        .map {
+          case Some(date) => Ok(Json.obj("date" -> date))
+          case None => Ok(Json.obj("date" -> JsNull))
+        }
     }
   }
 
@@ -103,7 +114,7 @@ class MessageController(DaikokuAction: DaikokuAction,
       ctx.setCtxValue("chatId", chat)
 
       (messageActor ? CloseChat(chat, ctx.tenant))
-        .mapTo[Boolean]
+        .mapTo[Long]
         .map(_ => Ok(Json.obj("done" -> true)))
     }
   }
