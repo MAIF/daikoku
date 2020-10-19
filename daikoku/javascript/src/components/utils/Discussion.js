@@ -6,7 +6,7 @@ import classNames from 'classnames';
 import { Option } from '../utils';
 import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
-import { Translation } from '../../locales';
+import { t, Translation } from '../../locales';
 
 const DiscussionComponent = props => {
   const { messages, totalUnread, sendNewMessage, readMessages, adminTeam, lastClosedDates, getPreviousMessages, loading } = useContext(MessagesContext);
@@ -90,7 +90,7 @@ const DiscussionComponent = props => {
             <input
               disabled={loading ? 'disabled' : null}
               type="text"
-              placeholder={'Your message'}
+              placeholder={t('Your message', props.currentLanguage)}
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
               onChange={e => setNewMessage(e.target.value)} />
