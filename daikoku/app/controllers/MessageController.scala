@@ -20,7 +20,7 @@ import play.api.Logger
 import play.api.http.ContentTypes
 import play.api.i18n.I18nSupport
 import play.api.libs.EventSource
-import play.api.libs.json.{JsArray, JsNull, JsValue, Json}
+import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
 import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
@@ -82,19 +82,26 @@ class MessageController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def myAdminMessages() = DaikokuAction.async { ctx =>
+  def myAdminMessages(date: Option[Long]) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(ctx) {
-      (messageActor ? GetMyAdminMessages(ctx.user, ctx.tenant))
-        .mapTo[Seq[Message]]
-        .map(messages => Ok(JsArray(messages.map(_.asJson))))
+      for {
+        messages <- (messageActor ? GetMyAdminMessages(ctx.user, ctx.tenant, date)).mapTo[Seq[Message]]
+        previousClosedDates <- (messageActor ? GetLastClosedChatDates(Set(ctx.user.id.value), ctx.tenant, date)).mapTo[Seq[JsObject]]
+      } yield {
+        Ok(Json.obj("messages" -> JsArray(messages.map(_.asJson)), "previousClosedDates" -> JsArray(previousClosedDates)))
+      }
     }
   }
 
   def myMessages(chat: Option[String], date: Option[Long]) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(ctx) {
-      (messageActor ? GetAllMessage(ctx.user, ctx.tenant, chat, date))
-        .mapTo[Seq[Message]]
-        .map(messages => Ok(JsArray(messages.map(_.asJson))))
+      for {
+        messages <- (messageActor ? GetAllMessage(ctx.user, ctx.tenant, chat, date)).mapTo[Seq[Message]]
+        chats = messages.map(_.chat.value).toSet
+        previousClosedDates <- (messageActor ? GetLastClosedChatDates(chats, ctx.tenant, date)).mapTo[Seq[JsObject]]
+      } yield {
+        Ok(Json.obj("messages" -> JsArray(messages.map(_.asJson)), "previousClosedDates" -> JsArray(previousClosedDates)))
+      }
     }
   }
 

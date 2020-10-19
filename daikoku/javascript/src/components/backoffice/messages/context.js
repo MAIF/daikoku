@@ -25,10 +25,13 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
         setAdminTeam(team);
         if (team.users.some(u => u.userId === connectedUser._id)) {
           return Services.myMessages();
-        } 
-          return Services.myAdminMessages();
+        }
+        return Services.myAdminMessages();
       })
-      .then((m) => setMessages(m));
+      .then(({ messages, previousClosedDates }) => {
+        setMessages(messages);
+        setLastClosedDates(previousClosedDates);
+      });
 
     MessageEvents.addCallback((m) => handleEvent(m), sseId);
 
@@ -46,7 +49,6 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
 
   useEffect(() => {
     setTotalUnread(messages.filter(m => !m.readBy.includes(connectedUser._id)).length);
-    setLastClosedDates(calcLastClosedDates());
   }, [messages]);
 
   const handleEvent = (m) => {
@@ -77,40 +79,27 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
       .then((m) => setMessages(m));
   };
 
-  const calcLastClosedDates = () => {
-    return messages.reduce((acc, {chat, closed}) => {
-      if (closed) {
-        const maybeLastDate = acc[chat];
-        if (!maybeLastDate) {
-          return { ...acc, [chat]: closed };
-        } else if (maybeLastDate && closed < maybeLastDate) {
-          return {...acc, [chat]: closed};
-        }
-      }
-      return acc;
-    }, {});
-  };
-
   const getPreviousMessages = (chat) => {
-    const date = Option(lastClosedDates[chat]).getOrElse(moment().format('x'));
-    Services.lastDateChat(chat, date)
-      .then(({date}) => {
-        if (date) {
-          Services.myChatMessages(chat, date)
-            .then(previousMessages => setMessages([...previousMessages, ...messages]));
-        }
+    Option(lastClosedDates.find(item => item.chat === chat))
+      .map(item => item.date)
+      .fold(() => { }, date => {
+        Services.myChatMessages(chat, date)
+          .then((result) => {
+            setMessages([...result.messages, ...messages]);
+            setLastClosedDates([...lastClosedDates.filter(item => item.chat !== chat), ...result.previousClosedDates]);
+          });
       });
+    };
+
+    return (
+      <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates }}>
+        {children}
+      </MessagesContext.Provider>
+    );
   };
 
-  return (
-    <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates}}>
-      {children}
-    </MessagesContext.Provider>
-  );
-};
+  const mapStateToProps = (state) => ({
+    ...state.context,
+  });
 
-const mapStateToProps = (state) => ({
-  ...state.context,
-});
-
-export const MessagesProvider = connect(mapStateToProps)(MessagesProviderComponent);
+  export const MessagesProvider = connect(mapStateToProps)(MessagesProviderComponent);

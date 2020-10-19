@@ -146,7 +146,7 @@ const AdminMessagesComponent = props => {
           })}
         </div>
         <div className="d-flex flex-column ml-2 messages-content">
-          {selectedChat && <div>
+          {selectedChat && lastClosedDates.find(x => x.chat === selectedChat).date && <div>
             <button onClick={() => getPreviousMessages(selectedChat)}>
               previous message
             </button>

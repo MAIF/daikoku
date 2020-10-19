@@ -168,7 +168,7 @@ POST    /api/teams/:teamId/pages                        fr.maif.otoroshi.daikoku
 POST    /api/teams/:teamId/apis/:apiId/pages/_reorder   fr.maif.otoroshi.daikoku.ctrls.ApiController.reorderApiDocPagesIndex(teamId, apiId)
 
 ### NoDocs ###
-GET  /api/me/messages/admin                             fr.maif.otoroshi.daikoku.ctrls.MessageController.myAdminMessages()
+GET  /api/me/messages/admin                             fr.maif.otoroshi.daikoku.ctrls.MessageController.myAdminMessages(date: Option[Long] ?= None)
 ### NoDocs ###
 GET  /api/me/messages/unread/_count                     fr.maif.otoroshi.daikoku.ctrls.MessageController.countUnreadMessages()
 ### NoDocs ###

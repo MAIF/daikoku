@@ -1,7 +1,9 @@
 package fr.maif.otoroshi.daikoku.messages
 
+import akka.Done
 import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
+import akka.stream.scaladsl.{Sink, Source}
 import fr.maif.otoroshi.daikoku.domain.{Message, Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env
 import org.joda.time.DateTime
@@ -15,7 +17,7 @@ case class StreamMessage(message: Message)
 
 case class GetAllMessage(user: User, tenant: Tenant, maybeChat: Option[String], closedDate: Option[Long] = None)
 
-case class GetMyAdminMessages(user: User, tenant: Tenant, date: Option[DateTime] = None)
+case class GetMyAdminMessages(user: User, tenant: Tenant, date: Option[Long] = None)
 
 case class CountUnreadMessages(user: User, tenant: Tenant)
 
@@ -23,7 +25,9 @@ case class CloseChat(chat: String, tenant: Tenant)
 
 case class ReadMessages(user: User, chatId:String, date: DateTime, tenant: Tenant)
 
-case class GetLastChatDate(chat: String, tenant: Tenant, closedDate: Option[Long])
+case class GetLastChatDate(chats: String, tenant: Tenant, closedDate: Option[Long])
+
+case class GetLastClosedChatDates(chats: Set[String], tenant: Tenant, closedDate: Option[Long])
 
 class MessageActor(
                     implicit env: Env
@@ -46,7 +50,7 @@ class MessageActor(
       response pipeTo sender()
 
     case GetMyAdminMessages(user, tenant, closed) =>
-      val value: JsValue = closed.map(d => JsNumber(d.toDate.getTime)).getOrElse(JsNull)
+      val value: JsValue = closed.map(d => JsNumber(d)).getOrElse(JsNull)
       val response: Future[Seq[Message]] =
         env.dataStore.messageRepo.forTenant(tenant)
           .find(Json.obj(
@@ -87,6 +91,23 @@ class MessageActor(
       val result = env.dataStore.messageRepo.forTenant(tenant)
         .findMaxByQuery(
           Json.obj("chat" -> chat, "closed" -> Json.obj("$lt" -> date)), "closed")
+      result pipeTo sender()
+
+    case GetLastClosedChatDates(chats, tenant, maybeClosedDate) =>
+      val result = Source(chats)
+        .mapAsync(10)(chat => {
+          val l: Long = maybeClosedDate.getOrElse(DateTime.now().toDate.getTime)
+          env.dataStore.messageRepo.forTenant(tenant)
+            .findMaxByQuery(
+              Json.obj("chat" -> chat, "closed" -> Json.obj("$lt" -> l)), "closed")
+            .map {
+              case Some(date) => Json.obj("chat" -> chat, "date" -> JsNumber(date))
+              case None => Json.obj("chat" -> chat, "date" -> JsNull)
+            }
+        }
+        )
+        .runWith(Sink.seq)(env.defaultMaterializer)
+
       result pipeTo sender()
   }
 }
