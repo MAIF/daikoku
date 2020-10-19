@@ -16,10 +16,12 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
   const [receivedMessage, setReceivedMessage] = useState(undefined);
   const [totalUnread, setTotalUnread] = useState(0);
   const [lastClosedDates, setLastClosedDates] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const sseId = faker.random.alphaNumeric(64);
 
   useEffect(() => {
+    setLoading(true);
     Services.team('admin')
       .then((team) => {
         setAdminTeam(team);
@@ -31,6 +33,7 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
       .then(({ messages, previousClosedDates }) => {
         setMessages(messages);
         setLastClosedDates(previousClosedDates);
+        setLoading(false);
       });
 
     MessageEvents.addCallback((m) => handleEvent(m), sseId);
@@ -56,7 +59,9 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
   };
 
   const sendNewMessage = (newMessage, participants, chat) => {
-    return Services.sendMessage(newMessage, participants, chat);
+    setLoading(true);
+    return Services.sendMessage(newMessage, participants, chat)
+      .then(() => setLoading(false));
   };
 
   const readMessages = (chat) => {
@@ -83,16 +88,18 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
     Option(lastClosedDates.find(item => item.chat === chat))
       .map(item => item.date)
       .fold(() => { }, date => {
+        setLoading(true);
         Services.myChatMessages(chat, date)
           .then((result) => {
             setMessages([...result.messages, ...messages]);
             setLastClosedDates([...lastClosedDates.filter(item => item.chat !== chat), ...result.previousClosedDates]);
+            setLoading(false);
           });
       });
     };
 
     return (
-      <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates }}>
+      <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates, loading }}>
         {children}
       </MessagesContext.Provider>
     );

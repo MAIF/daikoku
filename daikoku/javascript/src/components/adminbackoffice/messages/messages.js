@@ -13,13 +13,12 @@ import { UserBackOffice } from '../../backoffice';
 import { t, Translation } from '../../../locales';
 
 const AdminMessagesComponent = props => {
-  const { messages, sendNewMessage, readMessages, closeChat, getPreviousMessages, lastClosedDates } = useContext(MessagesContext);
+  const { messages, sendNewMessage, readMessages, closeChat, getPreviousMessages, lastClosedDates, loading } = useContext(MessagesContext);
 
   const [groupedMessages, setGroupedMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [users, setUsers] = useState([]);
   const [selectedChat, setSelectedChat] = useState(undefined);
-  const [loading, setLoading] = useState(undefined);
 
   useEffect(() => {
     Services.fetchAllUsers()
@@ -69,17 +68,17 @@ const AdminMessagesComponent = props => {
   };
 
   const sendMessage = () => {
-    setLoading(true);
-    const participants = Option(groupedMessages.find(g => g.chat === selectedChat))
-      .map(g => _.head(g.messages))
-      .map(m => m.participants)
-      .getOrElse([]);
+    if (!loading && newMessage.trim()) {
+      const participants = Option(groupedMessages.find(g => g.chat === selectedChat))
+        .map(g => _.head(g.messages))
+        .map(m => m.participants)
+        .getOrElse([]);
 
-    sendNewMessage(newMessage, participants, selectedChat)
-      .then(() => {
-        setLoading(false);
-        setNewMessage('');
-      });
+      sendNewMessage(newMessage, participants, selectedChat)
+        .then(() => {
+          setNewMessage('');
+        });
+    }
   };
 
   const handleKeyDown = (event) => {
@@ -148,7 +147,10 @@ const AdminMessagesComponent = props => {
         <div className="d-flex flex-column ml-2 messages-content">
           {selectedChat && lastClosedDates.find(x => x.chat === selectedChat).date && (
             <div className="d-flex flex-row justify-content-center my-1">
-              <button className="btn btn-sm btn-outline-primary" onClick={() => getPreviousMessages(selectedChat)}>
+              <button
+                className="btn btn-sm btn-outline-primary"
+                disabled={loading ? 'disabled' : null}
+                onClick={() => getPreviousMessages(selectedChat)}>
                 Load previous messages
                 </button>
             </div>
@@ -180,7 +182,10 @@ const AdminMessagesComponent = props => {
               onChange={e => setNewMessage(e.target.value)}
               placeholder={t('Your message', props.currentLanguage)}
             />
-            <button className="send-button" onClick={sendMessage}>
+            <button
+              disabled={loading ? 'disabled' : null}
+              className="send-button"
+              onClick={sendMessage}>
               <Send />
             </button>
           </div>}

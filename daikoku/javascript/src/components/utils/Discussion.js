@@ -8,11 +8,10 @@ import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
 
 const DiscussionComponent = props => {
-  const { messages, totalUnread, sendNewMessage, readMessages, adminTeam, lastClosedDates, getPreviousMessages } = useContext(MessagesContext);
+  const { messages, totalUnread, sendNewMessage, readMessages, adminTeam, lastClosedDates, getPreviousMessages, loading } = useContext(MessagesContext);
 
   const [opened, setOpened] = useState(false);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(false);
 
 
   useEffect(() => {
@@ -32,15 +31,15 @@ const DiscussionComponent = props => {
   };
 
   const sendMessage = () => {
-    setLoading(true);
-    const chat = Option(messages[0]).map(m => m.chat).getOrElse(props.connectedUser._id);
-    const participants = [...adminTeam.users.map(u => u.userId), props.connectedUser._id];
-
-    sendNewMessage(newMessage, participants, chat)
-      .then(() => {
-        setNewMessage('');
-        setLoading(false);
-      });
+    if (newMessage.trim()) {
+      const chat = Option(messages[0]).map(m => m.chat).getOrElse(props.connectedUser._id);
+      const participants = [...adminTeam.users.map(u => u.userId), props.connectedUser._id];
+  
+      sendNewMessage(newMessage, participants, chat)
+        .then(() => {
+          setNewMessage('');
+        });
+    }
   };
 
   if (opened) {
@@ -75,7 +74,10 @@ const DiscussionComponent = props => {
             }
             {lastClosedDates.find(x => x.chat === props.connectedUser._id).date && (
               <div className="d-flex flex-row justify-content-center my-1">
-                <button className="btn btn-sm btn-outline-primary" onClick={() => getPreviousMessages(props.connectedUser._id)}>
+                <button 
+                  disabled={loading ? 'disabled' : null}
+                  className="btn btn-sm btn-outline-primary" 
+                  onClick={() => getPreviousMessages(props.connectedUser._id)}>
                   Load previous messages
                 </button>
               </div>
@@ -89,7 +91,10 @@ const DiscussionComponent = props => {
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
               onChange={e => setNewMessage(e.target.value)} />
-            <button className="send-button" onClick={sendMessage}>
+            <button 
+              disabled={loading ? 'disabled' : null}
+              className="send-button" 
+              onClick={sendMessage}>
               <Send />
             </button>
           </div>
