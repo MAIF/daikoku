@@ -132,7 +132,7 @@ const AdminMessagesComponent = props => {
                     <a className="notification-link cursor-pointer" onClick={(e) => {
                       e.stopPropagation();
                       closeSelectedChat(chat);
-                      }}>
+                    }}>
                       <i className="fas fa-trash" />
                     </a>
 
@@ -146,11 +146,13 @@ const AdminMessagesComponent = props => {
           })}
         </div>
         <div className="d-flex flex-column ml-2 messages-content">
-          {selectedChat && lastClosedDates.find(x => x.chat === selectedChat).date && <div>
-            <button onClick={() => getPreviousMessages(selectedChat)}>
-              previous message
-            </button>
-          </div>}
+          {selectedChat && lastClosedDates.find(x => x.chat === selectedChat).date && (
+            <div className="d-flex flex-row justify-content-center my-1">
+              <button className="btn btn-sm btn-outline-primary" onClick={() => getPreviousMessages(selectedChat)}>
+                Load previous messages
+                </button>
+            </div>
+          )}
           {dialog.map((group, idx) => {
             return (
               <div

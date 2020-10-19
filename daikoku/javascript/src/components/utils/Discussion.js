@@ -3,12 +3,12 @@ import { connect } from 'react-redux';
 import { MessageCircle, X, Send } from 'react-feather';
 import classNames from 'classnames';
 
-import {Option} from '../utils';
-import {MessagesContext} from '../backoffice';
+import { Option } from '../utils';
+import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
 
 const DiscussionComponent = props => {
-  const { messages, totalUnread, sendNewMessage, readMessages, adminTeam } = useContext(MessagesContext);
+  const { messages, totalUnread, sendNewMessage, readMessages, adminTeam, lastClosedDates, getPreviousMessages } = useContext(MessagesContext);
 
   const [opened, setOpened] = useState(false);
   const [newMessage, setNewMessage] = useState('');
@@ -35,7 +35,7 @@ const DiscussionComponent = props => {
     setLoading(true);
     const chat = Option(messages[0]).map(m => m.chat).getOrElse(props.connectedUser._id);
     const participants = [...adminTeam.users.map(u => u.userId), props.connectedUser._id];
-    
+
     sendNewMessage(newMessage, participants, chat)
       .then(() => {
         setNewMessage('');
@@ -73,6 +73,13 @@ const DiscussionComponent = props => {
                 );
               })
             }
+            {lastClosedDates.find(x => x.chat === props.connectedUser._id).date && (
+              <div className="d-flex flex-row justify-content-center my-1">
+                <button className="btn btn-sm btn-outline-primary" onClick={() => getPreviousMessages(props.connectedUser._id)}>
+                  Load previous messages
+                </button>
+              </div>
+            )}
           </div>
           <div className="discussion-form">
             <input
