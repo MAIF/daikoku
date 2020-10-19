@@ -695,5 +695,6 @@
     "create.metadata.option.label": "Create option %s",
     "Team apis": "Team APIs",
     "notif.apikey.refresh": "Your subscription %s (%s/%s) has been refreshed.",
-    "Apikey refresh": "Apikey refresh"
+    "Apikey refresh": "Apikey refresh",
+    "Load previous messages": "Load previous messages"
 }

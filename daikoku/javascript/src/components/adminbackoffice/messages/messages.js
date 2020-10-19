@@ -151,8 +151,10 @@ const AdminMessagesComponent = props => {
                 className="btn btn-sm btn-outline-primary"
                 disabled={loading ? 'disabled' : null}
                 onClick={() => getPreviousMessages(selectedChat)}>
-                Load previous messages
-                </button>
+                <Translation i18nkey="Load previous messages" language={props.currentLanguage}>
+                  Load previous messages
+                </Translation>
+              </button>
             </div>
           )}
           {dialog.map((group, idx) => {

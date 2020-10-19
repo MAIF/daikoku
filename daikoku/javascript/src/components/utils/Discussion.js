@@ -6,6 +6,7 @@ import classNames from 'classnames';
 import { Option } from '../utils';
 import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
+import { Translation } from '../../locales';
 
 const DiscussionComponent = props => {
   const { messages, totalUnread, sendNewMessage, readMessages, adminTeam, lastClosedDates, getPreviousMessages, loading } = useContext(MessagesContext);
@@ -34,7 +35,7 @@ const DiscussionComponent = props => {
     if (newMessage.trim()) {
       const chat = Option(messages[0]).map(m => m.chat).getOrElse(props.connectedUser._id);
       const participants = [...adminTeam.users.map(u => u.userId), props.connectedUser._id];
-  
+
       sendNewMessage(newMessage, participants, chat)
         .then(() => {
           setNewMessage('');
@@ -74,11 +75,13 @@ const DiscussionComponent = props => {
             }
             {lastClosedDates.find(x => x.chat === props.connectedUser._id).date && (
               <div className="d-flex flex-row justify-content-center my-1">
-                <button 
+                <button
                   disabled={loading ? 'disabled' : null}
-                  className="btn btn-sm btn-outline-primary" 
+                  className="btn btn-sm btn-outline-primary"
                   onClick={() => getPreviousMessages(props.connectedUser._id)}>
-                  Load previous messages
+                  <Translation i18nkey="Load previous messages" language={props.currentLanguage}>
+                    Load previous messages
+                  </Translation>
                 </button>
               </div>
             )}
@@ -91,9 +94,9 @@ const DiscussionComponent = props => {
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
               onChange={e => setNewMessage(e.target.value)} />
-            <button 
+            <button
               disabled={loading ? 'disabled' : null}
-              className="send-button" 
+              className="send-button"
               onClick={sendMessage}>
               <Send />
             </button>
