@@ -6,7 +6,6 @@ import moment from 'moment';
 import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
 import { partition, Option } from '../../utils';
-import { message } from 'antd';
 
 
 export const MessagesContext = React.createContext();
@@ -46,6 +45,14 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
 
   useEffect(() => {
     if (receivedMessage) {
+      if (lastClosedDates.every(({chat}) => chat !== receivedMessage.chat)) {
+        setLoading(true);
+        Services.lastDateChat(receivedMessage.chat, moment().format('x'))
+          .then((date) => {
+            setLastClosedDates([...lastClosedDates.filter(item => item.chat !== receivedMessage.chat), { chat: receivedMessage.chat, date }]);
+            setLoading(false);
+          });
+      }
       setMessages([receivedMessage, ...messages]);
       setReceivedMessage(undefined);
     }
@@ -117,7 +124,7 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
     };
 
     return (
-      <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates, loading, createNewChat }}>
+      <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates, loading, createNewChat , adminTeam}}>
         {children}
       </MessagesContext.Provider>
     );

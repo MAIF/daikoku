@@ -2,7 +2,7 @@
   width: 25%;
   background-color: $aside-bg-color;
   height: calc(100vh - 160px);
-  &__active:first-child {
+  .messages-sender__active {
     background-color:$menu-text-hover-bg-color;
     border-left: 2px solid $danger-color;
     color:$menu-text-hover-color;

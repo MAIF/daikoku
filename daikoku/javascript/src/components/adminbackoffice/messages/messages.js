@@ -14,7 +14,7 @@ import { UserBackOffice } from '../../backoffice';
 import { t, Translation } from '../../../locales';
 
 const AdminMessagesComponent = props => {
-  const { messages, sendNewMessage, readMessages, closeChat, getPreviousMessages, lastClosedDates, loading, createNewChat } = useContext(MessagesContext);
+  const { messages, sendNewMessage, readMessages, closeChat, getPreviousMessages, lastClosedDates, loading, createNewChat, adminTeam } = useContext(MessagesContext);
 
   const [groupedMessages, setGroupedMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -78,7 +78,7 @@ const AdminMessagesComponent = props => {
       const participants = Option(groupedMessages.find(g => g.chat === selectedChat))
         .map(g => _.head(g.messages))
         .map(m => m.participants)
-        .getOrElse([selectedChat, props.connectedUser._id]); //todo: create new chat with me and another...add all the crew WARNING !!!
+        .getOrElse([selectedChat, ...adminTeam.users.map(u => u.userId)]);
 
       sendNewMessage(newMessage, participants, selectedChat)
         .then(() => {
@@ -166,7 +166,6 @@ const AdminMessagesComponent = props => {
               const lastMessageDate = Option(_.last(messages)).map(m => moment(m.date)).getOrElse(moment());
               const lastMessageDateDisplayed = (moment().diff(lastMessageDate, 'days') > 1) ?
                 lastMessageDate.format('D MMM.') : lastMessageDate.fromNow(true);
-
               return (
                 <div
                   key={idx}
@@ -198,25 +197,13 @@ const AdminMessagesComponent = props => {
             })}
         </div>
         <div className="d-flex flex-column-reverse ml-2 messages-content">
-          {selectedChat && lastClosedDates.find(x => x.chat === selectedChat).date && (
-            <div className="d-flex flex-row justify-content-center my-1">
-              <button
-                className="btn btn-sm btn-outline-primary"
-                disabled={loading ? 'disabled' : null}
-                onClick={() => getPreviousMessages(selectedChat)}>
-                <Translation i18nkey="Load previous messages" language={props.currentLanguage}>
-                  Load previous messages
-                </Translation>
-              </button>
-            </div>
-          )}
           {dialog.reverse().map((group, idx) => {
             return (
               <div
                 key={`discussion-messages-${idx}`}
                 className={classNames('discussion-messages', {
                   'discussion-messages--received': group.every(m => m.sender === selectedChat),
-                  'discussion-messages--send': group.every(m => m.sender !== selectedChat),
+                  'discussion-messages--send': group.every(m => m.sender !== selectedChat)
                 })}>
                 {group.map((m, idx) => {
                   return (
@@ -229,6 +216,18 @@ const AdminMessagesComponent = props => {
               </div>
             );
           })}
+          {selectedChat && lastClosedDates.find(x => x.chat === selectedChat).date && (
+            <div className="d-flex flex-row justify-content-center my-1">
+              <button
+                className="btn btn-sm btn-outline-primary"
+                disabled={loading ? 'disabled' : null}
+                onClick={() => getPreviousMessages(selectedChat)}>
+                <Translation i18nkey="Load previous messages" language={props.currentLanguage}>
+                  Load previous messages
+                </Translation>
+              </button>
+            </div>
+          )}
           {selectedChat && <div className="discussion-form discussion-form__message">
             <input
               disabled={loading ? 'disabled' : null}
