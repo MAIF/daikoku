@@ -696,5 +696,6 @@
     "Team apis": "Team APIs",
     "notif.apikey.refresh": "Your subscription %s (%s/%s) has been refreshed.",
     "Apikey refresh": "Apikey refresh",
-    "Load previous messages": "Load previous messages"
+    "Load previous messages": "Load previous messages",
+    "Start new conversation": "Start new conversation"
 }

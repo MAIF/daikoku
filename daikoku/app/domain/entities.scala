@@ -939,7 +939,8 @@ case class User(
       "_humanReadableId" -> email.urlPathSegmentSanitized,
       "name" -> name,
       "email" -> email,
-      "picture" -> picture
+      "picture" -> picture,
+      "isDaikokuAdmin" -> isDaikokuAdmin
     )
   }
   def toUiPayload(): JsValue = {

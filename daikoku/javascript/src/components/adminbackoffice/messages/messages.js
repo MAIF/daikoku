@@ -21,10 +21,16 @@ const AdminMessagesComponent = props => {
   const [users, setUsers] = useState([]);
   const [selectedChat, setSelectedChat] = useState(undefined);
 
+  const [possibleNewUsers, setPossibleNewUsers] = useState([]);
+
   useEffect(() => {
     Services.fetchAllUsers()
       .then((users) => setUsers(users));
   }, []);
+
+  useEffect(() => {
+    setPossibleNewUsers(users.filter(u => !u.isDaikokuAdmin && !groupedMessages.some(({ chat }) => chat === u._id)));
+  }, [groupedMessages, users]);
 
   useEffect(() => {
     if (users.length) {
@@ -73,7 +79,7 @@ const AdminMessagesComponent = props => {
         .map(g => _.head(g.messages))
         .map(m => m.participants)
         .getOrElse([selectedChat, props.connectedUser._id]); //todo: create new chat with me and another...add all the crew WARNING !!!
-        
+
       sendNewMessage(newMessage, participants, selectedChat)
         .then(() => {
           setNewMessage('');
@@ -94,7 +100,7 @@ const AdminMessagesComponent = props => {
   const createDialog = (user) => {
     createNewChat(user._id)
       .then(() => {
-        setGroupedMessages([...groupedMessages, {chat: user._id, user, messages: []}]);
+        setGroupedMessages([...groupedMessages, { chat: user._id, user, messages: [] }]);
         setSelectedChat(user._id);
       });
   };
@@ -118,60 +124,65 @@ const AdminMessagesComponent = props => {
           <Select
             placeholder={t('Start new conversation', props.currentLanguage)}
             className="mr-2 reactSelect"
-            options={users.map((u) => ({
-              label: (
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  {u.name} ({u.email}){' '}
-                  <img
-                    style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
-                    src={u.picture}
-                    alt="avatar"
-                  />
-                </div>
-              ),
-              value: u,
-            }))}
-            onChange={({value}) => createDialog(value)}
+            options={possibleNewUsers
+              .map((u) => ({
+                label: (
+                  <div
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {u.name} ({u.email}){' '}
+                    <img
+                      style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
+                      src={u.picture}
+                      alt="avatar"
+                    />
+                  </div>
+                ),
+                value: u,
+              }))}
+            value={null}
+            onChange={({ value }) => createDialog(value)}
             filterOption={(data, search) => _.values(data.value).some((v) => v.includes(search))}
             classNamePrefix="reactSelect"
           />
-          {orderedMessages.map(({ chat, user, messages }, idx) => {
-            const unreadCount = messages.filter(m => !m.readBy.includes(props.connectedUser._id)).length;
+          {_.orderBy(orderedMessages
+            .map(({ chat, user, messages }) => {
+              const unreadCount = messages.filter(m => !m.readBy.includes(props.connectedUser._id)).length;
+              return { chat, user, messages, unreadCount };
+            }), ['unreadCount', 'user.name'], ['desc', 'asc'])
+            .map(({ chat, user, messages, unreadCount }, idx) => {
+              const lastMessageDate = Option(_.last(messages)).map(m => moment(m.date)).getOrElse(moment());
+              const lastMessageDateDisplayed = (moment().diff(lastMessageDate, 'days') > 1) ?
+                lastMessageDate.format('D MMM.') : lastMessageDate.fromNow(true);
 
-            const lastMessageDate = Option(_.last(messages)).map(m => moment(m.date)).getOrElse(moment());
-            const lastMessageDateDisplayed = (moment().diff(lastMessageDate, 'days') > 1) ?
-              lastMessageDate.format('D MMM.') : lastMessageDate.fromNow(true);
-
-            return (
-              <div
-                key={idx}
-                className={classNames('p-3 cursor-pointer d-flex flex-row', {
-                  'messages-sender__active': selectedChat === chat
-                })}
-                onClick={() => setSelectedChat(chat)}>
-                <div className="col-4">
-                  <img className="user-avatar" src={user.picture} alt="user-avatar" style={{ width: '100%' }} />
-                  {unreadCount > 0 && <span className="notification">{unreadCount}</span>}
-                </div>
-                <div className="col-8">
-                  <div className="d-flex justify-content-between">
-                    <h4>{user.name}</h4>
-                    <a className="notification-link cursor-pointer" onClick={(e) => {
-                      e.stopPropagation();
-                      closeSelectedChat(chat);
-                    }}>
-                      <i className="fas fa-trash" />
-                    </a>
-
+              return (
+                <div
+                  key={idx}
+                  className={classNames('p-3 cursor-pointer d-flex flex-row', {
+                    'messages-sender__active': selectedChat === chat
+                  })}
+                  onClick={() => setSelectedChat(chat)}>
+                  <div className="col-4">
+                    <img className="user-avatar" src={user.picture} alt="user-avatar" style={{ width: '100%' }} />
+                    {unreadCount > 0 && <span className="notification">{unreadCount}</span>}
                   </div>
-                  <div className="d-flex justify-content-end">
-                    <div>{lastMessageDateDisplayed}</div>
+                  <div className="col-8">
+                    <div className="d-flex justify-content-between">
+                      <h4>{user.name}</h4>
+                      <a className="notification-link cursor-pointer" onClick={(e) => {
+                        e.stopPropagation();
+                        closeSelectedChat(chat);
+                      }}>
+                        <i className="fas fa-trash" />
+                      </a>
+
+                    </div>
+                    <div className="d-flex justify-content-end">
+                      <div>{lastMessageDateDisplayed}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
         <div className="d-flex flex-column ml-2 messages-content">
           {selectedChat && lastClosedDates.find(x => x.chat === selectedChat).date && (
