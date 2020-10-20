@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import { Send } from 'react-feather';
 import _ from 'lodash';
 import moment from 'moment';
+import Select from 'react-select';
 
 import { MessagesContext } from '../../backoffice';
 import * as MessagesEvents from '../../../services/messages';
@@ -13,7 +14,7 @@ import { UserBackOffice } from '../../backoffice';
 import { t, Translation } from '../../../locales';
 
 const AdminMessagesComponent = props => {
-  const { messages, sendNewMessage, readMessages, closeChat, getPreviousMessages, lastClosedDates, loading } = useContext(MessagesContext);
+  const { messages, sendNewMessage, readMessages, closeChat, getPreviousMessages, lastClosedDates, loading, createNewChat } = useContext(MessagesContext);
 
   const [groupedMessages, setGroupedMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -27,6 +28,7 @@ const AdminMessagesComponent = props => {
 
   useEffect(() => {
     if (users.length) {
+
       const groupedMessages = messages.reduce((groups, m) => {
         const { chat } = m;
         const [actualGroup, others] = partition(groups, g => g.chat === chat);
@@ -59,12 +61,10 @@ const AdminMessagesComponent = props => {
   };
 
   const closeSelectedChat = (chat) => {
-    closeChat(chat)
-      .then(() => {
-        if (selectedChat === chat) {
-          setSelectedChat(undefined);
-        }
-      });
+    if (selectedChat === chat) {
+      setSelectedChat(undefined);
+    }
+    closeChat(chat);
   };
 
   const sendMessage = () => {
@@ -72,8 +72,8 @@ const AdminMessagesComponent = props => {
       const participants = Option(groupedMessages.find(g => g.chat === selectedChat))
         .map(g => _.head(g.messages))
         .map(m => m.participants)
-        .getOrElse([]);
-
+        .getOrElse([selectedChat, props.connectedUser._id]); //todo: create new chat with me and another...add all the crew WARNING !!!
+        
       sendNewMessage(newMessage, participants, selectedChat)
         .then(() => {
           setNewMessage('');
@@ -89,6 +89,14 @@ const AdminMessagesComponent = props => {
         sendMessage();
         event.preventDefault();
     }
+  };
+
+  const createDialog = (user) => {
+    createNewChat(user._id)
+      .then(() => {
+        setGroupedMessages([...groupedMessages, {chat: user._id, user, messages: []}]);
+        setSelectedChat(user._id);
+      });
   };
 
 
@@ -107,10 +115,31 @@ const AdminMessagesComponent = props => {
       </h1>
       <div className="d-flex flex-row messages-container">
         <div className="d-flex flex-column messages-sender">
+          <Select
+            placeholder={t('Start new conversation', props.currentLanguage)}
+            className="mr-2 reactSelect"
+            options={users.map((u) => ({
+              label: (
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  {u.name} ({u.email}){' '}
+                  <img
+                    style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
+                    src={u.picture}
+                    alt="avatar"
+                  />
+                </div>
+              ),
+              value: u,
+            }))}
+            onChange={({value}) => createDialog(value)}
+            filterOption={(data, search) => _.values(data.value).some((v) => v.includes(search))}
+            classNamePrefix="reactSelect"
+          />
           {orderedMessages.map(({ chat, user, messages }, idx) => {
             const unreadCount = messages.filter(m => !m.readBy.includes(props.connectedUser._id)).length;
 
-            const lastMessageDate = moment(_.last(messages).date);
+            const lastMessageDate = Option(_.last(messages)).map(m => moment(m.date)).getOrElse(moment());
             const lastMessageDateDisplayed = (moment().diff(lastMessageDate, 'days') > 1) ?
               lastMessageDate.format('D MMM.') : lastMessageDate.fromNow(true);
 

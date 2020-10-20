@@ -6,6 +6,7 @@ import moment from 'moment';
 import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
 import { partition, Option } from '../../utils';
+import { message } from 'antd';
 
 
 export const MessagesContext = React.createContext();
@@ -67,13 +68,17 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
   const readMessages = (chat) => {
     Services.setMessagesRead(chat)
       .then(() => Services.myChatMessages(chat))
-      .then((chatMessages) => {
+      .then((result) => {
         const [filterMessages] = partition(messages, m => m.chat !== chat);
-        setMessages([...filterMessages, ...chatMessages]);
+
+        setMessages([...filterMessages, ...result.messages]);
+        setLastClosedDates([...lastClosedDates.filter(item => item.chat !== chat), ...result.previousClosedDates]);
+
       });
   };
 
   const closeChat = (chatid) => {
+    setLoading(true);
     return Services.closeMessageChat(chatid)
       .then(() => {
         if (adminTeam.users.some(u => u.userId === connectedUser._id)) {
@@ -81,7 +86,11 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
         }
         return Services.myAdminMessages();
       })
-      .then((m) => setMessages(m));
+      .then(({ messages, previousClosedDates }) => {
+        setMessages(messages);
+        setLastClosedDates(previousClosedDates);
+        setLoading(false);
+      });
   };
 
   const getPreviousMessages = (chat) => {
@@ -98,8 +107,17 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
       });
     };
 
+    const createNewChat = (chat) => {
+      setLoading(true);
+      return Services.lastDateChat(chat, moment().format('x'))
+        .then((date) => {
+          setLastClosedDates([...lastClosedDates.filter(item => item.chat !== chat), {chat, date}]);
+          setLoading(false);
+        });
+    };
+
     return (
-      <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates, loading }}>
+      <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates, loading, createNewChat }}>
         {children}
       </MessagesContext.Provider>
     );

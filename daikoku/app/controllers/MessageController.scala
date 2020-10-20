@@ -20,7 +20,7 @@ import play.api.Logger
 import play.api.http.ContentTypes
 import play.api.i18n.I18nSupport
 import play.api.libs.EventSource
-import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsNull, JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
@@ -110,8 +110,8 @@ class MessageController(DaikokuAction: DaikokuAction,
       (messageActor ? GetLastChatDate(chat, ctx.tenant, date))
         .mapTo[Option[Long]]
         .map {
-          case Some(date) => Ok(Json.obj("date" -> date))
-          case None => Ok(Json.obj("date" -> JsNull))
+          case Some(date) => Ok(JsNumber(date))
+          case None => Ok(JsNull)
         }
     }
   }
