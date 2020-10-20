@@ -697,5 +697,11 @@
   "notif.apikey.refresh": "votre souscription %s (%s/%s) a été mise à jour.",
   "Apikey refresh": "Mise à jour d'une clé d'API",
   "Load previous messages": "Messages précédents",
-  "Start new conversation": "Démarrer une nouvelle "
+  "Start new conversation": "Démarrer une nouvelle ",
+  "moment.duration.seconds": "%s sec",
+  "moment.duration.minutes": "%s min",
+  "moment.duration.days": "%s d",
+  "moment.duration.weeks": "%s sem",
+  "moment.duration.months": "%s m",
+  "moment.duration.years": "%s y"
 }

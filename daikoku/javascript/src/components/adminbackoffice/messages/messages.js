@@ -9,7 +9,7 @@ import Select from 'react-select';
 import { MessagesContext } from '../../backoffice';
 import * as MessagesEvents from '../../../services/messages';
 import * as Services from '../../../services';
-import { Option, partition } from '../../utils';
+import { Option, partition, formatMessageDate } from '../../utils';
 import { UserBackOffice } from '../../backoffice';
 import { t, Translation } from '../../../locales';
 
@@ -112,6 +112,19 @@ const AdminMessagesComponent = props => {
     .getOrElse([]);
 
   moment.locale(props.currentLanguage);
+  moment.updateLocale('fr', {
+    relativeTime: {
+      s: t('moment.duration.seconds', props.currentLanguage, false, '1 sec', '1'),
+      ss: t('moment.duration.seconds', props.currentLanguage, false, '%d sec', '%d'),
+      m: t('moment.duration.minutes', props.currentLanguage, false, '1 min', '1'),
+      mm: t('moment.duration.minutes', props.currentLanguage, false, '%d min', '%d'),
+      h: t('moment.duration.hours', props.currentLanguage, false, '1 h', '1'),
+      hh: t('moment.duration.jours', props.currentLanguage, false, '%d h', '%d'),
+      d: t('moment.duration.days', props.currentLanguage, false, '1 d', '1'),
+      dd: t('moment.duration.days', props.currentLanguage, false, '%d d', '%d'),
+    }
+  });
+
   return (
     <UserBackOffice tab="Messages">
       <h1>
@@ -184,7 +197,7 @@ const AdminMessagesComponent = props => {
               );
             })}
         </div>
-        <div className="d-flex flex-column ml-2 messages-content">
+        <div className="d-flex flex-column-reverse ml-2 messages-content">
           {selectedChat && lastClosedDates.find(x => x.chat === selectedChat).date && (
             <div className="d-flex flex-row justify-content-center my-1">
               <button
@@ -197,7 +210,7 @@ const AdminMessagesComponent = props => {
               </button>
             </div>
           )}
-          {dialog.map((group, idx) => {
+          {dialog.reverse().map((group, idx) => {
             return (
               <div
                 key={`discussion-messages-${idx}`}
@@ -207,8 +220,9 @@ const AdminMessagesComponent = props => {
                 })}>
                 {group.map((m, idx) => {
                   return (
-                    <div key={`discussion-message-${idx}`} className="discussion-message">
-                      {m.message}
+                    <div key={`discussion-message-${idx}`} className="discussion-message d-flex flex-column">
+                      <span className="message">{m.message}</span>
+                      <span className="date">{formatMessageDate(m.date)}</span>
                     </div>
                   );
                 })}

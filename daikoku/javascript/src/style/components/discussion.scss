@@ -116,9 +116,18 @@
       display: inline-block;
       margin-bottom: 2px;
       padding: 7px 13px;
-      font-size: 12px;
       border-radius: 15px;
       line-height: 1.4;
+
+      .message {
+        font-size: 1rem;
+        font-weight: 500;
+      }
+
+      .date {
+        font-size: .70rem;
+        font-weight: lighter;
+      }
     }
 
     &--send {
