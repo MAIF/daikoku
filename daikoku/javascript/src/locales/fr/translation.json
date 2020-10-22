@@ -703,5 +703,6 @@
   "moment.duration.days": "%s j",
   "moment.duration.weeks": "%s sem",
   "moment.duration.months": "%s m",
-  "moment.duration.years": "%s a"
+  "moment.duration.years": "%s a",
+  "Unknown user": "Utilisateur inconnu"
 }

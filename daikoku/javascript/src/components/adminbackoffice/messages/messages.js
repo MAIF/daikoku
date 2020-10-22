@@ -206,10 +206,16 @@ const AdminMessagesComponent = props => {
                   'discussion-messages--send': group.every(m => m.sender !== selectedChat)
                 })}>
                 {group.map((m, idx) => {
+                  const sender = Option(users.find(u => u._id === m.sender))
+                    .map(u => u.name)
+                    .getOrElse(t('Unknown user', props.currentLanguage));
                   return (
                     <div key={`discussion-message-${idx}`} className="discussion-message d-flex flex-column">
+                        <span className="sender">{sender}</span>
                       <span className="message">{m.message}</span>
-                      <span className="date">{formatMessageDate(m.date)}</span>
+                      <span className="info">
+                        <span className="date">{formatMessageDate(m.date)}</span>
+                      </span>
                     </div>
                   );
                 })}

@@ -2,6 +2,7 @@
   width: 25%;
   background-color: $aside-bg-color;
   height: calc(100vh - 160px);
+  overflow: scroll;
   .messages-sender__active {
     background-color:$menu-text-hover-bg-color;
     border-left: 2px solid $danger-color;
@@ -124,7 +125,21 @@
         font-weight: 500;
       }
 
-      .date {
+      .info {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .sender {
+        display: none;
+      }
+
+      &:first-child .sender {
+        display: block;
+        margin-left: 35px;
+      }
+
+      .date, .sender {
         font-size: .70rem;
         font-weight: lighter;
       }
@@ -135,14 +150,14 @@
       .discussion-message {
         color: #fff;
         background-color: $info-color;
-        border-bottom-left-radius: 5px;
-        border-top-left-radius: 5px;
+        border-bottom-right-radius: 5px;
+        border-top-right-radius: 5px;
 
         &:first-child{
-          border-top-left-radius: 15px;
+          border-top-right-radius: 15px;
         }
         &:last-child{
-          border-bottom-left-radius: 15px;
+          border-bottom-right-radius: 15px;
         }
       }
     }
@@ -152,14 +167,14 @@
       .discussion-message {
         color: #000;
         background-color: #ddd;
-        border-bottom-right-radius: 5px;
-        border-top-right-radius: 5px;
+        border-bottom-left-radius: 5px;
+        border-top-left-radius: 5px;
 
         &:first-child{
-          border-top-right-radius: 15px;
+          border-top-left-radius: 15px;
         }
         &:last-child{
-          border-bottom-right-radius: 15px;
+          border-bottom-left-radius: 15px;
         }
       }
     }
