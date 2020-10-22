@@ -294,6 +294,24 @@ class CredentialsAdminApiController(DaikokuApiAction: DaikokuApiAction,
   }
 }
 
+class MessagesAdminApiController(daa: DaikokuApiAction,
+                                   env: Env,
+                                   cc: ControllerComponents)
+  extends AdminApiController[Message, MongoId](daa, env, cc) {
+  override def entityClass = classOf[Message]
+  override def entityName: String = "message"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant,
+                           ds: DataStore): Repo[Message, MongoId] =
+    ds.messageRepo.forTenant(tenant)
+  override def toJson(entity: Message): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, Message] =
+    entity.asOpt[JsObject] match {
+      case Some(v) => Right(entity.as(json.MessageFormat))
+      case None    => Left("Not an object")
+    }
+}
+
 class AdminApiSwaggerController(
     env: Env,
     cc: ControllerComponents,
@@ -306,7 +324,8 @@ class AdminApiSwaggerController(
     ctrl7: NotificationAdminApiController,
     ctrl8: UserSessionAdminApiController,
     ctrl9: ApiKeyConsumptionAdminApiController,
-    ctrl10: AuditEventAdminApiController
+    ctrl10: AuditEventAdminApiController,
+    ctrl11: MessagesAdminApiController
 ) extends AbstractController(cc) {
 
   def schema[A, B <: ValueType](
@@ -325,7 +344,8 @@ class AdminApiSwaggerController(
       schema(ctrl7) ++
       schema(ctrl8) ++
       schema(ctrl9) ++
-      schema(ctrl10)
+      schema(ctrl10) ++
+      schema(ctrl11)
 
   def paths: JsValue =
     path(ctrl1) ++
@@ -337,7 +357,8 @@ class AdminApiSwaggerController(
       path(ctrl7) ++
       path(ctrl8) ++
       path(ctrl9) ++
-      path(ctrl10)
+      path(ctrl10) ++
+      path(ctrl11)
 
   def swagger() = Action {
     Ok(
