@@ -2604,4 +2604,6 @@ object json {
     Format(Reads.seq(TranslationFormat), Writes.seq(TranslationFormat))
   val SeqCustomMetadataFormat =
     Format(Reads.seq(CustomMetadataFormat), Writes.seq(CustomMetadataFormat))
+  val SeqMessagesFormat =
+    Format(Reads.seq(MessageFormat), Writes.seq(MessageFormat))
 }

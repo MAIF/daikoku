@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.messages
 
-import akka.Done
 import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
 import akka.stream.scaladsl.{Sink, Source}
@@ -63,7 +62,7 @@ class MessageActor(
     case CountUnreadMessages(user, tenant) =>
       val response: Future[Long] =
         env.dataStore.messageRepo.forTenant(tenant)
-          .count(Json.obj("participants" -> user.id.asJson, "closed" -> false, "readBy" -> Json.obj("$ne" -> user.id.asJson)))
+          .count(Json.obj("participants" -> user.id.asJson, "closed" -> JsNull, "readBy" -> Json.obj("$ne" -> user.id.asJson)))
 
       response pipeTo sender()
 
