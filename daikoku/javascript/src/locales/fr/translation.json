@@ -700,8 +700,8 @@
   "Start new conversation": "Démarrer une nouvelle ",
   "moment.duration.seconds": "%s sec",
   "moment.duration.minutes": "%s min",
-  "moment.duration.days": "%s d",
+  "moment.duration.days": "%s j",
   "moment.duration.weeks": "%s sem",
   "moment.duration.months": "%s m",
-  "moment.duration.years": "%s y"
+  "moment.duration.years": "%s a"
 }
