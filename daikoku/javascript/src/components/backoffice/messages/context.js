@@ -124,7 +124,7 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
     };
 
     return (
-      <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates, loading, createNewChat , adminTeam}}>
+      <MessagesContext.Provider value={{ messages, totalUnread, sendNewMessage, readMessages, adminTeam, closeChat, getPreviousMessages, lastClosedDates, loading, createNewChat }}>
         {children}
       </MessagesContext.Provider>
     );
