@@ -390,6 +390,7 @@ object json {
         JsSuccess(
           MailgunSettings(
             domain = (json \ "domain").as[String],
+            eu = (json \ "eu").asOpt[Boolean].getOrElse(false),
             key = (json \ "key").as[String],
             fromTitle = (json \ "fromTitle").as[String],
             fromEmail = (json \ "fromEmail").as[String],
@@ -402,6 +403,7 @@ object json {
     override def writes(o: MailgunSettings): JsValue = Json.obj(
       "type" -> "mailgun",
       "domain" -> o.domain,
+      "eu" -> o.eu,
       "key" -> o.key,
       "fromTitle" -> o.fromTitle,
       "fromEmail" -> o.fromEmail,

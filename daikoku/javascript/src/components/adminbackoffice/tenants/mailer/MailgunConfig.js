@@ -6,13 +6,19 @@ import { t } from '../../../../locales';
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export class MailgunConfig extends Component {
-  formFlow = ['domain', 'key', 'fromTitle', 'fromEmail', 'template'];
+  formFlow = ['domain', 'eu', 'key', 'fromTitle', 'fromEmail', 'template'];
 
   formSchema = {
     domain: {
       type: 'string',
       props: {
         label: t('Mailgun domain', this.props.currentLanguage),
+      },
+    },
+    eu: {
+      type: 'bool',
+      props: {
+        label: t('European server', this.props.currentLanguage),
       },
     },
     key: {

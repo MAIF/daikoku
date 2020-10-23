@@ -231,6 +231,7 @@ case class ConsoleMailerSettings()
 }
 
 case class MailgunSettings(domain: String,
+                           eu: Boolean = false,
                            key: String,
                            fromTitle: String,
                            fromEmail: String,

@@ -704,5 +704,6 @@
   "moment.duration.weeks": "%s sem",
   "moment.duration.months": "%s m",
   "moment.duration.years": "%s a",
-  "Unknown user": "Utilisateur inconnu"
+  "Unknown user": "Utilisateur inconnu",
+  "European server": "Serveur européen"
 }

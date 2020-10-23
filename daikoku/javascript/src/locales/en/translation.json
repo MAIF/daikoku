@@ -704,5 +704,6 @@
     "moment.duration.weeks": "%s w",
     "moment.duration.months": "%s m",
     "moment.duration.years": "%s y",
-    "Unknown user": "Unknown user"
+    "Unknown user": "Unknown user",
+    "European server": "European server"
 }
