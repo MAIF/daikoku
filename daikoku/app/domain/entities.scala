@@ -1454,15 +1454,6 @@ case class Translation(id: MongoId,
   }
 }
 
-sealed trait Recipient {
-  def id: ValueType
-}
-
-object Recipient {
-  case class Team(id: TeamId) extends Recipient
-  case class User(id: UserId) extends Recipient
-}
-
 sealed trait MessageType {
   def value: ValueType
 }

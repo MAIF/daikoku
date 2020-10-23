@@ -2520,28 +2520,6 @@ object json {
       )
     }
 
-  val RecipientFormat: Format[Recipient] =
-    new Format[Recipient] {
-      override def reads(json: JsValue): JsResult[Recipient] =
-        (json \ "type").as[String] match {
-          case "User"    => UserIdFormat.reads((json \ "id").as[JsValue])
-            .map(id => Recipient.User(id))
-          case "Team"   => TeamIdFormat.reads((json \ "id").as[JsValue])
-            .map(id => Recipient.Team(id))
-          case str      => JsError(s"Bad recipient value: $str")
-        }
-      override def writes(o: Recipient): JsValue = o match {
-        case p: Recipient.User => Json.obj(
-          "type" -> "User",
-          "id" -> UserIdFormat.writes(o.id.asInstanceOf[UserId])
-        )
-        case p: Recipient.Team => Json.obj(
-          "type" -> "Team",
-          "id" -> TeamIdFormat.writes(o.id.asInstanceOf[TeamId])
-        )
-      }
-    }
-
   val MessageTypeFormat: Format[MessageType] =
     new Format[MessageType] {
       override def reads(json: JsValue): JsResult[MessageType] =
