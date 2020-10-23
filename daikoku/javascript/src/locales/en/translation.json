@@ -697,7 +697,7 @@
     "notif.apikey.refresh": "Your subscription %s (%s/%s) has been refreshed.",
     "Apikey refresh": "Apikey refresh",
     "Load previous messages": "Load previous messages",
-    "Start new conversation": "Start new conversation",
+    "Start new conversation": "New conversation",
     "moment.duration.seconds": "few sec",
     "moment.duration.minutes": "%s min",
     "moment.duration.days": "%s d",

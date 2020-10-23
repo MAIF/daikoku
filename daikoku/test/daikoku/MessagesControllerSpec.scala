@@ -90,7 +90,7 @@ class MessagesControllerSpec()
       messages.get.head.message mustBe "1"
     }
 
-    "count unread messages & read messages" in {
+    "read his messages" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
@@ -99,19 +99,22 @@ class MessagesControllerSpec()
 
       val session = loginWithBlocking(tenantAdmin, tenant)
 
-      val respGet = httpJsonCallBlocking(s"/api/me/messages/unread/_count")(tenant, session)
+      val respGet = httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
       respGet.status mustBe 200
-      val messages = (respGet.json \ "count").as[Long]
-      messages mustBe 1
+      val messages = (respGet.json \ "messages").as(json.SeqMessagesFormat)
+      messages.length mustBe 1
+      messages.count(_.readBy.contains(tenantAdminId)) mustBe 0
 
       val respRead = httpJsonCallBlocking(
         path = s"/api/messages/${user.id.value}/_read",
         method = "PUT")(tenant, session)
       respRead.status mustBe 200
 
-      val respVerif = httpJsonCallBlocking(s"/api/me/messages/unread/_count")(tenant, session)
+      val respVerif = httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
       respVerif.status mustBe 200
-      (respVerif.json \ "count").as[Long] mustBe 0
+      val messagesVerif = (respVerif.json \ "messages").as(json.SeqMessagesFormat)
+      messagesVerif.length mustBe 1
+      messagesVerif.count(_.readBy.contains(tenantAdminId)) mustBe 1
 
     }
 
