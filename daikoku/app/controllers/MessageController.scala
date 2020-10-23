@@ -74,14 +74,6 @@ class MessageController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def countUnreadMessages() = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(ctx) {
-      (messageActor ? CountUnreadMessages(ctx.user, ctx.tenant))
-        .mapTo[Long]
-        .map(count => Ok(Json.obj("count" -> count)))
-    }
-  }
-
   def myAdminMessages(date: Option[Long]) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(ctx) {
       for {

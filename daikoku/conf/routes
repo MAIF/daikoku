@@ -170,8 +170,6 @@ POST    /api/teams/:teamId/apis/:apiId/pages/_reorder   fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET  /api/me/messages/admin                             fr.maif.otoroshi.daikoku.ctrls.MessageController.myAdminMessages(date: Option[Long] ?= None)
 ### NoDocs ###
-GET  /api/me/messages/unread/_count                     fr.maif.otoroshi.daikoku.ctrls.MessageController.countUnreadMessages()
-### NoDocs ###
 GET  /api/me/messages                                   fr.maif.otoroshi.daikoku.ctrls.MessageController.myMessages(chat: Option[String] ?= None, date: Option[Long] ?= None)
 ### NoDocs ###
 POST /api/messages/_send                                fr.maif.otoroshi.daikoku.ctrls.MessageController.sendMessage()

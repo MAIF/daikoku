@@ -18,8 +18,6 @@ case class GetAllMessage(user: User, tenant: Tenant, maybeChat: Option[String], 
 
 case class GetMyAdminMessages(user: User, tenant: Tenant, date: Option[Long] = None)
 
-case class CountUnreadMessages(user: User, tenant: Tenant)
-
 case class CloseChat(chat: String, tenant: Tenant)
 
 case class ReadMessages(user: User, chatId:String, date: DateTime, tenant: Tenant)
@@ -56,13 +54,6 @@ class MessageActor(
             "chat" -> user.id.asJson,
             "messageType.type" -> "tenant",
             "closed" -> value))
-
-      response pipeTo sender()
-
-    case CountUnreadMessages(user, tenant) =>
-      val response: Future[Long] =
-        env.dataStore.messageRepo.forTenant(tenant)
-          .count(Json.obj("participants" -> user.id.asJson, "closed" -> JsNull, "readBy" -> Json.obj("$ne" -> user.id.asJson)))
 
       response pipeTo sender()
 
