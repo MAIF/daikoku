@@ -1457,3 +1457,96 @@ export function removeAdminFromTenant(tenantId, adminId) {
     },
   }).then((r) => r.json());
 }
+
+export function myMessages() {
+  return fetch('/api/me/messages', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function myChatMessages(chat, date) {
+  return fetch(`/api/me/messages?chat=${chat}${date ? `&date=${date}` : ''}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function myAdminMessages() {
+  return fetch('/api/me/messages/admin', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function sendMessage(message, participants, chat) {
+  return fetch('/api/messages/_send', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message,
+      participants,
+      chat
+    })
+  }).then((r) => r.json());
+}
+
+export function messageSSE() {
+  return fetch('/api/messages/_sse', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function setMessagesRead(chatId) {
+  return fetch(`/api/messages/${chatId}/_read`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function closeMessageChat(chatId) {
+  return fetch(`/api/messages/${chatId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function lastDateChat(chatId, date) {
+  return fetch(`/api/messages/${chatId}/last-date?date=${date}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}

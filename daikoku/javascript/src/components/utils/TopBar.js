@@ -11,6 +11,7 @@ import * as Services from '../../services';
 import { logout, updateNotications, udpateLanguage } from '../../core/context/actions';
 import { t, Translation, languages } from '../../locales';
 import { Can, manage, daikoku, tenant } from '../utils';
+import { MessagesTopBarTools } from '../backoffice/messages';
 
 const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) => {
   const [login, setLogin] = useState('');
@@ -394,7 +395,7 @@ export class TopBarComponent extends Component {
                 />
               )}
               {!this.props.connectedUser.isGuest && (
-                <div className="d-flex justify-content-end mt-1 mt-lg-0">
+                <div className="d-flex justify-content-end align-items-center mt-1 mt-lg-0">
                   <DarkModeActivator />
                   <Link
                     className={classNames({
@@ -405,6 +406,9 @@ export class TopBarComponent extends Component {
                     title={t('Access to the notifications', this.props.currentLanguage)}>
                     <i className="fas fa-bell" />
                   </Link>
+                  {this.props.connectedUser.isDaikokuAdmin && <MessagesTopBarTools 
+                    currentLanguage={this.props.currentLanguage}
+                    connectedUser={this.props.connectedUser} />}
                   <div className="dropdown">
                     <img
                       style={{ width: 38, marginLeft: '5px', ...impersonatorStyle }}

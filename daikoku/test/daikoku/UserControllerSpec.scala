@@ -1,12 +1,9 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, Json}
 
 import scala.util.Random
 
@@ -27,11 +24,9 @@ class UserControllerSpec()
 
       val resp = httpJsonCallBlocking("/api/admin/users")(tenant, session)
       resp.status mustBe 200
-      val teams =
-        fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat.reads(resp.json)
-      teams.isSuccess mustBe true
-      teams.get.length mustBe 3
-      teams.get.diff(Seq(daikokuAdmin, user, userAdmin)) mustBe Seq.empty
+      val users = resp.json.as[JsArray]
+      users.value.length mustBe 3
+      users.value.diff(Seq(daikokuAdmin.asSimpleJson, user.asSimpleJson, userAdmin.asSimpleJson)) mustBe Seq.empty
     }
 
     "find user by id" in {

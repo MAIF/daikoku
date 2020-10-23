@@ -9,7 +9,7 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
 import play.api.mvc.{AbstractController, ControllerComponents}
@@ -18,9 +18,7 @@ import reactivemongo.bson.BSONObjectID
 import scala.concurrent.duration.FiniteDuration
 
 class UsersController(DaikokuAction: DaikokuAction,
-                      apiService: ApiService,
                       env: Env,
-                      otoroshiClient: OtoroshiClient,
                       cc: ControllerComponents)
     extends AbstractController(cc) {
 
@@ -31,7 +29,7 @@ class UsersController(DaikokuAction: DaikokuAction,
     DaikokuAdminOnly(
       AuditTrailEvent("@{user.name} has accessed all users list"))(ctx) {
       env.dataStore.userRepo.findAllNotDeleted().map { users =>
-        Ok(JsArray(users.map(_.asJson)))
+        Ok(JsArray(users.map(_.asSimpleJson)))
       }
     }
   }

@@ -203,6 +203,15 @@ object json {
       } get
     override def writes(o: MongoId): JsValue = JsString(o.value)
   }
+  val ChatIdFormat = new Format[ChatId] {
+    override def reads(json: JsValue): JsResult[ChatId] =
+      Try {
+        JsSuccess(ChatId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: ChatId): JsValue = JsString(o.value)
+  }
   val TeamIdFormat = new Format[TeamId] {
     override def reads(json: JsValue): JsResult[TeamId] =
       Try {
@@ -2469,6 +2478,64 @@ object json {
       )
     }
 
+  val MessageFormat: Format[Message] =
+    new Format[Message] {
+      override def reads(json: JsValue): JsResult[Message] = Try {
+        JsSuccess(
+          Message(
+            id = (json \ "_id").as(MongoIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            messageType = (json \ "messageType").as(MessageTypeFormat),
+            chat = (json \ "chat").as(UserIdFormat),
+            date = (json \ "date").as(DateTimeFormat),
+            sender = (json \ "sender").as(UserIdFormat),
+            participants = (json \ "participants").as(SetUserIdFormat),
+            readBy = (json \ "readBy").as(SetUserIdFormat),
+            message = (json \ "message").as[String],
+            send = (json \ "send").asOpt[Boolean].getOrElse(false),
+            closed = (json \ "closed").asOpt(DateTimeFormat)
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+      override def writes(o: Message): JsValue = Json.obj(
+        "_id" -> o.id.value,
+        "_tenant" -> o.tenant.value,
+        "messageType" -> MessageTypeFormat.writes(o.messageType),
+        "chat" -> o.chat.value,
+        "date" -> DateTimeFormat.writes(o.date),
+        "sender" -> UserIdFormat.writes(o.sender),
+        "participants" -> SetUserIdFormat.writes(o.participants),
+        "readBy" -> SetUserIdFormat.writes(o.readBy),
+        "message" -> o.message,
+        "send" -> o.send,
+        "closed" -> o.closed
+          .map(DateTimeFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue]
+      )
+    }
+
+  val MessageTypeFormat: Format[MessageType] =
+    new Format[MessageType] {
+      override def reads(json: JsValue): JsResult[MessageType] =
+        (json \ "type").as[String] match {
+          case "tenant"    => TenantIdFormat.reads((json \ "value").as[JsValue])
+            .map(value => MessageType.Tenant(value))
+          case str      => JsError(s"Bad message type value: $str")
+        }
+      override def writes(o: MessageType): JsValue = o match {
+        case t: MessageType.Tenant=> Json.obj(
+          "type" -> "tenant",
+          "value" -> TenantIdFormat.writes(t.value)
+        )
+      }
+    }
+
   val SeqOtoroshiSettingsFormat = Format(Reads.seq(OtoroshiSettingsFormat),
                                          Writes.seq(OtoroshiSettingsFormat))
   val SeqVersionFormat =
@@ -2515,4 +2582,6 @@ object json {
     Format(Reads.seq(TranslationFormat), Writes.seq(TranslationFormat))
   val SeqCustomMetadataFormat =
     Format(Reads.seq(CustomMetadataFormat), Writes.seq(CustomMetadataFormat))
+  val SeqMessagesFormat =
+    Format(Reads.seq(MessageFormat), Writes.seq(MessageFormat))
 }

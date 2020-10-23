@@ -1,4 +1,4 @@
-import React, { Component, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, withRouter, Switch } from 'react-router-dom';
 import { Redirect } from 'react-router';
 import { ConnectedRouter } from 'connected-react-router';
@@ -6,10 +6,9 @@ import { connect } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
-import { TopBar, Spinner, Error, Footer } from '../components/utils';
+import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
-import { updateTeamPromise } from '../core';
-import { history } from '../core';
+import { updateTeamPromise, history } from '../core';
 
 import 'react-redux-toastr/src/styles/index.scss';
 
@@ -44,6 +43,7 @@ import {
   TeamEdit,
   AssetsList,
   TeamApiSubscriptions,
+  MessagesProvider
 } from '../components/backoffice';
 
 import {
@@ -62,57 +62,69 @@ import {
   TeamList,
   TenantAdminList,
   InitializeFromOtoroshi,
+  AdminMessages
 } from '../components/adminbackoffice';
 
 import { smartRedirect, smartMatch } from '../services/path';
 import { ResetPassword, Signup } from './DaikokuHomeApp';
+import { MessagesEvents } from '../services/messages';
 
-class DaikokuAppComponent extends Component {
-  render() {
-    const { user, tenant, loginProvider, loginAction } = this.props;
-    if (!user) {
-      return (
-        <Router>
-          <div
-            role="root-container"
-            className="container-fluid"
-            style={{
-              minHeight: '100vh',
-              position: 'relative',
-              paddingBottom: '6rem',
-            }}>
-            <Route
-              exact
-              path="/"
-              render={(p) => (
-                <UnauthenticatedTopBar
-                  tenant={tenant}
-                  location={p.location}
-                  history={p.history}
-                  match={p.match}
-                />
-              )}
-            />
-            <Route
-              exact
-              path="/"
-              render={(p) => (
-                <UnauthenticatedHome tenant={tenant} match={p.match} history={p.history} />
-              )}
-            />
-            <Route
-              exact
-              path="/"
-              render={(p) => (
-                <UnauthenticatedFooter tenant={tenant} match={p.match} history={p.history} />
-              )}
-            />
-          </div>
-        </Router>
-      );
+const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
+  useEffect(() => {
+    if (!user.isGuest) {
+      MessagesEvents.start();
+      return () => {
+        MessagesEvents.stop();
+      };
     }
+  }, []);
+
+  //todo: try to dev a component to get message only once and pass its on context...and PAF
+
+  if (!user) {
     return (
-      <ConnectedRouter history={history}>
+      <Router>
+        <div
+          role="root-container"
+          className="container-fluid"
+          style={{
+            minHeight: '100vh',
+            position: 'relative',
+            paddingBottom: '6rem',
+          }}>
+          <Route
+            exact
+            path="/"
+            render={(p) => (
+              <UnauthenticatedTopBar
+                tenant={tenant}
+                location={p.location}
+                history={p.history}
+                match={p.match}
+              />
+            )}
+          />
+          <Route
+            exact
+            path="/"
+            render={(p) => (
+              <UnauthenticatedHome tenant={tenant} match={p.match} history={p.history} />
+            )}
+          />
+          <Route
+            exact
+            path="/"
+            render={(p) => (
+              <UnauthenticatedFooter tenant={tenant} match={p.match} history={p.history} />
+            )}
+          />
+        </div>
+      </Router>
+    );
+  }
+  return (
+    <ConnectedRouter history={history}>
+      <MessagesProvider >
         <div role="root-container" className="container-fluid main-content-container">
           <ModalRoot />
           <ReduxToastr
@@ -169,6 +181,14 @@ class DaikokuAppComponent extends Component {
                 <NotificationList match={p.match} history={p.history} location={p.location} />
               )}
             />
+            <Route
+              exact
+              path="/messages"
+              render={(p) => (
+                <NotificationList match={p.match} history={p.history} location={p.location} />
+              )}
+            />
+
             {/* <FrontOfficeRoute exact path="/" render={p => <MyHome match={p.match} history={p.history} />} /> */}
             <FrontOfficeRoute
               exact
@@ -179,6 +199,13 @@ class DaikokuAppComponent extends Component {
               exact
               path="/"
               render={(p) => <MaybeHomePage match={p.match} history={p.history} />}
+            />
+            <Route
+              exact
+              path="/settings/messages"
+              render={(p) => (
+                <AdminMessages match={p.match} history={p.history} location={p.location} />
+              )}
             />
             <Route
               exact
@@ -534,6 +561,15 @@ class DaikokuAppComponent extends Component {
             />
           </Switch>
           <Route
+            path="/"
+            render={(p) => (
+              <Discussion
+                location={p.location}
+                history={p.history}
+                match={p.match} />
+            )}
+          />
+          <Route
             path={[
               '/teams',
               '/organizations',
@@ -553,10 +589,10 @@ class DaikokuAppComponent extends Component {
             ))}
           />
         </div>
-      </ConnectedRouter>
-    );
-  }
-}
+      </MessagesProvider>
+    </ConnectedRouter>
+  );
+};
 
 const mapStateToProps = (state) => ({
   ...state.context,

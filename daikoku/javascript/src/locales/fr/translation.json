@@ -695,5 +695,14 @@
   "create.metadata.option.label": "Créer l'option %s",
   "Team apis": "APIs d'équipe",
   "notif.apikey.refresh": "votre souscription %s (%s/%s) a été mise à jour.",
-  "Apikey refresh": "Mise à jour d'une clé d'API"
+  "Apikey refresh": "Mise à jour d'une clé d'API",
+  "Load previous messages": "Messages précédents",
+  "Start new conversation": "Nouvelle conversation",
+  "moment.duration.seconds": "quelques sec",
+  "moment.duration.minutes": "%s min",
+  "moment.duration.days": "%s j",
+  "moment.duration.weeks": "%s sem",
+  "moment.duration.months": "%s m",
+  "moment.duration.years": "%s a",
+  "Unknown user": "Utilisateur inconnu"
 }

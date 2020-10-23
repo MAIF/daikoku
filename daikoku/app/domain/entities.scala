@@ -442,6 +442,9 @@ case class UserSessionId(value: String)
 case class MongoId(value: String) extends ValueType with CanJson[MongoId] {
   def asJson: JsValue = JsString(value)
 }
+case class ChatId(value: String) extends ValueType with CanJson[ChatId] {
+  def asJson: JsValue = JsString(value)
+}
 
 trait BillingTimeUnit extends CanJson[BillingTimeUnit] {
   def name: String
@@ -936,7 +939,8 @@ case class User(
       "_humanReadableId" -> email.urlPathSegmentSanitized,
       "name" -> name,
       "email" -> email,
-      "picture" -> picture
+      "picture" -> picture,
+      "isDaikokuAdmin" -> isDaikokuAdmin
     )
   }
   def toUiPayload(): JsValue = {
@@ -1448,4 +1452,25 @@ case class Translation(id: MongoId,
       key -> value,
     )
   }
+}
+
+sealed trait MessageType {
+  def value: ValueType
+}
+object MessageType {
+  case class Tenant(value: TenantId) extends MessageType
+}
+
+case class Message(id: MongoId,
+                  tenant: TenantId,
+                  messageType: MessageType,
+                  participants: Set[UserId],
+                  readBy: Set[UserId],
+                  chat: UserId,
+                  date: DateTime,
+                  sender: UserId,
+                  message: String,
+                  closed: Option[DateTime] = None,
+                  send: Boolean = false) extends CanJson[Message] {
+  override def asJson: JsValue = json.MessageFormat.writes(this)
 }

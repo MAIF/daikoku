@@ -30,6 +30,7 @@ trait Repo[Of, Id <: ValueType] {
   def format: Format[Of]
   def extractId(value: Of): String
   def count()(implicit ec: ExecutionContext): Future[Long]
+  def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long]
   def findAll()(implicit ec: ExecutionContext): Future[Seq[Of]]
   def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]]
   def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed]
@@ -60,9 +61,13 @@ trait Repo[Of, Id <: ValueType] {
   def insertMany(values: Seq[Of])(implicit ec: ExecutionContext): Future[Long]
   def updateMany(query: JsObject, Value: JsObject)(
       implicit ec: ExecutionContext): Future[Long]
+  def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
+      implicit ec: ExecutionContext): Future[Long]
   def exists(id: String)(implicit ec: ExecutionContext): Future[Boolean]
   def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean]
   def exists(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean]
+  def findMinByQuery(query: JsObject = Json.obj(), field: String)(implicit ec: ExecutionContext): Future[Option[Long]]
+  def findMaxByQuery(query: JsObject = Json.obj(), field: String)(implicit ec: ExecutionContext): Future[Option[Long]]
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   def findByIdOrHrId(id: String, hrid: String)(
       implicit ec: ExecutionContext): Future[Option[Of]] =
@@ -188,6 +193,7 @@ trait ConsumptionRepo extends TenantCapableRepo[ApiKeyConsumption, MongoId] {
   }
 }
 trait TranslationRepo extends TenantCapableRepo[Translation, MongoId]
+trait MessageRepo extends TenantCapableRepo[Message, MongoId]
 
 trait DataStore {
   def start(): Future[Unit]
@@ -206,6 +212,7 @@ trait DataStore {
   def translationRepo: TranslationRepo
   def passwordResetRepo: PasswordResetRepo
   def accountCreationRepo: AccountCreationRepo
+  def messageRepo: MessageRepo
   def exportAsStream(pretty: Boolean)(implicit ec: ExecutionContext,
                                       mat: Materializer,
                                       env: Env): Source[ByteString, _]

@@ -29,7 +29,7 @@ function elvis(value, f) {
 
 const BackOfficeContent = (props) => {
   return (
-    <div className="pt-5 pr-3 pl-3" style={{ height: '100%' }}>
+    <div className="pt-4 pr-3" style={{ height: '100%' }}>
       {props.error.status && <Error error={props.error} />}
       {!props.error.status && props.children}
     </div>
@@ -375,6 +375,19 @@ class UserBackOfficeComponent extends Component {
                       </Link>
                     </h6>
                     <ul className="nav flex-column mb-2">
+                      <li className="nav-item">
+                        <Link
+                          className={`nav-link ${tab === 'Messages' ? 'active' : ''}`}
+                          to={'/settings/messages'}>
+                          <i className="fas fa-comment-alt" />
+                          <Translation
+                            i18nkey="Messages"
+                            language={this.props.currentLanguage}
+                            isPlural>
+                            Messages
+                          </Translation>
+                        </Link>
+                      </li>
                       <li className="nav-item">
                         <Link
                           className={`nav-link ${tab === 'Otoroshi' ? 'active' : ''}`}

@@ -1,6 +1,7 @@
 package storage
 
 import akka.NotUsed
+import akka.http.scaladsl
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
@@ -8,18 +9,13 @@ import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.Index
-import reactivemongo.api.{
-  Cursor,
-  CursorOptions,
-  ReadConcern,
-  ReadPreference,
-  WriteConcern
-}
+import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -125,6 +121,17 @@ case class MongoTenantCapableTranslationRepo(
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[Translation, MongoId] = _repo()
+}
+
+case class MongoTenantCapableMessageRepo(
+    _repo: () => MongoRepo[Message, MongoId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[Message, MongoId]
+) extends MongoTenantCapableRepo[Message, MongoId]
+  with MessageRepo {
+  override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[Message, MongoId] =
+    _tenantRepo(tenant)
+
+  override def repo(): MongoRepo[Message, MongoId] = _repo()
 }
 
 case class MongoTenantCapableConsumptionRepo(
@@ -259,9 +266,14 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
   private val _accountCreationRepo: AccountCreationRepo =
     new MongoAccountCreationRepo(env, reactiveMongoApi)
   private val _translationRepo: TranslationRepo =
-    new MongoTenantCapableTranslationRepo(
+    MongoTenantCapableTranslationRepo(
       () => new MongoTranslationRepo(env, reactiveMongoApi),
       t => new MongoTenantTranslationRepo(env, reactiveMongoApi, t))
+  private val _messageRepo: MessageRepo =
+    MongoTenantCapableMessageRepo(
+      () => new MongoMessageRepo(env, reactiveMongoApi),
+      t => new MongoTenantMessageRepo(env, reactiveMongoApi, t)
+    )
 
   override def tenantRepo: TenantRepo = _tenantRepo
 
@@ -289,6 +301,8 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def accountCreationRepo: AccountCreationRepo = _accountCreationRepo
 
   override def translationRepo: TranslationRepo = _translationRepo
+
+  override def messageRepo: MessageRepo = _messageRepo
 
   override def start(): Future[Unit] =
     translationRepo.forAllTenant().ensureIndices
@@ -486,6 +500,19 @@ class MongoTenantTranslationRepo(env: Env,
   override def extractId(value: Translation): String = value.id.value
 }
 
+class MongoTenantMessageRepo(env: Env,
+                                 reactiveMongoApi: ReactiveMongoApi,
+                                 tenant: TenantId)
+    extends MongoTenantAwareRepo[Message, MongoId](env,
+                                                       reactiveMongoApi,
+                                                       tenant) {
+  override def collectionName: String = "Messages"
+
+  override def format: Format[Message] = json.MessageFormat
+
+  override def extractId(value: Message): String = value.id.value
+}
+
 class MongoTenantApiSubscriptionRepo(env: Env,
                                      reactiveMongoApi: ReactiveMongoApi,
                                      tenant: TenantId)
@@ -589,6 +616,15 @@ class MongoTranslationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def format: Format[Translation] = json.TranslationFormat
 
   override def extractId(value: Translation): String = value.id.value
+}
+
+class MongoMessageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[Message, MongoId](env, reactiveMongoApi) {
+  override def collectionName: String = "Messages"
+
+  override def format: Format[Message] = json.MessageFormat
+
+  override def extractId(value: Message): String = value.id.value
 }
 
 class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
@@ -739,6 +775,11 @@ abstract class MongoRepo[Of, Id <: ValueType](
       }
     }
 
+  override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] =
+    collection.flatMap { col =>
+      col.count(Some(query), None, 0, None, ReadConcern.Majority)
+    }
+
   def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
     collection.flatMap { col =>
       logger.debug(s"$collectionName.findAllRaw({})")
@@ -850,6 +891,20 @@ abstract class MongoRepo[Of, Id <: ValueType](
                  u = Json.obj("$set" -> value),
                  upsert = false,
                  multi = true)
+        .flatMap { element =>
+          update.many(List(element)).map(_.nModified)
+        }
+    }
+
+  override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
+    implicit ec: ExecutionContext): Future[Long] =
+    collection.flatMap { col =>
+      val update = col.update(ordered = true)
+      update
+        .element(q = query,
+          u = queryUpdate,
+          upsert = false,
+          multi = true)
         .flatMap { element =>
           update.many(List(element)).map(_.nModified)
         }
@@ -998,6 +1053,68 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id.value))
+
+  override def findMinByQuery(query: JsObject,  field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+    collection.flatMap { col =>
+        import col.BatchCommands.AggregationFramework
+        import AggregationFramework.{Group, Match, MinField}
+
+        col
+          .aggregatorContext[JsObject](
+            firstOperator = Match(query),
+            otherOperators =
+              List(Group(JsString("$clientId"))("min" -> MinField(field))),
+            explain = false,
+            allowDiskUse = false,
+            bypassDocumentValidation = false,
+            readConcern = ReadConcern.Majority,
+            readPreference = ReadPreference.primaryPreferred,
+            writeConcern = WriteConcern.Default,
+            batchSize = None,
+            cursorOptions = CursorOptions.empty,
+            maxTime = None,
+            hint = None,
+            comment = None,
+            collation = None
+          )
+          .prepared
+          .cursor
+          .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+          .map(agg =>
+            agg.headOption.map(v => (v \ "min").as[Long])
+          )
+    }
+
+  override def findMaxByQuery(query: JsObject, field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+    collection.flatMap { col =>
+      import col.BatchCommands.AggregationFramework
+      import AggregationFramework.{Group, Match, MaxField}
+
+      col
+        .aggregatorContext[JsObject](
+          firstOperator = Match(query),
+          otherOperators =
+            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
+          explain = false,
+          allowDiskUse = false,
+          bypassDocumentValidation = false,
+          readConcern = ReadConcern.Majority,
+          readPreference = ReadPreference.primaryPreferred,
+          writeConcern = WriteConcern.Default,
+          batchSize = None,
+          cursorOptions = CursorOptions.empty,
+          maxTime = None,
+          hint = None,
+          comment = None,
+          collation = None
+        )
+        .prepared
+        .cursor
+        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+        .map(agg =>
+          agg.headOption.map(v => (v \ "max").as[Long])
+        )
+    }
 }
 
 abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
@@ -1276,6 +1393,20 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         }
     }
 
+  override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
+    implicit ec: ExecutionContext): Future[Long] =
+    collection.flatMap { col =>
+      val update = col.update(ordered = true)
+      update
+        .element(q = query,
+          u = queryUpdate,
+          upsert = false,
+          multi = true)
+        .flatMap { element =>
+          update.many(List(element)).map(_.nModified)
+        }
+    }
+
   override def exists(query: JsObject)(
       implicit ec: ExecutionContext): Future[Boolean] = collection.flatMap {
     col =>
@@ -1286,6 +1417,71 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         .one[JsObject](ReadPreference.primaryPreferred)
         .map(_.isDefined)
   }
+
+  override def findMinByQuery(query: JsObject,  field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+    collection.flatMap { col =>
+      import col.BatchCommands.AggregationFramework
+      import AggregationFramework.{Group, Match, MinField}
+
+      col
+        .aggregatorContext[JsObject](
+          firstOperator = Match(query),
+          otherOperators =
+            List(Group(JsString("$clientId"))("min" -> MinField(field))),
+          explain = false,
+          allowDiskUse = false,
+          bypassDocumentValidation = false,
+          readConcern = ReadConcern.Majority,
+          readPreference = ReadPreference.primaryPreferred,
+          writeConcern = WriteConcern.Default,
+          batchSize = None,
+          cursorOptions = CursorOptions.empty,
+          maxTime = None,
+          hint = None,
+          comment = None,
+          collation = None
+        )
+        .prepared
+        .cursor
+        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+        .map(agg =>
+          agg.headOption.map(v => (v \ "min").as[Long])
+        )
+    }
+
+  override def findMaxByQuery(query: JsObject, field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+    collection.flatMap { col =>
+      import col.BatchCommands.AggregationFramework
+      import AggregationFramework.{Group, Match, MaxField}
+
+      col
+        .aggregatorContext[JsObject](
+          firstOperator = Match(query),
+          otherOperators =
+            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
+          explain = false,
+          allowDiskUse = false,
+          bypassDocumentValidation = false,
+          readConcern = ReadConcern.Majority,
+          readPreference = ReadPreference.primaryPreferred,
+          writeConcern = WriteConcern.Default,
+          batchSize = None,
+          cursorOptions = CursorOptions.empty,
+          maxTime = None,
+          hint = None,
+          comment = None,
+          collation = None
+        )
+        .prepared
+        .cursor
+        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+        .map(agg => agg.headOption.map(v => (v \ "max").as(json.LongFormat)))
+    }
+
+  override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] =
+    collection.flatMap { col =>
+      col.count(Some(query), None, 0, None, ReadConcern.Majority)
+    }
 
   override def count()(implicit ec: ExecutionContext): Future[Long] =
     collection.flatMap { col =>

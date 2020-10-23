@@ -19,9 +19,9 @@
   height: 10px;
   display: block;
   position: absolute;
-  top: 8px;
+  top: -3px;
   right: 10px;
-  background-color: tomato;
+  background-color: $danger-color;
   border-radius: 50%;
   border: 2px solid $navbar-bg-color;
   box-sizing: content-box;

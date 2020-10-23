@@ -28,7 +28,7 @@
   <logger name="application" level="INFO" />
   <logger name="MongoDataStore" level="INFO" />
   <logger name="daikoku-spec-helper" level="DEBUG" /><!---->
-  <logger name="daikoku-action-maybe-without-user" level="DEBUG" />
+  <logger name="daikoku-action-maybe-without-user" level="INFO" />
 
   <!-- Off these ones as they are annoying, and anyway we manage configuration ourselves -->
   <logger name="com.avaje.ebean.config.PropertyMapLoader" level="OFF" />

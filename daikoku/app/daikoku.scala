@@ -117,6 +117,8 @@ package object modules {
     lazy val translationController = wire[TranslationController]
     lazy val adminApiSwaggerController = wire[AdminApiSwaggerController]
     lazy val credentialsAdminApiController = wire[CredentialsAdminApiController]
+    lazy val messageController = wire [MessageController]
+    lazy val messagesAdminApiController = wire[MessagesAdminApiController]
 
     override lazy val assets: Assets = wire[Assets]
     lazy val router: Router = {

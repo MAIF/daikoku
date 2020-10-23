@@ -120,16 +120,7 @@ class TeamEditForAdministrationComponent extends Component {
         <Can I={manage} a={tenant} dispatchError>
           <div className="row d-flex justify-content-start align-items-center mb-2">
             {this.state.team && (
-              <div
-                className="ml-1"
-                style={{
-                  width: '100px',
-                  height: '100px',
-                  borderRadius: '50px',
-                  border: '3px solid #fff',
-                  boxShadow: '0px 0px 0px 3px lightgrey',
-                  overflow: 'hidden',
-                }}>
+              <div className="ml-1 avatar__container" >
                 <img src={this.state.team.avatar} className="img-fluid" alt="avatar" />
               </div>
             )}

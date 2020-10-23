@@ -111,6 +111,9 @@ object utils {
           .forAllTenant()
           .deleteAll()
         _ <- daikokuComponents.env.dataStore.userSessionRepo.deleteAll()
+        _ <- daikokuComponents.env.dataStore.messageRepo
+          .forAllTenant()
+          .deleteAll()
       } yield ()
     }
 
@@ -125,7 +128,8 @@ object utils {
         consumptions: Seq[ApiKeyConsumption] = Seq.empty,
         sessions: Seq[UserSession] = Seq.empty,
         resets: Seq[PasswordReset] = Seq.empty,
-        creations: Seq[AccountCreation] = Seq.empty
+        creations: Seq[AccountCreation] = Seq.empty,
+        messages:  Seq[Message] = Seq.empty
     ): Unit = {
       setupEnv(
         tenants,
@@ -138,7 +142,8 @@ object utils {
         consumptions,
         sessions,
         resets,
-        creations
+        creations,
+        messages
       ).futureValue
 //      await(0.1.seconds)
     }
@@ -154,7 +159,8 @@ object utils {
         consumptions: Seq[ApiKeyConsumption] = Seq.empty,
         sessions: Seq[UserSession] = Seq.empty,
         resets: Seq[PasswordReset] = Seq.empty,
-        creations: Seq[AccountCreation] = Seq.empty
+        creations: Seq[AccountCreation] = Seq.empty,
+        messages: Seq[Message] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -227,6 +233,13 @@ object utils {
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.accountCreationRepo.save(i)(
               daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(messages.toList)
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.messageRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)
           .run()
       } yield ()
