@@ -114,8 +114,7 @@ const AdminMessagesComponent = props => {
   moment.locale(props.currentLanguage);
   moment.updateLocale('fr', {
     relativeTime: {
-      s: t('moment.duration.seconds', props.currentLanguage, false, '1 sec', '1'),
-      ss: t('moment.duration.seconds', props.currentLanguage, false, '%d sec', '%d'),
+      s: t('moment.duration.seconds', props.currentLanguage, false, 'few sec'),
       m: t('moment.duration.minutes', props.currentLanguage, false, '1 min', '1'),
       mm: t('moment.duration.minutes', props.currentLanguage, false, '%d min', '%d'),
       h: t('moment.duration.hours', props.currentLanguage, false, '1 h', '1'),
@@ -159,13 +158,18 @@ const AdminMessagesComponent = props => {
           />
           {_.orderBy(orderedMessages
             .map(({ chat, user, messages }) => {
+              const maxMessage = _.maxBy(messages, 'date');
+              const maxDate = Option(maxMessage).map(m => moment(m.date)).getOrElse(moment());
+
               const unreadCount = messages.filter(m => !m.readBy.includes(props.connectedUser._id)).length;
-              return { chat, user, messages, unreadCount };
-            }), ['unreadCount', 'user.name'], ['desc', 'asc'])
-            .map(({ chat, user, messages, unreadCount }, idx) => {
-              const lastMessageDate = Option(_.last(messages)).map(m => moment(m.date)).getOrElse(moment());
-              const lastMessageDateDisplayed = (moment().diff(lastMessageDate, 'days') > 1) ?
-                lastMessageDate.format('D MMM.') : lastMessageDate.fromNow(true);
+
+
+
+              return { chat, user, messages, unreadCount, maxDate };
+            }), ['unreadCount', 'maxDate', 'user.name'], ['desc', 'desc', 'asc']) //todo: maybe order 
+            .map(({ chat, user, messages, unreadCount, maxDate }, idx) => {
+              const lastMessageDateDisplayed = (moment().diff(maxDate, 'days') > 1) ?
+                maxDate.format('D MMM.') : maxDate.fromNow(true);
               return (
                 <div
                   key={idx}

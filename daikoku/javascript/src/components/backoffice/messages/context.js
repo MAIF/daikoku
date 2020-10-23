@@ -21,26 +21,28 @@ const MessagesProviderComponent = ({ children, connectedUser }) => {
   const sseId = faker.random.alphaNumeric(64);
 
   useEffect(() => {
-    setLoading(true);
-    Services.team('admin')
-      .then((team) => {
-        setAdminTeam(team);
-        if (team.users.some(u => u.userId === connectedUser._id)) {
-          return Services.myMessages();
-        }
-        return Services.myAdminMessages();
-      })
-      .then(({ messages, previousClosedDates }) => {
-        setMessages(messages);
-        setLastClosedDates(previousClosedDates);
-        setLoading(false);
-      });
+    if (!connectedUser.isGuest) {
+      setLoading(true);
+      Services.team('admin')
+        .then((team) => {
+          setAdminTeam(team);
+          if (team.users.some(u => u.userId === connectedUser._id)) {
+            return Services.myMessages();
+          }
+          return Services.myAdminMessages();
+        })
+        .then(({ messages, previousClosedDates }) => {
+          setMessages(messages);
+          setLastClosedDates(previousClosedDates);
+          setLoading(false);
+        });
 
-    MessageEvents.addCallback((m) => handleEvent(m), sseId);
+      MessageEvents.addCallback((m) => handleEvent(m), sseId);
 
-    return () => {
-      MessageEvents.removeCallback(sseId);
-    };
+      return () => {
+        MessageEvents.removeCallback(sseId);
+      };
+    }
   }, []);
 
   useEffect(() => {

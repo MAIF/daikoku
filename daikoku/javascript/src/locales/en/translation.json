@@ -698,7 +698,7 @@
     "Apikey refresh": "Apikey refresh",
     "Load previous messages": "Load previous messages",
     "Start new conversation": "Start new conversation",
-    "moment.duration.seconds": "%s sec",
+    "moment.duration.seconds": "few sec",
     "moment.duration.minutes": "%s min",
     "moment.duration.days": "%s d",
     "moment.duration.weeks": "%s w",

@@ -112,7 +112,7 @@ const DiscussionComponent = props => {
     );
   }
 
-  if (props.connectedUser.isDaikokuAdmin) {
+  if (props.connectedUser.isDaikokuAdmin || props.connectedUser.isGuest) {
     return null;
   }
 

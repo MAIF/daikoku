@@ -71,10 +71,12 @@ import { MessagesEvents } from '../services/messages';
 
 const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
   useEffect(() => {
-    MessagesEvents.start();
-    return () => {
-      MessagesEvents.stop();
-    };
+    if (!user.isGuest) {
+      MessagesEvents.start();
+      return () => {
+        MessagesEvents.stop();
+      };
+    }
   }, []);
 
   //todo: try to dev a component to get message only once and pass its on context...and PAF
