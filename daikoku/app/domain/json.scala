@@ -1239,6 +1239,8 @@ object json {
               .asOpt(SeqApiSubscriptionIdFormat)
               .getOrElse(Seq.empty),
             creationSecurity = (json \ "creationSecurity")
+              .asOpt[Boolean],
+            subscriptionSecurity = (json \ "subscriptionSecurity")
               .asOpt[Boolean]
           )
         )
@@ -1272,7 +1274,8 @@ object json {
       "adminApi" -> o.adminApi.asJson,
       "adminSubscriptions" -> JsArray(
         o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes)),
-      "creationSecurity" -> o.creationSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue]
+      "creationSecurity" -> o.creationSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue],
+      "subscriptionSecurity" -> o.subscriptionSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue]
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {

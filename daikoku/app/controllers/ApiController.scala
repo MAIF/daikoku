@@ -622,6 +622,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       val teams: Seq[String] = (ctx.request.body \ "teams").as[Seq[String]]
       val planId: String = (ctx.request.body \ "plan").as[String]
 
+
       val results: EitherT[Future, Result, Result] = for {
         api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId),
           NotFound(Json.obj("error" -> "api not found")))
@@ -647,6 +648,10 @@ class ApiController(DaikokuAction: DaikokuAction,
                           case Some(team) if plan.visibility == Private && team.id != api.team =>
                             Future.successful(
                               Json.obj("error" -> s"${team.name} is not authorized on this plan")
+                            )
+                          case Some(team) if ctx.tenant.subscriptionSecurity.forall(t => t) && team.`type` == TeamType.Personal =>
+                            Future.successful(
+                              Json.obj("error" -> s"${team.name} is not authorized to subscribe to an api")
                             )
                           case Some(team) =>
                             env.dataStore.apiSubscriptionRepo

@@ -288,6 +288,7 @@ class ApiListComponent extends Component {
               teams={this.props.myTeams
                 .filter((t) => t.type !== 'Admin')
                 .filter((t) => !this.props.tenant.creationSecurity || t.apisCreationPermission)
+                .filter((t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization')
                 .filter((t) => CanIDoAction(this.props.connectedUser, manage, api, t, this.props.apiCreationPermitted))}
               action={(team) => this.createNewApi(team)}
               withAllTeamSelector={false}>

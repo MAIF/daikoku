@@ -6,29 +6,19 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
 import controllers.AppError.PlanUnauthorized
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
-  Admin,
-  FreeWithoutQuotas,
-  PayPerUse,
-  QuotasWithLimits
-}
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithoutQuotas, PayPerUse, QuotasWithLimits}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 
 class ApiControllerSpec()
     extends PlaySpec
@@ -1763,6 +1753,41 @@ class ApiControllerSpec()
         body = Some(api.asJson))(tenant, session)
 
       resp.status mustBe 201
+    }
+
+    "not subscribe to an api with his personnal team if tenant enabled subscription security" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamConsumer.copy(`type` = TeamType.Personal), teamOwner),
+        apis = Seq(defaultApi)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val plan = "1"
+      val respPersonal = httpJsonCallBlocking(
+        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        method = "POST",
+        body = Some(
+          Json.obj("plan" -> plan, "teams" -> Json.arr(teamConsumer.id.asJson)))
+      )(tenant, session)
+
+      respPersonal.status mustBe 200
+      val responsePersonal: JsValue = (respPersonal.json)
+        .as[JsArray]
+        .value.head
+      (responsePersonal \ "error").as[String] mustBe s"${teamConsumer.name} is not authorized to subscribe to an api"
+
+      val respOrg = httpJsonCallBlocking(
+        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        method = "POST",
+        body = Some(
+          Json.obj("plan" -> plan, "teams" -> Json.arr(teamOwner.id.asJson)))
+      )(tenant, session)
+
+      respOrg.status mustBe 200
+      val resultOrg = (respOrg.json \ 0).as[JsObject]
+      (resultOrg \ "creation").as[String] mustBe "done"
     }
   }
 

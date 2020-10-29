@@ -266,6 +266,7 @@ export class TenantEditComponent extends Component {
     'authProvider',
     'authProviderSettings',
     'creationSecurity',
+    'subscriptionSecurity',
     `>>> ${t('Audit trail (Elastic)', this.props.currentLanguage)}`,
     'auditTrailConfig.elasticConfigs',
     `>>> ${t('Audit trail (Webhooks)', this.props.currentLanguage)}`,
@@ -538,6 +539,14 @@ export class TenantEditComponent extends Component {
         currentLanguage: this.props.currentLanguage,
         label: t('creation security', this.props.currentLanguage),
         help: t('creation.security.help', this.props.currentLanguage, false, 'if enabled, only authorized teams will be able to create APIs')
+      }
+    },
+    subscriptionSecurity: {
+      type: 'bool',
+      props: {
+        currentLanguage: this.props.currentLanguage,
+        label: t('subscription security', this.props.currentLanguage),
+        help: t('subscription.security.help', this.props.currentLanguage, false, 'if enabled, personnal teams will not be able to subscribed to an API')
       }
     },
     'mailerSettings.type': {

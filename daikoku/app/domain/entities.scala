@@ -117,7 +117,8 @@ case class Tenant(
     isPrivate: Boolean = true,
     adminApi: ApiId,
     adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty,
-    creationSecurity: Option[Boolean] = None
+    creationSecurity: Option[Boolean] = None,
+    subscriptionSecurity: Option[Boolean] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -156,7 +157,8 @@ case class Tenant(
       "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "homePageVisible" -> style.exists(_.homePageVisible),
-      "creationSecurity" -> creationSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue]
+      "creationSecurity" -> creationSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue],
+      "subscriptionSecurity" -> subscriptionSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue]
     )
   }
   def colorTheme(): Html = {
