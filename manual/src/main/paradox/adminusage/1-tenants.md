@@ -23,7 +23,7 @@ Tenants could be customized in Daikoku.
 Logo, title, description can be changed.
 The css can be customized with some css code or js code, with overwriting css variables or with a css/js file.
 
-### Security
+### Authentication & Security
 
 A tenant can be private or public. In the last case, just public api can be accessed by unauthenticated users.
 Authentication can be set by choosen Local auth. or a tiers auth. like LDAP, OAuth2 or Otoroshi.
