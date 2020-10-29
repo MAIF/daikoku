@@ -261,10 +261,11 @@ export class TenantEditComponent extends Component {
     'style.faviconUrlFromAssets',
     'style.fontFamilyUrl',
     'style.fontFamilyUrlFromAssets',
-    `>>> ${t('Authentication', this.props.currentLanguage)}`,
+    `>>> ${t('Security', this.props.currentLanguage)}`,
     'isPrivate',
     'authProvider',
     'authProviderSettings',
+    'creationSecurity',
     `>>> ${t('Audit trail (Elastic)', this.props.currentLanguage)}`,
     'auditTrailConfig.elasticConfigs',
     `>>> ${t('Audit trail (Webhooks)', this.props.currentLanguage)}`,
@@ -530,6 +531,14 @@ export class TenantEditComponent extends Component {
         currentLanguage: this.props.currentLanguage,
         label: t('Settings', this.props.currentLanguage),
       },
+    },
+    creationSecurity: {
+      type: 'bool',
+      props: {
+        currentLanguage: this.props.currentLanguage,
+        label: t('creation security', this.props.currentLanguage),
+        help: t('creation.security.help', this.props.currentLanguage, false, 'if enabled, only authorized teams will be able to create APIs')
+      }
     },
     'mailerSettings.type': {
       type: 'select',

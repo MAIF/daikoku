@@ -7,7 +7,7 @@ import { TeamBackOffice } from '../TeamBackOffice';
 import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
-import { formatCurrency, formatPlanType, Spinner, Can, read, stat } from '../../utils';
+import { formatCurrency, formatPlanType, Spinner, Can, read, api } from '../../utils';
 import { t, Translation } from '../../../locales';
 
 class TeamIncomeComponent extends Component {
@@ -70,7 +70,7 @@ class TeamIncomeComponent extends Component {
       mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
     return (
       <TeamBackOffice tab="Income">
-        <Can I={read} a={stat} team={this.props.currentTeam} dispatchError={true}>
+        <Can I={read} a={api} team={this.props.currentTeam} dispatchError={true}>
           <div className="row">
             <div className="col">
               <h1>

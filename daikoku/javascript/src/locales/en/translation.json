@@ -705,5 +705,9 @@
     "moment.duration.months": "%s m",
     "moment.duration.years": "%s y",
     "Unknown user": "Unknown user",
-    "European server": "European server"
+    "European server": "European server",
+    "API creation security": "API creation security",
+    "creation.security.help": "if enabled, only authorized teams will be able to create APIs",
+    "APIs creation permission": "APIs creation permission",
+    "apisCreationPermission.help": "If api creation security is enabled on tenant, APIs creation permission is mandatory to create APIs"
 }

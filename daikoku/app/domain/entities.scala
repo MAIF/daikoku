@@ -104,7 +104,7 @@ case class Tenant(
     enabled: Boolean = true,
     deleted: Boolean = false,
     name: String,
-    domain: String, // = "localhost",
+    domain: String,
     contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
@@ -116,7 +116,8 @@ case class Tenant(
     auditTrailConfig: AuditTrailConfig = AuditTrailConfig(),
     isPrivate: Boolean = true,
     adminApi: ApiId,
-    adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty
+    adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty,
+    creationSecurity: Option[Boolean] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -154,7 +155,8 @@ case class Tenant(
       "authProvider" -> authProvider.name,
       "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
-      "homePageVisible" -> style.exists(_.homePageVisible)
+      "homePageVisible" -> style.exists(_.homePageVisible),
+      "creationSecurity" -> creationSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue]
     )
   }
   def colorTheme(): Html = {
@@ -1038,7 +1040,8 @@ case class Team(
     subscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     authorizedOtoroshiGroups: Set[OtoroshiGroup] = Set.empty,
     showApiKeyOnlyToAdmins: Boolean = true,
-    metadata: Map[String, String] = Map.empty
+    metadata: Map[String, String] = Map.empty,
+    apisCreationPermission: Option[Boolean] = None
 ) extends CanJson[User] {
   override def asJson: JsValue = json.TeamFormat.writes(this)
   def humanReadableId = name.urlPathSegmentSanitized
@@ -1056,6 +1059,7 @@ case class Team(
       "contact" -> contact,
       "users" -> json.SetUserWithPermissionFormat.writes(users),
       "showApiKeyOnlyToAdmins" -> showApiKeyOnlyToAdmins,
+      "apisCreationPermission" -> apisCreationPermission.map(JsBoolean).getOrElse(JsNull).as[JsValue]
     )
   }
   def includeUser(userId: UserId): Boolean = {

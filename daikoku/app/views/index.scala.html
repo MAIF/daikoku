@@ -5,7 +5,7 @@
 @import fr.maif.otoroshi.daikoku.domain.Tenant
 @import fr.maif.otoroshi.daikoku.domain.Team
 
-@(user: User, session: UserSession,tenant: Tenant, host: String, env: Env, isTenantAdmin: Boolean)
+@(user: User, session: UserSession,tenant: Tenant, host: String, env: Env, isTenantAdmin: Boolean, apiCreationPermitted: Boolean)
 
 @customStyle = {
   @(tenant.colorTheme())
@@ -45,7 +45,8 @@
       @Html(play.api.libs.json.Json.prettyPrint(session.impersonatorJson())),
       @Html(play.api.libs.json.Json.prettyPrint(session.asSimpleJson)),
       '@(fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(tenant.authProvider.name).url)',
-      @(isTenantAdmin)
+      @(isTenantAdmin),
+      @(apiCreationPermitted)
     )
   </script>
 }

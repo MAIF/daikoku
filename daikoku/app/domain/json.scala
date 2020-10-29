@@ -1237,7 +1237,9 @@ object json {
             adminApi = (json \ "adminApi").as(ApiIdFormat),
             adminSubscriptions = (json \ "adminSubscriptions")
               .asOpt(SeqApiSubscriptionIdFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            creationSecurity = (json \ "creationSecurity")
+              .asOpt[Boolean]
           )
         )
       } recover {
@@ -1269,7 +1271,8 @@ object json {
       "isPrivate" -> o.isPrivate,
       "adminApi" -> o.adminApi.asJson,
       "adminSubscriptions" -> JsArray(
-        o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes))
+        o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes)),
+      "creationSecurity" -> o.creationSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue]
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -1436,7 +1439,9 @@ object json {
               .getOrElse(Map.empty),
             showApiKeyOnlyToAdmins = (json \ "showApiKeyOnlyToAdmins")
               .asOpt[Boolean]
-              .getOrElse(true)
+              .getOrElse(true),
+            apisCreationPermission = (json \ "apisCreationPermission")
+              .asOpt[Boolean]
           )
         )
       } recover {
@@ -1459,6 +1464,7 @@ object json {
         o.authorizedOtoroshiGroups.map(OtoroshiGroupFormat.writes).toSeq),
       "showApiKeyOnlyToAdmins" -> o.showApiKeyOnlyToAdmins,
       "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
+      "apisCreationPermission" -> o.apisCreationPermission.map(JsBoolean).getOrElse(JsNull).as[JsValue]
     )
   }
 

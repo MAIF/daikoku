@@ -146,6 +146,29 @@ class TeamControllerSpec()
     }
     "not update permission member of team admin" in {}
     "not update apikey visibility for team admin" in {}
+
+    "update team api creation permission" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(daikokuAdmin),
+        teams = Seq(teamOwner)
+      )
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+      val respUpdate = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}",
+        method = "PUT",
+        body = Some(teamOwner.copy(apisCreationPermission = Some(true)).asJson)
+      )(tenant, session)
+      respUpdate.status mustBe 200
+
+      val respGet =
+        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant,
+          session)
+      val updatedTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGet.json)
+      updatedTeam.isSuccess mustBe true
+      updatedTeam.get.apisCreationPermission mustBe Some(true)
+    }
   }
 
   "a team administrator" can {
@@ -457,6 +480,29 @@ class TeamControllerSpec()
       pendingUsers.get.size mustBe 2
       addableUsers.get.size mustBe 0
 
+    }
+
+    "not update team api creation permission" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respUpdate = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}",
+        method = "PUT",
+        body = Some(teamOwner.copy(apisCreationPermission = Some(true)).asJson)
+      )(tenant, session)
+      respUpdate.status mustBe 200
+
+      val respGet =
+        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant,
+          session)
+      val updatedTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGet.json)
+      updatedTeam.isSuccess mustBe true
+      updatedTeam.get.apisCreationPermission mustBe None
     }
   }
 

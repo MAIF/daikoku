@@ -70,29 +70,31 @@ class ApiListComponent extends Component {
   }
 
   createNewApi = (teamId) => {
-    Promise.all([
-      Services.fetchNewApi().then((e) => {
-        const verb = faker.hacker.verb();
-        const apiName =
-          verb.charAt(0).toUpperCase() +
-          verb.slice(1) +
-          ' ' +
-          faker.hacker.adjective() +
-          ' ' +
-          faker.hacker.noun() +
-          ' api';
-
-        e.name = apiName;
-        e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
-        return e;
-      }),
-      this.props.updateTeam(this.props.myTeams.find((t) => t._id === teamId)),
-    ]).then(([newApi]) => {
-      this.props.history.push(
-        `/${this.props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
-        { newApi: { ...newApi, team: this.props.currentTeam._id } }
-      );
-    });
+    if (this.props.apiCreationPermitted) {
+      Promise.all([
+        Services.fetchNewApi().then((e) => {
+          const verb = faker.hacker.verb();
+          const apiName =
+            verb.charAt(0).toUpperCase() +
+            verb.slice(1) +
+            ' ' +
+            faker.hacker.adjective() +
+            ' ' +
+            faker.hacker.noun() +
+            ' api';
+  
+          e.name = apiName;
+          e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
+          return e;
+        }),
+        this.props.updateTeam(this.props.myTeams.find((t) => t._id === teamId)),
+      ]).then(([newApi]) => {
+        this.props.history.push(
+          `/${this.props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
+          { newApi: { ...newApi, team: this.props.currentTeam._id } }
+        );
+      });
+    }
   };
 
   createNewteam = () => {
@@ -258,7 +260,7 @@ class ApiListComponent extends Component {
             }}
             classNamePrefix="reactSelect"
           />
-          {this.props.team && (
+          {this.props.apiCreationPermitted && this.props.team && (
             <Can I={manage} a={api} team={this.props.team}>
               <div className="col-12 col-sm-2">
                 <button
@@ -269,7 +271,7 @@ class ApiListComponent extends Component {
               </div>
             </Can>
           )}
-          {!this.props.team && !this.props.connectedUser.isGuest && (
+          {this.props.apiCreationPermitted && !this.props.team && !this.props.connectedUser.isGuest && (
             <ActionWithTeamSelector
               title={t(
                 'api.creation.title.modal',
@@ -285,7 +287,8 @@ class ApiListComponent extends Component {
               )}
               teams={this.props.myTeams
                 .filter((t) => t.type !== 'Admin')
-                .filter((t) => CanIDoAction(this.props.connectedUser, manage, api, t))}
+                .filter((t) => t.apisCreationPermission)
+                .filter((t) => CanIDoAction(this.props.connectedUser, manage, api, t, this.props.apiCreationPermitted))}
               action={(team) => this.createNewApi(team)}
               withAllTeamSelector={false}>
               <div className="col-12 col-sm-2">

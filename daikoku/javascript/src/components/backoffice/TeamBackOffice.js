@@ -221,7 +221,7 @@ class TeamBackOfficeComponent extends Component {
                         </Link>
                       </li>
                     </Can>
-                    <Can I={read} a={stat} team={this.props.currentTeam}>
+                    <Can I={read} a={api} team={this.props.currentTeam}>
                       <li className="nav-item">
                         <Link
                           className={`nav-link ${tab === 'Income' ? 'active' : ''}`}

@@ -15,7 +15,7 @@ class TeamEditForAdministrationComponent extends Component {
     team: null,
   };
 
-  flow = ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata'];
+  flow = ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata', 'apisCreationPermission'];
 
   schema = {
     _id: {
@@ -62,6 +62,14 @@ class TeamEditForAdministrationComponent extends Component {
         label: t('Metadata', this.props.currentLanguage),
       },
     },
+    apisCreationPermission: {
+      type: 'bool',
+      visible: () => this.props.tenant.creationSecurity,
+      props: {
+        label: t('APIs creation permission', this.props.currentLanguage),
+        help: t('apisCreationPermission.help', this.props.currentLanguage, false, 'test.help')
+      }
+    }
   };
 
   save = () => {

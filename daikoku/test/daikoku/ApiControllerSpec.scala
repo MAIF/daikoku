@@ -1731,6 +1731,39 @@ class ApiControllerSpec()
         .as[String] mustBe "You need to provide custom metadata"
     }
 
+    "not manipulate api if tenant api creation security is enabled & team.apisCreationPermission is disabled" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(creationSecurity = Some(true))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner)
+      )
+
+      val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty)
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(path =
+        s"/api/teams/${teamOwnerId.value}/apis",
+        method = "POST",
+        body = Some(api.asJson))(tenant, session)
+
+      resp.status mustBe 403
+    }
+
+    "manipulate api if tenant api creation security is enabled & team.apisCreationPermission is enabled" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(creationSecurity = Some(true))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner.copy(apisCreationPermission = Some(true)))
+      )
+
+      val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty)
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(path =
+        s"/api/teams/${teamOwnerId.value}/apis",
+        method = "POST",
+        body = Some(api.asJson))(tenant, session)
+
+      resp.status mustBe 201
+    }
   }
 
   "a api editor" can {

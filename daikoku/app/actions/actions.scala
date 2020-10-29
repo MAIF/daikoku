@@ -1,14 +1,37 @@
 package fr.maif.otoroshi.daikoku.actions
 
+import akka.http.scaladsl.util.FastFuture
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.{IdentityAttrs, TenantHelper}
 import fr.maif.otoroshi.daikoku.utils.Errors
 import play.api.Logger
+import play.api.libs.json.{JsString, Json}
 import play.api.mvc._
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
+
+object tenantSecurity {
+  def userCanCreateApi(tenant: Tenant, user: User)(implicit env: Env, ec: ExecutionContext): Future[Boolean] = {
+    if (user.isDaikokuAdmin) {
+      FastFuture.successful(true)
+    } else {
+      tenant.creationSecurity
+        .map(_ => env.dataStore.teamRepo.forTenant(tenant).exists(Json.obj(
+          "overriddenCreationPermission" -> false,
+          "users" -> Json.obj("$elemMatch" -> Json.obj(
+            "userId" -> user.id.asJson,
+            "$or" -> Json.arr(
+              Json.obj("teamPermission" -> JsString(Administrator.name)),
+              Json.obj("teamPermission" -> JsString(ApiEditor.name))
+            )
+          ))
+        ))).getOrElse(FastFuture.successful(true))
+    }
+  }
+}
 
 case class DaikokuTenantActionContext[A](request: Request[A], tenant: Tenant)
 
@@ -19,6 +42,7 @@ case class DaikokuActionMaybeWithoutUserContext[A](
     session: Option[UserSession],
     impersonator: Option[User],
     isTenantAdmin: Boolean,
+    apiCreationPermitted: Boolean = false,
     ctx: TrieMap[String, String] = new TrieMap[String, String]()) {
   def setCtxValue(key: String, value: Any): Unit = {
     if (value != null) {
@@ -33,6 +57,7 @@ case class DaikokuActionContext[A](request: Request[A],
                                    session: UserSession,
                                    impersonator: Option[User],
                                    isTenantAdmin: Boolean,
+                                   apiCreationPermitted: Boolean = false,
                                    ctx: TrieMap[String, String] =
                                      new TrieMap[String, String]()) {
   def setCtxValue(key: String, value: Any): Unit = {
@@ -65,13 +90,15 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
             Some(user),
             Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          block(
-            DaikokuActionContext(request,
-                                 user,
-                                 tenant,
-                                 session,
-                                 imper,
-                                 isTenantAdmin))
+          tenantSecurity.userCanCreateApi(tenant, user)(env, ec)
+            .flatMap(permission => block(
+              DaikokuActionContext(request,
+                user,
+                tenant,
+                session,
+                imper,
+                isTenantAdmin,
+                permission)))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -114,13 +141,15 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
             Some(user),
             Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          block(
-            DaikokuActionContext(request,
-                                 user,
-                                 tenant,
-                                 session,
-                                 imper,
-                                 isTenantAdmin))
+          tenantSecurity.userCanCreateApi(tenant, user)(env, ec)
+            .flatMap(security => block(
+              DaikokuActionContext(request,
+                user,
+                tenant,
+                session,
+                imper,
+                isTenantAdmin,
+                security)))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -188,13 +217,15 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
             Some(user),
             Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          block(
-            DaikokuActionMaybeWithoutUserContext(request,
-                                                 Some(user),
-                                                 tenant,
-                                                 Some(session),
-                                                 imper,
-                                                 isTenantAdmin))
+          tenantSecurity.userCanCreateApi(tenant, user)(env, ec)
+            .flatMap(perm => block(
+              DaikokuActionMaybeWithoutUserContext(request,
+                Some(user),
+                tenant,
+                Some(session),
+                imper,
+                isTenantAdmin,
+                perm)))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")

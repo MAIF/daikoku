@@ -160,7 +160,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                   ctx.setCtxValue("team.name", team.name)
                   val teamToSave =
                     if (ctx.user.isDaikokuAdmin) newTeam
-                    else newTeam.copy(metadata = team.metadata)
+                    else newTeam.copy(metadata = team.metadata, apisCreationPermission = team.apisCreationPermission)
                   env.dataStore.teamRepo
                     .forTenant(ctx.tenant.id)
                     .save(teamToSave)

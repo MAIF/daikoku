@@ -6,33 +6,36 @@ import { doNothing, read, manage } from './actions';
 import { daikoku, api, apikey, asset, stat, team, backoffice, tenant } from './subjects';
 import { permissions } from './permissions';
 
-export const CanIDoAction = (user, action, what, team, isTenantAdmin, whichOne, currentTenant) => {
+export const CanIDoAction = (user, action, what, team, apiCreationPermitted, isTenantAdmin, whichOne, currentTenant) => {
   if (what === tenant) {
     return (isTenantAdmin && whichOne._id === currentTenant._id) || user.isDaikokuAdmin;
+  } else if (what === api && !apiCreationPermitted) {
+    return false;
+  } else {
+    const realPerm = Option(team)
+      .map((t) => t.users)
+      .flatMap((users) => Option(users.find((u) => u.userId === user._id)))
+      .map((userWithPermission) => userWithPermission.teamPermission)
+      .map((ability) => permissions[ability])
+      .flatMap((perms) => Option(perms.find((p) => p.what === what)))
+      .map((perm) =>
+        Option(perm.condition).fold(
+          () => perm.action,
+          (condition) => (condition(team) ? perm.action : doNothing)
+        )
+      )
+      .fold(
+        () => doNothing,
+        (perm) => perm
+      );
+  
+    return action <= realPerm || user.isDaikokuAdmin;
   }
 
-  const realPerm = Option(team)
-    .map((t) => t.users)
-    .flatMap((users) => Option(users.find((u) => u.userId === user._id)))
-    .map((userWithPermission) => userWithPermission.teamPermission)
-    .map((ability) => permissions[ability])
-    .flatMap((perms) => Option(perms.find((p) => p.what === what)))
-    .map((perm) =>
-      Option(perm.condition).fold(
-        () => perm.action,
-        (condition) => (condition(team) ? perm.action : doNothing)
-      )
-    )
-    .fold(
-      () => doNothing,
-      (perm) => perm
-    );
-
-  return action <= realPerm || user.isDaikokuAdmin;
 };
 
-export const CanIDoActionForOneOfTeams = (user, action, what, teams) => {
-  return teams.some((team) => CanIDoAction(user, action, what, team, false));
+export const CanIDoActionForOneOfTeams = (user, action, what, teams, apiCreationPermitted) => {
+  return teams.some((team) => CanIDoAction(user, action, what, team, apiCreationPermitted, false));
 };
 
 const CanComponent = ({
@@ -48,10 +51,11 @@ const CanComponent = ({
   isTenantAdmin,
   tenant,
   whichOne = tenant,
+  apiCreationPermitted
 }) => {
   const authorized = teams
-    ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams)
-    : CanIDoAction(connectedUser, I, a, team, isTenantAdmin, whichOne, tenant);
+    ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams, apiCreationPermitted)
+    : CanIDoAction(connectedUser, I, a, team, apiCreationPermitted, isTenantAdmin, whichOne, tenant);
 
   if (!authorized) {
     if (dispatchError) {
@@ -81,4 +85,5 @@ CanComponent.propTypes = {
   setError: PropTypes.func.isRequired,
   orElse: PropTypes.element,
   isTenantAdmin: PropTypes.bool,
+  apiCreationPermitted: PropTypes.bool
 };

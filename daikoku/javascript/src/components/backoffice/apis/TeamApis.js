@@ -196,7 +196,7 @@ class TeamApisComponent extends Component {
                 <Translation i18nkey="Team apis" language={this.props.currentLanguage}>
                   Team APIs
                 </Translation>
-                {this.props.currentTeam.type !== 'Admin' && (
+                {this.props.apiCreationPermitted && this.props.currentTeam.type !== 'Admin' && (
                   <Can I={manage} a={API} team={this.props.currentTeam}>
                     <a
                       className="btn btn-sm btn-access-negative mb-1 ml-1"
