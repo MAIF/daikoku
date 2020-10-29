@@ -23,11 +23,14 @@ Tenants could be customized in Daikoku.
 Logo, title, description can be changed.
 The css can be customized with some css code or js code, with overwriting css variables or with a css/js file.
 
-### Authentication
+### Security
 
 A tenant can be private or public. In the last case, just public api can be accessed by unauthenticated users.
 Authentication can be set by choosen Local auth. or a tiers auth. like LDAP, OAuth2 or Otoroshi.
 The user session duration can be set here, by default it last 24h.
+
+A creation security option can be activated to forbid all unauthorized team to create API. You just have to authorize the team from the team edit page.
+A subscription security option can be activated to forbid all personal team to subscribe to an API.
 
 ### Audit trail
 
