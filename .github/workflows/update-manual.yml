@@ -1,34 +1,24 @@
 name: Build documentations
 
 on:
-  push:
-    paths:
-      - 'manual/**'
-    branches:
-      - master
-    tags:
-      - v**
-  pull_request:
-    paths:
-      - 'manual/**'
-    branches:
-      - master
+  release: 
+    types: [published]
 
 jobs:
-  build_dev_manual:
+  build_manual:
     name: Build developer documentation
     runs-on: ubuntu-latest
     if: github.head_ref == 'master'
     steps:
       - uses: actions/checkout@v2.0.0
-      - name: Generate dev documentation website
-        run: sh ./scripts/build.sh devdoc
+      - name: Generate documentation website
+        run: sh ./scripts/build.sh doc
       - name: Commit files
         run: |
           git config --local user.email "daikoku-github-actions@users.noreply.github.com"
           git config --local user.name "daikoku-github-actions"
           git add --all
-          git commit -am "Update dev documentation"
+          git commit -am "Update documentation"
       - name: Push documentation
         uses: ad-m/github-push-action@master
         with:
