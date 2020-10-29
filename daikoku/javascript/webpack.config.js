@@ -52,10 +52,6 @@ module.exports = (env, argv) => {
           ]
         },
         {
-          test: /\.gif$/,
-          loader: 'url-loader?limit=1&name=[name]/.[ext]'
-        },
-        {
           test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
           loader: 'url-loader?limit=1&name=[name]/[name].[ext]'
         },

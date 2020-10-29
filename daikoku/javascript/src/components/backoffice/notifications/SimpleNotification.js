@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import moment from 'moment';
 
 import { t, Translation } from '../../../locales';
-import { formatPlanType, Option, BeautifulTitle } from '../../utils';
+import { formatPlanType, Option } from '../../utils';
 
 export class SimpleNotification extends Component {
   typeFormatter = (type) => {

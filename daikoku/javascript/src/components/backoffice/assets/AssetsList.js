@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name */
 import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';

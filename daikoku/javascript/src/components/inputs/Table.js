@@ -3,9 +3,7 @@ import {
   useTable,
   usePagination,
   useSortBy,
-  useFilters,
-  useBlockLayout,
-  useResizeColumns,
+  useFilters
 } from 'react-table';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -102,17 +100,11 @@ export const Table = ({
     headerGroups,
     rows,
     prepareRow,
-    setFilter,
     page,
-    canPreviousPage,
-    canNextPage,
     pageOptions,
-    pageCount,
     gotoPage,
-    nextPage,
-    previousPage,
     setPageSize,
-    state: { pageIndex, pageSize, sortBy, filters },
+    state: { pageSize },
   } = useTable(
     {
       columns,
