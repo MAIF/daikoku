@@ -33,7 +33,7 @@ build_dev_manual () {
 build_ui () {
   cd $LOCATION/daikoku/javascript
   yarn install
-  yarn webpack:build
+  yarn build
 }
 
 build_daikoku () {
@@ -112,6 +112,11 @@ release_daikoku ()  {
 }
 
 case "${1}" in
+  github)
+    clean
+    build_manual
+    build_ui
+    build_daikoku
   travis)
     clean
     build_manual

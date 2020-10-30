@@ -31,7 +31,7 @@ async function createGithubRelease() {
 }
 
 async function uploadAllFiles(release) {
-  await uploadFilesToRelease(release, { name: `daikoku-${DAIKOKU_VERSION}.jar`, path: path.resolve(LOCATION, `../daikoku/target/scala-2.12/daikoku.jar`) });
+  await uploadFilesToRelease(release, { name: `daikoku-${DAIKOKU_VERSION}.jar`, path: path.resolve(LOCATION, `../daikoku/target/scala-2.13/daikoku.jar`) });
   await uploadFilesToRelease(release, { name: `daikoku-${DAIKOKU_VERSION}.zip`, path: path.resolve(LOCATION, `../daikoku/target/universal/daikoku.zip`) });
   await uploadFilesToRelease(release, { name: `daikoku-manual-${DAIKOKU_VERSION}.zip`, path: path.resolve(LOCATION, `../daikoku-manual.zip`) });
 }
