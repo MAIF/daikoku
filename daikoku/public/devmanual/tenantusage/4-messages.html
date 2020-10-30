@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>Initialize Tenant from Otoroshi instances · Daikoku</title>
+<title>User messages · Daikoku</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='daikoku-manual'/>
@@ -66,10 +66,10 @@
   <li><a href="../tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
   <ul>
     <li><a href="../tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html" class="active page">Initialize Tenant from Otoroshi instances</a></li>
+    <li><a href="../tenantusage/1.5-initialize.html" class="page">Initialize Tenant from Otoroshi instances</a></li>
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
-    <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
+    <li><a href="../tenantusage/4-messages.html" class="active page">User messages</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -157,10 +157,10 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li><a href="../tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
   <ul>
     <li><a href="../tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html" class="active page">Initialize Tenant from Otoroshi instances</a></li>
+    <li><a href="../tenantusage/1.5-initialize.html" class="page">Initialize Tenant from Otoroshi instances</a></li>
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
-    <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
+    <li><a href="../tenantusage/4-messages.html" class="active page">User messages</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -196,7 +196,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <ul>
   <li><a href="../index.html">Daikoku</a></li>
   <li><a href="../tenantusage/index.html">Using Daikoku as Tenant admin</a></li>
-  <li>Initialize Tenant from Otoroshi instances</li>
+  <li>User messages</li>
 </ul>
 </div>
 </div>
@@ -204,26 +204,17 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#initialize-tenant-from-otoroshi-instances" name="initialize-tenant-from-otoroshi-instances" class="anchor"><span class="anchor-link"></span></a>Initialize Tenant from Otoroshi instances</h1>
-<p>You perhaps have a previous instance of Otoroshi, whiche contains services and lot of apikeys. This page have been created to easily import service group as API and apikeys as subscriptions in a tenant of your Daikoku instance.</p>
-<p>Go to <code>settings/Organizations settings</code> and click <code>Initialization</code> on the left menu.</p>
-<p>Now, it&rsquo;s easy as just follow steps.</p>
-<h2><a href="#select-otoroshi-instance" name="select-otoroshi-instance" class="anchor"><span class="anchor-link"></span></a>Select Otoroshi instance</h2>
-<p>Just select a previously created Otoroshi instance to begin.</p>
-<h2><a href="#select-the-step" name="select-the-step" class="anchor"><span class="anchor-link"></span></a>Select the step</h2>
-<p>You can begin to import Otoroshi service groups or just Otoroshi apikeys</p>
-<h2><a href="#select-service-group-to-import" name="select-service-group-to-import" class="anchor"><span class="anchor-link"></span></a>Select Service group to import</h2>
-<p>You have to choose which services you want to import. It&rsquo;s completly possible to change the API name but no necessary. You have to choose a team to admin the crated API. If the team doesn&rsquo;t exist, you can create a team in this screen. Your action is just, for the moment, to tack the api to create, the creation will be effective later.<br/><em>notice: Every choice you make are saved on your local storage in case of problem.</em></p>
-<h2><a href="#recap-and-creation" name="recap-and-creation" class="anchor"><span class="anchor-link"></span></a>Recap and creation</h2>
-<p>The next screen list all API to create. If your agree with this, you can click on the <code>create</code> button to launch the APIs creation.</p>
-<h2><a href="#select-service-group-to-import" name="select-service-group-to-import" class="anchor"><span class="anchor-link"></span></a>Select Service group to import</h2>
-<p>You have to choose which apikeys you want to import. You have to choose an api with a plan and a team for every apikeys. If the plan does&rsquo;t exists, you can create a plan in this screen (_notice: it will a FreePlan but you can change it after creation_).<br/>If the team doesn&rsquo;t exist, you can create a team in this screen. Your action is just, for the moment, to stack the apikey to create, the creation will be effective later.<br/><em>notice: Every choice you make are saved on your local storage in case of problem.</em></p>
-<h2><a href="#recap-and-creation" name="recap-and-creation" class="anchor"><span class="anchor-link"></span></a>Recap and creation</h2>
-<p>The next screen list all subscriptions to create. If your agree with this, you can click on the create button to launch the subscriptios creation.</p>
-<h2><a href="#done" name="done" class="anchor"><span class="anchor-link"></span></a>Done</h2>
-<p>All the selected APIs and apikeys are created. You have certainly to go to API page to update some informations because APIs are just created with default informations, just name and plan. If you have created some teams, be aware that you are the only member of those teams. You can import APIS and apikeys from another Otorshi instance if you wish.</p>
+<h1><a href="#user-messages" name="user-messages" class="anchor"><span class="anchor-link"></span></a>User messages</h1>
+<p>A user can send a message to whole tenant admins. In fact, all members of the tenant admin team can reply to user.</p>
+<p>Go to <code>settings/Organizations settings</code> and then click <code>messages</code> on the left menu, you should see the list of opened conversations. </p>
+<h2><a href="#reply-to-message" name="reply-to-message" class="anchor"><span class="anchor-link"></span></a>reply to message</h2>
+<p>If you receive a new message, conversation show you a notification woith the count of unread message. Click on conversation to open message editor and reply to user.</p>
+<h2><a href="#close-a-conversation" name="close-a-conversation" class="anchor"><span class="anchor-link"></span></a>Close a conversation</h2>
+<p>To close a conversation just click on <code>trash</code> button of conversation on the left panel. It&rsquo;s possible to get closed messages on clicking <code>load previous message</code> button on the opened conversation.</p>
+<h2><a href="#start-a-new-conversation" name="start-a-new-conversation" class="anchor"><span class="anchor-link"></span></a>Start a new conversation</h2>
+<p>Just select a user in the selector to start a new conversation.</p>
 <div class="nav-next">
-<p><strong>Next:</strong> <a href="../tenantusage/2-teams.html">Managing teams</a></p>
+<p><strong>Next:</strong> <a href="../producerusage/index.html">Using Daikoku as api producer</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
@@ -232,15 +223,11 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-title">On this page:</div>
 <div class="nav-toc">
 <ul>
-  <li><a href="../tenantusage/1.5-initialize.html#initialize-tenant-from-otoroshi-instances" class="header">Initialize Tenant from Otoroshi instances</a>
+  <li><a href="../tenantusage/4-messages.html#user-messages" class="header">User messages</a>
   <ul>
-    <li><a href="../tenantusage/1.5-initialize.html#select-otoroshi-instance" class="header">Select Otoroshi instance</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html#select-the-step" class="header">Select the step</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html#select-service-group-to-import" class="header">Select Service group to import</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html#recap-and-creation" class="header">Recap and creation</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html#select-service-group-to-import" class="header">Select Service group to import</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html#recap-and-creation" class="header">Recap and creation</a></li>
-    <li><a href="../tenantusage/1.5-initialize.html#done" class="header">Done</a></li>
+    <li><a href="../tenantusage/4-messages.html#reply-to-message" class="header">reply to message</a></li>
+    <li><a href="../tenantusage/4-messages.html#close-a-conversation" class="header">Close a conversation</a></li>
+    <li><a href="../tenantusage/4-messages.html#start-a-new-conversation" class="header">Start a new conversation</a></li>
   </ul></li>
 </ul>
 </div>
