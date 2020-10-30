@@ -18,7 +18,6 @@ jobs:
   build_dev_manual:
     name: Build developer documentation
     runs-on: ubuntu-latest
-    if: github.head_ref == 'master'
     steps:
       - uses: actions/checkout@v2.0.0
       - name: Generate dev documentation website
