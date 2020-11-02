@@ -13,7 +13,6 @@ import { updateTeamPromise, history } from '../core';
 import 'react-redux-toastr/src/styles/index.scss';
 
 import {
-  OrganizationChooser,
   TeamChooser,
   TeamHome,
   MyHome,
@@ -139,10 +138,8 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             path={[
               '/notifications',
               '/teams',
-              '/organizations',
               '/settings',
               '/consumptions',
-              '/organizations',
               '/teams/:teamId/settings',
               '/:teamId/settings',
               '/teams/:teamId/apis/:apiId',
@@ -347,13 +344,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               path="/teams"
               render={(p) => (
                 <TeamChooser match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <FrontOfficeRoute
-              exact
-              path="/organizations"
-              render={(p) => (
-                <OrganizationChooser match={p.match} history={p.history} location={p.location} />
               )}
             />
 
@@ -572,7 +562,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
           <Route
             path={[
               '/teams',
-              '/organizations',
               '/teams/:teamId/apis/:apiId',
               '/:teamId/:apiId',
               '/teams/:teamId',
