@@ -351,11 +351,18 @@ const AssetsListComponent = ({
                 fetchAssets();
               }}
             />
-            <a href={assetLink(item.meta.asset)} target="_blank" rel="noreferrer noopener">
+            <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
+              <button
+                className="btn btn-sm btn-outline-primary"
+                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
+                <i className="fas fa-eye" />
+              </button>
+            </a>
+            <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
               <button
                 className="btn btn-sm btn-outline-primary mr-1"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
-                <i className="fas fa-eye" />
+                <i className="fas fa-download" />
               </button>
             </a>
             <button
@@ -403,11 +410,11 @@ const AssetsListComponent = ({
       );
   };
 
-  const assetLink = (asset) => {
+  const assetLink = (asset, download = true) => {
     if (tenantMode) {
-      return `/tenant-assets/${asset}?download=true`;
+      return `/tenant-assets/${asset}?download=${download}`;
     } else {
-      return `/api/teams/${currentTeam._id}/assets/${asset}?download=true`;
+      return `/api/teams/${currentTeam._id}/assets/${asset}?download=${download}`;
     }
   };
 

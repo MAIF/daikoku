@@ -60,7 +60,8 @@ libraryDependencies ++= Seq(
   "de.svenkubiak" % "jBCrypt" % "0.4.1",
   "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "2.0.0",
   "com.amazonaws" % "aws-java-sdk-core" % "1.11.779",
-  "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1"
+  "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1",
+  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.789"
 )
 
 scalacOptions ++= Seq(

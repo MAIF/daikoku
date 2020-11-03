@@ -327,18 +327,18 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
         case Some(cfg) =>
           env.assetsStore
             .storeTenantAsset(ctx.tenant.id,
-                              assetId,
-                              filename,
-                              title,
-                              desc,
-                              contentType,
-                              ctx.request.body)(cfg)
+              assetId,
+              filename,
+              title,
+              desc,
+              contentType,
+              ctx.request.body)(cfg)
             .map { _ =>
               Ok(Json.obj("done" -> true, "id" -> assetId.value))
             } recover {
             case e =>
               AppLogger.error(s"Error during tenant asset storage: ${filename}",
-                              e)
+                e)
               InternalServerError(Json.obj("error" -> ec.toString))
           }
       }
@@ -380,12 +380,12 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
 
                 env.assetsStore
                   .storeTenantAsset(ctx.tenant.id,
-                                    AssetId(assetId),
-                                    filename,
-                                    title,
-                                    desc,
-                                    contentType,
-                                    ctx.request.body)(cfg)
+                    AssetId(assetId),
+                    filename,
+                    title,
+                    desc,
+                    contentType,
+                    ctx.request.body)(cfg)
                   .map { res =>
                     Ok(Json.obj("done" -> true, "id" -> assetId))
                   } recover {
@@ -460,36 +460,32 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
         FastFuture.successful(
           NotFound(Json.obj("error" -> "No bucket config found !")))
       case Some(cfg) =>
-        env.assetsStore
-          .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
-          .map {
-            case Some((source, meta)) =>
-              val filename = meta.metadata
-                .filter(_.name().startsWith("x-amz-meta-"))
-                .find(_.name() == "x-amz-meta-filename")
-                .map(_.value())
-                .getOrElse("asset.txt")
-              val disposition = ("Content-Disposition" -> s"""attachment; filename="$filename"""")
-              if (ctx.request.getQueryString("download").contains("true")) {
-                Ok.sendEntity(
+        val download = ctx.request.getQueryString("download").contains("true")
+
+        env.assetsStore.getTenantAssetPresignedUrl(ctx.tenant.id, AssetId(assetId))(cfg) match {
+          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Asset not found!")))
+          case Some(url) if download =>
+            env.assetsStore.getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
+              .map {
+                case None => NotFound(Json.obj("error" -> "Asset not found!"))
+                case Some((source, meta)) =>
+                  val filename = meta.metadata
+                    .filter(_.name().startsWith("x-amz-meta-"))
+                    .find(_.name() == "x-amz-meta-filename")
+                    .map(_.value())
+                    .getOrElse("asset.txt")
+
+                  Ok.sendEntity(
                     HttpEntity.Streamed(
                       source,
                       None,
                       meta.contentType
                         .map(Some.apply)
                         .getOrElse(Some("application/octet-stream"))))
-                  .withHeaders(disposition)
-              } else {
-                Ok.sendEntity(
-                  HttpEntity.Streamed(
-                    source,
-                    None,
-                    meta.contentType
-                      .map(Some.apply)
-                      .getOrElse(Some("application/octet-stream"))))
+                    .withHeaders("Content-Disposition" -> s"""attachment; filename="$filename"""")
               }
-            case None => NotFound(Json.obj("error" -> "Asset not found!"))
-          }
+          case Some(url) => FastFuture.successful(Redirect(url))
+        }
     }
   }
 }

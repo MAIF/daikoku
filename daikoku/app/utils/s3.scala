@@ -1,5 +1,6 @@
 package fr.maif.otoroshi.daikoku.utils
 
+import java.net.URL
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import akka.actor.ActorSystem
@@ -11,13 +12,19 @@ import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
+import com.amazonaws.{ClientConfiguration, HttpMethod, SdkClientException}
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import fr.maif.otoroshi.daikoku.domain._
+import org.joda.time.DateTime
 import play.api.libs.json._
 import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.core.exception.SdkException
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, duration}
 import scala.util.Try
 
 class BadFileContentFromContentType()
@@ -384,4 +391,46 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
       .withAttributes(s3ClientSettingsAttrs)
     content.toMat(sink)(Keep.right).run()
   }
+/// generate pre signed url //////
+
+  private def getPresignedUrl(path: String)(implicit conf: S3Configuration): Option[String] = {
+    lazy val opts = new ClientConfiguration()
+    lazy val endpointConfiguration = new EndpointConfiguration(conf.endpoint, conf.region)
+    lazy val credentialsProvider = new AWSStaticCredentialsProvider(
+      new BasicAWSCredentials(conf.access, conf.secret)
+    )
+    lazy val s3Client = AmazonS3ClientBuilder
+      .standard()
+      .withCredentials(credentialsProvider)
+      .withClientConfiguration(opts)
+      .withEndpointConfiguration(endpointConfiguration)
+      .build()
+
+    try {
+      val url: URL = s3Client.generatePresignedUrl(
+        "",
+        path,
+        DateTime.now().plusHours(1).toDate,
+        HttpMethod.GET)
+      Some(url.toURI.toString)
+    } catch {
+      case _: SdkClientException => None
+    }
+  }
+
+  def getTeamAssetPresignedUrl(tenant: TenantId, team: TeamId, asset: AssetId)(
+    implicit conf: S3Configuration)
+  : Option[String] = {
+    val path = s"/${tenant.value}/teams/${team.value}/assets/${asset.value}"
+    getPresignedUrl(path)
+  }
+
+  def getTenantAssetPresignedUrl(tenant: TenantId, asset: AssetId)(
+  implicit conf: S3Configuration)
+  : Option[String] = {
+
+    val path = s"/${tenant.value}/tenant-assets/${asset.value}"
+    getPresignedUrl(path)
+  }
+
 }
