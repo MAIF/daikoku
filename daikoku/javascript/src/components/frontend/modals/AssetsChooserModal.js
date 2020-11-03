@@ -240,7 +240,7 @@ export class AssetChooserComponent extends Component {
     return (
       <button
         type="button"
-        className="btn btn-access-negative ml-1"
+        className={this.props.classNames ? this.props.classNames : 'btn btn-access-negative ml-1'}
         onClick={() =>
           this.props.openAssetSelectorModal({
             open: true,
@@ -252,7 +252,7 @@ export class AssetChooserComponent extends Component {
           })
         }>
         <i
-          className={classNames('fas mr-1', {
+          className={this.props.icon ? this.props.icon : classNames('fas mr-1', {
             'fa-user-circle': !!this.props.onlyPreview,
             'fa-file': !this.props.onlyPreview,
           })}

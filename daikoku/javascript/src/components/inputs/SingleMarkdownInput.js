@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import AceEditor from 'react-ace';
 import _ from 'lodash';
 import { converter } from '../../services/showdown';
@@ -11,112 +11,121 @@ import 'brace/ext/searchbox';
 import 'brace/ext/language_tools';
 
 import { Help } from './Help';
-import { AssetChooserByModal } from '../frontend/modals/AssetsChooserModal';
+import { BeautifulTitle, Option } from '../utils';
+import { AssetChooserByModal, MimeTypeFilter } from '../frontend';
 import { t, Translation } from '../../locales';
 
 import hljs from 'highlight.js';
 
 window.hljs = window.hljs || hljs;
 
-export default class SingleMardownInput extends Component {
-  state = {
-    preview: false,
-  };
+const SingleMardownInput = props => {
+  const [preview, setPreview] = useState(false);
+  const [editor, setEditor] = useState(undefined);
 
-  commands = [
+  useEffect(() => {
+    if (preview) {
+      showPreview();
+    }
+  }, [preview]);
+
+  const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
+  const domain = tenant.domain;
+  const origin = window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+  const commands = [
     {
-      name: t('Add header', this.props.currentLanguage),
+      name: t('Add header', props.currentLanguage),
       icon: 'heading',
       inject: (selected = ' ') => `# ${selected}`,
     },
     {
-      name: t('Add bold text', this.props.currentLanguage),
+      name: t('Add bold text', props.currentLanguage),
       icon: 'bold',
       inject: (selected = ' ') => `**${selected}**`,
     },
     {
-      name: t('Add italic text', this.props.currentLanguage),
+      name: t('Add italic text', props.currentLanguage),
       icon: 'italic',
       inject: (selected = ' ') => `*${selected}*`,
     },
     {
-      name: t('Add strikethrough text', this.props.currentLanguage),
+      name: t('Add strikethrough text', props.currentLanguage),
       icon: 'strikethrough',
       inject: (selected = ' ') => `~~${selected}~~`,
     },
     {
-      name: t('Add link', this.props.currentLanguage),
+      name: t('Add link', props.currentLanguage),
       icon: 'link',
       inject: (selected = ' ') => `[${selected}](url)`,
     },
     {
-      name: t('Add code', this.props.currentLanguage),
+      name: t('Add code', props.currentLanguage),
       icon: 'code',
       inject: (selected = ' ') => '```\n' + selected + '\n```\n',
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Add quotes', this.props.currentLanguage),
+      name: t('Add quotes', props.currentLanguage),
       icon: 'quote-right',
       inject: (selected = ' ') => `> ${selected}`,
     },
     {
-      name: t('Add image', this.props.currentLanguage),
+      name: t('Add image', props.currentLanguage),
       icon: 'image',
       inject: (selected = ' ') => `![${selected}](image-url)`,
     },
     {
-      name: t('Add unordered list', this.props.currentLanguage),
+      name: t('Add unordered list', props.currentLanguage),
       icon: 'list-ul',
       inject: (selected = ' ') => `* ${selected}`,
     },
     {
-      name: t('Add ordered list', this.props.currentLanguage),
+      name: t('Add ordered list', props.currentLanguage),
       icon: 'list-ol',
       inject: (selected = ' ') => `1. ${selected}`,
     },
     {
-      name: t('Add check list', this.props.currentLanguage),
+      name: t('Add check list', props.currentLanguage),
       icon: 'tasks',
       inject: (selected = ' ') => `* [ ] ${selected}`,
     },
     {
-      name: t('Page ref', this.props.currentLanguage),
+      name: t('Page ref', props.currentLanguage),
       icon: 'book',
       inject: (selected = ' ') => `@ref:[${selected}](team/api/doc)`,
     },
     {
-      name: t('Warning', this.props.currentLanguage),
+      name: t('Warning', props.currentLanguage),
       icon: 'exclamation-triangle',
       inject: (selected = ' ') => `@@@ warning\n${selected}\n@@@\n`,
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Warning with title', this.props.currentLanguage),
+      name: t('Warning with title', props.currentLanguage),
       icon: 'exclamation-circle',
       inject: (selected = ' ') => `@@@ warning { title='A nice title' }\n${selected}\n@@@\n`,
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Note', this.props.currentLanguage),
+      name: t('Note', props.currentLanguage),
       icon: 'sticky-note',
       inject: (selected = ' ') => `@@@ note\n${selected}\n@@@\n`,
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Note with title', this.props.currentLanguage),
+      name: t('Note with title', props.currentLanguage),
       icon: 'clipboard',
       inject: (selected = ' ') => `@@@ note { title='A nice title' }\n${selected}\n@@@\n`,
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Lorem Ipsum', this.props.currentLanguage),
+      name: t('Lorem Ipsum', props.currentLanguage),
       icon: 'feather-alt',
       inject: () =>
         'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.',
     },
     {
-      name: t('Long Lorem Ipsum', this.props.currentLanguage),
+      name: t('Long Lorem Ipsum', props.currentLanguage),
       icon: 'feather',
       inject: () => `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.
 
@@ -128,20 +137,38 @@ Donec id mi cursus, volutpat dolor sed, bibendum sapien. Etiam vitae mauris sit 
 
 Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`,
     },
+    {
+      name: t('Test asset'),
+      component: <BeautifulTitle
+        placement="bottom"
+        title={t('image url from asset', props.currentLanguage)}>
+        <AssetChooserByModal
+          typeFilter={MimeTypeFilter.image}
+          onlyPreview
+          tenantMode={!props.team}
+          team={props.team}
+          teamId={Option(props.team).map(t => t._id).getOrNull()}
+          icon="fas fa-file-image"
+          classNames="btn-for-descriptionToolbar"
+          currentLanguage={props.currentLanguage}
+          onSelect={(asset) => editor.session.insert(editor.getCursorPosition(), origin + asset.link)}
+        />
+      </BeautifulTitle>
+
+    }
   ];
 
-  onChange = (e) => {
-    this.props.onChange(e);
-  };
-
-  showPreview = () => {
+  const showPreview = () => {
     window.$('pre code').each((i, block) => {
       window.hljs.highlightBlock(block);
     });
   };
 
-  injectButtons = () => {
-    return this.commands.map((command, idx) => {
+  const injectButtons = () => {
+    return commands.map((command, idx) => {
+      if (command.component) {
+        return command.component;
+      }
       return (
         <button
           type="button"
@@ -150,21 +177,21 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
           title={command.name}
           key={`toolbar-btn-${idx}`}
           onClick={() => {
-            const selection = this.editor.getSelection();
+            const selection = editor.getSelection();
             if (selection) {
-              this.editor.session.replace(
+              editor.session.replace(
                 selection.getRange(),
-                command.inject(this.editor.getSelectedText())
+                command.inject(editor.getSelectedText())
               );
             } else {
-              this.editor.session.insert(this.editor.getCursorPosition(), command.inject());
+              editor.session.insert(editor.getCursorPosition(), command.inject());
             }
             if (command.move) {
-              command.move(this.editor.getCursorPosition(), (p) =>
-                this.editor.moveCursorToPosition(p)
+              command.move(editor.getCursorPosition(), (p) =>
+                editor.moveCursorToPosition(p)
               );
             }
-            this.editor.focus();
+            editor.focus();
           }}>
           <i className={`fas fa-${command.icon}`} />
         </button>
@@ -172,88 +199,89 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
     });
   };
 
-  render() {
-    let code = this.props.value;
-    const team = _.isFunction(this.props.team) ? this.props.team() : this.props.team;
-    return (
-      <div className="d-flex flex-column">
-        <label
-          htmlFor={`input-${this.props.label}`}
-          className="col-form-label d-flex align-items-center">
-          {this.props.label} <Help place="right" text={this.props.help} />
-        </label>
-        <div
-          style={{
-            marginBottom: 10,
-          }}
-          className="d-flex flex-sm-row flex-column align-items-center">
-          <div>
-            <div className="btn-group">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ color: !this.state.preview ? '#7f96af' : 'white' }}
-                onClick={() => this.setState({ preview: false })}>
-                <Translation i18nkey="Write" language={this.props.currentLanguage}>
-                  Write
+  let code = props.value;
+  const team = _.isFunction(props.team) ? props.team() : props.team;
+
+  return (
+    <div className="d-flex flex-column">
+      <label
+        htmlFor={`input-${props.label}`}
+        className="col-form-label d-flex align-items-center">
+        {props.label} <Help place="right" text={props.help} />
+      </label>
+      <div
+        style={{
+          marginBottom: 10,
+        }}
+        className="d-flex flex-sm-row flex-column align-items-center">
+        <div>
+          <div className="btn-group">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ color: !preview ? '#7f96af' : 'white' }}
+              onClick={() => setPreview(false)}>
+              <Translation i18nkey="Write" language={props.currentLanguage}>
+                Write
                 </Translation>
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ color: this.state.preview ? '#7f96af' : 'white' }}
-                onClick={() => this.setState({ preview: true }, () => this.showPreview())}>
-                <Translation i18nkey="Preview" language={this.props.currentLanguage}>
-                  Preview
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ color: preview ? '#7f96af' : 'white' }}
+              onClick={() => setPreview(true)}>
+              <Translation i18nkey="Preview" language={props.currentLanguage}>
+                Preview
                 </Translation>
-              </button>
-            </div>
-          </div>
-          <div>{this.injectButtons()}</div>
-          <div style={{ width: 250 }}>
-            {this.props.assertChooserActive && (
-              <AssetChooserByModal
-                currentLanguage={this.props.currentLanguage}
-                tenantMode={this.props.tenantMode}
-                team={team}
-                label={t('Set from asset', this.props.currentLanguage)}
-                onSelect={(asset) => {
-                  this.editor.session.insert(this.editor.getCursorPosition(), asset.link);
-                  this.editor.focus();
-                }}
-              />
-            )}
+            </button>
           </div>
         </div>
-        {!this.state.preview && (
-          <AceEditor
-            ref={(r) => {
-              if (r && r.editor) {
-                this.editor = r.editor;
-              }
-            }}
-            mode="markdown"
-            theme="monokai"
-            onChange={this.onChange}
-            value={code}
-            name="scriptParam"
-            editorProps={{ $blockScrolling: true }}
-            height={this.props.height || '300px'}
-            width={this.props.width || '100%'}
-            showGutter={true}
-            tabSize={2}
-            highlightActiveLine={true}
-            enableBasicAutocompletion={true}
-            enableLiveAutocompletion={true}
-          />
-        )}
-        {this.state.preview && (
-          <div
-            className="api-description"
-            dangerouslySetInnerHTML={{ __html: converter.makeHtml(code) }}
-          />
-        )}
+        <div className="d-flex flex-row">{injectButtons()}</div>
+        <div style={{ width: 250 }}>
+          {props.assertChooserActive && (
+            <AssetChooserByModal
+              currentLanguage={props.currentLanguage}
+              tenantMode={props.tenantMode}
+              team={team}
+              label={t('Set from asset', props.currentLanguage)}
+              onSelect={(asset) => {
+                editor.session.insert(editor.getCursorPosition(), asset.link);
+                editor.focus();
+              }}
+            />
+          )}
+        </div>
       </div>
-    );
-  }
-}
+      {!preview && (
+        <AceEditor
+          ref={(r) => {
+            if (r && r.editor) {
+              setEditor(r.editor);
+            }
+          }}
+          mode="markdown"
+          theme="monokai"
+          onChange={props.onChange}
+          value={code}
+          name="scriptParam"
+          editorProps={{ $blockScrolling: true }}
+          height={props.height || '300px'}
+          width={props.width || '100%'}
+          showGutter={true}
+          tabSize={2}
+          highlightActiveLine={true}
+          enableBasicAutocompletion={true}
+          enableLiveAutocompletion={true}
+        />
+      )}
+      {preview && (
+        <div
+          className="api-description"
+          dangerouslySetInnerHTML={{ __html: converter.makeHtml(code) }}
+        />
+      )}
+    </div>
+  );
+};
+
+export default SingleMardownInput;

@@ -106,9 +106,7 @@ export class TeamApiDocumentation extends Component {
         currentLanguage: this.props.currentLanguage,
         label: 'Page content',
         height: '800px',
-        team: () => {
-          return this.props.team;
-        },
+        team: this.props.team,
       },
     },
     remoteContentEnabled: {

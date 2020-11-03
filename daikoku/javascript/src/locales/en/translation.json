@@ -709,5 +709,6 @@
     "API creation security": "API creation security",
     "creation.security.help": "if enabled, only authorized teams will be able to create APIs",
     "APIs creation permission": "APIs creation permission",
-    "apisCreationPermission.help": "If api creation security is enabled on tenant, APIs creation permission is mandatory to create APIs"
+    "apisCreationPermission.help": "If api creation security is enabled on tenant, APIs creation permission is mandatory to create APIs",
+    "image url from asset": "image URL from asset"
 }
