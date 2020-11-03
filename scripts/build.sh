@@ -117,6 +117,7 @@ case "${1}" in
     build_manual
     build_ui
     build_daikoku
+    ;;
   travis)
     clean
     build_manual
