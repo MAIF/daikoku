@@ -6,7 +6,16 @@ import { doNothing, read, manage } from './actions';
 import { daikoku, api, apikey, asset, stat, team, backoffice, tenant } from './subjects';
 import { permissions } from './permissions';
 
-export const CanIDoAction = (user, action, what, team, apiCreationPermitted, isTenantAdmin, whichOne, currentTenant) => {
+export const CanIDoAction = (
+  user,
+  action,
+  what,
+  team,
+  apiCreationPermitted,
+  isTenantAdmin,
+  whichOne,
+  currentTenant
+) => {
   if (what === tenant) {
     return (isTenantAdmin && whichOne._id === currentTenant._id) || user.isDaikokuAdmin;
   } else if (what === api && !apiCreationPermitted) {
@@ -28,10 +37,9 @@ export const CanIDoAction = (user, action, what, team, apiCreationPermitted, isT
         () => doNothing,
         (perm) => perm
       );
-  
+
     return action <= realPerm || user.isDaikokuAdmin;
   }
-
 };
 
 export const CanIDoActionForOneOfTeams = (user, action, what, teams, apiCreationPermitted) => {
@@ -51,11 +59,20 @@ const CanComponent = ({
   isTenantAdmin,
   tenant,
   whichOne = tenant,
-  apiCreationPermitted
+  apiCreationPermitted,
 }) => {
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams, apiCreationPermitted)
-    : CanIDoAction(connectedUser, I, a, team, apiCreationPermitted, isTenantAdmin, whichOne, tenant);
+    : CanIDoAction(
+        connectedUser,
+        I,
+        a,
+        team,
+        apiCreationPermitted,
+        isTenantAdmin,
+        whichOne,
+        tenant
+      );
 
   if (!authorized) {
     if (dispatchError) {
@@ -85,5 +102,5 @@ CanComponent.propTypes = {
   setError: PropTypes.func.isRequired,
   orElse: PropTypes.element,
   isTenantAdmin: PropTypes.bool,
-  apiCreationPermitted: PropTypes.bool
+  apiCreationPermitted: PropTypes.bool,
 };

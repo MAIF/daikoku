@@ -82,7 +82,7 @@ class ApiListComponent extends Component {
             ' ' +
             faker.hacker.noun() +
             ' api';
-  
+
           e.name = apiName;
           e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
           return e;
@@ -271,34 +271,46 @@ class ApiListComponent extends Component {
               </div>
             </Can>
           )}
-          {this.props.apiCreationPermitted && !this.props.team && !this.props.connectedUser.isGuest && (
-            <ActionWithTeamSelector
-              title={t(
-                'api.creation.title.modal',
-                this.props.currentLanguage,
-                false,
-                'Select the team for which to create new api'
-              )}
-              description={t(
-                'api.creation.description.modal',
-                this.props.currentLanguage,
-                false,
-                'You are going to create an api. For which team do you want to create it ?'
-              )}
-              teams={this.props.myTeams
-                .filter((t) => t.type !== 'Admin')
-                .filter((t) => !this.props.tenant.creationSecurity || t.apisCreationPermission)
-                .filter((t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization')
-                .filter((t) => CanIDoAction(this.props.connectedUser, manage, api, t, this.props.apiCreationPermitted))}
-              action={(team) => this.createNewApi(team)}
-              withAllTeamSelector={false}>
-              <div className="col-12 col-sm-2">
-                <button className="btn btn-access-negative mb-2 float-right">
-                  <i className="fas fa-plus-square" /> API
-                </button>
-              </div>
-            </ActionWithTeamSelector>
-          )}
+          {this.props.apiCreationPermitted &&
+            !this.props.team &&
+            !this.props.connectedUser.isGuest && (
+              <ActionWithTeamSelector
+                title={t(
+                  'api.creation.title.modal',
+                  this.props.currentLanguage,
+                  false,
+                  'Select the team for which to create new api'
+                )}
+                description={t(
+                  'api.creation.description.modal',
+                  this.props.currentLanguage,
+                  false,
+                  'You are going to create an api. For which team do you want to create it ?'
+                )}
+                teams={this.props.myTeams
+                  .filter((t) => t.type !== 'Admin')
+                  .filter((t) => !this.props.tenant.creationSecurity || t.apisCreationPermission)
+                  .filter(
+                    (t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization'
+                  )
+                  .filter((t) =>
+                    CanIDoAction(
+                      this.props.connectedUser,
+                      manage,
+                      api,
+                      t,
+                      this.props.apiCreationPermitted
+                    )
+                  )}
+                action={(team) => this.createNewApi(team)}
+                withAllTeamSelector={false}>
+                <div className="col-12 col-sm-2">
+                  <button className="btn btn-access-negative mb-2 float-right">
+                    <i className="fas fa-plus-square" /> API
+                  </button>
+                </div>
+              </ActionWithTeamSelector>
+            )}
         </div>
         <div className="row">
           <div className="d-flex col flex-column p-3 section">

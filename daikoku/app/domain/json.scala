@@ -1274,8 +1274,14 @@ object json {
       "adminApi" -> o.adminApi.asJson,
       "adminSubscriptions" -> JsArray(
         o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes)),
-      "creationSecurity" -> o.creationSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue],
-      "subscriptionSecurity" -> o.subscriptionSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue]
+      "creationSecurity" -> o.creationSecurity
+        .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "subscriptionSecurity" -> o.subscriptionSecurity
+        .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -1467,7 +1473,10 @@ object json {
         o.authorizedOtoroshiGroups.map(OtoroshiGroupFormat.writes).toSeq),
       "showApiKeyOnlyToAdmins" -> o.showApiKeyOnlyToAdmins,
       "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
-      "apisCreationPermission" -> o.apisCreationPermission.map(JsBoolean).getOrElse(JsNull).as[JsValue]
+      "apisCreationPermission" -> o.apisCreationPermission
+        .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
 
@@ -2491,27 +2500,28 @@ object json {
 
   val MessageFormat: Format[Message] =
     new Format[Message] {
-      override def reads(json: JsValue): JsResult[Message] = Try {
-        JsSuccess(
-          Message(
-            id = (json \ "_id").as(MongoIdFormat),
-            tenant = (json \ "_tenant").as(TenantIdFormat),
-            messageType = (json \ "messageType").as(MessageTypeFormat),
-            chat = (json \ "chat").as(UserIdFormat),
-            date = (json \ "date").as(DateTimeFormat),
-            sender = (json \ "sender").as(UserIdFormat),
-            participants = (json \ "participants").as(SetUserIdFormat),
-            readBy = (json \ "readBy").as(SetUserIdFormat),
-            message = (json \ "message").as[String],
-            send = (json \ "send").asOpt[Boolean].getOrElse(false),
-            closed = (json \ "closed").asOpt(DateTimeFormat)
+      override def reads(json: JsValue): JsResult[Message] =
+        Try {
+          JsSuccess(
+            Message(
+              id = (json \ "_id").as(MongoIdFormat),
+              tenant = (json \ "_tenant").as(TenantIdFormat),
+              messageType = (json \ "messageType").as(MessageTypeFormat),
+              chat = (json \ "chat").as(UserIdFormat),
+              date = (json \ "date").as(DateTimeFormat),
+              sender = (json \ "sender").as(UserIdFormat),
+              participants = (json \ "participants").as(SetUserIdFormat),
+              readBy = (json \ "readBy").as(SetUserIdFormat),
+              message = (json \ "message").as[String],
+              send = (json \ "send").asOpt[Boolean].getOrElse(false),
+              closed = (json \ "closed").asOpt(DateTimeFormat)
+            )
           )
-        )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
+        } recover {
+          case e =>
+            AppLogger.error(e.getMessage, e)
+            JsError(e.getMessage)
+        } get
 
       override def writes(o: Message): JsValue = Json.obj(
         "_id" -> o.id.value,
@@ -2535,15 +2545,18 @@ object json {
     new Format[MessageType] {
       override def reads(json: JsValue): JsResult[MessageType] =
         (json \ "type").as[String] match {
-          case "tenant"    => TenantIdFormat.reads((json \ "value").as[JsValue])
-            .map(value => MessageType.Tenant(value))
-          case str      => JsError(s"Bad message type value: $str")
+          case "tenant" =>
+            TenantIdFormat
+              .reads((json \ "value").as[JsValue])
+              .map(value => MessageType.Tenant(value))
+          case str => JsError(s"Bad message type value: $str")
         }
       override def writes(o: MessageType): JsValue = o match {
-        case t: MessageType.Tenant=> Json.obj(
-          "type" -> "tenant",
-          "value" -> TenantIdFormat.writes(t.value)
-        )
+        case t: MessageType.Tenant =>
+          Json.obj(
+            "type" -> "tenant",
+            "value" -> TenantIdFormat.writes(t.value)
+          )
       }
     }
 

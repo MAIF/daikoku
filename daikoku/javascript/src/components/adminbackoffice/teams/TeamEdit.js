@@ -15,7 +15,16 @@ class TeamEditForAdministrationComponent extends Component {
     team: null,
   };
 
-  flow = ['_id', 'name', 'description', 'contact', 'avatar', 'avatarFrom', 'metadata', 'apisCreationPermission'];
+  flow = [
+    '_id',
+    'name',
+    'description',
+    'contact',
+    'avatar',
+    'avatarFrom',
+    'metadata',
+    'apisCreationPermission',
+  ];
 
   schema = {
     _id: {
@@ -67,9 +76,9 @@ class TeamEditForAdministrationComponent extends Component {
       visible: () => this.props.tenant.creationSecurity,
       props: {
         label: t('APIs creation permission', this.props.currentLanguage),
-        help: t('apisCreationPermission.help', this.props.currentLanguage, false, 'test.help')
-      }
-    }
+        help: t('apisCreationPermission.help', this.props.currentLanguage, false, 'test.help'),
+      },
+    },
   };
 
   save = () => {
@@ -128,7 +137,7 @@ class TeamEditForAdministrationComponent extends Component {
         <Can I={manage} a={tenant} dispatchError>
           <div className="row d-flex justify-content-start align-items-center mb-2">
             {this.state.team && (
-              <div className="ml-1 avatar__container" >
+              <div className="ml-1 avatar__container">
                 <img src={this.state.team.avatar} className="img-fluid" alt="avatar" />
               </div>
             )}

@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 
 import { t } from '../../../locales';
-import {MessagesContext} from '../../backoffice';
+import { MessagesContext } from '../../backoffice';
 
 export const MessagesTopBarTools = (props) => {
   const { totalUnread } = useContext(MessagesContext);
@@ -15,7 +15,7 @@ export const MessagesTopBarTools = (props) => {
       <Link
         to="/settings/messages"
         className={classNames('notification-link cursor-pointer', {
-          'unread-messages': totalUnread > 0
+          'unread-messages': totalUnread > 0,
         })}
         onClick={() => setOpened(!opened)}
         title={t('Access to the messages', props.currentLanguage)}>

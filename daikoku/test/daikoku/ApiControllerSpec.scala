@@ -6,14 +6,25 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
 import controllers.AppError.PlanUnauthorized
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithoutQuotas, PayPerUse, QuotasWithLimits}
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
+  Admin,
+  FreeWithoutQuotas,
+  PayPerUse,
+  QuotasWithLimits
+}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -1731,9 +1742,9 @@ class ApiControllerSpec()
       val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis",
-        method = "POST",
-        body = Some(api.asJson))(tenant, session)
+                                        s"/api/teams/${teamOwnerId.value}/apis",
+                                      method = "POST",
+                                      body = Some(api.asJson))(tenant, session)
 
       resp.status mustBe 403
     }
@@ -1748,9 +1759,9 @@ class ApiControllerSpec()
       val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(path =
-        s"/api/teams/${teamOwnerId.value}/apis",
-        method = "POST",
-        body = Some(api.asJson))(tenant, session)
+                                        s"/api/teams/${teamOwnerId.value}/apis",
+                                      method = "POST",
+                                      body = Some(api.asJson))(tenant, session)
 
       resp.status mustBe 201
     }
@@ -1775,8 +1786,10 @@ class ApiControllerSpec()
       respPersonal.status mustBe 200
       val responsePersonal: JsValue = (respPersonal.json)
         .as[JsArray]
-        .value.head
-      (responsePersonal \ "error").as[String] mustBe s"${teamConsumer.name} is not authorized to subscribe to an api"
+        .value
+        .head
+      (responsePersonal \ "error")
+        .as[String] mustBe s"${teamConsumer.name} is not authorized to subscribe to an api"
 
       val respOrg = httpJsonCallBlocking(
         path = s"/api/apis/${defaultApi.id.value}/subscriptions",

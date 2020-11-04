@@ -3,12 +3,11 @@ package fr.maif.otoroshi.daikoku.messages
 import akka.actor.{Actor, ActorRef}
 import fr.maif.otoroshi.daikoku.domain.{TeamId, UserId}
 
-
-class MessageStreamActor (source: ActorRef, user: UserId) extends Actor {
+class MessageStreamActor(source: ActorRef, user: UserId) extends Actor {
   override def receive = {
     case StreamMessage(message) =>
       if (message.participants.contains(user))
-      source ! message.asJson
+        source ! message.asJson
   }
 
   override def preStart(): Unit = {

@@ -252,10 +252,14 @@ export class AssetChooserComponent extends Component {
           })
         }>
         <i
-          className={this.props.icon ? this.props.icon : classNames('fas mr-1', {
-            'fa-user-circle': !!this.props.onlyPreview,
-            'fa-file': !this.props.onlyPreview,
-          })}
+          className={
+            this.props.icon
+              ? this.props.icon
+              : classNames('fas mr-1', {
+                  'fa-user-circle': !!this.props.onlyPreview,
+                  'fa-file': !this.props.onlyPreview,
+                })
+          }
         />{' '}
         {this.props.label}
       </button>

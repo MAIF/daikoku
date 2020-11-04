@@ -129,7 +129,7 @@ object utils {
         sessions: Seq[UserSession] = Seq.empty,
         resets: Seq[PasswordReset] = Seq.empty,
         creations: Seq[AccountCreation] = Seq.empty,
-        messages:  Seq[Message] = Seq.empty
+        messages: Seq[Message] = Seq.empty
     ): Unit = {
       setupEnv(
         tenants,
@@ -236,10 +236,11 @@ object utils {
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(messages.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.messageRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.messageRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)
           .run()
       } yield ()

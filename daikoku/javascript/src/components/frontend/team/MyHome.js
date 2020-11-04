@@ -59,7 +59,15 @@ class MyHomeComponent extends Component {
   redirectToEditPage = (api) => {
     const adminTeam = this.state.myTeams.find((team) => api.team === team._id);
 
-    if (CanIDoAction(this.props.connectedUser, manage, API, adminTeam, this.props.apiCreationPermitted)) {
+    if (
+      CanIDoAction(
+        this.props.connectedUser,
+        manage,
+        API,
+        adminTeam,
+        this.props.apiCreationPermitted
+      )
+    ) {
       this.props
         .updateTeam(adminTeam)
         .then(() =>

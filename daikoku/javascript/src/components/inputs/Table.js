@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  useTable,
-  usePagination,
-  useSortBy,
-  useFilters
-} from 'react-table';
+import { useTable, usePagination, useSortBy, useFilters } from 'react-table';
 import classNames from 'classnames';
 import _ from 'lodash';
 import PropTypes from 'prop-types';

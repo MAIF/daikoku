@@ -73,7 +73,7 @@ class UserListComponent extends Component {
         t(
           'toggle.admin.alert',
           this.props.currentLanguage,
-          'You can\'t remove your admin status, ask another admin.'
+          "You can't remove your admin status, ask another admin."
         )
       );
     } else {

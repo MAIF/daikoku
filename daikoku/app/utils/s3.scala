@@ -393,9 +393,11 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
   }
 /// generate pre signed url //////
 
-  private def getPresignedUrl(path: String)(implicit conf: S3Configuration): Option[String] = {
+  private def getPresignedUrl(path: String)(
+      implicit conf: S3Configuration): Option[String] = {
     lazy val opts = new ClientConfiguration()
-    lazy val endpointConfiguration = new EndpointConfiguration(conf.endpoint, conf.region)
+    lazy val endpointConfiguration =
+      new EndpointConfiguration(conf.endpoint, conf.region)
     lazy val credentialsProvider = new AWSStaticCredentialsProvider(
       new BasicAWSCredentials(conf.access, conf.secret)
     )
@@ -419,15 +421,13 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
   }
 
   def getTeamAssetPresignedUrl(tenant: TenantId, team: TeamId, asset: AssetId)(
-    implicit conf: S3Configuration)
-  : Option[String] = {
+      implicit conf: S3Configuration): Option[String] = {
     val path = s"/${tenant.value}/teams/${team.value}/assets/${asset.value}"
     getPresignedUrl(path)
   }
 
   def getTenantAssetPresignedUrl(tenant: TenantId, asset: AssetId)(
-  implicit conf: S3Configuration)
-  : Option[String] = {
+      implicit conf: S3Configuration): Option[String] = {
 
     val path = s"/${tenant.value}/tenant-assets/${asset.value}"
     getPresignedUrl(path)

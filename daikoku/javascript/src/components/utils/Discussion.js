@@ -8,12 +8,20 @@ import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
 import { t, Translation } from '../../locales';
 
-const DiscussionComponent = props => {
-  const { messages, totalUnread, sendNewMessage, readMessages, adminTeam, lastClosedDates, getPreviousMessages, loading } = useContext(MessagesContext);
+const DiscussionComponent = (props) => {
+  const {
+    messages,
+    totalUnread,
+    sendNewMessage,
+    readMessages,
+    adminTeam,
+    lastClosedDates,
+    getPreviousMessages,
+    loading,
+  } = useContext(MessagesContext);
 
   const [opened, setOpened] = useState(false);
   const [newMessage, setNewMessage] = useState('');
-
 
   useEffect(() => {
     if (opened && totalUnread > 0) {
@@ -33,13 +41,14 @@ const DiscussionComponent = props => {
 
   const sendMessage = () => {
     if (newMessage.trim()) {
-      const chat = Option(messages[0]).map(m => m.chat).getOrElse(props.connectedUser._id);
-      const participants = [...adminTeam.users.map(u => u.userId), props.connectedUser._id];
+      const chat = Option(messages[0])
+        .map((m) => m.chat)
+        .getOrElse(props.connectedUser._id);
+      const participants = [...adminTeam.users.map((u) => u.userId), props.connectedUser._id];
 
-      sendNewMessage(newMessage, participants, chat)
-        .then(() => {
-          setNewMessage('');
-        });
+      sendNewMessage(newMessage, participants, chat).then(() => {
+        setNewMessage('');
+      });
     }
   };
 
@@ -47,33 +56,32 @@ const DiscussionComponent = props => {
     const dialog = MessageEvents.fromMessagesToDialog(messages);
     return (
       <div className="dicussion-component">
-
         <div className="discussion">
-          <div className="discussion-header">
-            Discuss with an admin
-        </div>
+          <div className="discussion-header">Discuss with an admin</div>
           <div className="discussion-stream">
-            {
-              dialog.reverse().map((group, idx) => {
-                return (
-                  <div
-                    key={`discussion-messages-${idx}`}
-                    className={classNames('discussion-messages', {
-                      'discussion-messages--received': group.every(m => m.sender !== props.connectedUser._id),
-                      'discussion-messages--send': group.every(m => m.sender === props.connectedUser._id),
-                    })}>
-                    {group.map((mess, idx) => {
-                      return (
-                        <div key={`discussion-message-${idx}`} className="discussion-message">
-                          {mess.message}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })
-            }
-            {lastClosedDates.find(x => x.chat === props.connectedUser._id).date && (
+            {dialog.reverse().map((group, idx) => {
+              return (
+                <div
+                  key={`discussion-messages-${idx}`}
+                  className={classNames('discussion-messages', {
+                    'discussion-messages--received': group.every(
+                      (m) => m.sender !== props.connectedUser._id
+                    ),
+                    'discussion-messages--send': group.every(
+                      (m) => m.sender === props.connectedUser._id
+                    ),
+                  })}>
+                  {group.map((mess, idx) => {
+                    return (
+                      <div key={`discussion-message-${idx}`} className="discussion-message">
+                        {mess.message}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+            {lastClosedDates.find((x) => x.chat === props.connectedUser._id).date && (
               <div className="d-flex flex-row justify-content-center my-1">
                 <button
                   disabled={loading ? 'disabled' : null}
@@ -93,7 +101,8 @@ const DiscussionComponent = props => {
               placeholder={t('Your message', props.currentLanguage)}
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
-              onChange={e => setNewMessage(e.target.value)} />
+              onChange={(e) => setNewMessage(e.target.value)}
+            />
             <button
               disabled={loading ? 'disabled' : null}
               className="send-button"
@@ -103,9 +112,7 @@ const DiscussionComponent = props => {
           </div>
         </div>
 
-        <button
-          className="btn discussion-btn"
-          onClick={() => setOpened(false)}>
+        <button className="btn discussion-btn" onClick={() => setOpened(false)}>
           <X />
         </button>
       </div>
@@ -118,14 +125,9 @@ const DiscussionComponent = props => {
 
   return (
     <div className="dicussion-component">
-      <button
-        className="btn discussion-btn"
-        onClick={() => setOpened(true)}
-      >
+      <button className="btn discussion-btn" onClick={() => setOpened(true)}>
         <MessageCircle />
-        {totalUnread > 0 && (
-          <span className="notification">{totalUnread}</span>
-        )}
+        {totalUnread > 0 && <span className="notification">{totalUnread}</span>}
       </button>
     </div>
   );

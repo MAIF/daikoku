@@ -163,7 +163,7 @@ class TeamControllerSpec()
 
       val respGet =
         httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant,
-          session)
+                                                                 session)
       val updatedTeam =
         fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGet.json)
       updatedTeam.isSuccess mustBe true
@@ -498,7 +498,7 @@ class TeamControllerSpec()
 
       val respGet =
         httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant,
-          session)
+                                                                 session)
       val updatedTeam =
         fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGet.json)
       updatedTeam.isSuccess mustBe true

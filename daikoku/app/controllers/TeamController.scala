@@ -31,7 +31,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                      env: Env,
                      otoroshiClient: OtoroshiClient,
                      cc: ControllerComponents)
-  extends AbstractController(cc)
+    extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -109,7 +109,7 @@ class TeamController(DaikokuAction: DaikokuAction,
         case JsError(e) =>
           FastFuture.successful(
             BadRequest(Json.obj("error" -> "Error while parsing payload",
-              "msg" -> e.toString)))
+                                "msg" -> e.toString)))
         case JsSuccess(team, _) =>
           ctx.setCtxValue("team.id", team.id)
           ctx.setCtxValue("team.name", team.name)
@@ -160,7 +160,10 @@ class TeamController(DaikokuAction: DaikokuAction,
                   ctx.setCtxValue("team.name", team.name)
                   val teamToSave =
                     if (ctx.user.isDaikokuAdmin) newTeam
-                    else newTeam.copy(metadata = team.metadata, apisCreationPermission = team.apisCreationPermission)
+                    else
+                      newTeam.copy(metadata = team.metadata,
+                                   apisCreationPermission =
+                                     team.apisCreationPermission)
                   env.dataStore.teamRepo
                     .forTenant(ctx.tenant.id)
                     .save(teamToSave)
@@ -217,8 +220,8 @@ class TeamController(DaikokuAction: DaikokuAction,
           .forTenant(ctx.tenant.id)
           .findNotDeleted(
             Json.obj("sender._id" -> ctx.user.id.asJson,
-              "action.type" -> "TeamAccess",
-              "status.status" -> "Pending")
+                     "action.type" -> "TeamAccess",
+                     "status.status" -> "Pending")
           )
       } yield {
         def translationAsJsObject(team: Team): JsObject = {
@@ -238,7 +241,7 @@ class TeamController(DaikokuAction: DaikokuAction,
         } else {
           val allOrga = teams.filter { team =>
             if (team.`type` == TeamType.Personal && team.includeUser(
-              ctx.user.id)) {
+                  ctx.user.id)) {
               true
             } else {
               team.`type` == TeamType.Organization
@@ -253,7 +256,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                 .map(notif => notif.action.asInstanceOf[TeamAccess].team)
                 .contains(t.id)
               json ++ Json.obj("canJoin" -> canJoin,
-                "alreadyJoin" -> alreadyJoin)
+                               "alreadyJoin" -> alreadyJoin)
             }
           Ok(JsArray(betterTeams))
         }
@@ -288,15 +291,15 @@ class TeamController(DaikokuAction: DaikokuAction,
             admins <- env.dataStore.userRepo
               .find(
                 Json.obj("_deleted" -> false,
-                  "_id" -> Json.obj("$in" -> JsArray(
-                    team.admins().map(_.asJson).toSeq))))
+                         "_id" -> Json.obj("$in" -> JsArray(
+                           team.admins().map(_.asJson).toSeq))))
             _ <- ctx.tenant.mailer.send(
               messagesApi("mail.team.access.title"),
               admins.map(admin => admin.email),
               messagesApi("mail.team.access.body",
-                ctx.user.name,
-                team.name,
-                s"${ctx.tenant.domain}/notifications")
+                          ctx.user.name,
+                          team.name,
+                          s"${ctx.tenant.domain}/notifications")
             )
           } yield {
             Ok(Json.obj("done" -> saved))
@@ -421,9 +424,9 @@ class TeamController(DaikokuAction: DaikokuAction,
                       messagesApi("mail.team.invitation.title"),
                       Seq(user.email),
                       messagesApi("mail.team.invitation.body",
-                        ctx.user.name,
-                        team.name,
-                        s"${ctx.tenant.domain}/notifications")
+                                  ctx.user.name,
+                                  team.name,
+                                  s"${ctx.tenant.domain}/notifications")
                     )
                   })
                 } yield (userId)
@@ -431,8 +434,8 @@ class TeamController(DaikokuAction: DaikokuAction,
               .runWith(Sink.seq[UserId])
               .map(users =>
                 Ok(Json.obj("done" -> true,
-                  "team" -> team.asJson,
-                  "pendingUsers" -> JsArray(users.map(_.asJson)))))
+                            "team" -> team.asJson,
+                            "pendingUsers" -> JsArray(users.map(_.asJson)))))
         }
       }
   }
@@ -489,7 +492,7 @@ class TeamController(DaikokuAction: DaikokuAction,
       // TODO: verify if the behavior is correct
       case team if team.includeUser(UserId(id)) =>
         env.dataStore.userRepo.findByIdNotDeleted(id).map {
-          case None => NotFound(Json.obj("error" -> "User not found"))
+          case None       => NotFound(Json.obj("error" -> "User not found"))
           case Some(user) => Ok(user.asSimpleJson)
         }
       case _ =>
@@ -587,12 +590,16 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def tenantAdminTeam() = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the tenant team for tenant @{tenant.name}"))(ctx) {
-      env.dataStore.teamRepo.forTenant(ctx.tenant)
-        .findOne(Json.obj("type" -> TeamType.Admin.name)).map {
-        case Some(team) => Ok(team.asSimpleJson)
-        case None => NotFound(Json.obj("error" -> "Team admin not found"))
-      }
+    PublicUserAccess(AuditTrailEvent(
+      s"@{user.name} has accessed the tenant team for tenant @{tenant.name}"))(
+      ctx) {
+      env.dataStore.teamRepo
+        .forTenant(ctx.tenant)
+        .findOne(Json.obj("type" -> TeamType.Admin.name))
+        .map {
+          case Some(team) => Ok(team.asSimpleJson)
+          case None       => NotFound(Json.obj("error" -> "Team admin not found"))
+        }
     }
   }
 }

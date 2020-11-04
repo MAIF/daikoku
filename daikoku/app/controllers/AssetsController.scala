@@ -327,18 +327,18 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
         case Some(cfg) =>
           env.assetsStore
             .storeTenantAsset(ctx.tenant.id,
-              assetId,
-              filename,
-              title,
-              desc,
-              contentType,
-              ctx.request.body)(cfg)
+                              assetId,
+                              filename,
+                              title,
+                              desc,
+                              contentType,
+                              ctx.request.body)(cfg)
             .map { _ =>
               Ok(Json.obj("done" -> true, "id" -> assetId.value))
             } recover {
             case e =>
               AppLogger.error(s"Error during tenant asset storage: ${filename}",
-                e)
+                              e)
               InternalServerError(Json.obj("error" -> ec.toString))
           }
       }
@@ -380,12 +380,12 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
 
                 env.assetsStore
                   .storeTenantAsset(ctx.tenant.id,
-                    AssetId(assetId),
-                    filename,
-                    title,
-                    desc,
-                    contentType,
-                    ctx.request.body)(cfg)
+                                    AssetId(assetId),
+                                    filename,
+                                    title,
+                                    desc,
+                                    contentType,
+                                    ctx.request.body)(cfg)
                   .map { res =>
                     Ok(Json.obj("done" -> true, "id" -> assetId))
                   } recover {
@@ -462,10 +462,15 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
       case Some(cfg) =>
         val download = ctx.request.getQueryString("download").contains("true")
 
-        env.assetsStore.getTenantAssetPresignedUrl(ctx.tenant.id, AssetId(assetId))(cfg) match {
-          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Asset not found!")))
+        env.assetsStore.getTenantAssetPresignedUrl(
+          ctx.tenant.id,
+          AssetId(assetId))(cfg) match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "Asset not found!")))
           case Some(url) if download =>
-            env.assetsStore.getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
+            env.assetsStore
+              .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
               .map {
                 case None => NotFound(Json.obj("error" -> "Asset not found!"))
                 case Some((source, meta)) =>
@@ -476,13 +481,14 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
                     .getOrElse("asset.txt")
 
                   Ok.sendEntity(
-                    HttpEntity.Streamed(
-                      source,
-                      None,
-                      meta.contentType
-                        .map(Some.apply)
-                        .getOrElse(Some("application/octet-stream"))))
-                    .withHeaders("Content-Disposition" -> s"""attachment; filename="$filename"""")
+                      HttpEntity.Streamed(
+                        source,
+                        None,
+                        meta.contentType
+                          .map(Some.apply)
+                          .getOrElse(Some("application/octet-stream"))))
+                    .withHeaders(
+                      "Content-Disposition" -> s"""attachment; filename="$filename"""")
               }
           case Some(url) => FastFuture.successful(Redirect(url))
         }

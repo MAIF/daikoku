@@ -157,8 +157,14 @@ case class Tenant(
       "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "homePageVisible" -> style.exists(_.homePageVisible),
-      "creationSecurity" -> creationSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue],
-      "subscriptionSecurity" -> subscriptionSecurity.map(JsBoolean).getOrElse(JsNull).as[JsValue]
+      "creationSecurity" -> creationSecurity
+        .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "subscriptionSecurity" -> subscriptionSecurity
+        .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   def colorTheme(): Html = {
@@ -1061,7 +1067,10 @@ case class Team(
       "contact" -> contact,
       "users" -> json.SetUserWithPermissionFormat.writes(users),
       "showApiKeyOnlyToAdmins" -> showApiKeyOnlyToAdmins,
-      "apisCreationPermission" -> apisCreationPermission.map(JsBoolean).getOrElse(JsNull).as[JsValue]
+      "apisCreationPermission" -> apisCreationPermission
+        .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   def includeUser(userId: UserId): Boolean = {
@@ -1469,15 +1478,16 @@ object MessageType {
 }
 
 case class Message(id: MongoId,
-                  tenant: TenantId,
-                  messageType: MessageType,
-                  participants: Set[UserId],
-                  readBy: Set[UserId],
-                  chat: UserId,
-                  date: DateTime,
-                  sender: UserId,
-                  message: String,
-                  closed: Option[DateTime] = None,
-                  send: Boolean = false) extends CanJson[Message] {
+                   tenant: TenantId,
+                   messageType: MessageType,
+                   participants: Set[UserId],
+                   readBy: Set[UserId],
+                   chat: UserId,
+                   date: DateTime,
+                   sender: UserId,
+                   message: String,
+                   closed: Option[DateTime] = None,
+                   send: Boolean = false)
+    extends CanJson[Message] {
   override def asJson: JsValue = json.MessageFormat.writes(this)
 }

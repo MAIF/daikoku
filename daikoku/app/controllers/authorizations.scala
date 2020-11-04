@@ -3,7 +3,10 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuActionContext,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.audit.{AuditEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain._
@@ -464,7 +467,7 @@ object authorizations {
       def apiCreationPermitted(team: Team) =
         ctx.tenant.creationSecurity.forall {
           case true => team.apisCreationPermission.getOrElse(false)
-          case _ => true
+          case _    => true
         }
 
       env.dataStore.teamRepo
@@ -484,18 +487,17 @@ object authorizations {
                   ctx.ctx,
                   AuthorizationLevel.AuthorizedDaikokuAdmin)
             }
-          case Some(team) if !apiCreationPermitted(team)  =>
+          case Some(team) if !apiCreationPermitted(team) =>
             ctx.setCtxValue("team.id", team.id)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(ctx.tenant,
-              ctx.user,
-              ctx.session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.NotAuthorized)
+                                      ctx.user,
+                                      ctx.session,
+                                      ctx.request,
+                                      ctx.ctx,
+                                      AuthorizationLevel.NotAuthorized)
             FastFuture.successful(
-              Results.Forbidden(
-                Json.obj("error" -> "You're not authorized")))
+              Results.Forbidden(Json.obj("error" -> "You're not authorized")))
           case Some(team)
               if ctx.user.tenants.contains(ctx.tenant.id) &&
                 team.users.exists(u =>

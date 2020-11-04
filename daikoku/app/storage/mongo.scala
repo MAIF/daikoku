@@ -15,7 +15,13 @@ import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.Index
-import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
+import reactivemongo.api.{
+  Cursor,
+  CursorOptions,
+  ReadConcern,
+  ReadPreference,
+  WriteConcern
+}
 import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -127,8 +133,9 @@ case class MongoTenantCapableMessageRepo(
     _repo: () => MongoRepo[Message, MongoId],
     _tenantRepo: TenantId => MongoTenantAwareRepo[Message, MongoId]
 ) extends MongoTenantCapableRepo[Message, MongoId]
-  with MessageRepo {
-  override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[Message, MongoId] =
+    with MessageRepo {
+  override def tenantRepo(
+      tenant: TenantId): MongoTenantAwareRepo[Message, MongoId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[Message, MongoId] = _repo()
@@ -501,11 +508,11 @@ class MongoTenantTranslationRepo(env: Env,
 }
 
 class MongoTenantMessageRepo(env: Env,
-                                 reactiveMongoApi: ReactiveMongoApi,
-                                 tenant: TenantId)
+                             reactiveMongoApi: ReactiveMongoApi,
+                             tenant: TenantId)
     extends MongoTenantAwareRepo[Message, MongoId](env,
-                                                       reactiveMongoApi,
-                                                       tenant) {
+                                                   reactiveMongoApi,
+                                                   tenant) {
   override def collectionName: String = "Messages"
 
   override def format: Format[Message] = json.MessageFormat
@@ -775,7 +782,8 @@ abstract class MongoRepo[Of, Id <: ValueType](
       }
     }
 
-  override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] =
+  override def count(query: JsObject)(
+      implicit ec: ExecutionContext): Future[Long] =
     collection.flatMap { col =>
       col.count(Some(query), None, 0, None, ReadConcern.Majority)
     }
@@ -897,14 +905,11 @@ abstract class MongoRepo[Of, Id <: ValueType](
     }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-    implicit ec: ExecutionContext): Future[Long] =
+      implicit ec: ExecutionContext): Future[Long] =
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
-        .element(q = query,
-          u = queryUpdate,
-          upsert = false,
-          multi = true)
+        .element(q = query, u = queryUpdate, upsert = false, multi = true)
         .flatMap { element =>
           update.many(List(element)).map(_.nModified)
         }
@@ -1054,38 +1059,38 @@ abstract class MongoRepo[Of, Id <: ValueType](
   override def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id.value))
 
-  override def findMinByQuery(query: JsObject,  field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+  override def findMinByQuery(query: JsObject, field: String)(
+      implicit ec: ExecutionContext): Future[Option[Long]] =
     collection.flatMap { col =>
-        import col.BatchCommands.AggregationFramework
-        import AggregationFramework.{Group, Match, MinField}
+      import col.BatchCommands.AggregationFramework
+      import AggregationFramework.{Group, Match, MinField}
 
-        col
-          .aggregatorContext[JsObject](
-            firstOperator = Match(query),
-            otherOperators =
-              List(Group(JsString("$clientId"))("min" -> MinField(field))),
-            explain = false,
-            allowDiskUse = false,
-            bypassDocumentValidation = false,
-            readConcern = ReadConcern.Majority,
-            readPreference = ReadPreference.primaryPreferred,
-            writeConcern = WriteConcern.Default,
-            batchSize = None,
-            cursorOptions = CursorOptions.empty,
-            maxTime = None,
-            hint = None,
-            comment = None,
-            collation = None
-          )
-          .prepared
-          .cursor
-          .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-          .map(agg =>
-            agg.headOption.map(v => (v \ "min").as[Long])
-          )
+      col
+        .aggregatorContext[JsObject](
+          firstOperator = Match(query),
+          otherOperators =
+            List(Group(JsString("$clientId"))("min" -> MinField(field))),
+          explain = false,
+          allowDiskUse = false,
+          bypassDocumentValidation = false,
+          readConcern = ReadConcern.Majority,
+          readPreference = ReadPreference.primaryPreferred,
+          writeConcern = WriteConcern.Default,
+          batchSize = None,
+          cursorOptions = CursorOptions.empty,
+          maxTime = None,
+          hint = None,
+          comment = None,
+          collation = None
+        )
+        .prepared
+        .cursor
+        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
     }
 
-  override def findMaxByQuery(query: JsObject, field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+  override def findMaxByQuery(query: JsObject, field: String)(
+      implicit ec: ExecutionContext): Future[Option[Long]] =
     collection.flatMap { col =>
       import col.BatchCommands.AggregationFramework
       import AggregationFramework.{Group, Match, MaxField}
@@ -1111,9 +1116,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
         .prepared
         .cursor
         .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-        .map(agg =>
-          agg.headOption.map(v => (v \ "max").as[Long])
-        )
+        .map(agg => agg.headOption.map(v => (v \ "max").as[Long]))
     }
 }
 
@@ -1394,14 +1397,11 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-    implicit ec: ExecutionContext): Future[Long] =
+      implicit ec: ExecutionContext): Future[Long] =
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
-        .element(q = query,
-          u = queryUpdate,
-          upsert = false,
-          multi = true)
+        .element(q = query, u = queryUpdate, upsert = false, multi = true)
         .flatMap { element =>
           update.many(List(element)).map(_.nModified)
         }
@@ -1418,7 +1418,8 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         .map(_.isDefined)
   }
 
-  override def findMinByQuery(query: JsObject,  field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+  override def findMinByQuery(query: JsObject, field: String)(
+      implicit ec: ExecutionContext): Future[Option[Long]] =
     collection.flatMap { col =>
       import col.BatchCommands.AggregationFramework
       import AggregationFramework.{Group, Match, MinField}
@@ -1444,12 +1445,11 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         .prepared
         .cursor
         .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-        .map(agg =>
-          agg.headOption.map(v => (v \ "min").as[Long])
-        )
+        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
     }
 
-  override def findMaxByQuery(query: JsObject, field: String)(implicit ec: ExecutionContext): Future[Option[Long]] =
+  override def findMaxByQuery(query: JsObject, field: String)(
+      implicit ec: ExecutionContext): Future[Option[Long]] =
     collection.flatMap { col =>
       import col.BatchCommands.AggregationFramework
       import AggregationFramework.{Group, Match, MaxField}
@@ -1478,7 +1478,8 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         .map(agg => agg.headOption.map(v => (v \ "max").as(json.LongFormat)))
     }
 
-  override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] =
+  override def count(query: JsObject)(
+      implicit ec: ExecutionContext): Future[Long] =
     collection.flatMap { col =>
       col.count(Some(query), None, 0, None, ReadConcern.Majority)
     }

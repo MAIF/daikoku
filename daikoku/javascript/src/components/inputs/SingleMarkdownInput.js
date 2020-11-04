@@ -19,7 +19,7 @@ import hljs from 'highlight.js';
 
 window.hljs = window.hljs || hljs;
 
-const SingleMardownInput = props => {
+const SingleMardownInput = (props) => {
   const [preview, setPreview] = useState(false);
   const [editor, setEditor] = useState(undefined);
 
@@ -31,7 +31,8 @@ const SingleMardownInput = props => {
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
-  const origin = window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+  const origin =
+    window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   const commands = [
     {
       name: t('Add header', props.currentLanguage),
@@ -139,23 +140,26 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
     },
     {
       name: t('Test asset'),
-      component: <BeautifulTitle
-        placement="bottom"
-        title={t('image url from asset', props.currentLanguage)}>
-        <AssetChooserByModal
-          typeFilter={MimeTypeFilter.image}
-          onlyPreview
-          tenantMode={!props.team}
-          team={props.team}
-          teamId={Option(props.team).map(t => t._id).getOrNull()}
-          icon="fas fa-file-image"
-          classNames="btn-for-descriptionToolbar"
-          currentLanguage={props.currentLanguage}
-          onSelect={(asset) => editor.session.insert(editor.getCursorPosition(), origin + asset.link)}
-        />
-      </BeautifulTitle>
-
-    }
+      component: (
+        <BeautifulTitle placement="bottom" title={t('image url from asset', props.currentLanguage)}>
+          <AssetChooserByModal
+            typeFilter={MimeTypeFilter.image}
+            onlyPreview
+            tenantMode={!props.team}
+            team={props.team}
+            teamId={Option(props.team)
+              .map((t) => t._id)
+              .getOrNull()}
+            icon="fas fa-file-image"
+            classNames="btn-for-descriptionToolbar"
+            currentLanguage={props.currentLanguage}
+            onSelect={(asset) =>
+              editor.session.insert(editor.getCursorPosition(), origin + asset.link)
+            }
+          />
+        </BeautifulTitle>
+      ),
+    },
   ];
 
   const showPreview = () => {
@@ -187,9 +191,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               editor.session.insert(editor.getCursorPosition(), command.inject());
             }
             if (command.move) {
-              command.move(editor.getCursorPosition(), (p) =>
-                editor.moveCursorToPosition(p)
-              );
+              command.move(editor.getCursorPosition(), (p) => editor.moveCursorToPosition(p));
             }
             editor.focus();
           }}>
@@ -204,9 +206,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
 
   return (
     <div className="d-flex flex-column">
-      <label
-        htmlFor={`input-${props.label}`}
-        className="col-form-label d-flex align-items-center">
+      <label htmlFor={`input-${props.label}`} className="col-form-label d-flex align-items-center">
         {props.label} <Help place="right" text={props.help} />
       </label>
       <div
@@ -223,7 +223,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               onClick={() => setPreview(false)}>
               <Translation i18nkey="Write" language={props.currentLanguage}>
                 Write
-                </Translation>
+              </Translation>
             </button>
             <button
               type="button"
@@ -232,7 +232,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               onClick={() => setPreview(true)}>
               <Translation i18nkey="Preview" language={props.currentLanguage}>
                 Preview
-                </Translation>
+              </Translation>
             </button>
           </div>
         </div>

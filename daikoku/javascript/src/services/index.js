@@ -1502,8 +1502,8 @@ export function sendMessage(message, participants, chat) {
     body: JSON.stringify({
       message,
       participants,
-      chat
-    })
+      chat,
+    }),
   }).then((r) => r.json());
 }
 

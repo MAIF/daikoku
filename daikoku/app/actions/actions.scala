@@ -14,21 +14,28 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 
 object tenantSecurity {
-  def userCanCreateApi(tenant: Tenant, user: User)(implicit env: Env, ec: ExecutionContext): Future[Boolean] = {
+  def userCanCreateApi(tenant: Tenant, user: User)(
+      implicit env: Env,
+      ec: ExecutionContext): Future[Boolean] = {
     if (user.isDaikokuAdmin) {
       FastFuture.successful(true)
     } else {
       tenant.creationSecurity
-        .map(_ => env.dataStore.teamRepo.forTenant(tenant).exists(Json.obj(
-          "overriddenCreationPermission" -> false,
-          "users" -> Json.obj("$elemMatch" -> Json.obj(
-            "userId" -> user.id.asJson,
-            "$or" -> Json.arr(
-              Json.obj("teamPermission" -> JsString(Administrator.name)),
-              Json.obj("teamPermission" -> JsString(ApiEditor.name))
-            )
-          ))
-        ))).getOrElse(FastFuture.successful(true))
+        .map(
+          _ =>
+            env.dataStore.teamRepo
+              .forTenant(tenant)
+              .exists(Json.obj(
+                "overriddenCreationPermission" -> false,
+                "users" -> Json.obj("$elemMatch" -> Json.obj(
+                  "userId" -> user.id.asJson,
+                  "$or" -> Json.arr(
+                    Json.obj("teamPermission" -> JsString(Administrator.name)),
+                    Json.obj("teamPermission" -> JsString(ApiEditor.name))
+                  )
+                ))
+              )))
+        .getOrElse(FastFuture.successful(true))
     }
   }
 }
@@ -90,15 +97,18 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
             Some(user),
             Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          tenantSecurity.userCanCreateApi(tenant, user)(env, ec)
-            .flatMap(permission => block(
-              DaikokuActionContext(request,
-                user,
-                tenant,
-                session,
-                imper,
-                isTenantAdmin,
-                permission)))
+          tenantSecurity
+            .userCanCreateApi(tenant, user)(env, ec)
+            .flatMap(
+              permission =>
+                block(
+                  DaikokuActionContext(request,
+                                       user,
+                                       tenant,
+                                       session,
+                                       imper,
+                                       isTenantAdmin,
+                                       permission)))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -141,15 +151,18 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
             Some(user),
             Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          tenantSecurity.userCanCreateApi(tenant, user)(env, ec)
-            .flatMap(security => block(
-              DaikokuActionContext(request,
-                user,
-                tenant,
-                session,
-                imper,
-                isTenantAdmin,
-                security)))
+          tenantSecurity
+            .userCanCreateApi(tenant, user)(env, ec)
+            .flatMap(
+              security =>
+                block(
+                  DaikokuActionContext(request,
+                                       user,
+                                       tenant,
+                                       session,
+                                       imper,
+                                       isTenantAdmin,
+                                       security)))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -217,15 +230,18 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
             Some(user),
             Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
-          tenantSecurity.userCanCreateApi(tenant, user)(env, ec)
-            .flatMap(perm => block(
-              DaikokuActionMaybeWithoutUserContext(request,
-                Some(user),
-                tenant,
-                Some(session),
-                imper,
-                isTenantAdmin,
-                perm)))
+          tenantSecurity
+            .userCanCreateApi(tenant, user)(env, ec)
+            .flatMap(
+              perm =>
+                block(
+                  DaikokuActionMaybeWithoutUserContext(request,
+                                                       Some(user),
+                                                       tenant,
+                                                       Some(session),
+                                                       imper,
+                                                       isTenantAdmin,
+                                                       perm)))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")

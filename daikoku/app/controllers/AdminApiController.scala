@@ -295,9 +295,9 @@ class CredentialsAdminApiController(DaikokuApiAction: DaikokuApiAction,
 }
 
 class MessagesAdminApiController(daa: DaikokuApiAction,
-                                   env: Env,
-                                   cc: ControllerComponents)
-  extends AdminApiController[Message, MongoId](daa, env, cc) {
+                                 env: Env,
+                                 cc: ControllerComponents)
+    extends AdminApiController[Message, MongoId](daa, env, cc) {
   override def entityClass = classOf[Message]
   override def entityName: String = "message"
   override def pathRoot: String = s"/admin-api/${entityName}s"

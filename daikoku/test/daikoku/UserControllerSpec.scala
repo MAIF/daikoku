@@ -1,6 +1,9 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}
@@ -26,7 +29,10 @@ class UserControllerSpec()
       resp.status mustBe 200
       val users = resp.json.as[JsArray]
       users.value.length mustBe 3
-      users.value.diff(Seq(daikokuAdmin.asSimpleJson, user.asSimpleJson, userAdmin.asSimpleJson)) mustBe Seq.empty
+      users.value.diff(
+        Seq(daikokuAdmin.asSimpleJson,
+            user.asSimpleJson,
+            userAdmin.asSimpleJson)) mustBe Seq.empty
     }
 
     "find user by id" in {

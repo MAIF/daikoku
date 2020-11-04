@@ -28,7 +28,15 @@ import { Translation } from './locales';
 window.$ = jQuery;
 window.jQuery = jQuery;
 
-export function init(user, tenant, impersonator, session, loginCallback, isTenantAdmin, apiCreationPermitted) {
+export function init(
+  user,
+  tenant,
+  impersonator,
+  session,
+  loginCallback,
+  isTenantAdmin,
+  apiCreationPermitted
+) {
   const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse('En');
   const currentLanguage = Option(user.defaultLanguage).getOrElse(tenantDefaultLanguage);
   const storeInst = store({
@@ -37,7 +45,7 @@ export function init(user, tenant, impersonator, session, loginCallback, isTenan
     impersonator,
     currentLanguage,
     isTenantAdmin,
-    apiCreationPermitted
+    apiCreationPermitted,
   });
 
   // history.listen(location => console.log(location))

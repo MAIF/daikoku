@@ -42,7 +42,7 @@ import {
   TeamEdit,
   AssetsList,
   TeamApiSubscriptions,
-  MessagesProvider
+  MessagesProvider,
 } from '../components/backoffice';
 
 import {
@@ -61,7 +61,7 @@ import {
   TeamList,
   TenantAdminList,
   InitializeFromOtoroshi,
-  AdminMessages
+  AdminMessages,
 } from '../components/adminbackoffice';
 
 import { smartRedirect, smartMatch } from '../services/path';
@@ -123,7 +123,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
   }
   return (
     <ConnectedRouter history={history}>
-      <MessagesProvider >
+      <MessagesProvider>
         <div role="root-container" className="container-fluid main-content-container">
           <ModalRoot />
           <ReduxToastr
@@ -552,12 +552,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
           </Switch>
           <Route
             path="/"
-            render={(p) => (
-              <Discussion
-                location={p.location}
-                history={p.history}
-                match={p.match} />
-            )}
+            render={(p) => <Discussion location={p.location} history={p.history} match={p.match} />}
           />
           <Route
             path={[

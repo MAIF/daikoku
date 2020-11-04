@@ -334,17 +334,18 @@ export class TopBarComponent extends Component {
                   title="Daikoku home"
                   style={{
                     maxWidth: '59px',
-                    maxHeight: '38px'
-                  }}
-                  >
-                  { this.props.tenant.logo && !isDefaultLogo && <img
-                    src={this.props.tenant.logo}
-                    style={{
-                      height: 'auto',
-                      maxWidth: '100%'
-                    }}
-                  />}
-                  { (!this.props.tenant.logo || !!isDefaultLogo) && this.props.tenant.name}
+                    maxHeight: '38px',
+                  }}>
+                  {this.props.tenant.logo && !isDefaultLogo && (
+                    <img
+                      src={this.props.tenant.logo}
+                      style={{
+                        height: 'auto',
+                        maxWidth: '100%',
+                      }}
+                    />
+                  )}
+                  {(!this.props.tenant.logo || !!isDefaultLogo) && this.props.tenant.name}
                 </Link>
               </div>
               {!this.props.connectedUser.isGuest && (
@@ -406,9 +407,12 @@ export class TopBarComponent extends Component {
                     title={t('Access to the notifications', this.props.currentLanguage)}>
                     <i className="fas fa-bell" />
                   </Link>
-                  {this.props.connectedUser.isDaikokuAdmin && <MessagesTopBarTools 
-                    currentLanguage={this.props.currentLanguage}
-                    connectedUser={this.props.connectedUser} />}
+                  {this.props.connectedUser.isDaikokuAdmin && (
+                    <MessagesTopBarTools
+                      currentLanguage={this.props.currentLanguage}
+                      connectedUser={this.props.connectedUser}
+                    />
+                  )}
                   <div className="dropdown">
                     <img
                       style={{ width: 38, marginLeft: '5px', ...impersonatorStyle }}

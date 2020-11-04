@@ -307,8 +307,7 @@ export class UserEditComponent extends Component {
         <Can I={manage} a={daikoku} dispatchError>
           <div className="row d-flex justify-content-start align-items-center mb-2">
             {this.state.user && (
-              <div
-                className="ml-1 avatar__container">
+              <div className="ml-1 avatar__container">
                 <img
                   src={this.state.user.picture}
                   className="img-fluid"

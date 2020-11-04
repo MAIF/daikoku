@@ -1,7 +1,16 @@
 package daikoku
 
-import fr.maif.otoroshi.daikoku.domain.{Message, MessageType, MongoId, User, json}
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.domain.{
+  Message,
+  MessageType,
+  MongoId,
+  User,
+  json
+}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
@@ -9,12 +18,15 @@ import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}
 
 class MessagesControllerSpec()
-  extends PlaySpec
+    extends PlaySpec
     with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience {
 
-  def adminMessage(user: User, sender: User, message: String, closed: Option[DateTime] = None): Message =
+  def adminMessage(user: User,
+                   sender: User,
+                   message: String,
+                   closed: Option[DateTime] = None): Message =
     Message(
       id = MongoId(IdGenerator.token(128)),
       tenant = tenant.id,
@@ -26,27 +38,26 @@ class MessagesControllerSpec()
       sender = sender.id,
       message = message,
       closed = closed,
-      send = true)
+      send = true
+    )
 
+  "a tenant admin" can {
+    "close a chat" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(tenantAdmin, user),
+        teams = Seq(defaultAdminTeam),
+        messages = Seq(adminMessage(user, user, "not closed", None))
+      )
 
-    "a tenant admin" can {
-      "close a chat" in {
-        setupEnvBlocking(
-          tenants = Seq(tenant),
-          users = Seq(tenantAdmin, user),
-          teams = Seq(defaultAdminTeam),
-          messages = Seq(adminMessage(user, user, "not closed", None))
-        )
+      val session = loginWithBlocking(tenantAdmin, tenant)
 
-        val session = loginWithBlocking(tenantAdmin, tenant)
+      val resp = httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
+                                      method = "DELETE")(tenant, session)
 
-        val resp = httpJsonCallBlocking(
-          path = s"/api/messages/${user.id.value}",
-          method = "DELETE")(tenant, session)
-
-        resp.status mustBe 200
-      }
+      resp.status mustBe 200
     }
+  }
 
   "a user" can {
     "get his message to admin team" in {
@@ -58,9 +69,11 @@ class MessagesControllerSpec()
 
       val session = loginWithBlocking(user, tenant)
 
-      val respGet = httpJsonCallBlocking("/api/me/messages/admin")(tenant, session)
+      val respGet =
+        httpJsonCallBlocking("/api/me/messages/admin")(tenant, session)
       respGet.status mustBe 200
-      val messages = json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
+      val messages =
+        json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
       messages.isSuccess mustBe true
       messages.get.length mustBe 1
       messages.get.head.message mustBe "1"
@@ -76,15 +89,18 @@ class MessagesControllerSpec()
 
       val session = loginWithBlocking(user, tenant)
 
-      val respGetClosedDate = httpJsonCallBlocking(s"/api/messages/${user.id.value}/last-date")(tenant, session)
+      val respGetClosedDate = httpJsonCallBlocking(
+        s"/api/messages/${user.id.value}/last-date")(tenant, session)
       respGetClosedDate.status mustBe 200
       val lastClosedDate = (respGetClosedDate.json).as[Long]
       lastClosedDate mustBe closedDate.toDate.getTime
 
-
-      val respGet = httpJsonCallBlocking(s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant, session)
+      val respGet = httpJsonCallBlocking(
+        s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant,
+                                                                        session)
       respGet.status mustBe 200
-      val messages = json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
+      val messages =
+        json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
       messages.isSuccess mustBe true
       messages.get.length mustBe 1
       messages.get.head.message mustBe "1"
@@ -94,7 +110,9 @@ class MessagesControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
-        messages = Seq(adminMessage(user, user, "1", None).copy(date = DateTime.now().minusHours(1)))
+        messages = Seq(
+          adminMessage(user, user, "1", None).copy(
+            date = DateTime.now().minusHours(1)))
       )
 
       val session = loginWithBlocking(tenantAdmin, tenant)
@@ -105,14 +123,15 @@ class MessagesControllerSpec()
       messages.length mustBe 1
       messages.count(_.readBy.contains(tenantAdminId)) mustBe 0
 
-      val respRead = httpJsonCallBlocking(
-        path = s"/api/messages/${user.id.value}/_read",
-        method = "PUT")(tenant, session)
+      val respRead =
+        httpJsonCallBlocking(path = s"/api/messages/${user.id.value}/_read",
+                             method = "PUT")(tenant, session)
       respRead.status mustBe 200
 
       val respVerif = httpJsonCallBlocking(s"/api/me/messages")(tenant, session)
       respVerif.status mustBe 200
-      val messagesVerif = (respVerif.json \ "messages").as(json.SeqMessagesFormat)
+      val messagesVerif =
+        (respVerif.json \ "messages").as(json.SeqMessagesFormat)
       messagesVerif.length mustBe 1
       messagesVerif.count(_.readBy.contains(tenantAdminId)) mustBe 1
 
@@ -129,17 +148,22 @@ class MessagesControllerSpec()
       val respSend = httpJsonCallBlocking(
         path = "/api/messages/_send",
         method = "POST",
-        body = Some(Json.obj(
-          "message" -> "1",
-          "participants" -> JsArray((Set(user.id.asJson) ++ defaultAdminTeam.users.map(_.userId.asJson)).toSeq),
-          "chat" -> user.id.asJson
-        )))(tenant, session)
+        body = Some(
+          Json.obj(
+            "message" -> "1",
+            "participants" -> JsArray(
+              (Set(user.id.asJson) ++ defaultAdminTeam.users.map(
+                _.userId.asJson)).toSeq),
+            "chat" -> user.id.asJson
+          ))
+      )(tenant, session)
 
       respSend.status mustBe 200
 
       val respGet = httpJsonCallBlocking("/api/me/messages")(tenant, session)
       respGet.status mustBe 200
-      val messages = json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
+      val messages =
+        json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
       messages.isSuccess mustBe true
       messages.get.length mustBe 1
       messages.get.head.message mustBe "1"
@@ -156,9 +180,8 @@ class MessagesControllerSpec()
 
       val session = loginWithBlocking(user, tenant)
 
-      val resp = httpJsonCallBlocking(
-        path = s"/api/messages/${user.id.value}",
-        method = "DELETE")(tenant, session)
+      val resp = httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
+                                      method = "DELETE")(tenant, session)
 
       resp.status mustBe 403
     }

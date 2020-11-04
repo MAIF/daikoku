@@ -13,8 +13,18 @@ import { Option, partition, formatMessageDate } from '../../utils';
 import { UserBackOffice } from '../../backoffice';
 import { t, Translation } from '../../../locales';
 
-const AdminMessagesComponent = props => {
-  const { messages, sendNewMessage, readMessages, closeChat, getPreviousMessages, lastClosedDates, loading, createNewChat, adminTeam } = useContext(MessagesContext);
+const AdminMessagesComponent = (props) => {
+  const {
+    messages,
+    sendNewMessage,
+    readMessages,
+    closeChat,
+    getPreviousMessages,
+    lastClosedDates,
+    loading,
+    createNewChat,
+    adminTeam,
+  } = useContext(MessagesContext);
 
   const [groupedMessages, setGroupedMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -24,24 +34,24 @@ const AdminMessagesComponent = props => {
   const [possibleNewUsers, setPossibleNewUsers] = useState([]);
 
   useEffect(() => {
-    Services.fetchAllUsers()
-      .then((users) => setUsers(users));
+    Services.fetchAllUsers().then((users) => setUsers(users));
   }, []);
 
   useEffect(() => {
-    setPossibleNewUsers(users.filter(u => !u.isDaikokuAdmin && !groupedMessages.some(({ chat }) => chat === u._id)));
+    setPossibleNewUsers(
+      users.filter((u) => !u.isDaikokuAdmin && !groupedMessages.some(({ chat }) => chat === u._id))
+    );
   }, [groupedMessages, users]);
 
   useEffect(() => {
     if (users.length) {
-
       const groupedMessages = messages.reduce((groups, m) => {
         const { chat } = m;
-        const [actualGroup, others] = partition(groups, g => g.chat === chat);
-        const user = users.find(u => u._id === chat);
+        const [actualGroup, others] = partition(groups, (g) => g.chat === chat);
+        const user = users.find((u) => u._id === chat);
         const updatedGroup = Option(_.head(actualGroup))
-          .map(g => ({ ...g, messages: [...g.messages, m] }))
-          .getOrElse(({ chat, user, messages: [m] }));
+          .map((g) => ({ ...g, messages: [...g.messages, m] }))
+          .getOrElse({ chat, user, messages: [m] });
 
         return [...others, updatedGroup];
       }, []);
@@ -56,10 +66,10 @@ const AdminMessagesComponent = props => {
 
   const maybeReadMessage = () => {
     if (selectedChat) {
-      const unreadCount = Option(groupedMessages.find(g => g.chat === selectedChat))
+      const unreadCount = Option(groupedMessages.find((g) => g.chat === selectedChat))
         .map((group) => group.messages)
         .getOrElse([])
-        .filter(m => !m.readBy.includes(props.connectedUser._id)).length;
+        .filter((m) => !m.readBy.includes(props.connectedUser._id)).length;
       if (unreadCount) {
         readMessages(selectedChat);
       }
@@ -75,15 +85,14 @@ const AdminMessagesComponent = props => {
 
   const sendMessage = () => {
     if (!loading && newMessage.trim()) {
-      const participants = Option(groupedMessages.find(g => g.chat === selectedChat))
-        .map(g => _.head(g.messages))
-        .map(m => m.participants)
-        .getOrElse([selectedChat, ...adminTeam.users.map(u => u.userId)]);
+      const participants = Option(groupedMessages.find((g) => g.chat === selectedChat))
+        .map((g) => _.head(g.messages))
+        .map((m) => m.participants)
+        .getOrElse([selectedChat, ...adminTeam.users.map((u) => u.userId)]);
 
-      sendNewMessage(newMessage, participants, selectedChat)
-        .then(() => {
-          setNewMessage('');
-        });
+      sendNewMessage(newMessage, participants, selectedChat).then(() => {
+        setNewMessage('');
+      });
     }
   };
 
@@ -98,17 +107,15 @@ const AdminMessagesComponent = props => {
   };
 
   const createDialog = (user) => {
-    createNewChat(user._id)
-      .then(() => {
-        setGroupedMessages([...groupedMessages, { chat: user._id, user, messages: [] }]);
-        setSelectedChat(user._id);
-      });
+    createNewChat(user._id).then(() => {
+      setGroupedMessages([...groupedMessages, { chat: user._id, user, messages: [] }]);
+      setSelectedChat(user._id);
+    });
   };
-
 
   const orderedMessages = _.sortBy(groupedMessages, 'chat');
   const dialog = Option(groupedMessages.find(({ chat }) => chat === selectedChat))
-    .map(g => MessagesEvents.fromMessagesToDialog(g.messages))
+    .map((g) => MessagesEvents.fromMessagesToDialog(g.messages))
     .getOrElse([]);
 
   moment.locale(props.currentLanguage);
@@ -121,7 +128,7 @@ const AdminMessagesComponent = props => {
       hh: t('moment.duration.jours', props.currentLanguage, false, '%d h', '%d'),
       d: t('moment.duration.days', props.currentLanguage, false, '1 d', '1'),
       dd: t('moment.duration.days', props.currentLanguage, false, '%d d', '%d'),
-    }
+    },
   });
 
   return (
@@ -136,61 +143,77 @@ const AdminMessagesComponent = props => {
           <Select
             placeholder={t('Start new conversation', props.currentLanguage)}
             className="mr-2 reactSelect"
-            options={possibleNewUsers
-              .map((u) => ({
-                label: (
-                  <div
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    {u.name} ({u.email}){' '}
-                    <img
-                      style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
-                      src={u.picture}
-                      alt="avatar"
-                    />
-                  </div>
-                ),
-                value: u,
-              }))}
+            options={possibleNewUsers.map((u) => ({
+              label: (
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}>
+                  {u.name} ({u.email}){' '}
+                  <img
+                    style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
+                    src={u.picture}
+                    alt="avatar"
+                  />
+                </div>
+              ),
+              value: u,
+            }))}
             value={null}
             onChange={({ value }) => createDialog(value)}
             filterOption={(data, search) => _.values(data.value).some((v) => v.includes(search))}
             classNamePrefix="reactSelect"
           />
-          {_.orderBy(orderedMessages
-            .map(({ chat, user, messages }) => {
+          {_.orderBy(
+            orderedMessages.map(({ chat, user, messages }) => {
               const maxMessage = _.maxBy(messages, 'date');
-              const maxDate = Option(maxMessage).map(m => moment(m.date)).getOrElse(moment());
+              const maxDate = Option(maxMessage)
+                .map((m) => moment(m.date))
+                .getOrElse(moment());
 
-              const unreadCount = messages.filter(m => !m.readBy.includes(props.connectedUser._id)).length;
-
-
+              const unreadCount = messages.filter(
+                (m) => !m.readBy.includes(props.connectedUser._id)
+              ).length;
 
               return { chat, user, messages, unreadCount, maxDate };
-            }), ['unreadCount', 'maxDate', 'user.name'], ['desc', 'desc', 'asc']) //todo: maybe order 
+            }),
+            ['unreadCount', 'maxDate', 'user.name'],
+            ['desc', 'desc', 'asc']
+          ) //todo: maybe order
             .map(({ chat, user, messages, unreadCount, maxDate }, idx) => {
-              const lastMessageDateDisplayed = (moment().diff(maxDate, 'days') > 1) ?
-                maxDate.format('D MMM.') : maxDate.fromNow(true);
+              const lastMessageDateDisplayed =
+                moment().diff(maxDate, 'days') > 1
+                  ? maxDate.format('D MMM.')
+                  : maxDate.fromNow(true);
               return (
                 <div
                   key={idx}
                   className={classNames('p-3 cursor-pointer d-flex flex-row', {
-                    'messages-sender__active': selectedChat === chat
+                    'messages-sender__active': selectedChat === chat,
                   })}
                   onClick={() => setSelectedChat(chat)}>
                   <div className="col-4">
-                    <img className="user-avatar" src={user.picture} alt="user-avatar" style={{ width: '100%' }} />
+                    <img
+                      className="user-avatar"
+                      src={user.picture}
+                      alt="user-avatar"
+                      style={{ width: '100%' }}
+                    />
                     {unreadCount > 0 && <span className="notification">{unreadCount}</span>}
                   </div>
                   <div className="col-8">
                     <div className="d-flex justify-content-between">
                       <h4>{user.name}</h4>
-                      <a className="notification-link cursor-pointer" onClick={(e) => {
-                        e.stopPropagation();
-                        closeSelectedChat(chat);
-                      }}>
+                      <a
+                        className="notification-link cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          closeSelectedChat(chat);
+                        }}>
                         <i className="fas fa-trash" />
                       </a>
-
                     </div>
                     <div className="d-flex justify-content-end">
                       <div>{lastMessageDateDisplayed}</div>
@@ -206,16 +229,18 @@ const AdminMessagesComponent = props => {
               <div
                 key={`discussion-messages-${idx}`}
                 className={classNames('discussion-messages', {
-                  'discussion-messages--received': group.every(m => m.sender === selectedChat),
-                  'discussion-messages--send': group.every(m => m.sender !== selectedChat)
+                  'discussion-messages--received': group.every((m) => m.sender === selectedChat),
+                  'discussion-messages--send': group.every((m) => m.sender !== selectedChat),
                 })}>
                 {group.map((m, idx) => {
-                  const sender = Option(users.find(u => u._id === m.sender))
-                    .map(u => u.name)
+                  const sender = Option(users.find((u) => u._id === m.sender))
+                    .map((u) => u.name)
                     .getOrElse(t('Unknown user', props.currentLanguage));
                   return (
-                    <div key={`discussion-message-${idx}`} className="discussion-message d-flex flex-column">
-                        <span className="sender">{sender}</span>
+                    <div
+                      key={`discussion-message-${idx}`}
+                      className="discussion-message d-flex flex-column">
+                      <span className="sender">{sender}</span>
                       <span className="message">{m.message}</span>
                       <span className="info">
                         <span className="date">{formatMessageDate(m.date)}</span>
@@ -226,7 +251,7 @@ const AdminMessagesComponent = props => {
               </div>
             );
           })}
-          {selectedChat && lastClosedDates.find(x => x.chat === selectedChat).date && (
+          {selectedChat && lastClosedDates.find((x) => x.chat === selectedChat).date && (
             <div className="d-flex flex-row justify-content-center my-1">
               <button
                 className="btn btn-sm btn-outline-primary"
@@ -238,22 +263,24 @@ const AdminMessagesComponent = props => {
               </button>
             </div>
           )}
-          {selectedChat && <div className="discussion-form discussion-form__message">
-            <input
-              disabled={loading ? 'disabled' : null}
-              type="text"
-              value={loading ? '...' : newMessage}
-              onKeyDown={handleKeyDown}
-              onChange={e => setNewMessage(e.target.value)}
-              placeholder={t('Your message', props.currentLanguage)}
-            />
-            <button
-              disabled={loading ? 'disabled' : null}
-              className="send-button"
-              onClick={sendMessage}>
-              <Send />
-            </button>
-          </div>}
+          {selectedChat && (
+            <div className="discussion-form discussion-form__message">
+              <input
+                disabled={loading ? 'disabled' : null}
+                type="text"
+                value={loading ? '...' : newMessage}
+                onKeyDown={handleKeyDown}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder={t('Your message', props.currentLanguage)}
+              />
+              <button
+                disabled={loading ? 'disabled' : null}
+                className="send-button"
+                onClick={sendMessage}>
+                <Send />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </UserBackOffice>
