@@ -1,0 +1,48 @@
+name: Release notes Daikoku
+
+on:
+  milestone:
+    types: [closed]
+
+jobs:
+  create-release-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Create Release Notes
+        uses: docker://decathlon/release-notes-generator-action:2.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUTPUT_FOLDER: temp_release_notes
+          USE_MILESTONE_TITLE: "true"
+      - name: text replace
+        uses: BjornLuG/substitute-string-action@v1
+        id: sub
+        with:
+          _input-file: temp_release_notes/${{ github.event.milestone.title }}.md
+      - uses: pCYSl5EDgo/cat@master
+        id: release_text
+        with:
+          path: temp_release_notes/${{ github.event.milestone.title }}.md
+      - run: |
+          echo "## [${{ github.event.milestone.title }}] - `date +%F`" >> CHANGELOG
+          echo "" >> CHANGELOG
+          echo "${{ steps.release_text.outputs.text }}" >> CHANGELOG
+      - name: Commit files
+        run: |
+          git config --local user.email "daikoku-github-actions@users.noreply.github.com"
+          git config --local user.name "daikoku-github-actions"
+          git add CHANGELOG
+          git commit -am "Update CHANGELOG"
+      - name: Push changelog
+        uses: ad-m/github-push-action@master
+        with:
+          branch: master
+          github_token: ${{ secrets.GITHUB_TOKEN}}
+      - name: Update release
+        uses: meeDamian/github-release@2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN}}
+          tag: ${{ github.event.milestone.title }}
+          body: ${{ steps.release_text.outputs.text }}
+          allow_override: true
