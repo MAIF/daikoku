@@ -27,7 +27,8 @@ assemblyMergeStrategy in assembly := {
     MergeStrategy.first // ???
   case PathList(ps @ _*) if ps.contains("reflection-config.json") =>
     MergeStrategy.first // ???
-  case PathList(ps @ _*) if ps.contains("mime.types") => MergeStrategy.first //???
+  case PathList(ps @ _*) if ps.contains("mime.types") =>
+    MergeStrategy.first //???
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
