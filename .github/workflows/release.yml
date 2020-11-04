@@ -77,7 +77,7 @@ jobs:
     - name: push tag
       uses: ad-m/github-push-action@master
       with:
-        branch: main
+        branch: master
         tags: true
         github_token: ${{ secrets.GITHUB_TOKEN}}
     # clean, build doc and build DK
