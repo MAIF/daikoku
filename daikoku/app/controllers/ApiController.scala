@@ -1685,7 +1685,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def getApiSubscriptions(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(AuditTrailEvent(s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"))(teamId, ctx) { team =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"))(teamId, ctx) { team =>
       env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(apiId).flatMap {
         case Some(api) if api.team != team.id => FastFuture.successful(Unauthorized(Json.obj("error" -> "Unauthorized to access to this api")))
         case Some(api) => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
