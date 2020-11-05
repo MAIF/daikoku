@@ -10,3 +10,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Daikoku is now OSS
 
 
+## [v1.0.7] - 2020-11-05
+
+## :star: New Features
+
+- Add a button in wysiwyg editorto inject image url from asset store [#160](https://github.com/MAIF/daikoku/issues/160)
+- Remove organizations page [#158](https://github.com/MAIF/daikoku/issues/158)
+- Forbidden/authorize personnal teams to subscribe to an api [#157](https://github.com/MAIF/daikoku/issues/157)
+- Forbidden/authorize users to create apis on tenant [#153](https://github.com/MAIF/daikoku/issues/153)
+- Allow users to contact daikoku admin [#35](https://github.com/MAIF/daikoku/issues/35)
+-  Allow api owners team to manage the apikeys [#13](https://github.com/MAIF/daikoku/issues/13)
+
+## :beetle: Bug Fixes
+
+- Images from S3 server may be partially cut off [#159](https://github.com/MAIF/daikoku/issues/159)
+- Allow european mailgun server usage [#154](https://github.com/MAIF/daikoku/issues/154)
+- API/APIkey initialization works just for first import ...  [#152](https://github.com/MAIF/daikoku/issues/152)
+- ArrayInput placeholder is not translate [#144](https://github.com/MAIF/daikoku/issues/144)
+- Better manual generation [#139](https://github.com/MAIF/daikoku/issues/139)
+
+## :heart: Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@quentinovega](https://github.com/quentinovega)
+
