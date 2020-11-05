@@ -131,6 +131,7 @@ jobs:
     # build docker image & upload it in docker hub
     - name: Build docker image
       run: |
+        cd daikoku
         sbt 'docker:publishLocal'
         docker tag maif/daikoku:latest maif/daikoku:${{ github.event.inputs.releaseversion }}
         docker push "maif/daikoku:latest"

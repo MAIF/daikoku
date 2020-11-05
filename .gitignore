@@ -1,7 +1,6 @@
 .DS_Store
 .metals
 .vscode
-release-*
 *.swp
 node_modules
 .idea

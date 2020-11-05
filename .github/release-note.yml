@@ -1,0 +1,11 @@
+changelog:
+  sections:
+  - title: "Enhancements"
+    emoji: ":star:"
+    labels: ["new", "enhancements"]
+  - title: "Bugs"
+    emoji: ":bug:"
+    labels: ["fix", "bug"]
+
+  exclude:
+      labels: ["wontfix", "question", "duplicate", "can't reproduce"]
