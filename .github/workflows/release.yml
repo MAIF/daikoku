@@ -123,25 +123,18 @@ jobs:
         asset_path: ./daikoku-manual.zip
         asset_name: daikoku-manual-${{ github.event.inputs.releaseversion }}.zip
         asset_content_type: application/octet-stream
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
     # build docker image & upload it in docker hub
     - name: Build docker image
-      run: sbt 'docker:publishLocal'
-    # publish docker image (latest & tagged)
-    - name: publish docker image
-      uses: manusa/actions-publish-docker@v1.1.2
-      with:
-        name: maif/daikoku
-        tag: ${{ github.event.inputs.releaseversion }}
-        username: ${{ secrets.DOCKER_USER }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    - name: publish docker image
-      uses: manusa/actions-publish-docker@v1.1.2
-      with:
-        name: maif/daikoku
-        tag: ${{ github.event.inputs.releaseversion }}
-        username: ${{ secrets.DOCKER_USER }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-
+      run: |
+        sbt 'docker:publishLocal'
+        docker tag maif/daikoku:latest maif/daikoku:${{ github.event.inputs.releaseversion }}
+        docker push "maif/daikoku:latest"
+        docker push "maif/daikoku:${{ github.event.inputs.releaseversion }}"
   # close milestone (with the latest release found)
     - name: Close milestone 
       uses: adlerhsieh/prepare-release@0.1.2
