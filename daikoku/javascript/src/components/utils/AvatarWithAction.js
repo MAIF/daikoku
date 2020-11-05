@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { v4 as uuidv4 } from 'uuid';
 import ReactToolTip from 'react-tooltip';
@@ -6,8 +6,13 @@ import ReactToolTip from 'react-tooltip';
 export const AvatarWithAction = (props) => {
   const [secondaryActions, setSecondaryActions] = useState([]);
 
+  useEffect(() => {
+    ReactToolTip.rebuild();
+  }, [secondaryActions]);
+
   const handleAction = (action) => {
     if (secondaryActions.length) {
+      ReactToolTip.hide();
       setSecondaryActions([]);
     }
     action();
