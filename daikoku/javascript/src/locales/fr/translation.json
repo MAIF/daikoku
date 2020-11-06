@@ -710,5 +710,12 @@
   "creation.security.help": "si activé, seules les équipes authorisées pourront créer des APis",
   "APIs creation permission": "Autorisation de création d'APIs",
   "apisCreationPermission.help": "Si la sécurité de création d'API est activée pour l'oragnisation, l'autorisation de création d'API est obligatoire pour créer des APIs",
-  "image url from asset": "URL d'une image depuis les assets"
+  "image url from asset": "URL d'une image depuis les assets",
+  "Permission": {
+    "s": "Autorisation",
+    "p": "Autorisations"
+  },
+  "permission.caption.administrator": "un Administrateur peut gérer les  membres de l'équipe, modifier l'équipe et consulter la facturation",
+  "permission.caption.apiEditor": "un Rédacteur d'API peu créer/modifier/supprimer des APIs et consulter les revenues",
+  "permission.caption.user": "un Utilisateur peut consulter les cles API"
 }

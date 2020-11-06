@@ -710,5 +710,12 @@
     "creation.security.help": "if enabled, only authorized teams will be able to create APIs",
     "APIs creation permission": "APIs creation permission",
     "apisCreationPermission.help": "If api creation security is enabled on tenant, APIs creation permission is mandatory to create APIs",
-    "image url from asset": "image URL from asset"
+    "image url from asset": "image URL from asset",
+    "Permission": {
+        "s": "Permission",
+        "p": "Permissions"
+    },
+    "permission.caption.administrator": "an Administrator can manage team members, update team and read billing",
+    "permission.caption.apiEditor": "a Api Editor can create/update/delete APIs and read incomes",
+    "permission.caption.user": "a User can read team api keys"
 }

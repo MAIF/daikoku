@@ -272,17 +272,15 @@ export class TeamMembersSimpleComponent extends Component {
               }}
             />
           </div>
-          <Can I={manage} a={team} team={this.props.currentTeam}>
-            <div className="col-12 mb-3 d-flex justify-content-between">
-              <SwitchButton
-                label={t('Api keys are just visible by admins', this.props.currentLanguage)}
-                onSwitch={this.updateApiKeysVisibility}
-                checked={this.props.currentTeam.showApiKeyOnlyToAdmins}
-                large
-                noText
-              />
-            </div>
-          </Can>
+          <div className="col-12 mb-3 d-flex justify-content-between">
+            <SwitchButton
+              label={t('Api keys are just visible by admins', this.props.currentLanguage)}
+              onSwitch={this.updateApiKeysVisibility}
+              checked={this.props.currentTeam.showApiKeyOnlyToAdmins}
+              large
+              noText
+            />
+          </div>
         </div>
         <div className="container-fluid">
           <div className="row">
@@ -325,6 +323,22 @@ export class TeamMembersSimpleComponent extends Component {
         </div>
         {this.state.tab === TABS.members && (
           <PaginatedComponent
+            help={() => {
+              alert(
+                <div className="d-flex flex-column">
+                  <div><i className="fas fa-shield-alt mr-1" />
+                    <Translation i18nkey="permission.caption.administrator" language={this.props.currentLanguage} />
+                  </div>
+                  <div><i className="fas fa-pencil-alt mr-1" />
+                    <Translation i18nkey="permission.caption.apiEditor" language={this.props.currentLanguage} />
+                  </div>
+                  <div><i className="fas fa-user-alt mr-1" />
+                    <Translation i18nkey="permission.caption.user" language={this.props.currentLanguage} />
+                  </div>
+                </div>,
+                t('Permission', this.props.currentLanguage, true)
+              );
+            }}
             currentLanguage={this.props.currentLanguage}
             items={_.sortBy(filteredMembers, [(member) => member.name.toLowerCase()])}
             count={15}
