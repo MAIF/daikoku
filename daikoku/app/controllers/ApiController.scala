@@ -769,12 +769,6 @@ class ApiController(DaikokuAction: DaikokuAction,
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(ctx) {
 
       def findSubscriptions(api: Api, teams: Seq[Team]): Future[Result] = {
-        def hideApikey =
-          (team: Team) =>
-            team.showApiKeyOnlyToAdmins && !team.users
-              .find(u => u.userId == ctx.user.id)
-              .forall(_.teamPermission == TeamUser)
-
         for {
           subscriptions <- env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant.id)
@@ -799,14 +793,14 @@ class ApiController(DaikokuAction: DaikokuAction,
               "subscriptions" -> JsArray(
                 subscriptions
                   .map(subscription => {
-                    val hide = teams
-                      .find(t => t.id == subscription.team)
-                      .exists(team => hideApikey(team))
+                    val apiKeyVisible = teams
+                      .find(_.id == subscription.team)
+                      .exists(authorizations.isTeamApiKeyVisible(_, ctx.user))
 
-                    if (hide) {
-                      subscription.asJson.as[JsObject] - "apiKey"
-                    } else {
+                    if (apiKeyVisible) {
                       subscription.asJson
+                    } else {
+                      subscription.asJson.as[JsObject] - "apiKey"
                     }
                   })
               ),
@@ -835,26 +829,20 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def updateApiSubscriptionCustomName(teamId: String, subscriptionId: String) = DaikokuAction.async(parse.json) { ctx =>
-
-    val customName = (ctx.request.body.as[JsObject] \ "customName").as[String].toLowerCase.trim
-
-    TeamMemberOnly(AuditTrailEvent(s"@{user.name} has update custom name for subscription @{subscription._id}"))(teamId,
+    TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has update custom name for subscription @{subscription._id}"))(teamId,
       ctx) {
       team =>
+        val customName = (ctx.request.body.as[JsObject] \ "customName").as[String].toLowerCase.trim
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant)
           .findOneNotDeleted(Json.obj("_id" -> subscriptionId, "team" -> teamId))
           .flatMap {
             case None => FastFuture.successful(NotFound(Json.obj("error" -> "apiSubscription not found")))
             case Some(subscription) =>
-              if (!ctx.user.isDaikokuAdmin && (team.showApiKeyOnlyToAdmins && !team.admins().contains(ctx.user.id))) {
-                Future.successful(Forbidden(Json.obj("error" -> "You're not authorized to update subscription")))
-              } else {
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(ctx.tenant)
-                  .save(subscription.copy(customName = Some(customName)))
-                  .map(done => Ok(Json.obj("done" -> done)))
-              }
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.tenant)
+                .save(subscription.copy(customName = Some(customName)))
+                .map(done => Ok(Json.obj("done" -> done)))
           }
     }
   }
@@ -913,11 +901,8 @@ class ApiController(DaikokuAction: DaikokuAction,
         def checkTeam(api: Api): Future[Result] = {
           ctx.setCtxValue("api.id", api.id)
           ctx.setCtxValue("api.name", api.name)
-          val showApikey = ctx.user.isDaikokuAdmin || !team.showApiKeyOnlyToAdmins || !team.users
-            .find(u => u.userId == ctx.user.id)
-            .forall(_.teamPermission == TeamUser)
 
-          if (!showApikey) {
+          if (!authorizations.isTeamApiKeyVisible(team, ctx.user)) {
             FastFuture.successful(
               Forbidden(Json.obj("error" -> "You're not authorized to see subscriptions on this team"))
             )

@@ -1446,9 +1446,9 @@ object json {
             metadata = (json \ "metadata")
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty),
-            showApiKeyOnlyToAdmins = (json \ "showApiKeyOnlyToAdmins")
-              .asOpt[Boolean]
-              .getOrElse(true),
+            apiKeyVisibility = (json \ "apiKeyVisibility")
+              .asOpt[String]
+              .flatMap(TeamApiKeyVisibility.apply),
             apisCreationPermission = (json \ "apisCreationPermission")
               .asOpt[Boolean]
           )
@@ -1471,7 +1471,7 @@ object json {
         o.subscriptions.map(ApiSubscriptionIdFormat.writes)),
       "authorizedOtoroshiGroups" -> JsArray(
         o.authorizedOtoroshiGroups.map(OtoroshiGroupFormat.writes).toSeq),
-      "showApiKeyOnlyToAdmins" -> o.showApiKeyOnlyToAdmins,
+      "apiKeyVisibility" -> o.apiKeyVisibility.map(_.asJson).getOrElse(JsNull).as[JsValue],
       "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
       "apisCreationPermission" -> o.apisCreationPermission
         .map(JsBoolean)

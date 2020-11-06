@@ -23,6 +23,27 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
 object authorizations {
+  def isTeamApiKeyVisible(team: Team, user: User)(implicit env: Env): Boolean =
+    team.apiKeyVisibility match {
+      case Some(TeamApiKeyVisibility.Administrator) =>
+        team.users
+          .find(_.userId == user.id)
+          .forall(_.teamPermission == TeamPermission.Administrator)
+      case Some(TeamApiKeyVisibility.ApiEditor) =>
+        team.users
+          .find(_.userId == user.id)
+          .forall(_.teamPermission != TeamPermission.TeamUser)
+      case Some(TeamApiKeyVisibility.User) => false
+      case None => env.config.defaultApiKeyVisibility match {
+        case TeamApiKeyVisibility.Administrator => team.users
+          .find(_.userId == user.id)
+          .forall(_.teamPermission == TeamPermission.Administrator)
+        case TeamApiKeyVisibility.ApiEditor => team.users
+          .find(_.userId == user.id)
+          .forall(_.teamPermission != TeamPermission.TeamUser)
+        case TeamApiKeyVisibility.User => false
+      }
+    }
 
   object sync {
     def UberPublicAccess[T](audit: AuditEvent)(ctx: DaikokuActionContext[T])(
@@ -613,6 +634,67 @@ object authorizations {
                                       ctx.request,
                                       ctx.ctx,
                                       AuthorizationLevel.NotAuthorized)
+            FastFuture.successful(
+              Results.NotFound(Json.obj("error" -> "Team not found")))
+        }
+    }
+
+    def TeamApiKeyAction[T](audit: AuditEvent)(
+      teamId: String,
+      ctx: DaikokuActionContext[T])(f: Team => Future[Result])(
+      implicit ec: ExecutionContext,
+      env: Env): Future[Result] = {
+      env.dataStore.teamRepo
+        .forTenant(ctx.tenant.id)
+        .findByIdOrHrId(teamId)
+        .flatMap {
+          case Some(team) if ctx.user.isDaikokuAdmin =>
+            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.name", team.name)
+            f(team).andThen {
+              case _ =>
+                audit.logTenantAuditEvent(
+                  ctx.tenant,
+                  ctx.user,
+                  ctx.session,
+                  ctx.request,
+                  ctx.ctx,
+                  AuthorizationLevel.AuthorizedDaikokuAdmin)
+            }
+          case Some(team) =>
+            val authorized : Boolean = authorizations.isTeamApiKeyVisible(team, ctx.user)
+            if (authorized) {
+              ctx.setCtxValue("team.id", team.id)
+              ctx.setCtxValue("team.name", team.name)
+              f(team).andThen {
+                case _ =>
+                  audit.logTenantAuditEvent(
+                    ctx.tenant,
+                    ctx.user,
+                    ctx.session,
+                    ctx.request,
+                    ctx.ctx,
+                    AuthorizationLevel.AuthorizedTeamMember)
+              }
+            } else {
+              audit.logTenantAuditEvent(ctx.tenant,
+                ctx.user,
+                ctx.session,
+                ctx.request,
+                ctx.ctx,
+                AuthorizationLevel.NotAuthorized)
+              FastFuture.successful(
+                Results.Unauthorized(Json.obj("error" -> "Unauthorized action")))
+            }
+
+            ???
+          case _ =>
+            audit.logTenantAuditEvent(ctx.tenant,
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized)
             FastFuture.successful(
               Results.NotFound(Json.obj("error" -> "Team not found")))
         }

@@ -273,8 +273,6 @@ GET     /api/teams/:teamId/members                      fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/teams/:teamId/addable-members              fr.maif.otoroshi.daikoku.ctrls.TeamController.addableUsersForTeam(teamId)
 ### NoDocs ###
-POST    /api/teams/:teamId/apiKeys/visibility           fr.maif.otoroshi.daikoku.ctrls.TeamController.updateApiKeysVisibility(teamId)
-### NoDocs ###
 GET     /api/teams/:teamId/home                         fr.maif.otoroshi.daikoku.ctrls.TeamController.teamHome(teamId)
 
 ### NoDocs ###
