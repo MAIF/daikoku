@@ -246,6 +246,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                 "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))))
             )
         )
+        test = AppLogger.warn(Json.prettyPrint(Json.obj("api" -> api.id.value,
+          "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))))))
       } yield {
         if (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
           .intersect(myTeams.map(_.id))
@@ -821,7 +823,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has update custom name for subscription @{subscription._id}"))(teamId,
       ctx) {
       _ =>
-        val customName = (ctx.request.body.as[JsObject] \ "customName").as[String].toLowerCase.trim
+        val customName = (ctx.request.body.as[JsObject] \ "customName").as[String].trim
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant)
           .findOneNotDeleted(Json.obj("_id" -> subscriptionId, "team" -> teamId))
@@ -928,7 +930,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def toggleApiSubscription(teamId: String, subscriptionId: String, enabled: Option[Boolean]) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(
+    TeamApiKeyAction(
       AuditTrailEvent(s"@{user.name} has archived api subscription @{subscription.id} of @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
@@ -960,7 +962,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def toggleApiKeyRotation(teamId: String, subscriptionId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamAdminOnly(
+    TeamApiKeyAction(
       AuditTrailEvent(s"@{user.name} has toggle api subscription rotation @{subscription.id} of @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
@@ -971,7 +973,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def regenerateApiKeySecret(teamId: String, subscriptionId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(
+    TeamApiKeyAction(
       AuditTrailEvent(s"@{user.name} has regenerate apikey secret @{subscription.id} of @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {

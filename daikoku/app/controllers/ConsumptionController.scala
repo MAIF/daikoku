@@ -3,19 +3,14 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TeamAdminOnly
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, TeamApiKeyAction}
 import fr.maif.otoroshi.daikoku.domain.OtoroshiSettings
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import jobs.ApiKeyStatsJob
 import org.joda.time.DateTime
 import play.api.libs.json._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,7 +29,7 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                                  from: Option[Long],
                                  to: Option[Long]): Action[AnyContent] =
     DaikokuAction.async { ctx =>
-      TeamAdminOnly(AuditTrailEvent(
+      TeamApiKeyAction(AuditTrailEvent(
         s"@{user.name} has accessed to apikey consumption for subscription @{subscriptionId}"))(
         teamId,
         ctx

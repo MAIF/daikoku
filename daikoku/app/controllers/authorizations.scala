@@ -671,8 +671,6 @@ object authorizations {
                 Json.obj("error" -> "You're not part of the team")))
           case Some(team) =>
             val authorized : Boolean = authorizations.isTeamApiKeyVisible(team, ctx.user)
-            val perm = team.users.find(_.userId == ctx.user.id)
-            AppLogger.warn(s"### Team ${team.name}/${team.apiKeyVisibility} -- user ${ctx.user.name}/$perm ==> $authorized")
             if (authorized) {
               ctx.setCtxValue("team.id", team.id)
               ctx.setCtxValue("team.name", team.name)

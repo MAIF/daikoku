@@ -299,17 +299,6 @@ export function subscriptionsInit(subscriptions) {
   });
 }
 
-export function deleteApiKey(teamId, subscriptionId) {
-  return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_delete`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
 export function archiveApiKey(teamId, subscriptionId, enable) {
   return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_archive?enabled=${enable}`, {
     method: 'PUT',
