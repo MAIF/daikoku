@@ -212,13 +212,6 @@ export class TeamMembersSimpleComponent extends Component {
     }
   };
 
-  updateApiKeysVisibility = (onlyForAdmins) => {
-    return Services.updateApiKeysVisibility(
-      this.props.currentTeam._id,
-      onlyForAdmins
-    ).then(({ team }) => this.props.updateTeam(team));
-  };
-
   render() {
     if (this.props.currentTeam.type === 'Personal') {
       return <Redirect to="/settings/me" />;
@@ -270,15 +263,6 @@ export class TeamMembersSimpleComponent extends Component {
               onChange={(e) => {
                 this.setState({ search: e.target.value });
               }}
-            />
-          </div>
-          <div className="col-12 mb-3 d-flex justify-content-between">
-            <SwitchButton
-              label={t('Api keys are just visible by admins', this.props.currentLanguage)}
-              onSwitch={this.updateApiKeysVisibility}
-              checked={this.props.currentTeam.showApiKeyOnlyToAdmins}
-              large
-              noText
             />
           </div>
         </div>

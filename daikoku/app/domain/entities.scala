@@ -1054,11 +1054,8 @@ object TeamApiKeyVisibility {
   val values: Seq[TeamApiKeyVisibility] =
     Seq(Administrator, ApiEditor, User)
   def apply(name: String): Option[TeamApiKeyVisibility] = name.toLowerCase() match {
-    case "Administrator" => Administrator.some
     case "administrator" => Administrator.some
-    case "ApiEditor" => ApiEditor.some
-    case "apiEditor" => ApiEditor.some
-    case "User"     => User.some
+    case "apieditor" => ApiEditor.some
     case "user"     => User.some
     case _          => None
   }

@@ -1,12 +1,9 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
@@ -16,12 +13,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -161,9 +153,9 @@ class TeamController(DaikokuAction: DaikokuAction,
                   val teamToSave =
                     if (ctx.user.isDaikokuAdmin) newTeam
                     else
-                      newTeam.copy(metadata = team.metadata,
-                                   apisCreationPermission =
-                                     team.apisCreationPermission)
+                      newTeam.copy(
+                        metadata = team.metadata,
+                        apisCreationPermission = team.apisCreationPermission)
                   env.dataStore.teamRepo
                     .forTenant(ctx.tenant.id)
                     .save(teamToSave)

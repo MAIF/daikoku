@@ -124,9 +124,9 @@ export function init(
     };
 
     setupTimeouts(session);
-    registerAlert(); // Hell Yeah !!!!
-    registerConfirm();
-    registerPrompt();
+    registerAlert(storeInst); // Hell Yeah !!!!
+    registerConfirm(storeInst);
+    registerPrompt(storeInst);
     registerContact(storeInst);
   }
 }
@@ -140,9 +140,9 @@ export function login(provider, callback, tenant) {
     </Provider>,
     document.getElementById('app')
   );
-  registerAlert(); // Hell Yeah !!!!
-  registerConfirm();
-  registerPrompt();
+  registerAlert(storeInst); // Hell Yeah !!!!
+  registerConfirm(storeInst);
+  registerPrompt(storeInst);
   registerContact(storeInst);
 }
 
@@ -155,8 +155,8 @@ export function initNotLogged(tenant) {
     </Provider>,
     document.getElementById('app')
   );
-  registerAlert(); // Hell Yeah !!!!
-  registerConfirm();
-  registerPrompt();
+  registerAlert(storeInst); // Hell Yeah !!!!
+  registerConfirm(storeInst);
+  registerPrompt(storeInst);
   registerContact(storeInst);
 }

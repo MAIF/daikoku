@@ -110,18 +110,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       ctx.setCtxValue("team.name", team.name)
       ctx.setCtxValue("team.id", team.id)
 
-      env.dataStore.translationRepo.forTenant(ctx.tenant)
-        .find(Json.obj("element.id" -> team.id.asJson))
-        .map(translations => {
-          val translationAsJsObject = translations
-            .groupBy(t => t.language)
-            .map {
-              case (k, v) => Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
-            }.fold(Json.obj())(_ deepMerge _)
-          val translation = Json.obj("translation" -> translationAsJsObject)
-
-          Ok(team.asJson.as[JsObject] ++ translation)
-        })
+      FastFuture.successful(Ok(team.toUiPayload))
     }
   }
 

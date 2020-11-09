@@ -757,18 +757,6 @@ export function askForApiAccess(teams, api) {
   }).then((r) => r.json());
 }
 
-export function updateApiKeysVisibility(teamId, showApiKeyOnlyToAdmins) {
-  return fetch(`/api/teams/${teamId}/apiKeys/visibility`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ showApiKeyOnlyToAdmins }),
-  }).then((r) => r.json());
-}
-
 export function fetchAuditTrail(from, to, page, size) {
   return fetch(`/api/admin/auditTrail?from=${from}&to=${to}&page=${page}&size=${size}`, {
     method: 'GET',

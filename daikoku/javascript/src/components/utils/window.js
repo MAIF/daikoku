@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
 import _ from 'lodash';
 
 import { OPEN_MODAL } from '../../core/modal';
@@ -198,7 +199,7 @@ Prompt.propTypes = {
   message: PropTypes.string,
 };
 
-export function registerAlert() {
+export function registerAlert(store) {
   window.oldAlert = window.alert;
   if (!document.getElementById('daikoku-alerts-container')) {
     const div = document.createElement('div');
@@ -208,22 +209,24 @@ export function registerAlert() {
   window.alert = (message, title, linkOpt) => {
     return new Promise((success) => {
       ReactDOM.render(
-        <Alert
-          message={message}
-          title={title}
-          linkOpt={linkOpt}
-          close={() => {
-            ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
-            success();
-          }}
-        />,
+        <Provider store={store}>
+          <Alert
+            message={message}
+            title={title}
+            linkOpt={linkOpt}
+            close={() => {
+              ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
+              success();
+            }}
+          />
+        </Provider>,
         document.getElementById('daikoku-alerts-container')
       );
     });
   };
 }
 
-export function registerConfirm() {
+export function registerConfirm(store) {
   window.oldConfirm = window.confirm;
   if (!document.getElementById('daikoku-alerts-container')) {
     const div = document.createElement('div');
@@ -233,24 +236,26 @@ export function registerConfirm() {
   window.confirm = (message) => {
     return new Promise((success) => {
       ReactDOM.render(
-        <Confirm
-          message={message}
-          ok={() => {
-            success(true);
-            ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
-          }}
-          cancel={() => {
-            success(false);
-            ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
-          }}
-        />,
+        <Provider store={store}>
+          <Confirm
+            message={message}
+            ok={() => {
+              success(true);
+              ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
+            }}
+            cancel={() => {
+              success(false);
+              ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
+            }}
+          />
+        </Provider>,
         document.getElementById('daikoku-alerts-container')
       );
     });
   };
 }
 
-export function registerPrompt() {
+export function registerPrompt(store) {
   window.oldPrompt = window.prompot;
   if (!document.getElementById('daikoku-alerts-container')) {
     const div = document.createElement('div');
@@ -260,19 +265,21 @@ export function registerPrompt() {
   window.prompt = (message, value, isPassword) => {
     return new Promise((success) => {
       ReactDOM.render(
-        <Prompt
-          isPassword={!!isPassword}
-          message={message}
-          value={value}
-          ok={(inputValue) => {
-            success(inputValue);
-            ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
-          }}
-          cancel={() => {
-            success(null);
-            ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
-          }}
-        />,
+        <Provider store={store}>
+          <Prompt
+            isPassword={!!isPassword}
+            message={message}
+            value={value}
+            ok={(inputValue) => {
+              success(inputValue);
+              ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
+            }}
+            cancel={() => {
+              success(null);
+              ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
+            }}
+          />
+        </Provider>,
         document.getElementById('daikoku-alerts-container')
       );
     });
