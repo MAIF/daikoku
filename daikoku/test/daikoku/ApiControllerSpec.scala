@@ -20,7 +20,6 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
 }
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.{
   DaikokuSpecHelper,
   OneServerPerSuiteWithMyComponents
@@ -667,7 +666,6 @@ class ApiControllerSpec()
         body = Some(
           Json.obj("plan" -> "1", "teams" -> Json.arr(teamConsumer.id.asJson)))
       )(tenant, session)
-      logger.debug(Json.stringify(resp.json))
       resp.status mustBe 200
       resp.json mustBe Json.parse(
         "[{\"error\":\"Consumer Team is not authorized on this plan\"}]")
@@ -1666,8 +1664,6 @@ class ApiControllerSpec()
         body = Some(
           sub.copy(customMetadata = Some(Json.obj("foo" -> "bar"))).asSafeJson)
       )(tenant, session)
-
-      logger.debug(Json.stringify(resp.json))
       resp.status mustBe 403
     }
 
@@ -1726,7 +1722,6 @@ class ApiControllerSpec()
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
-      logger.warn(Json.stringify(resp.json))
       resp.status mustBe 400
       (resp.json \ "error")
         .as[String] mustBe "You need to provide custom metadata"
@@ -1976,7 +1971,7 @@ class ApiControllerSpec()
       resp2.status mustBe 404
     }
 
-    "subscribe to an api and update the custom name only if not showApiKeyOnlyToAdmin" in {
+    "subscribe to an api and update the custom name only if he's authorized by apikey visibility" in {
       val teamIdWithApiKeyVisible = TeamId("team-consumer-with-apikey-visible")
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1984,10 +1979,12 @@ class ApiControllerSpec()
         teams = Seq(
           teamOwner,
           teamConsumer.copy(
-            users = Set(UserWithPermission(userApiEditorId, ApiEditor))),
+            users = Set(UserWithPermission(userApiEditorId, ApiEditor)),
+            apiKeyVisibility = Some(TeamApiKeyVisibility.Administrator)
+          ),
           teamConsumer.copy(
             id = teamIdWithApiKeyVisible,
-            showApiKeyOnlyToAdmins = false,
+            apiKeyVisibility = Some(TeamApiKeyVisibility.ApiEditor),
             users = Set(UserWithPermission(userApiEditorId, ApiEditor)))
         ),
         apis = Seq(defaultApi)
@@ -2367,7 +2364,7 @@ class ApiControllerSpec()
       resp.status mustBe 403
     }
 
-    "subscribe to an api and update the custom name only if not showApiKeyOnlyToAdmin" in {
+    "subscribe to an api and update the custom name only if he's auhtorized by team apikey visibility" in {
       val teamIdWithApiKeyVisible = TeamId("team-consumer-with-apikey-visible")
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -2375,11 +2372,13 @@ class ApiControllerSpec()
         teams = Seq(
           teamOwner,
           teamConsumer.copy(
-            users = Set(UserWithPermission(userApiEditorId, ApiEditor))),
+            apiKeyVisibility = Some(TeamApiKeyVisibility.ApiEditor),
+            users = Set(UserWithPermission(userApiEditorId, TeamPermission.TeamUser))
+          ),
           teamConsumer.copy(
             id = teamIdWithApiKeyVisible,
-            showApiKeyOnlyToAdmins = false,
-            users = Set(UserWithPermission(userApiEditorId, ApiEditor)))
+            apiKeyVisibility = Some(TeamApiKeyVisibility.User),
+            users = Set(UserWithPermission(userApiEditorId, TeamPermission.TeamUser)))
         ),
         apis = Seq(defaultApi)
       )
@@ -2744,7 +2743,7 @@ class ApiControllerSpec()
     }
   }
 
-  "a subscription" should {
+ "a subscription" should {
     "be not available right now if plan's subscription process is manual" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -2927,11 +2926,11 @@ class ApiControllerSpec()
         .contains("not authorized") mustBe true
     }
 
-    "be just visible for admin if apiKeyOnlyVisibleToAdmin" in {
+    "be just visible for admin if team apikey visibility is set to Administrator" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
-        teams = Seq(teamOwner, teamConsumer.copy(showApiKeyOnlyToAdmins = true)),
+        teams = Seq(teamOwner, teamConsumer.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.Administrator))),
         apis = Seq(defaultApi)
       )
 

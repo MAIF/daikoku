@@ -3,14 +3,12 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuActionContext,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -33,7 +31,7 @@ object authorizations {
         team.users
           .find(_.userId == user.id)
           .forall(_.teamPermission != TeamPermission.TeamUser)
-      case Some(TeamApiKeyVisibility.User) => false
+      case Some(TeamApiKeyVisibility.User) => true
       case None => env.config.defaultApiKeyVisibility match {
         case TeamApiKeyVisibility.Administrator => team.users
           .find(_.userId == user.id)
@@ -41,7 +39,7 @@ object authorizations {
         case TeamApiKeyVisibility.ApiEditor => team.users
           .find(_.userId == user.id)
           .forall(_.teamPermission != TeamPermission.TeamUser)
-        case TeamApiKeyVisibility.User => false
+        case TeamApiKeyVisibility.User => true
       }
     }
 
@@ -661,8 +659,20 @@ object authorizations {
                   ctx.ctx,
                   AuthorizationLevel.AuthorizedDaikokuAdmin)
             }
+          case Some(team) if !team.includeUser(ctx.user.id) =>
+            audit.logTenantAuditEvent(ctx.tenant,
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized)
+            FastFuture.successful(
+              Results.Forbidden(
+                Json.obj("error" -> "You're not part of the team")))
           case Some(team) =>
             val authorized : Boolean = authorizations.isTeamApiKeyVisible(team, ctx.user)
+            val perm = team.users.find(_.userId == ctx.user.id)
+            AppLogger.warn(s"### Team ${team.name}/${team.apiKeyVisibility} -- user ${ctx.user.name}/$perm ==> $authorized")
             if (authorized) {
               ctx.setCtxValue("team.id", team.id)
               ctx.setCtxValue("team.name", team.name)
@@ -684,10 +694,8 @@ object authorizations {
                 ctx.ctx,
                 AuthorizationLevel.NotAuthorized)
               FastFuture.successful(
-                Results.Unauthorized(Json.obj("error" -> "Unauthorized action")))
+                Results.Forbidden(Json.obj("error" -> "Unauthorized action")))
             }
-
-            ???
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
               ctx.user,

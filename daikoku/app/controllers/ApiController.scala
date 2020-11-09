@@ -820,7 +820,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   def updateApiSubscriptionCustomName(teamId: String, subscriptionId: String) = DaikokuAction.async(parse.json) { ctx =>
     TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has update custom name for subscription @{subscription._id}"))(teamId,
       ctx) {
-      team =>
+      _ =>
         val customName = (ctx.request.body.as[JsObject] \ "customName").as[String].toLowerCase.trim
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant)
@@ -863,7 +863,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def getApiSubscriptionsForTeam(apiId: String, teamId: String) = DaikokuAction.async { ctx =>
-    TeamMemberOnly(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(teamId, ctx) {
+    TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(teamId, ctx) {
       team =>
         def findSubscriptions(api: Api, team: Team): Future[Result] = {
           env.dataStore.apiSubscriptionRepo
@@ -887,25 +887,12 @@ class ApiController(DaikokuAction: DaikokuAction,
             }
         }
 
-        def checkTeam(api: Api): Future[Result] = {
-          ctx.setCtxValue("api.id", api.id)
-          ctx.setCtxValue("api.name", api.name)
-
-          if (!authorizations.isTeamApiKeyVisible(team, ctx.user)) {
-            FastFuture.successful(
-              Forbidden(Json.obj("error" -> "You're not authorized to see subscriptions on this team"))
-            )
-          } else {
-            findSubscriptions(api, team)
-          }
-        }
-
         env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-          case Some(api) if api.visibility == ApiVisibility.Public => checkTeam(api)
-          case Some(api) if api.team == team.id => checkTeam(api)
+          case Some(api) if api.visibility == ApiVisibility.Public => findSubscriptions(api, team)
+          case Some(api) if api.team == team.id => findSubscriptions(api, team)
           case Some(api) if api.visibility != ApiVisibility.Public && api.authorizedTeams.contains(team.id) =>
-            checkTeam(api)
+            findSubscriptions(api, team)
           case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api")))
         }
     }

@@ -400,20 +400,19 @@ class TeamControllerSpec()
       )
       val session = loginWithBlocking(userAdmin, tenant)
 
-      teamOwner.showApiKeyOnlyToAdmins mustBe true
+      teamOwner.apiKeyVisibility mustBe None
       val resp =
         httpJsonCallBlocking(
-          path = s"/api/teams/${teamOwnerId.value}/apiKeys/visibility",
-          method = "POST",
-          body = Some(Json.obj("showApiKeyOnlyToAdmins" -> false))
+          path = s"/api/teams/${teamOwnerId.value}",
+          method = "PUT",
+          body = Some(teamOwner.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.Administrator)).asJson)
         )(tenant, session)
       resp.status mustBe 200
 
-      (resp.json \ "done").as[Boolean] mustBe true
       val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
-        .reads((resp.json \ "team").as[JsObject])
+        .reads(resp.json.as[JsObject])
       updatedTeam.isSuccess mustBe true
-      updatedTeam.get.showApiKeyOnlyToAdmins mustBe false
+      updatedTeam.get.apiKeyVisibility mustBe Some(TeamApiKeyVisibility.Administrator)
     }
 
     "get addable and pending user for his team" in {
@@ -682,12 +681,12 @@ class TeamControllerSpec()
       )
       val session = loginWithBlocking(randomUser, tenant)
 
-      teamOwner.showApiKeyOnlyToAdmins mustBe true
+      teamOwner.apiKeyVisibility mustBe None
       val resp =
         httpJsonCallBlocking(
-          path = s"/api/teams/${teamOwnerId.value}/apiKeys/visibility",
-          method = "POST",
-          body = Some(Json.obj("showApiKeyOnlyToAdmins" -> false))
+          path = s"/api/teams/${teamOwnerId.value}",
+          method = "PUT",
+          body = Some(teamOwner.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.ApiEditor)).asJson)
         )(tenant, session)
       resp.status mustBe 403
     }
@@ -706,14 +705,14 @@ class TeamControllerSpec()
       myTeam.isSuccess mustBe true
       val myTeamId = myTeam.get.id
 
-      teamOwner.showApiKeyOnlyToAdmins mustBe true
+      teamOwner.apiKeyVisibility mustBe None
       val resp =
         httpJsonCallBlocking(
-          path = s"/api/teams/${myTeamId.value}/apiKeys/visibility",
-          method = "POST",
-          body = Some(Json.obj("showApiKeyOnlyToAdmins" -> false))
+          path = s"/api/teams/${myTeamId.value}",
+          method = "PUT",
+          body = Some(myTeam.get.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.ApiEditor)).asJson)
         )(tenant, session)
-      resp.status mustBe 409
+      resp.status mustBe 403
     }
 
     "get his team home information" in {
@@ -842,7 +841,7 @@ class TeamControllerSpec()
       respUser.status mustBe 403
     }
 
-    "not see its apikey visibility updated" in {
+    "not update its apikey visibility" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
@@ -852,15 +851,14 @@ class TeamControllerSpec()
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
-      defaultAdminTeam.showApiKeyOnlyToAdmins mustBe true
+      defaultAdminTeam.apiKeyVisibility mustBe None
       val resp =
         httpJsonCallBlocking(
-          path = s"/api/teams/${defaultAdminTeam.id.value}/apiKeys/visibility",
-          method = "POST",
-          body = Some(Json.obj("showApiKeyOnlyToAdmins" -> false))
+          path = s"/api/teams/${defaultAdminTeam.id.value}",
+          method = "PUT",
+          body = Some(defaultAdminTeam.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.User)).asJson)
         )(tenant, session)
-      logger.debug(Json.stringify(resp.json))
-      resp.status mustBe 409
+      resp.status mustBe 403
     }
 
     "not see its member permission updated" in {
