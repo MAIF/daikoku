@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
 import { Table } from '../../inputs';
-import { Can, manage, read, apikey, isUserIsTeamAdmin } from '../../utils';
+import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
 import { t, Translation } from '../../../locales';
 
 export class TeamApiKeysComponent extends Component {
@@ -78,7 +78,7 @@ export class TeamApiKeysComponent extends Component {
   render() {
     return (
       <TeamBackOffice tab="ApiKeys" apiId={this.props.match.params.apiId}>
-        <Can I={read} a={apikey} team={this.props.currentTeam} dispatchError={true}>
+        <Can I={manage} a={apikey} team={this.props.currentTeam} dispatchError={true}>
           <div className="row">
             <div className="col">
               <h1>

@@ -2951,6 +2951,5 @@ class ApiControllerSpec()
         })
       })
     }
-    //todo: !!! just admin can clean archived apikey
   }
 }
