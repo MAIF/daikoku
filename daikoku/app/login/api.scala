@@ -83,7 +83,6 @@ object TenantHelper {
   def withTenant(request: RequestHeader, env: Env)(f: Tenant => Future[Result])(
       implicit ec: ExecutionContext): Future[Result] = {
 
-    AppLogger.debug(env.config.tenantProvider.name)
     env.config.tenantProvider match {
       case TenantProvider.Header => {
         val tenantId = TenantHelper.extractTenantId(request)(env)

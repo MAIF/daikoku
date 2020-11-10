@@ -181,7 +181,6 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
       query: JsObject = Json.obj()): Future[Unit] = {
     env.dataStore.apiSubscriptionRepo.forAllTenant().findNotDeleted(query).map {
       subscriptions =>
-        AppLogger.debug(subscriptions.map(_.id.value).mkString(" - "))
         subscriptions.map { subscription =>
           env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant).map {
             case None =>

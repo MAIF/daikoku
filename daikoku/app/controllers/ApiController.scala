@@ -246,8 +246,6 @@ class ApiController(DaikokuAction: DaikokuAction,
                 "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))))
             )
         )
-        test = AppLogger.warn(Json.prettyPrint(Json.obj("api" -> api.id.value,
-          "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))))))
       } yield {
         if (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
           .intersect(myTeams.map(_.id))
