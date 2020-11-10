@@ -7,6 +7,7 @@ It's necessary to fill in the following fields :
 * Description: A quick description for the new team (Display in the all team page)
 * Team contact: the mail to contact the team
 * Team avatar: a link to the team avatar. It's possible to use gravatar (or an asset, once the team is created)
+* apiKeyVisibility: Minimum member permission to see and manage team apikeys. Default set to User.
 
 After creation, you will be redirected to the members page to managing them 
 
@@ -27,6 +28,3 @@ Then, choose:
 * admin: member can access everything.
 * api editor: member can't manage team but can create an api.
 * nothing: member can just subscribe another team api.
-
-### Update apikeys visibility
-A switch button allow to team admins to set apikey visibility. If it is set on `on`, only team admins are able to see APIkeys.

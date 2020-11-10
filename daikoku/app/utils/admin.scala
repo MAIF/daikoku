@@ -386,7 +386,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                                               missing,
                                               required))
         }
-      case "scala.collection.Seq" =>
+      case "scala.collection.immutable.Seq" =>
         fieldGeneric match {
           case None => Json.obj("type" -> "any")
           case Some(_generic) =>
@@ -411,6 +411,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
         Json.obj("type" -> "number", "format" -> "float64")
       case "java.lang.Object" if fieldName == "avgOverhead" =>
         Json.obj("type" -> "number", "format" -> "float64")
+      case "java.lang.Object" => Json.obj("type" -> "object") //todo find a better way to get warrped type By scala.Option
       case str
           if str.startsWith("fr.maif.otoroshi.daikoku.domain") && str.endsWith(
             "Id") =>
