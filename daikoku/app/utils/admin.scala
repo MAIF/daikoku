@@ -411,7 +411,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
         Json.obj("type" -> "number", "format" -> "float64")
       case "java.lang.Object" if fieldName == "avgOverhead" =>
         Json.obj("type" -> "number", "format" -> "float64")
-      case "java.lang.Object" => Json.obj("type" -> "object") //todo find a better way to get warrped type By scala.Option
+      case "java.lang.Object" => Json.obj("type" -> "object") //todo find a better way to get warrped type By scala.Option https://stackoverflow.com/questions/54914316/get-type-of-primitive-field-from-an-object-using-scala-reflection
       case str
           if str.startsWith("fr.maif.otoroshi.daikoku.domain") && str.endsWith(
             "Id") =>
