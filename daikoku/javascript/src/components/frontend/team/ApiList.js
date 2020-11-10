@@ -177,12 +177,7 @@ class ApiListComponent extends Component {
 
   handlePageClick = (data) => {
     this.setState(
-      { offset: data.selected * this.state.pageNumber, selectedPage: data.selected },
-      () =>
-        console.debug({
-          offset: data.selected * this.state.pageNumber,
-          selectedPage: data.selected,
-        })
+      { offset: data.selected * this.state.pageNumber, selectedPage: data.selected }
     );
   };
 

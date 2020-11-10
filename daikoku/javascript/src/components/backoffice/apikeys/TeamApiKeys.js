@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
 import { Table } from '../../inputs';
-import { Can, read, apikey, isUserIsTeamAdmin } from '../../utils';
+import { Can, manage, read, apikey, isUserIsTeamAdmin } from '../../utils';
 import { t, Translation } from '../../../locales';
 
 export class TeamApiKeysComponent extends Component {

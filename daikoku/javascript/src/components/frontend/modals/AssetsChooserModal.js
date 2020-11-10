@@ -166,12 +166,6 @@ export class AssetChooserComponent extends Component {
     this.getAssets(this.props.team);
   }
 
-  // shouldComponentUpdate(nextProps,nexState) {
-  // 	const shouldUpdate = this.state.loading || nextProps.currentTeam._id !== this.props.currentTeam._id;
-  // 	console.debug(shouldUpdate)
-  // 	return shouldUpdate;
-  // }
-
   getAssets(team) {
     let fetchAssets = () => new Promise((resolve) => resolve([]));
     if (this.props.tenantMode) {
