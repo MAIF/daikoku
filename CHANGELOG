@@ -35,3 +35,21 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@quentinovega](https://github.com/quentinovega)
 
+## [v1.0.8] - 2020-11-10
+
+## :star: New Features
+
+- Application conf for apikey visibility in team [#164](https://github.com/MAIF/daikoku/issues/164)
+- Show user permissions explanation in team user perm managment page [#163](https://github.com/MAIF/daikoku/issues/163)
+
+## :beetle: Bug Fixes
+
+- Title from user permission management don't appear [#162](https://github.com/MAIF/daikoku/issues/162)
+- Api editor can't access to api subscriptions page [#161](https://github.com/MAIF/daikoku/issues/161)
+
+## :heart: Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@quentinovega](https://github.com/quentinovega)
+
