@@ -1,5 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.PublicUserAccess
@@ -59,7 +60,8 @@ class EntitiesController(DaikokuAction: DaikokuAction,
           tenant = ctx.tenant.id,
           `type` = TeamType.Organization,
           name = "New Team",
-          description = "A new team"
+          description = "A new team",
+          apiKeyVisibility = env.config.defaultApiKeyVisibility.some
         ).asJson)
     }
   }

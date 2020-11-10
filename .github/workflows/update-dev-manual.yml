@@ -6,13 +6,6 @@ on:
       - 'manual/**'
     branches:
       - master
-    tags:
-      - v**
-  pull_request:
-    paths:
-      - 'manual/**'
-    branches:
-      - master
 
 jobs:
   build_dev_manual:
@@ -21,14 +14,19 @@ jobs:
     steps:
       - uses: actions/checkout@v2.0.0
       - name: Generate dev documentation website
-        run: sh ./scripts/build.sh devdoc
+        id: doc
+        run: |
+          sh ./scripts/build.sh devdoc
+          echo "::set-output name=diff::$(git diff --numstat | wc -l)"
       - name: Commit files
+        if: steps.doc.output.diff != '0'
         run: |
           git config --local user.email "daikoku-github-actions@users.noreply.github.com"
           git config --local user.name "daikoku-github-actions"
           git add --all
           git commit -am "Update dev documentation"
       - name: Push documentation
+        if: steps.doc.output.diff != '0'
         uses: ad-m/github-push-action@master
         with:
           branch: master

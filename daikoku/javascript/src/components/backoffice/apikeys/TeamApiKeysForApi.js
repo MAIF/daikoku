@@ -49,29 +49,6 @@ class TeamApiKeysForApiComponent extends Component {
     return Services.updateSubscriptionCustomName(this.props.currentTeam, subscription, customName);
   };
 
-  deleteApiKey = (subscription) => {
-    window
-      .confirm(
-        t(
-          'delete.apikey.confirm',
-          this.props.currentLanguage,
-          'Are you sure to delete this apikey ?'
-        )
-      )
-      .then((ok) => {
-        if (ok) {
-          Services.deleteApiKey(this.props.currentTeam._id, subscription._id)
-            .then(() =>
-              Services.getTeamSubscriptions(
-                this.props.match.params.apiId,
-                this.props.currentTeam._id
-              )
-            )
-            .then((subscriptions) => this.setState({ subscriptions }));
-        }
-      });
-  };
-
   archiveApiKey = (subscription) => {
     return Services.archiveApiKey(
       this.props.currentTeam._id,
@@ -92,7 +69,7 @@ class TeamApiKeysForApiComponent extends Component {
           'rotation.error.message',
           this.props.currentLanguage,
           false,
-          "You can't toggle rotation because of plan rotation is forced to enabled"
+          'You can\'t toggle rotation because of plan rotation is forced to enabled'
         )
       );
     }
@@ -226,7 +203,6 @@ class TeamApiKeysForApiComponent extends Component {
                         plan={plan}
                         api={this.state.api}
                         updateCustomName={(name) => this.updateCustomName(subscription, name)}
-                        deleteApiKey={() => this.deleteApiKey(subscription)}
                         archiveApiKey={() => this.archiveApiKey(subscription)}
                         toggleRotation={(rotationEvery, gracePeriod) =>
                           this.toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)
@@ -305,7 +281,7 @@ const ApiKeyCard = ({
 
   useEffect(() => {
     if (rotationEvery < 0) {
-      setError({ ...error, rotationEvery: "value can't be negative" });
+      setError({ ...error, rotationEvery: 'value can\'t be negative' });
     } else {
       delete error.rotationEvery;
       setError(error);
@@ -314,9 +290,9 @@ const ApiKeyCard = ({
 
   useEffect(() => {
     if (gracePeriod < 0) {
-      setError({ ...error, gracePeriod: "value can't be negative" });
+      setError({ ...error, gracePeriod: 'value can\'t be negative' });
     } else if (gracePeriod > rotationEvery) {
-      setError({ ...error, gracePeriod: "value can't be bigger than rotationEvery" });
+      setError({ ...error, gracePeriod: 'value can\'t be bigger than rotationEvery' });
     } else {
       delete error.gracePeriod;
       setError(error);

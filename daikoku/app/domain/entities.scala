@@ -1035,6 +1035,32 @@ case class UserWithPermission(
   override def asJson: JsValue = json.UserWithPermissionFormat.writes(this)
 }
 
+
+sealed trait TeamApiKeyVisibility extends CanJson[TeamApiKeyVisibility] {
+  def name: String
+  def asJson: JsValue = JsString(name)
+}
+
+object TeamApiKeyVisibility {
+  case object Administrator extends TeamApiKeyVisibility {
+    def name: String = "Administrator"
+  }
+  case object ApiEditor extends TeamApiKeyVisibility {
+    def name: String = "ApiEditor"
+  }
+  case object User extends TeamApiKeyVisibility {
+    def name: String = "User"
+  }
+  val values: Seq[TeamApiKeyVisibility] =
+    Seq(Administrator, ApiEditor, User)
+  def apply(name: String): Option[TeamApiKeyVisibility] = name.toLowerCase() match {
+    case "administrator" => Administrator.some
+    case "apieditor" => ApiEditor.some
+    case "user"     => User.some
+    case _          => None
+  }
+}
+
 case class Team(
     id: TeamId,
     tenant: TenantId,
@@ -1047,14 +1073,14 @@ case class Team(
     users: Set[UserWithPermission] = Set.empty,
     subscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     authorizedOtoroshiGroups: Set[OtoroshiGroup] = Set.empty,
-    showApiKeyOnlyToAdmins: Boolean = true,
+    apiKeyVisibility: Option[TeamApiKeyVisibility] = None,
     metadata: Map[String, String] = Map.empty,
-    apisCreationPermission: Option[Boolean] = None
+    apisCreationPermission: Option[Boolean] = None,
 ) extends CanJson[User] {
   override def asJson: JsValue = json.TeamFormat.writes(this)
   def humanReadableId = name.urlPathSegmentSanitized
-  def asSimpleJson: JsValue = toUiPayload()
-  def toUiPayload(): JsValue = {
+  def asSimpleJson(implicit env: Env): JsValue = toUiPayload()
+  def toUiPayload()(implicit env: Env): JsValue = {
     Json.obj(
       "_id" -> id.value,
       "_humanReadableId" -> humanReadableId,
@@ -1066,7 +1092,7 @@ case class Team(
       "avatar" -> JsString(avatar.getOrElse("/assets/images/daikoku.svg")),
       "contact" -> contact,
       "users" -> json.SetUserWithPermissionFormat.writes(users),
-      "showApiKeyOnlyToAdmins" -> showApiKeyOnlyToAdmins,
+      "apiKeyVisibility" -> apiKeyVisibility.getOrElse(env.config.defaultApiKeyVisibility).asJson,
       "apisCreationPermission" -> apisCreationPermission
         .map(JsBoolean)
         .getOrElse(JsNull)

@@ -84,8 +84,6 @@ GET     /api/apis/:apiId/pages/:id                      fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/teams/:teamId/subscriptions/:id/name       fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiSubscriptionCustomName(teamId, id)
 ### NoDocs ###
-DELETE  /api/teams/:teamId/subscriptions/:id/_delete    fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiSubscription(teamId, id)
-### NoDocs ###
 PUT		  /api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
 
 
@@ -272,8 +270,6 @@ POST    /api/teams/:teamId/members                      fr.maif.otoroshi.daikoku
 GET     /api/teams/:teamId/members                      fr.maif.otoroshi.daikoku.ctrls.TeamController.membersOfTeam(teamId)
 ### NoDocs ###
 GET     /api/teams/:teamId/addable-members              fr.maif.otoroshi.daikoku.ctrls.TeamController.addableUsersForTeam(teamId)
-### NoDocs ###
-POST    /api/teams/:teamId/apiKeys/visibility           fr.maif.otoroshi.daikoku.ctrls.TeamController.updateApiKeysVisibility(teamId)
 ### NoDocs ###
 GET     /api/teams/:teamId/home                         fr.maif.otoroshi.daikoku.ctrls.TeamController.teamHome(teamId)
 

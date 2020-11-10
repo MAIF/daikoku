@@ -83,43 +83,6 @@ class ConsumptionControllerSpec()
   )
 
   "a team admin" can {
-    "get apikey consumption" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
-        subscriptions = Seq(payperUserSub),
-        consumptions = Seq(
-          yesterdayConsumption
-        )
-      )
-      val session = loginWithBlocking(userAdmin, tenant)
-      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$from&to=$to"
-      )(tenant, session)
-
-      resp.status mustBe 200
-      val eventualPlan = fr.maif.otoroshi.daikoku.domain.json.UsagePlanFormat
-        .reads((resp.json \ "plan").as[JsObject])
-      eventualPlan.isSuccess mustBe true
-      val eventualConsumptions =
-        fr.maif.otoroshi.daikoku.domain.json.SeqConsumptionFormat
-          .reads((resp.json \ "consumptions").as[JsArray])
-      eventualConsumptions.isSuccess mustBe true
-
-      val maybePlan =
-        defaultApi.possibleUsagePlans.find(u => u.typeName == "PayPerUse")
-      maybePlan.isDefined mustBe true
-
-      eventualPlan.get mustBe maybePlan.get
-      eventualConsumptions.get.length mustBe 1
-      eventualConsumptions.get.head.hits mustBe 1000L
-    }
-
     "get otoroshi group consumption" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -636,40 +599,6 @@ class ConsumptionControllerSpec()
 
   "a user or apiEditor" can {
     val randomUser = Random.shuffle(Seq(user, userApiEditor)).head
-    "not get apikey consumption" in {
-      val sub = ApiSubscription(
-        id = ApiSubscriptionId("test"),
-        tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
-        plan = payPerUsePlanId,
-        createdAt = DateTime.now(),
-        team = teamConsumerId,
-        api = defaultApi.id,
-        by = userTeamAdminId,
-        customName = None,
-        rotation = None,
-        integrationToken = "token"
-      )
-
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userAdmin, randomUser),
-        teams = Seq(teamOwner, teamConsumer),
-        apis = Seq(defaultApi),
-        subscriptions = Seq(sub),
-        consumptions = Seq(
-          yesterdayConsumption
-        )
-      )
-      val session = loginWithBlocking(randomUser, tenant)
-      val from = DateTime.now().minusDays(1).withTimeAtStartOfDay().getMillis
-      val to = DateTime.now().withTimeAtStartOfDay().getMillis
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamConsumerId.value}/subscription/${sub.id.value}/consumption?from=$from&to=$to"
-      )(tenant, session)
-      resp.status mustBe 403
-    }
 
     "not get otoroshi group consumption" in {
       setupEnvBlocking(

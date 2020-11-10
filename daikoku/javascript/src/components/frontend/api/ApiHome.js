@@ -244,6 +244,7 @@ class ApiHomeComponent extends Component {
             <div className="row pt-3">
               {['pricing', 'description'].includes(tab) && (
                 <ApiCartidge
+                  connectedUser={this.props.connectedUser}
                   myTeams={this.state.myTeams}
                   ownerTeam={this.state.ownerTeam}
                   api={api}

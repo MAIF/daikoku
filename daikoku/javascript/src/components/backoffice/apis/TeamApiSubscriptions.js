@@ -143,7 +143,6 @@ const TeamApiSubscriptionsComponent = (props) => {
   const updateMeta = (sub) =>
     props.openSubMetadataModal({
       save: (updates) => {
-        console.debug({ updates, realUpdate: { ...sub, ...updates } });
         Services.updateSubscription(props.currentTeam, { ...sub, ...updates }).then(() =>
           table.update()
         );

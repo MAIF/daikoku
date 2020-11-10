@@ -12,7 +12,7 @@ import { AvatarChooser, Spinner } from '../../utils';
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 export class TeamEditForm extends Component {
-  flow = ['name', 'description', 'contact', 'avatar', 'avatarFrom'];
+  flow = ['name', 'description', 'contact', 'avatar', 'avatarFrom', 'apiKeyVisibility'];
 
   schema = {
     _id: {
@@ -63,6 +63,17 @@ export class TeamEditForm extends Component {
         currentLanguage: this.props.currentLanguage,
       },
     },
+    apiKeyVisibility:{
+      type: 'select',
+      props: {
+        label: t('apikey visibility', this.props.currentLanguage),
+        possibleValues: [
+          { label: t('Administrator', this.props.currentLanguage), value: 'Administrator' },
+          { label: t('ApiEditor', this.props.currentLanguage), value: 'ApiEditor' },
+          { label: t('User', this.props.currentLanguage), value: 'User' },
+        ],
+      },
+    }
   };
 
   render() {

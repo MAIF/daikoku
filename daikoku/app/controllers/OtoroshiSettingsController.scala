@@ -223,7 +223,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
 
   def createTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) {
     ctx =>
-      TeamAdminOnly(AuditTrailEvent(
+      TeamApiEditorOnly(AuditTrailEvent(
         s"@{user.name} create a testing apikey for team @{team.name} - @{team.id}"))(
         teamId,
         ctx) { team =>

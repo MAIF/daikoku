@@ -9,6 +9,7 @@ import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
+import fr.maif.otoroshi.daikoku.domain.TeamApiKeyVisibility
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.logger.AppLogger
@@ -157,6 +158,10 @@ class Config(val underlying: Configuration) {
     .getOptional[String]("daikoku.tenants.provider")
     .flatMap(TenantProvider.apply)
     .getOrElse(TenantProvider.Local)
+  lazy val defaultApiKeyVisibility: TeamApiKeyVisibility = underlying
+    .getOptional[String]("daikoku.teams.defaultApiKeyVisibility")
+    .flatMap(TeamApiKeyVisibility.apply)
+    .getOrElse(TeamApiKeyVisibility.User)
   lazy val tenantHostHeaderKey: String = underlying
     .getOptional[String]("daikoku.tenants.hostheaderName")
     .getOrElse("Otoroshi-Proxied-Host")

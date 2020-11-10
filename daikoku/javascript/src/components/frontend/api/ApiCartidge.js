@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import moment from 'moment';
 
 import { Link } from 'react-router-dom';
-import { ActionWithTeamSelector, Can, read, apikey, access } from '../../utils';
+import { ActionWithTeamSelector, Can, manage, apikey, access, CanIDoAction } from '../../utils';
 import { Translation, t } from '../../../locales';
 import _ from 'lodash';
 
@@ -117,14 +117,19 @@ export class ApiCartidge extends Component {
         </small>
 
         {!!subscribingTeams.length && (
-          <Can I={read} a={apikey} teams={subscribingTeams}>
+          <Can I={manage} a={apikey} teams={subscribingTeams}>
             <ActionWithTeamSelector
               title={t(
                 'teamapi.select.title',
                 this.props.currentLanguage,
                 'Select the team to view your api key'
               )}
-              teams={subscribingTeams}
+              teams={subscribingTeams.filter(t => CanIDoAction(
+                this.props.connectedUser,
+                manage,
+                apikey,
+                t
+              ))}
               action={(team) =>
                 this.props.redirectToApiKeysPage(this.props.myTeams.find((t) => t._id === team))
               }
