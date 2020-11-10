@@ -405,14 +405,18 @@ class TeamControllerSpec()
         httpJsonCallBlocking(
           path = s"/api/teams/${teamOwnerId.value}",
           method = "PUT",
-          body = Some(teamOwner.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.Administrator)).asJson)
+          body = Some(
+            teamOwner
+              .copy(apiKeyVisibility = Some(TeamApiKeyVisibility.Administrator))
+              .asJson)
         )(tenant, session)
       resp.status mustBe 200
 
       val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
         .reads(resp.json.as[JsObject])
       updatedTeam.isSuccess mustBe true
-      updatedTeam.get.apiKeyVisibility mustBe Some(TeamApiKeyVisibility.Administrator)
+      updatedTeam.get.apiKeyVisibility mustBe Some(
+        TeamApiKeyVisibility.Administrator)
     }
 
     "get addable and pending user for his team" in {
@@ -686,7 +690,10 @@ class TeamControllerSpec()
         httpJsonCallBlocking(
           path = s"/api/teams/${teamOwnerId.value}",
           method = "PUT",
-          body = Some(teamOwner.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.ApiEditor)).asJson)
+          body = Some(
+            teamOwner
+              .copy(apiKeyVisibility = Some(TeamApiKeyVisibility.ApiEditor))
+              .asJson)
         )(tenant, session)
       resp.status mustBe 403
     }
@@ -710,7 +717,10 @@ class TeamControllerSpec()
         httpJsonCallBlocking(
           path = s"/api/teams/${myTeamId.value}",
           method = "PUT",
-          body = Some(myTeam.get.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.ApiEditor)).asJson)
+          body = Some(
+            myTeam.get
+              .copy(apiKeyVisibility = Some(TeamApiKeyVisibility.ApiEditor))
+              .asJson)
         )(tenant, session)
       resp.status mustBe 403
     }
@@ -856,7 +866,10 @@ class TeamControllerSpec()
         httpJsonCallBlocking(
           path = s"/api/teams/${defaultAdminTeam.id.value}",
           method = "PUT",
-          body = Some(defaultAdminTeam.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.User)).asJson)
+          body = Some(
+            defaultAdminTeam
+              .copy(apiKeyVisibility = Some(TeamApiKeyVisibility.User))
+              .asJson)
         )(tenant, session)
       resp.status mustBe 403
     }

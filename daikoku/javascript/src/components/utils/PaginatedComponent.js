@@ -23,7 +23,13 @@ export const PaginatedComponent = (props) => {
   return (
     <div className="section p-2">
       <div className="flex-column">
-        {props.help && <i className="far fa-question-circle ml-1 cursor-pointer" style={{fontSize:'20px'}} onClick={() => props.help()}/>}
+        {props.help && (
+          <i
+            className="far fa-question-circle ml-1 cursor-pointer"
+            style={{ fontSize: '20px' }}
+            onClick={() => props.help()}
+          />
+        )}
         <div
           className={classNames('d-flex flex-wrap', {
             'flex-wrap': props.wrap,

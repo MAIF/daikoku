@@ -105,7 +105,7 @@ export class TeamMembersSimpleComponent extends Component {
           'remove.member.alert',
           this.props.currentLanguage,
           false,
-          'You can\'t delete this user, it must remain an admin in a team.'
+          "You can't delete this user, it must remain an admin in a team."
         )
       );
     } else {
@@ -177,7 +177,7 @@ export class TeamMembersSimpleComponent extends Component {
           t(
             'remove.admin.alert',
             this.props.currentLanguage,
-            'You can\'t remove this admin status, it must remain an admin in a team.'
+            "You can't remove this admin status, it must remain an admin in a team."
           )
         );
       } else {
@@ -206,7 +206,7 @@ export class TeamMembersSimpleComponent extends Component {
         t(
           'not.admin.alert',
           this.props.currentLanguage,
-          'Your are not an administrator. You can\'t do that.'
+          "Your are not an administrator. You can't do that."
         )
       );
     }
@@ -310,14 +310,26 @@ export class TeamMembersSimpleComponent extends Component {
             help={() => {
               alert(
                 <div className="d-flex flex-column">
-                  <div><i className="fas fa-shield-alt mr-1" />
-                    <Translation i18nkey="permission.caption.administrator" language={this.props.currentLanguage} />
+                  <div>
+                    <i className="fas fa-shield-alt mr-1" />
+                    <Translation
+                      i18nkey="permission.caption.administrator"
+                      language={this.props.currentLanguage}
+                    />
                   </div>
-                  <div><i className="fas fa-pencil-alt mr-1" />
-                    <Translation i18nkey="permission.caption.apiEditor" language={this.props.currentLanguage} />
+                  <div>
+                    <i className="fas fa-pencil-alt mr-1" />
+                    <Translation
+                      i18nkey="permission.caption.apiEditor"
+                      language={this.props.currentLanguage}
+                    />
                   </div>
-                  <div><i className="fas fa-user-alt mr-1" />
-                    <Translation i18nkey="permission.caption.user" language={this.props.currentLanguage} />
+                  <div>
+                    <i className="fas fa-user-alt mr-1" />
+                    <Translation
+                      i18nkey="permission.caption.user"
+                      language={this.props.currentLanguage}
+                    />
                   </div>
                 </div>,
                 t('Permission', this.props.currentLanguage, true)

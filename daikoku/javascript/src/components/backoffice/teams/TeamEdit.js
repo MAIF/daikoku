@@ -63,7 +63,7 @@ export class TeamEditForm extends Component {
         currentLanguage: this.props.currentLanguage,
       },
     },
-    apiKeyVisibility:{
+    apiKeyVisibility: {
       type: 'select',
       props: {
         label: t('apikey visibility', this.props.currentLanguage),
@@ -73,7 +73,7 @@ export class TeamEditForm extends Component {
           { label: t('User', this.props.currentLanguage), value: 'User' },
         ],
       },
-    }
+    },
   };
 
   render() {

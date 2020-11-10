@@ -16,7 +16,7 @@ export const isUserIsTeamAdmin = (user, team) =>
 
 export const permissions = {
   User: [
-    { action: manage, what: apikey, condition: (team) => team.apiKeyVisibility === 'User'},
+    { action: manage, what: apikey, condition: (team) => team.apiKeyVisibility === 'User' },
     { action: read, what: api },
     { action: read, what: asset },
     { action: read, what: team },
@@ -24,7 +24,11 @@ export const permissions = {
   ],
   ApiEditor: [
     { action: manage, what: api },
-    { action: manage, what: apikey, condition: (team) => team.apiKeyVisibility !== 'Administrator' },
+    {
+      action: manage,
+      what: apikey,
+      condition: (team) => team.apiKeyVisibility !== 'Administrator',
+    },
     { action: manage, what: asset },
     { action: read, what: team },
     { action: read, what: backoffice },

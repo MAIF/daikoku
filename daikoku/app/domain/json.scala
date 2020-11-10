@@ -1471,7 +1471,10 @@ object json {
         o.subscriptions.map(ApiSubscriptionIdFormat.writes)),
       "authorizedOtoroshiGroups" -> JsArray(
         o.authorizedOtoroshiGroups.map(OtoroshiGroupFormat.writes).toSeq),
-      "apiKeyVisibility" -> o.apiKeyVisibility.map(_.asJson).getOrElse(JsNull).as[JsValue],
+      "apiKeyVisibility" -> o.apiKeyVisibility
+        .map(_.asJson)
+        .getOrElse(JsNull)
+        .as[JsValue],
       "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
       "apisCreationPermission" -> o.apisCreationPermission
         .map(JsBoolean)

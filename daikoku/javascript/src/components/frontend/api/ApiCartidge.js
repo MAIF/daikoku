@@ -124,12 +124,9 @@ export class ApiCartidge extends Component {
                 this.props.currentLanguage,
                 'Select the team to view your api key'
               )}
-              teams={subscribingTeams.filter(t => CanIDoAction(
-                this.props.connectedUser,
-                manage,
-                apikey,
-                t
-              ))}
+              teams={subscribingTeams.filter((t) =>
+                CanIDoAction(this.props.connectedUser, manage, apikey, t)
+              )}
               action={(team) =>
                 this.props.redirectToApiKeysPage(this.props.myTeams.find((t) => t._id === team))
               }

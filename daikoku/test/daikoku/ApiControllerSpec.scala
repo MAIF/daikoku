@@ -4,13 +4,24 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithoutQuotas, PayPerUse, QuotasWithLimits}
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
+  Admin,
+  FreeWithoutQuotas,
+  PayPerUse,
+  QuotasWithLimits
+}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -37,7 +48,7 @@ class ApiControllerSpec()
     wireMockServer.stop()
   }
 
- "a tenant administrator" can {
+  "a tenant administrator" can {
     "not initialize apis for a tenant for which he's not admin" in {
       setupEnvBlocking(
         tenants = Seq(tenant, tenant2),
@@ -1419,12 +1430,14 @@ class ApiControllerSpec()
           teamOwner,
           teamConsumer.copy(
             apiKeyVisibility = Some(TeamApiKeyVisibility.ApiEditor),
-            users = Set(UserWithPermission(userApiEditorId, TeamPermission.TeamUser))
+            users =
+              Set(UserWithPermission(userApiEditorId, TeamPermission.TeamUser))
           ),
           teamConsumer.copy(
             id = teamIdWithApiKeyVisible,
             apiKeyVisibility = Some(TeamApiKeyVisibility.User),
-            users = Set(UserWithPermission(userApiEditorId, TeamPermission.TeamUser)))
+            users =
+              Set(UserWithPermission(userApiEditorId, TeamPermission.TeamUser)))
         ),
         apis = Seq(defaultApi)
       )
@@ -1595,7 +1608,7 @@ class ApiControllerSpec()
     }
   }
 
- "a subscription" should {
+  "a subscription" should {
     "be not available right now if plan's subscription process is manual" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1782,7 +1795,10 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
-        teams = Seq(teamOwner, teamConsumer.copy(apiKeyVisibility = Some(TeamApiKeyVisibility.Administrator))),
+        teams =
+          Seq(teamOwner,
+              teamConsumer.copy(
+                apiKeyVisibility = Some(TeamApiKeyVisibility.Administrator))),
         apis = Seq(defaultApi)
       )
 
@@ -2472,10 +2488,14 @@ class ApiControllerSpec()
       val sessionUser = loginWithBlocking(user, tenant)
 
       val matrixOfMatrix = Map(
-        (Some(TeamApiKeyVisibility.Administrator), Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.ApiEditor), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.User), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200))),
-        (None, Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200)))
+        (Some(TeamApiKeyVisibility.Administrator),
+         Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.ApiEditor),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.User),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))),
+        (None,
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200)))
       )
 
       matrixOfMatrix.foreachEntry((maybeVisibility, matrix) => {
@@ -2489,8 +2509,10 @@ class ApiControllerSpec()
         resp.status mustBe 200
 
         matrix.foreachEntry((session, response) => {
-          val resp = httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}/subscription/${sub.id.value}/consumption"
-          )(tenant, session)
+          val resp = httpJsonCallBlocking(
+            s"/api/teams/${teamConsumerId.value}/subscription/${sub.id.value}/consumption")(
+            tenant,
+            session)
           resp.status mustBe response
         })
       })
@@ -2549,7 +2571,7 @@ class ApiControllerSpec()
 
       wireMockServer.isRunning mustBe true
       val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
-        sub.apiKey.clientId)
+                                          sub.apiKey.clientId)
 
       val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
       stubFor(
@@ -2560,7 +2582,7 @@ class ApiControllerSpec()
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
                     Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                      "name" -> otoroshiTarget.get.serviceGroup.value)
+                             "name" -> otoroshiTarget.get.serviceGroup.value)
                 )
               )
               .withStatus(200)
@@ -2580,10 +2602,14 @@ class ApiControllerSpec()
       )
 
       val matrixOfMatrix = Map(
-        (Some(TeamApiKeyVisibility.Administrator), Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.ApiEditor), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.User), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200))),
-        (None, Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200)))
+        (Some(TeamApiKeyVisibility.Administrator),
+         Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.ApiEditor),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.User),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))),
+        (None,
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200)))
       )
 
       matrixOfMatrix.foreachEntry((maybeVisibility, matrix) => {
@@ -2643,10 +2669,14 @@ class ApiControllerSpec()
       val sessionUser = loginWithBlocking(user, tenant)
 
       val matrixOfMatrix = Map(
-        (Some(TeamApiKeyVisibility.Administrator), Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.ApiEditor), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.User), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200))),
-        (None, Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200)))
+        (Some(TeamApiKeyVisibility.Administrator),
+         Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.ApiEditor),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.User),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))),
+        (None,
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200)))
       )
 
       matrixOfMatrix.foreachEntry((maybeVisibility, matrix) => {
@@ -2737,7 +2767,7 @@ class ApiControllerSpec()
         rotation = None
       )
       val path = otoroshiDeleteApikeyPath(otoroshiTarget.get.serviceGroup.value,
-        sub.apiKey.clientId)
+                                          sub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoroshiPathStats.*"))
           .willReturn(
@@ -2759,7 +2789,7 @@ class ApiControllerSpec()
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
                     Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                      "name" -> otoroshiTarget.get.serviceGroup.value)
+                             "name" -> otoroshiTarget.get.serviceGroup.value)
                 )
               )
               .withStatus(200)
@@ -2767,7 +2797,7 @@ class ApiControllerSpec()
       )
       val otoPathQuotas =
         otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-          sub.apiKey.clientId)
+                                 sub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -2809,10 +2839,14 @@ class ApiControllerSpec()
       )
 
       val matrixOfMatrix = Map(
-        (Some(TeamApiKeyVisibility.Administrator), Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.ApiEditor), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.User), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200))),
-        (None, Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200)))
+        (Some(TeamApiKeyVisibility.Administrator),
+         Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.ApiEditor),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.User),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))),
+        (None,
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200)))
       )
 
       matrixOfMatrix.foreachEntry((maybeVisibility, matrix) => {
@@ -2868,7 +2902,6 @@ class ApiControllerSpec()
       val sessionApiEditor = loginWithBlocking(userApiEditor, tenant)
       val sessionUser = loginWithBlocking(user, tenant)
 
-
       val callPerSec = 100L
       val callPerDay = 1000L
       val callPerMonth = 2000L
@@ -2892,7 +2925,7 @@ class ApiControllerSpec()
 
       wireMockServer.isRunning mustBe true
       val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
-        sub.apiKey.clientId)
+                                          sub.apiKey.clientId)
 
       val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
       stubFor(
@@ -2903,7 +2936,7 @@ class ApiControllerSpec()
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
                     Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                      "name" -> otoroshiTarget.get.serviceGroup.value)
+                             "name" -> otoroshiTarget.get.serviceGroup.value)
                 )
               )
               .withStatus(200)
@@ -2923,10 +2956,14 @@ class ApiControllerSpec()
       )
 
       val matrixOfMatrix = Map(
-        (Some(TeamApiKeyVisibility.Administrator), Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.ApiEditor), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  403))),
-        (Some(TeamApiKeyVisibility.User), Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200))),
-        (None, Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser,  200)))
+        (Some(TeamApiKeyVisibility.Administrator),
+         Map((sessionAdmin, 200), (sessionApiEditor, 403), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.ApiEditor),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 403))),
+        (Some(TeamApiKeyVisibility.User),
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200))),
+        (None,
+         Map((sessionAdmin, 200), (sessionApiEditor, 200), (sessionUser, 200)))
       )
 
       matrixOfMatrix.foreachEntry((maybeVisibility, matrix) => {

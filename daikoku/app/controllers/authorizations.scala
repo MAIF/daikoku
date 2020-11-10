@@ -3,7 +3,10 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuActionContext,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.audit.{AuditEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain._
@@ -31,15 +34,18 @@ object authorizations {
           .find(_.userId == user.id)
           .forall(_.teamPermission != TeamPermission.TeamUser)
       case Some(TeamApiKeyVisibility.User) => true
-      case None => env.config.defaultApiKeyVisibility match {
-        case TeamApiKeyVisibility.Administrator => team.users
-          .find(_.userId == user.id)
-          .forall(_.teamPermission == TeamPermission.Administrator)
-        case TeamApiKeyVisibility.ApiEditor => team.users
-          .find(_.userId == user.id)
-          .forall(_.teamPermission != TeamPermission.TeamUser)
-        case TeamApiKeyVisibility.User => true
-      }
+      case None =>
+        env.config.defaultApiKeyVisibility match {
+          case TeamApiKeyVisibility.Administrator =>
+            team.users
+              .find(_.userId == user.id)
+              .forall(_.teamPermission == TeamPermission.Administrator)
+          case TeamApiKeyVisibility.ApiEditor =>
+            team.users
+              .find(_.userId == user.id)
+              .forall(_.teamPermission != TeamPermission.TeamUser)
+          case TeamApiKeyVisibility.User => true
+        }
     }
 
   object sync {
@@ -637,10 +643,10 @@ object authorizations {
     }
 
     def TeamApiKeyAction[T](audit: AuditEvent)(
-      teamId: String,
-      ctx: DaikokuActionContext[T])(f: Team => Future[Result])(
-      implicit ec: ExecutionContext,
-      env: Env): Future[Result] = {
+        teamId: String,
+        ctx: DaikokuActionContext[T])(f: Team => Future[Result])(
+        implicit ec: ExecutionContext,
+        env: Env): Future[Result] = {
       env.dataStore.teamRepo
         .forTenant(ctx.tenant.id)
         .findByIdOrHrId(teamId)
@@ -660,16 +666,17 @@ object authorizations {
             }
           case Some(team) if !team.includeUser(ctx.user.id) =>
             audit.logTenantAuditEvent(ctx.tenant,
-              ctx.user,
-              ctx.session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.NotAuthorized)
+                                      ctx.user,
+                                      ctx.session,
+                                      ctx.request,
+                                      ctx.ctx,
+                                      AuthorizationLevel.NotAuthorized)
             FastFuture.successful(
               Results.Forbidden(
                 Json.obj("error" -> "You're not part of the team")))
           case Some(team) =>
-            val authorized : Boolean = authorizations.isTeamApiKeyVisible(team, ctx.user)
+            val authorized: Boolean =
+              authorizations.isTeamApiKeyVisible(team, ctx.user)
             if (authorized) {
               ctx.setCtxValue("team.id", team.id)
               ctx.setCtxValue("team.name", team.name)
@@ -685,21 +692,21 @@ object authorizations {
               }
             } else {
               audit.logTenantAuditEvent(ctx.tenant,
-                ctx.user,
-                ctx.session,
-                ctx.request,
-                ctx.ctx,
-                AuthorizationLevel.NotAuthorized)
+                                        ctx.user,
+                                        ctx.session,
+                                        ctx.request,
+                                        ctx.ctx,
+                                        AuthorizationLevel.NotAuthorized)
               FastFuture.successful(
                 Results.Forbidden(Json.obj("error" -> "Unauthorized action")))
             }
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
-              ctx.user,
-              ctx.session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.NotAuthorized)
+                                      ctx.user,
+                                      ctx.session,
+                                      ctx.request,
+                                      ctx.ctx,
+                                      AuthorizationLevel.NotAuthorized)
             FastFuture.successful(
               Results.NotFound(Json.obj("error" -> "Team not found")))
         }

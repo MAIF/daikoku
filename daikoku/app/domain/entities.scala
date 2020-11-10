@@ -1035,7 +1035,6 @@ case class UserWithPermission(
   override def asJson: JsValue = json.UserWithPermissionFormat.writes(this)
 }
 
-
 sealed trait TeamApiKeyVisibility extends CanJson[TeamApiKeyVisibility] {
   def name: String
   def asJson: JsValue = JsString(name)
@@ -1053,12 +1052,13 @@ object TeamApiKeyVisibility {
   }
   val values: Seq[TeamApiKeyVisibility] =
     Seq(Administrator, ApiEditor, User)
-  def apply(name: String): Option[TeamApiKeyVisibility] = name.toLowerCase() match {
-    case "administrator" => Administrator.some
-    case "apieditor" => ApiEditor.some
-    case "user"     => User.some
-    case _          => None
-  }
+  def apply(name: String): Option[TeamApiKeyVisibility] =
+    name.toLowerCase() match {
+      case "administrator" => Administrator.some
+      case "apieditor"     => ApiEditor.some
+      case "user"          => User.some
+      case _               => None
+    }
 }
 
 case class Team(
@@ -1092,7 +1092,9 @@ case class Team(
       "avatar" -> JsString(avatar.getOrElse("/assets/images/daikoku.svg")),
       "contact" -> contact,
       "users" -> json.SetUserWithPermissionFormat.writes(users),
-      "apiKeyVisibility" -> apiKeyVisibility.getOrElse(env.config.defaultApiKeyVisibility).asJson,
+      "apiKeyVisibility" -> apiKeyVisibility
+        .getOrElse(env.config.defaultApiKeyVisibility)
+        .asJson,
       "apisCreationPermission" -> apisCreationPermission
         .map(JsBoolean)
         .getOrElse(JsNull)
