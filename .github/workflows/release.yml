@@ -101,7 +101,7 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./daikoku/target/scala-2.13/daikoku.jar
-        asset_name: daikoku-${{ github.event.inputs.releaseversion }}.jar
+        asset_name: daikoku.jar
         asset_content_type: application/octet-stream
     - name: Upload a Release Asset - daikoku.zip
       uses: actions/upload-release-asset@v1.0.2
