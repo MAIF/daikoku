@@ -53,3 +53,9 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@quentinovega](https://github.com/quentinovega)
 
+## [v1.0.9] - 2020-11-12
+
+## :beetle: Bug Fixes
+
+- can't running Daikoku.jar [#168](https://github.com/MAIF/daikoku/issues/168)
+
