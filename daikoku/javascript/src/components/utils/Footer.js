@@ -17,7 +17,6 @@ const FooterComponent = ({ tenant, isBackOffice }) => {
         'back-office-footer': isBackOffice,
       })}>
       <div
-        className="container"
         dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer) }}
       />
     </footer>
