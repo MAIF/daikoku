@@ -98,9 +98,12 @@ assemblyMergeStrategy in assembly := {
   //case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case PathList("javax", xs @ _*) =>
     MergeStrategy.first
-  case PathList("org", "apache", "commons", "logging", xs @ _*)       => MergeStrategy.first
-  case PathList("org", "apache", "commons", "lang", xs @ _*)          => MergeStrategy.first
-  case PathList("org", "apache", "commons", "collections", xs @ _*)   => MergeStrategy.first
+  case PathList("org", "apache", "commons", "logging", xs @ _*) =>
+    MergeStrategy.first
+  case PathList("org", "apache", "commons", "lang", xs @ _*) =>
+    MergeStrategy.first
+  case PathList("org", "apache", "commons", "collections", xs @ _*) =>
+    MergeStrategy.first
   case PathList(ps @ _*) if ps.last == "io.netty.versions.properties" =>
     MergeStrategy.first
   case PathList(ps @ _*) if ps.contains("reference-overrides.conf") =>
