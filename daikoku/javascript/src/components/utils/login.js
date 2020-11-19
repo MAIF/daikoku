@@ -50,9 +50,9 @@ export class LoginPage extends Component {
             action={this.props.action}>
             <input type="hidden" name="token" className="form-control" value={this.props.token} />
             <div className="form-group">
-              <label className="col-sm-2 control-label">
-                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Username">
-                  Username
+              <label className="control-label">
+                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Email address">
+                  Email address
                 </Translation>
               </label>
               <div className="col-sm-10">
@@ -66,7 +66,7 @@ export class LoginPage extends Component {
               </div>
             </div>
             <div className="form-group">
-              <label className="col-sm-2 control-label">
+              <label className="control-label">
                 <Translation language={this.props.tenant.defaultLanguage} i18nkey="Password">
                   Password
                 </Translation>

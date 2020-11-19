@@ -34,8 +34,8 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
               <form className="form-horizontal text-left mx-1" action={loginAction} method="POST">
                 <div className="form-group">
                   <label htmlFor="username">
-                    <Translation i18nkey="Username" language={currentLanguage}>
-                      Username
+                    <Translation i18nkey="Email address" language={currentLanguage}>
+                      Email address
                     </Translation>
                   </label>
                   <input
