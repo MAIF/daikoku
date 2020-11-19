@@ -36,10 +36,7 @@ export class ApiCard extends Component {
           <div
             className={isAuthorized ? 'cursor-pointer underline-on-hover a-fake' : 'api--forbidden'}
             onClick={() => this.redirectToApiPage(isAuthorized)}>
-            <h3>
-              {this.props.showTeam ? team.name + '/' : ''}
-              {api.name}
-            </h3>
+            <h3>{api.name}</h3>
           </div>
 
           <div className="ml-2">
