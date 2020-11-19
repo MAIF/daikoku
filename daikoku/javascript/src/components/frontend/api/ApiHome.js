@@ -252,6 +252,7 @@ class ApiHomeComponent extends Component {
                   askForApikeys={(teams, plan) => this.askForApikeys(teams, plan)}
                   pendingSubscriptions={this.state.pendingSubscriptions}
                   currentLanguage={this.props.currentLanguage}
+                  tenant={this.props.tenant}
                   openContactModal={() =>
                     this.props.openContactModal(
                       userName,
@@ -286,6 +287,7 @@ class ApiHomeComponent extends Component {
                   pendingSubscriptions={this.state.pendingSubscriptions}
                   updateSubscriptions={this.updateSubscriptions}
                   currentLanguage={this.props.currentLanguage}
+                  tenant={this.props.tenant}
                 />
               )}
               {tab === 'documentation' && (

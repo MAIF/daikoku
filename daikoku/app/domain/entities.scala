@@ -159,11 +159,11 @@ case class Tenant(
       "homePageVisible" -> style.exists(_.homePageVisible),
       "creationSecurity" -> creationSecurity
         .map(JsBoolean)
-        .getOrElse(JsNull)
+        .getOrElse(JsBoolean(false))
         .as[JsValue],
       "subscriptionSecurity" -> subscriptionSecurity
         .map(JsBoolean)
-        .getOrElse(JsNull)
+        .getOrElse(JsBoolean(true))
         .as[JsValue]
     )
   }

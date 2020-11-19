@@ -187,7 +187,9 @@ export class ApiPricingCard extends Component {
                         .filter(
                           (team) =>
                             plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-                        )}
+                        )
+                        .filter((t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization')
+                      }
                       pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
                       authorizedTeams={this.props.subscriptions.map((subs) => subs.team)}
                       allowMultipleDemand={plan.allowMultipleKeys}
@@ -258,6 +260,7 @@ export class ApiPricing extends Component {
                     askForApikeys={(teams) => this.props.askForApikeys(teams, plan)}
                     updateSubscriptions={this.props.updateSubscriptions}
                     currentLanguage={this.props.currentLanguage}
+                    tenant={this.props.tenant}
                   />
                 </div>
               ))}

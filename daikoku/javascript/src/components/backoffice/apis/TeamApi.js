@@ -17,6 +17,8 @@ import {
   TeamApiTesting,
 } from '.';
 
+import { setError } from '../../../core';
+
 class TeamApiComponent extends Component {
   state = {
     api: null,
@@ -101,7 +103,7 @@ class TeamApiComponent extends Component {
             );
             return api;
           } else {
-            return Promise.reject();
+            return Promise.reject(api.error);
           }
         })
         .then((api) =>
@@ -111,7 +113,7 @@ class TeamApiComponent extends Component {
             )
           )
         )
-        .catch(() => toastr.error(t('oops, something went wrong.', this.props.currentLanguage)));
+        .catch((error) => toastr.error(t(error, this.props.currentLanguage)));
     } else {
       return Services.saveTeamApi(this.props.currentTeam._id, editedApi)
         .then(() => toastr.success(t('Api saved', this.props.currentLanguage)))
@@ -218,6 +220,10 @@ class TeamApiComponent extends Component {
     const disabled = {}; //TODO: deepEqual(this.state.originalApi, this.state.api) ? { disabled: 'disabled' } : {};
     const tab = this.state.tab;
     const editedApi = this.transformPossiblePlans(this.state.api);
+
+    if (this.props.tenant.creationSecurity && !this.props.currentTeam.apisCreationPermission) {
+      this.props.setError({ error: { status: 403, message: 'unauthorized' } });
+    }
 
     return (
       <TeamBackOffice tab="Apis" isLoading={!editedApi}>
@@ -469,4 +475,8 @@ const mapStateToProps = (state) => ({
   ...state.context,
 });
 
-export const TeamApi = connect(mapStateToProps)(TeamApiComponent);
+const mapDispatchToProps = {
+  setError: (error) => setError(error),
+};
+
+export const TeamApi = connect(mapStateToProps, mapDispatchToProps)(TeamApiComponent);

@@ -253,7 +253,7 @@ class ApiListComponent extends Component {
             }}
             classNamePrefix="reactSelect"
           />
-          {this.props.apiCreationPermitted && this.props.team && (
+          {this.props.team && (!this.props.tenant.creationSecurity || this.props.team.apisCreationPermission) && (
             <Can I={manage} a={api} team={this.props.team}>
               <div className="col-12 col-sm-2">
                 <button
@@ -283,9 +283,6 @@ class ApiListComponent extends Component {
                 teams={this.props.myTeams
                   .filter((t) => t.type !== 'Admin')
                   .filter((t) => !this.props.tenant.creationSecurity || t.apisCreationPermission)
-                  .filter(
-                    (t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization'
-                  )
                   .filter((t) =>
                     CanIDoAction(
                       this.props.connectedUser,

@@ -717,5 +717,6 @@
   },
   "permission.caption.administrator": "un Administrateur peut gérer les  membres de l'équipe, modifier l'équipe et consulter la facturation",
   "permission.caption.apiEditor": "un Rédacteur d'API peu créer/modifier/supprimer des APIs et consulter les revenues",
-  "permission.caption.user": "un Utilisateur peut consulter les cles API"
+  "permission.caption.user": "un Utilisateur peut consulter les cles API",
+  "Team forbidden to create api on current tenant": "Équipe interdite de créer une API sur l'organisation actuel"
 }

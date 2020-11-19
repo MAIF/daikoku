@@ -179,7 +179,9 @@ export class ApiCartidge extends Component {
                   .filter(
                     (team) =>
                       defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-                  )}
+                  )
+                  .filter((t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization')
+                }
                 pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
                 authorizedTeams={this.props.subscriptions
                   .filter((subs) => subs.plan === defaultPlan._id)

@@ -1336,29 +1336,33 @@ class ApiController(DaikokuAction: DaikokuAction,
     TeamApiEditorOnly(
       AuditTrailEvent(s"@{user.name} want to create an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})")
     )(teamId, ctx) { team =>
-      env.dataStore.apiRepo
-        .forTenant(ctx.tenant.id)
-        .findAllNotDeleted()
-        .map { apis =>
-          val withSameName = apis.filter(api => api.name.toLowerCase.trim == name)
-          withSameName.nonEmpty
-        }
-        .flatMap {
-          case true => FastFuture.successful(Conflict("Resource with same name already exists ..."))
-          case false =>
-            ApiFormat.reads(finalBody) match {
-              case JsError(e) =>
-                FastFuture
-                  .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
-              case JsSuccess(api, _) => {
-                ctx.setCtxValue("api.id", api.id)
-                ctx.setCtxValue("api.name", api.name)
-                env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(api).map { _ =>
-                  Created(api.asJson)
+      ctx.tenant.creationSecurity match {
+        case Some(true) if !team.apisCreationPermission.getOrElse(false) =>
+          FastFuture.successful(Forbidden(Json.obj("error" -> "Team forbidden to create api on current tenant")))
+        case _ => env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .findAllNotDeleted()
+          .map { apis =>
+            val withSameName = apis.filter(api => api.name.toLowerCase.trim == name)
+            withSameName.nonEmpty
+          }
+          .flatMap {
+            case true => FastFuture.successful(Conflict("Resource with same name already exists ..."))
+            case false =>
+              ApiFormat.reads(finalBody) match {
+                case JsError(e) =>
+                  FastFuture
+                    .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
+                case JsSuccess(api, _) => {
+                  ctx.setCtxValue("api.id", api.id)
+                  ctx.setCtxValue("api.name", api.name)
+                  env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(api).map { _ =>
+                    Created(api.asJson)
+                  }
                 }
               }
-            }
-        }
+          }
+      }
     }
   }
 

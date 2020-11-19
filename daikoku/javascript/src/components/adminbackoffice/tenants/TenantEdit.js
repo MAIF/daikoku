@@ -12,7 +12,7 @@ import { ConsoleConfig, MailgunConfig, MailjetConfig } from './mailer';
 import { Can, manage, tenant, Spinner } from '../../utils';
 import { t, Translation, configuration } from '../../../locales';
 import { BooleanInput } from '../../inputs/BooleanInput';
-import { openSaveOrCancelModal } from '../../../core/modal/actions';
+import { openSaveOrCancelModal, updateTenant } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -768,7 +768,9 @@ export class TenantEditComponent extends Component {
         );
       });
     } else {
-      return Services.saveTenant(this.state.tenant).then(() =>
+      return Services.saveTenant(this.state.tenant)
+      .then(this.props.updateTenant)
+      .then(() =>
         toastr.success(t('Tenant updated successfully', this.props.currentLanguage))
       );
     }
@@ -860,6 +862,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   openSaveOrCancelModal: (modalProps) => openSaveOrCancelModal(modalProps),
+  updateTenant: (t) => updateTenant(t)
 };
 
 export const TenantEdit = connect(mapStateToProps, mapDispatchToProps)(TenantEditComponent);

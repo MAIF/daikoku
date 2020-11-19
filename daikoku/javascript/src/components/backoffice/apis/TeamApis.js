@@ -9,6 +9,7 @@ import { Can, read, manage, stat, api as API, administrator } from '../../utils'
 import { TeamBackOffice } from '../..';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { t, Translation } from '../../../locales';
+import { setError } from '../../../core';
 
 class TeamApisComponent extends Component {
   columns = [
@@ -187,6 +188,9 @@ class TeamApisComponent extends Component {
   };
 
   render() {
+    if (this.props.tenant.creationSecurity && !this.props.currentTeam.apisCreationPermission) {
+      this.props.setError({ error: { status: 403, message: 'unauthorized' } });
+    }
     return (
       <TeamBackOffice tab="Apis" apiId={this.props.match.params.apiId}>
         <Can I={read} a={API} dispatchError={true} team={this.props.currentTeam}>
@@ -239,4 +243,8 @@ const mapStateToProps = (state) => ({
   ...state.context,
 });
 
-export const TeamApis = connect(mapStateToProps)(TeamApisComponent);
+const mapDispatchToProps = {
+  setError: (error) => setError(error),
+};
+
+export const TeamApis = connect(mapStateToProps, mapDispatchToProps)(TeamApisComponent);

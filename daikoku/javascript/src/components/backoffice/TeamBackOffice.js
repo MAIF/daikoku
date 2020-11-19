@@ -209,6 +209,7 @@ class TeamBackOfficeComponent extends Component {
                     )}
                   </h6>
                   <ul className="nav flex-column mt-3">
+                    {(!this.props.tenant.creationSecurity || this.props.currentTeam.apisCreationPermission) && 
                     <Can I={read} a={api} team={this.props.currentTeam}>
                       <li className="nav-item">
                         <Link
@@ -220,7 +221,8 @@ class TeamBackOfficeComponent extends Component {
                           </Translation>
                         </Link>
                       </li>
-                    </Can>
+                    </Can>}
+                    {(!this.props.tenant.creationSecurity || this.props.currentTeam.apisCreationPermission) &&
                     <Can I={read} a={api} team={this.props.currentTeam}>
                       <li className="nav-item">
                         <Link
@@ -232,7 +234,7 @@ class TeamBackOfficeComponent extends Component {
                           </Translation>
                         </Link>
                       </li>
-                    </Can>
+                    </Can>}
                     <Can I={read} a={apikey} team={this.props.currentTeam}>
                       <li className="nav-item">
                         <Link

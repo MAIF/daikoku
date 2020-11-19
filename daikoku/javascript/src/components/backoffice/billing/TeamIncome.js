@@ -9,6 +9,7 @@ import { MonthPicker } from '../../inputs/monthPicker';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { formatCurrency, formatPlanType, Spinner, Can, read, api } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { setError } from '../../../core';
 
 class TeamIncomeComponent extends Component {
   state = {
@@ -64,10 +65,15 @@ class TeamIncomeComponent extends Component {
   };
 
   render() {
+    if (this.props.tenant.creationSecurity && !this.props.currentTeam.apisCreationPermission) {
+      this.props.setError({ error: { status: 403, message: 'unauthorized' } });
+    }
+
     const total = this.state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
     const mostRecentConsumption = _.maxBy(this.state.consumptions, (c) => c.to);
     const lastDate =
       mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
+
     return (
       <TeamBackOffice tab="Income">
         <Can I={read} a={api} team={this.props.currentTeam} dispatchError={true}>
@@ -232,4 +238,8 @@ const mapStateToProps = (state) => ({
   ...state.context,
 });
 
-export const TeamIncome = connect(mapStateToProps)(TeamIncomeComponent);
+const mapDispatchToProps = {
+  setError: (error) => setError(error),
+};
+
+export const TeamIncome = connect(mapStateToProps, mapDispatchToProps)(TeamIncomeComponent);
