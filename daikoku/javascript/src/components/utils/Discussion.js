@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import { MessageCircle, X, Send } from 'react-feather';
 import classNames from 'classnames';
 
+import { converter } from '../../services/showdown';
 import { Option } from '../utils';
 import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
@@ -81,6 +82,14 @@ const DiscussionComponent = (props) => {
                 </div>
               );
             })}
+            {props.tenant.defaultMessage && <div
+              key='discussion-messages-default'
+              className='discussion-messages discussion-messages--received'>
+              <div 
+                key='discussion-message-default' 
+                className="discussion-message"
+                dangerouslySetInnerHTML={{ __html: converter.makeHtml(props.tenant.defaultMessage) }} />
+            </div>}
             {lastClosedDates.find((x) => x.chat === props.connectedUser._id).date && (
               <div className="d-flex flex-row justify-content-center my-1">
                 <button

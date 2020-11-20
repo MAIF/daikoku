@@ -290,6 +290,8 @@ export class TenantEditComponent extends Component {
     'bucketSettings.secret',
     'bucketSettings.chunkSize',
     'bucketSettings.v4auth',
+    `>>> ${t('Message', this.props.currentLanguage, true)}`,
+    'defaultMessage',
     `>>> ${t('Footer', this.props.currentLanguage)}`,
     'style.footer',
     `>>> ${t('Unlogged home description', this.props.currentLanguage)}`,
@@ -507,6 +509,10 @@ export class TenantEditComponent extends Component {
     'style.footer': {
       type: 'markdown',
       props: { label: t('Footer', this.props.currentLanguage) },
+    },
+    'defaultMessage': {
+      type: 'markdown',
+      props: { label: t('Default message', this.props.currentLanguage) }
     },
     isPrivate: {
       type: 'bool',

@@ -118,7 +118,8 @@ case class Tenant(
     adminApi: ApiId,
     adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     creationSecurity: Option[Boolean] = None,
-    subscriptionSecurity: Option[Boolean] = None
+    subscriptionSecurity: Option[Boolean] = None,
+    defaultMessage: Option[String] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -164,6 +165,10 @@ case class Tenant(
       "subscriptionSecurity" -> subscriptionSecurity
         .map(JsBoolean)
         .getOrElse(JsBoolean(true))
+        .as[JsValue],
+      "defaultMessage" -> defaultMessage
+        .map(JsString.apply)
+        .getOrElse(JsNull)
         .as[JsValue]
     )
   }

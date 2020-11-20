@@ -1241,7 +1241,9 @@ object json {
             creationSecurity = (json \ "creationSecurity")
               .asOpt[Boolean],
             subscriptionSecurity = (json \ "subscriptionSecurity")
-              .asOpt[Boolean]
+              .asOpt[Boolean],
+            defaultMessage = (json \ "defaultMessage")
+              .asOpt[String],
           )
         )
       } recover {
@@ -1280,6 +1282,10 @@ object json {
         .as[JsValue],
       "subscriptionSecurity" -> o.subscriptionSecurity
         .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "defaultMessage" -> o.defaultMessage
+        .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue]
     )

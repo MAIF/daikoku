@@ -601,7 +601,10 @@
     "Contact us": "Contact us",
     "Contact request": "Contact request",
     "Subject": "Subject",
-    "Message": "Message",
+    "Message": {
+        "s": "Message",
+        "p": "Messages"
+    },
     "Enter your name": "Enter your name",
     "Enter email": "Enter email",
     "Your message": "Your message",
@@ -718,5 +721,6 @@
     "permission.caption.administrator": "an Administrator can manage team members, update team and read billing",
     "permission.caption.apiEditor": "a Api Editor can create/update/delete APIs and read incomes",
     "permission.caption.user": "a User can read team api keys",
-    "Team forbidden to create api on current tenant": "Team forbidden to create API on current tenant"
+    "Team forbidden to create api on current tenant": "Team forbidden to create API on current tenant",
+    "Default message": "Default message"
 }
