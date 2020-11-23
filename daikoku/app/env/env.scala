@@ -150,7 +150,7 @@ class Config(val underlying: Configuration) {
 
   lazy val tenantJwtAlgo: Algorithm = Algorithm.HMAC512(signingKey)
 
-  lazy val tenantJwtVerifier: JWTVerifier = JWT.require(tenantJwtAlgo).build()
+  lazy val tenantJwtVerifier: JWTVerifier = JWT.require(tenantJwtAlgo).acceptLeeway(10).build()
 
   lazy val isProd: Boolean = mode == DaikokuMode.Prod
   lazy val isDev: Boolean = mode == DaikokuMode.Dev
