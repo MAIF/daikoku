@@ -54,7 +54,7 @@
 
 .card-skin {
   padding: 10px;
-  height: 225px;
+  height: 175px;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -64,9 +64,11 @@
   font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
   font-size: 25pt;
   text-align: center;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
+  position: relative;
+}
+
+.plan-quotas, .plan-pricing {
+  font-size: .75rem;
 }
 
 .card .plan-body {

@@ -6,7 +6,7 @@ import { currencies } from '../../../services/currencies';
 import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { t, Translation } from '../../../locales';
-import { Can, access, apikey } from '../../utils';
+import { Can, access, apikey, getCurrencySymbol, formatCurrency } from '../../utils';
 
 const Curreny = ({ plan }) => {
   const cur = _.find(currencies, (c) => c.code === plan.currency.code);
@@ -120,12 +120,14 @@ export class ApiPricingCard extends Component {
     const plan = this.props.plan;
     const type = plan.type;
     const customDescription = plan.customDescription;
-    const authorizedTeams = this.props.myTeams.filter(
-      (t) =>
-        this.props.api.visibility === 'Public' ||
-        this.props.api.authorizedTeams.includes(t._id) ||
-        t._id === this.props.ownerTeam._id
-    );
+    const authorizedTeams = this.props.myTeams
+      .filter((t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization')
+      .filter(
+        (t) =>
+          this.props.api.visibility === 'Public' ||
+          this.props.api.authorizedTeams.includes(t._id) ||
+          t._id === this.props.ownerTeam._id
+      );
 
     const allPossibleTeams = _.difference(
       authorizedTeams.map((t) => t._id),
@@ -137,12 +139,25 @@ export class ApiPricingCard extends Component {
     ).length;
     const isAccepted = !allPossibleTeams.length;
 
+    let pricing = t('Free', this.props.currentLanguage);
+    const req = t('req.', this.props.currentLanguage);
+    const month = t('month', this.props.currentLanguage);
+    if (plan.costPerMonth && plan.costPerAdditionalRequest) {
+      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month} + ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`;
+    } else if (plan.costPerMonth) {
+      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month}`;
+    } else if (plan.costPerRequest) {
+      pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`;
+    }
+
+
+
     return (
       <div className="card mb-4 shadow-sm">
         <div className="card-img-top card-link card-skin" data-holder-rendered="true">
           <span>{plan.customName || formatPlanType(plan)}</span>
         </div>
-        <div className="card-body plan-body">
+        <div className="card-body plan-body d-flex flex-column">
           <p className="card-text text-justify">
             {customDescription && <span>{customDescription}</span>}
             {!customDescription && type === 'FreeWithoutQuotas' && this.renderFreeWithoutQuotas()}
@@ -153,33 +168,50 @@ export class ApiPricingCard extends Component {
               this.renderQuotasWithoutLimits()}
             {!customDescription && type === 'PayPerUse' && this.renderPayPerUse()}
           </p>
+          <div className="d-flex flex-column mb-2">
+            <span className="plan-quotas">
+              {!plan.maxPerSecond && !plan.maxPerMonth && t('plan.limits.unlimited', this.props.currentLanguage)}
+              {!!plan.maxPerSecond && !!plan.maxPerMonth && <div>
+                <div>
+                  <Translation i18nkey="plan.limits" language={this.props.currentLanguage} replacements={[plan.maxPerSecond, plan.maxPerMonth]}>
+                    Limits: {plan.maxPerSecond} req./sec, {plan.maxPerMonth} req./month
+                  </Translation>
+                </div>
+              </div>}
+            </span>
+            <span className="plan-pricing">
+              <Translation i18nkey="plan.pricing" language={this.props.currentLanguage} replacements={[pricing]}>
+                pricing: {pricing}
+              </Translation>
+            </span>
+          </div>
           <div className="d-flex justify-content-between align-items-center">
-            <div className="btn-group">
-              {plan.otoroshiTarget && !isAccepted && isPending && (
-                <button type="button" className="btn btn-sm btn-access-negative">
-                  {' '}
-                  Request in progress{' '}
-                </button>
-              )}
-              {this.props.api.published && (
-                <Can
-                  I={access}
-                  a={apikey}
-                  teams={authorizedTeams.filter(
-                    (team) => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-                  )}>
-                  {(this.props.api.visibility === 'AdminOnly' ||
-                    (plan.otoroshiTarget && !isAccepted && !isPending)) && (
+            {plan.otoroshiTarget && !isAccepted && isPending && (
+              <button type="button" disabled className="btn btn-sm btn-access-negative col-12">
+                <Translation i18nkey="Request in progress" language={this.props.currentLanguage}>
+                  Request in progress
+                </Translation>
+              </button>
+            )}
+            {!isAccepted && this.props.api.published && (
+              <Can
+                I={access}
+                a={apikey}
+                teams={authorizedTeams.filter(
+                  (team) => plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                )}>
+                {(this.props.api.visibility === 'AdminOnly' ||
+                  (plan.otoroshiTarget && !isAccepted && !isPending)) && (
                     <ActionWithTeamSelector
                       title={t(
                         'team.selection.title',
                         this.props.currentLanguage,
-                        'Select the team of the subscription'
+                        'Select teams'
                       )}
                       description={t(
-                        'team.selection.desc',
+                        plan.subscriptionProcess === 'Automatic' ? 'team.selection.desc.get' : 'team.selection.desc.request',
                         this.props.currentLanguage,
-                        'You are going to subscribe to the api. On which team do you want to make this subscriptions ?'
+                        'You are going to get or request API keys. On which team do you want them for?'
                       )}
                       currentLanguage={this.props.currentLanguage}
                       teams={authorizedTeams
@@ -195,16 +227,17 @@ export class ApiPricingCard extends Component {
                       allowMultipleDemand={plan.allowMultipleKeys}
                       action={(teams) => this.props.askForApikeys(teams)}
                       withAllTeamSelector={true}>
-                      <button type="button" className="btn btn-sm btn-access-negative">
-                        <Translation i18nkey="Subscribe" language={this.props.currentLanguage}>
-                          Subscribe
+                      <button type="button" className="btn btn-sm btn-access-negative col-12">
+                        <Translation
+                          i18nkey={plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
+                          language={this.props.currentLanguage}>
+                          {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
                         </Translation>
                       </button>
                     </ActionWithTeamSelector>
                   )}
-                </Can>
-              )}
-            </div>
+              </Can>
+            )}
           </div>
         </div>
       </div>

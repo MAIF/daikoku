@@ -14,26 +14,6 @@ export class ApiCartidge extends Component {
     const defaultPlan = api.possibleUsagePlans.filter((p) => p._id === api.defaultUsagePlan)[0];
     const pricing = defaultPlan ? defaultPlan.type : 'None';
 
-    const authorizedTeams = this.props.myTeams.filter(
-      (t) =>
-        this.props.api.visibility === 'Public' || this.props.api.authorizedTeams.includes(t._id)
-    );
-    const allPossibleTeams = _.difference(
-      authorizedTeams.map((t) => t._id),
-      this.props.subscriptions
-        .filter((sub) => !defaultPlan || sub.plan === defaultPlan._id)
-        .map((s) => s.team)
-    );
-    const isAccepted = !allPossibleTeams.length;
-    const isPending =
-      !isAccepted &&
-      !_.difference(
-        allPossibleTeams,
-        this.props.pendingSubscriptions
-          .filter((sub) => !defaultPlan || sub.action.plan === defaultPlan._id)
-          .map((s) => s.action.team)
-      ).length;
-
     const subscribingTeams = this.props.myTeams
       .filter((t) => t.type !== 'Admin')
       .filter((team) => this.props.subscriptions.some((sub) => sub.team === team._id));
@@ -99,11 +79,11 @@ export class ApiCartidge extends Component {
         </span>
         <Separator />
         <span>
-          <Translation i18nkey="Default pricing" language={this.props.currentLanguage}>
-            Default pricing
+          <Translation i18nkey="Default plan" language={this.props.currentLanguage}>
+            Default plan
           </Translation>
           <span className="badge badge-primary word-break ml-1" style={{ whiteSpace: 'normal' }}>
-            {t(pricing, this.props.currentLanguage)}
+            {defaultPlan.customName || t(pricing, this.props.currentLanguage)}
           </span>
         </span>
         <Separator />
@@ -140,62 +120,7 @@ export class ApiCartidge extends Component {
             </ActionWithTeamSelector>
           </Can>
         )}
-        {defaultPlan && defaultPlan.otoroshiTarget && isPending && (
-          <button type="button" className="btn btn-sm btn-access-negative mt-5">
-            <Translation i18nkey="Request in progress" language={this.props.currentLanguage}>
-              Request in progress
-            </Translation>
-          </button>
-        )}
-        {this.props.api.published &&
-          defaultPlan &&
-          defaultPlan.otoroshiTarget &&
-          !isAccepted &&
-          !isPending && (
-            <Can
-              I={access}
-              a={apikey}
-              teams={authorizedTeams.filter(
-                (team) =>
-                  defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-              )}>
-              <ActionWithTeamSelector
-                title={t(
-                  'team.selection.title',
-                  this.props.currentLanguage,
-                  false,
-                  'Select the team of the subscription'
-                )}
-                description={t(
-                  'team.selection.desc',
-                  this.props.currentLanguage,
-                  false,
-                  'You are going to subscribe to the api. On which team do you want to make this subscriptions ?'
-                )}
-                buttonLabel="subscribe"
-                currentLanguage={this.props.currentLanguage}
-                teams={this.props.myTeams
-                  .filter((t) => t.type !== 'Admin')
-                  .filter(
-                    (team) =>
-                      defaultPlan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-                  )
-                  .filter((t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization')
-                }
-                pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
-                authorizedTeams={this.props.subscriptions
-                  .filter((subs) => subs.plan === defaultPlan._id)
-                  .map((subs) => subs.team)}
-                action={(teams) => this.props.askForApikeys(teams, defaultPlan)}
-                withAllTeamSelector={true}>
-                <button type="button" className="btn btn-sm btn-access-negative mt-5">
-                  <Translation i18nkey="Subscribe" language={this.props.currentLanguage}>
-                    Subscribe
-                  </Translation>
-                </button>
-              </ActionWithTeamSelector>
-            </Can>
-          )}
+        
         {defaultPlan && !defaultPlan.otoroshiTarget && (
           <small className="mt-5">
             <Translation i18nkey="api not linked" language={this.props.currentLanguage}>

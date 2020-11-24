@@ -92,7 +92,7 @@ class ApiHomeComponent extends Component {
                 'subscription.plan.accepted',
                 this.props.currentLanguage,
                 false,
-                `Subscription to plan ${planName} for team ${team.name} is accepted`,
+                `API key for ${planName} plan and the team ${team.name} is available`,
                 planName,
                 team.name
               )
@@ -104,7 +104,7 @@ class ApiHomeComponent extends Component {
                 'subscription.plan.waiting',
                 this.props.currentLanguage,
                 false,
-                `Subscription to plan ${planName} for team ${team.name} is waiting for acceptation`,
+                `The API key request for ${planName} plan and the team ${team.name} is pending acceptance`,
                 planName,
                 team.name
               )
@@ -139,8 +139,7 @@ class ApiHomeComponent extends Component {
         <section className="organisation__header col-12 mb-4 p-3">
           <div className="container">
             <h1 className="jumbotron-heading">
-              <Link to={`/${ownerTeam._humanReadableId}`}>{ownerTeam.name}</Link> /{' '}
-              <Link to={`/${ownerTeam._humanReadableId}/${api._humanReadableId}`}>{api.name}</Link>
+              {api.name}
               <Can I={manage} a={API} team={ownerTeam}>
                 <a
                   href="#"
