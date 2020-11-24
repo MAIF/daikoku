@@ -26,7 +26,7 @@ object tenantSecurity {
             env.dataStore.teamRepo
               .forTenant(tenant)
               .exists(Json.obj(
-                "overriddenCreationPermission" -> false,
+                "apisCreationPermission" -> true,
                 "users" -> Json.obj("$elemMatch" -> Json.obj(
                   "userId" -> user.id.asJson,
                   "$or" -> Json.arr(
