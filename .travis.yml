@@ -15,13 +15,6 @@ services:
   - docker
 
 before_install:
-  - sudo apt-get install wget curl
-  - wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash 
-  - export NVM_DIR="/home/travis/.nvm" 
-  - sh $NVM_DIR/nvm.sh
-  - nvm install 13
-  - nvm use 13
-  - curl -o- -L https://yarnpkg.com/install.sh | bash
   - docker run -d -p 27017:27017 -v $(pwd)/mongo-data:/data/db mongo
   
 script:
