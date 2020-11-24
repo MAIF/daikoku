@@ -10,6 +10,7 @@ import { configuration } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
 import { Spinner, validatePassword, ValidateEmail } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { updateUser } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -333,19 +334,21 @@ class MyProfileComponent extends Component {
     if (this.state.user.name && this.state.user.email && this.state.user.picture) {
       const emailValidation = ValidateEmail(this.state.user.email);
       if (emailValidation.ok) {
-        Services.updateUserById(this.state.user).then((user) => {
-          this.setState({ user }, () =>
-            toastr.success(
-              t(
-                'user.updated.success',
-                this.props.currentLanguage,
-                false,
-                'user successfully updated',
-                user.name
-              )
-            )
-          );
-        });
+        Services.updateUserById(this.state.user)
+          .then((user) => {
+            this.setState({ user }, () => {
+              this.props.updateUser(user);
+              toastr.success(
+                t(
+                  'user.updated.success',
+                  this.props.currentLanguage,
+                  false,
+                  'user successfully updated',
+                  user.name
+                )
+              );
+            });
+          });
       } else {
         toastr.error(emailValidation.error);
       }
@@ -394,9 +397,8 @@ class MyProfileComponent extends Component {
                   marginBottom: 20,
                 }}>
                 <img
-                  src={`${this.state.user.picture}${
-                    this.state.user.picture.startsWith('http') ? '' : `?${Date.now()}`
-                  }`}
+                  src={`${this.state.user.picture}${this.state.user.picture.startsWith('http') ? '' : `?${Date.now()}`
+                    }`}
                   style={{
                     width: 200,
                     borderRadius: '50%',
@@ -467,4 +469,8 @@ const mapStateToProps = (state) => ({
   ...state.context,
 });
 
-export const MyProfile = connect(mapStateToProps)(MyProfileComponent);
+const mapDispatchToProps = {
+  updateUser: (u) => updateUser(u),
+};
+
+export const MyProfile = connect(mapStateToProps, mapDispatchToProps)(MyProfileComponent);

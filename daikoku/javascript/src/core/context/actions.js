@@ -6,6 +6,7 @@ import {
   UPDATE_TEAM,
   UPDATE_LANGUAGE,
   UPDATE_TENANT,
+  UPDATE_USER
 } from './';
 
 export const login = ({ user, team, tenant, language }) => (dispatch) => {
@@ -65,5 +66,12 @@ export const updateTenant = (tenant) => (dispatch) => {
   return dispatch({
     type: UPDATE_TENANT,
     tenant,
+  });
+};
+
+export const updateUser = (user) => (dispatch) => {
+  return dispatch({
+    type: UPDATE_USER,
+    user,
   });
 };
