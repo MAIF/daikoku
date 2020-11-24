@@ -59,3 +59,20 @@ We'd like to thank all the contributors who worked on this release!
 
 - can't running Daikoku.jar [#168](https://github.com/MAIF/daikoku/issues/168)
 
+## [v1.0.10] - 2020-11-24
+
+## :star: New Features
+
+- Rework on pricing plan cards [#174](https://github.com/MAIF/daikoku/issues/174)
+- Remove Team name from api card title in api list [#172](https://github.com/MAIF/daikoku/issues/172)
+- Connection form: email instead of name in label [#170](https://github.com/MAIF/daikoku/issues/170)
+- Define a default message (for tenant) for first message display in conversation popup [#167](https://github.com/MAIF/daikoku/issues/167)
+
+## :beetle: Bug Fixes
+
+- User admin of an authorized team to create api can't create API [#177](https://github.com/MAIF/daikoku/issues/177)
+- API keys custom name is cut off if name is too long [#175](https://github.com/MAIF/daikoku/issues/175)
+- Error 500 on login [#173](https://github.com/MAIF/daikoku/issues/173)
+- tenant Subscription security issue [#171](https://github.com/MAIF/daikoku/issues/171)
+- Custom footer doesn't display properly [#169](https://github.com/MAIF/daikoku/issues/169)
+
