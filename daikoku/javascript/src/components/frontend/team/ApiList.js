@@ -253,17 +253,18 @@ class ApiListComponent extends Component {
             }}
             classNamePrefix="reactSelect"
           />
-          {this.props.team && (!this.props.tenant.creationSecurity || this.props.team.apisCreationPermission) && (
-            <Can I={manage} a={api} team={this.props.team}>
-              <div className="col-12 col-sm-2">
-                <button
-                  className="btn btn-access-negative mb-2 float-right"
-                  onClick={() => this.createNewApi(this.props.team._id)}>
-                  <i className="fas fa-plus-square" /> API
-                </button>
-              </div>
-            </Can>
-          )}
+          {this.props.team &&
+            (!this.props.tenant.creationSecurity || this.props.team.apisCreationPermission) && (
+              <Can I={manage} a={api} team={this.props.team}>
+                <div className="col-12 col-sm-2">
+                  <button
+                    className="btn btn-access-negative mb-2 float-right"
+                    onClick={() => this.createNewApi(this.props.team._id)}>
+                    <i className="fas fa-plus-square" /> API
+                  </button>
+                </div>
+              </Can>
+            )}
           {this.props.apiCreationPermitted &&
             !this.props.team &&
             !this.props.connectedUser.isGuest && (

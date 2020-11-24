@@ -209,32 +209,38 @@ class TeamBackOfficeComponent extends Component {
                     )}
                   </h6>
                   <ul className="nav flex-column mt-3">
-                    {(!this.props.tenant.creationSecurity || this.props.currentTeam.apisCreationPermission) && 
-                    <Can I={read} a={api} team={this.props.currentTeam}>
-                      <li className="nav-item">
-                        <Link
-                          className={`nav-link ${tab === 'Apis' ? 'active' : ''}`}
-                          to={`/${currentTeam._humanReadableId}/settings/apis`}>
-                          <i className="fas fa-atlas" />
-                          <Translation i18nkey="Team Apis" language={this.props.currentLanguage}>
-                            Team Apis
-                          </Translation>
-                        </Link>
-                      </li>
-                    </Can>}
-                    {(!this.props.tenant.creationSecurity || this.props.currentTeam.apisCreationPermission) &&
-                    <Can I={read} a={api} team={this.props.currentTeam}>
-                      <li className="nav-item">
-                        <Link
-                          className={`nav-link ${tab === 'Income' ? 'active' : ''}`}
-                          to={`/${currentTeam._humanReadableId}/settings/income`}>
-                          <i className="fas fa-file-invoice-dollar" />
-                          <Translation i18nkey="Team Income" language={this.props.currentLanguage}>
-                            Team Income
-                          </Translation>
-                        </Link>
-                      </li>
-                    </Can>}
+                    {(!this.props.tenant.creationSecurity ||
+                      this.props.currentTeam.apisCreationPermission) && (
+                      <Can I={read} a={api} team={this.props.currentTeam}>
+                        <li className="nav-item">
+                          <Link
+                            className={`nav-link ${tab === 'Apis' ? 'active' : ''}`}
+                            to={`/${currentTeam._humanReadableId}/settings/apis`}>
+                            <i className="fas fa-atlas" />
+                            <Translation i18nkey="Team Apis" language={this.props.currentLanguage}>
+                              Team Apis
+                            </Translation>
+                          </Link>
+                        </li>
+                      </Can>
+                    )}
+                    {(!this.props.tenant.creationSecurity ||
+                      this.props.currentTeam.apisCreationPermission) && (
+                      <Can I={read} a={api} team={this.props.currentTeam}>
+                        <li className="nav-item">
+                          <Link
+                            className={`nav-link ${tab === 'Income' ? 'active' : ''}`}
+                            to={`/${currentTeam._humanReadableId}/settings/income`}>
+                            <i className="fas fa-file-invoice-dollar" />
+                            <Translation
+                              i18nkey="Team Income"
+                              language={this.props.currentLanguage}>
+                              Team Income
+                            </Translation>
+                          </Link>
+                        </li>
+                      </Can>
+                    )}
                     <Can I={read} a={apikey} team={this.props.currentTeam}>
                       <li className="nav-item">
                         <Link

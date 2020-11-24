@@ -510,9 +510,9 @@ export class TenantEditComponent extends Component {
       type: 'markdown',
       props: { label: t('Footer', this.props.currentLanguage) },
     },
-    'defaultMessage': {
+    defaultMessage: {
       type: 'markdown',
-      props: { label: t('Default message', this.props.currentLanguage) }
+      props: { label: t('Default message', this.props.currentLanguage) },
     },
     isPrivate: {
       type: 'bool',
@@ -775,10 +775,8 @@ export class TenantEditComponent extends Component {
       });
     } else {
       return Services.saveTenant(this.state.tenant)
-      .then(this.props.updateTenant)
-      .then(() =>
-        toastr.success(t('Tenant updated successfully', this.props.currentLanguage))
-      );
+        .then(this.props.updateTenant)
+        .then(() => toastr.success(t('Tenant updated successfully', this.props.currentLanguage)));
     }
   };
 
@@ -868,7 +866,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   openSaveOrCancelModal: (modalProps) => openSaveOrCancelModal(modalProps),
-  updateTenant: (t) => updateTenant(t)
+  updateTenant: (t) => updateTenant(t),
 };
 
 export const TenantEdit = connect(mapStateToProps, mapDispatchToProps)(TenantEditComponent);

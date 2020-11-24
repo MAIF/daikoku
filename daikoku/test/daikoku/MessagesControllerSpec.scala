@@ -1,8 +1,17 @@
 package daikoku
 
-import fr.maif.otoroshi.daikoku.domain.{Message, MessageType, MongoId, User, json}
+import fr.maif.otoroshi.daikoku.domain.{
+  Message,
+  MessageType,
+  MongoId,
+  User,
+  json
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience

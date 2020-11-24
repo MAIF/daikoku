@@ -69,7 +69,7 @@ class TeamApiKeysForApiComponent extends Component {
           'rotation.error.message',
           this.props.currentLanguage,
           false,
-          'You can\'t toggle rotation because of plan rotation is forced to enabled'
+          "You can't toggle rotation because of plan rotation is forced to enabled"
         )
       );
     }
@@ -139,14 +139,14 @@ class TeamApiKeysForApiComponent extends Component {
       searched === ''
         ? this.state.subscriptions
         : this.state.subscriptions.filter((subs) => {
-          if (subs.customName && subs.customName.toLowerCase().includes(searched)) {
-            return true;
-          } else if (subs.apiKey.clientId.toLowerCase().includes(searched)) {
-            return true;
-          } else {
-            return formatPlanType(this.currentPlan(subs)).toLowerCase().includes(searched);
-          }
-        });
+            if (subs.customName && subs.customName.toLowerCase().includes(searched)) {
+              return true;
+            } else if (subs.apiKey.clientId.toLowerCase().includes(searched)) {
+              return true;
+            } else {
+              return formatPlanType(this.currentPlan(subs)).toLowerCase().includes(searched);
+            }
+          });
     const sortedApiKeys = _.sortBy(filteredApiKeys, ['plan', 'customName']);
 
     return (
@@ -281,7 +281,7 @@ const ApiKeyCard = ({
 
   useEffect(() => {
     if (rotationEvery < 0) {
-      setError({ ...error, rotationEvery: 'value can\'t be negative' });
+      setError({ ...error, rotationEvery: "value can't be negative" });
     } else {
       delete error.rotationEvery;
       setError(error);
@@ -290,9 +290,9 @@ const ApiKeyCard = ({
 
   useEffect(() => {
     if (gracePeriod < 0) {
-      setError({ ...error, gracePeriod: 'value can\'t be negative' });
+      setError({ ...error, gracePeriod: "value can't be negative" });
     } else if (gracePeriod > rotationEvery) {
-      setError({ ...error, gracePeriod: 'value can\'t be bigger than rotationEvery' });
+      setError({ ...error, gracePeriod: "value can't be bigger than rotationEvery" });
     } else {
       delete error.gracePeriod;
       setError(error);
@@ -331,14 +331,17 @@ const ApiKeyCard = ({
             {!settingMode &&
               (!editMode ? (
                 <>
-                  <BeautifulTitle title={customName} style={{
-                    wordBreak: 'break-all',
-                    marginBlockEnd: '0',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '85%',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }} className="plan-name">
+                  <BeautifulTitle
+                    title={customName}
+                    style={{
+                      wordBreak: 'break-all',
+                      marginBlockEnd: '0',
+                      whiteSpace: 'nowrap',
+                      maxWidth: '85%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    className="plan-name">
                     {customName}
                   </BeautifulTitle>
                   <button
@@ -350,26 +353,26 @@ const ApiKeyCard = ({
                   </button>
                 </>
               ) : (
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={customName}
-                      ref={inputRef}
-                      onChange={(e) => setCustomName(e.target.value)}
-                    />
-                    <div className="input-group-append">
-                      <span
-                        className="input-group-text cursor-pointer"
-                        onClick={handleCustomNameChange}>
-                        <i className="fas fa-check accept" />
-                      </span>
-                      <span className="input-group-text cursor-pointer" onClick={abortCustomNameEdit}>
-                        <i className="fas fa-times escape a-fake" />
-                      </span>
-                    </div>
+                <div className="input-group">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={customName}
+                    ref={inputRef}
+                    onChange={(e) => setCustomName(e.target.value)}
+                  />
+                  <div className="input-group-append">
+                    <span
+                      className="input-group-text cursor-pointer"
+                      onClick={handleCustomNameChange}>
+                      <i className="fas fa-check accept" />
+                    </span>
+                    <span className="input-group-text cursor-pointer" onClick={abortCustomNameEdit}>
+                      <i className="fas fa-times escape a-fake" />
+                    </span>
                   </div>
-                ))}
+                </div>
+              ))}
             {settingMode && (
               <h3>
                 <Translation i18nkey="ApiKey rotation" language={currentLanguage}>

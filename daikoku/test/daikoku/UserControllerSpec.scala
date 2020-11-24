@@ -1,7 +1,10 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}
@@ -41,8 +44,9 @@ class UserControllerSpec()
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
-      val resp = httpJsonCallBlocking(
-        s"/api/admin/users/${user.id.value}")(tenant, session)
+      val resp =
+        httpJsonCallBlocking(s"/api/admin/users/${user.id.value}")(tenant,
+                                                                   session)
       AppLogger.info(Json.stringify(resp.json))
       resp.status mustBe 200
       val eventualUser =

@@ -143,14 +143,20 @@ export class ApiPricingCard extends Component {
     const req = t('req.', this.props.currentLanguage);
     const month = t('month', this.props.currentLanguage);
     if (plan.costPerMonth && plan.costPerAdditionalRequest) {
-      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month} + ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`;
+      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
+        plan.currency.code
+      )}/${month} + ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(
+        plan.currency.code
+      )}/${req}`;
     } else if (plan.costPerMonth) {
-      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month}`;
+      pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(
+        plan.currency.code
+      )}/${month}`;
     } else if (plan.costPerRequest) {
-      pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`;
+      pricing = `${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(
+        plan.currency.code
+      )}/${req}`;
     }
-
-
 
     return (
       <div className="card mb-4 shadow-sm">
@@ -170,17 +176,27 @@ export class ApiPricingCard extends Component {
           </p>
           <div className="d-flex flex-column mb-2">
             <span className="plan-quotas">
-              {!plan.maxPerSecond && !plan.maxPerMonth && t('plan.limits.unlimited', this.props.currentLanguage)}
-              {!!plan.maxPerSecond && !!plan.maxPerMonth && <div>
+              {!plan.maxPerSecond &&
+                !plan.maxPerMonth &&
+                t('plan.limits.unlimited', this.props.currentLanguage)}
+              {!!plan.maxPerSecond && !!plan.maxPerMonth && (
                 <div>
-                  <Translation i18nkey="plan.limits" language={this.props.currentLanguage} replacements={[plan.maxPerSecond, plan.maxPerMonth]}>
-                    Limits: {plan.maxPerSecond} req./sec, {plan.maxPerMonth} req./month
-                  </Translation>
+                  <div>
+                    <Translation
+                      i18nkey="plan.limits"
+                      language={this.props.currentLanguage}
+                      replacements={[plan.maxPerSecond, plan.maxPerMonth]}>
+                      Limits: {plan.maxPerSecond} req./sec, {plan.maxPerMonth} req./month
+                    </Translation>
+                  </div>
                 </div>
-              </div>}
+              )}
             </span>
             <span className="plan-pricing">
-              <Translation i18nkey="plan.pricing" language={this.props.currentLanguage} replacements={[pricing]}>
+              <Translation
+                i18nkey="plan.pricing"
+                language={this.props.currentLanguage}
+                replacements={[pricing]}>
                 pricing: {pricing}
               </Translation>
             </span>
@@ -202,40 +218,45 @@ export class ApiPricingCard extends Component {
                 )}>
                 {(this.props.api.visibility === 'AdminOnly' ||
                   (plan.otoroshiTarget && !isAccepted && !isPending)) && (
-                    <ActionWithTeamSelector
-                      title={t(
-                        'team.selection.title',
-                        this.props.currentLanguage,
-                        'Select teams'
+                  <ActionWithTeamSelector
+                    title={t('team.selection.title', this.props.currentLanguage, 'Select teams')}
+                    description={t(
+                      plan.subscriptionProcess === 'Automatic'
+                        ? 'team.selection.desc.get'
+                        : 'team.selection.desc.request',
+                      this.props.currentLanguage,
+                      'You are going to get or request API keys. On which team do you want them for?'
+                    )}
+                    currentLanguage={this.props.currentLanguage}
+                    teams={authorizedTeams
+                      .filter((t) => t.type !== 'Admin')
+                      .filter(
+                        (team) =>
+                          plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                      )
+                      .filter(
+                        (t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization'
                       )}
-                      description={t(
-                        plan.subscriptionProcess === 'Automatic' ? 'team.selection.desc.get' : 'team.selection.desc.request',
-                        this.props.currentLanguage,
-                        'You are going to get or request API keys. On which team do you want them for?'
-                      )}
-                      currentLanguage={this.props.currentLanguage}
-                      teams={authorizedTeams
-                        .filter((t) => t.type !== 'Admin')
-                        .filter(
-                          (team) =>
-                            plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-                        )
-                        .filter((t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization')
-                      }
-                      pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
-                      authorizedTeams={this.props.subscriptions.map((subs) => subs.team)}
-                      allowMultipleDemand={plan.allowMultipleKeys}
-                      action={(teams) => this.props.askForApikeys(teams)}
-                      withAllTeamSelector={true}>
-                      <button type="button" className="btn btn-sm btn-access-negative col-12">
-                        <Translation
-                          i18nkey={plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
-                          language={this.props.currentLanguage}>
-                          {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
-                        </Translation>
-                      </button>
-                    </ActionWithTeamSelector>
-                  )}
+                    pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
+                    authorizedTeams={this.props.subscriptions.map((subs) => subs.team)}
+                    allowMultipleDemand={plan.allowMultipleKeys}
+                    action={(teams) => this.props.askForApikeys(teams)}
+                    withAllTeamSelector={true}>
+                    <button type="button" className="btn btn-sm btn-access-negative col-12">
+                      <Translation
+                        i18nkey={
+                          plan.subscriptionProcess === 'Automatic'
+                            ? 'Get API key'
+                            : 'Request API key'
+                        }
+                        language={this.props.currentLanguage}>
+                        {plan.subscriptionProcess === 'Automatic'
+                          ? 'Get API key'
+                          : 'Request API key'}
+                      </Translation>
+                    </button>
+                  </ActionWithTeamSelector>
+                )}
               </Can>
             )}
           </div>

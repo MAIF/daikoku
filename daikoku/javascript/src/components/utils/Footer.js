@@ -16,9 +16,7 @@ const FooterComponent = ({ tenant, isBackOffice }) => {
         // 'col-md-12': !isBackOffice,
         'back-office-footer': isBackOffice,
       })}>
-      <div
-        dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer) }}
-      />
+      <div dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer) }} />
     </footer>
   );
 };

@@ -120,7 +120,7 @@ export class ApiCartidge extends Component {
             </ActionWithTeamSelector>
           </Can>
         )}
-        
+
         {defaultPlan && !defaultPlan.otoroshiTarget && (
           <small className="mt-5">
             <Translation i18nkey="api not linked" language={this.props.currentLanguage}>

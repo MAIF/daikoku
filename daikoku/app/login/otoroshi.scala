@@ -55,7 +55,8 @@ object OtoroshiIdentityFilter {
     val claimHeaderName =
       tenant.authProviderSettings.\("claimHeaderName").as[String]
     val otoroshiJwtAlgo = Algorithm.HMAC512(claimSecret)
-    val otoroshiJwtVerifier = JWT.require(otoroshiJwtAlgo).acceptLeeway(10).build()
+    val otoroshiJwtVerifier =
+      JWT.require(otoroshiJwtAlgo).acceptLeeway(10).build()
 
     request.headers.get(claimHeaderName) match {
       case None =>

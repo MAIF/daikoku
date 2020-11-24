@@ -6,7 +6,7 @@ import {
   UPDATE_TEAM,
   UPDATE_LANGUAGE,
   UPDATE_TENANT,
-  UPDATE_USER
+  UPDATE_USER,
 } from './';
 
 export const login = ({ user, team, tenant, language }) => (dispatch) => {
