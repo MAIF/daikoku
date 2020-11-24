@@ -1,9 +1,8 @@
 name: Test Daikoku
-on:
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
-  release:
+  test:
     runs-on: ubuntu-latest
 
     services:
