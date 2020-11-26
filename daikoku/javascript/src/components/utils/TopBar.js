@@ -229,9 +229,6 @@ export class TopBarComponent extends Component {
         <Link className="dropdown-item" to={'/teams'}>
           <i className="fas fa-users" /> {t('All teams', this.props.currentLanguage)}
         </Link>
-        <Link className="dropdown-item" to={'/organizations'}>
-          <i className="fas fa-random" /> {t('All organizations', this.props.currentLanguage)}
-        </Link>
         <div className="dropdown-divider" />
         <Can I={manage} a={tenant}>
           <Link className="dropdown-item" to={'/settings/teams'}>
@@ -293,13 +290,7 @@ export class TopBarComponent extends Component {
           label: t('My profile', this.props.currentLanguage),
           type: 'link',
           url: '/settings/me',
-        },
-        {
-          value: 'tenant',
-          label: t('Organizations settings', this.props.currentLanguage),
-          type: 'link',
-          url: '/settings/tenants',
-        },
+        }
       ];
       if (this.props.connectedUser.isDaikokuAdmin)
         options.push({

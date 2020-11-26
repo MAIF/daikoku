@@ -1520,11 +1520,6 @@ class ApiController(DaikokuAction: DaikokuAction,
 
       for {
         myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-        tenants <- env.dataStore.tenantRepo
-          .findNotDeleted(
-            Json.obj("$or" -> Json.arr(Json.obj("name" -> searchAsRegex), Json.obj("_id" -> searchAsRegex))),
-            5
-          )
         teams <- env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
           .findNotDeleted(Json.obj("name" -> searchAsRegex), 5)
@@ -1548,10 +1543,6 @@ class ApiController(DaikokuAction: DaikokuAction,
       } yield {
         Ok(
           Json.arr(
-            Json.obj("label" -> "Tenants",
-              "options" -> JsArray(
-                tenants.map(t => Json.obj("value" -> t.humanReadableId, "label" -> t.name, "type" -> "tenant"))
-              )),
             Json.obj("label" -> "Teams",
               "options" -> JsArray(
                 teams.map(t => Json.obj("value" -> t.humanReadableId, "label" -> t.name, "type" -> "team"))
