@@ -125,11 +125,6 @@ export class ApiDocumentation extends Component {
               </Link>
             )}
           </div>
-          {/*!this.state.remoteContent && <div
-            ref={r => (this.doc = r)}
-            className="api-description"
-            dangerouslySetInnerHTML={{ __html: converter.makeHtml(this.state.content) }}
-          />*/}
           {!this.state.remoteContent && (
             <AwesomeContentViewer
               contentType={this.state.contentType}
@@ -173,11 +168,9 @@ const Html = (props) => (
   <iframe src={props.url} style={{ width: '100%', height: '100vh', border: 0 }} />
 );
 
-class Pdf extends Component {
-  render() {
-    return <iframe src={this.props.url} style={{ width: '100%', height: '100vh', border: 0 }} />;
-  }
-}
+const Pdf = ({ url }) => {
+  return <embed src={url} type="application/pdf" style={{ width: '100%', height: '100vh', border: 0 }} />;
+};
 
 class Markdown extends Component {
   state = { content: null };
@@ -349,17 +342,15 @@ const mimeTypes = [
   { label: '.webm WEBM video file ', value: 'video/webm', render: (url) => <Video url={url} /> },
 ];
 
-class AwesomeContentViewer extends Component {
-  render() {
-    const mimeType = mimeTypes.filter((t) => t.value === this.props.contentType)[0] || {
-      render: () => <TypeNotSupportedYet />,
-    };
-    if (this.props.remoteContent) {
-      return mimeType.render(this.props.remoteContent.url);
-    } else if (this.props.content) {
-      return mimeType.render(null, this.props.content);
-    } else {
-      return <TypeNotSupportedYet />;
-    }
+const AwesomeContentViewer = props => {
+  const mimeType = mimeTypes.filter((t) => t.value === props.contentType)[0] || {
+    render: () => <TypeNotSupportedYet />,
+  };
+  if (props.remoteContent) {
+    return mimeType.render(props.remoteContent.url);
+  } else if (props.content) {
+    return mimeType.render(null, props.content);
+  } else {
+    return <TypeNotSupportedYet />;
   }
-}
+};
