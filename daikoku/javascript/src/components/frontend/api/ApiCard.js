@@ -96,7 +96,7 @@ export class ApiCard extends Component {
             </div>
           </div>
         </div>
-        <div className="col-12">
+        <div className="col-12 lead">
           <Translation
             language={this.props.currentLanguage}
             i18nkey={`${api._humanReadableId}.description`}
