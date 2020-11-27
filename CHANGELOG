@@ -76,3 +76,12 @@ We'd like to thank all the contributors who worked on this release!
 - tenant Subscription security issue [#171](https://github.com/MAIF/daikoku/issues/171)
 - Custom footer doesn't display properly [#169](https://github.com/MAIF/daikoku/issues/169)
 
+## [v1.0.11] - 2020-11-27
+
+## :beetle: Bug Fixes
+
+- PDF page for documentation does not work [#181](https://github.com/MAIF/daikoku/issues/181)
+- Newlines are not rendered in api smalldescription and description [#180](https://github.com/MAIF/daikoku/issues/180)
+- Tenants are accessibles from search bar and menu [#179](https://github.com/MAIF/daikoku/issues/179)
+- Custom footer doesn't display properly [#169](https://github.com/MAIF/daikoku/issues/169)
+
