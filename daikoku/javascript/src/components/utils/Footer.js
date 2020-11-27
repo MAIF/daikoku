@@ -11,13 +11,10 @@ const FooterComponent = ({ tenant, isBackOffice }) => {
   return (
     <footer
       className={classNames('footer row', {
-        // 'col-md-10': !!isBackOffice,
-        // 'ml-sm-auto': !!isBackOffice,
-        // 'col-md-12': !isBackOffice,
         'back-office-footer': isBackOffice,
-      })}>
-      <div dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer) }} />
-    </footer>
+      })}
+      dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer) }}
+    />
   );
 };
 
