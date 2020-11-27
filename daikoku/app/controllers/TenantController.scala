@@ -317,7 +317,9 @@ class TenantController(DaikokuAction: DaikokuAction,
                   avatar = tenant.style.map(_.logo)
                 ))
           } yield {
-            Ok(Json.obj("tenant" -> tenant.asJsonWithJwt, "uiPayload" -> tenant.toUiPayload(env)))
+            Ok(
+              Json.obj("tenant" -> tenant.asJsonWithJwt,
+                       "uiPayload" -> tenant.toUiPayload(env)))
           }
         }
       }

@@ -290,7 +290,7 @@ export class TopBarComponent extends Component {
           label: t('My profile', this.props.currentLanguage),
           type: 'link',
           url: '/settings/me',
-        }
+        },
       ];
       if (this.props.connectedUser.isDaikokuAdmin)
         options.push({

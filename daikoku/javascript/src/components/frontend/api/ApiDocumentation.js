@@ -169,7 +169,9 @@ const Html = (props) => (
 );
 
 const Pdf = ({ url }) => {
-  return <embed src={url} type="application/pdf" style={{ width: '100%', height: '100vh', border: 0 }} />;
+  return (
+    <embed src={url} type="application/pdf" style={{ width: '100%', height: '100vh', border: 0 }} />
+  );
 };
 
 class Markdown extends Component {
@@ -342,7 +344,7 @@ const mimeTypes = [
   { label: '.webm WEBM video file ', value: 'video/webm', render: (url) => <Video url={url} /> },
 ];
 
-const AwesomeContentViewer = props => {
+const AwesomeContentViewer = (props) => {
   const mimeType = mimeTypes.filter((t) => t.value === props.contentType)[0] || {
     render: () => <TypeNotSupportedYet />,
   };
