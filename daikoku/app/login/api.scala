@@ -117,12 +117,14 @@ object TenantHelper {
             ))
           .flatMap {
             case None =>
+              AppLogger.info(s"Tenant does not exists - host $host - domain $domain - None")
               Errors.craftResponseResult(s"Tenant does not exists",
                                          Results.NotFound,
                                          request,
                                          None,
                                          env)
             case Some(tenant) if !tenant.enabled =>
+              AppLogger.info(s"Tenant does not exists - host $host - domain $domain - tenant disabled")
               Errors.craftResponseResult("Tenant does not exists",
                                          Results.NotFound,
                                          request,
