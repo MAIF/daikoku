@@ -775,7 +775,7 @@ export class TenantEditComponent extends Component {
       });
     } else {
       return Services.saveTenant(this.state.tenant)
-        .then(this.props.updateTenant)
+        .then(({uiPayload}) => this.props.updateTenant(uiPayload))
         .then(() => toastr.success(t('Tenant updated successfully', this.props.currentLanguage)));
     }
   };

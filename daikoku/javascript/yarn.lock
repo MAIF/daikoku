@@ -68,10 +68,10 @@
   dependencies:
     yargs "15.3.1"
 
-"@asciidoctor/core@2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@asciidoctor/core/-/core-2.2.0.tgz#cae722e32666bf3c38365afe7d05f2f433b165fd"
-  integrity sha512-WN/mFuU4SeWaDqpGvRwAf+Tq2T8NQkVVpZ3Ne1/ZRxDKElzFkqq8bGbmxSMWmMVzC+H9ZO1YxxbOjhWEiNvpOA==
+"@asciidoctor/core@2.2.1":
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/@asciidoctor/core/-/core-2.2.1.tgz#eac0361a85b46f2ef2a9d19d73e3875bf94715d4"
+  integrity sha512-wdVseZjCcBvFfWSsCGyyvJkSQJ9UmXDdTDKnL+HerM12XQq4eWtk7lniSIKO459ipqImcsrueib47EtkzzRjLw==
   dependencies:
     asciidoctor-opal-runtime "0.3.0"
     unxhr "1.0.1"
@@ -2118,13 +2118,13 @@ asciidoctor-opal-runtime@0.3.0:
     glob "7.1.3"
     unxhr "1.0.1"
 
-asciidoctor@2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/asciidoctor/-/asciidoctor-2.2.0.tgz#880f0dfe349d7dcc8b819ebc691bf1fd36d47bbe"
-  integrity sha512-w5oBMYPaA5RP/Qlv6XQzWE7kSf8d9sLMRBItcU+nn7E/FF9yGLUd1p/dzqWiu600KyNHBpp8Ml/VTaGjUm6LrQ==
+asciidoctor@2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/asciidoctor/-/asciidoctor-2.2.1.tgz#4e29fe7195d97f75b36c91ad8e3448191b9ab0fa"
+  integrity sha512-adH/pDPDZCd4eb1ku7N8WepN+O6Yl0lVQPWE/ep7+0BFkBm4P/Sx8DUqzZ+X+nG6WSZlma5Uu0gNuDgrc7etFg==
   dependencies:
     "@asciidoctor/cli" "3.4.0"
-    "@asciidoctor/core" "2.2.0"
+    "@asciidoctor/core" "2.2.1"
 
 asn1.js@^4.0.0:
   version "4.10.1"
@@ -2953,13 +2953,13 @@ buffer@^5.5.0:
     base64-js "^1.3.1"
     ieee754 "^1.1.13"
 
-buffer@^5.6.0:
-  version "5.6.0"
-  resolved "https://registry.yarnpkg.com/buffer/-/buffer-5.6.0.tgz#a31749dc7d81d84db08abf937b6b8c4033f62786"
-  integrity sha512-/gDYp/UtU0eA1ys8bOs9J6a+E/KWIY+DZ+Q2WESNUA0jFRsJOc0SNUO6xJ5SGA1xueg3NL65W6s+NY5l9cunuw==
+buffer@^6.0.3:
+  version "6.0.3"
+  resolved "https://registry.yarnpkg.com/buffer/-/buffer-6.0.3.tgz#2ace578459cc8fbe2a70aaa8f52ee63b6a74c6c6"
+  integrity sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==
   dependencies:
-    base64-js "^1.0.2"
-    ieee754 "^1.1.4"
+    base64-js "^1.3.1"
+    ieee754 "^1.2.1"
 
 builtin-status-codes@^3.0.0:
   version "3.0.0"
@@ -3621,7 +3621,7 @@ core-js@^1.0.0:
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-1.2.7.tgz#652294c14651db28fa93bd2d5ff2983a4f08c636"
   integrity sha1-ZSKUwUZR2yj6k70tX/KYOk8IxjY=
 
-core-js@^2.4.0, core-js@^2.4.1, core-js@^2.5.0, core-js@^2.6.10, core-js@^2.6.11:
+core-js@^2.4.0, core-js@^2.4.1, core-js@^2.5.0, core-js@^2.6.10:
   version "2.6.11"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.11.tgz#38831469f9922bded8ee21c9dc46985e0399308c"
   integrity sha512-5wjnpaT/3dV+XB4borEsnAYQchn00XSgTAWKDkEqv+K8KevjbzmofK6hfJ9TZIlpj2N0xQpazy7PiRQiWHqzWg==
@@ -4388,10 +4388,10 @@ domkit@^0.0.1:
   resolved "https://registry.yarnpkg.com/domkit/-/domkit-0.0.1.tgz#88399d586794efc1154fec6c22cfe50f19bd4dbb"
   integrity sha1-iDmdWGeU78EVT+xsIs/lDxm9Tbs=
 
-dompurify@^2.0.7:
-  version "2.0.10"
-  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-2.0.10.tgz#d193f36d8148b4297a3a420b992d20eeff47a4d3"
-  integrity sha512-ok1dcSztsIuVxWG6Cx0ujyDIzNclz9W9OIU0cOb0IT+VAtSLrOelZF4miUvSm1U4PoCw8D7sIOLCnCQOaVpr3w==
+dompurify@=2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-2.2.2.tgz#cb8c2b1a2f3c8a0b565127504ae4eedec176a972"
+  integrity sha512-BsGR4nDLaC5CNBnyT5I+d5pOeaoWvgVeg6Gq/aqmKYWMPR07131u60I80BvExLAJ0FQEIBQ1BTicw+C5+jOyrg==
 
 domutils@1.5.1:
   version "1.5.1"
@@ -5079,22 +5079,10 @@ fast-deep-equal@^1.0.0:
   resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-1.1.0.tgz#c053477817c86b51daa853c81e059b733d023614"
   integrity sha1-wFNHeBfIa1HaqFPIHgWbcz0CNhQ=
 
-fast-deep-equal@^2.0.1:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-2.0.1.tgz#7b05218ddf9667bf7f370bf7fdb2cb15fdd0aa49"
-  integrity sha1-ewUhjd+WZ79/Nwv3/bLLFf3Qqkk=
-
 fast-deep-equal@^3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-3.1.1.tgz#545145077c501491e33b15ec408c294376e94ae4"
   integrity sha512-8UEa58QDLauDNfpbrX55Q9jrGHThw2ZMdOky5Gl1CDtVeJDPVrG4Jxx1N8jw2gkWaff5UUuX1KJd+9zGe2B+ZA==
-
-fast-json-patch@^2.2.1:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/fast-json-patch/-/fast-json-patch-2.2.1.tgz#18150d36c9ab65c7209e7d4eb113f4f8eaabe6d9"
-  integrity sha512-4j5uBaTnsYAV5ebkidvxiLUYOwjQ+JSFljeqfTxCrH9bDmlCQaOJFS84oDJ2rAXZq2yskmk3ORfoP9DCwqFNig==
-  dependencies:
-    fast-deep-equal "^2.0.1"
 
 fast-json-patch@^3.0.0-1:
   version "3.0.0-1"
@@ -6118,7 +6106,7 @@ ieee754@^1.1.13:
   resolved "https://registry.yarnpkg.com/ieee754/-/ieee754-1.1.13.tgz#ec168558e95aa181fd87d37f55c32bbcb6708b84"
   integrity sha512-4vf7I2LYV/HaWerSo3XmlMkp5eZ83i+/CDluXi/IGTs/O1sejBNhTtnxzmRZfvOUqj7lZjqHkeTvpgSFDlWZTg==
 
-ieee754@^1.1.4:
+ieee754@^1.1.4, ieee754@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/ieee754/-/ieee754-1.2.1.tgz#8eb7a10a63fff25d15a57b001586d177d1b0d352"
   integrity sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==
@@ -11876,34 +11864,14 @@ svgo@^1.0.0:
     unquote "~1.1.1"
     util.promisify "~1.0.0"
 
-swagger-client@=3.11.1:
-  version "3.11.1"
-  resolved "https://registry.yarnpkg.com/swagger-client/-/swagger-client-3.11.1.tgz#594a5e570e3751d62164e368accd278e783a1346"
-  integrity sha512-/D4I9lnGKaRmiNFTSY6xBBWYgPCHcDw7J9m4mcyeSOmZs7yGHVSFa7ozNyc7TAjNY0x2zQKjivGMUNkJ72W7ZQ==
+swagger-client@^3.12.0, swagger-client@^3.12.1:
+  version "3.12.1"
+  resolved "https://registry.yarnpkg.com/swagger-client/-/swagger-client-3.12.1.tgz#bbe4521c0f662e72ad84fa9dbe3eb42c9960d901"
+  integrity sha512-jxhf7yvMq1SIlaMBlL0S+2mk5eovdYNzVAn1Ewrpe1pkby2pm5PnnP8XiSImCuX7d+BxUfVFkOgCTeK38+fBlA==
   dependencies:
     "@babel/runtime-corejs3" "^7.11.2"
     btoa "^1.2.1"
-    buffer "^5.6.0"
-    cookie "~0.4.1"
-    cross-fetch "^3.0.6"
-    deep-extend "~0.6.0"
-    fast-json-patch "^2.2.1"
-    isomorphic-form-data "~2.0.0"
-    js-yaml "^3.14.0"
-    lodash "^4.17.19"
-    qs "^6.9.4"
-    querystring-browser "^1.0.4"
-    traverse "~0.6.6"
-    url "~0.11.0"
-
-swagger-client@^3.11.1:
-  version "3.12.0"
-  resolved "https://registry.yarnpkg.com/swagger-client/-/swagger-client-3.12.0.tgz#28d940cc44d5d1dbc4d833066eec1093b65277d3"
-  integrity sha512-u8IAf+xWYvUY4H23gIgpN77I6BnJngAoZ80pnKB/Qex/nNxf99MvnpzatU0Wj4L5vz/Qa145PIj/ACbcMKK/MQ==
-  dependencies:
-    "@babel/runtime-corejs3" "^7.11.2"
-    btoa "^1.2.1"
-    buffer "^5.6.0"
+    buffer "^6.0.3"
     cookie "~0.4.1"
     cross-fetch "^3.0.6"
     deep-extend "~0.6.0"
@@ -11916,10 +11884,10 @@ swagger-client@^3.11.1:
     traverse "~0.6.6"
     url "~0.11.0"
 
-swagger-editor@3.14.4:
-  version "3.14.4"
-  resolved "https://registry.yarnpkg.com/swagger-editor/-/swagger-editor-3.14.4.tgz#e0ad6aeeab4b48bee8a9437a04aef5e5b1e00308"
-  integrity sha512-d4XAuVKPhAMjdfd1wHe40KXVqSlXEXiveGAn37JsTrjCYmEZOgfiKvg2ME/85qygR1wAVieIS+D8LkWcidgCRA==
+swagger-editor@3.14.7:
+  version "3.14.7"
+  resolved "https://registry.yarnpkg.com/swagger-editor/-/swagger-editor-3.14.7.tgz#7cc6a6c02ba4dd3a9ea3dcfb05021ff8d6a0cd82"
+  integrity sha512-ufHJNEiOON8p+/Lv5JdAIGvLbx8BzZClHN7jz8sgf8r+Ee8voTNMJDJ7EXQxJeHDVzDV7iroLWuYrDoDMpcvcg==
   dependencies:
     ajv "^5.2.2"
     ajv-errors "^1.0.1"
@@ -11952,8 +11920,8 @@ swagger-editor@3.14.4:
     react-transition-group "^1.1.1"
     redux "^3.x.x"
     reselect "^4.0.0"
-    swagger-client "^3.11.1"
-    swagger-ui "^3.36.0"
+    swagger-client "^3.12.0"
+    swagger-ui "^3.37.0"
     traverse "^0.6.6"
     whatwg-fetch "^2.0.3"
     yaml-js "^0.2.3"
@@ -11963,10 +11931,10 @@ swagger-ui-dist@3.36.0:
   resolved "https://registry.yarnpkg.com/swagger-ui-dist/-/swagger-ui-dist-3.36.0.tgz#a97d29bb914bc945ec5b1387c9324f0e3709fa0a"
   integrity sha512-y+ZTvI5vU1xnb2TtUk6JctoCyDDnjXWdpxJbE3BAd7wOXa8vdwNND4suJIpIRffxRygoZw42z3qGWjRK+xqfJA==
 
-swagger-ui@^3.36.0:
-  version "3.36.0"
-  resolved "https://registry.yarnpkg.com/swagger-ui/-/swagger-ui-3.36.0.tgz#61e9b8214b036574514dfdb85ea3e8b7e49f2671"
-  integrity sha512-gdAPUllYjLlcu4Yw3pix1QmErqSpBgORwjWyu/wjQgl311JfDhBorj2YfzjjM7ri8kzCw/+h0eB675ycic0zpw==
+swagger-ui@^3.37.0:
+  version "3.37.2"
+  resolved "https://registry.yarnpkg.com/swagger-ui/-/swagger-ui-3.37.2.tgz#47a9bbbe16f038ae018afb6ee7b6e199cfd34120"
+  integrity sha512-/I8JP2Tl5W7283Hf9QDPc/ezbd8DFFAnZXL+TAmH/iT/ZqoubDC9VZ5padzfy0/fxD+oQe1ry0TLvi7rJmmTjg==
   dependencies:
     "@babel/runtime-corejs3" "^7.11.2"
     "@braintree/sanitize-url" "^5.0.0"
@@ -11974,10 +11942,9 @@ swagger-ui@^3.36.0:
     "@kyleshockey/xml" "^1.0.2"
     base64-js "^1.2.0"
     classnames "^2.2.6"
-    core-js "^2.6.11"
     css.escape "1.5.1"
     deep-extend "0.6.0"
-    dompurify "^2.0.7"
+    dompurify "=2.2.2"
     ieee754 "^1.1.13"
     immutable "^3.x.x"
     js-file-download "^0.4.1"
@@ -12002,7 +11969,7 @@ swagger-ui@^3.36.0:
     reselect "^4.0.0"
     serialize-error "^2.1.0"
     sha.js "^2.4.11"
-    swagger-client "=3.11.1"
+    swagger-client "^3.12.1"
     url-parse "^1.4.7"
     xml-but-prettier "^1.0.1"
     zenscroll "^4.0.2"
