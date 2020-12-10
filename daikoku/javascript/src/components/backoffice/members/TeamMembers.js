@@ -251,10 +251,10 @@ export class TeamMembersSimpleComponent extends Component {
             <Select
               placeholder={t('Add new member to the team ...', this.props.currentLanguage)}
               className="add-member-select mr-2 reactSelect"
-              options={this.state.addableMembers}
+              options={_.sortBy(this.state.addableMembers, ['value.name', 'value.email'])}
               onChange={this.addMember}
               value={this.state.selectedMember}
-              filterOption={(data, search) => _.values(data.value).some((v) => v.includes(search))}
+              filterOption={({value: {email, name}}, search) => email.includes(search) || name.includes(search)}
               classNamePrefix="reactSelect"
             />
             <input
