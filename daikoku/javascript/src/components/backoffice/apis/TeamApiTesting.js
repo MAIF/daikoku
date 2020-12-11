@@ -63,12 +63,12 @@ class GenerateApiKeyModal extends Component {
   };
 
   generateApiKey = () => {
-    Services.createTestingApiKey(this.props.teamId, this.state.config).then((apikey) => {
-      this.props.changeValue('username', apikey.clientId);
-      this.props.changeValue('password', apikey.clientSecret);
-      // this.props.changeValue('auth', 'Basic');
-      this.props.close();
-    });
+    Services.createTestingApiKey(this.props.teamId, this.state.config)
+      .then((apikey) => {
+        this.props.changeValue('username', apikey.clientId);
+        this.props.changeValue('password', apikey.clientSecret);
+        this.props.close();
+      });
   };
 
   render() {
@@ -162,7 +162,7 @@ class GenerateApiKeyModal extends Component {
 }
 
 class GenerateApiKey extends Component {
-  showGenerateApiKeyModal = () => {
+  showGenerateApiKeyModal = (metadata) => {
     const random = faker.random.alphaNumeric(16);
     const config = {
       otoroshiSettings: null,
@@ -170,6 +170,7 @@ class GenerateApiKey extends Component {
       clientName: `testing-purpose-only-apikey-for-${this.props.apiName()}`,
       api: this.props.api(),
       tag: `daikoku_testing_${random}`,
+      ...metadata
     };
     window.alert(
       (close) => (
@@ -194,7 +195,12 @@ class GenerateApiKey extends Component {
           <button
             type="button"
             className="btn btn-outline-success"
-            onClick={() => this.showGenerateApiKeyModal()}>
+            onClick={() => this.props.openSubMetadataModal({
+              save: (metadata) => this.showGenerateApiKeyModal(metadata) ,
+              api: this.props.api(),
+              currentLanguage: this.props.currentLanguage,
+              description: <div>Description</div>
+            })}>
             <i className="fas fa-key mr-1" />
             <Translation
               i18nkey="otoroshi.test.key.generator.button"
@@ -256,6 +262,7 @@ export class TeamApiTesting extends Component {
         changeValue: this.props.changeValue,
         currentLanguage: this.props.currentLanguage,
         otoroshiSettings: this.props.otoroshiSettings,
+        openSubMetadataModal: this.props.openSubMetadataModal
       },
     },
   };

@@ -42,7 +42,7 @@ export const SubscriptionMetadataModal = (props) => {
       const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
         ([accMeta, accCustomMeta], item) => {
           if (
-            plan.otoroshiTarget.apikeyCustomization.customMetadata.some((x) => x.key === item[0])
+            plan && plan.otoroshiTarget.apikeyCustomization.customMetadata.some((x) => x.key === item[0])
           ) {
             return [[...accMeta, item], accCustomMeta];
           }
@@ -78,8 +78,8 @@ export const SubscriptionMetadataModal = (props) => {
 
   const validate = () =>
     Object.entries({ ...customMetadata, ...metadata }).every(([_, value]) => !!value) &&
-    plan &&
-    plan.otoroshiTarget.apikeyCustomization.customMetadata.length === Object.keys(metadata).length;
+    (!plan || plan.otoroshiTarget.apikeyCustomization.customMetadata.length === Object.keys(metadata).length);
+   
 
   useEffect(() => {
     setIsValid(validate());
@@ -209,20 +209,19 @@ export const SubscriptionMetadataModal = (props) => {
       </div>
       <div className="modal-body">
         {loading && <Spinner />}
-        {!loading && !!api && !!plan && (
+        {!loading && (
           <>
-            {props.creationMode && (
+            {! props.description && props.creationMode && (
               <div className="modal-description">
                 <Translation
                   i18nkey="subscription.metadata.modal.creation.description"
                   language={props.currentLanguage}
                   replacements={[props.team.name, plan.customName || formatPlanType(plan)]}>
-                  {props.team.name} ask you an apikey for plan{' '}
-                  {plan.customName || formatPlanType(plan)}
+                  {props.team.name} ask you an apikey for plan {plan.customName || formatPlanType(plan)}
                 </Translation>
               </div>
             )}
-            {!props.creationMode && (
+            {!props.description && !props.creationMode && (
               <div className="modal-description">
                 <Translation
                   i18nkey="subscription.metadata.modal.update.description"
@@ -232,7 +231,12 @@ export const SubscriptionMetadataModal = (props) => {
                 </Translation>
               </div>
             )}
-            <Collapse
+            {props.description && (
+              <div className="modal-description">
+                {props.description}
+              </div>
+            )}
+            {!!plan && <Collapse
               label={t(
                 'mandatory.metadata.label',
                 props.currentLanguage,
@@ -251,7 +255,7 @@ export const SubscriptionMetadataModal = (props) => {
                   );
                 }
               )}
-            </Collapse>
+            </Collapse>}
             <Collapse label={t('Additional metadata', props.currentLanguage)} collapsed={true}>
               <ObjectInput
                 value={customMetadata}
@@ -334,6 +338,7 @@ export const SubscriptionMetadataModal = (props) => {
             </Collapse>
           </>
         )}
+        
         <div className="modal-footer">
           <button
             type="button"

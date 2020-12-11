@@ -17,7 +17,7 @@ import {
   TeamApiTesting,
 } from '.';
 
-import { setError } from '../../../core';
+import { setError, openSubMetadataModal } from '../../../core';
 
 class TeamApiComponent extends Component {
   state = {
@@ -423,6 +423,7 @@ class TeamApiComponent extends Component {
                         save={this.save}
                         hookSavePage={(savePage) => this.setState({ savePage })}
                         otoroshiSettings={this.state.otoroshiSettings}
+                        openSubMetadataModal={this.props.openSubMetadataModal}
                       />
                     )}
                   </div>
@@ -477,6 +478,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   setError: (error) => setError(error),
+  openSubMetadataModal: (props) => openSubMetadataModal(props)
 };
 
 export const TeamApi = connect(mapStateToProps, mapDispatchToProps)(TeamApiComponent);
