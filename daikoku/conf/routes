@@ -29,6 +29,8 @@ GET     /apis/*path                                     fr.maif.otoroshi.daikoku
 GET     /consumptions/*path                             fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
 ### NoDocs ###
 GET     /logout                                         fr.maif.otoroshi.daikoku.ctrls.LoginController.userLogout()
+### NoDocs ###
+GET     /health                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.health()
 
 ### NoDocs ###
 POST    /account/reset                                  fr.maif.otoroshi.daikoku.ctrls.LoginController.askForPasswordReset()
