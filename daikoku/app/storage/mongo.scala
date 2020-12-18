@@ -10,20 +10,17 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import org.jooq.{JSONB, QueryPart}
+import org.jooq.impl.DSL
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.Index
-import reactivemongo.api.{
-  Cursor,
-  CursorOptions,
-  ReadConcern,
-  ReadPreference,
-  WriteConcern
-}
+import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MongoTenantCapableRepo[A, Id <: ValueType]
@@ -226,60 +223,60 @@ case class MongoTenantCapableConsumptionRepo(
   ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
-class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
+class MongoDataStore (env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
     extends DataStore {
 
   val logger = Logger("MongoDataStore")
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
   private val _tenantRepo: TenantRepo =
-    new MongoTenantRepo(env, reactiveMongoApi)
-  private val _userRepo: UserRepo = new MongoUserRepo(env, reactiveMongoApi)
+    new MongoTenantRepo(env, db, reactiveMongoApi)
+  private val _userRepo: UserRepo = new MongoUserRepo(env, db, reactiveMongoApi)
   private val _teamRepo: TeamRepo = MongoTenantCapableTeamRepo(
-    () => new MongoTeamRepo(env, reactiveMongoApi),
-    t => new MongoTenantTeamRepo(env, reactiveMongoApi, t))
+    () => new MongoTeamRepo(env, db, reactiveMongoApi),
+    t => new MongoTenantTeamRepo(env, db, reactiveMongoApi, t))
   private val _apiRepo: ApiRepo = MongoTenantCapableApiRepo(
-    () => new MongoApiRepo(env, reactiveMongoApi),
-    t => new MongoTenantApiRepo(env, reactiveMongoApi, t))
+    () => new MongoApiRepo(env, db, reactiveMongoApi),
+    t => new MongoTenantApiRepo(env, db, reactiveMongoApi, t))
   private val _apiSubscriptionRepo: ApiSubscriptionRepo =
     MongoTenantCapableApiSubscriptionRepo(
-      () => new MongoApiSubscriptionRepo(env, reactiveMongoApi),
-      t => new MongoTenantApiSubscriptionRepo(env, reactiveMongoApi, t)
+      () => new MongoApiSubscriptionRepo(env, db, reactiveMongoApi),
+      t => new MongoTenantApiSubscriptionRepo(env, db, reactiveMongoApi, t)
     )
   private val _apiDocumentationPageRepo: ApiDocumentationPageRepo =
     MongoTenantCapableApiDocumentationPageRepo(
-      () => new MongoApiDocumentationPageRepo(env, reactiveMongoApi),
-      t => new MongoTenantApiDocumentationPageRepo(env, reactiveMongoApi, t)
+      () => new MongoApiDocumentationPageRepo(env, db, reactiveMongoApi),
+      t => new MongoTenantApiDocumentationPageRepo(env, db, reactiveMongoApi, t)
     )
   private val _notificationRepo: NotificationRepo =
     MongoTenantCapableNotificationRepo(
-      () => new MongoNotificationRepo(env, reactiveMongoApi),
-      t => new MongoTenantNotificationRepo(env, reactiveMongoApi, t)
+      () => new MongoNotificationRepo(env, db, reactiveMongoApi),
+      t => new MongoTenantNotificationRepo(env, db, reactiveMongoApi, t)
     )
   private val _userSessionRepo: UserSessionRepo =
-    new MongoUserSessionRepo(env, reactiveMongoApi)
+    new MongoUserSessionRepo(env, db, reactiveMongoApi)
   private val _auditTrailRepo: AuditTrailRepo =
     MongoTenantCapableAuditTrailRepo(
-      () => new MongoAuditTrailRepo(env, reactiveMongoApi),
-      t => new MongoTenantAuditTrailRepo(env, reactiveMongoApi, t)
+      () => new MongoAuditTrailRepo(env, db, reactiveMongoApi),
+      t => new MongoTenantAuditTrailRepo(env, db, reactiveMongoApi, t)
     )
   private val _consumptionRepo: ConsumptionRepo =
     MongoTenantCapableConsumptionRepo(
-      () => new MongoConsumptionRepo(env, reactiveMongoApi),
-      t => new MongoTenantConsumptionRepo(env, reactiveMongoApi, t)
+      () => new MongoConsumptionRepo(env, db, reactiveMongoApi),
+      t => new MongoTenantConsumptionRepo(env, db, reactiveMongoApi, t)
     )
   private val _passwordResetRepo: PasswordResetRepo =
-    new MongoPasswordResetRepo(env, reactiveMongoApi)
+    new MongoPasswordResetRepo(env, db, reactiveMongoApi)
   private val _accountCreationRepo: AccountCreationRepo =
-    new MongoAccountCreationRepo(env, reactiveMongoApi)
+    new MongoAccountCreationRepo(env, db, reactiveMongoApi)
   private val _translationRepo: TranslationRepo =
     MongoTenantCapableTranslationRepo(
-      () => new MongoTranslationRepo(env, reactiveMongoApi),
-      t => new MongoTenantTranslationRepo(env, reactiveMongoApi, t))
+      () => new MongoTranslationRepo(env, db, reactiveMongoApi),
+      t => new MongoTenantTranslationRepo(env, db, reactiveMongoApi, t))
   private val _messageRepo: MessageRepo =
     MongoTenantCapableMessageRepo(
-      () => new MongoMessageRepo(env, reactiveMongoApi),
-      t => new MongoTenantMessageRepo(env, reactiveMongoApi, t)
+      () => new MongoMessageRepo(env, db, reactiveMongoApi),
+      t => new MongoTenantMessageRepo(env, db, reactiveMongoApi, t)
     )
 
   override def tenantRepo: TenantRepo = _tenantRepo
@@ -442,30 +439,36 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
   }
 }
 
-class MongoTenantRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Tenant, TenantId](env, reactiveMongoApi)
+class MongoTenantRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[Tenant, TenantId](env, db, reactiveMongoApi)
     with TenantRepo {
   override def collectionName: String = "Tenants"
+
+  override def tableName: String = "tenants"
 
   override def format: Format[Tenant] = json.TenantFormat
 
   override def extractId(value: Tenant): String = value.id.value
 }
 
-class MongoPasswordResetRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[PasswordReset, MongoId](env, reactiveMongoApi)
+class MongoPasswordResetRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[PasswordReset, MongoId](env, db, reactiveMongoApi)
     with PasswordResetRepo {
   override def collectionName: String = "PasswordReset"
+
+  override def tableName: String = "password_reset"
 
   override def format: Format[PasswordReset] = json.PasswordResetFormat
 
   override def extractId(value: PasswordReset): String = value.id.value
 }
 
-class MongoAccountCreationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[AccountCreation, MongoId](env, reactiveMongoApi)
+class MongoAccountCreationRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[AccountCreation, MongoId](env, db, reactiveMongoApi)
     with AccountCreationRepo {
   override def collectionName: String = "AccountCreation"
+
+  override def tableName: String = "account_creation"
 
   override def format: Format[AccountCreation] = json.AccountCreationFormat
 
@@ -473,10 +476,13 @@ class MongoAccountCreationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoTenantTeamRepo(env: Env,
+                          db: PostgresConnection,
                           reactiveMongoApi: ReactiveMongoApi,
                           tenant: TenantId)
-    extends MongoTenantAwareRepo[Team, TeamId](env, reactiveMongoApi, tenant) {
+    extends MongoTenantAwareRepo[Team, TeamId](env, db, reactiveMongoApi, tenant) {
   override def collectionName: String = "Teams"
+
+  override def tableName: String = "teams"
 
   override def format: Format[Team] = json.TeamFormat
 
@@ -484,23 +490,30 @@ class MongoTenantTeamRepo(env: Env,
 }
 
 class MongoTenantApiRepo(env: Env,
+                         db: PostgresConnection,
                          reactiveMongoApi: ReactiveMongoApi,
                          tenant: TenantId)
-    extends MongoTenantAwareRepo[Api, ApiId](env, reactiveMongoApi, tenant) {
+    extends MongoTenantAwareRepo[Api, ApiId](env, db, reactiveMongoApi, tenant) {
   override def collectionName: String = "Apis"
 
   override def format: Format[Api] = json.ApiFormat
+
+  override def tableName: String = "apis"
 
   override def extractId(value: Api): String = value.id.value
 }
 
 class MongoTenantTranslationRepo(env: Env,
+                                 db: PostgresConnection,
                                  reactiveMongoApi: ReactiveMongoApi,
                                  tenant: TenantId)
     extends MongoTenantAwareRepo[Translation, MongoId](env,
+      db,
                                                        reactiveMongoApi,
                                                        tenant) {
   override def collectionName: String = "Translations"
+
+  override def tableName: String = "translations"
 
   override def format: Format[Translation] = json.TranslationFormat
 
@@ -508,12 +521,16 @@ class MongoTenantTranslationRepo(env: Env,
 }
 
 class MongoTenantMessageRepo(env: Env,
+                             db: PostgresConnection,
                              reactiveMongoApi: ReactiveMongoApi,
                              tenant: TenantId)
     extends MongoTenantAwareRepo[Message, MongoId](env,
+                                                    db,
                                                    reactiveMongoApi,
                                                    tenant) {
   override def collectionName: String = "Messages"
+
+  override def tableName: String = "messages"
 
   override def format: Format[Message] = json.MessageFormat
 
@@ -521,13 +538,17 @@ class MongoTenantMessageRepo(env: Env,
 }
 
 class MongoTenantApiSubscriptionRepo(env: Env,
+                                     db: PostgresConnection,
                                      reactiveMongoApi: ReactiveMongoApi,
                                      tenant: TenantId)
     extends MongoTenantAwareRepo[ApiSubscription, ApiSubscriptionId](
       env,
+      db,
       reactiveMongoApi,
       tenant) {
   override def collectionName: String = "ApiSubscriptions"
+
+  override def tableName: String = "api_subscriptions"
 
   override def format: Format[ApiSubscription] = json.ApiSubscriptionFormat
 
@@ -535,13 +556,17 @@ class MongoTenantApiSubscriptionRepo(env: Env,
 }
 
 class MongoTenantApiDocumentationPageRepo(env: Env,
+                                          db: PostgresConnection,
                                           reactiveMongoApi: ReactiveMongoApi,
                                           tenant: TenantId)
     extends MongoTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId](
       env,
+      db,
       reactiveMongoApi,
       tenant) {
   override def collectionName: String = "ApiDocumentationPages"
+
+  override def tableName: String = "api_documentation_pages"
 
   override def format: Format[ApiDocumentationPage] =
     json.ApiDocumentationPageFormat
@@ -550,12 +575,16 @@ class MongoTenantApiDocumentationPageRepo(env: Env,
 }
 
 class MongoTenantNotificationRepo(env: Env,
+                                  db: PostgresConnection,
                                   reactiveMongoApi: ReactiveMongoApi,
                                   tenant: TenantId)
     extends MongoTenantAwareRepo[Notification, NotificationId](env,
+      db,
                                                                reactiveMongoApi,
                                                                tenant) {
   override def collectionName: String = "Notifications"
+
+  override def tableName: String = "notifications"
 
   override def format: Format[Notification] =
     json.NotificationFormat
@@ -564,12 +593,16 @@ class MongoTenantNotificationRepo(env: Env,
 }
 
 class MongoTenantConsumptionRepo(env: Env,
+                                 db: PostgresConnection,
                                  reactiveMongoApi: ReactiveMongoApi,
                                  tenant: TenantId)
     extends MongoTenantAwareRepo[ApiKeyConsumption, MongoId](env,
+      db,
                                                              reactiveMongoApi,
                                                              tenant) {
   override def collectionName: String = "Consumptions"
+
+  override def tableName: String = "consumptions"
 
   override def format: Format[ApiKeyConsumption] =
     json.ConsumptionFormat
@@ -578,9 +611,11 @@ class MongoTenantConsumptionRepo(env: Env,
 }
 
 class MongoTenantAuditTrailRepo(env: Env,
+                                db: PostgresConnection,
                                 reactiveMongoApi: ReactiveMongoApi,
                                 tenant: TenantId)
     extends MongoTenantAwareRepo[JsObject, MongoId](env,
+      db,
                                                     reactiveMongoApi,
                                                     tenant) {
   val _fmt = new Format[JsObject] {
@@ -592,60 +627,74 @@ class MongoTenantAuditTrailRepo(env: Env,
 
   override def collectionName: String = "AuditEvents"
 
+    override def tableName: String = "audit_events"
+
   override def format: Format[JsObject] = _fmt
 
   override def extractId(value: JsObject): String = (value \ "_id").as[String]
 }
 
-class MongoUserRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[User, UserId](env, reactiveMongoApi)
+class MongoUserRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[User, UserId](env, db, reactiveMongoApi)
     with UserRepo {
   override def collectionName: String = "Users"
+
+  override def tableName: String = "users"
 
   override def format: Format[User] = json.UserFormat
 
   override def extractId(value: User): String = value.id.value
 }
 
-class MongoTeamRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Team, TeamId](env, reactiveMongoApi) {
+class MongoTeamRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[Team, TeamId](env, db, reactiveMongoApi) {
   override def collectionName: String = "Teams"
+
+  override def tableName: String = "teams"
 
   override def format: Format[Team] = json.TeamFormat
 
   override def extractId(value: Team): String = value.id.value
 }
 
-class MongoTranslationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Translation, MongoId](env, reactiveMongoApi) {
+class MongoTranslationRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[Translation, MongoId](env, db, reactiveMongoApi) {
   override def collectionName: String = "Translations"
+
+  override def tableName: String = "translations"
 
   override def format: Format[Translation] = json.TranslationFormat
 
   override def extractId(value: Translation): String = value.id.value
 }
 
-class MongoMessageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Message, MongoId](env, reactiveMongoApi) {
+class MongoMessageRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[Message, MongoId](env, db, reactiveMongoApi) {
   override def collectionName: String = "Messages"
+
+  override def tableName: String = "messages"
 
   override def format: Format[Message] = json.MessageFormat
 
   override def extractId(value: Message): String = value.id.value
 }
 
-class MongoApiRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Api, ApiId](env, reactiveMongoApi) {
+class MongoApiRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[Api, ApiId](env, db, reactiveMongoApi) {
   override def collectionName: String = "Apis"
+
+  override def tableName: String = "apis"
 
   override def format: Format[Api] = json.ApiFormat
 
   override def extractId(value: Api): String = value.id.value
 }
 
-class MongoApiSubscriptionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[ApiSubscription, ApiSubscriptionId](env, reactiveMongoApi) {
+class MongoApiSubscriptionRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[ApiSubscription, ApiSubscriptionId](env, db, reactiveMongoApi) {
   override def collectionName: String = "ApiSubscriptions"
+
+  override def tableName: String = "api_subscriptions"
 
   override def format: Format[ApiSubscription] = json.ApiSubscriptionFormat
 
@@ -653,11 +702,15 @@ class MongoApiSubscriptionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoApiDocumentationPageRepo(env: Env,
+                                    db: PostgresConnection,
                                     reactiveMongoApi: ReactiveMongoApi)
     extends MongoRepo[ApiDocumentationPage, ApiDocumentationPageId](
       env,
+      db,
       reactiveMongoApi) {
   override def collectionName: String = "ApiDocumentationPages"
+
+  override def tableName: String = "api_documentation_pages"
 
   override def format: Format[ApiDocumentationPage] =
     json.ApiDocumentationPageFormat
@@ -665,9 +718,11 @@ class MongoApiDocumentationPageRepo(env: Env,
   override def extractId(value: ApiDocumentationPage): String = value.id.value
 }
 
-class MongoNotificationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Notification, NotificationId](env, reactiveMongoApi) {
+class MongoNotificationRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[Notification, NotificationId](env, db, reactiveMongoApi) {
   override def collectionName: String = "Notifications"
+
+  override def tableName: String = "notifications"
 
   override def format: Format[Notification] =
     json.NotificationFormat
@@ -675,19 +730,23 @@ class MongoNotificationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def extractId(value: Notification): String = value.id.value
 }
 
-class MongoConsumptionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[ApiKeyConsumption, MongoId](env, reactiveMongoApi) {
+class MongoConsumptionRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[ApiKeyConsumption, MongoId](env, db, reactiveMongoApi) {
   override def collectionName: String = "Consumptions"
+
+  override def tableName: String = "consumptions"
 
   override def format: Format[ApiKeyConsumption] = json.ConsumptionFormat
 
   override def extractId(value: ApiKeyConsumption): String = value.id.value
 }
 
-class MongoUserSessionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[UserSession, MongoId](env, reactiveMongoApi)
+class MongoUserSessionRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[UserSession, MongoId](env, db, reactiveMongoApi)
     with UserSessionRepo {
   override def collectionName: String = "UserSessions"
+
+  override def tableName: String = "user_sessions"
 
   override def format: Format[UserSession] =
     json.UserSessionFormat
@@ -695,8 +754,8 @@ class MongoUserSessionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def extractId(value: UserSession): String = value.id.value
 }
 
-class MongoAuditTrailRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[JsObject, MongoId](env, reactiveMongoApi) {
+class MongoAuditTrailRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+    extends MongoRepo[JsObject, MongoId](env, db, reactiveMongoApi) {
   val _fmt = new Format[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
       JsSuccess(json.as[JsObject])
@@ -706,6 +765,8 @@ class MongoAuditTrailRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 
   override def collectionName: String = "AuditEvents"
 
+  override def tableName: String = "audit_events"
+
   override def format: Format[JsObject] = _fmt
 
   override def extractId(value: JsObject): String = (value \ "_id").as[String]
@@ -713,6 +774,7 @@ class MongoAuditTrailRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 
 abstract class MongoRepo[Of, Id <: ValueType](
     env: Env,
+    db: PostgresConnection,
     reactiveMongoApi: ReactiveMongoApi)
     extends Repo[Of, Id] {
 
@@ -759,6 +821,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
       maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] =
     collection.flatMap { col =>
       logger.debug(s"$collectionName.find(${Json.prettyPrint(query)})")
+
       sort match {
         case None =>
           col
@@ -863,6 +926,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
       logger.debug(
         s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
       )
+
       col
         .findAndUpdate(
           selector = query,
@@ -1122,6 +1186,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
 abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     env: Env,
+    db: PostgresConnection,
     reactiveMongoApi: ReactiveMongoApi,
     tenant: TenantId)
     extends Repo[Of, Id] {
@@ -1133,6 +1198,25 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       json.validate[JsObject](Reads.JsObjectReads)
 
     override def writes(o: JsObject): JsObject = o
+  }
+
+  def convertTuple(field: (String, JsValue)): String = {
+    field._2 match {
+      case value: JsObject =>
+        value.fields.headOption match {
+          case Some((key: String, content: JsValue)) if key == "$in" => s"${field._1} IN ${convertTuple(value.fields.head)}"
+          case _ => "NOT IMPLEMENTED"
+        }
+      case value: JsArray if field._1 == "$or" => "(" + value.as[List[JsObject]].map(convertQuery).mkString(" OR ") + ")"
+      case value: JsArray if field._1 == "$in" => "(" + value.as[List[String]].map("'" + _ + "'").mkString(",") + ")"
+      case value: Any => s"${field._1} = ${value.toString()}"
+    }
+  }
+
+  def convertQuery(query: JsObject): String = {
+    query.fields
+      .map(convertTuple)
+      .mkString("\nAND\n")
   }
 
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
@@ -1223,10 +1307,17 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   override def find(
       query: JsObject,
       sort: Option[JsObject] = None,
-      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] =
+      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+
+    logger.error(query.toString())
+    logger.error(convertQuery(query))
+    logger.error("#######")
+
+
     collection.flatMap { col =>
       logger.debug(s"$collectionName.find(${Json.prettyPrint(
         query ++ Json.obj("_tenant" -> tenant.value))})")
+
       sort match {
         case None =>
           col
@@ -1267,6 +1358,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
             )
       }
     }
+  }
 
   def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
     collection.flatMap { col =>
@@ -1317,6 +1409,12 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = collection.flatMap {
+
+    logger.error("## FIND_ONE ##")
+    logger.error(query.toString())
+    logger.error(convertQuery(query))
+    logger.error("## FIND_ONE ##")
+
     col =>
       logger.debug(s"$collectionName.findOne(${Json.prettyPrint(
         query ++ Json.obj("_tenant" -> tenant.value))})")
@@ -1349,27 +1447,47 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   }
 
   override def save(query: JsObject, value: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] =
-    collection.flatMap { col =>
-      logger.debug(
-        s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
-      )
-      col
-        .findAndUpdate(
-          selector = query,
-          update = value,
-          fetchNewObject = false,
-          upsert = true,
-          sort = None,
-          fields = None,
-          bypassDocumentValidation = false,
-          writeConcern = WriteConcern.Default,
-          maxTime = None,
-          collation = None,
-          arrayFilters = Seq.empty
-        )
-        .map(_.lastError.isDefined)
+      implicit ec: ExecutionContext): Future[Boolean] = {
+
+    implicit val writesJSONBToJson: Writes[JSONB] = (o: JSONB) => {
+      Json.parse(o.data())
     }
+
+    db.query { dsl =>
+      logger.debug(
+        s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
+      )
+      dsl
+        .insertInto(DSL.table(s"$tableName"))
+        .values(
+          (value \ "_id").as[String],
+          (value \ "_deleted").as[Boolean],
+          DSL.inline(value)
+        )
+        .execute() == 1
+    }
+
+//    collection.flatMap { col =>
+//      logger.debug(
+//        s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
+//      )
+//      col
+//        .findAndUpdate(
+//          selector = query,
+//          update = value,
+//          fetchNewObject = false,
+//          upsert = true,
+//          sort = None,
+//          fields = None,
+//          bypassDocumentValidation = false,
+//          writeConcern = WriteConcern.Default,
+//          maxTime = None,
+//          collation = None,
+//          arrayFilters = Seq.empty
+//        )
+//        .map(_.lastError.isDefined)
+//    }
+  }
 
   override def insertMany(values: Seq[Of])(
       implicit ec: ExecutionContext): Future[Long] =

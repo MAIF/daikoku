@@ -24,6 +24,7 @@ trait TenantCapableRepo[Of, Id <: ValueType] {
 
 trait Repo[Of, Id <: ValueType] {
   def collectionName: String
+  def tableName: String = "TEST_TABLE_NAME"
   def indices: Seq[Index]
   def ensureIndices(implicit ec: ExecutionContext): Future[Unit]
   def collection(implicit ec: ExecutionContext): Future[JSONCollection]

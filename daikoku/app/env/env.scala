@@ -1,7 +1,6 @@
 package fr.maif.otoroshi.daikoku.env
 
 import java.nio.file.Paths
-
 import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
@@ -21,7 +20,7 @@ import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoApi
-import storage.{DataStore, MongoDataStore}
+import storage.{DataStore, MongoDataStore, PostgresConnection}
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -228,6 +227,7 @@ class DaikokuEnv(ws: WSClient,
                  val environment: Environment,
                  configuration: Configuration,
                  reactiveMongoApi: ReactiveMongoApi,
+                 db: PostgresConnection,
                  messagesApi: MessagesApi)
     extends Env {
 
@@ -241,7 +241,7 @@ class DaikokuEnv(ws: WSClient,
     actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
 
   private val daikokuConfig = new Config(configuration)
-  private val mongoDataStore = new MongoDataStore(this, reactiveMongoApi)
+  private val mongoDataStore = new MongoDataStore(this, db, reactiveMongoApi)
   private val s3assetsStore =
     new AssetsDataStore(actorSystem)(actorSystem.dispatcher, materializer)
 
