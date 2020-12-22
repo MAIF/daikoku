@@ -232,6 +232,10 @@ POST    /api/tenants/:tenantId/otoroshis                fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/teams/:teamId/testing/apikeys              fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createTestingApiKey(teamId)
 ### NoDocs ###
+PUT     /api/teams/:teamId/testing/apikeys              fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.updateTestingApiKey(teamId)
+### NoDocs ###
+DELETE  /api/teams/:teamId/testing/apikeys              fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.deleteTestingApiKey(teamId)
+### NoDocs ###
 POST    /api/teams/:teamId/testing/:apiId/call          fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.fakeApiCall(teamId, apiId)
 ### NoDocs ###
 GET     /api/teams/:teamId/tenant/otoroshis/:oto/groups fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiGroupsFor(teamId, oto)

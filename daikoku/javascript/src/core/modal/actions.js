@@ -62,6 +62,14 @@ export const openContactModal = (
   });
 };
 
+export const openTestingApiKeyModal = (modalProps) => (dispatch) => {
+  return dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'testingApiKey',
+  });
+};
+
 export const closeModal = () => (dispatch) => {
   return dispatch({
     type: CLOSE_MODAL,

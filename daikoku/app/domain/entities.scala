@@ -1126,13 +1126,29 @@ object TestingAuth {
   }
 }
 
+case class TestingConfig(
+    otoroshiSettings: OtoroshiSettingsId,
+    serviceGroup: OtoroshiServiceGroupId,
+    clientName: String,
+    api: ApiId,
+    tag: String,
+    customMetadata: Option[JsObject],
+    customMaxPerSecond: Option[Long],
+    customMaxPerDay: Option[Long],
+    customMaxPerMonth: Option[Long],
+    customReadOnly: Option[Boolean]
+) extends CanJson[TestingConfig] {
+  override def asJson: JsValue = json.TestingConfigFormat.writes(this)
+}
+
 case class Testing(
     enabled: Boolean = false,
     auth: TestingAuth = TestingAuth.Basic,
     name: Option[String] = None,
     username: Option[String] = None,
     password: Option[String] = None,
-) extends CanJson[User] {
+    config: Option[TestingConfig] = None,
+) extends CanJson[Testing] {
   override def asJson: JsValue = json.TestingFormat.writes(this)
 }
 

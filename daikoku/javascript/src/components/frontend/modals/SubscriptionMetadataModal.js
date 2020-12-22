@@ -6,7 +6,7 @@ import _ from 'lodash';
 
 import { Spinner, formatPlanType, Option } from '../../utils';
 import * as Services from '../../../services';
-import { ObjectInput, Collapse, Help, BooleanInput } from '../../inputs';
+import { ObjectInput, Collapse, Help, BooleanInput, TextInput, NumberInput } from '../../inputs';
 import { t, Translation } from '../../../locales';
 
 export const SubscriptionMetadataModal = (props) => {
@@ -33,8 +33,9 @@ export const SubscriptionMetadataModal = (props) => {
   }, [api]);
 
   useEffect(() => {
-    if (plan) {
+    if (plan || props.config) {
       const maybeSubMetadata = Option(props.subscription)
+        .orElse(props.config)
         .map((s) => s.customMetadata)
         .map((v) => Object.entries(v))
         .getOrElse([]);
@@ -55,21 +56,25 @@ export const SubscriptionMetadataModal = (props) => {
       setCustomMetadata({ ...Object.fromEntries(maybeCustomMetadata), ...customMetadata });
       setCustomMaxPerSecond(
         Option(props.subscription)
+          .orElse(props.config)
           .map((s) => s.customMaxPerSecond)
           .getOrNull()
       );
       setCustomMaxPerDay(
         Option(props.subscription)
+          .orElse(props.config)
           .map((s) => s.customMaxPerDay)
           .getOrNull()
       );
       setCustomMaxPerMonth(
         Option(props.subscription)
+          .orElse(props.config)
           .map((s) => s.customMaxPerMonth)
           .getOrNull()
       );
       setCustomReadOnly(
         Option(props.subscription)
+          .orElse(props.config)
           .map((s) => s.customReadOnly)
           .getOrNull()
       );
@@ -265,76 +270,34 @@ export const SubscriptionMetadataModal = (props) => {
               />
             </Collapse>
             <Collapse label={t('Custom quotas', props.currentLanguage)} collapsed={true}>
-              <div className="form-group row">
-                <label
-                  htmlFor={'input-max-request-per-second'}
-                  className="col-xs-12 col-sm-2 col-form-label">
-                  <Help text="Help" label="max-request-per-second" />
-                </label>
-                <div className="col-sm-10">
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    className="form-control"
-                    id="input-max-request-per-second"
-                    placeholder="max request per second"
-                    value={customMaxPerSecond}
-                    onChange={(e) => setCustomMaxPerSecond(Number(e.target.value))}
-                  />
-                </div>
-              </div>
-              <div className="form-group row">
-                <label
-                  htmlFor={'input-max-request-per-day'}
-                  className="col-xs-12 col-sm-2 col-form-label">
-                  <Help text="Help" label="max-request-per-day" />
-                </label>
-                <div className="col-sm-10">
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    className="form-control"
-                    id="input-max-request-per-day"
-                    placeholder="max request per day"
-                    value={customMaxPerDay}
-                    onChange={(e) => setCustomMaxPerDay(Number(e.target.value))}
-                  />
-                </div>
-              </div>
-              <div className="form-group row">
-                <label
-                  htmlFor={'input-max-request-per-month'}
-                  className="col-xs-12 col-sm-2 col-form-label">
-                  <Help text="Help" label="max-request-per-month" />
-                </label>
-                <div className="col-sm-10">
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    className="form-control"
-                    id="input-max-request-per-month"
-                    placeholder="max request per month"
-                    value={customMaxPerMonth}
-                    onChange={(e) => setCustomMaxPerMonth(Number(e.target.value))}
-                  />
-                </div>
-              </div>
+              <NumberInput
+                step="1"
+                min="0"
+                label={t('Max. requests per second', props.currentLanguage)}
+                value={customMaxPerSecond}
+                onChange={(e) => setCustomMaxPerSecond(Number(e.target.value))}
+              />
+              <NumberInput
+                step="1"
+                min="0"
+                label={t('Max. requests per day', props.currentLanguage)}
+                value={customMaxPerDay}
+                onChange={(e) => setCustomMaxPerDay(Number(e.target.value))}
+              />
+              <NumberInput
+                step="1"
+                min="0"
+                label={t('Max. requests per month', props.currentLanguage)}
+                value={customMaxPerMonth}
+                onChange={(e) => setCustomMaxPerMonth(Number(e.target.value))}
+              />
             </Collapse>
             <Collapse label={t('Other custom props', props.currentLanguage)} collapsed={true}>
-              <div className="form-group row">
-                <label className="col-xs-12 col-sm-2 col-form-label">
-                  <Help text="Help" label="custom read only" />
-                </label>
-                <div className="col-sm-10">
-                  <BooleanInput
-                    value={customReadOnly}
-                    onChange={(readOnly) => setCustomReadOnly(readOnly)}
-                  />
-                </div>
-              </div>
+              <BooleanInput
+                label={t('Read only apikey', props.currentLanguage)}
+                value={customReadOnly}
+                onChange={(readOnly) => setCustomReadOnly(readOnly)}
+              />
             </Collapse>
           </>
         )}

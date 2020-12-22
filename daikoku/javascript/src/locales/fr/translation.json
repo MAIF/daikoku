@@ -415,7 +415,7 @@
   "Trial": "Essai",
   "Allow multiple apiKey demands": "Autoriser plusieurs demandes apiKey",
   "Max. per second": "Max. par seconde",
-  "Max. requests per second": "Max. requêtes apr seconde",
+  "Max. requests per second": "Max. requêtes par seconde",
   "Max. per day": "Max. par jour",
   "Max. requests per day": "Max. requêtes par jour",
   "Max. per month": "Max. par mois",
@@ -731,5 +731,12 @@
   "month": "mois",
   "Free": "Gratuit",
   "Get API key": "Obtenir une clé d'API",
-  "Request API key": "Demander une clé d'API"
+  "Request API key": "Demander une clé d'API",
+  "otoroshi.testing.delete.confirm": "Êtes vous certain de vouloir supprimer ces paramètres de test ?",
+  "Select a auth type": "Selectionner un type d'Auth.",
+  "testing.key.creation": "Utiliser Otoroshi pour créer une clé d'API de test",
+  "Delete Testing ApiKey": "Suprimer la clé d'API de test",
+  "Update Testing ApiKey": "Mettre à jour la clé d'API de test",
+  "Custom quotas": "Quotas personnalisés",
+  "Other custom props": "Autres propriétés personnalisées"
 }

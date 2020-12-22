@@ -6,3 +6,4 @@ export * from './SaveOrCancelModal';
 export * from './TeamCreationModal';
 export * from './ContactModal';
 export * from './SubscriptionMetadataModal';
+export * from './TestingApiKeyModal';

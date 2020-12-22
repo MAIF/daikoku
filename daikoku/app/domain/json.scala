@@ -113,6 +113,56 @@ object json {
       "clientSecret" -> o.clientSecret
     )
   }
+
+  val TestingConfigFormat = new Format[TestingConfig] {
+    override def reads(json: JsValue): JsResult[TestingConfig] =
+      Try {
+        JsSuccess(
+          TestingConfig(
+            otoroshiSettings = (json \ "otoroshiSettings").as(OtoroshiSettingsIdFormat),
+            serviceGroup = (json \ "serviceGroup").as(OtoroshiServiceGroupIdFormat),
+            clientName = (json \ "clientName").as[String],
+            api = (json \ "api").as(ApiIdFormat),
+            tag = (json \ "tag").as[String],
+            customMetadata = (json \ "customMetadata").asOpt[JsObject],
+            customMaxPerSecond = (json \ "customMaxPerSecond").asOpt[Long],
+            customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
+            customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
+            customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: TestingConfig): JsValue = Json.obj(
+      "otoroshiSettings" -> OtoroshiSettingsIdFormat.writes(o.otoroshiSettings),
+      "serviceGroup" -> OtoroshiServiceGroupIdFormat.writes(o.serviceGroup),
+      "clientName" -> o.clientName,
+      "api" -> ApiIdFormat.writes(o.api),
+      "tag" -> o.tag,
+      "customMetadata" -> o.customMetadata
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerSecond" -> o.customMaxPerSecond
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerDay" -> o.customMaxPerDay
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerMonth" -> o.customMaxPerMonth
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customReadOnly" -> o.customReadOnly
+        .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
+  }
+
   val TestingFormat = new Format[Testing] {
     override def reads(json: JsValue): JsResult[Testing] =
       Try {
@@ -127,6 +177,7 @@ object json {
             name = (json \ "name").asOpt[String].filter(_.trim.nonEmpty),
             username = (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
             password = (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
+            config = (json \ "config").asOpt(TestingConfigFormat),
           )
         )
       } recover {
@@ -144,38 +195,13 @@ object json {
         .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
+      "config" -> o.config
+        .map(TestingConfigFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
     )
   }
-//  val IdentitySettingsFormat  = new Format[IdentitySettings] {
-//    override def reads(json: JsValue): JsResult[IdentitySettings] =
-//      Try {
-//        JsSuccess(
-//          IdentitySettings(
-//            identityThroughOtoroshi =
-//              (json \ "identityThroughOtoroshi").asOpt[Boolean].getOrElse(true),
-//            stateHeaderName = (json \ "stateHeaderName")
-//              .asOpt[String]
-//              .getOrElse("Otoroshi-State"),
-//            stateRespHeaderName = (json \ "stateRespHeaderName")
-//              .asOpt[String]
-//              .getOrElse("Otoroshi-State-Resp"),
-//            claimHeaderName = (json \ "claimHeaderName")
-//              .asOpt[String]
-//              .getOrElse("Otoroshi-Claim"),
-//            claimSecret =
-//              (json \ "claimSecret").asOpt[String].getOrElse("secret")
-//          ))
-//      } recover {
-//        case e => JsError(e.getMessage)
-//      } get
-//    override def writes(o: IdentitySettings): JsValue = Json.obj(
-//      "identityThroughOtoroshi" -> o.identityThroughOtoroshi,
-//      "stateHeaderName" -> o.stateHeaderName,
-//      "stateRespHeaderName" -> o.stateRespHeaderName,
-//      "claimHeaderName" -> o.claimHeaderName,
-//      "claimSecret" -> o.claimSecret,
-//    )
-//  }
+
   val UsagePlanIdFormat = new Format[UsagePlanId] {
     override def reads(json: JsValue): JsResult[UsagePlanId] =
       Try {

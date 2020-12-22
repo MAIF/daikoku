@@ -1312,6 +1312,30 @@ export function createTestingApiKey(teamId, body) {
   }).then((r) => r.json());
 }
 
+export function updateTestingApiKey(teamId, body) {
+  return fetch(`/api/teams/${teamId}/testing/apikeys`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  }).then((r) => r.json());
+}
+
+export function deleteTestingApiKey(teamId, body) {
+  return fetch(`/api/teams/${teamId}/testing/apikeys`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  }).then((r) => r.json());
+}
+
 export function testingCall(teamId, apiId, body) {
   return fetch(`/api/teams/${teamId}/testing/${apiId}/call`, {
     method: 'POST',

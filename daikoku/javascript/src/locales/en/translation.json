@@ -731,5 +731,12 @@
     "month": "month",
     "Free": "Free",
     "Get API key": "Get API key",
-    "Request API key": "Request API key"
+    "Request API key": "Request API key",
+    "otoroshi.testing.delete.confirm": "Are you sure you want to delete these testing settings ?",
+    "Select a auth type": "Select a auth type",
+    "testing.key.creation": "Use Otoroshi to create testing ApiKey",
+    "Delete Testing ApiKey": "Delete Testing ApiKey",
+    "Update Testing ApiKey": "Update Testing ApiKey",
+    "Custom quotas": "Custom quotas",
+    "Other custom props": "Other custom props"
 }
