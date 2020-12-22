@@ -47,6 +47,6 @@ mail.api.access.acceptation.body=The request to access to api {0} by {1} has bee
 mail.api.subscription.rejection.body=Your request for an apikey for {0} has been rejected.
 mail.api.subscription.acceptation.body=The request of {0} for an apikey for {1} has been accepted.
 mail.team.access.rejection.body=Your request to join the team {0} has been rejected.
-mail.team.access.acceptation.body=Your request to access to team {0} has been rejected.
+mail.team.access.acceptation.body=Your request to access to team {0} has been accepted.
 mail.user.invitation.rejection.body={0} rejected your request to join your team {1}.
 mail.user.invitation.acceptation.body={0} accepted your request to join your team {1}.
