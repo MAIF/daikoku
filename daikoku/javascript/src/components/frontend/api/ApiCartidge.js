@@ -2,9 +2,8 @@ import React, { Component } from 'react';
 import moment from 'moment';
 
 import { Link } from 'react-router-dom';
-import { ActionWithTeamSelector, Can, manage, apikey, access, CanIDoAction } from '../../utils';
+import { ActionWithTeamSelector, Can, manage, apikey, CanIDoAction } from '../../utils';
 import { Translation, t } from '../../../locales';
-import _ from 'lodash';
 
 const Separator = () => <hr className="hr-apidescription" />;
 
