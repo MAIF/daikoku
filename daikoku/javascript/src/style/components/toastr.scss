@@ -1,8 +1,6 @@
 .redux-toastr .toastr {
-  overflow: visible !important;
   .rrt-middle-container{
     margin-left: 0px !important;
-    position: absolute !important;
     width: 100% !important;
     text-align: center !important;
   }
@@ -14,14 +12,20 @@
 
 .toastr.rrt-success {
     .rrt-middle-container{
-      background-color: #60bb71;
+      background-color: $success-color;
+      border-radius: 4px;
+    }
+}
+.toastr.rrt-info {
+    .rrt-middle-container{
+      background-color: $info-color;
       border-radius: 4px;
     }
 }
 
 .toastr.rrt-error{
     .rrt-middle-container{
-      background-color: #db6a64;
+      background-color: $error-color;
       border-radius: 4px;
     }
 }
