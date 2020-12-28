@@ -41,6 +41,6 @@
 
 #redoc-container {
   width: 100vw;
-  position: absolute;
+  /* position: absolute; */
   left: 0px;
 }
