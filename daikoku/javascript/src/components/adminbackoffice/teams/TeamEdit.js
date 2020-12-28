@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { Link } from 'react-router-dom';
 
 import * as Services from '../../../services';
 
@@ -155,15 +156,12 @@ class TeamEditForAdministrationComponent extends Component {
             </React.Suspense>
             <div style={{ height: 60 }} />
             <div className="row form-back-fixedBtns">
-              <a
-                className="btn btn-outline-primary"
-                href="#"
-                onClick={() => this.props.history.goBack()}>
+              <Link className="btn btn-outline-primary" to={'/settings/teams'}>
                 <i className="fas fa-chevron-left mr-1" />
                 <Translation i18nkey="Back" language={this.props.currentLanguage}>
                   Back
                 </Translation>
-              </a>
+              </Link>
               <button
                 style={{ marginLeft: 5 }}
                 type="button"

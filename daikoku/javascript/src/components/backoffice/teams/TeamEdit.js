@@ -1,6 +1,7 @@
 import React, { Component, useState } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { Link } from 'react-router-dom';
 
 import { updateTeamPromise } from '../../../core/context';
 import * as Services from '../../../services';
@@ -134,12 +135,12 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
     <TeamBackOffice>
       <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={currentLanguage} />
       <div className="row form-back-fixedBtns">
-        <a className="btn btn-outline-primary" href="#" onClick={() => history.goBack()}>
+        <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
           <i className="fas fa-chevron-left mr-1" />
           <Translation i18nkey="Back" language={currentLanguage}>
             Back
           </Translation>
-        </a>
+        </Link>
         <button
           style={{ marginLeft: 5 }}
           type="button"
