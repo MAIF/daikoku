@@ -738,5 +738,7 @@
   "Delete Testing ApiKey": "Suprimer la clé d'API de test",
   "Update Testing ApiKey": "Mettre à jour la clé d'API de test",
   "Custom quotas": "Quotas personnalisés",
-  "Other custom props": "Autres propriétés personnalisées"
+  "Other custom props": "Autres propriétés personnalisées",
+  "Default plan": "Plan par défault",
+  "api.consumption.title": "Consommation - %s"
 }

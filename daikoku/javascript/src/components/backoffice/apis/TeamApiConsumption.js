@@ -9,7 +9,7 @@ import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
 import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Spinner, Can, read, stat, formatPlanType } from '../../utils';
-import { t } from '../../../locales';
+import { t, Translation } from '../../../locales';
 
 const Currency = ({ plan }) => {
   const cur = _.find(currencies, (c) => c.code === plan.currency.code);
@@ -130,7 +130,11 @@ class TeamApiConsumptionComponent extends Component {
             <div className="d-flex col flex-column pricing-content">
               <div className="row">
                 <div className="col-12">
-                  <h1>Api Consumption - {this.state.api.name}</h1>
+                  <h1>
+                    <Translation i18nkey="api.consumption.title" language={this.props.currentLanguage} replacements={[this.state.api.name]}>
+                      Api Consumption - {this.state.api.name}
+                    </Translation>
+                  </h1>
                 </div>
                 <div className="col section p-2">
                   <OtoroshiStatsVizualization

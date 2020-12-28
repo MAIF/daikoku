@@ -738,5 +738,7 @@
     "Delete Testing ApiKey": "Delete Testing ApiKey",
     "Update Testing ApiKey": "Update Testing ApiKey",
     "Custom quotas": "Custom quotas",
-    "Other custom props": "Other custom props"
+    "Other custom props": "Other custom props",
+    "Default plan": "Default plan",
+    "api.consumption.title": "Api Consumption - %s"
 }
