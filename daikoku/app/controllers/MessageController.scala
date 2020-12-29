@@ -74,7 +74,7 @@ class MessageController(DaikokuAction: DaikokuAction,
 
       ctx.setCtxValue("message.id", message.id.value)
 
-      (messageActor ? SendMessage(message))
+      (messageActor ? SendMessage(message, ctx.tenant))
         .map {
           case true =>
             env.defaultActorSystem.eventStream.publish(StreamMessage(message))

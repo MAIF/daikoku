@@ -50,3 +50,14 @@ mail.team.access.rejection.body=Your request to join the team {0} has been rejec
 mail.team.access.acceptation.body=Your request to access to team {0} has been accepted.
 mail.user.invitation.rejection.body={0} rejected your request to join your team {1}.
 mail.user.invitation.acceptation.body={0} accepted your request to join your team {1}.
+mail.new.message.title=New message from {0}
+mail.new.message.body=Hello,\
+  <br/>\
+  You''ve got a message,\
+  <br>\
+  <div>\
+  {0} :\
+  <br>\
+  {1}\
+  </div>\
+  <a href="{2}">Respond</a>

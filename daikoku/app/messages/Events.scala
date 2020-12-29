@@ -3,14 +3,17 @@ package fr.maif.otoroshi.daikoku.messages
 import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
 import akka.stream.scaladsl.{Sink, Source}
+import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.domain.{Message, Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
-import play.api.libs.json.{JsNull, JsNumber, JsValue, Json}
+import play.api.i18n.{I18nSupport, Lang, MessagesApi}
+import play.api.libs.json.{JsArray, JsNull, JsNumber, JsValue, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class SendMessage(message: Message)
+case class SendMessage(message: Message, tenant: Tenant)
 
 case class StreamMessage(message: Message)
 
@@ -39,12 +42,48 @@ case class GetLastClosedChatDates(chats: Set[String],
                                   closedDate: Option[Long])
 
 class MessageActor(
-    implicit env: Env
+    implicit env: Env, messagesApi: MessagesApi
 ) extends Actor
-    with ActorLogging {
+    with ActorLogging{
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
   var messages: Seq[Message] = Seq.empty
+
+  def maybeSendMailToRecipent(message: Message, tenant: Tenant): Future[Unit] = {
+    implicit val lang: Lang = Lang(tenant.defaultLanguage.getOrElse("en"))
+    for {
+      sender <- env.dataStore.userRepo.findById(message.sender)
+      lastMessage <- env.dataStore.messageRepo.forTenant(tenant).find(Json.obj(
+        "closed" -> JsNull,
+        "chat" -> message.chat.asJson,
+        "date" -> Json.obj("$lt" -> message.date.getMillis)
+      )).map(_.sortWith((a, b) => a.date.isAfter(b.date)).headOption)
+      recipients <- env.dataStore.userRepo.find(Json.obj("_id" -> Json.obj("$in" -> JsArray((message.participants + message.chat - message.sender).map(_.asJson).toSeq))))
+      connected <- env.dataStore.userSessionRepo.find(Json.obj(
+        "userId" -> Json.obj("$in" -> JsArray(recipients.map(_.id.asJson))),
+        "expires" -> Json.obj("$gt" -> DateTime.now().getMillis)))
+
+      emails = if (message.chat == message.sender)
+        recipients
+          .filter(u => lastMessage.exists(m => m.readBy.contains(u.id)))
+          .filter(u => !connected.exists(s => s.userId == u.id)).map(_.email)
+      else
+        recipients
+          .filter(u => lastMessage.exists(_.readBy.contains(u.id)))
+          .filter(_.id == message.chat).filter(u => !connected.exists(s => s.userId == u.id)).map(_.email)
+      baseLink = env.config.exposedPort match {
+        case 80    => s"http://${tenant.domain}/"
+        case 443   => s"https://${tenant.domain}/"
+        case value => s"http://${tenant.domain}:$value/"
+      }
+      link = if (message.sender == message.chat) s"$baseLink/settings/messages" else baseLink
+
+      _ <- Future.sequence(emails.map(email => tenant.mailer.send(
+        messagesApi("mail.new.message.title", sender.get.name),
+        Seq(email),
+        messagesApi("mail.new.message.body", sender.get.name, message.message, link))))
+    } yield()
+  }
 
   override def receive: Receive = {
     case GetAllMessage(user, tenant, maybeChat, closed) =>
@@ -72,10 +111,13 @@ class MessageActor(
 
       response pipeTo sender()
 
-    case SendMessage(message) =>
-      val response =
-        env.dataStore.messageRepo.forTenant(message.tenant).save(message)
-      response pipeTo sender()
+    case SendMessage(message, tenant) =>
+      (for {
+        response <- env.dataStore.messageRepo.forTenant(message.tenant).save(message)
+        _ <- maybeSendMailToRecipent(message, tenant)
+      } yield {
+        response
+      }) pipeTo sender()
 
     case CloseChat(chat, tenant) =>
       val response = env.dataStore.messageRepo

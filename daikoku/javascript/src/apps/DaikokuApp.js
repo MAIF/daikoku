@@ -78,8 +78,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
     }
   }, []);
 
-  //todo: try to dev a component to get message only once and pass its on context...and PAF
-
   if (!user) {
     return (
       <Router>

@@ -66,10 +66,10 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
       settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
 
     wsClient
-      .url(settings.eu match {
-        case true =>
-          s"https://api.eu.mailgun.net/v3/${settings.domain}/messages"
-        case false => s"https://api.mailgun.net/v3/${settings.domain}/messages"
+      .url(if (settings.eu) {
+        s"https://api.eu.mailgun.net/v3/${settings.domain}/messages"
+      } else {
+        s"https://api.mailgun.net/v3/${settings.domain}/messages"
       })
       .withAuth("api", settings.key, WSAuthScheme.BASIC)
       .post(
@@ -77,7 +77,8 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
           "from" -> Seq(s"${settings.fromTitle} <${settings.fromEmail}>"),
           "to" -> Seq(to.mkString(", ")),
           "subject" -> Seq(title),
-          "html" -> Seq(templatedBody)
+          "html" -> Seq(templatedBody),
+          "text" -> Seq(body)
         )
       )
       .andThen {
