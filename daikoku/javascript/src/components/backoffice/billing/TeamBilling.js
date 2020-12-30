@@ -96,7 +96,7 @@ class TeamBillingComponent extends Component {
       mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 
     return (
-      <TeamBackOffice tab="Billing" isLoading={this.state.loading}>
+      <TeamBackOffice tab="Billing" isLoading={this.state.loading} title={`${this.props.currentTeam.name} - Billing`}>
         <Can I={read} a={stat} team={this.props.currentTeam} dispatchError={true}>
           <div className="row">
             <div className="col">

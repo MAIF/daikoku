@@ -77,7 +77,7 @@ export class TeamApiKeysComponent extends Component {
 
   render() {
     return (
-      <TeamBackOffice tab="ApiKeys" apiId={this.props.match.params.apiId}>
+      <TeamBackOffice tab="ApiKeys" apiId={this.props.match.params.apiId} title={`${this.props.currentTeam.name} - API keys`}>
         <Can I={manage} a={apikey} team={this.props.currentTeam} dispatchError={true}>
           <div className="row">
             <div className="col">

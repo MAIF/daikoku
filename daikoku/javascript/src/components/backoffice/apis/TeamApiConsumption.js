@@ -124,7 +124,7 @@ class TeamApiConsumptionComponent extends Component {
 
   render() {
     return (
-      <TeamBackOffice tab="Apis" isLoading={!this.state.api}>
+      <TeamBackOffice tab="Apis" isLoading={!this.state.api} title={`${this.props.currentTeam.name} - API consumption`}>
         <Can I={read} a={stat} team={this.props.currentTeam} dispatchError={true}>
           {!!this.state.api && (
             <div className="d-flex col flex-column pricing-content">

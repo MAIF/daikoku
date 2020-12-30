@@ -73,6 +73,8 @@ class TeamHomeComponent extends Component {
       return null;
     }
 
+    document.title = `${this.props.tenant.name} - ${this.state.team.name}`;
+
     return (
       <main role="main" className="row">
         <section className="organisation__header col-12 mb-4 p-3">

@@ -134,6 +134,8 @@ class ApiHomeComponent extends Component {
     const userName = isGuest ? undefined : name;
     const userEmail = isGuest ? undefined : email;
 
+    document.title = `${this.props.tenant.name} - ${this.state.api ? this.state.api.name : 'API'}`;
+
     return (
       <main role="main" className="row">
         <section className="organisation__header col-12 mb-4 p-3">

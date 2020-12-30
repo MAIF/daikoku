@@ -7,12 +7,12 @@ import { TeamBackOffice } from '../TeamBackOffice';
 import * as Services from '../../../services';
 import { t } from '../../../locales';
 
-class TeamConsumptionComponent extends Component {
-  mappers = [
+const TeamConsumptionComponent = ({ currentTeam, currentLanguage }) => {
+  const mappers = [
     {
       type: 'DoubleRoundChart',
-      label: t('Hits by api/plan', this.props.currentLanguage),
-      title: t('Hits by api/plan', this.props.currentLanguage),
+      label: t('Hits by api/plan', currentLanguage),
+      title: t('Hits by api/plan', currentLanguage),
       formatter: (data) =>
         _.sortBy(
           data.reduce((acc, item) => {
@@ -41,30 +41,28 @@ class TeamConsumptionComponent extends Component {
     },
   ];
 
-  render() {
-    return (
-      <TeamBackOffice tab="ApiKeys">
-        <div className="row">
-          <div className="col">
-            <h1>Consumption</h1>
-            <OtoroshiStatsVizualization
-              sync={() => Services.syncTeamBilling(this.props.currentTeam._id)}
-              fetchData={(from, to) =>
-                Services.getTeamConsumptions(
-                  this.props.currentTeam._id,
-                  from.valueOf(),
-                  to.valueOf()
-                )
-              }
-              mappers={this.mappers}
-              currentLanguage={this.props.currentLanguage}
-            />
-          </div>
+  return (
+    <TeamBackOffice tab="ApiKeys" title={`${currentTeam.name} - Consumption`}>
+      <div className="row">
+        <div className="col">
+          <h1>Consumption</h1>
+          <OtoroshiStatsVizualization
+            sync={() => Services.syncTeamBilling(currentTeam._id)}
+            fetchData={(from, to) =>
+              Services.getTeamConsumptions(
+                currentTeam._id,
+                from.valueOf(),
+                to.valueOf()
+              )
+            }
+            mappers={mappers}
+            currentLanguage={currentLanguage}
+          />
         </div>
-      </TeamBackOffice>
-    );
-  }
-}
+      </div>
+    </TeamBackOffice>
+  );
+};
 
 const mapStateToProps = (state) => ({
   ...state.context,

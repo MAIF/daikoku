@@ -192,7 +192,7 @@ class TeamApisComponent extends Component {
       this.props.setError({ error: { status: 403, message: 'unauthorized' } });
     }
     return (
-      <TeamBackOffice tab="Apis" apiId={this.props.match.params.apiId}>
+      <TeamBackOffice tab="Apis" apiId={this.props.match.params.apiId} title={`${this.props.currentTeam.name} - APIs`}>
         <Can I={read} a={API} dispatchError={true} team={this.props.currentTeam}>
           <div className="row">
             <div className="col">

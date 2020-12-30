@@ -216,6 +216,7 @@ const AddAsset = (props) => {
 const AssetsListComponent = ({
   match,
   currentTeam,
+  tenant,
   tenantMode,
   openWysywygModal,
   currentLanguage,
@@ -531,7 +532,7 @@ const AssetsListComponent = ({
 
   const BackOffice = tenantMode ? UserBackOffice : TeamBackOffice;
   return (
-    <BackOffice tab="Assets" apiId={match.params.apiId}>
+    <BackOffice tab="Assets" apiId={match.params.apiId} title={`${tenantMode ? tenant.name : currentTeam.name} - Assets`}>
       <Can I={manage} a={tenantMode ? tenant : asset} team={currentTeam} dispatchError>
         <div className="row">
           <div className="col">

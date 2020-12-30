@@ -64,7 +64,6 @@ import {
   AdminMessages,
 } from '../components/adminbackoffice';
 
-import { smartRedirect, smartMatch } from '../services/path';
 import { ResetPassword, Signup } from './DaikokuHomeApp';
 import { MessagesEvents } from '../services/messages';
 
@@ -138,15 +137,12 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               '/teams',
               '/settings',
               '/consumptions',
-              '/teams/:teamId/settings',
               '/:teamId/settings',
-              '/teams/:teamId/apis/:apiId',
               '/:teamId/:apiId',
-              '/teams/:teamId',
               '/:teamId',
               '/',
             ]}
-            render={smartMatch((p) => (
+            render={(p) => (
               <TopBar
                 location={p.location}
                 history={p.history}
@@ -154,90 +150,94 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 loginAction={loginAction}
                 loginProvider={loginProvider}
               />
-            ))}
+            )}
           />
           <Switch>
             <UnauthenticatedRoute
+              title={`${tenant.name} - Reset password`}
               exact
               path="/reset"
               tenant={tenant}
               render={(p) => <ResetPassword match={p.match} history={p.history} />}
             />
             <UnauthenticatedRoute
+              title={`${tenant.name} - Signup`}
               exact
               path="/signup"
               tenant={tenant}
               render={(p) => <Signup match={p.match} history={p.history} />}
             />
-            <Route
+            <RouteWithTitle
               exact
+              title={`${tenant.name} - Notifications`}
               path="/notifications"
               render={(p) => (
-                <NotificationList match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <Route
-              exact
-              path="/messages"
-              render={(p) => (
-                <NotificationList match={p.match} history={p.history} location={p.location} />
+                <NotificationList match={p.match} history={p.history} location={p.location}/>
               )}
             />
 
-            {/* <FrontOfficeRoute exact path="/" render={p => <MyHome match={p.match} history={p.history} />} /> */}
             <FrontOfficeRoute
+              title={`${tenant.name} - Apis`}
               exact
               path="/apis"
               render={(p) => <MyHome match={p.match} history={p.history} />}
             />
             <FrontOfficeRoute
+              title={`${tenant.name} - Home`}
               exact
               path="/"
               render={(p) => <MaybeHomePage match={p.match} history={p.history} />}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Messages`}
               exact
               path="/settings/messages"
               render={(p) => (
                 <AdminMessages match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Otoroshi`}
               exact
               path="/settings/otoroshis/:otoroshiId"
               render={(p) => (
                 <TenantOtoroshi match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Otoroshis`}
               exact
               path="/settings/otoroshis"
               render={(p) => (
                 <TenantOtoroshis match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Tenant edit`}
               exact
               path="/settings/tenants/:tenantId"
               render={(p) => (
                 <TenantEdit match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Style`}
               exact
               path="/settings/tenants/:tenantId/style"
               render={(p) => (
                 <TenantStyleEdit match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Tenants`}
               exact
               path="/settings/tenants"
               render={(p) => (
                 <TenantList match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Admins`}
               exact
               path="/settings/tenants/:tenantId/admins"
               render={(p) => (
@@ -249,59 +249,68 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - User`}
               exact
               path="/settings/users/:userId"
               render={(p) => <UserEdit match={p.match} history={p.history} location={p.location} />}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Users`}
               exact
               path="/settings/users"
               render={(p) => <UserList match={p.match} history={p.history} location={p.location} />}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Audit trail`}
               exact
               path="/settings/audit"
               render={(p) => (
                 <AuditTrailList match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - User sessions`}
               exact
               path="/settings/sessions"
               render={(p) => (
                 <SessionList match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Import/Export`}
               exact
               path="/settings/import-export"
               render={(p) => (
                 <ImportExport match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - My profile`}
               exact
               path="/settings/me"
               render={(p) => (
                 <MyProfile match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Team`}
               exact
               path="/settings/teams/:teamSettingId"
               render={(p) => (
                 <TeamEditForAdmin match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Team members`}
               exact
               path="/settings/teams/:teamSettingId/members"
               render={(p) => (
                 <TeamMembersForAdmin match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Teams`}
               exact
               path="/settings/teams"
               render={(p) => <TeamList match={p.match} history={p.history} location={p.location} />}
@@ -318,7 +327,8 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Admins`}
               exact
               path="/settings/admins"
               render={(p) => (
@@ -330,7 +340,8 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 />
               )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - Init`}
               exact
               path="/settings/init"
               render={(p) => (
@@ -338,6 +349,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <FrontOfficeRoute
+              title={`${tenant.name} - Teams`}
               exact
               path="/teams"
               render={(p) => (
@@ -351,201 +363,185 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
 
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/edition', '/:teamId/settings/edition']}
+              path='/:teamId/settings/edition'
               render={(p) => <TeamEdit match={p.match} history={p.history} location={p.location} />}
             />
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/consumption', '/:teamId/settings/consumption']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/consumption'
+              render={(p) => (
                 <TeamConsumption match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/billing', '/:teamId/settings/billing']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/billing'
+              render={(p) => (
                 <TeamBilling match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/income', '/:teamId/settings/income']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/income'
+              render={(p) => (
                 <TeamIncome match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/apikeys/:apiId', '/:teamId/settings/apikeys/:apiId']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/apikeys/:apiId'
+              render={(p) => (
                 <TeamApiKeysForApi match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
               exact
-              path={['/:teamId/settings/subscriptions/apis/:apiId']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/subscriptions/apis/:apiId'
+              render={(p) => (
                 <TeamApiSubscriptions match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
               exact
-              path={[
-                '/teams/:teamId/settings/apikeys/:apiId/subscription/:subscription/consumptions',
-                '/:teamId/settings/apikeys/:apiId/subscription/:subscription/consumptions',
-              ]}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/apikeys/:apiId/subscription/:subscription/consumptions'
+              render={(p) => (
                 <TeamApiKeyConsumption match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/apikeys', '/:teamId/settings/apikeys']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/apikeys'
+              render={(p) => (
                 <TeamApiKeys match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/apis', '/:teamId/settings/apis']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/apis'
+              render={(p) => (
                 <TeamApis match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
 
             <TeamBackOfficeRoute
               exact
-              path={[
-                '/teams/:teamId/settings/consumptions/apis/:apiId',
-                '/:teamId/settings/consumptions/apis/:apiId',
-              ]}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/consumptions/apis/:apiId'
+              render={(p) => (
                 <TeamApiConsumption match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
               exact
-              path={[
-                '/teams/:teamId/settings/consumptions/apis/:apiId/plan/:planId',
-                '/:teamId/settings/consumptions/apis/:apiId/plan/:planId',
-              ]}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/consumptions/apis/:apiId/plan/:planId'
+              render={(p) => (
                 <TeamPlanConsumption match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
+              title={`${tenant.name} - members`}
               exact
-              path={['/teams/:teamId/settings/members', '/:teamId/settings/members']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/members'
+              render={(p) => (
                 <TeamMembers match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
-
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/assets', '/:teamId/settings/assets']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/assets'
+              render={(p) => (
                 <AssetsList
                   match={p.match}
                   history={p.history}
                   location={p.location}
                   tenantMode={false}
                 />
-              ))}
+              )}
             />
-
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings', '/:teamId/settings']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings'
+              render={(p) => (
                 <TeamBackOfficeHome match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
-
             <TeamBackOfficeRoute
               exact
-              path={['/teams/:teamId/settings/apis/:apiId', '/:teamId/settings/apis/:apiId']}
-              render={smartRedirect((p) => (
+              path='/:teamId/settings/apis/:apiId'
+              render={(p) => (
                 <TeamApi match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
             <TeamBackOfficeRoute
-              path={[
-                '/teams/:teamId/settings/apis/:apiId/:tab',
-                '/:teamId/settings/apis/:apiId/:tab',
-              ]}
-              render={smartRedirect((p) => (
+              title={`${tenant.name} - Api`}
+              path='/:teamId/settings/apis/:apiId/:tab'
+              render={(p) => (
                 <TeamApi match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
 
             <FrontOfficeRoute
               exact
-              path={[
-                '/teams/:teamId/apis/:apiId/documentation/:pageId',
-                '/:teamId/:apiId/documentation/:pageId',
-              ]}
-              render={smartRedirect((p) => (
+              path='/:teamId/:apiId/documentation/:pageId'
+              render={(p) => (
                 <ApiHome match={p.match} history={p.history} tab="documentation-page" />
-              ))}
+              )}
             />
             <FrontOfficeRoute
               exact
-              path={['/teams/:teamId/apis/:apiId/documentation', '/:teamId/:apiId/documentation']}
-              render={smartRedirect((p) => (
+              path='/:teamId/:apiId/documentation'
+              render={(p) => (
                 <ApiHome match={p.match} history={p.history} tab="documentation" />
-              ))}
+              )}
             />
             <FrontOfficeRoute
               exact
-              path={['/teams/:teamId/apis/:apiId/pricing', '/:teamId/:apiId/pricing']}
-              render={smartRedirect((p) => (
+              path='/:teamId/:apiId/pricing'
+              render={(p) => (
                 <ApiHome match={p.match} history={p.history} tab="pricing" />
-              ))}
+              )}
             />
             <FrontOfficeRoute
               exact
-              path={['/teams/:teamId/apis/:apiId/swagger', '/:teamId/:apiId/swagger']}
-              render={smartRedirect((p) => (
+              path='/:teamId/:apiId/swagger'
+              render={(p) => (
                 <ApiHome match={p.match} history={p.history} tab="swagger" />
-              ))}
+              )}
             />
             <FrontOfficeRoute
               exact
-              path={['/teams/:teamId/apis/:apiId/redoc', '/:teamId/:apiId/redoc']}
-              render={smartRedirect((p) => (
+              path='/:teamId/:apiId/redoc'
+              render={(p) => (
                 <ApiHome match={p.match} history={p.history} tab="redoc" />
-              ))}
+              )}
             />
             <FrontOfficeRoute
               exact
-              path={['/teams/:teamId/apis/:apiId/console', '/:teamId/:apiId/console']}
-              render={smartRedirect((p) => (
+              path='/:teamId/:apiId/console'
+              render={(p) => (
                 <ApiHome match={p.match} history={p.history} tab="console" />
-              ))}
+              )}
             />
-
             <FrontOfficeRoute
               exact
-              path={['/teams/:teamId/apis/:apiId', '/:teamId/:apiId']}
-              render={smartRedirect((p) => (
+              path='/:teamId/:apiId'
+              render={(p) => (
                 <ApiHome match={p.match} history={p.history} tab="description" />
-              ))}
+              )}
             />
 
             <FrontOfficeRoute
               exact
-              path={['/teams/:teamId', '/:teamId']}
-              render={smartRedirect((p) => (
+              path='/:teamId'
+              render={(p) => (
                 <TeamHome match={p.match} history={p.history} location={p.location} />
-              ))}
+              )}
             />
-            <Route
+            <RouteWithTitle
+              title={`${tenant.name} - 404 Error`}
               path="*"
-              render={smartRedirect(() => (
+              render={() => (
                 <Error error={{ status: 404 }} />
-              ))}
+              )}
             />
           </Switch>
           <Route
@@ -555,20 +551,18 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
           <Route
             path={[
               '/teams',
-              '/teams/:teamId/apis/:apiId',
               '/:teamId/:apiId',
-              '/teams/:teamId',
               '/:teamId',
               '/',
             ]}
-            render={smartMatch((p) => (
+            render={(p) => (
               <Footer
                 isBackOffice={false}
                 location={p.location}
                 history={p.history}
                 match={p.match}
               />
-            ))}
+            )}
           />
         </div>
       </MessagesProvider>
@@ -654,7 +648,15 @@ const TeamBackOfficeRoute = withRouter(
 );
 
 const FrontOfficeRoute = (props) => {
-  return <Route {...props} render={(p) => <FrontOffice>{props.render(p)}</FrontOffice>} />;
+  return <RouteWithTitle {...props} render={(p) => <FrontOffice>{props.render(p)}</FrontOffice>} />;
+};
+
+const RouteWithTitle = (props) => {
+  useEffect(() => {
+    document.title = props.title;
+  }, [props.title]);
+
+  return <Route {...props}/>;
 };
 
 const UnauthenticatedRouteComponent = ({
@@ -667,7 +669,7 @@ const UnauthenticatedRouteComponent = ({
     return <Redirect to="/" />;
   }
   return (
-    <Route
+    <RouteWithTitle
       {...rest}
       render={(props) => (
         <UnauthenticatedHome {...rest}>
