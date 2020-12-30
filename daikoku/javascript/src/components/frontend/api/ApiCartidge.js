@@ -77,15 +77,19 @@ export class ApiCartidge extends Component {
           </span>
         </span>
         <Separator />
-        <span>
-          <Translation i18nkey="Default plan" language={this.props.currentLanguage}>
-            Default plan
-          </Translation>
-          <span className="badge badge-primary word-break ml-1" style={{ whiteSpace: 'normal' }}>
-            {defaultPlan.customName || t(pricing, this.props.currentLanguage)}
-          </span>
-        </span>
-        <Separator />
+        {defaultPlan && (
+          <>
+            <span>
+              <Translation i18nkey="Default plan" language={this.props.currentLanguage}>
+                Default plan
+              </Translation>
+              <span className="badge badge-primary word-break ml-1" style={{ whiteSpace: 'normal' }}>
+                {defaultPlan.customName || t(pricing, this.props.currentLanguage)}
+              </span>
+            </span>
+            <Separator />
+          </>
+        )}
         <span>
           <Translation i18nkey="Last modification" language={this.props.currentLanguage}>
             Last modification
