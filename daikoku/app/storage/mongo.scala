@@ -10,7 +10,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import org.jooq.{JSONB, QueryPart}
+import org.jooq.{Field, JSONB, QueryPart}
 import org.jooq.impl.DSL
 import play.api.Logger
 import play.api.libs.json._
@@ -20,6 +20,7 @@ import reactivemongo.api.indexes.Index
 import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
 
+import java.lang
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -908,10 +909,21 @@ abstract class MongoRepo[Of, Id <: ValueType](
   }
 
   override def delete(query: JsObject)(
-      implicit ec: ExecutionContext): Future[WriteResult] = collection.flatMap {
-    col =>
+      implicit ec: ExecutionContext): Future[WriteResult] = {
       logger.debug(s"$collectionName.delete(${Json.prettyPrint(query)})")
-      col.delete(ordered = true).one(query)
+
+      val tmp = query
+        .fields
+        .map { field =>
+          s""""${field._1}" : "${field._2}""""
+        }
+        .mkString(",")
+
+      logger.error(tmp)
+
+      collection.flatMap { col =>
+        col.delete(ordered = true).one(query)
+      }
   }
 
   override def save(value: Of)(
@@ -921,7 +933,26 @@ abstract class MongoRepo[Of, Id <: ValueType](
   }
 
   override def save(query: JsObject, value: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] =
+      implicit ec: ExecutionContext): Future[Boolean] = {
+
+    db.query { dsl =>
+      logger.debug(
+        s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
+      )
+
+      dsl
+        .query("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
+          "ON CONFLICT (_id) DO UPDATE " +
+          "set _deleted = {2}, content = {3}",
+          DSL.table(tableName),
+          DSL.inline((value \ "_id").as[String]),
+          DSL.inline((value \ "_deleted").as[Boolean]),
+          DSL.inline(value)
+        )
+        .execute() == 1
+    }
+
+    // TODO - delete call to Mongo
     collection.flatMap { col =>
       logger.debug(
         s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
@@ -943,6 +974,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
         )
         .map(_.lastError.isDefined)
     }
+  }
 
   override def insertMany(values: Seq[Of])(
       implicit ec: ExecutionContext): Future[Long] =
@@ -981,6 +1013,8 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(id: String)(
       implicit ec: ExecutionContext): Future[WriteResult] = {
+
+    logger.error("deleteByIdLogically with String")
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update.one(
@@ -994,6 +1028,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(id: Id)(
       implicit ec: ExecutionContext): Future[WriteResult] = {
+    logger.error("deleteByIdLogically with Id")
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update.one(
@@ -1007,6 +1042,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def deleteLogically(query: JsObject)(
       implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.error("deleteLogically with Query")
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
@@ -1022,6 +1058,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def deleteAllLogically()(
       implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.error("deleteAllLogically")
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
@@ -1200,25 +1237,6 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     override def writes(o: JsObject): JsObject = o
   }
 
-  def convertTuple(field: (String, JsValue)): String = {
-    field._2 match {
-      case value: JsObject =>
-        value.fields.headOption match {
-          case Some((key: String, content: JsValue)) if key == "$in" => s"${field._1} IN ${convertTuple(value.fields.head)}"
-          case _ => "NOT IMPLEMENTED"
-        }
-      case value: JsArray if field._1 == "$or" => "(" + value.as[List[JsObject]].map(convertQuery).mkString(" OR ") + ")"
-      case value: JsArray if field._1 == "$in" => "(" + value.as[List[String]].map("'" + _ + "'").mkString(",") + ")"
-      case value: Any => s"${field._1} = ${value.toString()}"
-    }
-  }
-
-  def convertQuery(query: JsObject): String = {
-    query.fields
-      .map(convertTuple)
-      .mkString("\nAND\n")
-  }
-
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
   def collectionName: String
@@ -1246,6 +1264,20 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(id: String)(
       implicit ec: ExecutionContext): Future[WriteResult] = {
+    logger.error(s"deleteByIdLogically query $id")
+
+    db.query { dsl =>
+      dsl
+        .query("UPDATE {0} " +
+          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+          "WHERE _id = {1} AND content ->> '_tenant' = {2}",
+          DSL.table(tableName),
+          DSL.inline(id),
+          DSL.inline(tenant.value)
+        )
+        .execute() == 1
+    }
+
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update.one(
@@ -1260,6 +1292,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(id: Id)(
       implicit ec: ExecutionContext): Future[WriteResult] = {
+    logger.error("deleteByIdLogically query 1281")
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update.one(
@@ -1275,6 +1308,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteLogically(query: JsObject)(
       implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.error("deleteLogically query 1296")
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
@@ -1291,6 +1325,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteAllLogically()(
       implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.error("deleteAllLogically L. 1312")
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
@@ -1308,11 +1343,6 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       query: JsObject,
       sort: Option[JsObject] = None,
       maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
-
-    logger.error(query.toString())
-    logger.error(convertQuery(query))
-    logger.error("#######")
-
 
     collection.flatMap { col =>
       logger.debug(s"$collectionName.find(${Json.prettyPrint(
@@ -1410,11 +1440,6 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   override def findOne(query: JsObject)(
       implicit ec: ExecutionContext): Future[Option[Of]] = collection.flatMap {
 
-    logger.error("## FIND_ONE ##")
-    logger.error(query.toString())
-    logger.error(convertQuery(query))
-    logger.error("## FIND_ONE ##")
-
     col =>
       logger.debug(s"$collectionName.findOne(${Json.prettyPrint(
         query ++ Json.obj("_tenant" -> tenant.value))})")
@@ -1431,13 +1456,36 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   }
 
   override def delete(query: JsObject)(
-      implicit ec: ExecutionContext): Future[WriteResult] = collection.flatMap {
-    col =>
-      logger.debug(s"$collectionName.delete(${Json.prettyPrint(
-        query ++ Json.obj("_tenant" -> tenant.value))})")
-      col
-        .delete(ordered = true)
+      implicit ec: ExecutionContext): Future[WriteResult] = {
+
+    logger.error("override def delete(query: JsObject)")
+
+    logger.debug(s"$tableName.delete(${
+      Json.prettyPrint(
+        query ++ Json.obj("_tenant" -> tenant.value))
+    })")
+
+    val tmp = (query ++ Json.obj("_tenant" -> tenant.value))
+      .fields
+      .map { field =>
+        s""""${field._1}" : "${field._2}""""
+      }
+      .mkString(",")
+
+    logger.error(tmp)
+
+    collection.flatMap { col =>
+      col.delete(ordered = true)
         .one(query ++ Json.obj("_tenant" -> tenant.value))
+    }
+
+//    db.query { dsl =>
+//      dsl.
+//        query("DELETE FROM {0} WHERE content @> '{ }' LIMIT 1 ")
+//        .execute()
+//    }
+
+
   }
 
   override def save(value: Of)(
@@ -1449,44 +1497,43 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   override def save(query: JsObject, value: JsObject)(
       implicit ec: ExecutionContext): Future[Boolean] = {
 
-    implicit val writesJSONBToJson: Writes[JSONB] = (o: JSONB) => {
-      Json.parse(o.data())
-    }
-
     db.query { dsl =>
       logger.debug(
         s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
       )
+
       dsl
-        .insertInto(DSL.table(s"$tableName"))
-        .values(
-          (value \ "_id").as[String],
-          (value \ "_deleted").as[Boolean],
-          DSL.inline(value)
+        .query("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
+          "ON CONFLICT (_id) DO UPDATE " +
+          "set _deleted = {2}, content = {3}",
+                DSL.table(tableName),
+                DSL.inline((value \ "_id").as[String]),
+                DSL.inline((value \ "_deleted").as[Boolean]),
+                DSL.inline(value)
         )
         .execute() == 1
     }
 
-//    collection.flatMap { col =>
-//      logger.debug(
-//        s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
-//      )
-//      col
-//        .findAndUpdate(
-//          selector = query,
-//          update = value,
-//          fetchNewObject = false,
-//          upsert = true,
-//          sort = None,
-//          fields = None,
-//          bypassDocumentValidation = false,
-//          writeConcern = WriteConcern.Default,
-//          maxTime = None,
-//          collation = None,
-//          arrayFilters = Seq.empty
-//        )
-//        .map(_.lastError.isDefined)
-//    }
+    collection.flatMap { col =>
+      logger.debug(
+        s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
+      )
+      col
+        .findAndUpdate(
+          selector = query,
+          update = value,
+          fetchNewObject = false,
+          upsert = true,
+          sort = None,
+          fields = None,
+          bypassDocumentValidation = false,
+          writeConcern = WriteConcern.Default,
+          maxTime = None,
+          collation = None,
+          arrayFilters = Seq.empty
+        )
+        .map(_.lastError.isDefined)
+    }
   }
 
   override def insertMany(values: Seq[Of])(
@@ -1501,8 +1548,10 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     }
 
   override def updateMany(query: JsObject, value: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] =
-    collection.flatMap { col =>
+      implicit ec: ExecutionContext): Future[Long] = {
+    logger.error("updateMany(query: JsObject, value: JsObject)")
+
+  collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
         .element(q = query,
@@ -1513,9 +1562,11 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
           update.many(List(element)).map(_.nModified)
         }
     }
+  }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] =
+      implicit ec: ExecutionContext): Future[Long] = {
+    logger.error("updateManyByQuery(query: JsObject, queryUpdate: JsObject)")
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
@@ -1524,16 +1575,20 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
           update.many(List(element)).map(_.nModified)
         }
     }
+  }
 
   override def exists(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = collection.flatMap {
-    col =>
-      logger.debug(s"$collectionName.exists(${Json.prettyPrint(
-        query ++ Json.obj("_tenant" -> tenant.value))})")
-      col
-        .find(query ++ Json.obj("_tenant" -> tenant.value), None)
-        .one[JsObject](ReadPreference.primaryPreferred)
-        .map(_.isDefined)
+      implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.error("exists(query: JsObject)")
+    collection.flatMap {
+      col =>
+        logger.debug(s"$collectionName.exists(${Json.prettyPrint(
+          query ++ Json.obj("_tenant" -> tenant.value))})")
+        col
+          .find(query ++ Json.obj("_tenant" -> tenant.value), None)
+          .one[JsObject](ReadPreference.primaryPreferred)
+          .map(_.isDefined)
+    }
   }
 
   override def findMinByQuery(query: JsObject, field: String)(

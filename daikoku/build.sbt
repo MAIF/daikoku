@@ -35,6 +35,7 @@ assemblyMergeStrategy in assembly := {
 }
 
 libraryDependencies ++= Seq(
+  jdbc,
   ws,
   filters,
   "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test,
@@ -55,7 +56,6 @@ libraryDependencies ++= Seq(
   "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1",
   "com.sun.xml.bind" % "jaxb-impl" % "2.3.0.1",
 
-  jdbc,
   "org.postgresql" % "postgresql" % "42.2.18",
   "org.jooq" % "jooq" % "3.14.4",
   "org.jooq" % "jooq-meta" % "3.14.4",
