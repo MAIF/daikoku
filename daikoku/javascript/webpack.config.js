@@ -9,17 +9,20 @@ const smp = new SpeedMeasurePlugin();
 module.exports = (env, argv) => {
   const isProd = argv.mode === 'production';
   const config = {
+    devtool: 'eval',
+    devServer: {
+      disableHostCheck: true,
+      liveReload: true,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
+      }
+    },
     entry: {
       'daikoku.login': path.resolve(__dirname, 'src/login.js'),
       'daikoku.home': path.resolve(__dirname, 'src/home.js'),
       daikoku: path.resolve(__dirname, 'src/index.js'),
-    },
-    output: {
-      filename: isProd ? '[name].min.js' : '[name].js',
-      path: path.resolve(__dirname, '../public/react-app'),
-      publicPath: isProd ? '/assets/react-app/' : 'http://localhost:3000/',
-      library: 'Daikoku',
-      libraryTarget: 'umd'
     },
     module: {
       rules: [{
@@ -53,48 +56,104 @@ module.exports = (env, argv) => {
         },
         {
           test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
-          loader: 'url-loader?limit=1&name=[name]/[name].[ext]'
+          use: [
+            {
+              loader: 'url-loader',
+              options: {
+                limit: 1,
+              },
+            },
+          ],
         },
         {
           test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,
-          loader: 'url-loader?limit=10000&mimetype=application/font-woff&name=[name]/[name].[ext]'
+          use: [
+            {
+              loader: 'url-loader',
+              options: {
+                limit: 1,
+                mimetype: 'application/font-woff'
+              },
+            },
+          ],
         },
         {
           test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/,
-          loader: 'url-loader?limit=1&name=[name]/[name].[ext]'
+          use: [
+            {
+              loader: 'url-loader',
+              options: {
+                limit: 1,
+              },
+            },
+          ],
         },
         {
           test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
-          loader: 'url-loader?limit=1&name=[name]/[name].[ext]'
+          use: [
+            {
+              loader: 'url-loader',
+              options: {
+                limit: 1,
+              },
+            },
+          ],
         },
         {
           test: /\.gif$/,
-          loader: 'url-loader?limit=1&name=[name]/[name].[ext]'
+          use: [
+            {
+              loader: 'url-loader',
+              options: {
+                limit: 1,
+              },
+            },
+          ],
         },
         {
           test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
-          loader: 'url-loader?limit=1&name=[name]/[name].[ext]'
+          use: [
+            {
+              loader: 'url-loader',
+              options: {
+                limit: 1,
+              },
+            },
+          ],
         },
         {
           test: /\.png$/,
-          loader: 'url-loader?limit=1&name=[name]/[name].[ext]'
+          use: [
+            {
+              loader: 'url-loader',
+              options: {
+                limit: 1,
+              },
+            },
+          ],
         },
       ]
     },
-    devServer: {
-      disableHostCheck: true,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-        'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
-      }
+    output: {
+      filename: isProd ? '[name].min.js' : '[name].js',
+      path: path.resolve(__dirname, '../public/react-app'),
+      publicPath: isProd ? '/assets/react-app/' : 'http://localhost:3000/',
+      library: 'Daikoku',
+      libraryTarget: 'umd'
     },
+    
     plugins: [
       new MiniCssExtractPlugin({
         filename: isProd ? '[name].min.css' : '[name].css',
         chunkFilename: isProd ? '[id].min.css' : '[id].css'
       }),
-    ]
+    ],
+    resolve: {
+      alias: {
+        crypto: 'crypto-browserify',
+        path: 'path-browserify'
+      }
+    }
   };
   if (isProd) {
     return smp.wrap({ 
