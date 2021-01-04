@@ -1230,6 +1230,27 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   val logger: Logger = Logger(s"MongoTenantAwareRepo")
 
+  def _convertTuple(field: (String, JsValue)): String = {
+    field._2 match {
+      case value: JsObject =>
+        value.fields.headOption match {
+          case Some((key: String, content: JsValue)) if key == "$in" => s"${field._1} IN ${_convertTuple(value.fields.head)}"
+          case _ => "NOT IMPLEMENTED"
+        }
+      case value: JsArray if field._1 == "$or" => value.as[List[JsObject]].map(convertQuery).mkString(" OR ")
+      case value: JsArray if field._1 == "$in" => "(" + value.as[List[String]].map("'" + _ + "'").mkString(",") + ")"
+      case value: Any => s"content ->> '${field._1}' = '${value.toString().replace("\"", "")}'"
+    }
+  }
+
+  // TODO - extract this method in helper class
+  // convert jsObject query to jsonb syntax
+  def convertQuery(query: JsObject): String = {
+    query.fields
+      .map(_convertTuple)
+      .mkString(" AND ")
+  }
+
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
       json.validate[JsObject](Reads.JsObjectReads)
@@ -1264,7 +1285,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(id: String)(
       implicit ec: ExecutionContext): Future[WriteResult] = {
-    logger.error(s"deleteByIdLogically query $id")
+    logger.error(s"deleteByIdLogically $id : String")
 
     db.query { dsl =>
       dsl
@@ -1292,23 +1313,38 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(id: Id)(
       implicit ec: ExecutionContext): Future[WriteResult] = {
-    logger.error("deleteByIdLogically query 1281")
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update.one(
-        q = Json.obj("_deleted" -> false,
-                     "_id" -> id.value,
-                     "_tenant" -> tenant.value),
-        u = Json.obj("$set" -> Json.obj("_deleted" -> true)),
-        upsert = false,
-        multi = false
-      )
-    }
+    logger.error("deleteByIdLogically id: Id")
+
+    deleteByIdLogically(id.value)
+//    collection.flatMap { col =>
+//      val update = col.update(ordered = true)
+//      update.one(
+//        q = Json.obj("_deleted" -> false,
+//                     "_id" -> id.value,
+//                     "_tenant" -> tenant.value),
+//        u = Json.obj("$set" -> Json.obj("_deleted" -> true)),
+//        upsert = false,
+//        multi = false
+//      )
+//    }
   }
 
   override def deleteLogically(query: JsObject)(
       implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("deleteLogically query 1296")
+    logger.error("deleteLogically query : JsObject")
+
+    db.query { dsl =>
+      dsl
+        .query("UPDATE {0} " +
+          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+          "WHERE content ->> '_tenant' = {1} AND {2}",
+          DSL.table(tableName),
+          DSL.inline(tenant.value),
+          DSL.table(convertQuery(query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value)))
+        )
+        .execute() == 1
+    }
+
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
@@ -1325,7 +1361,19 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteAllLogically()(
       implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("deleteAllLogically L. 1312")
+    logger.error("deleteAllLogically")
+
+    db.query { dsl =>
+      dsl
+        .query("UPDATE {0} " +
+          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+          "WHERE content ->> '_tenant' = {1} AND _deleted = false",
+          DSL.table(tableName),
+          DSL.inline(tenant.value)
+        )
+        .execute() == 1
+    }
+
     collection.flatMap { col =>
       val update = col.update(ordered = true)
       update
@@ -1580,7 +1628,26 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   override def exists(query: JsObject)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     logger.error("exists(query: JsObject)")
-    collection.flatMap {
+
+    db.query { dsl =>
+      println(s"Coming from Postgresql : ${dsl.fetchExists(dsl.selectFrom(
+        DSL
+          .table(tableName)
+          .where(DSL.condition("exists (SELECT 1 FROM {0} WHERE {1})",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
+        )))
+      ))}"
+      )
+//          dsl.query(
+//            "SELECT 1 FROM {0} WHERE {1}",
+//            DSL.table(tableName),
+//            DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
+//          )
+//        )
+    }
+
+    val tmp = collection.flatMap {
       col =>
         logger.debug(s"$collectionName.exists(${Json.prettyPrint(
           query ++ Json.obj("_tenant" -> tenant.value))})")
@@ -1589,6 +1656,14 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
           .one[JsObject](ReadPreference.primaryPreferred)
           .map(_.isDefined)
     }
+
+    tmp
+      .map { value =>
+        println(s"Coming from mongo : $value")
+          
+      }
+
+    tmp
   }
 
   override def findMinByQuery(query: JsObject, field: String)(
