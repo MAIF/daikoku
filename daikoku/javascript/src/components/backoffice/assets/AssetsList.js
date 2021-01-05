@@ -6,7 +6,7 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { TeamBackOffice, UserBackOffice } from '..';
 import { Table } from '../../inputs';
-import { Can, manage, asset, tenant, Spinner } from '../../utils';
+import { Can, manage, asset, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
 import { openWysywygModal } from '../../../core/modal';
 
@@ -532,7 +532,7 @@ const AssetsListComponent = ({
 
   const BackOffice = tenantMode ? UserBackOffice : TeamBackOffice;
   return (
-    <BackOffice tab="Assets" apiId={match.params.apiId} title={`${tenantMode ? tenant.name : currentTeam.name} - Assets`}>
+    <BackOffice tab="Assets" apiId={match.params.apiId} title={`${tenantMode ? tenant.name : currentTeam.name} - ${t('Asset', currentLanguage, true)}`}>
       <Can I={manage} a={tenantMode ? tenant : asset} team={currentTeam} dispatchError>
         <div className="row">
           <div className="col">

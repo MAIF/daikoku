@@ -9,6 +9,7 @@ import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise, history } from '../core';
+import {t} from '../locales';
 
 import 'react-redux-toastr/src/styles/index.scss';
 
@@ -67,7 +68,7 @@ import {
 import { ResetPassword, Signup } from './DaikokuHomeApp';
 import { MessagesEvents } from '../services/messages';
 
-const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
+const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, currentLanguage }) => {
   useEffect(() => {
     if (!user.isGuest) {
       MessagesEvents.start();
@@ -154,14 +155,14 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
           />
           <Switch>
             <UnauthenticatedRoute
-              title={`${tenant.name} - Reset password`}
+              title={`${tenant.name} - ${t('Reset password', currentLanguage)}`}
               exact
               path="/reset"
               tenant={tenant}
               render={(p) => <ResetPassword match={p.match} history={p.history} />}
             />
             <UnauthenticatedRoute
-              title={`${tenant.name} - Signup`}
+              title={`${tenant.name} - ${t('Signup', currentLanguage)}`}
               exact
               path="/signup"
               tenant={tenant}
@@ -169,7 +170,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             />
             <RouteWithTitle
               exact
-              title={`${tenant.name} - Notifications`}
+              title={`${tenant.name} - ${t('Notifications', currentLanguage)}`}
               path="/notifications"
               render={(p) => (
                 <NotificationList match={p.match} history={p.history} location={p.location}/>
@@ -177,19 +178,19 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             />
 
             <FrontOfficeRoute
-              title={`${tenant.name} - Apis`}
+              title={`${tenant.name} - ${t('Apis', currentLanguage)}`}
               exact
               path="/apis"
               render={(p) => <MyHome match={p.match} history={p.history} />}
             />
             <FrontOfficeRoute
-              title={`${tenant.name} - Home`}
+              title={`${tenant.name} - ${t('Home', currentLanguage)}`}
               exact
               path="/"
               render={(p) => <MaybeHomePage match={p.match} history={p.history} />}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Messages`}
+              title={`${tenant.name} - ${t('Message', currentLanguage, true)}`}
               exact
               path="/settings/messages"
               render={(p) => (
@@ -197,7 +198,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Otoroshi`}
+              title={`${tenant.name} - ${t('Otoroshi', currentLanguage)}`}
               exact
               path="/settings/otoroshis/:otoroshiId"
               render={(p) => (
@@ -205,7 +206,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Otoroshis`}
+              title={`${tenant.name} - ${t('Otoroshis', currentLanguage, true)}`}
               exact
               path="/settings/otoroshis"
               render={(p) => (
@@ -213,7 +214,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Tenant edit`}
+              title={`${tenant.name} - ${t('Tenant edit', currentLanguage)}`}
               exact
               path="/settings/tenants/:tenantId"
               render={(p) => (
@@ -221,7 +222,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Style`}
+              title={`${tenant.name} - ${t('Style', currentLanguage)}`}
               exact
               path="/settings/tenants/:tenantId/style"
               render={(p) => (
@@ -229,7 +230,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Tenants`}
+              title={`${tenant.name} - ${t('Tenants', currentLanguage, true)}`}
               exact
               path="/settings/tenants"
               render={(p) => (
@@ -237,7 +238,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Admins`}
+              title={`${tenant.name} - ${t('Admins', currentLanguage)}`}
               exact
               path="/settings/tenants/:tenantId/admins"
               render={(p) => (
@@ -250,19 +251,19 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - User`}
+              title={`${tenant.name} - ${t('User', currentLanguage)}`}
               exact
               path="/settings/users/:userId"
               render={(p) => <UserEdit match={p.match} history={p.history} location={p.location} />}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Users`}
+              title={`${tenant.name} - ${t('Users', currentLanguage, true)}`}
               exact
               path="/settings/users"
               render={(p) => <UserList match={p.match} history={p.history} location={p.location} />}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Audit trail`}
+              title={`${tenant.name} - ${t('Audit trail', currentLanguage)}`}
               exact
               path="/settings/audit"
               render={(p) => (
@@ -270,7 +271,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - User sessions`}
+              title={`${tenant.name} - ${t('User sessions', currentLanguage)}`}
               exact
               path="/settings/sessions"
               render={(p) => (
@@ -278,7 +279,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Import/Export`}
+              title={`${tenant.name} - ${t('Import / Export', currentLanguage)}`}
               exact
               path="/settings/import-export"
               render={(p) => (
@@ -286,7 +287,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - My profile`}
+              title={`${tenant.name} - ${t('My profile', currentLanguage)}`}
               exact
               path="/settings/me"
               render={(p) => (
@@ -294,7 +295,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Team`}
+              title={`${tenant.name} - ${t('Team', currentLanguage)}`}
               exact
               path="/settings/teams/:teamSettingId"
               render={(p) => (
@@ -302,7 +303,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Team members`}
+              title={`${tenant.name} - ${t('Team members', currentLanguage)}`}
               exact
               path="/settings/teams/:teamSettingId/members"
               render={(p) => (
@@ -310,7 +311,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Teams`}
+              title={`${tenant.name} - ${t('Teams', currentLanguage)}`}
               exact
               path="/settings/teams"
               render={(p) => <TeamList match={p.match} history={p.history} location={p.location} />}
@@ -328,7 +329,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Admins`}
+              title={`${tenant.name} - ${t('Admins', currentLanguage)}`}
               exact
               path="/settings/admins"
               render={(p) => (
@@ -341,7 +342,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - Init`}
+              title={`${tenant.name} - ${t('Init', currentLanguage)}`}
               exact
               path="/settings/init"
               render={(p) => (
@@ -349,7 +350,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <FrontOfficeRoute
-              title={`${tenant.name} - Teams`}
+              title={`${tenant.name} - ${t('Teams', currentLanguage)}`}
               exact
               path="/teams"
               render={(p) => (
@@ -438,7 +439,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <TeamBackOfficeRoute
-              title={`${tenant.name} - members`}
+              title={`${tenant.name} - ${t('member', currentLanguage, true)}`}
               exact
               path='/:teamId/settings/members'
               render={(p) => (
@@ -472,7 +473,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <TeamBackOfficeRoute
-              title={`${tenant.name} - Api`}
+              title={`${tenant.name} - ${t('API', currentLanguage)}`}
               path='/:teamId/settings/apis/:apiId/:tab'
               render={(p) => (
                 <TeamApi match={p.match} history={p.history} location={p.location} />
@@ -537,7 +538,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               )}
             />
             <RouteWithTitle
-              title={`${tenant.name} - 404 Error`}
+              title={`${tenant.name} - ${t('404 Error', currentLanguage)}`}
               path="*"
               render={() => (
                 <Error error={{ status: 404 }} />
@@ -579,7 +580,7 @@ const mapDispatchToProps = {
   updateTeam: (team) => updateTeamPromise(team),
 };
 
-export const DaikokuApp = connect(null)(DaikokuAppComponent);
+export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
 
 //custom component route to get team object if it's not present in  redux store...
 

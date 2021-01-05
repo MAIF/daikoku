@@ -99,7 +99,7 @@ class TeamPlanConsumptionComponent extends Component {
 
   render() {
     return (
-      <TeamBackOffice tab="Apis" title={`${this.props.currentTeam.name} - Plan consumption`}>
+      <TeamBackOffice tab="Apis" title={`${this.props.currentTeam.name} - ${t('Plan consumption', this.props.currentLanguage)}`}>
         <div>
           <div className="row">
             <div className="col">

@@ -42,7 +42,7 @@ const TeamConsumptionComponent = ({ currentTeam, currentLanguage }) => {
   ];
 
   return (
-    <TeamBackOffice tab="ApiKeys" title={`${currentTeam.name} - Consumption`}>
+    <TeamBackOffice tab="ApiKeys" title={`${currentTeam.name} - ${t('Consumption', currentLanguage)}`}>
       <div className="row">
         <div className="col">
           <h1>Consumption</h1>

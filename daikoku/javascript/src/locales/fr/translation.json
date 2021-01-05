@@ -11,7 +11,7 @@
     "s": "Tenant",
     "p": "Tenants"
   },
-  "Apis": "Apis",
+  "Apis": "APIs",
   "Organizations settings": "Paramètres de l'organisation",
   "Daikoku settings": "Paramètre Daikoku",
   "Search": "Rechercher",
@@ -62,7 +62,7 @@
     "s": "souscription",
     "p": "souscriptions"
   },
-  "members": {
+  "member": {
     "s": "membre",
     "p": "membres"
   },
@@ -181,6 +181,10 @@
   "asset": {
     "s": "asset",
     "p": "assets"
+  },
+  "Asset": {
+    "s": "Asset",
+    "p": "Assets"
   },
   "Asset filename": "Nom de fichier de l'asset",
   "Asset title": "Titre de l'asset",
@@ -356,7 +360,10 @@
   "View this Api": "Voir cette api",
   "New api": "Nouvelle api",
   "Informations": "Informations",
-  "Otoroshi": "Otoroshi",
+  "Otoroshi": {
+    "s": "Otoroshi",
+    "p": "Otoroshis"
+  },
   "Sawgger": "Swagger",
   "Testing": "Test",
   "Small desc.": "Desc. courte",
@@ -640,7 +647,10 @@
   "Create apis": "Créer les APIs",
   "Create subscriptions": "Créer les souscriptions",
   "Jump to specific apikey": "Aller à une clé d'API spécifique",
-  "API": "API",
+  "API": {
+    "s": "API",
+    "p": "APIs"
+  },
   "Select an API": "Selectionner une API",
   "Select a plan": "Selectionner un plan",
   "create.plan.label": "Créer le plan %s",
@@ -740,5 +750,18 @@
   "Custom quotas": "Quotas personnalisés",
   "Other custom props": "Autres propriétés personnalisées",
   "Default plan": "Plan par défault",
-  "api.consumption.title": "Consommation - %s"
+  "api.consumption.title": "Consommation - %s",
+  "Signup": "Inscription",
+  "Home": "Accueil",
+  "Tenant edit": "Edition du tenant",
+  "Style": "Style",
+  "Init": "Init",
+  "404 Error": "Erreur 404",
+  "API key consumption": "Consommation clé d'API",
+  "Consumption": "Consommation",
+  "API consumption": "Consommation d'API",
+  "Subscriptions": "Souscriptions",
+  "Plan consumption": "Consommation du plan",
+  "Income": "Revenu",
+  "Edition": "Edition"
 }

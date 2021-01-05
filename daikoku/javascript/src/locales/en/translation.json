@@ -11,7 +11,7 @@
         "s": "Tenant",
         "p": "Tenants"
     },
-    "Apis": "Apis",
+    "Apis": "APIs",
     "Organizations settings": "Organizations settings",
     "Daikoku settings": "Daikoku settings",
     "Search": "Search",
@@ -62,7 +62,7 @@
         "s": "api subcription",
         "p": "apis subcriptions"
     },
-    "members": {
+    "member": {
         "s": "member",
         "p": "members"
     },
@@ -181,6 +181,10 @@
     "asset": {
         "s": "asset",
         "p": "assets"
+    },
+    "Asset": {
+        "s": "Asset",
+        "p": "Assets"
     },
     "Asset filename": "Asset filename",
     "Asset title": "Asset title",
@@ -356,7 +360,10 @@
     "View this Api": "View this Api",
     "New api": "New api",
     "Informations": "Informations",
-    "Otoroshi": "Otoroshi",
+    "Otoroshi": {
+        "s": "Otoroshi",
+        "p": "Otoroshis"
+    },
     "Sawgger": "Swagger",
     "Testing": "Testing",
     "Small desc.": "Small desc.",
@@ -640,7 +647,10 @@
     "Create apis": "Create apis",
     "Create subscriptions": "Create subscriptions",
     "Jump to specific apikey": "Jump to specific apikey",
-    "API": "API",
+    "API": {
+        "s": "API",
+        "p": "APIs"
+    },
     "Select an API": "Select an API",
     "Select a plan": "Select a plan",
     "create.plan.label": "Create plan %s",
@@ -740,5 +750,18 @@
     "Custom quotas": "Custom quotas",
     "Other custom props": "Other custom props",
     "Default plan": "Default plan",
-    "api.consumption.title": "Api Consumption - %s"
+    "api.consumption.title": "Api Consumption - %s",
+    "Signup": "Signup",
+    "Home": "Home",
+    "Tenant edit": "Tenant edit",
+    "Style": "Style",
+    "Init": "Init",
+    "404 Error": "404 Error",
+    "API key consumption": "API key consumption",
+    "Consumption": "Consumption",
+    "API consumption": "API consumption",
+    "Subscriptions": "Subscriptions",
+    "Plan consumption": "Plan consumption",
+    "Income": "Income",
+    "Edition": "Edition"
 }

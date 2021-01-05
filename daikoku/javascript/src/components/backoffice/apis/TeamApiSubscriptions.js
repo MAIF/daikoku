@@ -182,7 +182,7 @@ const TeamApiSubscriptionsComponent = (props) => {
   };
 
   return (
-    <TeamBackOffice tab="Apis" apiId={props.match.params.apiId} isLoading={loading} title={`${props.currentTeam.name} - Subscriptions`}>
+    <TeamBackOffice tab="Apis" apiId={props.match.params.apiId} isLoading={loading} title={`${props.currentTeam.name} - ${t('Subscriptions', this.props.currentLanguage)}`}>
       <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
         {!loading && (
           <div className="row">

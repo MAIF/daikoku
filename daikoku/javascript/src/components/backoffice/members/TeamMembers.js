@@ -429,7 +429,7 @@ export class TeamMembersSimpleComponent extends Component {
 
 const TeamMembersComponent = (props) => {
   return (
-    <TeamBackOffice tab="Members" apiId={props.match.params.apiId} title={`${props.currentTeam.name} - members`}>
+    <TeamBackOffice tab="Members" apiId={props.match.params.apiId} title={`${props.currentTeam.name} - ${t('Member', this.props.currentLanguage, true)}`}>
       <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
         <TeamMembersSimpleComponent {...props} />
       </Can>
