@@ -33,7 +33,7 @@ trait Repo[Of, Id <: ValueType] {
   def count()(implicit ec: ExecutionContext): Future[Long]
   def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long]
   def findAll()(implicit ec: ExecutionContext): Future[Seq[Of]]
-  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]]
+//  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]]
   def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed]
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed]
   def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
@@ -67,8 +67,8 @@ trait Repo[Of, Id <: ValueType] {
   def exists(id: String)(implicit ec: ExecutionContext): Future[Boolean]
   def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean]
   def exists(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean]
-  def findMinByQuery(query: JsObject = Json.obj(), field: String)(
-      implicit ec: ExecutionContext): Future[Option[Long]]
+//  def findMinByQuery(query: JsObject = Json.obj(), field: String)(
+//      implicit ec: ExecutionContext): Future[Option[Long]]
   def findMaxByQuery(query: JsObject = Json.obj(), field: String)(
       implicit ec: ExecutionContext): Future[Option[Long]]
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

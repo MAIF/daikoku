@@ -10,7 +10,8 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import org.jooq.{Field, JSONB, QueryPart}
+import org.jooq.XMLFormat.RecordFormat
+import org.jooq.{Field, JSONB, JSONFormat, QueryPart, Record}
 import org.jooq.impl.DSL
 import play.api.Logger
 import play.api.libs.json._
@@ -19,9 +20,10 @@ import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
-import storage.Helper.convertQuery
+import storage.Helper.{convertQuery, getContentFromJson, getContentsListFromJson, recordToJson}
 
 import java.lang
+import java.sql.ResultSet
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -316,8 +318,6 @@ class MongoDataStore (env: Env, db: PostgresConnection, reactiveMongoApi: Reacti
   override def stop(): Future[Unit] = Future.successful(())
 
   override def isEmpty(): Future[Boolean] = {
-
-    logger.error("IS EMPTY")
     for {
       tenants <- tenantRepo.count()
     } yield {
@@ -851,44 +851,28 @@ abstract class MongoRepo[Of, Id <: ValueType](
     logger.error(s"COUNT $query")
 
     db.query { dsl =>
-      println(s"Coming from Postgres : ${
-        dsl
-          .fetchOne("SELECT COUNT(*) FROM {0}", DSL.table(tableName))
-      }")
-    }
-
-    collection.flatMap { col =>
-      col.count(Some(query), None, 0, None, ReadConcern.Majority)
-    }
-  }
-
-  override def count()(implicit ec: ExecutionContext): Future[Long] = {
-    logger.error(s"COUNT without query : $collectionName")
-
-    db.query { dsl =>
-      println(s"Coming from Postgres : ${dsl.fetchCount(DSL.table(tableName))}")
-    }
-
-    collection.flatMap { col =>
-      logger.debug(s"$collectionName.count({})")
-      val tmp = col.count(None, None, 0, None, ReadConcern.Majority)
-
-      tmp.map {
-        println(_)
-      }
-
-      tmp
+      if(query.values.isEmpty)
+        dsl.fetchCount(DSL.table(tableName))
+      else
+        dsl.fetchOne(
+          "SELECT COUNT(*) FROM {0} WHERE {1}",
+          DSL.table(tableName),
+          DSL.table(convertQuery(query))
+        )
+          .size()
     }
   }
 
-  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
-    collection.flatMap { col =>
-      logger.debug(s"$collectionName.findAllRaw({})")
-      col
-        .find(Json.obj(), None)
-        .cursor[JsObject](ReadPreference.primaryPreferred)
-        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-    }
+  override def count()(implicit ec: ExecutionContext): Future[Long] = count(JsObject.empty)
+
+//  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
+//    collection.flatMap { col =>
+//      logger.debug(s"$collectionName.findAllRaw({})")
+//      col
+//        .find(Json.obj(), None)
+//        .cursor[JsObject](ReadPreference.primaryPreferred)
+//        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+//    }
 
   def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
     Source
@@ -926,16 +910,22 @@ abstract class MongoRepo[Of, Id <: ValueType](
       .flatMapConcat(seq => Source(seq.toList))
 
   override def findOne(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Option[Of]] = collection.flatMap {
-    col =>
-      logger.debug(s"$collectionName.findOne(${Json.prettyPrint(query)})")
-      col
-        .find(query, None)
-        .one[JsObject](ReadPreference.primaryPreferred)
-        .map(_.map(format.reads).collect {
-          case JsSuccess(e, _) => e
-        })
-  }
+      implicit ec: ExecutionContext): Future[Option[Of]] =
+          db.query { dsl =>
+            try {
+              val result = recordToJson(
+                dsl.fetch(
+                  "SELECT * FROM {0} WHERE {1} LIMIT 1",
+                DSL.table(tableName),
+                DSL.table(convertQuery(query)))
+              )
+
+              getContentFromJson(result, format)
+            } catch {
+              case err: Throwable => logger.error(s"$err")
+                None
+            }
+          }
 
   override def delete(query: JsObject)(
       implicit ec: ExecutionContext): Future[WriteResult] = {
@@ -1253,35 +1243,35 @@ abstract class MongoRepo[Of, Id <: ValueType](
   override def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id.value))
 
-  override def findMinByQuery(query: JsObject, field: String)(
-      implicit ec: ExecutionContext): Future[Option[Long]] =
-    collection.flatMap { col =>
-      import col.BatchCommands.AggregationFramework
-      import AggregationFramework.{Group, Match, MinField}
-
-      col
-        .aggregatorContext[JsObject](
-          firstOperator = Match(query),
-          otherOperators =
-            List(Group(JsString("$clientId"))("min" -> MinField(field))),
-          explain = false,
-          allowDiskUse = false,
-          bypassDocumentValidation = false,
-          readConcern = ReadConcern.Majority,
-          readPreference = ReadPreference.primaryPreferred,
-          writeConcern = WriteConcern.Default,
-          batchSize = None,
-          cursorOptions = CursorOptions.empty,
-          maxTime = None,
-          hint = None,
-          comment = None,
-          collation = None
-        )
-        .prepared
-        .cursor
-        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
-    }
+//  override def findMinByQuery(query: JsObject, field: String)(
+//      implicit ec: ExecutionContext): Future[Option[Long]] =
+//    collection.flatMap { col =>
+//      import col.BatchCommands.AggregationFramework
+//      import AggregationFramework.{Group, Match, MinField}
+//
+//      col
+//        .aggregatorContext[JsObject](
+//          firstOperator = Match(query),
+//          otherOperators =
+//            List(Group(JsString("$clientId"))("min" -> MinField(field))),
+//          explain = false,
+//          allowDiskUse = false,
+//          bypassDocumentValidation = false,
+//          readConcern = ReadConcern.Majority,
+//          readPreference = ReadPreference.primaryPreferred,
+//          writeConcern = WriteConcern.Default,
+//          batchSize = None,
+//          cursorOptions = CursorOptions.empty,
+//          maxTime = None,
+//          hint = None,
+//          comment = None,
+//          collation = None
+//        )
+//        .prepared
+//        .cursor
+//        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+//        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
+//    }
 
   override def findMaxByQuery(query: JsObject, field: String)(
       implicit ec: ExecutionContext): Future[Option[Long]] =
@@ -1453,29 +1443,48 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       sort: Option[JsObject] = None,
       maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
 
+    logger.error(s"def find() : $query")
+
     collection.flatMap { col =>
       logger.debug(s"$collectionName.find(${Json.prettyPrint(
         query ++ Json.obj("_tenant" -> tenant.value))})")
 
       sort match {
         case None =>
-          col
-            .find(query ++ Json.obj("_tenant" -> tenant.value), None)
-            .cursor[JsObject](ReadPreference.primaryPreferred)
-            .collect[Seq](maxDocs = maxDocs,
-                          Cursor.FailOnError[Seq[JsObject]]())
-            .map(
-              _.map(format.reads)
-                .map {
-                  case j @ JsSuccess(_, _) => j
-                  case j @ JsError(_) =>
-                    println(s"error: $j")
-                    j
-                }
-                .collect {
-                  case JsSuccess(e, _) => e
-                }
-            )
+          db.query { dsl =>
+            try {
+              val result = recordToJson(
+                if (query.values.isEmpty) dsl.fetch("SELECT * FROM {0}", DSL.table(tableName))
+                else
+                dsl.fetch(
+                  "SELECT * FROM {0} WHERE {1}",
+                  DSL.table(tableName),
+                  DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))))
+              )
+
+              getContentsListFromJson(result, format)
+            } catch {
+              case err: Throwable => logger.error(s"$err")
+                Seq()
+            }
+          }
+//          col
+//            .find(query ++ Json.obj("_tenant" -> tenant.value), None)
+//            .cursor[JsObject](ReadPreference.primaryPreferred)
+//            .collect[Seq](maxDocs = maxDocs,
+//                          Cursor.FailOnError[Seq[JsObject]]())
+//            .map(
+//              _.map(format.reads)
+//                .map {
+//                  case j @ JsSuccess(_, _) => j
+//                  case j @ JsError(_) =>
+//                    println(s"error: $j")
+//                    j
+//                }
+//                .collect {
+//                  case JsSuccess(e, _) => e
+//                }
+//            )
         case Some(s) =>
           col
             .find(query ++ Json.obj("_tenant" -> tenant.value), None)
@@ -1499,15 +1508,15 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     }
   }
 
-  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
-    collection.flatMap { col =>
-      logger.debug(s"$collectionName.findAllRaw(${Json.prettyPrint(
-        Json.obj("_tenant" -> tenant.value))})")
-      col
-        .find(Json.obj("_tenant" -> tenant.value), None)
-        .cursor[JsObject](ReadPreference.primaryPreferred)
-        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-    }
+//  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
+//    collection.flatMap { col =>
+//      logger.debug(s"$collectionName.findAllRaw(${Json.prettyPrint(
+//        Json.obj("_tenant" -> tenant.value))})")
+//      col
+//        .find(Json.obj("_tenant" -> tenant.value), None)
+//        .cursor[JsObject](ReadPreference.primaryPreferred)
+//        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+//    }
 
   def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
     Source
@@ -1547,22 +1556,22 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       .flatMapConcat(seq => Source(seq.toList))
 
   override def findOne(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Option[Of]] = collection.flatMap {
+      implicit ec: ExecutionContext): Future[Option[Of]] =
+    db.query { dsl =>
+      try {
+        val result = recordToJson(
+          dsl.fetch(
+            "SELECT * FROM {0} WHERE {1} LIMIT 1",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))))
+        )
 
-    col =>
-      logger.debug(s"$collectionName.findOne(${Json.prettyPrint(
-        query ++ Json.obj("_tenant" -> tenant.value))})")
-      col
-        .find(query ++ Json.obj("_tenant" -> tenant.value), None)
-        .one[JsObject](ReadPreference.primaryPreferred)
-        .map(_.map(format.reads).collect {
-          case JsSuccess(e, _) => e
-        })
-        .recover(e => {
-          logger.error("findOneError", e)
+        getContentFromJson(result, format)
+      } catch {
+        case err: Throwable => logger.error(s"$err")
           None
-        })
-  }
+      }
+    }
 
   override def delete(query: JsObject)(
       implicit ec: ExecutionContext): Future[WriteResult] = {
@@ -1643,7 +1652,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     val payloads = values.map(v =>
       format.writes(v).as[JsObject] ++ Json.obj("_tenant" -> tenant.value))
 
-    logger.error(s"insertMany : $values")
+//    logger.error(s"insertMany : $values")
 
     db.query { dsl =>
       dsl.query(
@@ -1730,35 +1739,35 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     tmp
   }
 
-  override def findMinByQuery(query: JsObject, field: String)(
-      implicit ec: ExecutionContext): Future[Option[Long]] =
-    collection.flatMap { col =>
-      import col.BatchCommands.AggregationFramework
-      import AggregationFramework.{Group, Match, MinField}
-
-      col
-        .aggregatorContext[JsObject](
-          firstOperator = Match(query),
-          otherOperators =
-            List(Group(JsString("$clientId"))("min" -> MinField(field))),
-          explain = false,
-          allowDiskUse = false,
-          bypassDocumentValidation = false,
-          readConcern = ReadConcern.Majority,
-          readPreference = ReadPreference.primaryPreferred,
-          writeConcern = WriteConcern.Default,
-          batchSize = None,
-          cursorOptions = CursorOptions.empty,
-          maxTime = None,
-          hint = None,
-          comment = None,
-          collation = None
-        )
-        .prepared
-        .cursor
-        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
-    }
+//  override def findMinByQuery(query: JsObject, field: String)(
+//      implicit ec: ExecutionContext): Future[Option[Long]] =
+//    collection.flatMap { col =>
+//      import col.BatchCommands.AggregationFramework
+//      import AggregationFramework.{Group, Match, MinField}
+//
+//      col
+//        .aggregatorContext[JsObject](
+//          firstOperator = Match(query),
+//          otherOperators =
+//            List(Group(JsString("$clientId"))("min" -> MinField(field))),
+//          explain = false,
+//          allowDiskUse = false,
+//          bypassDocumentValidation = false,
+//          readConcern = ReadConcern.Majority,
+//          readPreference = ReadPreference.primaryPreferred,
+//          writeConcern = WriteConcern.Default,
+//          batchSize = None,
+//          cursorOptions = CursorOptions.empty,
+//          maxTime = None,
+//          hint = None,
+//          comment = None,
+//          collation = None
+//        )
+//        .prepared
+//        .cursor
+//        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+//        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
+//    }
 
   override def findMaxByQuery(query: JsObject, field: String)(
       implicit ec: ExecutionContext): Future[Option[Long]] =
