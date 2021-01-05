@@ -119,7 +119,7 @@ class UsersController(DaikokuAction: DaikokuAction,
                       .findOneNotDeleted(
                         Json.obj(
                           "type" -> TeamType.Personal.name,
-                          "users.userId" -> ctx.user.id.asJson
+                          "users.userId" -> userToSave.id.asJson
                         ))
                     _ <- env.dataStore.userRepo.save(userToSave)
                     _ <- env.dataStore.teamRepo
