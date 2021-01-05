@@ -8,8 +8,8 @@
   "scripts": {
     "prettier": "prettier --write --single-quote --trailing-comma es5 --print-width 100 --tab-width 2 --jsx-bracket-same-line \"src/**/*.js\"",
     "test:eslint": "eslint src/ --ext .js --ext .jsx",
-    "start": "webpack serve --port 3000 --host 0.0.0.0 --color --mode development",
-    "watch": "webpack --watch --mode development --live-reload=true -d --color",
+    "start": "webpack serve --port 3000 --host 0.0.0.0 --liveReload --color --mode development",
+    "watch": "webpack --watch --mode development --liveReload -d --color",
     "build": "rm -rf ../public/react-app && mkdir ../public/react-app && webpack --mode production --progress"
   },
   "dependencies": {
