@@ -19,6 +19,7 @@ import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
+import storage.Helper.convertQuery
 
 import java.lang
 import javax.inject.Inject
@@ -316,6 +317,7 @@ class MongoDataStore (env: Env, db: PostgresConnection, reactiveMongoApi: Reacti
 
   override def isEmpty(): Future[Boolean] = {
 
+    logger.error("IS EMPTY")
     for {
       tenants <- tenantRepo.count()
     } yield {
@@ -847,10 +849,39 @@ abstract class MongoRepo[Of, Id <: ValueType](
     }
 
   override def count(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] =
+      implicit ec: ExecutionContext): Future[Long] = {
+    logger.error(s"COUNT $query")
+
+    db.query { dsl =>
+      println(s"Coming from Postgres : ${
+        dsl
+          .fetchOne("SELECT COUNT(*) FROM {0}", DSL.table(tableName))
+      }")
+    }
+
     collection.flatMap { col =>
       col.count(Some(query), None, 0, None, ReadConcern.Majority)
     }
+  }
+
+  override def count()(implicit ec: ExecutionContext): Future[Long] = {
+    logger.error(s"COUNT without query : $collectionName")
+
+    db.query { dsl =>
+      println(s"Coming from Postgres : ${dsl.fetchCount(DSL.table(tableName))}")
+    }
+
+    collection.flatMap { col =>
+      logger.debug(s"$collectionName.count({})")
+      val tmp = col.count(None, None, 0, None, ReadConcern.Majority)
+
+      tmp.map {
+        println(_)
+      }
+
+      tmp
+    }
+  }
 
   def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
     collection.flatMap { col =>
@@ -1073,20 +1104,29 @@ abstract class MongoRepo[Of, Id <: ValueType](
   }
 
   override def exists(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = collection.flatMap {
-    col =>
-      logger.debug(s"$collectionName.exists(${Json.prettyPrint(query)})")
-      col
-        .find(query, None)
-        .one[JsObject](ReadPreference.primaryPreferred)
-        .map(_.isDefined)
-  }
+      implicit ec: ExecutionContext): Future[Boolean] = {
 
-  override def count()(implicit ec: ExecutionContext): Future[Long] =
-    collection.flatMap { col =>
-      logger.debug(s"$collectionName.count({})")
-      col.count(None, None, 0, None, ReadConcern.Majority)
+    db.query { dsl =>
+      println(s"Coming from Postgresql : ${dsl.fetchExists(dsl.selectFrom(
+        DSL
+          .table(tableName)
+          .where(DSL.condition("exists (SELECT 1 FROM {0} WHERE {1})",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query))
+            )))
+      )}"
+      )
     }
+
+    collection.flatMap {
+      col =>
+        logger.debug(s"$collectionName.exists(${Json.prettyPrint(query)})")
+        col
+          .find(query, None)
+          .one[JsObject](ReadPreference.primaryPreferred)
+          .map(_.isDefined)
+    }
+  }
 
   override def findWithProjection(query: JsObject, projection: JsObject)(
       implicit ec: ExecutionContext
@@ -1229,27 +1269,6 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     extends Repo[Of, Id] {
 
   val logger: Logger = Logger(s"MongoTenantAwareRepo")
-
-  def _convertTuple(field: (String, JsValue)): String = {
-    field._2 match {
-      case value: JsObject =>
-        value.fields.headOption match {
-          case Some((key: String, content: JsValue)) if key == "$in" => s"${field._1} IN ${_convertTuple(value.fields.head)}"
-          case _ => "NOT IMPLEMENTED"
-        }
-      case value: JsArray if field._1 == "$or" => value.as[List[JsObject]].map(convertQuery).mkString(" OR ")
-      case value: JsArray if field._1 == "$in" => "(" + value.as[List[String]].map("'" + _ + "'").mkString(",") + ")"
-      case value: Any => s"content ->> '${field._1}' = '${value.toString().replace("\"", "")}'"
-    }
-  }
-
-  // TODO - extract this method in helper class
-  // convert jsObject query to jsonb syntax
-  def convertQuery(query: JsObject): String = {
-    query.fields
-      .map(_convertTuple)
-      .mkString(" AND ")
-  }
 
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
@@ -1639,12 +1658,6 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         )))
       ))}"
       )
-//          dsl.query(
-//            "SELECT 1 FROM {0} WHERE {1}",
-//            DSL.table(tableName),
-//            DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
-//          )
-//        )
     }
 
     val tmp = collection.flatMap {
@@ -1660,7 +1673,7 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     tmp
       .map { value =>
         println(s"Coming from mongo : $value")
-          
+
       }
 
     tmp
@@ -1727,20 +1740,15 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     }
 
   override def count(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] =
+      implicit ec: ExecutionContext): Future[Long] = {
+
+    logger.error(s"Count with tenant : $query")
     collection.flatMap { col =>
       col.count(Some(query), None, 0, None, ReadConcern.Majority)
     }
+  }
 
-  override def count()(implicit ec: ExecutionContext): Future[Long] =
-    collection.flatMap { col =>
-      logger.debug(s"$collectionName.count({})")
-      col.count(Some(Json.obj("_tenant" -> tenant.value)),
-                None,
-                0,
-                None,
-                ReadConcern.Majority)
-    }
+  override def count()(implicit ec: ExecutionContext): Future[Long] = count(Json.obj("_tenant" -> tenant.value))
 
   override def findWithProjection(query: JsObject, projection: JsObject)(
       implicit ec: ExecutionContext
