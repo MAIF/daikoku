@@ -1,7 +1,6 @@
 package storage
 
 import akka.NotUsed
-import akka.http.scaladsl
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
@@ -9,9 +8,6 @@ import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import org.jooq.XMLFormat.RecordFormat
-import org.jooq.{Field, JSONB, JSONFormat, QueryPart, Record}
 import org.jooq.impl.DSL
 import play.api.Logger
 import play.api.libs.json._
@@ -19,16 +15,11 @@ import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
-import reactivemongo.play.json.collection.JSONCollection
 import storage.Helper.{convertQuery, getContentFromJson, getContentsListFromJson, recordToJson}
-
-import java.lang
-import java.sql.ResultSet
-import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MongoTenantCapableRepo[A, Id <: ValueType]
-    extends TenantCapableRepo[A, Id] {
+  extends TenantCapableRepo[A, Id] {
 
   def repo(): MongoRepo[A, Id]
 
@@ -45,21 +36,21 @@ trait MongoTenantCapableRepo[A, Id <: ValueType]
 }
 
 case class MongoTenantCapableTeamRepo(
-    _repo: () => MongoRepo[Team, TeamId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[Team, TeamId])
-    extends MongoTenantCapableRepo[Team, TeamId]
+                                       _repo: () => MongoRepo[Team, TeamId],
+                                       _tenantRepo: TenantId => MongoTenantAwareRepo[Team, TeamId])
+  extends MongoTenantCapableRepo[Team, TeamId]
     with TeamRepo {
   override def tenantRepo(
-      tenant: TenantId): MongoTenantAwareRepo[Team, TeamId] =
+                           tenant: TenantId): MongoTenantAwareRepo[Team, TeamId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[Team, TeamId] = _repo()
 }
 
 case class MongoTenantCapableApiRepo(
-    _repo: () => MongoRepo[Api, ApiId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[Api, ApiId])
-    extends MongoTenantCapableRepo[Api, ApiId]
+                                      _repo: () => MongoRepo[Api, ApiId],
+                                      _tenantRepo: TenantId => MongoTenantAwareRepo[Api, ApiId])
+  extends MongoTenantCapableRepo[Api, ApiId]
     with ApiRepo {
   override def tenantRepo(tenant: TenantId): MongoTenantAwareRepo[Api, ApiId] =
     _tenantRepo(tenant)
@@ -68,26 +59,26 @@ case class MongoTenantCapableApiRepo(
 }
 
 case class MongoTenantCapableApiSubscriptionRepo(
-    _repo: () => MongoRepo[ApiSubscription, ApiSubscriptionId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[ApiSubscription,
-                                                  ApiSubscriptionId]
-) extends MongoTenantCapableRepo[ApiSubscription, ApiSubscriptionId]
-    with ApiSubscriptionRepo {
+                                                  _repo: () => MongoRepo[ApiSubscription, ApiSubscriptionId],
+                                                  _tenantRepo: TenantId => MongoTenantAwareRepo[ApiSubscription,
+                                                    ApiSubscriptionId]
+                                                ) extends MongoTenantCapableRepo[ApiSubscription, ApiSubscriptionId]
+  with ApiSubscriptionRepo {
   override def tenantRepo(tenant: TenantId)
-    : MongoTenantAwareRepo[ApiSubscription, ApiSubscriptionId] =
+  : MongoTenantAwareRepo[ApiSubscription, ApiSubscriptionId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[ApiSubscription, ApiSubscriptionId] = _repo()
 }
 
 case class MongoTenantCapableApiDocumentationPageRepo(
-    _repo: () => MongoRepo[ApiDocumentationPage, ApiDocumentationPageId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[ApiDocumentationPage,
-                                                  ApiDocumentationPageId]
-) extends MongoTenantCapableRepo[ApiDocumentationPage, ApiDocumentationPageId]
-    with ApiDocumentationPageRepo {
+                                                       _repo: () => MongoRepo[ApiDocumentationPage, ApiDocumentationPageId],
+                                                       _tenantRepo: TenantId => MongoTenantAwareRepo[ApiDocumentationPage,
+                                                         ApiDocumentationPageId]
+                                                     ) extends MongoTenantCapableRepo[ApiDocumentationPage, ApiDocumentationPageId]
+  with ApiDocumentationPageRepo {
   override def tenantRepo(tenant: TenantId)
-    : MongoTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId] =
+  : MongoTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[ApiDocumentationPage, ApiDocumentationPageId] =
@@ -95,58 +86,58 @@ case class MongoTenantCapableApiDocumentationPageRepo(
 }
 
 case class MongoTenantCapableNotificationRepo(
-    _repo: () => MongoRepo[Notification, NotificationId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[Notification, NotificationId]
-) extends MongoTenantCapableRepo[Notification, NotificationId]
-    with NotificationRepo {
+                                               _repo: () => MongoRepo[Notification, NotificationId],
+                                               _tenantRepo: TenantId => MongoTenantAwareRepo[Notification, NotificationId]
+                                             ) extends MongoTenantCapableRepo[Notification, NotificationId]
+  with NotificationRepo {
   override def tenantRepo(
-      tenant: TenantId): MongoTenantAwareRepo[Notification, NotificationId] =
+                           tenant: TenantId): MongoTenantAwareRepo[Notification, NotificationId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[Notification, NotificationId] = _repo()
 }
 
 case class MongoTenantCapableAuditTrailRepo(
-    _repo: () => MongoRepo[JsObject, MongoId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[JsObject, MongoId])
-    extends MongoTenantCapableRepo[JsObject, MongoId]
+                                             _repo: () => MongoRepo[JsObject, MongoId],
+                                             _tenantRepo: TenantId => MongoTenantAwareRepo[JsObject, MongoId])
+  extends MongoTenantCapableRepo[JsObject, MongoId]
     with AuditTrailRepo {
   override def tenantRepo(
-      tenant: TenantId): MongoTenantAwareRepo[JsObject, MongoId] =
+                           tenant: TenantId): MongoTenantAwareRepo[JsObject, MongoId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[JsObject, MongoId] = _repo()
 }
 
 case class MongoTenantCapableTranslationRepo(
-    _repo: () => MongoRepo[Translation, MongoId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[Translation, MongoId]
-) extends MongoTenantCapableRepo[Translation, MongoId]
-    with TranslationRepo {
+                                              _repo: () => MongoRepo[Translation, MongoId],
+                                              _tenantRepo: TenantId => MongoTenantAwareRepo[Translation, MongoId]
+                                            ) extends MongoTenantCapableRepo[Translation, MongoId]
+  with TranslationRepo {
   override def tenantRepo(
-      tenant: TenantId): MongoTenantAwareRepo[Translation, MongoId] =
+                           tenant: TenantId): MongoTenantAwareRepo[Translation, MongoId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[Translation, MongoId] = _repo()
 }
 
 case class MongoTenantCapableMessageRepo(
-    _repo: () => MongoRepo[Message, MongoId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[Message, MongoId]
-) extends MongoTenantCapableRepo[Message, MongoId]
-    with MessageRepo {
+                                          _repo: () => MongoRepo[Message, MongoId],
+                                          _tenantRepo: TenantId => MongoTenantAwareRepo[Message, MongoId]
+                                        ) extends MongoTenantCapableRepo[Message, MongoId]
+  with MessageRepo {
   override def tenantRepo(
-      tenant: TenantId): MongoTenantAwareRepo[Message, MongoId] =
+                           tenant: TenantId): MongoTenantAwareRepo[Message, MongoId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[Message, MongoId] = _repo()
 }
 
 case class MongoTenantCapableConsumptionRepo(
-    _repo: () => MongoRepo[ApiKeyConsumption, MongoId],
-    _tenantRepo: TenantId => MongoTenantAwareRepo[ApiKeyConsumption, MongoId]
-) extends MongoTenantCapableRepo[ApiKeyConsumption, MongoId]
-    with ConsumptionRepo {
+                                              _repo: () => MongoRepo[ApiKeyConsumption, MongoId],
+                                              _tenantRepo: TenantId => MongoTenantAwareRepo[ApiKeyConsumption, MongoId]
+                                            ) extends MongoTenantCapableRepo[ApiKeyConsumption, MongoId]
+  with ConsumptionRepo {
 
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
@@ -158,13 +149,13 @@ case class MongoTenantCapableConsumptionRepo(
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
   override def tenantRepo(
-      tenant: TenantId): MongoTenantAwareRepo[ApiKeyConsumption, MongoId] =
+                           tenant: TenantId): MongoTenantAwareRepo[ApiKeyConsumption, MongoId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[ApiKeyConsumption, MongoId] = _repo()
 
   private def lastConsumptions(tenantId: Option[TenantId], filter: JsObject)(
-      implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]] = {
+    implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]] = {
     val rep = tenantId match {
       case Some(t) =>
         forTenant(t)
@@ -173,62 +164,64 @@ case class MongoTenantCapableConsumptionRepo(
         forAllTenant().asInstanceOf[MongoRepo[ApiKeyConsumption, MongoId]]
     }
 
-    rep.collection.flatMap { col =>
-      import col.BatchCommands.AggregationFramework
-      import AggregationFramework.{Group, Match, MaxField}
+    Future.successful(Seq())
 
-      col
-        .aggregatorContext[JsObject](
-          firstOperator = Match(filter),
-          otherOperators =
-            List(Group(JsString("$clientId"))("maxFrom" -> MaxField("from"))),
-          explain = false,
-          allowDiskUse = false,
-          bypassDocumentValidation = false,
-          readConcern = ReadConcern.Majority,
-          readPreference = ReadPreference.primaryPreferred,
-          writeConcern = WriteConcern.Default,
-          batchSize = None,
-          cursorOptions = CursorOptions.empty,
-          maxTime = None,
-          hint = None,
-          comment = None,
-          collation = None
-        )
-        .prepared
-        .cursor
-        .collect[List](-1, Cursor.FailOnError[List[JsObject]]())
-        .flatMap { agg =>
-          val futures: List[Future[Option[ApiKeyConsumption]]] = agg.map(
-            json =>
-              col
-                .find(Json.obj("clientId" -> (json \ "_id").as[String],
-                               "from" -> (json \ "maxFrom" \ "$long").as[Long]),
-                      None)
-                .one[JsObject](ReadPreference.primaryPreferred)
-                .map { results =>
-                  results.map(rep.format.reads).collect {
-                    case JsSuccess(e, _) => e
-                  }
-              }
-          )
-          Future.sequence(futures).map(_.flatten)
-        }
-    }
+    //    rep.collection.flatMap { col =>
+    //      import col.BatchCommands.AggregationFramework
+    //      import AggregationFramework.{Group, Match, MaxField}
+    //
+    //      col
+    //        .aggregatorContext[JsObject](
+    //          firstOperator = Match(filter),
+    //          otherOperators =
+    //            List(Group(JsString("$clientId"))("maxFrom" -> MaxField("from"))),
+    //          explain = false,
+    //          allowDiskUse = false,
+    //          bypassDocumentValidation = false,
+    //          readConcern = ReadConcern.Majority,
+    //          readPreference = ReadPreference.primaryPreferred,
+    //          writeConcern = WriteConcern.Default,
+    //          batchSize = None,
+    //          cursorOptions = CursorOptions.empty,
+    //          maxTime = None,
+    //          hint = None,
+    //          comment = None,
+    //          collation = None
+    //        )
+    //        .prepared
+    //        .cursor
+    //        .collect[List](-1, Cursor.FailOnError[List[JsObject]]())
+    //        .flatMap { agg =>
+    //          val futures: List[Future[Option[ApiKeyConsumption]]] = agg.map(
+    //            json =>
+    //              col
+    //                .find(Json.obj("clientId" -> (json \ "_id").as[String],
+    //                               "from" -> (json \ "maxFrom" \ "$long").as[Long]),
+    //                      None)
+    //                .one[JsObject](ReadPreference.primaryPreferred)
+    //                .map { results =>
+    //                  results.map(rep.format.reads).collect {
+    //                    case JsSuccess(e, _) => e
+    //                  }
+    //              }
+    //          )
+    //          Future.sequence(futures).map(_.flatten)
+    //        }
+    //    }
   }
 
   override def getLastConsumptionsforAllTenant(filter: JsObject)(
-      implicit ec: ExecutionContext
+    implicit ec: ExecutionContext
   ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(None, filter)
 
   override def getLastConsumptionsForTenant(tenantId: TenantId,
                                             filter: JsObject)(
-      implicit ec: ExecutionContext
-  ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
+                                             implicit ec: ExecutionContext
+                                           ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
-class MongoDataStore (env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends DataStore {
+class MongoDataStore(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
+  extends DataStore {
 
   val logger = Logger("MongoDataStore")
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -312,8 +305,9 @@ class MongoDataStore (env: Env, db: PostgresConnection, reactiveMongoApi: Reacti
 
   override def messageRepo: MessageRepo = _messageRepo
 
-  override def start(): Future[Unit] =
-    translationRepo.forAllTenant().ensureIndices
+  override def start(): Future[Unit] = {
+    Future.successful(())
+  }
 
   override def stop(): Future[Unit] = Future.successful(())
 
@@ -326,9 +320,9 @@ class MongoDataStore (env: Env, db: PostgresConnection, reactiveMongoApi: Reacti
   }
 
   override def exportAsStream(pretty: Boolean)(
-      implicit ec: ExecutionContext,
-      mat: Materializer,
-      env: Env): Source[ByteString, _] = {
+    implicit ec: ExecutionContext,
+    mat: Materializer,
+    env: Env): Source[ByteString, _] = {
     val collections: List[Repo[_, _]] = List(
       tenantRepo,
       userRepo,
@@ -349,21 +343,21 @@ class MongoDataStore (env: Env, db: PostgresConnection, reactiveMongoApi: Reacti
       collection.streamAllRaw().map { doc =>
         if (pretty) {
           ByteString(
-            Json.prettyPrint(Json.obj("type" -> collection.collectionName,
-                                      "payload" -> doc)) + "\n")
+            Json.prettyPrint(Json.obj("type" -> collection.tableName,
+              "payload" -> doc)) + "\n")
         } else {
           ByteString(
-            Json.stringify(Json.obj("type" -> collection.collectionName,
-                                    "payload" -> doc)) + "\n")
+            Json.stringify(Json.obj("type" -> collection.tableName,
+              "payload" -> doc)) + "\n")
         }
       }
     }
   }
 
   override def importFromStream(source: Source[ByteString, _])(
-      implicit ec: ExecutionContext,
-      mat: Materializer,
-      env: Env): Future[Unit] = {
+    implicit ec: ExecutionContext,
+    mat: Materializer,
+    env: Env): Future[Unit] = {
     for {
       _ <- env.dataStore.tenantRepo.deleteAll()
       _ <- env.dataStore.passwordResetRepo.deleteAll()
@@ -443,10 +437,8 @@ class MongoDataStore (env: Env, db: PostgresConnection, reactiveMongoApi: Reacti
 }
 
 class MongoTenantRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Tenant, TenantId](env, db, reactiveMongoApi)
+  extends MongoRepo[Tenant, TenantId](env, db, reactiveMongoApi)
     with TenantRepo {
-  override def collectionName: String = "Tenants"
-
   override def tableName: String = "tenants"
 
   override def format: Format[Tenant] = json.TenantFormat
@@ -455,10 +447,8 @@ class MongoTenantRepo(env: Env, db: PostgresConnection, reactiveMongoApi: Reacti
 }
 
 class MongoPasswordResetRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[PasswordReset, MongoId](env, db, reactiveMongoApi)
+  extends MongoRepo[PasswordReset, MongoId](env, db, reactiveMongoApi)
     with PasswordResetRepo {
-  override def collectionName: String = "PasswordReset"
-
   override def tableName: String = "password_reset"
 
   override def format: Format[PasswordReset] = json.PasswordResetFormat
@@ -467,10 +457,8 @@ class MongoPasswordResetRepo(env: Env, db: PostgresConnection, reactiveMongoApi:
 }
 
 class MongoAccountCreationRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[AccountCreation, MongoId](env, db, reactiveMongoApi)
+  extends MongoRepo[AccountCreation, MongoId](env, db, reactiveMongoApi)
     with AccountCreationRepo {
-  override def collectionName: String = "AccountCreation"
-
   override def tableName: String = "account_creation"
 
   override def format: Format[AccountCreation] = json.AccountCreationFormat
@@ -482,9 +470,7 @@ class MongoTenantTeamRepo(env: Env,
                           db: PostgresConnection,
                           reactiveMongoApi: ReactiveMongoApi,
                           tenant: TenantId)
-    extends MongoTenantAwareRepo[Team, TeamId](env, db, reactiveMongoApi, tenant) {
-  override def collectionName: String = "Teams"
-
+  extends MongoTenantAwareRepo[Team, TeamId](env, db, reactiveMongoApi, tenant) {
   override def tableName: String = "teams"
 
   override def format: Format[Team] = json.TeamFormat
@@ -496,9 +482,7 @@ class MongoTenantApiRepo(env: Env,
                          db: PostgresConnection,
                          reactiveMongoApi: ReactiveMongoApi,
                          tenant: TenantId)
-    extends MongoTenantAwareRepo[Api, ApiId](env, db, reactiveMongoApi, tenant) {
-  override def collectionName: String = "Apis"
-
+  extends MongoTenantAwareRepo[Api, ApiId](env, db, reactiveMongoApi, tenant) {
   override def format: Format[Api] = json.ApiFormat
 
   override def tableName: String = "apis"
@@ -510,12 +494,10 @@ class MongoTenantTranslationRepo(env: Env,
                                  db: PostgresConnection,
                                  reactiveMongoApi: ReactiveMongoApi,
                                  tenant: TenantId)
-    extends MongoTenantAwareRepo[Translation, MongoId](env,
-      db,
-                                                       reactiveMongoApi,
-                                                       tenant) {
-  override def collectionName: String = "Translations"
-
+  extends MongoTenantAwareRepo[Translation, MongoId](env,
+    db,
+    reactiveMongoApi,
+    tenant) {
   override def tableName: String = "translations"
 
   override def format: Format[Translation] = json.TranslationFormat
@@ -527,12 +509,10 @@ class MongoTenantMessageRepo(env: Env,
                              db: PostgresConnection,
                              reactiveMongoApi: ReactiveMongoApi,
                              tenant: TenantId)
-    extends MongoTenantAwareRepo[Message, MongoId](env,
-                                                    db,
-                                                   reactiveMongoApi,
-                                                   tenant) {
-  override def collectionName: String = "Messages"
-
+  extends MongoTenantAwareRepo[Message, MongoId](env,
+    db,
+    reactiveMongoApi,
+    tenant) {
   override def tableName: String = "messages"
 
   override def format: Format[Message] = json.MessageFormat
@@ -544,13 +524,11 @@ class MongoTenantApiSubscriptionRepo(env: Env,
                                      db: PostgresConnection,
                                      reactiveMongoApi: ReactiveMongoApi,
                                      tenant: TenantId)
-    extends MongoTenantAwareRepo[ApiSubscription, ApiSubscriptionId](
-      env,
-      db,
-      reactiveMongoApi,
-      tenant) {
-  override def collectionName: String = "ApiSubscriptions"
-
+  extends MongoTenantAwareRepo[ApiSubscription, ApiSubscriptionId](
+    env,
+    db,
+    reactiveMongoApi,
+    tenant) {
   override def tableName: String = "api_subscriptions"
 
   override def format: Format[ApiSubscription] = json.ApiSubscriptionFormat
@@ -562,13 +540,11 @@ class MongoTenantApiDocumentationPageRepo(env: Env,
                                           db: PostgresConnection,
                                           reactiveMongoApi: ReactiveMongoApi,
                                           tenant: TenantId)
-    extends MongoTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId](
-      env,
-      db,
-      reactiveMongoApi,
-      tenant) {
-  override def collectionName: String = "ApiDocumentationPages"
-
+  extends MongoTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId](
+    env,
+    db,
+    reactiveMongoApi,
+    tenant) {
   override def tableName: String = "api_documentation_pages"
 
   override def format: Format[ApiDocumentationPage] =
@@ -581,12 +557,10 @@ class MongoTenantNotificationRepo(env: Env,
                                   db: PostgresConnection,
                                   reactiveMongoApi: ReactiveMongoApi,
                                   tenant: TenantId)
-    extends MongoTenantAwareRepo[Notification, NotificationId](env,
-      db,
-                                                               reactiveMongoApi,
-                                                               tenant) {
-  override def collectionName: String = "Notifications"
-
+  extends MongoTenantAwareRepo[Notification, NotificationId](env,
+    db,
+    reactiveMongoApi,
+    tenant) {
   override def tableName: String = "notifications"
 
   override def format: Format[Notification] =
@@ -599,12 +573,10 @@ class MongoTenantConsumptionRepo(env: Env,
                                  db: PostgresConnection,
                                  reactiveMongoApi: ReactiveMongoApi,
                                  tenant: TenantId)
-    extends MongoTenantAwareRepo[ApiKeyConsumption, MongoId](env,
-      db,
-                                                             reactiveMongoApi,
-                                                             tenant) {
-  override def collectionName: String = "Consumptions"
-
+  extends MongoTenantAwareRepo[ApiKeyConsumption, MongoId](env,
+    db,
+    reactiveMongoApi,
+    tenant) {
   override def tableName: String = "consumptions"
 
   override def format: Format[ApiKeyConsumption] =
@@ -617,10 +589,10 @@ class MongoTenantAuditTrailRepo(env: Env,
                                 db: PostgresConnection,
                                 reactiveMongoApi: ReactiveMongoApi,
                                 tenant: TenantId)
-    extends MongoTenantAwareRepo[JsObject, MongoId](env,
-      db,
-                                                    reactiveMongoApi,
-                                                    tenant) {
+  extends MongoTenantAwareRepo[JsObject, MongoId](env,
+    db,
+    reactiveMongoApi,
+    tenant) {
   val _fmt = new Format[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
       JsSuccess(json.as[JsObject])
@@ -628,9 +600,7 @@ class MongoTenantAuditTrailRepo(env: Env,
     override def writes(o: JsObject): JsValue = o
   }
 
-  override def collectionName: String = "AuditEvents"
-
-    override def tableName: String = "audit_events"
+  override def tableName: String = "audit_events"
 
   override def format: Format[JsObject] = _fmt
 
@@ -638,10 +608,8 @@ class MongoTenantAuditTrailRepo(env: Env,
 }
 
 class MongoUserRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[User, UserId](env, db, reactiveMongoApi)
+  extends MongoRepo[User, UserId](env, db, reactiveMongoApi)
     with UserRepo {
-  override def collectionName: String = "Users"
-
   override def tableName: String = "users"
 
   override def format: Format[User] = json.UserFormat
@@ -650,9 +618,7 @@ class MongoUserRepo(env: Env, db: PostgresConnection, reactiveMongoApi: Reactive
 }
 
 class MongoTeamRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Team, TeamId](env, db, reactiveMongoApi) {
-  override def collectionName: String = "Teams"
-
+  extends MongoRepo[Team, TeamId](env, db, reactiveMongoApi) {
   override def tableName: String = "teams"
 
   override def format: Format[Team] = json.TeamFormat
@@ -661,9 +627,7 @@ class MongoTeamRepo(env: Env, db: PostgresConnection, reactiveMongoApi: Reactive
 }
 
 class MongoTranslationRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Translation, MongoId](env, db, reactiveMongoApi) {
-  override def collectionName: String = "Translations"
-
+  extends MongoRepo[Translation, MongoId](env, db, reactiveMongoApi) {
   override def tableName: String = "translations"
 
   override def format: Format[Translation] = json.TranslationFormat
@@ -672,9 +636,7 @@ class MongoTranslationRepo(env: Env, db: PostgresConnection, reactiveMongoApi: R
 }
 
 class MongoMessageRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Message, MongoId](env, db, reactiveMongoApi) {
-  override def collectionName: String = "Messages"
-
+  extends MongoRepo[Message, MongoId](env, db, reactiveMongoApi) {
   override def tableName: String = "messages"
 
   override def format: Format[Message] = json.MessageFormat
@@ -683,9 +645,7 @@ class MongoMessageRepo(env: Env, db: PostgresConnection, reactiveMongoApi: React
 }
 
 class MongoApiRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Api, ApiId](env, db, reactiveMongoApi) {
-  override def collectionName: String = "Apis"
-
+  extends MongoRepo[Api, ApiId](env, db, reactiveMongoApi) {
   override def tableName: String = "apis"
 
   override def format: Format[Api] = json.ApiFormat
@@ -694,9 +654,7 @@ class MongoApiRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveM
 }
 
 class MongoApiSubscriptionRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[ApiSubscription, ApiSubscriptionId](env, db, reactiveMongoApi) {
-  override def collectionName: String = "ApiSubscriptions"
-
+  extends MongoRepo[ApiSubscription, ApiSubscriptionId](env, db, reactiveMongoApi) {
   override def tableName: String = "api_subscriptions"
 
   override def format: Format[ApiSubscription] = json.ApiSubscriptionFormat
@@ -707,12 +665,10 @@ class MongoApiSubscriptionRepo(env: Env, db: PostgresConnection, reactiveMongoAp
 class MongoApiDocumentationPageRepo(env: Env,
                                     db: PostgresConnection,
                                     reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[ApiDocumentationPage, ApiDocumentationPageId](
-      env,
-      db,
-      reactiveMongoApi) {
-  override def collectionName: String = "ApiDocumentationPages"
-
+  extends MongoRepo[ApiDocumentationPage, ApiDocumentationPageId](
+    env,
+    db,
+    reactiveMongoApi) {
   override def tableName: String = "api_documentation_pages"
 
   override def format: Format[ApiDocumentationPage] =
@@ -722,9 +678,7 @@ class MongoApiDocumentationPageRepo(env: Env,
 }
 
 class MongoNotificationRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Notification, NotificationId](env, db, reactiveMongoApi) {
-  override def collectionName: String = "Notifications"
-
+  extends MongoRepo[Notification, NotificationId](env, db, reactiveMongoApi) {
   override def tableName: String = "notifications"
 
   override def format: Format[Notification] =
@@ -734,9 +688,7 @@ class MongoNotificationRepo(env: Env, db: PostgresConnection, reactiveMongoApi: 
 }
 
 class MongoConsumptionRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[ApiKeyConsumption, MongoId](env, db, reactiveMongoApi) {
-  override def collectionName: String = "Consumptions"
-
+  extends MongoRepo[ApiKeyConsumption, MongoId](env, db, reactiveMongoApi) {
   override def tableName: String = "consumptions"
 
   override def format: Format[ApiKeyConsumption] = json.ConsumptionFormat
@@ -745,10 +697,8 @@ class MongoConsumptionRepo(env: Env, db: PostgresConnection, reactiveMongoApi: R
 }
 
 class MongoUserSessionRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[UserSession, MongoId](env, db, reactiveMongoApi)
+  extends MongoRepo[UserSession, MongoId](env, db, reactiveMongoApi)
     with UserSessionRepo {
-  override def collectionName: String = "UserSessions"
-
   override def tableName: String = "user_sessions"
 
   override def format: Format[UserSession] =
@@ -758,15 +708,13 @@ class MongoUserSessionRepo(env: Env, db: PostgresConnection, reactiveMongoApi: R
 }
 
 class MongoAuditTrailRepo(env: Env, db: PostgresConnection, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[JsObject, MongoId](env, db, reactiveMongoApi) {
+  extends MongoRepo[JsObject, MongoId](env, db, reactiveMongoApi) {
   val _fmt = new Format[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
       JsSuccess(json.as[JsObject])
 
     override def writes(o: JsObject): JsValue = o
   }
-
-  override def collectionName: String = "AuditEvents"
 
   override def tableName: String = "audit_events"
 
@@ -776,10 +724,10 @@ class MongoAuditTrailRepo(env: Env, db: PostgresConnection, reactiveMongoApi: Re
 }
 
 abstract class MongoRepo[Of, Id <: ValueType](
-    env: Env,
-    db: PostgresConnection,
-    reactiveMongoApi: ReactiveMongoApi)
-    extends Repo[Of, Id] {
+                                               env: Env,
+                                               db: PostgresConnection,
+                                               reactiveMongoApi: ReactiveMongoApi)
+  extends Repo[Of, Id] {
 
   val logger = Logger(s"MongoRepo")
 
@@ -792,66 +740,53 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
-  def collectionName: String
-
-  def indices: Seq[Index.Default] = Seq.empty
-
-  override def ensureIndices(implicit ec: ExecutionContext): Future[Unit] =
-    for {
-      db <- reactiveMongoApi.database
-      foundName <- db.collectionNames.map(names =>
-        names.contains(collectionName))
-      _ <- if (foundName) {
-        logger.info(s"Ensuring indices for $collectionName")
-        val col = db.collection[JSONCollection](collectionName)
-        Future.sequence(indices.map(i => col.indexesManager.ensure(i)))
-      } else {
-        Future.successful(Seq.empty[Boolean])
-      }
-    } yield {
-      ()
-    }
-
-  override def collection(
-      implicit ec: ExecutionContext): Future[JSONCollection] =
-    reactiveMongoApi.database.map(_.collection(collectionName))
-
   override def find(
-      query: JsObject,
-      sort: Option[JsObject] = None,
-      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] =
-    collection.flatMap { col =>
-      logger.debug(s"$collectionName.find(${Json.prettyPrint(query)})")
+                     query: JsObject,
+                     sort: Option[JsObject] = None,
+                     maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+    logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
 
-      sort match {
-        case None =>
-          col
-            .find(query, None)
-            .cursor[JsObject](ReadPreference.primaryPreferred)
-            .collect[Seq](maxDocs = maxDocs,
-                          Cursor.FailOnError[Seq[JsObject]]())
-            .map(_.map(format.reads).collect {
-              case JsSuccess(e, _) => e
-            })
-        case Some(s) =>
-          col
-            .find(query, None)
-            .sort(s)
-            .cursor[JsObject](ReadPreference.primaryPreferred)
-            .collect[Seq](maxDocs = maxDocs,
-                          Cursor.FailOnError[Seq[JsObject]]())
-            .map(_.map(format.reads).collect {
-              case JsSuccess(e, _) => e
-            })
-      }
+    sort match {
+      case None =>
+        db.query { dsl =>
+          try {
+            val result = recordToJson(
+              if (query.values.isEmpty) dsl.fetch("SELECT * FROM {0}", DSL.table(tableName))
+              else
+                dsl.fetch(
+                  "SELECT * FROM {0} WHERE {1}",
+                  DSL.table(tableName),
+                  DSL.table(convertQuery(query))
+                )
+            )
+
+            getContentsListFromJson(result, format)
+          } catch {
+            case err: Throwable => logger.error(s"$err")
+              Seq()
+          }
+        }
+      case Some(s) =>
+        // TODO - transformer le sort
+        Future.successful(Seq())
+      //          col
+      //            .find(query, None)
+      //            .sort(s)
+      //            .cursor[JsObject](ReadPreference.primaryPreferred)
+      //            .collect[Seq](maxDocs = maxDocs,
+      //              Cursor.FailOnError[Seq[JsObject]]())
+      //            .map(_.map(format.reads).collect {
+      //              case JsSuccess(e, _) => e
+      //            })
     }
+  }
 
   override def count(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] = {
+    implicit ec: ExecutionContext): Future[Long] = {
     logger.error(s"COUNT $query")
 
     db.query { dsl =>
-      if(query.values.isEmpty)
+      if (query.values.isEmpty)
         dsl.fetchCount(DSL.table(tableName))
       else
         dsl.fetchOne(
@@ -865,96 +800,111 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def count()(implicit ec: ExecutionContext): Future[Long] = count(JsObject.empty)
 
-//  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
-//    collection.flatMap { col =>
-//      logger.debug(s"$collectionName.findAllRaw({})")
-//      col
-//        .find(Json.obj(), None)
-//        .cursor[JsObject](ReadPreference.primaryPreferred)
-//        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-//    }
+  //  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
+  //    collection.flatMap { col =>
+  //      logger.debug(s"$collectionName.findAllRaw({})")
+  //      col
+  //        .find(Json.obj(), None)
+  //        .cursor[JsObject](ReadPreference.primaryPreferred)
+  //        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+  //    }
 
-  def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
-    Source
-      .future(collection.flatMap { col =>
-        logger.debug(s"$collectionName.streamAll({})")
-        col
-          .find(Json.obj(), None)
-          .cursor[JsObject](ReadPreference.primaryPreferred)
-          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-          .map { docs =>
-            docs
-              .map(format.reads)
-              .map {
-                case j @ JsSuccess(_, _) => j
-                case j @ JsError(_) =>
-                  println(s"error: $j")
-                  j
-              }
-              .collect {
-                case JsSuccess(e, _) => e
-              }
-          }
-      })
-      .flatMapConcat(seq => Source(seq.toList))
+  //  def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
+  //    Source
+  //      .future(collection.flatMap { col =>
+  //        logger.debug(s"$collectionName.streamAll({})")
+  //        col
+  //          .find(Json.obj(), None)
+  //          .cursor[JsObject](ReadPreference.primaryPreferred)
+  //          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+  //          .map { docs =>
+  //            docs
+  //              .map(format.reads)
+  //              .map {
+  //                case j @ JsSuccess(_, _) => j
+  //                case j @ JsError(_) =>
+  //                  println(s"error: $j")
+  //                  j
+  //              }
+  //              .collect {
+  //                case JsSuccess(e, _) => e
+  //              }
+  //          }
+  //      })
+  //      .flatMapConcat(seq => Source(seq.toList))
 
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed] =
     Source
-      .future(collection.flatMap { col =>
-        logger.debug(s"$collectionName.streamAllRaw({})")
-        col
-          .find(Json.obj(), None)
-          .cursor[JsObject](ReadPreference.primaryPreferred)
-          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-      })
+      .future(
+        db.query { dsl =>
+          logger.debug(s"$tableName.streamAllRaw({})")
+          val result = recordToJson(dsl
+            .fetch("SELECT * FROM {0}", DSL.table(tableName)))
+          getContentsListFromJson(result, format)
+            .map(_.asInstanceOf[JsValue])
+        }
+      )
       .flatMapConcat(seq => Source(seq.toList))
 
-  override def findOne(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Option[Of]] =
-          db.query { dsl =>
-            try {
-              val result = recordToJson(
-                dsl.fetch(
-                  "SELECT * FROM {0} WHERE {1} LIMIT 1",
-                DSL.table(tableName),
-                DSL.table(convertQuery(query)))
-              )
+  //    Source
+  //      .future(
+  //        collection.flatMap { col =>
+  //        logger.debug(s"$collectionName.streamAllRaw({})")
+  //        col
+  //          .find(Json.obj(), None)
+  //          .cursor[JsObject](ReadPreference.primaryPreferred)
+  //          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+  //      })
+  //      .flatMapConcat(seq => Source(seq.toList))
 
-              getContentFromJson(result, format)
-            } catch {
-              case err: Throwable => logger.error(s"$err")
-                None
-            }
-          }
+  override def findOne(query: JsObject)(
+    implicit ec: ExecutionContext): Future[Option[Of]] =
+    db.query { dsl =>
+      try {
+        val result = recordToJson(
+          dsl.fetch(
+            "SELECT * FROM {0} WHERE {1} LIMIT 1",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query)))
+        )
+
+        getContentFromJson(result, format)
+      } catch {
+        case err: Throwable => logger.error(s"$err")
+          None
+      }
+    }
 
   override def delete(query: JsObject)(
-      implicit ec: ExecutionContext): Future[WriteResult] = {
-      logger.debug(s"$collectionName.delete(${Json.prettyPrint(query)})")
+    implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.debug(s"$tableName.delete(${Json.prettyPrint(query)})")
 
-      logger.error(s"delete query : ${convertQuery(query)}")
+    logger.error(s"delete query : ${convertQuery(query)}")
 
-      db.query { dsl =>
-        dsl.query(
-          "DELETE FROM {0} WHERE {1}",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query))
-        )
-          .execute()
-      }
-
-      collection.flatMap { col =>
-        col.delete(ordered = true).one(query)
-      }
+    db.query { dsl =>
+      if (query.values.isEmpty)
+        dsl
+          .query("DELETE FROM {0}", DSL.table(tableName))
+          .execute() > 0
+      else
+        dsl
+          .query(
+            "DELETE FROM {0} WHERE {1}",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query))
+          )
+          .execute() > 0
+    }
   }
 
   override def save(value: Of)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
     val payload = format.writes(value).as[JsObject]
     save(Json.obj("_id" -> extractId(value)), payload)
   }
 
   override def save(query: JsObject, value: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
 
     logger.error(s"save : $query")
 
@@ -973,7 +923,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
             DSL.inline((value \ "_deleted").as[Boolean]),
             DSL.inline(value)
           )
-          .execute() == 1
+          .execute() > 0
       else
         dsl
           .query("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
@@ -981,39 +931,14 @@ abstract class MongoRepo[Of, Id <: ValueType](
             DSL.inline((value \ "_id").as[String]),
             DSL.inline(value)
           )
-          .execute() == 1
-    }
-
-    // TODO - delete call to Mongo
-    collection.flatMap { col =>
-      logger.debug(
-        s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
-      )
-
-      col
-        .findAndUpdate(
-          selector = query,
-          update = value,
-          fetchNewObject = false,
-          upsert = true,
-          sort = None,
-          fields = None,
-          bypassDocumentValidation = false,
-          writeConcern = WriteConcern.Default,
-          maxTime = None,
-          collation = None,
-          arrayFilters = Seq.empty
-        )
-        .map(_.lastError.isDefined)
+          .execute() > 0
     }
   }
 
   override def insertMany(values: Seq[Of])(
-      implicit ec: ExecutionContext): Future[Long] = {
-
-    val payloads = values.map(v => format.writes(v).as[JsObject])
-
+    implicit ec: ExecutionContext): Future[Long] =
     db.query { dsl =>
+      val payloads = values.map(v => format.writes(v).as[JsObject])
       dsl.query(
         "INSERT INTO {0}(_id, content) VALUES{1}",
         DSL.table(tableName),
@@ -1025,45 +950,38 @@ abstract class MongoRepo[Of, Id <: ValueType](
         .execute()
     }
 
-    collection.flatMap { col =>
-      col
-        .insert(true)
-        .many(payloads)
-        .map(_.n)
-    }
-  }
-
   override def updateMany(query: JsObject, value: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] =
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update
-        .element(q = query,
-                 u = Json.obj("$set" -> value),
-                 upsert = false,
-                 multi = true)
-        .flatMap { element =>
-          update.many(List(element)).map(_.nModified)
-        }
+    implicit ec: ExecutionContext): Future[Long] =
+    db.query { dsl =>
+      dsl
+        .query("UPDATE {0} " +
+          "SET content = content || {1}" +
+          "WHERE {2}",
+          DSL.table(tableName),
+          DSL.inline(convertQuery(value)),
+          DSL.table(convertQuery(query))
+        )
+        .execute()
     }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] =
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update
-        .element(q = query, u = queryUpdate, upsert = false, multi = true)
-        .flatMap { element =>
-          update.many(List(element)).map(_.nModified)
-        }
+    implicit ec: ExecutionContext): Future[Long] =
+    db.query { dsl =>
+      dsl
+        .query("UPDATE {0} " +
+          "SET content = content || {1}" +
+          "WHERE {2}",
+          DSL.table(tableName),
+          DSL.inline(convertQuery(queryUpdate)),
+          DSL.table(convertQuery(query))
+        )
+        .execute()
     }
 
   override def deleteByIdLogically(id: String)(
-      implicit ec: ExecutionContext): Future[WriteResult] = {
-
-    logger.error("deleteByIdLogically with String")
-
+    implicit ec: ExecutionContext): Future[Boolean] =
     db.query { dsl =>
+      logger.error("deleteByIdLogically with String")
       dsl
         .query("UPDATE {0} " +
           "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
@@ -1071,31 +989,19 @@ abstract class MongoRepo[Of, Id <: ValueType](
           DSL.table(tableName),
           DSL.inline(id)
         )
-        .execute() == 1
+        .execute() > 0
     }
-
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update.one(
-        q = Json.obj("_deleted" -> false, "_id" -> id),
-        u = Json.obj("$set" -> Json.obj("_deleted" -> true)),
-        upsert = false,
-        multi = false
-      )
-    }
-  }
 
   override def deleteByIdLogically(id: Id)(
-      implicit ec: ExecutionContext): Future[WriteResult] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
     logger.error("deleteByIdLogically with Id")
     deleteByIdLogically(id.value)
   }
 
   override def deleteLogically(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("deleteLogically with Query")
-
+    implicit ec: ExecutionContext): Future[Boolean] =
     db.query { dsl =>
+      logger.error("deleteLogically with Query")
       dsl
         .query("UPDATE {0} " +
           "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
@@ -1103,112 +1009,125 @@ abstract class MongoRepo[Of, Id <: ValueType](
           DSL.table(tableName),
           DSL.table(convertQuery(query))
         )
-        .execute() == 1
+        .execute() > 0
     }
-
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update
-        .element(q = query ++ Json.obj("_deleted" -> false),
-                 u = Json.obj("$set" -> Json.obj("_deleted" -> true)),
-                 upsert = false,
-                 multi = true)
-        .flatMap { element =>
-          update.many(List(element)).map(_.ok)
-        }
-    }
-  }
 
   override def deleteAllLogically()(
-      implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("deleteAllLogically")
-
+    implicit ec: ExecutionContext): Future[Boolean] =
     db.query { dsl =>
+      logger.error("deleteAllLogically")
       dsl
         .query("UPDATE {0} " +
           "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
           "WHERE _deleted = false",
           DSL.table(tableName)
         )
-        .execute() == 1
+        .execute() > 0
     }
-
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update
-        .element(q = Json.obj("_deleted" -> false),
-                 u = Json.obj("$set" -> Json.obj("_deleted" -> true)),
-                 upsert = false,
-                 multi = true)
-        .flatMap { element =>
-          update.many(List(element)).map(_.ok)
-        }
-    }
-  }
 
   override def exists(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
-
+    implicit ec: ExecutionContext): Future[Boolean] =
     db.query { dsl =>
-      println(s"Coming from Postgresql : ${dsl.fetchExists(dsl.selectFrom(
+      dsl.fetchExists(dsl.selectFrom(
         DSL
           .table(tableName)
           .where(DSL.condition("exists (SELECT 1 FROM {0} WHERE {1})",
             DSL.table(tableName),
             DSL.table(convertQuery(query))
-            )))
-      )}"
+          )))
       )
     }
 
-    collection.flatMap {
-      col =>
-        logger.debug(s"$collectionName.exists(${Json.prettyPrint(query)})")
-        col
-          .find(query, None)
-          .one[JsObject](ReadPreference.primaryPreferred)
-          .map(_.isDefined)
+  override def findWithProjection(query: JsObject, projection: JsObject)
+                                 (implicit ec: ExecutionContext): Future[Seq[JsObject]] =
+    db.query { dsl =>
+      logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+      try {
+        val result = recordToJson(
+          if (query.values.isEmpty) dsl.fetch(
+            "SELECT {1} FROM {0}",
+            DSL.table(tableName),
+            if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+          )
+          else
+            dsl.fetch(
+              "SELECT {2} FROM {0} WHERE {1}",
+              DSL.table(tableName),
+              DSL.table(convertQuery(query)),
+              if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+            )
+        )
+
+        getContentsListFromJson(result, format)
+          .map(_.asInstanceOf[JsObject])
+      } catch {
+        case err: Throwable => logger.error(s"$err")
+          Seq()
+      }
     }
-  }
 
-  override def findWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext
-  ): Future[Seq[JsObject]] = collection.flatMap { col =>
-    logger.debug(
-      s"$collectionName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
-    col
-      .find(query, Some(projection))
-      .cursor[JsObject](ReadPreference.primaryPreferred)
-      .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-  }
+  override def findOneWithProjection(query: JsObject, projection: JsObject)
+                                    (implicit ec: ExecutionContext): Future[Option[JsObject]] =
+    db.query { dsl =>
+      logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+      try {
+        val result = recordToJson(
+          if (query.values.isEmpty) dsl.fetch(
+            "SELECT {1} FROM {0}",
+            DSL.table(tableName),
+            if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+          )
+          else
+            dsl.fetch(
+              "SELECT {2} FROM {0} WHERE {1}",
+              DSL.table(tableName),
+              DSL.table(convertQuery(query)),
+              if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+            )
+        )
 
-  override def findOneWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext
-  ): Future[Option[JsObject]] = collection.flatMap { col =>
-    logger.debug(
-      s"$collectionName.findOne(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
-    col
-      .find(query, Some(projection))
-      .one[JsObject](ReadPreference.primaryPreferred)
-  }
+        getContentFromJson(result, format)
+          .asInstanceOf[Option[JsObject]]
+      } catch {
+        case err: Throwable => logger.error(s"$err")
+          None
+      }
+    }
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
-      implicit ec: ExecutionContext
-  ): Future[(Seq[Of], Long)] = collection.flatMap { col =>
-    logger.debug(
-      s"$collectionName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
+  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)
+                                 (implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+    logger.debug(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
     for {
-      count <- col.count(Some(query), None, 0, None, ReadConcern.Majority)
-      queryRes <- col
-        .find(query, None)
-        .sort(Json.obj("_id" -> -1))
-        .skip(page * pageSize)
-        .batchSize(pageSize)
-        .cursor[JsObject](ReadPreference.primaryPreferred)
-        .collect[Seq](maxDocs = pageSize, Cursor.FailOnError[Seq[JsObject]]())
-        .map(_.map(format.reads).collect {
-          case JsSuccess(e, _) => e
-        })
+      count <- db.query { dsl =>
+        if (query.values.isEmpty)
+          dsl.fetchOne("SELECT COUNT(*) FROM {0}", DSL.table(tableName)).size()
+        else
+          dsl.fetchOne("SELECT COUNT(*) FROM {0} WHERE {1}", DSL.table(tableName),
+            DSL.table(convertQuery(query))
+          ).size()
+      }
+      queryRes <- {
+        db.query { dsl =>
+          val result = recordToJson(
+            if (query.values.isEmpty) dsl.fetch(
+              "SELECT * FROM {0} ORDER BY _id DESC LIMIT {1} OFFSET {2}",
+              DSL.table(tableName),
+              pageSize,
+              page * pageSize
+            )
+            else
+              dsl.fetch(
+                "SELECT * FROM {0} WHERE {1} ORDER BY _id DESC LIMIT {2} OFFSET {3}",
+                DSL.table(tableName),
+                DSL.table(convertQuery(query)),
+                pageSize,
+                page * pageSize
+              )
+          )
+
+          getContentsListFromJson(result, format)
+        }
+      }
     } yield {
       (queryRes, count)
     }
@@ -1218,98 +1137,99 @@ abstract class MongoRepo[Of, Id <: ValueType](
     find(Json.obj())
 
   override def findById(id: String)(
-      implicit ec: ExecutionContext): Future[Option[Of]] =
+    implicit ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_id" -> id))
 
   override def findById(id: Id)(
-      implicit ec: ExecutionContext): Future[Option[Of]] =
+    implicit ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_id" -> id.value))
 
   override def deleteById(id: String)(
-      implicit ec: ExecutionContext): Future[WriteResult] =
+    implicit ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id))
 
   override def deleteById(id: Id)(
-      implicit ec: ExecutionContext): Future[WriteResult] =
+    implicit ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id.value))
 
-  override def deleteAll()(implicit ec: ExecutionContext): Future[WriteResult] =
+  override def deleteAll()(implicit ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj())
 
   override def exists(id: String)(
-      implicit ec: ExecutionContext): Future[Boolean] =
+    implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id))
 
   override def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id.value))
 
-//  override def findMinByQuery(query: JsObject, field: String)(
-//      implicit ec: ExecutionContext): Future[Option[Long]] =
-//    collection.flatMap { col =>
-//      import col.BatchCommands.AggregationFramework
-//      import AggregationFramework.{Group, Match, MinField}
-//
-//      col
-//        .aggregatorContext[JsObject](
-//          firstOperator = Match(query),
-//          otherOperators =
-//            List(Group(JsString("$clientId"))("min" -> MinField(field))),
-//          explain = false,
-//          allowDiskUse = false,
-//          bypassDocumentValidation = false,
-//          readConcern = ReadConcern.Majority,
-//          readPreference = ReadPreference.primaryPreferred,
-//          writeConcern = WriteConcern.Default,
-//          batchSize = None,
-//          cursorOptions = CursorOptions.empty,
-//          maxTime = None,
-//          hint = None,
-//          comment = None,
-//          collation = None
-//        )
-//        .prepared
-//        .cursor
-//        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-//        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
-//    }
+  //  override def findMinByQuery(query: JsObject, field: String)(
+  //      implicit ec: ExecutionContext): Future[Option[Long]] =
+  //    collection.flatMap { col =>
+  //      import col.BatchCommands.AggregationFramework
+  //      import AggregationFramework.{Group, Match, MinField}
+  //
+  //      col
+  //        .aggregatorContext[JsObject](
+  //          firstOperator = Match(query),
+  //          otherOperators =
+  //            List(Group(JsString("$clientId"))("min" -> MinField(field))),
+  //          explain = false,
+  //          allowDiskUse = false,
+  //          bypassDocumentValidation = false,
+  //          readConcern = ReadConcern.Majority,
+  //          readPreference = ReadPreference.primaryPreferred,
+  //          writeConcern = WriteConcern.Default,
+  //          batchSize = None,
+  //          cursorOptions = CursorOptions.empty,
+  //          maxTime = None,
+  //          hint = None,
+  //          comment = None,
+  //          collation = None
+  //        )
+  //        .prepared
+  //        .cursor
+  //        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+  //        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
+  //    }
 
   override def findMaxByQuery(query: JsObject, field: String)(
-      implicit ec: ExecutionContext): Future[Option[Long]] =
-    collection.flatMap { col =>
-      import col.BatchCommands.AggregationFramework
-      import AggregationFramework.{Group, Match, MaxField}
+    implicit ec: ExecutionContext): Future[Option[Long]] = ???
 
-      col
-        .aggregatorContext[JsObject](
-          firstOperator = Match(query),
-          otherOperators =
-            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
-          explain = false,
-          allowDiskUse = false,
-          bypassDocumentValidation = false,
-          readConcern = ReadConcern.Majority,
-          readPreference = ReadPreference.primaryPreferred,
-          writeConcern = WriteConcern.Default,
-          batchSize = None,
-          cursorOptions = CursorOptions.empty,
-          maxTime = None,
-          hint = None,
-          comment = None,
-          collation = None
-        )
-        .prepared
-        .cursor
-        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-        .map(agg => agg.headOption.map(v => (v \ "max").as[Long]))
-    }
+  //    collection.flatMap { col =>
+  //      import col.BatchCommands.AggregationFramework
+  //      import AggregationFramework.{Group, Match, MaxField}
+  //
+  //      col
+  //        .aggregatorContext[JsObject](
+  //          firstOperator = Match(query),
+  //          otherOperators =
+  //            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
+  //          explain = false,
+  //          allowDiskUse = false,
+  //          bypassDocumentValidation = false,
+  //          readConcern = ReadConcern.Majority,
+  //          readPreference = ReadPreference.primaryPreferred,
+  //          writeConcern = WriteConcern.Default,
+  //          batchSize = None,
+  //          cursorOptions = CursorOptions.empty,
+  //          maxTime = None,
+  //          hint = None,
+  //          comment = None,
+  //          collation = None
+  //        )
+  //        .prepared
+  //        .cursor
+  //        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+  //        .map(agg => agg.headOption.map(v => (v \ "max").as[Long]))
+  //    }
 }
 
 abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
-    env: Env,
-    db: PostgresConnection,
-    reactiveMongoApi: ReactiveMongoApi,
-    tenant: TenantId)
-    extends Repo[Of, Id] {
+                                                          env: Env,
+                                                          db: PostgresConnection,
+                                                          reactiveMongoApi: ReactiveMongoApi,
+                                                          tenant: TenantId)
+  extends Repo[Of, Id] {
 
   val logger: Logger = Logger(s"MongoTenantAwareRepo")
 
@@ -1322,31 +1242,8 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
-  def collectionName: String
-
-  def indices: Seq[Index.Default] = Seq.empty
-
-  override def ensureIndices(implicit ec: ExecutionContext): Future[Unit] =
-    for {
-      db <- reactiveMongoApi.database
-      foundName <- db.collectionNames.map(names =>
-        names.contains(collectionName))
-      _ <- if (foundName) {
-        logger.info(s"Ensuring indices for $collectionName")
-        val col = db.collection[JSONCollection](collectionName)
-        Future.sequence(indices.map(i => col.indexesManager.ensure(i)))
-      } else {
-        Future.successful(Seq.empty[Boolean])
-      }
-    } yield {
-      ()
-    }
-
-  def collection(implicit ec: ExecutionContext): Future[JSONCollection] =
-    reactiveMongoApi.database.map(_.collection(collectionName))
-
   override def deleteByIdLogically(id: String)(
-      implicit ec: ExecutionContext): Future[WriteResult] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
     logger.error(s"deleteByIdLogically $id : String")
 
     db.query { dsl =>
@@ -1358,30 +1255,19 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
           DSL.inline(id),
           DSL.inline(tenant.value)
         )
-        .execute() == 1
-    }
-
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update.one(
-        q =
-          Json.obj("_deleted" -> false, "_id" -> id, "_tenant" -> tenant.value),
-        u = Json.obj("$set" -> Json.obj("_deleted" -> true)),
-        upsert = false,
-        multi = false
-      )
+        .execute() > 0
     }
   }
 
   override def deleteByIdLogically(id: Id)(
-      implicit ec: ExecutionContext): Future[WriteResult] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
     logger.error("deleteByIdLogically id: Id")
 
     deleteByIdLogically(id.value)
   }
 
   override def deleteLogically(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
     logger.error("deleteLogically query : JsObject")
 
     db.query { dsl =>
@@ -1393,25 +1279,13 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
           DSL.inline(tenant.value),
           DSL.table(convertQuery(query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value)))
         )
-        .execute() == 1
+        .execute() > 0
     }
 
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update
-        .element(
-          q = query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value),
-          u = Json.obj("$set" -> Json.obj("_deleted" -> true)),
-          upsert = false,
-          multi = true)
-        .flatMap { element =>
-          update.many(List(element)).map(_.ok)
-        }
-    }
   }
 
   override def deleteAllLogically()(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
     logger.error("deleteAllLogically")
 
     db.query { dsl =>
@@ -1422,141 +1296,127 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
           DSL.table(tableName),
           DSL.inline(tenant.value)
         )
-        .execute() == 1
-    }
-
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update
-        .element(q = Json.obj("_deleted" -> false, "_tenant" -> tenant.value),
-                 u = Json.obj("$set" -> Json.obj("_deleted" -> true)),
-                 upsert = false,
-                 multi = true)
-        .flatMap { element =>
-          update.many(List(element)).map(_.ok)
-        }
+        .execute() > 0
     }
   }
 
   override def find(
-      query: JsObject,
-      sort: Option[JsObject] = None,
-      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
-
+                     query: JsObject,
+                     sort: Option[JsObject] = None,
+                     maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
     logger.error(s"def find() : $query")
+    logger.debug(s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
 
-    collection.flatMap { col =>
-      logger.debug(s"$collectionName.find(${Json.prettyPrint(
-        query ++ Json.obj("_tenant" -> tenant.value))})")
-
-      sort match {
-        case None =>
-          db.query { dsl =>
-            try {
-              val result = recordToJson(
-                if (query.values.isEmpty) dsl.fetch("SELECT * FROM {0}", DSL.table(tableName))
-                else
+    sort match {
+      case None =>
+        db.query { dsl =>
+          try {
+            val result = recordToJson(
+              if (query.values.isEmpty) dsl.fetch("SELECT * FROM {0}", DSL.table(tableName))
+              else
                 dsl.fetch(
                   "SELECT * FROM {0} WHERE {1}",
                   DSL.table(tableName),
                   DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))))
-              )
-
-              getContentsListFromJson(result, format)
-            } catch {
-              case err: Throwable => logger.error(s"$err")
-                Seq()
-            }
-          }
-//          col
-//            .find(query ++ Json.obj("_tenant" -> tenant.value), None)
-//            .cursor[JsObject](ReadPreference.primaryPreferred)
-//            .collect[Seq](maxDocs = maxDocs,
-//                          Cursor.FailOnError[Seq[JsObject]]())
-//            .map(
-//              _.map(format.reads)
-//                .map {
-//                  case j @ JsSuccess(_, _) => j
-//                  case j @ JsError(_) =>
-//                    println(s"error: $j")
-//                    j
-//                }
-//                .collect {
-//                  case JsSuccess(e, _) => e
-//                }
-//            )
-        case Some(s) =>
-          col
-            .find(query ++ Json.obj("_tenant" -> tenant.value), None)
-            .sort(s)
-            .cursor[JsObject](ReadPreference.primaryPreferred)
-            .collect[Seq](maxDocs = maxDocs,
-                          Cursor.FailOnError[Seq[JsObject]]())
-            .map(
-              _.map(format.reads)
-                .map {
-                  case j @ JsSuccess(_, _) => j
-                  case j @ JsError(_) =>
-                    println(s"error: $j")
-                    j
-                }
-                .collect {
-                  case JsSuccess(e, _) => e
-                }
             )
-      }
+
+            getContentsListFromJson(result, format)
+          } catch {
+            case err: Throwable => logger.error(s"$err")
+              Seq()
+          }
+        }
+      case Some(s) =>
+        // TODO - transformer le sort
+        Future.successful(Seq())
+      //          col
+      //            .find(query ++ Json.obj("_tenant" -> tenant.value), None)
+      //            .sort(s)
+      //            .cursor[JsObject](ReadPreference.primaryPreferred)
+      //            .collect[Seq](maxDocs = maxDocs,
+      //              Cursor.FailOnError[Seq[JsObject]]())
+      //            .map(
+      //              _.map(format.reads)
+      //                .map {
+      //                  case j@JsSuccess(_, _) => j
+      //                  case j@JsError(_) =>
+      //                    println(s"error: $j")
+      //                    j
+      //                }
+      //                .collect {
+      //                  case JsSuccess(e, _) => e
+      //                }
+      //            )
     }
   }
 
-//  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
-//    collection.flatMap { col =>
-//      logger.debug(s"$collectionName.findAllRaw(${Json.prettyPrint(
-//        Json.obj("_tenant" -> tenant.value))})")
-//      col
-//        .find(Json.obj("_tenant" -> tenant.value), None)
-//        .cursor[JsObject](ReadPreference.primaryPreferred)
-//        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-//    }
+  //  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
+  //    collection.flatMap { col =>
+  //      logger.debug(s"$collectionName.findAllRaw(${Json.prettyPrint(
+  //        Json.obj("_tenant" -> tenant.value))})")
+  //      col
+  //        .find(Json.obj("_tenant" -> tenant.value), None)
+  //        .cursor[JsObject](ReadPreference.primaryPreferred)
+  //        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+  //    }
 
-  def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
-    Source
-      .future(collection.flatMap { col =>
-        logger.debug(s"$collectionName.streamAll(${Json.prettyPrint(
-          Json.obj("_tenant" -> tenant.value))})")
-        col
-          .find(Json.obj("_tenant" -> tenant.value), None)
-          .cursor[JsObject](ReadPreference.primaryPreferred)
-          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-          .map { docs =>
-            docs
-              .map(format.reads)
-              .map {
-                case j @ JsSuccess(_, _) => j
-                case j @ JsError(_) =>
-                  println(s"error: $j")
-                  j
-              }
-              .collect {
-                case JsSuccess(e, _) => e
-              }
-          }
-      })
-      .flatMapConcat(seq => Source(seq.toList))
+  //  def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
+  //    Source
+  //      .future(collection.flatMap { col =>
+  //        logger.debug(s"$collectionName.streamAll(${Json.prettyPrint(
+  //          Json.obj("_tenant" -> tenant.value))})")
+  //        col
+  //          .find(Json.obj("_tenant" -> tenant.value), None)
+  //          .cursor[JsObject](ReadPreference.primaryPreferred)
+  //          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+  //          .map { docs =>
+  //            docs
+  //              .map(format.reads)
+  //              .map {
+  //                case j @ JsSuccess(_, _) => j
+  //                case j @ JsError(_) =>
+  //                  println(s"error: $j")
+  //                  j
+  //              }
+  //              .collect {
+  //                case JsSuccess(e, _) => e
+  //              }
+  //          }
+  //      })
+  //      .flatMapConcat(seq => Source(seq.toList))
 
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed] =
     Source
-      .future(collection.flatMap { col =>
-        logger.debug(s"$collectionName.streamAllRaw(${Json.prettyPrint(
-          Json.obj("_tenant" -> tenant.value))})")
-        col
-          .find(Json.obj("_tenant" -> tenant.value), None)
-          .cursor[JsObject](ReadPreference.primaryPreferred)
-          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-      })
+      .future(
+        db.query { dsl =>
+          logger.debug(s"$tableName.streamAllRaw({})")
+          val result = recordToJson(dsl
+            .fetch("SELECT * FROM {0} WHERE content->>'tenant' = {1}",
+              DSL.table(tableName),
+              DSL.inline(tenant.value)))
+          getContentsListFromJson(result, format)
+            .map(_.asInstanceOf[JsValue])
+        }
+      )
       .flatMapConcat(seq => Source(seq.toList))
 
+  //    Source
+  //      .future(
+  //        collection.flatMap { col =>
+  //          logger.debug(s"$collectionName.streamAllRaw(${
+  //            Json.prettyPrint(
+  //              Json.obj("_tenant" -> tenant.value))
+  //          })")
+  //          col
+  //            .find(Json.obj("_tenant" -> tenant.value), None)
+  //            .cursor[JsObject](ReadPreference.primaryPreferred)
+  //            .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
+  //        }
+  //      )
+  //      .flatMapConcat(seq => Source(seq.toList))
+
   override def findOne(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Option[Of]] =
+    implicit ec: ExecutionContext): Future[Option[Of]] =
     db.query { dsl =>
       try {
         val result = recordToJson(
@@ -1574,38 +1434,31 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     }
 
   override def delete(query: JsObject)(
-      implicit ec: ExecutionContext): Future[WriteResult] = {
-
+    implicit ec: ExecutionContext): Future[Boolean] = {
     logger.error("override def delete(query: JsObject)")
-
-    logger.debug(s"$tableName.delete(${
-      Json.prettyPrint(
-        query ++ Json.obj("_tenant" -> tenant.value))
-    })")
+    logger.debug(s"$tableName.delete(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
 
     db.query { dsl =>
+      if (query.values.isEmpty)
+        dsl.query("DELETE FROM {0}", DSL.table(tableName)).execute() > 0
+      else
       dsl.query(
         "DELETE FROM {0} WHERE {1}",
         DSL.table(tableName),
         DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
       )
-        .execute()
-    }
-
-    collection.flatMap { col =>
-      col.delete(ordered = true)
-        .one(query ++ Json.obj("_tenant" -> tenant.value))
+        .execute() > 0
     }
   }
 
   override def save(value: Of)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
     val payload = format.writes(value).as[JsObject]
     save(Json.obj("_id" -> extractId(value)), payload)
   }
 
   override def save(query: JsObject, value: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
 
     db.query { dsl =>
       logger.debug(
@@ -1616,242 +1469,253 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         .query("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
           "ON CONFLICT (_id) DO UPDATE " +
           "set _deleted = {2}, content = {3}",
-                DSL.table(tableName),
-                DSL.inline((value \ "_id").as[String]),
-                DSL.inline((value \ "_deleted").as[Boolean]),
-                DSL.inline(value)
+          DSL.table(tableName),
+          DSL.inline((value \ "_id").as[String]),
+          DSL.inline((value \ "_deleted").as[Boolean]),
+          DSL.inline(value)
         )
-        .execute() == 1
-    }
-
-    collection.flatMap { col =>
-      logger.debug(
-        s"$collectionName.upsert(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
-      )
-      col
-        .findAndUpdate(
-          selector = query,
-          update = value,
-          fetchNewObject = false,
-          upsert = true,
-          sort = None,
-          fields = None,
-          bypassDocumentValidation = false,
-          writeConcern = WriteConcern.Default,
-          maxTime = None,
-          collation = None,
-          arrayFilters = Seq.empty
-        )
-        .map(_.lastError.isDefined)
+        .execute() > 0
     }
   }
 
   override def insertMany(values: Seq[Of])(
-      implicit ec: ExecutionContext): Future[Long] = {
+    implicit ec: ExecutionContext): Future[Long] = {
 
     val payloads = values.map(v =>
       format.writes(v).as[JsObject] ++ Json.obj("_tenant" -> tenant.value))
 
-//    logger.error(s"insertMany : $values")
-
     db.query { dsl =>
       dsl.query(
         "INSERT INTO {0}(_id, content) VALUES{1}",
-          DSL.table(tableName),
-          DSL.table(payloads.map { payload =>
-            s"(${DSL.inline((payload \ "_id").as[String])}, ${DSL.inline(payload)})"
-          }
-            .mkString(","))
+        DSL.table(tableName),
+        DSL.table(payloads.map { payload =>
+          s"(${DSL.inline((payload \ "_id").as[String])}, ${DSL.inline(payload)})"
+        }
+          .mkString(","))
       )
         .execute()
-    }
-
-    collection.flatMap { col =>
-      col
-        .insert(true)
-        .many(payloads)
-        .map(_.n)
     }
   }
 
   override def updateMany(query: JsObject, value: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] = {
+    implicit ec: ExecutionContext): Future[Long] = {
     logger.error("updateMany(query: JsObject, value: JsObject)")
 
-  collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update
-        .element(q = query,
-                 u = Json.obj("$set" -> value),
-                 upsert = false,
-                 multi = true)
-        .flatMap { element =>
-          update.many(List(element)).map(_.nModified)
-        }
+    db.query { dsl =>
+      dsl
+        .query("UPDATE {0} " +
+          "SET content = content || {1}" +
+          "WHERE {2}",
+          DSL.table(tableName),
+          DSL.inline(convertQuery(value)),
+          DSL.table(convertQuery(query))
+        )
+        .execute()
     }
   }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] = {
+    implicit ec: ExecutionContext): Future[Long] = {
     logger.error("updateManyByQuery(query: JsObject, queryUpdate: JsObject)")
-    collection.flatMap { col =>
-      val update = col.update(ordered = true)
-      update
-        .element(q = query, u = queryUpdate, upsert = false, multi = true)
-        .flatMap { element =>
-          update.many(List(element)).map(_.nModified)
-        }
+    db.query { dsl =>
+      dsl
+        .query("UPDATE {0} " +
+          "SET content = content || {1}" +
+          "WHERE {2}",
+          DSL.table(tableName),
+          DSL.inline(convertQuery(queryUpdate)),
+          DSL.table(convertQuery(query))
+        )
+        .execute()
     }
   }
 
   override def exists(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+    implicit ec: ExecutionContext): Future[Boolean] = {
     logger.error("exists(query: JsObject)")
 
     db.query { dsl =>
-      println(s"Coming from Postgresql : ${dsl.fetchExists(dsl.selectFrom(
+      dsl.fetchExists(dsl.selectFrom(
         DSL
           .table(tableName)
           .where(DSL.condition("exists (SELECT 1 FROM {0} WHERE {1})",
             DSL.table(tableName),
             DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
-        )))
-      ))}"
-      )
+            )))
+      ))
     }
-
-    val tmp = collection.flatMap {
-      col =>
-        logger.debug(s"$collectionName.exists(${Json.prettyPrint(
-          query ++ Json.obj("_tenant" -> tenant.value))})")
-        col
-          .find(query ++ Json.obj("_tenant" -> tenant.value), None)
-          .one[JsObject](ReadPreference.primaryPreferred)
-          .map(_.isDefined)
-    }
-
-    tmp
-      .map { value =>
-        println(s"Coming from mongo : $value")
-
-      }
-
-    tmp
   }
 
-//  override def findMinByQuery(query: JsObject, field: String)(
-//      implicit ec: ExecutionContext): Future[Option[Long]] =
-//    collection.flatMap { col =>
-//      import col.BatchCommands.AggregationFramework
-//      import AggregationFramework.{Group, Match, MinField}
-//
-//      col
-//        .aggregatorContext[JsObject](
-//          firstOperator = Match(query),
-//          otherOperators =
-//            List(Group(JsString("$clientId"))("min" -> MinField(field))),
-//          explain = false,
-//          allowDiskUse = false,
-//          bypassDocumentValidation = false,
-//          readConcern = ReadConcern.Majority,
-//          readPreference = ReadPreference.primaryPreferred,
-//          writeConcern = WriteConcern.Default,
-//          batchSize = None,
-//          cursorOptions = CursorOptions.empty,
-//          maxTime = None,
-//          hint = None,
-//          comment = None,
-//          collation = None
-//        )
-//        .prepared
-//        .cursor
-//        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-//        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
-//    }
+  //  override def findMinByQuery(query: JsObject, field: String)(
+  //      implicit ec: ExecutionContext): Future[Option[Long]] =
+  //    collection.flatMap { col =>
+  //      import col.BatchCommands.AggregationFramework
+  //      import AggregationFramework.{Group, Match, MinField}
+  //
+  //      col
+  //        .aggregatorContext[JsObject](
+  //          firstOperator = Match(query),
+  //          otherOperators =
+  //            List(Group(JsString("$clientId"))("min" -> MinField(field))),
+  //          explain = false,
+  //          allowDiskUse = false,
+  //          bypassDocumentValidation = false,
+  //          readConcern = ReadConcern.Majority,
+  //          readPreference = ReadPreference.primaryPreferred,
+  //          writeConcern = WriteConcern.Default,
+  //          batchSize = None,
+  //          cursorOptions = CursorOptions.empty,
+  //          maxTime = None,
+  //          hint = None,
+  //          comment = None,
+  //          collation = None
+  //        )
+  //        .prepared
+  //        .cursor
+  //        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+  //        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
+  //    }
 
   override def findMaxByQuery(query: JsObject, field: String)(
-      implicit ec: ExecutionContext): Future[Option[Long]] =
-    collection.flatMap { col =>
-      import col.BatchCommands.AggregationFramework
-      import AggregationFramework.{Group, Match, MaxField}
+    implicit ec: ExecutionContext): Future[Option[Long]] = ???
 
-      col
-        .aggregatorContext[JsObject](
-          firstOperator = Match(query),
-          otherOperators =
-            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
-          explain = false,
-          allowDiskUse = false,
-          bypassDocumentValidation = false,
-          readConcern = ReadConcern.Majority,
-          readPreference = ReadPreference.primaryPreferred,
-          writeConcern = WriteConcern.Default,
-          batchSize = None,
-          cursorOptions = CursorOptions.empty,
-          maxTime = None,
-          hint = None,
-          comment = None,
-          collation = None
-        )
-        .prepared
-        .cursor
-        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-        .map(agg => agg.headOption.map(v => (v \ "max").as(json.LongFormat)))
-    }
+  //    collection.flatMap { col =>
+  //      import col.BatchCommands.AggregationFramework
+  //      import AggregationFramework.{Group, Match, MaxField}
+  //
+  //      col
+  //        .aggregatorContext[JsObject](
+  //          firstOperator = Match(query),
+  //          otherOperators =
+  //            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
+  //          explain = false,
+  //          allowDiskUse = false,
+  //          bypassDocumentValidation = false,
+  //          readConcern = ReadConcern.Majority,
+  //          readPreference = ReadPreference.primaryPreferred,
+  //          writeConcern = WriteConcern.Default,
+  //          batchSize = None,
+  //          cursorOptions = CursorOptions.empty,
+  //          maxTime = None,
+  //          hint = None,
+  //          comment = None,
+  //          collation = None
+  //        )
+  //        .prepared
+  //        .cursor
+  //        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+  //        .map(agg => agg.headOption.map(v => (v \ "max").as(json.LongFormat)))
+  //    }
 
   override def count(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] = {
+    implicit ec: ExecutionContext): Future[Long] = {
 
     logger.error(s"Count with tenant : $query")
-    collection.flatMap { col =>
-      col.count(Some(query), None, 0, None, ReadConcern.Majority)
+    db.query { dsl =>
+      if (query.values.isEmpty)
+        dsl.fetchCount(DSL.table(tableName))
+      else
+        dsl.fetchOne(
+          "SELECT COUNT(*) FROM {0} WHERE {1}",
+          DSL.table(tableName),
+          DSL.table(convertQuery(query))
+        )
+          .size()
     }
   }
 
   override def count()(implicit ec: ExecutionContext): Future[Long] = count(Json.obj("_tenant" -> tenant.value))
 
-  override def findWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext
-  ): Future[Seq[JsObject]] = collection.flatMap { col =>
-    logger.debug(
-      s"$collectionName.find(${Json.prettyPrint(query ++ Json.obj(
-        "_tenant" -> tenant.value))}, ${Json.prettyPrint(projection)})"
-    )
-    col
-      .find(query ++ Json.obj("_tenant" -> tenant.value), Some(projection))
-      .cursor[JsObject](ReadPreference.primaryPreferred)
-      .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-  }
+  override def findWithProjection(query: JsObject, projection: JsObject)
+                                 (implicit ec: ExecutionContext): Future[Seq[JsObject]] =
+    db.query { dsl =>
+      logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+      try {
+        val result = recordToJson(
+          if (query.values.isEmpty) dsl.fetch(
+            "SELECT {1} FROM {0}",
+            DSL.table(tableName),
+            if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+          )
+          else
+            dsl.fetch(
+              "SELECT {2} FROM {0} WHERE {1}",
+              DSL.table(tableName),
+              DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))),
+              if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+            )
+        )
 
-  override def findOneWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext
-  ): Future[Option[JsObject]] = collection.flatMap { col =>
-    logger.debug(
-      s"$collectionName.findOne(${Json.prettyPrint(query ++ Json.obj(
-        "_tenant" -> tenant.value))}, ${Json.prettyPrint(projection)})"
-    )
-    col
-      .find(query ++ Json.obj("_tenant" -> tenant.value), Some(projection))
-      .one[JsObject](ReadPreference.primaryPreferred)
-  }
+        getContentsListFromJson(result, format)
+          .map(_.asInstanceOf[JsObject])
+      } catch {
+        case err: Throwable => logger.error(s"$err")
+          Seq()
+      }
+    }
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
-      implicit ec: ExecutionContext
-  ): Future[(Seq[Of], Long)] = collection.flatMap { col =>
-    logger.debug(
-      s"$collectionName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
+  override def findOneWithProjection(query: JsObject, projection: JsObject)
+                                    (implicit ec: ExecutionContext): Future[Option[JsObject]] =
+    db.query { dsl =>
+      logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+      try {
+        val result = recordToJson(
+          if (query.values.isEmpty) dsl.fetch(
+            "SELECT {1} FROM {0}",
+            DSL.table(tableName),
+            if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+          )
+          else
+            dsl.fetch(
+              "SELECT {2} FROM {0} WHERE {1}",
+              DSL.table(tableName),
+              DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))),
+              if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+            )
+        )
+
+        getContentFromJson(result, format)
+          .asInstanceOf[Option[JsObject]]
+      } catch {
+        case err: Throwable => logger.error(s"$err")
+          None
+      }
+    }
+
+  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)
+                                 (implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+    logger.debug(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
     for {
-      count <- col.count(Some(query), None, 0, None, ReadConcern.Majority)
-      queryRes <- col
-        .find(query, None)
-        .sort(Json.obj("_id" -> -1))
-        .batchSize(pageSize)
-        .skip(page * pageSize)
-        .cursor[JsObject](ReadPreference.primaryPreferred)
-        .collect[Seq](maxDocs = pageSize, Cursor.FailOnError[Seq[JsObject]]())
-        .map(_.map(format.reads).collect {
-          case JsSuccess(e, _) => e
-        })
+      count <- db.query { dsl =>
+        if (query.values.isEmpty)
+          dsl.fetchOne("SELECT COUNT(*) FROM {0}", DSL.table(tableName)).size()
+        else
+          dsl.fetchOne("SELECT COUNT(*) FROM {0} WHERE {1}", DSL.table(tableName),
+            DSL.table(convertQuery(query))
+          ).size()
+      }
+      queryRes <- {
+        db.query { dsl =>
+          val result = recordToJson(
+            if (query.values.isEmpty) dsl.fetch(
+              "SELECT * FROM {0} ORDER BY _id DESC LIMIT {1} OFFSET {2}",
+              DSL.table(tableName),
+              pageSize,
+              page * pageSize
+            )
+            else
+              dsl.fetch(
+                "SELECT * FROM {0} WHERE {1} ORDER BY _id DESC LIMIT {2} OFFSET {3}",
+                DSL.table(tableName),
+                DSL.table(convertQuery(query)),
+                pageSize,
+                page * pageSize
+              )
+          )
+
+          getContentsListFromJson(result, format)
+        }
+      }
     } yield {
       (queryRes, count)
     }
@@ -1861,26 +1725,26 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     find(Json.obj())
 
   override def findById(id: String)(
-      implicit ec: ExecutionContext): Future[Option[Of]] =
+    implicit ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_id" -> id))
 
   override def findById(id: Id)(
-      implicit ec: ExecutionContext): Future[Option[Of]] =
+    implicit ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_id" -> id.value))
 
   override def deleteById(id: String)(
-      implicit ec: ExecutionContext): Future[WriteResult] =
+    implicit ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id))
 
   override def deleteById(id: Id)(
-      implicit ec: ExecutionContext): Future[WriteResult] =
+    implicit ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id.value))
 
-  override def deleteAll()(implicit ec: ExecutionContext): Future[WriteResult] =
+  override def deleteAll()(implicit ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj())
 
   override def exists(id: String)(
-      implicit ec: ExecutionContext): Future[Boolean] =
+    implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id))
 
   override def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =

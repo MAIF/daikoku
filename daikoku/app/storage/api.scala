@@ -7,9 +7,6 @@ import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.libs.json._
-import reactivemongo.api.commands.WriteResult
-import reactivemongo.api.indexes.Index
-import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -23,18 +20,14 @@ trait TenantCapableRepo[Of, Id <: ValueType] {
 }
 
 trait Repo[Of, Id <: ValueType] {
-  def collectionName: String
   def tableName: String = "TEST_TABLE_NAME"
-  def indices: Seq[Index]
-  def ensureIndices(implicit ec: ExecutionContext): Future[Unit]
-  def collection(implicit ec: ExecutionContext): Future[JSONCollection]
   def format: Format[Of]
   def extractId(value: Of): String
   def count()(implicit ec: ExecutionContext): Future[Long]
   def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long]
   def findAll()(implicit ec: ExecutionContext): Future[Seq[Of]]
 //  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]]
-  def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed]
+//  def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed]
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed]
   def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
       implicit ec: ExecutionContext): Future[Seq[Of]]
@@ -51,11 +44,11 @@ trait Repo[Of, Id <: ValueType] {
   def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
       implicit ec: ExecutionContext
   ): Future[(Seq[Of], Long)]
-  def deleteById(id: String)(implicit ec: ExecutionContext): Future[WriteResult]
-  def deleteById(id: Id)(implicit ec: ExecutionContext): Future[WriteResult]
+  def deleteById(id: String)(implicit ec: ExecutionContext): Future[Boolean]
+  def deleteById(id: Id)(implicit ec: ExecutionContext): Future[Boolean]
   def delete(query: JsObject)(
-      implicit ec: ExecutionContext): Future[WriteResult]
-  def deleteAll()(implicit ec: ExecutionContext): Future[WriteResult]
+      implicit ec: ExecutionContext): Future[Boolean]
+  def deleteAll()(implicit ec: ExecutionContext): Future[Boolean]
   def save(value: Of)(implicit ec: ExecutionContext): Future[Boolean]
   def save(query: JsObject, value: JsObject)(
       implicit ec: ExecutionContext): Future[Boolean]
@@ -106,12 +99,12 @@ trait Repo[Of, Id <: ValueType] {
                "$or" -> Json.arr(Json.obj("_id" -> idOrHrid),
                                  Json.obj("_humanReadableId" -> idOrHrid))))
   def deleteByIdOrHrId(id: String, hrid: String)(
-      implicit ec: ExecutionContext): Future[WriteResult] =
+      implicit ec: ExecutionContext): Future[Boolean] =
     delete(
       Json.obj("$or" -> Json.arr(Json.obj("_id" -> id),
                                  Json.obj("_humanReadableId" -> hrid))))
   def deleteByIdOrHrId(id: Id, hrid: String)(
-      implicit ec: ExecutionContext): Future[WriteResult] =
+      implicit ec: ExecutionContext): Future[Boolean] =
     delete(
       Json.obj("$or" -> Json.arr(Json.obj("_id" -> id.value),
                                  Json.obj("_humanReadableId" -> hrid))))
@@ -133,9 +126,9 @@ trait Repo[Of, Id <: ValueType] {
     findByIdOrHrId(id, hrid).map(_.isDefined)
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   def deleteByIdLogically(id: String)(
-      implicit ec: ExecutionContext): Future[WriteResult]
+      implicit ec: ExecutionContext): Future[Boolean]
   def deleteByIdLogically(id: Id)(
-      implicit ec: ExecutionContext): Future[WriteResult]
+      implicit ec: ExecutionContext): Future[Boolean]
   def deleteLogically(query: JsObject)(
       implicit ec: ExecutionContext): Future[Boolean]
   def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean]

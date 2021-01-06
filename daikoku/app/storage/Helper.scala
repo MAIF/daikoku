@@ -8,6 +8,13 @@ object Helper {
 
   val logger: Logger = Logger("Helper")
 
+  def _inOperatorToString(value: List[String]): String = {
+    if(value.isEmpty)
+      "('DEFAULT VALUE TO AVOID EMPTY LIST')"
+    else
+      s"(${value.map("'" + _ + "'").mkString(",")})"
+  }
+
   def _convertTuple(field: (String, JsValue)): String = {
     field._2 match {
       case value: JsObject =>
@@ -16,7 +23,7 @@ object Helper {
           case _ => "NOT IMPLEMENTED"
         }
       case value: JsArray if field._1 == "$or" => value.as[List[JsObject]].map(convertQuery).mkString(" OR ")
-      case value: JsArray if field._1 == "$in" => "(" + value.as[List[String]].map("'" + _ + "'").mkString(",") + ")"
+      case value: JsArray if field._1 == "$in" => _inOperatorToString(value.as[List[String]])
       case value: Any => s"content ->> '${field._1}' = '${value.toString().replace("\"", "")}'"
     }
   }
