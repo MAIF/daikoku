@@ -9,7 +9,6 @@ const smp = new SpeedMeasurePlugin();
 module.exports = (env, argv) => {
   const isProd = argv.mode === 'production';
   const config = {
-    devtool: 'eval',
     devServer: {
       disableHostCheck: true,
       liveReload: true,
@@ -170,7 +169,10 @@ module.exports = (env, argv) => {
       }
     });
   } else {
-    return config;
+    return {
+      ...config,
+      devtool: 'eval'
+    };
   }
 };
 
