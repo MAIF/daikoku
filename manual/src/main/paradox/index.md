@@ -6,7 +6,7 @@
 > *In Japan, <a href="https://en.wikipedia.org/wiki/File:Daikoku.jpg" target="blank">Daikokuten</a> (大黒天), the god of great darkness or blackness, or the god of five cereals, is one of the Seven Lucky Gods (Fukujin). Daikokuten evolved from the Buddhist form of the Indian deity Shiva intertwined with the Shinto god Ōkuninushi. The name is the Japanese equivalent of Mahākāla, the Hindu name for Shiva.*
 
 @@@ div { .centered-img }
-[![Build](https://github.com/MAIF/daikoku/workflows/Build/badge.svg)](https://travis-ci.org/MAIF/daikoku) [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases/download/v1.0.12/daikoku-1.0.12.jar)
+[![Build](https://github.com/MAIF/daikoku/workflows/Build/badge.svg)](https://travis-ci.org/MAIF/daikoku) [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases/download/v1.0.13/daikoku-1.0.13.jar)
 @@@
 
 @@@ div { .centered-img }
@@ -19,19 +19,19 @@ You are not sure of what is **Otoroshi**, you should probably have a look at [th
 
 ## Installation
 
-You can download the latest build of Daikoku as a [fat jar](https://github.com/MAIF/daikoku/releases/download/v1.0.12/daikoku-1.0.12.jar) or as a [zip package](https://github.com/MAIF/daikoku/releases/download/v1.0.12/daikoku-1.0.12.zip).
+You can download the latest build of Daikoku as a [fat jar](https://github.com/MAIF/daikoku/releases/download/v1.0.13/daikoku-1.0.13.jar) or as a [zip package](https://github.com/MAIF/daikoku/releases/download/v1.0.13/daikoku-1.0.13.zip).
 
 You can install and run Otoroshi with this little bash snippet :
 
 ```sh
-curl -L -o daikoku.jar 'https://github.com/MAIF/daikoku/releases/download/v1.0.12/daikoku-1.0.12.jar'
+curl -L -o daikoku.jar 'https://github.com/MAIF/daikoku/releases/download/v1.0.13/daikoku-1.0.13.jar'
 java -jar daikoku.jar
 ```
 
 or using docker :
 
 ```sh
-docker run -p "8080:8080" maif/daikoku:1.0.12
+docker run -p "8080:8080" maif/daikoku:1.0.13
 ```
 
 Now, open your browser to <a href="http://localhost:8080/" target="_blank">http://localhost:8080/</a>, **log in with the credential generated in the logs** and explore **Daikoku** by yourself
