@@ -106,3 +106,9 @@ We'd like to thank all the contributors who worked on this release!
 - UI is broken after searching for a user to add to team members [#183](https://github.com/MAIF/daikoku/issues/183)
 - Newlines are not rendered in api smalldescription and description [#180](https://github.com/MAIF/daikoku/issues/180)
 
+## [v1.0.13] - 2021-01-07
+
+## :beetle: Bug Fixes
+
+- javascript build is broken ¿ⓧ_ⓧﮌ [#203](https://github.com/MAIF/daikoku/issues/203)
+
