@@ -343,7 +343,8 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
       notificationRepo.forAllTenant(),
       auditTrailRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
-      translationRepo.forAllTenant()
+      translationRepo.forAllTenant(),
+      messageRepo.forAllTenant()
     )
     Source(collections).flatMapConcat { collection =>
       collection.streamAllRaw().map { doc =>
@@ -378,6 +379,7 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
       _ <- env.dataStore.auditTrailRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.userSessionRepo.deleteAll()
       _ <- env.dataStore.translationRepo.forAllTenant().deleteAll()
+      - <- env.dataStore.messageRepo.forAllTenant().deleteAll()
       _ <- source
         .via(Framing.delimiter(ByteString("\n"), 1000000000, true))
         .map(_.utf8String)
@@ -431,6 +433,10 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
           case ("UserSessions", payload) =>
             env.dataStore.userSessionRepo.save(
               UserSessionFormat.reads(payload).get)
+          case ("Messages", payload) =>
+            env.dataStore.messageRepo
+              .forAllTenant()
+              .save(MessageFormat.reads(payload).get)
           case (typ, _) =>
             logger.info(s"Unknown type: $typ")
             FastFuture.successful(false)
