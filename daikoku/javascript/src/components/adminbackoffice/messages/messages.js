@@ -9,7 +9,7 @@ import Select from 'react-select';
 import { MessagesContext } from '../../backoffice';
 import * as MessagesEvents from '../../../services/messages';
 import * as Services from '../../../services';
-import { Option, partition, formatMessageDate } from '../../utils';
+import { Option, partition, formatMessageDate, BeautifulTitle } from '../../utils';
 import { UserBackOffice } from '../../backoffice';
 import { t, Translation } from '../../../locales';
 
@@ -205,9 +205,11 @@ const AdminMessagesComponent = (props) => {
                   </div>
                   <div className="col-8">
                     <div className="d-flex justify-content-between">
-                      <h4>{user.name}</h4>
+                      <BeautifulTitle title={user.name} className="message__user--name">
+                        <h4 className="message__user--name">{user.name}</h4>
+                      </BeautifulTitle>
                       <a
-                        className="notification-link cursor-pointer"
+                        className="delete-link cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           closeSelectedChat(chat);

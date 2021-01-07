@@ -180,3 +180,22 @@
     }
   }
 
+  .message__user--name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .delete-link {
+  width: 50px;
+  color: $link-color;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  position: relative;
+}
+
+.delete-link:hover {
+  color: $link-hover-color;
+  text-decoration: none;
+}
