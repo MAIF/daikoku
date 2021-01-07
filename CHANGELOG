@@ -85,3 +85,24 @@ We'd like to thank all the contributors who worked on this release!
 - Tenants are accessibles from search bar and menu [#179](https://github.com/MAIF/daikoku/issues/179)
 - Custom footer doesn't display properly [#169](https://github.com/MAIF/daikoku/issues/169)
 
+## [v1.0.12] - 2021-01-07
+
+## :star: New Features
+
+- Update title page (in browser tab) [#192](https://github.com/MAIF/daikoku/issues/192)
+- Maybe it's could be nice to receive a mail after receive a message in Daikoku [#182](https://github.com/MAIF/daikoku/issues/182)
+
+## :beetle: Bug Fixes
+
+- Messages are not exported on db export [#202](https://github.com/MAIF/daikoku/issues/202)
+- footer display is broken on the API reference page [#196](https://github.com/MAIF/daikoku/issues/196)
+- Some messages are too big for toastr [#195](https://github.com/MAIF/daikoku/issues/195)
+- back button work weirdly [#194](https://github.com/MAIF/daikoku/issues/194)
+- Click on message button crash app [#193](https://github.com/MAIF/daikoku/issues/193)
+- Update build badge in manual [#191](https://github.com/MAIF/daikoku/issues/191)
+- When super admin change name of user, a new personal team is created with the new name [#189](https://github.com/MAIF/daikoku/issues/189)
+- Testing issues [#188](https://github.com/MAIF/daikoku/issues/188)
+- Wrong mail body when user is accepted in a team [#186](https://github.com/MAIF/daikoku/issues/186)
+- UI is broken after searching for a user to add to team members [#183](https://github.com/MAIF/daikoku/issues/183)
+- Newlines are not rendered in api smalldescription and description [#180](https://github.com/MAIF/daikoku/issues/180)
+
