@@ -783,18 +783,16 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def count(query: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
-    logger.error(s"COUNT $query")
-
     db.query { dsl =>
+      logger.error(s"COUNT $query - $tableName - ${dsl.fetchCount(DSL.table(tableName))}")
       if (query.values.isEmpty)
         dsl.fetchCount(DSL.table(tableName))
       else
-        dsl.fetchOne(
-          "SELECT COUNT(*) FROM {0} WHERE {1}",
+        dsl.fetchValue("SELECT COUNT(*) FROM {0} WHERE {1}",
           DSL.table(tableName),
           DSL.table(convertQuery(query))
         )
-          .size()
+          .asInstanceOf[Long]
     }
   }
 
@@ -905,14 +903,10 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def save(query: JsObject, value: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-
-    logger.error(s"save : $query")
+    logger.error(s"save : $query - $tableName")
 
     db.query { dsl =>
-      logger.debug(
-        s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
-      )
-
+      logger.debug(s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})")
       if (value.keys.contains("_deleted"))
         dsl
           .query("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
@@ -1028,7 +1022,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
   override def exists(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] =
     db.query { dsl =>
-      dsl.fetchExists(dsl.selectFrom(
+      val result = dsl.fetchExists(dsl.selectFrom(
         DSL
           .table(tableName)
           .where(DSL.condition("exists (SELECT 1 FROM {0} WHERE {1})",
@@ -1036,6 +1030,10 @@ abstract class MongoRepo[Of, Id <: ValueType](
             DSL.table(convertQuery(query))
           )))
       )
+
+      logger.error(s"exists - $query - $tableName - $result")
+
+      result
     }
 
   override def findWithProjection(query: JsObject, projection: JsObject)
@@ -1100,11 +1098,13 @@ abstract class MongoRepo[Of, Id <: ValueType](
     for {
       count <- db.query { dsl =>
         if (query.values.isEmpty)
-          dsl.fetchOne("SELECT COUNT(*) FROM {0}", DSL.table(tableName)).size()
+          dsl.fetchCount(DSL.table(tableName))
         else
-          dsl.fetchOne("SELECT COUNT(*) FROM {0} WHERE {1}", DSL.table(tableName),
+          dsl.fetchValue("SELECT COUNT(*) FROM {0} WHERE {1}",
+            DSL.table(tableName),
             DSL.table(convertQuery(query))
-          ).size()
+          )
+            .asInstanceOf[Long]
       }
       queryRes <- {
         db.query { dsl =>
@@ -1304,12 +1304,16 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
                      query: JsObject,
                      sort: Option[JsObject] = None,
                      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
-    logger.error(s"def find() : $query")
     logger.debug(s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
 
     sort match {
       case None =>
         db.query { dsl =>
+          if (query.values.isEmpty)
+            logger.error(s"SELECT * FROM $tableName")
+          else
+            logger.error(s"SELECT * FROM $tableName WHERE ${convertQuery(query ++ Json.obj("_tenant" -> tenant.value))} ")
+
           try {
             val result = recordToJson(
               if (query.values.isEmpty) dsl.fetch("SELECT * FROM {0}", DSL.table(tableName))
@@ -1532,10 +1536,8 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def exists(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("exists(query: JsObject)")
-
     db.query { dsl =>
-      dsl.fetchExists(dsl.selectFrom(
+      val result = dsl.fetchExists(dsl.selectFrom(
         DSL
           .table(tableName)
           .where(DSL.condition("exists (SELECT 1 FROM {0} WHERE {1})",
@@ -1543,6 +1545,10 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
             DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
             )))
       ))
+
+      logger.error(s"exits $query - $tableName - $result")
+
+      result
     }
   }
 
@@ -1615,12 +1621,11 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       if (query.values.isEmpty)
         dsl.fetchCount(DSL.table(tableName))
       else
-        dsl.fetchOne(
-          "SELECT COUNT(*) FROM {0} WHERE {1}",
+        dsl.fetchValue("SELECT COUNT(*) FROM {0} WHERE {1}",
           DSL.table(tableName),
           DSL.table(convertQuery(query))
         )
-          .size()
+          .asInstanceOf[Long]
     }
   }
 
@@ -1684,15 +1689,22 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
   override def findWithPagination(query: JsObject, page: Int, pageSize: Int)
                                  (implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
-    logger.debug(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
+    logger.error(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
     for {
       count <- db.query { dsl =>
         if (query.values.isEmpty)
-          dsl.fetchOne("SELECT COUNT(*) FROM {0}", DSL.table(tableName)).size()
+          logger.error(s"SELECT COUNT(*) FROM ${DSL.table(tableName)}")
         else
-          dsl.fetchOne("SELECT COUNT(*) FROM {0} WHERE {1}", DSL.table(tableName),
+          logger.error(s"SELECT COUNT(*) FROM ${DSL.table(tableName)} WHERE ${DSL.table(convertQuery(query))}")
+
+        if (query.values.isEmpty)
+          dsl.fetchCount(DSL.table(tableName))
+        else
+          dsl.fetchValue("SELECT COUNT(*) FROM {0} WHERE {1}",
+            DSL.table(tableName),
             DSL.table(convertQuery(query))
-          ).size()
+          )
+            .asInstanceOf[Long]
       }
       queryRes <- {
         db.query { dsl =>

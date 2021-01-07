@@ -9,7 +9,7 @@ import play.api.db.{Database, Databases}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class PostgresConnection @Inject() (system: ActorSystem) {
+class PostgresConnection @Inject()(system: ActorSystem) {
   val databaseContext: ExecutionContext = system.dispatchers.lookup("contexts.database")
 
   val logger: Logger = Logger(s"PostgresConnection")
@@ -26,16 +26,16 @@ class PostgresConnection @Inject() (system: ActorSystem) {
   logger.error("Ending initialize")
 
   def query[A](block: DSLContext => A): Future[A] = Future {
-      database.withConnection { connection =>
-        val sql = DSL.using(connection, SQLDialect.POSTGRES)
-        block(sql)
-      }
+    database.withConnection { connection =>
+      val sql = DSL.using(connection, SQLDialect.POSTGRES)
+      block(sql)
+    }
   }(databaseContext)
 
   def withTransaction[A](block: DSLContext => A): Future[A] = Future {
-      database.withTransaction { connection =>
-        val sql = DSL.using(connection, SQLDialect.POSTGRES)
-        block(sql)
-      }
+    database.withTransaction { connection =>
+      val sql = DSL.using(connection, SQLDialect.POSTGRES)
+      block(sql)
+    }
   }(databaseContext)
 }

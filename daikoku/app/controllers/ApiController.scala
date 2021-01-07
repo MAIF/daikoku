@@ -1176,6 +1176,18 @@ class ApiController(DaikokuAction: DaikokuAction,
             "$in" -> JsArray(publicApis.map(_.id.asJson) ++ almostPublicApis.map(_.id.asJson) ++ privateApis.map(_.id.asJson)))))
     } yield {
 
+      publicApis.foreach { api =>
+        println(s"publicApis ${api.name}")
+      }
+
+      almostPublicApis.foreach { api =>
+        println(s"almostPublicApis ${api.name}")
+      }
+
+      privateApis.foreach { api =>
+        println(s"privateApis ${api.name}")
+      }
+
       val apis = (publicApis ++ almostPublicApis ++ privateApis).filter(api => api.published || myTeams.exists(api.team == _.id))
 
       val sortedApis = apis.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
