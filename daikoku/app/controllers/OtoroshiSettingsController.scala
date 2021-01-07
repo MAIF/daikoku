@@ -9,8 +9,15 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, ApiKeyRestrictions, TestingAuth}
-import fr.maif.otoroshi.daikoku.domain.json.{OtoroshiSettingsFormat, OtoroshiSettingsIdFormat}
+import fr.maif.otoroshi.daikoku.domain.{
+  ActualOtoroshiApiKey,
+  ApiKeyRestrictions,
+  TestingAuth
+}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  OtoroshiSettingsFormat,
+  OtoroshiSettingsIdFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import org.apache.commons.codec.binary.Base64
@@ -19,13 +26,18 @@ import play.api.http.HttpEntity
 import play.api.libs.json.JsError.toJson
 import play.api.libs.json.{JsArray, JsError, JsObject, JsSuccess, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request}
+import play.api.mvc.{
+  AbstractController,
+  BodyParser,
+  ControllerComponents,
+  Request
+}
 
 class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                                  env: Env,
                                  otoroshiClient: OtoroshiClient,
                                  cc: ControllerComponents)
-  extends AbstractController(cc) {
+    extends AbstractController(cc) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
@@ -228,9 +240,11 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         val apiOpt = (ctx.request.body \ "api").asOpt[String]
         val metadataOpt = (ctx.request.body \ "customMetadata").asOpt[JsObject]
         val readOnlyOpt = (ctx.request.body \ "customReadOnly").asOpt[Boolean]
-        val maxPerSecondOpt = (ctx.request.body \ "customMaxPerSecond").asOpt[Long]
+        val maxPerSecondOpt =
+          (ctx.request.body \ "customMaxPerSecond").asOpt[Long]
         val maxPerDayOpt = (ctx.request.body \ "customMaxPerDay").asOpt[Long]
-        val maxPerMonthOpt = (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
+        val maxPerMonthOpt =
+          (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
         (otoroshiSettingsOpt, serviceGroupOpt, clientNameOpt, tagOpt, apiOpt) match {
           case (Some(otoroshiSettings),
                 Some(serviceGroup),
@@ -296,7 +310,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                         otoroshiClient
                           .createApiKey(serviceGroup, apiKey)(settings)
                           .map {
-                            case Left(err)     => AppError.render(err)
+                            case Left(err) => AppError.render(err)
                             case Right(apiKey) =>
                               Ok(apiKey.asJson)
                           }
@@ -318,149 +332,195 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
     Accumulator.source[ByteString].map(Right.apply)
   }
 
-  def updateTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamApiEditorOnly(AuditTrailEvent(
-      s"@{user.name} update testing @{apikey.id} apikey for team @{team.name} - @{team.id}"))(teamId, ctx) { team =>
-      val apiOpt = (ctx.request.body \ "api").asOpt[String]
-      val otoroshiSettingsOpt =
-        (ctx.request.body \ "otoroshiSettings").asOpt(OtoroshiSettingsIdFormat)
-      val serviceGroupOpt = (ctx.request.body \ "serviceGroup").asOpt[String]
-      val metadataOpt = (ctx.request.body \ "customMetadata").asOpt[JsObject]
-      val readOnlyOpt = (ctx.request.body \ "customReadOnly").asOpt[Boolean]
-      val maxPerSecondOpt = (ctx.request.body \ "customMaxPerSecond").asOpt[Long]
-      val maxPerDayOpt = (ctx.request.body \ "customMaxPerDay").asOpt[Long]
-      val maxPerMonthOpt = (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
+  def updateTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) {
+    ctx =>
+      TeamApiEditorOnly(AuditTrailEvent(
+        s"@{user.name} update testing @{apikey.id} apikey for team @{team.name} - @{team.id}"))(
+        teamId,
+        ctx) { team =>
+        val apiOpt = (ctx.request.body \ "api").asOpt[String]
+        val otoroshiSettingsOpt =
+          (ctx.request.body \ "otoroshiSettings")
+            .asOpt(OtoroshiSettingsIdFormat)
+        val serviceGroupOpt = (ctx.request.body \ "serviceGroup").asOpt[String]
+        val metadataOpt = (ctx.request.body \ "customMetadata").asOpt[JsObject]
+        val readOnlyOpt = (ctx.request.body \ "customReadOnly").asOpt[Boolean]
+        val maxPerSecondOpt =
+          (ctx.request.body \ "customMaxPerSecond").asOpt[Long]
+        val maxPerDayOpt = (ctx.request.body \ "customMaxPerDay").asOpt[Long]
+        val maxPerMonthOpt =
+          (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
 
-      apiOpt match {
-        case Some(apiId) =>
-          env.dataStore.apiRepo
-            .forTenant(ctx.tenant)
-            .findById(apiId) flatMap {
-            case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-            case Some(api) =>
-              val maybeLastOtoSettings = api.testing.config.map(_.otoroshiSettings)
-              (otoroshiSettingsOpt, serviceGroupOpt) match {
-                case (Some(otoroshiSettings),
-                      Some(serviceGroup)) =>
-                  ctx.tenant.otoroshiSettings.find(s => maybeLastOtoSettings.contains(s.id)) match {
-                    case None => FastFuture.successful(NotFound(
-                      Json.obj("error" -> s"previous Otoroshi settings not found")))
-                    case Some(previousSettings) =>
-                          env.dataStore.apiRepo
-                            .forTenant(ctx.tenant)
-                            .findById(apiId) flatMap {
-                            case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-                            case Some(api) =>
-                              api.testing.config.map(_.serviceGroup) match {
-                                case Some(lastServiceGroup) =>
-                                  otoroshiClient.getApikey(lastServiceGroup.value, api.testing.username.get)(previousSettings).flatMap {
-                                    case Left(error) => FastFuture.successful(BadRequest(toJson(error)))
+        apiOpt match {
+          case Some(apiId) =>
+            env.dataStore.apiRepo
+              .forTenant(ctx.tenant)
+              .findById(apiId) flatMap {
+              case None =>
+                FastFuture.successful(
+                  NotFound(Json.obj("error" -> "Api not found")))
+              case Some(api) =>
+                val maybeLastOtoSettings =
+                  api.testing.config.map(_.otoroshiSettings)
+                (otoroshiSettingsOpt, serviceGroupOpt) match {
+                  case (Some(otoroshiSettings), Some(serviceGroup)) =>
+                    ctx.tenant.otoroshiSettings.find(s =>
+                      maybeLastOtoSettings.contains(s.id)) match {
+                      case None =>
+                        FastFuture.successful(NotFound(Json.obj(
+                          "error" -> s"previous Otoroshi settings not found")))
+                      case Some(previousSettings) =>
+                        env.dataStore.apiRepo
+                          .forTenant(ctx.tenant)
+                          .findById(apiId) flatMap {
+                          case None =>
+                            FastFuture.successful(
+                              NotFound(Json.obj("error" -> "Api not found")))
+                          case Some(api) =>
+                            api.testing.config.map(_.serviceGroup) match {
+                              case Some(lastServiceGroup) =>
+                                otoroshiClient
+                                  .getApikey(
+                                    lastServiceGroup.value,
+                                    api.testing.username.get)(previousSettings)
+                                  .flatMap {
+                                    case Left(error) =>
+                                      FastFuture.successful(
+                                        BadRequest(toJson(error)))
                                     case Right(apiKey) =>
-                                      val lastMetadata: Map[String, String] = api.testing.config.flatMap(_.customMetadata)
-                                        .flatMap(_.asOpt[Map[String, String]])
-                                        .getOrElse(Map.empty[String, String])
+                                      val lastMetadata: Map[String, String] =
+                                        api.testing.config
+                                          .flatMap(_.customMetadata)
+                                          .flatMap(_.asOpt[Map[String, String]])
+                                          .getOrElse(Map.empty[String, String])
 
                                       val updatedKey = apiKey.copy(
                                         authorizedGroup = serviceGroup,
                                         metadata = (apiKey.metadata -- lastMetadata.keySet) ++ metadataOpt
                                           .flatMap(_.asOpt[Map[String, String]])
                                           .getOrElse(Map.empty[String, String]),
-                                        throttlingQuota = maxPerSecondOpt.getOrElse(apiKey.throttlingQuota),
-                                        dailyQuota = maxPerDayOpt.getOrElse(apiKey.dailyQuota),
-                                        monthlyQuota = maxPerMonthOpt.getOrElse(apiKey.monthlyQuota),
-                                        readOnly = readOnlyOpt.getOrElse(apiKey.readOnly)
+                                        throttlingQuota = maxPerSecondOpt
+                                          .getOrElse(apiKey.throttlingQuota),
+                                        dailyQuota = maxPerDayOpt.getOrElse(
+                                          apiKey.dailyQuota),
+                                        monthlyQuota = maxPerMonthOpt.getOrElse(
+                                          apiKey.monthlyQuota),
+                                        readOnly =
+                                          readOnlyOpt.getOrElse(apiKey.readOnly)
                                       )
 
-                                      if (maybeLastOtoSettings.exists(_ != otoroshiSettings)) {
-                                        ctx.tenant.otoroshiSettings.find(_.id == otoroshiSettings) match {
+                                      if (maybeLastOtoSettings.exists(
+                                            _ != otoroshiSettings)) {
+                                        ctx.tenant.otoroshiSettings.find(
+                                          _.id == otoroshiSettings) match {
                                           case Some(newSettings) =>
                                             for {
-                                              _ <- otoroshiClient.deleteApiKey(apiKey.authorizedGroup, apiKey.clientId)(previousSettings)
-                                              newKey <- otoroshiClient.createApiKey(serviceGroup, updatedKey)(newSettings)
+                                              _ <- otoroshiClient.deleteApiKey(
+                                                apiKey.authorizedGroup,
+                                                apiKey.clientId)(
+                                                previousSettings)
+                                              newKey <- otoroshiClient
+                                                .createApiKey(
+                                                  serviceGroup,
+                                                  updatedKey)(newSettings)
                                             } yield {
                                               newKey match {
-                                                case Left(err)     => AppError.render(err)
-                                                case Right(apiKey) => Ok(apiKey.asJson)
+                                                case Left(err) =>
+                                                  AppError.render(err)
+                                                case Right(apiKey) =>
+                                                  Ok(apiKey.asJson)
                                               }
                                             }
-                                          case None => FastFuture.successful(NotFound(
-                                            Json.obj("error" -> s"Settings ${otoroshiSettings.value} not found")))
+                                          case None =>
+                                            FastFuture.successful(
+                                              NotFound(Json.obj(
+                                                "error" -> s"Settings ${otoroshiSettings.value} not found")))
                                         }
                                       } else {
-                                        otoroshiClient.updateApiKey(serviceGroup, updatedKey)(previousSettings)
+                                        otoroshiClient
+                                          .updateApiKey(
+                                            serviceGroup,
+                                            updatedKey)(previousSettings)
                                           .map(key => Ok(key.asJson))
                                       }
                                   }
-                                case None => FastFuture.successful(NotFound(Json.obj("error" -> "Last testing apikey not found")))
-                              }
-                          }
-                  }
-                case _ => FastFuture.successful(BadRequest(Json.obj("error" -> "Bad request")))
-              }
-          }
-        case None => FastFuture.successful(
-          NotFound(Json.obj("error" -> "Api not found")))
-      }
-    }
-  }
-
-  def deleteTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamApiEditorOnly(AuditTrailEvent(
-      s"@{user.name} delete testing @{apikey.id} apikey for team @{team.name} - @{team.id}"))(teamId, ctx) { team =>
-
-      val otoroshiSettingsOpt =
-        (ctx.request.body \ "otoroshiSettings").asOpt[String]
-      val serviceGroupOpt = (ctx.request.body \ "serviceGroup").asOpt[String]
-      val clientIdOpt = (ctx.request.body \ "clientId").asOpt[String]
-      (otoroshiSettingsOpt, serviceGroupOpt, clientIdOpt) match {
-        case (
-          Some(otoroshiSettings),
-          Some(serviceGroup),
-          Some(clientId)
-          ) =>
-          ctx.tenant.otoroshiSettings.find(s =>
-            s.id.value == otoroshiSettings) match {
-            case None =>
-              FastFuture.successful(NotFound(
-                Json.obj("error" -> s"Settings $otoroshiSettings not found")))
-            case Some(settings) =>
-              otoroshiClient.getServiceGroup(serviceGroup)(settings)
-                .map {
-                  group =>
-                    Some(group)
-                } recover {
-                case _ => None
-              } flatMap {
-                case None =>
-                  FastFuture.successful(
-                    NotFound(Json.obj("error" -> "Group not found")))
-                case Some(_) =>
-                  otoroshiClient
-                    .deleteApiKey(serviceGroup, clientId)(settings)
-                    .map(_ => Ok(Json.obj("done" -> true)))
-              }
-          }
-        case _ => {
-          FastFuture.successful(
-            BadRequest(Json.obj("error" -> "Bad request")))
+                              case None =>
+                                FastFuture.successful(NotFound(Json.obj(
+                                  "error" -> "Last testing apikey not found")))
+                            }
+                        }
+                    }
+                  case _ =>
+                    FastFuture.successful(
+                      BadRequest(Json.obj("error" -> "Bad request")))
+                }
+            }
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "Api not found")))
         }
       }
+  }
 
-    }
+  def deleteTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) {
+    ctx =>
+      TeamApiEditorOnly(AuditTrailEvent(
+        s"@{user.name} delete testing @{apikey.id} apikey for team @{team.name} - @{team.id}"))(
+        teamId,
+        ctx) { team =>
+        val otoroshiSettingsOpt =
+          (ctx.request.body \ "otoroshiSettings").asOpt[String]
+        val serviceGroupOpt = (ctx.request.body \ "serviceGroup").asOpt[String]
+        val clientIdOpt = (ctx.request.body \ "clientId").asOpt[String]
+        (otoroshiSettingsOpt, serviceGroupOpt, clientIdOpt) match {
+          case (
+              Some(otoroshiSettings),
+              Some(serviceGroup),
+              Some(clientId)
+              ) =>
+            ctx.tenant.otoroshiSettings.find(s =>
+              s.id.value == otoroshiSettings) match {
+              case None =>
+                FastFuture.successful(NotFound(
+                  Json.obj("error" -> s"Settings $otoroshiSettings not found")))
+              case Some(settings) =>
+                otoroshiClient
+                  .getServiceGroup(serviceGroup)(settings)
+                  .map { group =>
+                    Some(group)
+                  } recover {
+                  case _ => None
+                } flatMap {
+                  case None =>
+                    FastFuture.successful(
+                      NotFound(Json.obj("error" -> "Group not found")))
+                  case Some(_) =>
+                    otoroshiClient
+                      .deleteApiKey(serviceGroup, clientId)(settings)
+                      .map(_ => Ok(Json.obj("done" -> true)))
+                }
+            }
+          case _ => {
+            FastFuture.successful(
+              BadRequest(Json.obj("error" -> "Bad request")))
+          }
+        }
+
+      }
   }
 
   private def hasBody(request: Request[_]): Boolean =
     (request.method, request.headers.get("Content-Length")) match {
-      case ("GET", Some(_)) => true
-      case ("GET", None) => false
-      case ("HEAD", Some(_)) => true
-      case ("HEAD", None) => false
-      case ("PATCH", _) => true
-      case ("POST", _) => true
-      case ("PUT", _) => true
+      case ("GET", Some(_))    => true
+      case ("GET", None)       => false
+      case ("HEAD", Some(_))   => true
+      case ("HEAD", None)      => false
+      case ("PATCH", _)        => true
+      case ("POST", _)         => true
+      case ("PUT", _)          => true
       case ("DELETE", Some(_)) => true
-      case ("DELETE", None) => false
-      case _ => true
+      case ("DELETE", None)    => false
+      case _                   => true
     }
 
   def fakeApiCall(teamId: String, apiId: String) =
@@ -506,9 +566,9 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                     case TestingAuth.ApiKey if queryOpt.isDefined =>
                       url
                         .replace(s"&${queryOpt.get._1}=fake-${api.id.value}",
-                          s"&${queryOpt.get._1}=${username}")
+                                 s"&${queryOpt.get._1}=${username}")
                         .replace(s"?${queryOpt.get._1}=fake-${api.id.value}",
-                          s"?${queryOpt.get._1}=${username}")
+                                 s"?${queryOpt.get._1}=${username}")
                     // case TestingAuth.ApiKey if queryOpt.isDefined && url.contains("?") => (url + "&" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
                     // case TestingAuth.ApiKey if queryOpt.isDefined && !url.contains("?") => (url + "?" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
                     case _ => url
@@ -518,10 +578,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                       case TestingAuth.ApiKey if headerOpt.isDefined =>
                         headers - headerOpt.get._1 + (headerOpt.get._1 -> username)
                       case TestingAuth.Basic =>
-                        headers - "Authorization" + ("Authorization" -> s"Basic ${
-                          Base64.encodeBase64String(
-                            s"${username}:${password}".getBytes(Charsets.UTF_8))
-                        }")
+                        headers - "Authorization" + ("Authorization" -> s"Basic ${Base64.encodeBase64String(
+                          s"${username}:${password}".getBytes(Charsets.UTF_8))}")
                       case _ => headers
                     }
                   val builder = env.wsClient

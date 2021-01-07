@@ -83,7 +83,9 @@ export class ApiCartidge extends Component {
               <Translation i18nkey="Default plan" language={this.props.currentLanguage}>
                 Default plan
               </Translation>
-              <span className="badge badge-primary word-break ml-1" style={{ whiteSpace: 'normal' }}>
+              <span
+                className="badge badge-primary word-break ml-1"
+                style={{ whiteSpace: 'normal' }}>
                 {defaultPlan.customName || t(pricing, this.props.currentLanguage)}
               </span>
             </span>

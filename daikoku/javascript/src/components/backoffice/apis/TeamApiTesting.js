@@ -22,7 +22,7 @@ export const TeamApiTesting = (props) => {
       auth: authType,
       username: clientId,
       password: clientSecret,
-      config
+      config,
     };
 
     if (!_.isEqual(testing, props.value.testing)) {
@@ -32,43 +32,47 @@ export const TeamApiTesting = (props) => {
 
   const handleOtoroshiUsage = () => {
     const random = faker.random.alphaNumeric(16);
-    const newConfig = config && config.otoroshiSettings ? config : {
-      otoroshiSettings: null,
-      serviceGroup: null,
-      clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
-      api: props.value._id,
-      tag: `daikoku_testing_${random}`,
-      metadata: props.metadata
-    };
+    const newConfig =
+      config && config.otoroshiSettings
+        ? config
+        : {
+            otoroshiSettings: null,
+            serviceGroup: null,
+            clientName: `testing-purpose-only-apikey-for-${props.value.name}`,
+            api: props.value._id,
+            tag: `daikoku_testing_${random}`,
+            metadata: props.metadata,
+          };
 
     props.openSubMetadataModal({
-      save: (metadata) => props.openTestingApiKeyModal({
-        currentLanguage: props.currentLanguage,
-        metadata,
-        otoroshiSettings: props.otoroshiSettings,
-        teamId: props.teamId,
-        config: newConfig,
-        update: config && config.otoroshiSettings,
-        title: t('Otoroshi settings', props.currentLanguage),
-        onChange: (apiKey, config) => {
-          Promise.all([
-            setConfig(config),
-            setAuthName('Otoroshi auth'),
-            setAuthType('Basic'),
-            setClientId(apiKey.clientId),
-            setClientSecret(apiKey.clientSecret),
-            setEnabled(true)
-          ])
-            .then(() => {
-              props.save(); //FIXME: sometime it does'nt call
-            })
-            .catch(e => console.error({e}));
-        }
-      }),
+      save: (metadata) =>
+        props.openTestingApiKeyModal({
+          currentLanguage: props.currentLanguage,
+          metadata,
+          otoroshiSettings: props.otoroshiSettings,
+          teamId: props.teamId,
+          config: newConfig,
+          update: config && config.otoroshiSettings,
+          title: t('Otoroshi settings', props.currentLanguage),
+          onChange: (apiKey, config) => {
+            Promise.all([
+              setConfig(config),
+              setAuthName('Otoroshi auth'),
+              setAuthType('Basic'),
+              setClientId(apiKey.clientId),
+              setClientSecret(apiKey.clientSecret),
+              setEnabled(true),
+            ])
+              .then(() => {
+                props.save(); //FIXME: sometime it does'nt call
+              })
+              .catch((e) => console.error({ e }));
+          },
+        }),
       config,
       api: props.value._id,
       currentLanguage: props.currentLanguage,
-      description: <div>Description</div>
+      description: <div>Description</div>,
     });
   };
 
@@ -87,26 +91,27 @@ export const TeamApiTesting = (props) => {
           Services.deleteTestingApiKey(props.team._id, {
             otoroshiSettings: props.value.testing.config.otoroshiSettings,
             serviceGroup: props.value.testing.config.serviceGroup,
-            clientId: props.value.testing.username
-          })
-            .then(() => {
-              Promise.all([
-                setConfig(undefined),
-                setEnabled(false),
-                setAuthName(undefined),
-                setAuthType('Basic'),
-                setClientId(undefined),
-                setClientSecret(undefined)
-              ]).then(() => props.save());
-            });
+            clientId: props.value.testing.username,
+          }).then(() => {
+            Promise.all([
+              setConfig(undefined),
+              setEnabled(false),
+              setAuthName(undefined),
+              setAuthType('Basic'),
+              setClientId(undefined),
+              setClientSecret(undefined),
+            ]).then(() => props.save());
+          });
         }
       });
   };
 
-  const otoKeyExists = Option(props.value.testing).map(t => t.config).exists(c => c.otoroshiSettings);
+  const otoKeyExists = Option(props.value.testing)
+    .map((t) => t.config)
+    .exists((c) => c.otoroshiSettings);
   return (
     <div className="d-flex">
-      <form className='col-6 section pt-2 pr-2'>
+      <form className="col-6 section pt-2 pr-2">
         <BooleanInput
           value={enabled}
           label={t('Enabled', props.currentLanguage)}
@@ -115,7 +120,7 @@ export const TeamApiTesting = (props) => {
         <SelectInput
           clearable={false}
           value={{ label: authType, value: authType }}
-          placeholder={t('Select a auth type', props.currentLanguage)} 
+          placeholder={t('Select a auth type', props.currentLanguage)}
           label={t('Auth. type', props.currentLanguage)}
           possibleValues={[
             { label: 'ApiKey', value: 'ApiKey' },
@@ -138,17 +143,19 @@ export const TeamApiTesting = (props) => {
         <TextInput
           value={clientSecret}
           label={t('Client secret', props.currentLanguage)}
-          type='password'
+          type="password"
           onChange={(v) => setClientSecret(v)}
         />
       </form>
-      {!otoKeyExists && <div className="col-6 d-flex justify-content-center align-items-center">
-        <button className="btn btn-outline-success" onClick={handleOtoroshiUsage}>
-          <Translation i18nkey="testing.key.creation" language={props.currentLanguage}>
-            Use Otoroshi to create testing ApiKey
-          </Translation>
-        </button>
-      </div>}
+      {!otoKeyExists && (
+        <div className="col-6 d-flex justify-content-center align-items-center">
+          <button className="btn btn-outline-success" onClick={handleOtoroshiUsage}>
+            <Translation i18nkey="testing.key.creation" language={props.currentLanguage}>
+              Use Otoroshi to create testing ApiKey
+            </Translation>
+          </button>
+        </div>
+      )}
       {!!otoKeyExists && (
         <div className="d-flex flex-column pt-2 pr-2">
           <div
@@ -163,16 +170,17 @@ export const TeamApiTesting = (props) => {
                 i18nkey="otoroshi.test.key.modal.description"
                 language={props.currentLanguage}>
                 In order to make everything work, you'll have to add a tags match (OneTageIn /
-                AllTagIn) in your service descriptor in the 'Api Keys Constraints' section. Make sure
-                this service descriptor is the right one for testing and not a production system.
-            </Translation>
+                AllTagIn) in your service descriptor in the 'Api Keys Constraints' section. Make
+                sure this service descriptor is the right one for testing and not a production
+                system.
+              </Translation>
             </p>
             <p>
               <Translation
                 i18nkey="otoroshi.test.key.modal.tag.name"
                 language={props.currentLanguage}>
                 The tag you need to add is the following
-            </Translation>
+              </Translation>
             </p>
             <div
               style={{

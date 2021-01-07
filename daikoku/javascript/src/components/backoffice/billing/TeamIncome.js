@@ -75,7 +75,9 @@ class TeamIncomeComponent extends Component {
       mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 
     return (
-      <TeamBackOffice tab="Income" title={`${this.props.currentTeam.name} - ${t('Income', this.props.currentLanguage)}`}>
+      <TeamBackOffice
+        tab="Income"
+        title={`${this.props.currentTeam.name} - ${t('Income', this.props.currentLanguage)}`}>
         <Can I={read} a={api} team={this.props.currentTeam} dispatchError={true}>
           <div className="row">
             <div className="col">

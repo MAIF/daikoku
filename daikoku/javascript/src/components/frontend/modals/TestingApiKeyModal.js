@@ -7,7 +7,7 @@ import { t, Translation } from '../../../locales';
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 export const TestingApiKeyModal = (props) => {
-  const [config, setConfig] = useState({...props.config });
+  const [config, setConfig] = useState({ ...props.config });
 
   const otoroshiFlow = ['otoroshiSettings', 'serviceGroup'];
   const otoroshiForm = (_found) => {
@@ -64,19 +64,17 @@ export const TestingApiKeyModal = (props) => {
   };
 
   const generateApiKey = () => {
-    Services.createTestingApiKey(props.teamId, {...config, ...props.metadata})
-      .then((apikey) => {
-        props.closeModal();
-        props.onChange(apikey, { ...config, ...props.metadata });
-      });
+    Services.createTestingApiKey(props.teamId, { ...config, ...props.metadata }).then((apikey) => {
+      props.closeModal();
+      props.onChange(apikey, { ...config, ...props.metadata });
+    });
   };
 
   const updateApiKey = () => {
-    Services.updateTestingApiKey(props.teamId, { ...config, ...props.metadata })
-      .then((apikey) => {
-        props.closeModal();
-        props.onChange(apikey, { ...config, ...props.metadata });
-      });
+    Services.updateTestingApiKey(props.teamId, { ...config, ...props.metadata }).then((apikey) => {
+      props.closeModal();
+      props.onChange(apikey, { ...config, ...props.metadata });
+    });
   };
 
   return (
@@ -93,25 +91,24 @@ export const TestingApiKeyModal = (props) => {
             flow={otoroshiFlow}
             schema={otoroshiForm(config)}
             value={config}
-            onChange={(c) => setConfig({...config, ...c})}
+            onChange={(c) => setConfig({ ...config, ...c })}
           />
         </React.Suspense>
       </div>
       <div className="modal-footer">
-        <button
-          type="button"
-          className="btn btn-outline-danger"
-          onClick={() => props.closeModal()}>
+        <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
           <Translation i18nkey="Cancel" language={props.currentLanguage}>
             Cancel
           </Translation>
         </button>
-        <button 
-          type="button" 
-          className="btn btn-outline-success" 
+        <button
+          type="button"
+          className="btn btn-outline-success"
           onClick={apiKeyAction}
           disabled={!config.otoroshiSettings && !config.serviceGroup ? 'disabled' : undefined}>
-          <Translation i18nkey={props.update ? 'Update' : 'Create'} language={props.currentLanguage}> 
+          <Translation
+            i18nkey={props.update ? 'Update' : 'Create'}
+            language={props.currentLanguage}>
             {props.update ? 'Update' : 'Create'}
           </Translation>
         </button>

@@ -226,7 +226,12 @@ class TeamApiComponent extends Component {
     }
 
     return (
-      <TeamBackOffice tab="Apis" isLoading={!editedApi} title={`${this.props.currentTeam.name} - ${this.state.api ? this.state.api.name : t('API', this.props.currentLanguage)}`}>
+      <TeamBackOffice
+        tab="Apis"
+        isLoading={!editedApi}
+        title={`${this.props.currentTeam.name} - ${
+          this.state.api ? this.state.api.name : t('API', this.props.currentLanguage)
+        }`}>
         <Can I={manage} a={API} team={this.props.currentTeam} dispatchError>
           {!editedApi && (
             <h3>
@@ -480,7 +485,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   setError: (error) => setError(error),
   openSubMetadataModal: (props) => openSubMetadataModal(props),
-  openTestingApiKeyModal: (props) => openTestingApiKeyModal(props)
+  openTestingApiKeyModal: (props) => openTestingApiKeyModal(props),
 };
 
 export const TeamApi = connect(mapStateToProps, mapDispatchToProps)(TeamApiComponent);

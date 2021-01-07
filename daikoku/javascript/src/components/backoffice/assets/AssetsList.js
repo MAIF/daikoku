@@ -532,7 +532,14 @@ const AssetsListComponent = ({
 
   const BackOffice = tenantMode ? UserBackOffice : TeamBackOffice;
   return (
-    <BackOffice tab="Assets" apiId={match.params.apiId} title={`${tenantMode ? tenant.name : currentTeam.name} - ${t('Asset', currentLanguage, true)}`}>
+    <BackOffice
+      tab="Assets"
+      apiId={match.params.apiId}
+      title={`${tenantMode ? tenant.name : currentTeam.name} - ${t(
+        'Asset',
+        currentLanguage,
+        true
+      )}`}>
       <Can I={manage} a={tenantMode ? tenant : asset} team={currentTeam} dispatchError>
         <div className="row">
           <div className="col">

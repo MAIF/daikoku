@@ -119,8 +119,10 @@ object json {
       Try {
         JsSuccess(
           TestingConfig(
-            otoroshiSettings = (json \ "otoroshiSettings").as(OtoroshiSettingsIdFormat),
-            serviceGroup = (json \ "serviceGroup").as(OtoroshiServiceGroupIdFormat),
+            otoroshiSettings =
+              (json \ "otoroshiSettings").as(OtoroshiSettingsIdFormat),
+            serviceGroup =
+              (json \ "serviceGroup").as(OtoroshiServiceGroupIdFormat),
             clientName = (json \ "clientName").as[String],
             api = (json \ "api").as(ApiIdFormat),
             tag = (json \ "tag").as[String],

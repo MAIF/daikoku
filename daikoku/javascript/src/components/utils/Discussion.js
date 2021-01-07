@@ -95,7 +95,9 @@ const DiscussionComponent = (props) => {
                 />
               </div>
             )}
-            {Option(lastClosedDates.find((x) => x.chat === props.connectedUser._id)).exists(l => l.date) && (
+            {Option(lastClosedDates.find((x) => x.chat === props.connectedUser._id)).exists(
+              (l) => l.date
+            ) && (
               <div className="d-flex flex-row justify-content-center my-1">
                 <button
                   disabled={loading ? 'disabled' : null}

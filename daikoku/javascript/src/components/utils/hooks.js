@@ -1,4 +1,4 @@
-import {useState, useRef, useEffect, useCallback} from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 export const useStateWithPromise = (initialState) => {
   const [state, setState] = useState(initialState);
@@ -17,12 +17,15 @@ export const useStateWithPromise = (initialState) => {
      */
   }, [resolverRef.current, state]);
 
-  const handleSetState = useCallback((stateAction) => {
-    setState(stateAction);
-    return new Promise(resolve => {
-      resolverRef.current = resolve;
-    });
-  }, [setState]);
+  const handleSetState = useCallback(
+    (stateAction) => {
+      setState(stateAction);
+      return new Promise((resolve) => {
+        resolverRef.current = resolve;
+      });
+    },
+    [setState]
+  );
 
   return [state, handleSetState];
 };

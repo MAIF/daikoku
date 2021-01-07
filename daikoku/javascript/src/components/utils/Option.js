@@ -8,7 +8,7 @@ export const Some = (x) => ({
   getOrElse: () => x,
   getOrNull: () => x,
   isDefined: true,
-  exists: (f) => Option(f(x)).isDefined
+  exists: (f) => Option(f(x)).isDefined,
 });
 
 export const None = {
@@ -19,5 +19,5 @@ export const None = {
   getOrElse: (ifEmpty) => ifEmpty,
   getOrNull: () => undefined,
   isDefined: false,
-  exists: () => false
+  exists: () => false,
 };

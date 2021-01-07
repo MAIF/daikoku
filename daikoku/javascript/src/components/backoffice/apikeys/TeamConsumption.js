@@ -42,18 +42,16 @@ const TeamConsumptionComponent = ({ currentTeam, currentLanguage }) => {
   ];
 
   return (
-    <TeamBackOffice tab="ApiKeys" title={`${currentTeam.name} - ${t('Consumption', currentLanguage)}`}>
+    <TeamBackOffice
+      tab="ApiKeys"
+      title={`${currentTeam.name} - ${t('Consumption', currentLanguage)}`}>
       <div className="row">
         <div className="col">
           <h1>Consumption</h1>
           <OtoroshiStatsVizualization
             sync={() => Services.syncTeamBilling(currentTeam._id)}
             fetchData={(from, to) =>
-              Services.getTeamConsumptions(
-                currentTeam._id,
-                from.valueOf(),
-                to.valueOf()
-              )
+              Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
             }
             mappers={mappers}
             currentLanguage={currentLanguage}

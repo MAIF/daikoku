@@ -43,7 +43,8 @@ export const SubscriptionMetadataModal = (props) => {
       const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
         ([accMeta, accCustomMeta], item) => {
           if (
-            plan && plan.otoroshiTarget.apikeyCustomization.customMetadata.some((x) => x.key === item[0])
+            plan &&
+            plan.otoroshiTarget.apikeyCustomization.customMetadata.some((x) => x.key === item[0])
           ) {
             return [[...accMeta, item], accCustomMeta];
           }
@@ -83,8 +84,9 @@ export const SubscriptionMetadataModal = (props) => {
 
   const validate = () =>
     Object.entries({ ...customMetadata, ...metadata }).every(([_, value]) => !!value) &&
-    (!plan || plan.otoroshiTarget.apikeyCustomization.customMetadata.length === Object.keys(metadata).length);
-   
+    (!plan ||
+      plan.otoroshiTarget.apikeyCustomization.customMetadata.length ===
+        Object.keys(metadata).length);
 
   useEffect(() => {
     setIsValid(validate());
@@ -216,13 +218,14 @@ export const SubscriptionMetadataModal = (props) => {
         {loading && <Spinner />}
         {!loading && (
           <>
-            {! props.description && props.creationMode && (
+            {!props.description && props.creationMode && (
               <div className="modal-description">
                 <Translation
                   i18nkey="subscription.metadata.modal.creation.description"
                   language={props.currentLanguage}
                   replacements={[props.team.name, plan.customName || formatPlanType(plan)]}>
-                  {props.team.name} ask you an apikey for plan {plan.customName || formatPlanType(plan)}
+                  {props.team.name} ask you an apikey for plan{' '}
+                  {plan.customName || formatPlanType(plan)}
                 </Translation>
               </div>
             )}
@@ -236,31 +239,33 @@ export const SubscriptionMetadataModal = (props) => {
                 </Translation>
               </div>
             )}
-            {props.description && (
-              <div className="modal-description">
-                {props.description}
-              </div>
+            {props.description && <div className="modal-description">{props.description}</div>}
+            {!!plan && (
+              <Collapse
+                label={t(
+                  'mandatory.metadata.label',
+                  props.currentLanguage,
+                  false,
+                  `Mandatory metadata (${plan.otoroshiTarget.apikeyCustomization.customMetadata.length})`,
+                  plan.otoroshiTarget.apikeyCustomization.customMetadata.length
+                )}
+                collapsed={false}>
+                {_.sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key']).map(
+                  ({ key, possibleValues }, idx) => {
+                    return (
+                      <div className="d-flex flex-row mb-1" key={idx}>
+                        <input
+                          className="form-control col-5 mr-1"
+                          value={key}
+                          disabled="disabled"
+                        />
+                        {renderInput(key, possibleValues)}
+                      </div>
+                    );
+                  }
+                )}
+              </Collapse>
             )}
-            {!!plan && <Collapse
-              label={t(
-                'mandatory.metadata.label',
-                props.currentLanguage,
-                false,
-                `Mandatory metadata (${plan.otoroshiTarget.apikeyCustomization.customMetadata.length})`,
-                plan.otoroshiTarget.apikeyCustomization.customMetadata.length
-              )}
-              collapsed={false}>
-              {_.sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key']).map(
-                ({ key, possibleValues }, idx) => {
-                  return (
-                    <div className="d-flex flex-row mb-1" key={idx}>
-                      <input className="form-control col-5 mr-1" value={key} disabled="disabled" />
-                      {renderInput(key, possibleValues)}
-                    </div>
-                  );
-                }
-              )}
-            </Collapse>}
             <Collapse label={t('Additional metadata', props.currentLanguage)} collapsed={true}>
               <ObjectInput
                 value={customMetadata}
@@ -301,7 +306,7 @@ export const SubscriptionMetadataModal = (props) => {
             </Collapse>
           </>
         )}
-        
+
         <div className="modal-footer">
           <button
             type="button"

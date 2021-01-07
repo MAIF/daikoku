@@ -72,7 +72,12 @@ class TeamApiKeyConsumptionComponent extends Component {
 
   render() {
     return (
-      <TeamBackOffice tab="ApiKeys" title={`${this.props.currentTeam.name} - ${t('API key consumption', this.props.currentLanguage)}`}>
+      <TeamBackOffice
+        tab="ApiKeys"
+        title={`${this.props.currentTeam.name} - ${t(
+          'API key consumption',
+          this.props.currentLanguage
+        )}`}>
         <Can I={read} a={stat} team={this.props.currentTeam} dispatchError>
           <div className="d-flex col flex-column pricing-content">
             <div className="row">

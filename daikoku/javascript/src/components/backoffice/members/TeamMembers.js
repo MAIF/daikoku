@@ -104,7 +104,7 @@ export class TeamMembersSimpleComponent extends Component {
           'remove.member.alert',
           this.props.currentLanguage,
           false,
-          'You can\'t delete this user, it must remain an admin in a team.'
+          "You can't delete this user, it must remain an admin in a team."
         )
       );
     } else {
@@ -123,15 +123,15 @@ export class TeamMembersSimpleComponent extends Component {
             Services.removeMemberFromTeam(teamId, member._id).then(({ done, team }) => {
               done
                 ? toastr.success(
-                  'Success',
-                  t(
-                    'remove.member.success',
-                    this.props.currentLanguage,
-                    false,
-                    `${member.name} is no longer member of your team`,
-                    member.name
+                    'Success',
+                    t(
+                      'remove.member.success',
+                      this.props.currentLanguage,
+                      false,
+                      `${member.name} is no longer member of your team`,
+                      member.name
+                    )
                   )
-                )
                 : toastr.error('Failure');
               this.props.updateTeam(team).then(() => this.updateMembers(this.props.currentTeam));
             });
@@ -149,15 +149,15 @@ export class TeamMembersSimpleComponent extends Component {
           this.setState({ selectedMember: null }, () => {
             done
               ? toastr.success(
-                'Success',
-                t(
-                  'member.now.invited',
-                  this.props.currentLanguage,
-                  false,
-                  `${member.name} has been invited as new member of your team`,
-                  member.name
+                  'Success',
+                  t(
+                    'member.now.invited',
+                    this.props.currentLanguage,
+                    false,
+                    `${member.name} has been invited as new member of your team`,
+                    member.name
+                  )
                 )
-              )
               : toastr.error('Failure');
           });
         })
@@ -176,7 +176,7 @@ export class TeamMembersSimpleComponent extends Component {
           t(
             'remove.admin.alert',
             this.props.currentLanguage,
-            'You can\'t remove this admin status, it must remain an admin in a team.'
+            "You can't remove this admin status, it must remain an admin in a team."
           )
         );
       } else {
@@ -185,16 +185,16 @@ export class TeamMembersSimpleComponent extends Component {
           ({ done, team }) => {
             done
               ? toastr.success(
-                'Success',
-                t(
-                  'member.new.permission.success',
-                  this.props.currentLanguage,
-                  false,
-                  `${member.name} is now ${newPermission}`,
-                  member.name,
-                  newPermission
+                  'Success',
+                  t(
+                    'member.new.permission.success',
+                    this.props.currentLanguage,
+                    false,
+                    `${member.name} is now ${newPermission}`,
+                    member.name,
+                    newPermission
+                  )
                 )
-              )
               : toastr.error('Failure');
             this.props.updateTeam(team).then(() => this.updateMembers(this.props.currentTeam));
           }
@@ -205,7 +205,7 @@ export class TeamMembersSimpleComponent extends Component {
         t(
           'not.admin.alert',
           this.props.currentLanguage,
-          'Your are not an administrator. You can\'t do that.'
+          "Your are not an administrator. You can't do that."
         )
       );
     }
@@ -222,14 +222,14 @@ export class TeamMembersSimpleComponent extends Component {
 
     const filteredMembers = this.state.search
       ? this.state.members.filter(({ name, email }) =>
-        [name, email].some((value) => value.toLowerCase().includes(this.state.search))
-      )
+          [name, email].some((value) => value.toLowerCase().includes(this.state.search))
+        )
       : this.state.members;
 
     const filteredPending = this.state.search
       ? this.state.pendingUsers.filter(({ name, email }) =>
-        [name, email].some((value) => value.toLowerCase().includes(this.state.search))
-      )
+          [name, email].some((value) => value.toLowerCase().includes(this.state.search))
+        )
       : this.state.pendingUsers;
     return (
       <>
@@ -253,7 +253,9 @@ export class TeamMembersSimpleComponent extends Component {
               options={_.sortBy(this.state.addableMembers, ['value.name', 'value.email'])}
               onChange={this.addMember}
               value={this.state.selectedMember}
-              filterOption={({ value: { email, name } }, search) => email.includes(search) || name.includes(search)}
+              filterOption={({ value: { email, name } }, search) =>
+                email.includes(search) || name.includes(search)
+              }
               classNamePrefix="reactSelect"
             />
             <input
@@ -271,8 +273,9 @@ export class TeamMembersSimpleComponent extends Component {
               <ul className="nav nav-tabs flex-column flex-sm-row">
                 <li className="nav-item">
                   <span
-                    className={`nav-link cursor-pointer ${this.state.tab === TABS.members ? 'active' : ''
-                      }`}
+                    className={`nav-link cursor-pointer ${
+                      this.state.tab === TABS.members ? 'active' : ''
+                    }`}
                     onClick={() => this.setState({ tab: TABS.members })}>
                     <Translation
                       i18nkey="Member"
@@ -379,21 +382,25 @@ export class TeamMembersSimpleComponent extends Component {
                       action: [
                         {
                           action: () => this.togglePermission(member, administrator),
-                          iconClass: `fas fa-shield-alt ${isAdmin ? 'admin-active' : 'admin-inactive'
-                            }`,
-                          tooltip: `${isAdmin
+                          iconClass: `fas fa-shield-alt ${
+                            isAdmin ? 'admin-active' : 'admin-inactive'
+                          }`,
+                          tooltip: `${
+                            isAdmin
                               ? t('Remove administrator status', this.props.currentLanguage)
                               : t('Add administrator status', this.props.currentLanguage)
-                            }`,
+                          }`,
                         },
                         {
                           action: () => this.togglePermission(member, apiEditor),
-                          iconClass: `fas fa-pencil-alt ${isApiEditor ? 'admin-active' : 'admin-inactive'
-                            }`,
-                          tooltip: `${isApiEditor
+                          iconClass: `fas fa-pencil-alt ${
+                            isApiEditor ? 'admin-active' : 'admin-inactive'
+                          }`,
+                          tooltip: `${
+                            isApiEditor
                               ? t('Remove api editor status', this.props.currentLanguage)
                               : t('Add api editor status', this.props.currentLanguage)
-                            }`,
+                          }`,
                         },
                       ],
                       iconClass: 'fas fa-user-cog',
@@ -429,7 +436,10 @@ export class TeamMembersSimpleComponent extends Component {
 
 const TeamMembersComponent = (props) => {
   return (
-    <TeamBackOffice tab="Members" apiId={props.match.params.apiId} title={`${props.currentTeam.name} - ${t('Member', this.props.currentLanguage, true)}`}>
+    <TeamBackOffice
+      tab="Members"
+      apiId={props.match.params.apiId}
+      title={`${props.currentTeam.name} - ${t('Member', this.props.currentLanguage, true)}`}>
       <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
         <TeamMembersSimpleComponent {...props} />
       </Can>
