@@ -549,22 +549,30 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
             path="/"
             render={(p) => <Discussion location={p.location} history={p.history} match={p.match} />}
           />
-          <Route
-            path={[
-              '/teams',
-              '/:teamId/:apiId',
-              '/:teamId',
-              '/',
-            ]}
-            render={(p) => (
-              <Footer
-                isBackOffice={false}
-                location={p.location}
-                history={p.history}
-                match={p.match}
-              />
-            )}
-          />
+          <Switch>
+            <Route
+              path={[
+                '/settings',
+                '/notifications',
+                '/:teamId/settings'
+              ]}
+              render={() => null}
+            />
+            <Route
+              path={[
+                '/',
+              ]}
+              render={(p) => (
+                <Footer
+                  isBackOffice={false}
+                  location={p.location}
+                  history={p.history}
+                  match={p.match}
+                />
+              )}
+            />
+          </Switch>
+          
         </div>
       </MessagesProvider>
     </ConnectedRouter>
