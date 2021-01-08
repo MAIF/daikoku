@@ -186,7 +186,7 @@ const TeamApiSubscriptionsComponent = (props) => {
       tab="Apis"
       apiId={props.match.params.apiId}
       isLoading={loading}
-      title={`${props.currentTeam.name} - ${t('Subscriptions', this.props.currentLanguage)}`}>
+      title={`${props.currentTeam.name} - ${t('Subscriptions', props.currentLanguage)}`}>
       <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
         {!loading && (
           <div className="row">
