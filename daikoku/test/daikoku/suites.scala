@@ -532,7 +532,7 @@ object utils {
       s"/api/groups/$groupId/apikeys/$clientId"
 
     lazy val wireMockUrl = s"http://$stubHost:$stubPort"
-    val stubPort = wireMockConfig().dynamicPort().portNumber()
+    val stubPort = 11112
     val stubHost = "localhost"
 
     val teamOwnerId = TeamId("team-owner")
