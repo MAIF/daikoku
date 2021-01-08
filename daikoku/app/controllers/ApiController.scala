@@ -491,32 +491,6 @@ class ApiController(DaikokuAction: DaikokuAction,
         FlowShape(partition.in, merge.out)
       })
 
-      val UpdateApisFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow[ApiSubscription]
-        .mapAsync(1)(sub => {
-          for {
-            api <- env.dataStore.apiRepo.forTenant(tenant.id).findById(sub.api) if api.isDefined
-            _ <- env.dataStore.apiRepo
-              .forTenant(tenant.id)
-              .save(api.get.copy(subscriptions = api.get.subscriptions :+ sub.id))
-          } yield {
-            sub
-          }
-        })
-      val updateApisConcurrentFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit b: GraphDSL.Builder[NotUsed] =>
-        import GraphDSL.Implicits._
-
-        val merge = b.add(Merge[ApiSubscription](parallelism))
-        val partition = b.add(Partition[ApiSubscription](parallelism, sub => {
-          MurmurHash3.stringHash(sub.api.value) % parallelism
-        }))
-
-        for (i <- 0 until parallelism) {
-          partition.out(i) ~> UpdateApisFlow.async ~> merge.in(i)
-        }
-
-        FlowShape(partition.in, merge.out)
-      })
-
       val createSubFlow: Flow[ApiSubscription, ApiSubscription, NotUsed] = Flow[ApiSubscription]
         .mapAsync(10)(sub => env.dataStore.apiSubscriptionRepo.forTenant(tenant.id)
           .save(sub)
@@ -524,17 +498,9 @@ class ApiController(DaikokuAction: DaikokuAction,
         .filter(_._2)
         .map(_._1)
 
-      val source = Source.fromGraph(GraphDSL.create() { implicit b: GraphDSL.Builder[NotUsed] =>
-        import GraphDSL.Implicits._
-
-        val broadcast = b.add(Broadcast[ApiSubscription](2))
-        val merge = b.add(Merge[ApiSubscription](2))
-
-        subSource ~> createSubFlow ~> broadcast ~> updateTeamConcurrentFlow ~> merge
-        broadcast ~> updateApisConcurrentFlow ~> merge
-
-        SourceShape(merge.out)
-      })
+      val source =  subSource
+        .via(createSubFlow)
+        .via(updateTeamConcurrentFlow)
 
       val transformFlow = Flow[ApiSubscription]
         .map(_.apiKey.clientName)
@@ -1645,7 +1611,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(apiId).flatMap {
         case Some(api) if api.team != team.id => FastFuture.successful(Unauthorized(Json.obj("error" -> "Unauthorized to access to this api")))
         case Some(api) => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
-          .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(api.subscriptions.map(_.asJson)))))
+          .findNotDeleted(Json.obj("api" -> api.id.asJson))
           .map(subs => Ok(JsArray(subs.map(_.asSafeJson))))
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
       }

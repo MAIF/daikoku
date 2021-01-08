@@ -1173,7 +1173,6 @@ case class Api(
     visibility: ApiVisibility,
     possibleUsagePlans: Seq[UsagePlan],
     defaultUsagePlan: UsagePlanId,
-    subscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     authorizedTeams: Seq[TeamId] = Seq.empty,
     managedServices: Seq[OtoroshiService] = Seq.empty
 ) extends CanJson[User] {

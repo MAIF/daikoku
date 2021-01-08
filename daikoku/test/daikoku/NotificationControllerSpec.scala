@@ -1,25 +1,20 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand,
-  TeamAccess,
-  TeamInvitation
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.QuotasWithLimits
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.domain.json._
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsArray, Json}
+import play.api.libs.json.{Format, JsArray, JsBoolean, JsError, JsNull, JsNumber, JsObject, JsResult, JsString, JsSuccess, JsValue, Json, Reads, Writes}
+
+import scala.util.Try
 
 class NotificationControllerSpec()
     extends PlaySpec
@@ -45,6 +40,77 @@ class NotificationControllerSpec()
     notificationType = AcceptOrReject,
     action = ApiAccess(defaultApi.id, teamConsumerId)
   )
+
+  val ApiSubscriptionSafeFormat = new Format[ApiSubscription] {
+    override def reads(json: JsValue): JsResult[ApiSubscription] =
+      Try {
+        JsSuccess(
+          ApiSubscription(
+            id = (json \ "_id").as(ApiSubscriptionIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
+            apiKey = OtoroshiApiKey("***", "***", "***"),
+            plan = (json \ "plan").as(UsagePlanIdFormat),
+            team = (json \ "team").as(TeamIdFormat),
+            api = (json \ "api").as(ApiIdFormat),
+            createdAt = (json \ "createdAt").as(DateTimeFormat),
+            by = (json \ "by").as(UserIdFormat),
+            customName = (json \ "customName").asOpt[String],
+            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+            rotation = (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
+            integrationToken = "***",
+            customMetadata = (json \ "customMetadata").asOpt[JsObject],
+            customMaxPerSecond = (json \ "customMaxPerSecond").asOpt(LongFormat),
+            customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
+            customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
+            customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: ApiSubscription): JsValue = Json.obj(
+      "_id" -> ApiSubscriptionIdFormat.writes(o.id),
+      "_tenant" -> o.tenant.asJson,
+      "_deleted" -> o.deleted,
+      "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
+      "plan" -> UsagePlanIdFormat.writes(o.plan),
+      "team" -> TeamIdFormat.writes(o.team),
+      "api" -> ApiIdFormat.writes(o.api),
+      "createdAt" -> DateTimeFormat.writes(o.createdAt),
+      "by" -> UserIdFormat.writes(o.by),
+      "customName" -> o.customName
+        .map(id => JsString(id))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "enabled" -> o.enabled,
+      "rotation" -> o.rotation
+        .map(ApiSubscriptionyRotationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "integrationToken" -> o.integrationToken,
+      "customMetadata" -> o.customMetadata,
+      "customMaxPerSecond" -> o.customMaxPerSecond
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerDay" -> o.customMaxPerDay
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customMaxPerMonth" -> o.customMaxPerMonth
+        .map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "customReadOnly" -> o.customReadOnly
+        .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
+  }
+  val SeqApiSubscriptionSafeFormat =
+    Format(Reads.seq(ApiSubscriptionSafeFormat), Writes.seq(ApiSubscriptionSafeFormat))
+
 
   "a team admin" can {
     "read the count of untreated notifications of his team" in {
@@ -303,13 +369,13 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/subscriptions")(
           tenant,
           session)
       respVerif.status mustBe 200
-      val eventualApi = json.ApiFormat.reads(respVerif.json)
-      eventualApi.isSuccess mustBe true
-      eventualApi.get.subscriptions.size mustBe 1
+      val eventualApiSubs: JsResult[Seq[ApiSubscription]] = SeqApiSubscriptionSafeFormat.reads(respVerif.json)
+      eventualApiSubs.isSuccess mustBe true
+      eventualApiSubs.get.size mustBe 1
     }
     "reject notification - api subscription" in {
       setupEnvBlocking(
@@ -354,13 +420,14 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/subscriptions")(
           tenant,
           session)
       respVerif.status mustBe 200
-      val eventualApi = json.ApiFormat.reads(respVerif.json)
-      eventualApi.isSuccess mustBe true
-      eventualApi.get.subscriptions.size mustBe 0
+      logger.warn(Json.prettyPrint(respVerif.json))
+      val eventualApiSubs: JsResult[Seq[ApiSubscription]] = SeqApiSubscriptionSafeFormat.reads(respVerif.json)
+      eventualApiSubs.isSuccess mustBe true
+      eventualApiSubs.get.size mustBe 0
     }
   }
 
@@ -574,13 +641,13 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/subscriptions")(
           tenant,
           session)
       respVerif.status mustBe 200
-      val eventualApi = json.ApiFormat.reads(respVerif.json)
-      eventualApi.isSuccess mustBe true
-      eventualApi.get.subscriptions.size mustBe 1
+      val eventualApiSubs: JsResult[Seq[ApiSubscription]] = SeqApiSubscriptionSafeFormat.reads(respVerif.json)
+      eventualApiSubs.isSuccess mustBe true
+      eventualApiSubs.get.size mustBe 1
     }
     "reject notification - api subscription" in {
       setupEnvBlocking(
@@ -625,13 +692,13 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/subscriptions")(
           tenant,
           session)
       respVerif.status mustBe 200
-      val eventualApi = json.ApiFormat.reads(respVerif.json)
-      eventualApi.isSuccess mustBe true
-      eventualApi.get.subscriptions.size mustBe 0
+      val eventualApiSubs: JsResult[Seq[ApiSubscription]] = SeqApiSubscriptionSafeFormat.reads(respVerif.json)
+      eventualApiSubs.isSuccess mustBe true
+      eventualApiSubs.get.size mustBe 0
     }
   }
 

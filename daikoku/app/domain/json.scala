@@ -1555,9 +1555,6 @@ object json {
             possibleUsagePlans = (json \ "possibleUsagePlans")
               .as(SeqUsagePlanFormat),
             defaultUsagePlan = (json \ "defaultUsagePlan").as(UsagePlanIdFormat),
-            subscriptions = (json \ "subscriptions")
-              .asOpt(SeqApiSubscriptionIdFormat)
-              .getOrElse(Seq.empty),
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(SeqTeamIdFormat)
               .getOrElse(Seq.empty)
@@ -1592,8 +1589,6 @@ object json {
       "possibleUsagePlans" -> JsArray(
         o.possibleUsagePlans.map(UsagePlanFormat.writes)),
       "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),
-      "subscriptions" -> JsArray(
-        o.subscriptions.map(ApiSubscriptionIdFormat.writes)),
       "authorizedTeams" -> JsArray(o.authorizedTeams.map(TeamIdFormat.writes))
     )
   }

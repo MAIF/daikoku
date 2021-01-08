@@ -153,17 +153,15 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
           env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)
             .save(apiSubscription))
+        upToDateTeam <- EitherT.liftF(env.dataStore.teamRepo
+          .forTenant(tenant.id)
+          .findById(team.id)
+        )
         _ <- EitherT.liftF(
           env.dataStore.teamRepo
             .forTenant(tenant.id)
-            .save(team.copy(
+            .save(upToDateTeam.getOrElse(team).copy(
               subscriptions = team.subscriptions :+ apiSubscription.id))
-        )
-        _ <- EitherT.liftF(
-          env.dataStore.apiRepo
-            .forTenant(tenant.id)
-            .save(
-              api.copy(subscriptions = api.subscriptions :+ apiSubscription.id))
         )
       } yield {
         Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson)
@@ -208,12 +206,6 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
             .forTenant(tenant.id)
             .save(team.copy(
               subscriptions = team.subscriptions :+ apiSubscription.id))
-        )
-        _ <- EitherT.liftF(
-          env.dataStore.apiRepo
-            .forTenant(tenant.id)
-            .save(
-              api.copy(subscriptions = api.subscriptions :+ apiSubscription.id))
         )
         _ <- EitherT.liftF(
           env.dataStore.tenantRepo.save(tenant.copy(adminSubscriptions = tenant.adminSubscriptions :+ apiSubscription.id))
