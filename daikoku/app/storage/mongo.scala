@@ -15,7 +15,8 @@ import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
-import storage.Helper.{convertQuery, getContentFromJson, getContentsListFromJson, recordToJson}
+import storage.Helper.{convertQuery, getContentFromJson, getContentsListFromJson, quotes, recordToJson}
+
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MongoTenantCapableRepo[A, Id <: ValueType]
@@ -768,16 +769,38 @@ abstract class MongoRepo[Of, Id <: ValueType](
         }
       case Some(s) =>
         // TODO - transformer le sort
-        Future.successful(Seq())
-      //          col
-      //            .find(query, None)
-      //            .sort(s)
-      //            .cursor[JsObject](ReadPreference.primaryPreferred)
-      //            .collect[Seq](maxDocs = maxDocs,
-      //              Cursor.FailOnError[Seq[JsObject]]())
-      //            .map(_.map(format.reads).collect {
-      //              case JsSuccess(e, _) => e
-      //            })
+        logger.error(s"FIND $tableName with $s")
+
+        db.query { dsl =>
+          try {
+            val result = recordToJson(
+              if (query.values.isEmpty)
+                dsl.fetch(
+                  "SELECT *, {2} FROM {0} ORDER BY {1}",
+                  DSL.table(tableName),
+                  DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
+                  DSL.table(s.keys.map { key =>
+                    s"content->>'$key' as $quotes$key$quotes"
+                  }.mkString(","))
+                )
+              else
+                dsl.fetch(
+                  "SELECT *, {3} FROM {0} WHERE {1} ORDER BY {2}",
+                  DSL.table(tableName),
+                  DSL.table(convertQuery(query)),
+                  DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
+                  DSL.table(s.keys.map { key =>
+                    s"content->>'$key' as $quotes$key$quotes"
+                  }.mkString(","))
+                )
+            )
+
+            getContentsListFromJson(result, format)
+          } catch {
+            case err: Throwable => logger.error(s"$err")
+              Seq()
+          }
+        }
     }
   }
 
@@ -948,11 +971,9 @@ abstract class MongoRepo[Of, Id <: ValueType](
     implicit ec: ExecutionContext): Future[Long] =
     db.query { dsl =>
       dsl
-        .query("UPDATE {0} " +
-          "SET content = content || {1}" +
-          "WHERE {2}",
+        .query("UPDATE {0} SET content = content || {1} WHERE {2}",
           DSL.table(tableName),
-          DSL.inline(convertQuery(value)),
+          DSL.inline(value),
           DSL.table(convertQuery(query))
         )
         .execute()
@@ -1332,25 +1353,37 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         }
       case Some(s) =>
         // TODO - transformer le sort
-        Future.successful(Seq())
-      //          col
-      //            .find(query ++ Json.obj("_tenant" -> tenant.value), None)
-      //            .sort(s)
-      //            .cursor[JsObject](ReadPreference.primaryPreferred)
-      //            .collect[Seq](maxDocs = maxDocs,
-      //              Cursor.FailOnError[Seq[JsObject]]())
-      //            .map(
-      //              _.map(format.reads)
-      //                .map {
-      //                  case j@JsSuccess(_, _) => j
-      //                  case j@JsError(_) =>
-      //                    println(s"error: $j")
-      //                    j
-      //                }
-      //                .collect {
-      //                  case JsSuccess(e, _) => e
-      //                }
-      //            )
+        logger.error(s"FIND $tableName with $s")
+        db.query { dsl =>
+          try {
+            val result = recordToJson(
+              if (query.values.isEmpty)
+                dsl.fetch(
+                  "SELECT *, {2} FROM {0} ORDER BY {1}",
+                  DSL.table(tableName),
+                  DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
+                  DSL.table(s.keys.map { key =>
+                    s"content->>'$key' as $quotes$key$quotes"
+                  }.mkString(","))
+                )
+              else
+                dsl.fetch(
+                  "SELECT *, {3} FROM {0} WHERE {1} ORDER BY {2}",
+                  DSL.table(tableName),
+                  DSL.table(convertQuery(query)),
+                  DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
+                  DSL.table(s.keys.map { key =>
+                    s"content->>'$key' as $quotes$key$quotes"
+                  }.mkString(","))
+                )
+            )
+
+            getContentsListFromJson(result, format)
+          } catch {
+            case err: Throwable => logger.error(s"$err")
+              Seq()
+          }
+        }
     }
   }
 
@@ -1507,11 +1540,9 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
 
     db.query { dsl =>
       dsl
-        .query("UPDATE {0} " +
-          "SET content = content || {1}" +
-          "WHERE {2}",
+        .query("UPDATE {0} SET content = content || {1} WHERE {2}",
           DSL.table(tableName),
-          DSL.inline(convertQuery(value)),
+          DSL.inline(value),
           DSL.table(convertQuery(query))
         )
         .execute()
@@ -1583,35 +1614,35 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   //    }
 
   override def findMaxByQuery(query: JsObject, field: String)(
-    implicit ec: ExecutionContext): Future[Option[Long]] = ???
+    implicit ec: ExecutionContext): Future[Option[Long]] = {
 
-  //    collection.flatMap { col =>
-  //      import col.BatchCommands.AggregationFramework
-  //      import AggregationFramework.{Group, Match, MaxField}
-  //
-  //      col
-  //        .aggregatorContext[JsObject](
-  //          firstOperator = Match(query),
-  //          otherOperators =
-  //            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
-  //          explain = false,
-  //          allowDiskUse = false,
-  //          bypassDocumentValidation = false,
-  //          readConcern = ReadConcern.Majority,
-  //          readPreference = ReadPreference.primaryPreferred,
-  //          writeConcern = WriteConcern.Default,
-  //          batchSize = None,
-  //          cursorOptions = CursorOptions.empty,
-  //          maxTime = None,
-  //          hint = None,
-  //          comment = None,
-  //          collation = None
-  //        )
-  //        .prepared
-  //        .cursor
-  //        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-  //        .map(agg => agg.headOption.map(v => (v \ "max").as(json.LongFormat)))
-  //    }
+    logger.error(s"findMaxByQuery - $tableName")
+
+    ???
+  }
+//  {
+//
+//    db.query { dsl =>
+//      dsl.query(
+//        "SELECT json_agg(content) as content, MAX({2}) as max " +
+//          "FROM {0} " +
+//          "WHERE {1} " +
+//          "GROUP BY content->>'clientId'",
+//        DSL.table(tableName),
+//        ,
+//      )
+//    }
+//
+//        col
+//          .aggregatorContext[JsObject](
+//            firstOperator = Match(query),
+//            otherOperators = List(Group(JsString("$clientId"))("max" -> MaxField(field)))
+//          )
+//          .prepared
+//          .cursor
+//          .collect[List](1, Cursor.FailOnError[List[JsObject]]())
+//          .map(agg => agg.headOption.map(v => (v \ "max").as(json.LongFormat)))
+//      }
 
   override def count(query: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {

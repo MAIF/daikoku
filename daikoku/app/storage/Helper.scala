@@ -16,7 +16,8 @@ object Helper {
       s"(${value.map("'" + _ + "'").mkString(",")})"
   }
 
-  def _removeQuotes(str: Any): String = str.toString.replace("\"", "")
+  def _removeQuotes(str: Any): String = str.toString
+      .replace("\"", "")
 
   def _manageProperty(key: String, jsValue: JsValue): String = {
     val value = _removeQuotes(jsValue)
@@ -26,9 +27,8 @@ object Helper {
       if (parts.length > 2)
         throw new NotImplementedException("Queries with three dots in the property are not supported")
 
-      val quotes = "\""
-      s"content->'${_removeQuotes(parts(0))}' @> '[{$quotes${parts(1)}$quotes : $quotes$value$quotes}]'"
-
+      s"(content->'${_removeQuotes(parts(0))}' @> '[{$quotes${parts(1)}$quotes : $quotes$value$quotes}]' OR " +
+        s"content->'${_removeQuotes(parts(0))}' @> '{$quotes${parts(1)}$quotes : $quotes$value$quotes}')"
     } else
       s"content->>'$key' = '$value'"
   }
@@ -42,6 +42,10 @@ object Helper {
               s"content->>'${field._1}' IN ${_convertTuple(value.fields.head)}"
 
           case Some((key: String, _: JsValue))
+            if key == "$nin" =>
+            s"content->>'${field._1}' NOT IN ${_convertTuple(value.fields.head)}"
+
+          case Some((key: String, _: JsValue))
             if key == "$regex" =>
               val regex = value.fields.head._2.as[String].replaceAll(".*", "%")
               if (regex == "%%") "1 = 1"
@@ -50,12 +54,24 @@ object Helper {
           case Some((key: String, _: JsValue))
             if key == "$options" => "1 = 1"
 
+          case Some((key: String, _: JsValue))
+            if key == "$gte" => s"(content->>'${field._1}')::bigint >= ${_convertTuple(value.fields.head)}"
+
+          case Some((key: String, _: JsValue))
+            if key == "$lte" => s"(content->>'${field._1}')::bigint <= ${_convertTuple(value.fields.head)}"
+
+          case Some((key: String, _: JsValue))
+            if key == "$lt" => s"(content->>'${field._1}')::bigint < ${_convertTuple(value.fields.head)}"
+
           case e =>
             logger.error(s"NOT IMPLEMENTED - $e")
             "1 = 1"
         }
       case value: JsArray if field._1 == "$or" => "(" + value.as[List[JsObject]].map(convertQuery).mkString(" OR ") + ")"
       case value: JsArray if field._1 == "$in" => _inOperatorToString(value.as[List[String]])
+      case value: JsArray if field._1 == "$nin" => _inOperatorToString(value.as[List[String]])
+      case value: JsValue if field._1 == "$lte" => value.toString
+      case value: JsValue if field._1 == "$gte" => value.toString
       case value: Any => _manageProperty(field._1, value)
     }
   }
@@ -105,4 +121,6 @@ object Helper {
       Seq()
     }
   }
+
+  var quotes = "\""
 }
