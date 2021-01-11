@@ -136,7 +136,8 @@ case class MongoTenantCapableMessageRepo(
 
 case class MongoTenantCapableConsumptionRepo(
                                               _repo: () => MongoRepo[ApiKeyConsumption, MongoId],
-                                              _tenantRepo: TenantId => MongoTenantAwareRepo[ApiKeyConsumption, MongoId]
+                                              _tenantRepo: TenantId => MongoTenantAwareRepo[ApiKeyConsumption, MongoId],
+                                              db: PostgresConnection
                                             ) extends MongoTenantCapableRepo[ApiKeyConsumption, MongoId]
   with ConsumptionRepo {
 
@@ -155,39 +156,57 @@ case class MongoTenantCapableConsumptionRepo(
 
   override def repo(): MongoRepo[ApiKeyConsumption, MongoId] = _repo()
 
+  val logger: Logger = Logger("TEST")
+
   private def lastConsumptions(tenantId: Option[TenantId], filter: JsObject)(
     implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]] = {
     val rep = tenantId match {
-      case Some(t) =>
-        forTenant(t)
-          .asInstanceOf[MongoTenantAwareRepo[ApiKeyConsumption, MongoId]]
-      case None =>
-        forAllTenant().asInstanceOf[MongoRepo[ApiKeyConsumption, MongoId]]
+      case Some(t) => forTenant(t).asInstanceOf[MongoTenantAwareRepo[ApiKeyConsumption, MongoId]]
+      case None => forAllTenant().asInstanceOf[MongoRepo[ApiKeyConsumption, MongoId]]
     }
 
-    Future.successful(Seq())
+    db.query { dsl =>
+      val result = recordToJson(dsl.fetch(
+        "SELECT _id, content->>'clientId' as clientid, MAX(content->>'from') as maxfrom " +
+          "FROM {0} " +
+          "WHERE {1} " +
+          "GROUP BY content->>'clientId', _id",
+        DSL.table(rep.tableName),
+        DSL.table(convertQuery(filter))
+      ))
+        .as[JsArray]
+        .value
+        .toSeq
 
+      logger.error(result.mkString("\n"))
+
+      result.flatMap(json => {
+        logger.error(s"SELECT * FROM ${rep.tableName} WHERE ${
+          convertQuery(Json.obj(
+            "clientId" -> (json \ "clientid").as[String],
+            "from" -> (json \ "maxfrom").as[JsValue])
+          )
+        }")
+
+        getContentFromJson(
+          recordToJson(
+            dsl.fetch(
+              "SELECT * FROM {0} WHERE {1}",
+              DSL.table(rep.tableName),
+              DSL.table(convertQuery(
+                Json.obj("clientId" -> (json \ "clientid").as[String],
+                  "from" -> (json \ "maxfrom").as[JsValue]))
+              ))),
+          rep.format
+        )
+      })
+    }
     //    rep.collection.flatMap { col =>
-    //      import col.BatchCommands.AggregationFramework
-    //      import AggregationFramework.{Group, Match, MaxField}
-    //
     //      col
     //        .aggregatorContext[JsObject](
     //          firstOperator = Match(filter),
     //          otherOperators =
     //            List(Group(JsString("$clientId"))("maxFrom" -> MaxField("from"))),
-    //          explain = false,
-    //          allowDiskUse = false,
-    //          bypassDocumentValidation = false,
-    //          readConcern = ReadConcern.Majority,
-    //          readPreference = ReadPreference.primaryPreferred,
-    //          writeConcern = WriteConcern.Default,
-    //          batchSize = None,
-    //          cursorOptions = CursorOptions.empty,
-    //          maxTime = None,
-    //          hint = None,
-    //          comment = None,
-    //          collation = None
     //        )
     //        .prepared
     //        .cursor
@@ -261,7 +280,8 @@ class MongoDataStore(env: Env, db: PostgresConnection, reactiveMongoApi: Reactiv
   private val _consumptionRepo: ConsumptionRepo =
     MongoTenantCapableConsumptionRepo(
       () => new MongoConsumptionRepo(env, db, reactiveMongoApi),
-      t => new MongoTenantConsumptionRepo(env, db, reactiveMongoApi, t)
+      t => new MongoTenantConsumptionRepo(env, db, reactiveMongoApi, t),
+      db
     )
   private val _passwordResetRepo: PasswordResetRepo =
     new MongoPasswordResetRepo(env, db, reactiveMongoApi)
@@ -980,11 +1000,14 @@ abstract class MongoRepo[Of, Id <: ValueType](
     }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-    implicit ec: ExecutionContext): Future[Long] =
+    implicit ec: ExecutionContext): Future[Long] = {
+    logger.error(s"UPDATE ${DSL.table(tableName)} SET content = content || " +
+      s"${DSL.inline(queryUpdate)} WHERE ${DSL.table(convertQuery(query))}")
+
     db.query { dsl =>
       dsl
         .query("UPDATE {0} " +
-          "SET content = content || {1}" +
+          "SET {1}" +
           "WHERE {2}",
           DSL.table(tableName),
           DSL.inline(convertQuery(queryUpdate)),
@@ -992,6 +1015,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
         )
         .execute()
     }
+  }
 
   override def deleteByIdLogically(id: String)(
     implicit ec: ExecutionContext): Future[Boolean] =
@@ -1214,35 +1238,19 @@ abstract class MongoRepo[Of, Id <: ValueType](
   //    }
 
   override def findMaxByQuery(query: JsObject, field: String)(
-    implicit ec: ExecutionContext): Future[Option[Long]] = ???
+    implicit ec: ExecutionContext): Future[Option[Long]] =
+    db.query { dsl =>
+      val result = dsl.fetchValue(
+        "SELECT MAX({2})::bigint " +
+          "FROM {0} " +
+          "WHERE {1}",
+        DSL.table(tableName),
+        DSL.table(convertQuery(query)),
+        DSL.table(s"content->>'$field'")
+      )
 
-  //    collection.flatMap { col =>
-  //      import col.BatchCommands.AggregationFramework
-  //      import AggregationFramework.{Group, Match, MaxField}
-  //
-  //      col
-  //        .aggregatorContext[JsObject](
-  //          firstOperator = Match(query),
-  //          otherOperators =
-  //            List(Group(JsString("$clientId"))("max" -> MaxField(field))),
-  //          explain = false,
-  //          allowDiskUse = false,
-  //          bypassDocumentValidation = false,
-  //          readConcern = ReadConcern.Majority,
-  //          readPreference = ReadPreference.primaryPreferred,
-  //          writeConcern = WriteConcern.Default,
-  //          batchSize = None,
-  //          cursorOptions = CursorOptions.empty,
-  //          maxTime = None,
-  //          hint = None,
-  //          comment = None,
-  //          collation = None
-  //        )
-  //        .prepared
-  //        .cursor
-  //        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-  //        .map(agg => agg.headOption.map(v => (v \ "max").as[Long]))
-  //    }
+      Option(result).asInstanceOf[Option[Long]]
+    }
 }
 
 abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
@@ -1479,12 +1487,12 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       if (query.values.isEmpty)
         dsl.query("DELETE FROM {0}", DSL.table(tableName)).execute() > 0
       else
-      dsl.query(
-        "DELETE FROM {0} WHERE {1}",
-        DSL.table(tableName),
-        DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
-      )
-        .execute() > 0
+        dsl.query(
+          "DELETE FROM {0} WHERE {1}",
+          DSL.table(tableName),
+          DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
+        )
+          .execute() > 0
     }
   }
 
@@ -1498,20 +1506,26 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     implicit ec: ExecutionContext): Future[Boolean] = {
 
     db.query { dsl =>
-      logger.debug(
-        s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})"
-      )
-
-      dsl
-        .query("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
-          "ON CONFLICT (_id) DO UPDATE " +
-          "set _deleted = {2}, content = {3}",
-          DSL.table(tableName),
-          DSL.inline((value \ "_id").as[String]),
-          DSL.inline((value \ "_deleted").as[Boolean]),
-          DSL.inline(value)
-        )
-        .execute() > 0
+      logger.debug(s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})")
+      if (value.keys.contains("_deleted"))
+        dsl
+          .query("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
+            "ON CONFLICT (_id) DO UPDATE " +
+            "set _deleted = {2}, content = {3}",
+            DSL.table(tableName),
+            DSL.inline((value \ "_id").as[String]),
+            DSL.inline((value \ "_deleted").as[Boolean]),
+            DSL.inline(value)
+          )
+          .execute() > 0
+      else
+        dsl
+          .query("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
+            DSL.table(tableName),
+            DSL.inline((value \ "_id").as[String]),
+            DSL.inline(value)
+          )
+          .execute() > 0
     }
   }
 
@@ -1552,13 +1566,16 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
     logger.error("updateManyByQuery(query: JsObject, queryUpdate: JsObject)")
+    logger.error(s"UPDATE ${DSL.table(tableName)} SET " +
+      s"${DSL.table(convertQuery(queryUpdate))} WHERE ${DSL.table(convertQuery(query))}")
+
     db.query { dsl =>
       dsl
         .query("UPDATE {0} " +
-          "SET content = content || {1}" +
+          "SET {1}" +
           "WHERE {2}",
           DSL.table(tableName),
-          DSL.inline(convertQuery(queryUpdate)),
+          DSL.table(convertQuery(queryUpdate)),
           DSL.table(convertQuery(query))
         )
         .execute()
@@ -1616,33 +1633,22 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
   override def findMaxByQuery(query: JsObject, field: String)(
     implicit ec: ExecutionContext): Future[Option[Long]] = {
 
-    logger.error(s"findMaxByQuery - $tableName")
+    logger.error(s"findMaxByQuery - $tableName - $query - $field")
+    logger.error(s"SELECT MAX(content->>'$field') FROM ${DSL.table(tableName)} WHERE ${DSL.table(convertQuery(query))}")
 
-    ???
+    db.query { dsl =>
+      val result = dsl.fetchValue(
+        "SELECT MAX({2})::bigint " +
+          "FROM {0} " +
+          "WHERE {1}",
+        DSL.table(tableName),
+        DSL.table(convertQuery(query)),
+        DSL.table(s"content->>'$field'")
+      )
+
+      Option(result).asInstanceOf[Option[Long]]
+    }
   }
-//  {
-//
-//    db.query { dsl =>
-//      dsl.query(
-//        "SELECT json_agg(content) as content, MAX({2}) as max " +
-//          "FROM {0} " +
-//          "WHERE {1} " +
-//          "GROUP BY content->>'clientId'",
-//        DSL.table(tableName),
-//        ,
-//      )
-//    }
-//
-//        col
-//          .aggregatorContext[JsObject](
-//            firstOperator = Match(query),
-//            otherOperators = List(Group(JsString("$clientId"))("max" -> MaxField(field)))
-//          )
-//          .prepared
-//          .cursor
-//          .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-//          .map(agg => agg.headOption.map(v => (v \ "max").as(json.LongFormat)))
-//      }
 
   override def count(query: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {

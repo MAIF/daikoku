@@ -22,18 +22,30 @@ object Helper {
   def _manageProperty(key: String, jsValue: JsValue): String = {
     val value = _removeQuotes(jsValue)
 
+    var out = ""
+
     if (key.contains(".")) {
       val parts = key.split("\\.")
       if (parts.length > 2)
         throw new NotImplementedException("Queries with three dots in the property are not supported")
 
-      s"(content->'${_removeQuotes(parts(0))}' @> '[{$quotes${parts(1)}$quotes : $quotes$value$quotes}]' OR " +
+      out = s"(content->'${_removeQuotes(parts(0))}' @> '[{$quotes${parts(1)}$quotes : $quotes$value$quotes}]' OR " +
         s"content->'${_removeQuotes(parts(0))}' @> '{$quotes${parts(1)}$quotes : $quotes$value$quotes}')"
     } else
-      s"content->>'$key' = '$value'"
+      out = s"(content->>'$key' = '$value' OR content->'$key' @> '$quotes$value$quotes')"
+
+    out.replace("= 'null'", "is null")
   }
 
   def _convertTuple(field: (String, JsValue)): String = {
+
+    logger.error(s"$field")
+
+    if (field._1 == "$push") {
+      val entry = field._2.as[JsObject].fields.head
+      return s"content = jsonb_set(content, array['${entry._1}'], content->'${entry._1}' || '${entry._2}')"
+    }
+
     field._2 match {
       case value: JsObject =>
         value.fields.headOption match {
@@ -63,6 +75,11 @@ object Helper {
           case Some((key: String, _: JsValue))
             if key == "$lt" => s"(content->>'${field._1}')::bigint < ${_convertTuple(value.fields.head)}"
 
+          case Some((key: String, _: JsValue))
+            if key == "$and" => _convertTuple(value.fields.head)
+
+          case Some((key: String, _: JsValue))
+            if key == "$ne" => s"NOT (content->'${field._1}' @> '${_convertTuple(value.fields.head)}')"
           case e =>
             logger.error(s"NOT IMPLEMENTED - $e")
             "1 = 1"
@@ -72,6 +89,9 @@ object Helper {
       case value: JsArray if field._1 == "$nin" => _inOperatorToString(value.as[List[String]])
       case value: JsValue if field._1 == "$lte" => value.toString
       case value: JsValue if field._1 == "$gte" => value.toString
+      case value: JsValue if field._1 == "$lt" => value.toString
+      case value: JsValue if field._1 == "$ne" => value.toString
+      case value: JsArray if field._1 == "$and" => value.as[List[JsObject]].map(convertQuery).mkString(" AND ")
       case value: Any => _manageProperty(field._1, value)
     }
   }
