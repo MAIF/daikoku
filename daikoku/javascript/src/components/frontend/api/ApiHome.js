@@ -15,24 +15,33 @@ import 'highlight.js/styles/monokai.css';
 import { Translation, t } from '../../../locales';
 window.hljs = hljs;
 
-const ApiDescription = ({api}) => {
-    useEffect(() => {
-      window.$('pre code').each((i, block) => {
-        hljs.highlightBlock(block);
-      });
-    }, []);
+const ApiDescription = ({ api }) => {
+  useEffect(() => {
+    window.$('pre code').each((i, block) => {
+      hljs.highlightBlock(block);
+    });
+  }, []);
 
-    return (
-      <div className="d-flex col flex-column p-3 section">
-        <div
-          className="api-description"
-          dangerouslySetInnerHTML={{ __html: converter.makeHtml(api.description) }}
-        />
-      </div>
-    );
+  return (
+    <div className="d-flex col flex-column p-3 section">
+      <div
+        className="api-description"
+        dangerouslySetInnerHTML={{ __html: converter.makeHtml(api.description) }}
+      />
+    </div>
+  );
 };
 
-const ApiHomeComponent = ({ tab, openContactModal, match, history, setError, currentLanguage, connectedUser, tenant}) => {
+const ApiHomeComponent = ({
+  tab,
+  openContactModal,
+  match,
+  history,
+  setError,
+  currentLanguage,
+  connectedUser,
+  tenant,
+}) => {
   const [api, setApi] = useState(undefined);
   const [subscriptions, setSubscriptions] = useState([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
@@ -45,8 +54,7 @@ const ApiHomeComponent = ({ tab, openContactModal, match, history, setError, cur
 
   useEffect(() => {
     if (api) {
-      Services.team(api.team)
-        .then((ownerTeam) => setOwnerTeam(ownerTeam));
+      Services.team(api.team).then((ownerTeam) => setOwnerTeam(ownerTeam));
     }
   }, [api]);
 
@@ -54,18 +62,17 @@ const ApiHomeComponent = ({ tab, openContactModal, match, history, setError, cur
     Promise.all([
       Services.getVisibleApi(apiId),
       Services.apiSubscriptions(apiId, teamId),
-      Services.myTeams()
-    ])
-      .then(([api, subscriptions, teams]) => {
-        if (api.error) {
-          setError({ error: { status: 404, message: api.error } });
-        } else {
-          setApi(api);
-          setSubscriptions(subscriptions);
-          setPendingSubscriptions(api.pendingRequests);
-          setMyTeams(teams);
-        }
-      });
+      Services.myTeams(),
+    ]).then(([api, subscriptions, teams]) => {
+      if (api.error) {
+        setError({ error: { status: 404, message: api.error } });
+      } else {
+        setApi(api);
+        setSubscriptions(subscriptions);
+        setPendingSubscriptions(api.pendingRequests);
+        setMyTeams(teams);
+      }
+    });
   };
 
   const askForApikeys = (teams, plan) => {
@@ -116,211 +123,191 @@ const ApiHomeComponent = ({ tab, openContactModal, match, history, setError, cur
     history.push(`/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`);
   };
 
-    if (!api || !ownerTeam) {
-      return null;
-    }
-    const apiId = api._humanReadableId;
-    const teamId = match.params.teamId;
+  if (!api || !ownerTeam) {
+    return null;
+  }
+  const apiId = api._humanReadableId;
+  const teamId = match.params.teamId;
 
-    //for contact modal
-    const { isGuest, name, email } = connectedUser;
-    const userName = isGuest ? undefined : name;
-    const userEmail = isGuest ? undefined : email;
+  //for contact modal
+  const { isGuest, name, email } = connectedUser;
+  const userName = isGuest ? undefined : name;
+  const userEmail = isGuest ? undefined : email;
 
-    document.title = `${tenant.name} - ${api ? api.name : 'API'}`;
+  document.title = `${tenant.name} - ${api ? api.name : 'API'}`;
 
-    return (
-      <main role="main" className="row">
-        <section className="organisation__header col-12 mb-4 p-3">
-          <div className="container">
-            <h1 className="jumbotron-heading">
-              {api.name}
-              <Can I={manage} a={API} team={ownerTeam}>
-                <a
-                  href="#"
-                  className="team__settings ml-2"
-                  onClick={() => redirectToEditPage(api)}>
-                  <button type="button" className="btn btn-sm btn-access-negative">
-                    <i className="fas fa-edit" />
-                  </button>
-                </a>
-              </Can>
-            </h1>
-            <p className="lead">{api.smallDescription}</p>
-          </div>
-        </section>
+  return (
+    <main role="main" className="row">
+      <section className="organisation__header col-12 mb-4 p-3">
         <div className="container">
-          <div className="row">
-            <div className="col mt-3 onglets">
-              <ul className="nav nav-tabs flex-column flex-sm-row">
-                <li className="nav-item">
+          <h1 className="jumbotron-heading">
+            {api.name}
+            <Can I={manage} a={API} team={ownerTeam}>
+              <a href="#" className="team__settings ml-2" onClick={() => redirectToEditPage(api)}>
+                <button type="button" className="btn btn-sm btn-access-negative">
+                  <i className="fas fa-edit" />
+                </button>
+              </a>
+            </Can>
+          </h1>
+          <p className="lead">{api.smallDescription}</p>
+        </div>
+      </section>
+      <div className="container">
+        <div className="row">
+          <div className="col mt-3 onglets">
+            <ul className="nav nav-tabs flex-column flex-sm-row">
+              <li className="nav-item">
+                <Link
+                  className={`nav-link ${tab === 'description' ? 'active' : ''}`}
+                  to={`/${match.params.teamId}/${apiId}`}>
+                  <Translation i18nkey="Description" language={currentLanguage}>
+                    Description
+                  </Translation>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link
+                  className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
+                  to={`/${match.params.teamId}/${apiId}/pricing`}>
+                  <Translation i18nkey="Plan" language={currentLanguage} isPlural={true}>
+                    Plans
+                  </Translation>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link
+                  className={`nav-link ${
+                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                  }`}
+                  to={`/${match.params.teamId}/${apiId}/documentation`}>
+                  <Translation i18nkey="Documentation" language={currentLanguage}>
+                    Documentation
+                  </Translation>
+                </Link>
+              </li>
+              <li className="nav-item">
+                {api.swagger && (
                   <Link
-                    className={`nav-link ${tab === 'description' ? 'active' : ''}`}
-                    to={`/${match.params.teamId}/${apiId}`}>
-                    <Translation i18nkey="Description" language={currentLanguage}>
-                      Description
+                    className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
+                    to={`/${match.params.teamId}/${apiId}/redoc`}>
+                    <Translation i18nkey="Api Reference" language={currentLanguage}>
+                      Api Reference
                     </Translation>
                   </Link>
-                </li>
-                <li className="nav-item">
-                  <Link
-                    className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
-                    to={`/${match.params.teamId}/${apiId}/pricing`}>
-                    <Translation
-                      i18nkey="Plan"
-                      language={currentLanguage}
-                      isPlural={true}>
-                      Plans
+                )}
+                {!api.swagger && (
+                  <span className={'nav-link disabled'}>
+                    <Translation i18nkey="Api Reference" language={currentLanguage}>
+                      Api Reference
                     </Translation>
-                  </Link>
-                </li>
+                  </span>
+                )}
+              </li>
+              <Can I={access} a={backoffice}>
                 <li className="nav-item">
-                  <Link
-                    className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                      }`}
-                    to={`/${match.params.teamId}/${apiId}/documentation`}>
-                    <Translation i18nkey="Documentation" language={currentLanguage}>
-                      Documentation
-                    </Translation>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  {api.swagger && (
+                  {api.swagger && api.testing.enabled && (
                     <Link
-                      className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
-                      to={`/${match.params.teamId}/${apiId}/redoc`}>
-                      <Translation i18nkey="Api Reference" language={currentLanguage}>
-                        Api Reference
+                      className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
+                      to={`/${match.params.teamId}/${apiId}/swagger`}>
+                      <Translation i18nkey="Try it !" language={currentLanguage}>
+                        Try it !
                       </Translation>
                     </Link>
                   )}
-                  {!api.swagger && (
-                    <span className={'nav-link disabled'}>
-                      <Translation i18nkey="Api Reference" language={currentLanguage}>
-                        Api Reference
-                      </Translation>
-                    </span>
+                  {!(api.swagger && api.testing.enabled) && (
+                    <span className={'nav-link disabled'}>Try it !</span>
                   )}
                 </li>
-                <Can I={access} a={backoffice}>
-                  <li className="nav-item">
-                    {api.swagger && api.testing.enabled && (
-                      <Link
-                        className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
-                        to={`/${match.params.teamId}/${apiId}/swagger`}>
-                        <Translation i18nkey="Try it !" language={currentLanguage}>
-                          Try it !
-                        </Translation>
-                      </Link>
-                    )}
-                    {!(api.swagger && api.testing.enabled) && (
-                      <span className={'nav-link disabled'}>Try it !</span>
-                    )}
-                  </li>
-                </Can>
-              </ul>
-            </div>
+              </Can>
+            </ul>
           </div>
         </div>
-        <div className="album py-2 col-12 min-vh-100">
-          <div className="container">
-            <div className="row pt-3">
-              {['pricing', 'description'].includes(tab) && (
-                <ApiCartidge
-                  connectedUser={connectedUser}
-                  myTeams={myTeams}
-                  ownerTeam={ownerTeam}
-                  api={api}
-                  subscriptions={subscriptions}
-                  askForApikeys={(teams, plan) => askForApikeys(teams, plan)}
-                  pendingSubscriptions={pendingSubscriptions}
-                  currentLanguage={currentLanguage}
-                  tenant={tenant}
-                  openContactModal={() =>
-                    openContactModal(
-                      userName,
-                      userEmail,
-                      tenant._id,
-                      api.team,
-                      api._id
-                    )
-                  }
-                  redirectToApiKeysPage={(team) => {
-                    history.push(
-                      `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}`
-                    );
-                  }}
-                />
-              )}
-              {tab === 'description' && (
-                <ApiDescription
-                  api={api}
-                  ownerTeam={ownerTeam}
-                  subscriptions={subscriptions}
-                />
-              )}
-              {tab === 'pricing' && (
-                <ApiPricing
-                  userIsTenantAdmin={connectedUser.isDaikokuAdmin}
-                  api={api}
-                  myTeams={myTeams}
-                  ownerTeam={ownerTeam}
-                  subscriptions={subscriptions}
-                  askForApikeys={(teams, plan) => askForApikeys(teams, plan)}
-                  pendingSubscriptions={pendingSubscriptions}
-                  updateSubscriptions={updateSubscriptions}
-                  currentLanguage={currentLanguage}
-                  tenant={tenant}
-                />
-              )}
-              {tab === 'documentation' && (
-                <ApiDocumentation
-                  api={api}
-                  ownerTeam={ownerTeam}
-                  match={match}
-                  currentLanguage={currentLanguage}
-                />
-              )}
-              {tab === 'documentation-page' && (
-                <ApiDocumentation
-                  api={api}
-                  ownerTeam={ownerTeam}
-                  match={match}
-                  currentLanguage={currentLanguage}
-                />
-              )}
-              {api.swagger && api.testing.enabled && tab === 'swagger' && (
-                <ApiSwagger
-                  api={api}
-                  teamId={teamId}
-                  ownerTeam={ownerTeam}
-                  match={match}
-                  testing={api.testing}
-                />
-              )}
-              {tab === 'redoc' && (
-                <ApiRedoc
-                  api={api}
-                  teamId={teamId}
-                  ownerTeam={ownerTeam}
-                  match={match}
-                />
-              )}
-              {tab === 'console' && (
-                <ApiConsole
-                  api={api}
-                  teamId={teamId}
-                  ownerTeam={ownerTeam}
-                  match={match}
-                  subscriptions={subscriptions}
-                  updateSubscriptions={updateSubscriptions}
-                />
-              )}
-            </div>
+      </div>
+      <div className="album py-2 col-12 min-vh-100">
+        <div className="container">
+          <div className="row pt-3">
+            {['pricing', 'description'].includes(tab) && (
+              <ApiCartidge
+                connectedUser={connectedUser}
+                myTeams={myTeams}
+                ownerTeam={ownerTeam}
+                api={api}
+                subscriptions={subscriptions}
+                askForApikeys={(teams, plan) => askForApikeys(teams, plan)}
+                pendingSubscriptions={pendingSubscriptions}
+                currentLanguage={currentLanguage}
+                tenant={tenant}
+                openContactModal={() =>
+                  openContactModal(userName, userEmail, tenant._id, api.team, api._id)
+                }
+                redirectToApiKeysPage={(team) => {
+                  history.push(
+                    `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}`
+                  );
+                }}
+              />
+            )}
+            {tab === 'description' && (
+              <ApiDescription api={api} ownerTeam={ownerTeam} subscriptions={subscriptions} />
+            )}
+            {tab === 'pricing' && (
+              <ApiPricing
+                userIsTenantAdmin={connectedUser.isDaikokuAdmin}
+                api={api}
+                myTeams={myTeams}
+                ownerTeam={ownerTeam}
+                subscriptions={subscriptions}
+                askForApikeys={(teams, plan) => askForApikeys(teams, plan)}
+                pendingSubscriptions={pendingSubscriptions}
+                updateSubscriptions={updateSubscriptions}
+                currentLanguage={currentLanguage}
+                tenant={tenant}
+              />
+            )}
+            {tab === 'documentation' && (
+              <ApiDocumentation
+                api={api}
+                ownerTeam={ownerTeam}
+                match={match}
+                currentLanguage={currentLanguage}
+              />
+            )}
+            {tab === 'documentation-page' && (
+              <ApiDocumentation
+                api={api}
+                ownerTeam={ownerTeam}
+                match={match}
+                currentLanguage={currentLanguage}
+              />
+            )}
+            {api.swagger && api.testing.enabled && tab === 'swagger' && (
+              <ApiSwagger
+                api={api}
+                teamId={teamId}
+                ownerTeam={ownerTeam}
+                match={match}
+                testing={api.testing}
+              />
+            )}
+            {tab === 'redoc' && (
+              <ApiRedoc api={api} teamId={teamId} ownerTeam={ownerTeam} match={match} />
+            )}
+            {tab === 'console' && (
+              <ApiConsole
+                api={api}
+                teamId={teamId}
+                ownerTeam={ownerTeam}
+                match={match}
+                subscriptions={subscriptions}
+                updateSubscriptions={updateSubscriptions}
+              />
+            )}
           </div>
         </div>
-      </main>
-    );
+      </div>
+    </main>
+  );
 };
 
 const mapStateToProps = (state) => ({

@@ -1,18 +1,41 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand,
+  TeamAccess,
+  TeamInvitation
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.QuotasWithLimits
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{Format, JsArray, JsBoolean, JsError, JsNull, JsNumber, JsObject, JsResult, JsString, JsSuccess, JsValue, Json, Reads, Writes}
+import play.api.libs.json.{
+  Format,
+  JsArray,
+  JsBoolean,
+  JsError,
+  JsNull,
+  JsNumber,
+  JsObject,
+  JsResult,
+  JsString,
+  JsSuccess,
+  JsValue,
+  Json,
+  Reads,
+  Writes
+}
 
 import scala.util.Try
 
@@ -109,8 +132,8 @@ class NotificationControllerSpec()
     )
   }
   val SeqApiSubscriptionSafeFormat =
-    Format(Reads.seq(ApiSubscriptionSafeFormat), Writes.seq(ApiSubscriptionSafeFormat))
-
+    Format(Reads.seq(ApiSubscriptionSafeFormat),
+           Writes.seq(ApiSubscriptionSafeFormat))
 
   "a team admin" can {
     "read the count of untreated notifications of his team" in {
@@ -373,7 +396,8 @@ class NotificationControllerSpec()
           tenant,
           session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] = SeqApiSubscriptionSafeFormat.reads(respVerif.json)
+      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
+        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
       eventualApiSubs.isSuccess mustBe true
       eventualApiSubs.get.size mustBe 1
     }
@@ -425,7 +449,8 @@ class NotificationControllerSpec()
           session)
       respVerif.status mustBe 200
       logger.warn(Json.prettyPrint(respVerif.json))
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] = SeqApiSubscriptionSafeFormat.reads(respVerif.json)
+      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
+        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
       eventualApiSubs.isSuccess mustBe true
       eventualApiSubs.get.size mustBe 0
     }
@@ -645,7 +670,8 @@ class NotificationControllerSpec()
           tenant,
           session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] = SeqApiSubscriptionSafeFormat.reads(respVerif.json)
+      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
+        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
       eventualApiSubs.isSuccess mustBe true
       eventualApiSubs.get.size mustBe 1
     }
@@ -696,7 +722,8 @@ class NotificationControllerSpec()
           tenant,
           session)
       respVerif.status mustBe 200
-      val eventualApiSubs: JsResult[Seq[ApiSubscription]] = SeqApiSubscriptionSafeFormat.reads(respVerif.json)
+      val eventualApiSubs: JsResult[Seq[ApiSubscription]] =
+        SeqApiSubscriptionSafeFormat.reads(respVerif.json)
       eventualApiSubs.isSuccess mustBe true
       eventualApiSubs.get.size mustBe 0
     }
