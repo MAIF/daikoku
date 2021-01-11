@@ -3,23 +3,23 @@ package storage
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import org.jooq.{JSONFormat, Record, Result}
 import play.api.Logger
-import play.api.libs.json.{Format, JsArray, JsError, JsObject, JsString, JsSuccess, JsValue, Json}
+import play.api.libs.json.{Format, JsArray, JsError, JsObject, JsSuccess, JsValue, Json}
 
 object Helper {
 
   val logger: Logger = Logger("Helper")
 
-  def _inOperatorToString(value: List[String]): String = {
-    if(value.isEmpty)
+  private def _inOperatorToString(value: List[String]): String = {
+    if (value.isEmpty)
       "('DEFAULT VALUE TO AVOID EMPTY LIST')"
     else
       s"(${value.map("'" + _ + "'").mkString(",")})"
   }
 
-  def _removeQuotes(str: Any): String = str.toString
-      .replace("\"", "")
+  private def _removeQuotes(str: Any): String = str.toString
+    .replace("\"", "")
 
-  def _manageProperty(key: String, jsValue: JsValue): String = {
+  private def _manageProperty(key: String, jsValue: JsValue): String = {
     val value = _removeQuotes(jsValue)
 
     var out = ""
@@ -37,9 +37,8 @@ object Helper {
     out.replace("= 'null'", "is null")
   }
 
-  def _convertTuple(field: (String, JsValue)): String = {
-
-    logger.error(s"$field")
+  private def _convertTuple(field: (String, JsValue)): String = {
+    logger.debug(s"_convertTuple - $field")
 
     if (field._1 == "$push") {
       val entry = field._2.as[JsObject].fields.head
@@ -49,37 +48,35 @@ object Helper {
     field._2 match {
       case value: JsObject =>
         value.fields.headOption match {
-          case Some((key: String, _: JsValue))
-            if key == "$in" =>
-              s"content->>'${field._1}' IN ${_convertTuple(value.fields.head)}"
+          case Some((key: String, _: JsValue)) if key == "$in" =>
+            s"content->>'${field._1}' IN ${_convertTuple(value.fields.head)}"
 
-          case Some((key: String, _: JsValue))
-            if key == "$nin" =>
+          case Some((key: String, _: JsValue)) if key == "$nin" =>
             s"content->>'${field._1}' NOT IN ${_convertTuple(value.fields.head)}"
 
-          case Some((key: String, _: JsValue))
-            if key == "$regex" =>
-              val regex = value.fields.head._2.as[String].replaceAll(".*", "%")
-              if (regex == "%%") "1 = 1"
-              else  s"content->>'${field._1}' LIKE $regex"
+          case Some((key: String, _: JsValue)) if key == "$regex" =>
+            val regex = value.fields.head._2.as[String].replaceAll(".*", "%")
+            if (regex == "%%") "1 = 1"
+            else  s"content->>'${field._1}' LIKE $regex"
 
-          case Some((key: String, _: JsValue))
-            if key == "$options" => "1 = 1"
+          case Some((key: String, _: JsValue)) if key == "$options" =>
+            "1 = 1"
 
-          case Some((key: String, _: JsValue))
-            if key == "$gte" => s"(content->>'${field._1}')::bigint >= ${_convertTuple(value.fields.head)}"
+          case Some((key: String, _: JsValue)) if key == "$gte" =>
+            s"(content->>'${field._1}')::bigint >= ${_convertTuple(value.fields.head)}"
 
-          case Some((key: String, _: JsValue))
-            if key == "$lte" => s"(content->>'${field._1}')::bigint <= ${_convertTuple(value.fields.head)}"
+          case Some((key: String, _: JsValue)) if key == "$lte" =>
+            s"(content->>'${field._1}')::bigint <= ${_convertTuple(value.fields.head)}"
 
-          case Some((key: String, _: JsValue))
-            if key == "$lt" => s"(content->>'${field._1}')::bigint < ${_convertTuple(value.fields.head)}"
+          case Some((key: String, _: JsValue)) if key == "$lt" =>
+            s"(content->>'${field._1}')::bigint < ${_convertTuple(value.fields.head)}"
 
-          case Some((key: String, _: JsValue))
-            if key == "$and" => _convertTuple(value.fields.head)
+          case Some((key: String, _: JsValue)) if key == "$and" =>
+            _convertTuple(value.fields.head)
 
-          case Some((key: String, _: JsValue))
-            if key == "$ne" => s"NOT (content->'${field._1}' @> '${_convertTuple(value.fields.head)}')"
+          case Some((key: String, _: JsValue)) if key == "$ne" =>
+            s"NOT (content->'${field._1}' @> '${_convertTuple(value.fields.head)}')"
+
           case e =>
             logger.error(s"NOT IMPLEMENTED - $e")
             "1 = 1"

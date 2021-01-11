@@ -874,29 +874,17 @@ abstract class MongoRepo[Of, Id <: ValueType](
   //      })
   //      .flatMapConcat(seq => Source(seq.toList))
 
-  def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed] =
+  def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
+    logger.error(s"$tableName")
+
     Source
       .future(
         db.query { dsl =>
-          logger.debug(s"$tableName.streamAllRaw({})")
-          val result = recordToJson(dsl
-            .fetch("SELECT * FROM {0}", DSL.table(tableName)))
-          getContentsListFromJson(result, format)
-            .map(_.asInstanceOf[JsValue])
+          recordToJson(dsl.fetch("SELECT * FROM {0}", DSL.table(tableName)))
+            .asInstanceOf[JsArray]
         }
       )
-      .flatMapConcat(seq => Source(seq.toList))
-
-  //    Source
-  //      .future(
-  //        collection.flatMap { col =>
-  //        logger.debug(s"$collectionName.streamAllRaw({})")
-  //        col
-  //          .find(Json.obj(), None)
-  //          .cursor[JsObject](ReadPreference.primaryPreferred)
-  //          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-  //      })
-  //      .flatMapConcat(seq => Source(seq.toList))
+  }
 
   override def findOne(query: JsObject)(
     implicit ec: ExecutionContext): Future[Option[Of]] =
@@ -1434,31 +1422,10 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     Source
       .future(
         db.query { dsl =>
-          logger.debug(s"$tableName.streamAllRaw({})")
-          val result = recordToJson(dsl
-            .fetch("SELECT * FROM {0} WHERE content->>'tenant' = {1}",
-              DSL.table(tableName),
-              DSL.inline(tenant.value)))
-          getContentsListFromJson(result, format)
-            .map(_.asInstanceOf[JsValue])
+          recordToJson(dsl.fetch("SELECT * FROM {0}", DSL.table(tableName)))
+            .asInstanceOf[JsArray]
         }
       )
-      .flatMapConcat(seq => Source(seq.toList))
-
-  //    Source
-  //      .future(
-  //        collection.flatMap { col =>
-  //          logger.debug(s"$collectionName.streamAllRaw(${
-  //            Json.prettyPrint(
-  //              Json.obj("_tenant" -> tenant.value))
-  //          })")
-  //          col
-  //            .find(Json.obj("_tenant" -> tenant.value), None)
-  //            .cursor[JsObject](ReadPreference.primaryPreferred)
-  //            .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-  //        }
-  //      )
-  //      .flatMapConcat(seq => Source(seq.toList))
 
   override def findOne(query: JsObject)(
     implicit ec: ExecutionContext): Future[Option[Of]] =
