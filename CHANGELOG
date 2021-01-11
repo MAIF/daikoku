@@ -112,3 +112,10 @@ We'd like to thank all the contributors who worked on this release!
 
 - javascript build is broken ¿ⓧ_ⓧﮌ [#203](https://github.com/MAIF/daikoku/issues/203)
 
+## [v1.0.14] - 2021-01-11
+
+## :beetle: Bug Fixes
+
+- Multiple subscriptions are not saved in api.subscriptions [#205](https://github.com/MAIF/daikoku/issues/205)
+- Api subsriptions page is broken [#204](https://github.com/MAIF/daikoku/issues/204)
+
