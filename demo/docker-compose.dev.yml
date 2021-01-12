@@ -6,15 +6,15 @@ services:
   #     - 27017:27017
   #   volumes:
   #     - ./config/mongo-data:/data/db
-  # redis:
-  #   image: redis:4.0.8
-  #   expose:
-  #     - 6379
-  #   ports:
-  #   - 6379:6379
-  #   command: redis-server --appendonly yes
-  #   volumes:
-  #     - ./config/redis-data:/data
+  redis:
+    image: redis:4.0.8
+    expose:
+      - 6379
+    ports:
+    - 6379:6379
+    command: redis-server --appendonly yes
+    volumes:
+      - ./config/redis-data:/data
 #  s3server:
 #    image: scality/s3server
 #    expose:
@@ -64,58 +64,58 @@ services:
 #    depends_on:
 #      - mongo
 ##      - s3server
-#   kibana:
-#     image: docker.elastic.co/kibana/kibana:6.8.4
-#     environment:
-#       SERVER_NAME: kibana.oto.tools
-#       ELASTICSEARCH_URL: http://elastic:9200
-#     expose:
-#       - 5601
-#     ports:
-#       - 5601:5601
-#     depends_on:
-#       - elastic
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.8.4
+    environment:
+      SERVER_NAME: kibana.oto.tools
+      ELASTICSEARCH_URL: http://elastic:9200
+    expose:
+      - 5601
+    ports:
+      - 5601:5601
+    depends_on:
+      - elastic
 
-#   elastic:
-#     image: docker.elastic.co/elasticsearch/elasticsearch:6.8.4
-#     environment:
-#       - discovery.type=single-node
-#       - bootstrap.memory_lock=true
-#       - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     volumes:
-#       - ./config/es-data:/usr/share/elasticsearch/data
-#     expose:
-#       - 9200
-#   otoroshi:
-#     image: maif/otoroshi:1.4.21-jdk11
-#     environment:
-#       - APP_STORAGE=redis
-#       - REDIS_HOST=redis
-#       - PORT=8080
-#       - APP_PRIVATEAPPS_PORT=80
-#       - APP_IMPORT_FROM=/usr/app/otoroshi/imports/otoroshi-state.json
-#       - APP_DOMAIN=oto.tools
-#     volumes:
-#       - "./config:/usr/app/otoroshi/imports"
-#     expose:
-#       - 8080
-#     depends_on:
-#       - redis
-# #      - daikoku
-#       - elastic
-#       - api-dev
-#       - api-prod
-  # nginx:
-  #   image: nginx
-  #   expose:
-  #     - 8080
-  #   ports:
-  #     - 80:8080
-  #   volumes:
-  #     - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-  #   depends_on:
-  #     - otoroshi
+  elastic:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.4
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./config/es-data:/usr/share/elasticsearch/data
+    expose:
+      - 9200
+  otoroshi:
+    image: maif/otoroshi
+    environment:
+      - APP_STORAGE=redis
+      - REDIS_HOST=redis
+      - PORT=8080
+      - APP_PRIVATEAPPS_PORT=80
+      - APP_IMPORT_FROM=/usr/app/otoroshi/imports/otoroshi-state.json
+      - APP_DOMAIN=oto.tools
+    volumes:
+      - "./config:/usr/app/otoroshi/imports"
+    expose:
+      - 8080
+    depends_on:
+      - redis
+#      - daikoku
+      - elastic
+      - api-dev
+      - api-prod
+  nginx:
+    image: nginx
+    expose:
+      - 8080
+    ports:
+      - 80:8080
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - otoroshi

@@ -10,7 +10,9 @@
     "test:eslint": "eslint src/ --ext .js --ext .jsx",
     "start": "webpack serve --port 3000 --host 0.0.0.0 --liveReload --color --mode development",
     "watch": "webpack --watch --mode development --liveReload -d --color",
-    "build": "rm -rf ../public/react-app && mkdir ../public/react-app && webpack --mode production --progress"
+    "build": "rm -rf ../public/react-app && mkdir ../public/react-app && webpack --mode production --progress",
+    "cypress": "cypress open",
+    "test:cypress": "cypress run -s cypress/integration/*.spec.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "5.15.1",
@@ -71,6 +73,7 @@
     "babel-minify-webpack-plugin": "0.3.1",
     "crypto-browserify": "^3.12.0",
     "css-loader": "5.0.1",
+    "cypress": "6.2.1",
     "eslint": "7.17.0",
     "eslint-plugin-react": "7.22.0",
     "file-loader": "6.2.0",

@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import * as Services from '../../../services';
 import { ApiCartidge, ApiConsole, ApiDocumentation, ApiPricing, ApiSwagger, ApiRedoc } from '.';
 import { converter } from '../../../services/showdown';
-import { Can, manage, api as API, access, backoffice } from '../../utils';
+import { Can, manage, api as API, access, backoffice, user } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal } from '../../../core';
 
@@ -204,7 +204,7 @@ const ApiHomeComponent = ({
                   </span>
                 )}
               </li>
-              <Can I={access} a={backoffice}>
+              {!connectedUser.isGuest &&
                 <li className="nav-item">
                   {api.swagger && api.testing.enabled && (
                     <Link
@@ -219,7 +219,7 @@ const ApiHomeComponent = ({
                     <span className={'nav-link disabled'}>Try it !</span>
                   )}
                 </li>
-              </Can>
+              }
             </ul>
           </div>
         </div>
