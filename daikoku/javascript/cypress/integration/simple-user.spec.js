@@ -91,4 +91,12 @@ describe('Team back-office', () => {
       .get('.api__billing__card__container').should('be.visible')
       .get('.api__billing__card__container .no-data').should('be.visible');
   });
+
+  it('Team Api keys works', () => {
+    cy
+      .get('nav#sidebar a.nav-link').contains('Team api keys').click()
+      .url().should('include', '/testers/settings/billing')
+      .get('.api__billing__card__container').should('be.visible')
+      .get('.api__billing__card__container .no-data').should('be.visible');
+  });
 })
