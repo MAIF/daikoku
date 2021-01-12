@@ -14,20 +14,23 @@ jobs:
     runs-on: ubuntu-16.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2.2.0
     - name: Set up JDK 11
       uses: actions/setup-java@v1
       with:
         java-version: 11
     - name: run backend in Background
-      id: backend
       run: |
         cd daikoku
         sbt 'run -Dhttp.port=9000 -Ddaikoku.mode=Dev -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson' &
-    - name: run frontend
-      id: run_test
+        - name: run backend in Background
+    - name: install ajvascript deps
       run: |
-        cd daikoku/javascript
+        cd javascript
         yarn
-        yarn start &
-        yarn test:cypress
+    - name: Cypress run
+        uses: cypress-io/github-action@v2
+        with:
+          start: yarn start
+          wait-on: 'http://localhost:9000'
+          command: yarn test:cypress
