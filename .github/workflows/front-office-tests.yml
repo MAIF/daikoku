@@ -26,6 +26,7 @@ jobs:
     - name: install javascript deps
       run: |
         cd daikoku/javascript
+        yarn
         yarn build
     - name: Cypress run
       uses: cypress-io/github-action@v2
