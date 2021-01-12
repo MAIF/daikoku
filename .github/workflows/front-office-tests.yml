@@ -33,3 +33,4 @@ jobs:
         start: yarn start
         wait-on: 'http://localhost:9000'
         command: yarn test:cypress
+        working-directory: daikoku/javascript
