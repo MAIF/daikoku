@@ -83,4 +83,12 @@ describe('Team back-office', () => {
       .get('.api__billing__card').click()
       .get('.col.apikeys h3').should('have.text', 'test API');
   });
+
+  it('Team billing works', () => {
+    cy
+      .get('nav#sidebar a.nav-link').contains('Team billing').click()
+      .url().should('include', '/testers/settings/billing')
+      .get('.api__billing__card__container').should('be.visible')
+      .get('.api__billing__card__container .no-data').should('be.visible');
+  });
 })
