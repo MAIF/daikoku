@@ -390,7 +390,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Messages' ? 'active' : ''}`}
                         to={'/settings/messages'}>
                         <i className="fas fa-comment-alt" />
-                        <Translation i18nkey="Messages" language={currentLanguage} isPlural>
+                        <Translation i18nkey="Message" language={currentLanguage} isPlural>
                           Messages
                         </Translation>
                       </Link>
