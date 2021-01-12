@@ -97,6 +97,11 @@ describe('Team back-office', () => {
       .get('nav#sidebar a.nav-link').contains('Team api keys').click()
       .url().should('include', '/testers/settings/apikeys')
       .get('main h1').should('have.text', 'Subscribed Apis')
+      .get('table tbody tr').should('have.length', 1)
+      .get('table tbody tr a.btn').first().click()
+      .url().should('include', '/testers/settings/apikeys/test-api')
+      .get('.card').should('have.length', 1);
+      
   });
 
   it('Team assets works', () => {
