@@ -22,15 +22,15 @@ jobs:
     - name: run backend in Background
       run: |
         cd daikoku
-        sbt 'run -Dhttp.port=9000 -Ddaikoku.mode=Dev -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson' &
-    - name: install javascript deps
-      run: |
-        cd daikoku/javascript
-        yarn
+        sbt 'run -Dhttp.port=9000 -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson' &
+    # - name: install javascript deps
+    #   run: |
+    #     cd daikoku/javascript
+    #     yarn
     - name: Cypress run
       uses: cypress-io/github-action@v2
       with:
-        start: yarn start
+        start: yarn build
         wait-on: 'http://localhost:9000'
         command: yarn test:cypress
         working-directory: daikoku/javascript
