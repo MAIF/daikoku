@@ -6,7 +6,7 @@ import _ from 'lodash';
 
 import { Spinner, formatPlanType, Option } from '../../utils';
 import * as Services from '../../../services';
-import { ObjectInput, Collapse, Help, BooleanInput, TextInput, NumberInput } from '../../inputs';
+import { ObjectInput, Collapse, BooleanInput, NumberInput } from '../../inputs';
 import { t, Translation } from '../../../locales';
 
 export const SubscriptionMetadataModal = (props) => {
@@ -23,7 +23,9 @@ export const SubscriptionMetadataModal = (props) => {
   const [loadingInput, setLoadingInput] = useState(false);
 
   useEffect(() => {
-    setLoading(false);
+    if (api) {
+      setLoading(false);
+    }
   }, [api]);
 
   useEffect(() => {

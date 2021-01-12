@@ -1,4 +1,4 @@
-.notification-link {
+.notification-link, .messages-link {
   width: 50px;
   color: $navbar-text-color;
   display: flex;
@@ -6,11 +6,11 @@
   justify-content: center;
   font-size: 21px;
   position: relative;
-}
 
-.notification-link:hover {
-  color: $navbar-text-hover-color;
-  text-decoration: none;
+  &:hover {
+    color: $navbar-text-hover-color;
+    text-decoration: none;
+  }
 }
 
 .unread-notifications::before {

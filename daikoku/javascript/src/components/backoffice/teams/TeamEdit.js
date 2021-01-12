@@ -132,7 +132,7 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
   };
 
   return (
-    <TeamBackOffice title={`${team.name} - ${t('Edition', this.props.currentLanguage)}`}>
+    <TeamBackOffice title={`${team.name} - ${t('Edition', currentLanguage)}`}>
       <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={currentLanguage} />
       <div className="row form-back-fixedBtns">
         <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>

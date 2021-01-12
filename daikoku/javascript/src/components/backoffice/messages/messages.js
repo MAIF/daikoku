@@ -14,7 +14,7 @@ export const MessagesTopBarTools = (props) => {
     <div style={{ position: 'relative' }}>
       <Link
         to="/settings/messages"
-        className={classNames('notification-link cursor-pointer', {
+        className={classNames('messages-link cursor-pointer', {
           'unread-messages': totalUnread > 0,
         })}
         onClick={() => setOpened(!opened)}
