@@ -95,8 +95,15 @@ describe('Team back-office', () => {
   it('Team Api keys works', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Team api keys').click()
-      .url().should('include', '/testers/settings/billing')
-      .get('.api__billing__card__container').should('be.visible')
-      .get('.api__billing__card__container .no-data').should('be.visible');
+      .url().should('include', '/testers/settings/apikeys')
+      .get('main h1').should('have.text', 'Subscribed Apis')
+  });
+
+  it('Team assets works', () => {
+    cy
+      .get('nav#sidebar a.nav-link').contains('Team assets').click()
+      .url().should('include', '/testers/settings/assets')
+      .get('main h1').should('have.text', 'Testers assets')
+      .get('main .alert').should('have.text', 'No bucket config found !')
   });
 })
