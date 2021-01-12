@@ -31,7 +31,7 @@ jobs:
     - name: run backend in Background
       run: |
         cd daikoku
-        sbt 'run -Dhttp.port=9000 -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson' &
+        screen -d -m sbt 'run -Dhttp.port=9000 -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson'
     - name: install javascript deps
       run: |
         cd daikoku/javascript
