@@ -44,3 +44,43 @@ describe('Notification page', () => {
       .get(('div.alert.section')).should('have.length', 1);
   });
 })
+
+describe('Profile page', () => {
+  it('load well', () => {
+    cy
+      .visit('http://localhost:9000/settings/me')
+      .get('main h1').should('have.text', 'Tester - tester@foo.bar')
+  });
+})
+
+describe('Team apis page', () => {
+  it('load well', () => {
+    cy
+      .visit('http://localhost:9000/testers')
+      .get('h1.jumbotron-heading').should('have.text', 'Testers')
+  });
+})
+
+describe('Team back-office', () => {
+  it('load well', () => {
+    cy
+      .visit('http://localhost:9000/testers/settings')
+      .get('main h1').should('have.text', 'Testers')
+  });
+
+  it('Team APIs works', () => {
+    cy
+      .get('nav#sidebar a.nav-link').contains('Team Apis').click()
+      .url().should('include', '/testers/settings/apis')
+      .get('table tbody tr').should('have.length', 1); //todo: test stats, subs, meta
+  });
+
+  it('Team income works', () => {
+    cy
+      .get('nav#sidebar a.nav-link').contains('Team Income').click()
+      .url().should('include', '/testers/settings/income')
+      .get('.col.apis').should('be.visible')
+      .get('.api__billing__card').click()
+      .get('.col.apikeys h3').should('have.text', 'test API');
+  });
+})
