@@ -1,6 +1,11 @@
 name: Cypress tests
-on: [push, pull_request]
-  paths:
+on: 
+  push:
+    paths:
+      - 'daikoku/app/**'
+      - 'daikoku/javascript/**'
+  pull_request:
+    paths:
       - 'daikoku/app/**'
       - 'daikoku/javascript/**'
 jobs:
