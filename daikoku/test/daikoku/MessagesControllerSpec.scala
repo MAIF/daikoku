@@ -3,7 +3,7 @@ package daikoku
 import fr.maif.otoroshi.daikoku.domain.{
   Message,
   MessageType,
-  MongoId,
+  DatastoreId,
   User,
   json
 }
@@ -29,7 +29,7 @@ class MessagesControllerSpec()
                    message: String,
                    closed: Option[DateTime] = None): Message =
     Message(
-      id = MongoId(IdGenerator.token(128)),
+      id = DatastoreId(IdGenerator.token(128)),
       tenant = tenant.id,
       messageType = MessageType.Tenant(tenant.id),
       participants = Set(user.id) ++ defaultAdminTeam.users.map(_.userId),

@@ -126,7 +126,7 @@ object OtoroshiIdentityFilter {
                         )
                         val session = maybeSession.getOrElse(
                           UserSession(
-                            id = MongoId(BSONObjectID.generate().stringify),
+                            id = DatastoreId(BSONObjectID.generate().stringify),
                             userId = defaultUser.id,
                             userName = defaultUser.name,
                             userEmail = defaultUser.email,
@@ -179,7 +179,7 @@ object OtoroshiIdentityFilter {
                         )
                         val session = maybeSession.getOrElse(
                           UserSession(
-                            id = MongoId(BSONObjectID.generate().stringify),
+                            id = DatastoreId(BSONObjectID.generate().stringify),
                             userId = u.id,
                             userName = u.name,
                             userEmail = u.email,
@@ -249,7 +249,7 @@ object OtoroshiIdentityFilter {
                   )
                   val session = maybeSession.getOrElse(
                     UserSession(
-                      id = MongoId(BSONObjectID.generate().stringify),
+                      id = DatastoreId(BSONObjectID.generate().stringify),
                       userId = user.id,
                       userName = user.name,
                       userEmail = user.email,

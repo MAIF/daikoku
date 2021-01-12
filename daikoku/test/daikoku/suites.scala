@@ -305,7 +305,7 @@ object utils {
                     .map(_ => t))
               .flatMap { team =>
                 val session = UserSession(
-                  id = MongoId(BSONObjectID.generate().stringify),
+                  id = DatastoreId(BSONObjectID.generate().stringify),
                   userId = user.id,
                   userName = user.name,
                   userEmail = user.email,

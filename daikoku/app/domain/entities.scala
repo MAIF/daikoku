@@ -455,7 +455,7 @@ case class UserSessionId(value: String)
     with CanJson[UserSessionId] {
   def asJson: JsValue = JsString(value)
 }
-case class MongoId(value: String) extends ValueType with CanJson[MongoId] {
+case class DatastoreId(value: String) extends ValueType with CanJson[DatastoreId] {
   def asJson: JsValue = JsString(value)
 }
 case class ChatId(value: String) extends ValueType with CanJson[ChatId] {
@@ -993,7 +993,7 @@ object GuestUserSession {
     val sessionMaxAge =
       tenant.authProviderSettings.\("sessionMaxAge").asOpt[Int].getOrElse(86400)
     UserSession(
-      id = MongoId(BSONObjectID.generate().stringify),
+      id = DatastoreId(BSONObjectID.generate().stringify),
       userId = user.id,
       userName = user.name,
       userEmail = user.email,
@@ -1373,7 +1373,7 @@ case class Notification(
   override def asJson: JsValue = json.NotificationFormat.writes(this)
 }
 
-case class UserSession(id: MongoId,
+case class UserSession(id: DatastoreId,
                        sessionId: UserSessionId,
                        userId: UserId,
                        userName: String,
@@ -1409,18 +1409,18 @@ case class UserSession(id: MongoId,
 }
 
 case class ApiKeyConsumption(
-    id: MongoId,
-    tenant: TenantId,
-    team: TeamId,
-    api: ApiId,
-    plan: UsagePlanId,
-    clientId: String,
-    hits: Long,
-    globalInformations: ApiKeyGlobalConsumptionInformations,
-    quotas: ApiKeyQuotas,
-    billing: ApiKeyBilling,
-    from: DateTime,
-    to: DateTime)
+                              id: DatastoreId,
+                              tenant: TenantId,
+                              team: TeamId,
+                              api: ApiId,
+                              plan: UsagePlanId,
+                              clientId: String,
+                              hits: Long,
+                              globalInformations: ApiKeyGlobalConsumptionInformations,
+                              quotas: ApiKeyQuotas,
+                              billing: ApiKeyBilling,
+                              from: DateTime,
+                              to: DateTime)
     extends CanJson[ApiKeyConsumption] {
   override def asJson: JsValue = json.ConsumptionFormat.writes(this)
 }
@@ -1454,28 +1454,28 @@ case class ApiKeyBilling(hits: Long, total: BigDecimal)
 }
 
 case class PasswordReset(
-    id: MongoId,
-    deleted: Boolean = false,
-    randomId: String,
-    email: String,
-    password: String,
-    user: UserId,
-    creationDate: DateTime,
-    validUntil: DateTime,
+                          id: DatastoreId,
+                          deleted: Boolean = false,
+                          randomId: String,
+                          email: String,
+                          password: String,
+                          user: UserId,
+                          creationDate: DateTime,
+                          validUntil: DateTime,
 ) extends CanJson[PasswordReset] {
   override def asJson: JsValue = json.PasswordResetFormat.writes(this)
 }
 
 case class AccountCreation(
-    id: MongoId,
-    deleted: Boolean = false,
-    randomId: String,
-    email: String,
-    name: String,
-    avatar: String,
-    password: String,
-    creationDate: DateTime,
-    validUntil: DateTime,
+                            id: DatastoreId,
+                            deleted: Boolean = false,
+                            randomId: String,
+                            email: String,
+                            name: String,
+                            avatar: String,
+                            password: String,
+                            creationDate: DateTime,
+                            validUntil: DateTime,
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
@@ -1488,7 +1488,7 @@ object TranslationElement {
   case class TeamTranslationElement(team: TeamId) extends TranslationElement
 }
 
-case class Translation(id: MongoId,
+case class Translation(id: DatastoreId,
                        tenant: TenantId,
                        element: TranslationElement,
                        language: String,
@@ -1510,7 +1510,7 @@ object MessageType {
   case class Tenant(value: TenantId) extends MessageType
 }
 
-case class Message(id: MongoId,
+case class Message(id: DatastoreId,
                    tenant: TenantId,
                    messageType: MessageType,
                    participants: Set[UserId],

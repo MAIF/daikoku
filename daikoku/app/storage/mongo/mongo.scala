@@ -11,12 +11,16 @@ import fr.maif.otoroshi.daikoku.env.Env
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
+import reactivemongo.api.indexes.Index
 import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
-
 import storage._
 
 import scala.concurrent.{ExecutionContext, Future}
+
+trait RepositoryMongo[Of, Id <: ValueType] extends Repo[Of, Id] {
+  override def tableName: String = "ignored"
+}
 
 trait MongoTenantCapableRepo[A, Id <: ValueType]
   extends TenantCapableRepo[A, Id] {
@@ -27,8 +31,7 @@ trait MongoTenantCapableRepo[A, Id <: ValueType]
 
   override def forTenant(tenant: TenantId): Repo[A, Id] = tenantRepo(tenant)
 
-  override def forTenantF(tenant: TenantId): Future[Repo[A, Id]] =
-    Future.successful(tenantRepo(tenant))
+  override def forTenantF(tenant: TenantId): Future[Repo[A, Id]] = Future.successful(tenantRepo(tenant))
 
   override def forAllTenant(): Repo[A, Id] = repo()
 
@@ -98,45 +101,45 @@ case class MongoTenantCapableNotificationRepo(
 }
 
 case class MongoTenantCapableAuditTrailRepo(
-                                             _repo: () => MongoRepo[JsObject, MongoId],
-                                             _tenantRepo: TenantId => MongoTenantAwareRepo[JsObject, MongoId])
-  extends MongoTenantCapableRepo[JsObject, MongoId]
+                                             _repo: () => MongoRepo[JsObject, DatastoreId],
+                                             _tenantRepo: TenantId => MongoTenantAwareRepo[JsObject, DatastoreId])
+  extends MongoTenantCapableRepo[JsObject, DatastoreId]
     with AuditTrailRepo {
   override def tenantRepo(
-                           tenant: TenantId): MongoTenantAwareRepo[JsObject, MongoId] =
+                           tenant: TenantId): MongoTenantAwareRepo[JsObject, DatastoreId] =
     _tenantRepo(tenant)
 
-  override def repo(): MongoRepo[JsObject, MongoId] = _repo()
+  override def repo(): MongoRepo[JsObject, DatastoreId] = _repo()
 }
 
 case class MongoTenantCapableTranslationRepo(
-                                              _repo: () => MongoRepo[Translation, MongoId],
-                                              _tenantRepo: TenantId => MongoTenantAwareRepo[Translation, MongoId]
-                                            ) extends MongoTenantCapableRepo[Translation, MongoId]
+                                              _repo: () => MongoRepo[Translation, DatastoreId],
+                                              _tenantRepo: TenantId => MongoTenantAwareRepo[Translation, DatastoreId]
+                                            ) extends MongoTenantCapableRepo[Translation, DatastoreId]
   with TranslationRepo {
   override def tenantRepo(
-                           tenant: TenantId): MongoTenantAwareRepo[Translation, MongoId] =
+                           tenant: TenantId): MongoTenantAwareRepo[Translation, DatastoreId] =
     _tenantRepo(tenant)
 
-  override def repo(): MongoRepo[Translation, MongoId] = _repo()
+  override def repo(): MongoRepo[Translation, DatastoreId] = _repo()
 }
 
 case class MongoTenantCapableMessageRepo(
-                                          _repo: () => MongoRepo[Message, MongoId],
-                                          _tenantRepo: TenantId => MongoTenantAwareRepo[Message, MongoId]
-                                        ) extends MongoTenantCapableRepo[Message, MongoId]
+                                          _repo: () => MongoRepo[Message, DatastoreId],
+                                          _tenantRepo: TenantId => MongoTenantAwareRepo[Message, DatastoreId]
+                                        ) extends MongoTenantCapableRepo[Message, DatastoreId]
   with MessageRepo {
   override def tenantRepo(
-                           tenant: TenantId): MongoTenantAwareRepo[Message, MongoId] =
+                           tenant: TenantId): MongoTenantAwareRepo[Message, DatastoreId] =
     _tenantRepo(tenant)
 
-  override def repo(): MongoRepo[Message, MongoId] = _repo()
+  override def repo(): MongoRepo[Message, DatastoreId] = _repo()
 }
 
 case class MongoTenantCapableConsumptionRepo(
-                                              _repo: () => MongoRepo[ApiKeyConsumption, MongoId],
-                                              _tenantRepo: TenantId => MongoTenantAwareRepo[ApiKeyConsumption, MongoId]
-                                            ) extends MongoTenantCapableRepo[ApiKeyConsumption, MongoId]
+                                              _repo: () => MongoRepo[ApiKeyConsumption, DatastoreId],
+                                              _tenantRepo: TenantId => MongoTenantAwareRepo[ApiKeyConsumption, DatastoreId]
+                                            ) extends MongoTenantCapableRepo[ApiKeyConsumption, DatastoreId]
   with ConsumptionRepo {
 
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
@@ -149,19 +152,19 @@ case class MongoTenantCapableConsumptionRepo(
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
   override def tenantRepo(
-                           tenant: TenantId): MongoTenantAwareRepo[ApiKeyConsumption, MongoId] =
+                           tenant: TenantId): MongoTenantAwareRepo[ApiKeyConsumption, DatastoreId] =
     _tenantRepo(tenant)
 
-  override def repo(): MongoRepo[ApiKeyConsumption, MongoId] = _repo()
+  override def repo(): MongoRepo[ApiKeyConsumption, DatastoreId] = _repo()
 
   private def lastConsumptions(tenantId: Option[TenantId], filter: JsObject)(
     implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]] = {
     val rep = tenantId match {
       case Some(t) =>
         forTenant(t)
-          .asInstanceOf[MongoTenantAwareRepo[ApiKeyConsumption, MongoId]]
+          .asInstanceOf[MongoTenantAwareRepo[ApiKeyConsumption, DatastoreId]]
       case None =>
-        forAllTenant().asInstanceOf[MongoRepo[ApiKeyConsumption, MongoId]]
+        forAllTenant().asInstanceOf[MongoRepo[ApiKeyConsumption, DatastoreId]]
     }
 
     rep.collection.flatMap { col =>
@@ -224,8 +227,7 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
   val logger = Logger("MongoDataStore")
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
-  private val _tenantRepo: TenantRepo =
-    new MongoTenantRepo(env, reactiveMongoApi)
+  private val _tenantRepo: TenantRepo = new MongoTenantRepo(env, reactiveMongoApi)
   private val _userRepo: UserRepo = new MongoUserRepo(env, reactiveMongoApi)
   private val _teamRepo: TeamRepo = MongoTenantCapableTeamRepo(
     () => new MongoTeamRepo(env, reactiveMongoApi),
@@ -248,8 +250,7 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
       () => new MongoNotificationRepo(env, reactiveMongoApi),
       t => new MongoTenantNotificationRepo(env, reactiveMongoApi, t)
     )
-  private val _userSessionRepo: UserSessionRepo =
-    new MongoUserSessionRepo(env, reactiveMongoApi)
+  private val _userSessionRepo: UserSessionRepo = new MongoUserSessionRepo(env, reactiveMongoApi)
   private val _auditTrailRepo: AuditTrailRepo =
     MongoTenantCapableAuditTrailRepo(
       () => new MongoAuditTrailRepo(env, reactiveMongoApi),
@@ -260,10 +261,8 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
       () => new MongoConsumptionRepo(env, reactiveMongoApi),
       t => new MongoTenantConsumptionRepo(env, reactiveMongoApi, t)
     )
-  private val _passwordResetRepo: PasswordResetRepo =
-    new MongoPasswordResetRepo(env, reactiveMongoApi)
-  private val _accountCreationRepo: AccountCreationRepo =
-    new MongoAccountCreationRepo(env, reactiveMongoApi)
+  private val _passwordResetRepo: PasswordResetRepo = new MongoPasswordResetRepo(env, reactiveMongoApi)
+  private val _accountCreationRepo: AccountCreationRepo = new MongoAccountCreationRepo(env, reactiveMongoApi)
   private val _translationRepo: TranslationRepo =
     MongoTenantCapableTranslationRepo(
       () => new MongoTranslationRepo(env, reactiveMongoApi),
@@ -304,7 +303,7 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
   override def messageRepo: MessageRepo = _messageRepo
 
   override def start(): Future[Unit] =
-    translationRepo.forAllTenant().asInstanceOf[RepositoryMongo].ensureIndices
+    translationRepo.forAllTenant().ensureIndices
 
   override def stop(): Future[Unit] = Future.successful(())
 
@@ -337,8 +336,7 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
       consumptionRepo.forAllTenant(),
       translationRepo.forAllTenant()
     )
-    Source(collections).flatMapConcat { col =>
-      val collection = col.asInstanceOf[RepositoryMongo]
+    Source(collections).flatMapConcat { collection =>
       collection.streamAllRaw().map { doc =>
         if (pretty) {
           ByteString(
@@ -446,7 +444,7 @@ class MongoTenantRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoPasswordResetRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[PasswordReset, MongoId](env, reactiveMongoApi)
+  extends MongoRepo[PasswordReset, DatastoreId](env, reactiveMongoApi)
     with PasswordResetRepo {
   override def collectionName: String = "PasswordReset"
 
@@ -456,7 +454,7 @@ class MongoPasswordResetRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoAccountCreationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[AccountCreation, MongoId](env, reactiveMongoApi)
+  extends MongoRepo[AccountCreation, DatastoreId](env, reactiveMongoApi)
     with AccountCreationRepo {
   override def collectionName: String = "AccountCreation"
 
@@ -490,7 +488,7 @@ class MongoTenantApiRepo(env: Env,
 class MongoTenantTranslationRepo(env: Env,
                                  reactiveMongoApi: ReactiveMongoApi,
                                  tenant: TenantId)
-  extends MongoTenantAwareRepo[Translation, MongoId](env,
+  extends MongoTenantAwareRepo[Translation, DatastoreId](env,
     reactiveMongoApi,
     tenant) {
   override def collectionName: String = "Translations"
@@ -503,7 +501,7 @@ class MongoTenantTranslationRepo(env: Env,
 class MongoTenantMessageRepo(env: Env,
                              reactiveMongoApi: ReactiveMongoApi,
                              tenant: TenantId)
-  extends MongoTenantAwareRepo[Message, MongoId](env,
+  extends MongoTenantAwareRepo[Message, DatastoreId](env,
     reactiveMongoApi,
     tenant) {
   override def collectionName: String = "Messages"
@@ -559,7 +557,7 @@ class MongoTenantNotificationRepo(env: Env,
 class MongoTenantConsumptionRepo(env: Env,
                                  reactiveMongoApi: ReactiveMongoApi,
                                  tenant: TenantId)
-  extends MongoTenantAwareRepo[ApiKeyConsumption, MongoId](env,
+  extends MongoTenantAwareRepo[ApiKeyConsumption, DatastoreId](env,
     reactiveMongoApi,
     tenant) {
   override def collectionName: String = "Consumptions"
@@ -573,7 +571,7 @@ class MongoTenantConsumptionRepo(env: Env,
 class MongoTenantAuditTrailRepo(env: Env,
                                 reactiveMongoApi: ReactiveMongoApi,
                                 tenant: TenantId)
-  extends MongoTenantAwareRepo[JsObject, MongoId](env,
+  extends MongoTenantAwareRepo[JsObject, DatastoreId](env,
     reactiveMongoApi,
     tenant) {
 
@@ -604,7 +602,7 @@ class MongoTeamRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoTranslationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[Translation, MongoId](env, reactiveMongoApi) {
+  extends MongoRepo[Translation, DatastoreId](env, reactiveMongoApi) {
   override def collectionName: String = "Translations"
 
   override def format: Format[Translation] = json.TranslationFormat
@@ -613,7 +611,7 @@ class MongoTranslationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoMessageRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[Message, MongoId](env, reactiveMongoApi) {
+  extends MongoRepo[Message, DatastoreId](env, reactiveMongoApi) {
   override def collectionName: String = "Messages"
 
   override def format: Format[Message] = json.MessageFormat
@@ -663,7 +661,7 @@ class MongoNotificationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoConsumptionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[ApiKeyConsumption, MongoId](env, reactiveMongoApi) {
+  extends MongoRepo[ApiKeyConsumption, DatastoreId](env, reactiveMongoApi) {
   override def collectionName: String = "Consumptions"
 
   override def format: Format[ApiKeyConsumption] = json.ConsumptionFormat
@@ -672,7 +670,7 @@ class MongoConsumptionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoUserSessionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[UserSession, MongoId](env, reactiveMongoApi)
+  extends MongoRepo[UserSession, DatastoreId](env, reactiveMongoApi)
     with UserSessionRepo {
   override def collectionName: String = "UserSessions"
 
@@ -682,7 +680,7 @@ class MongoUserSessionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoAuditTrailRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[JsObject, MongoId](env, reactiveMongoApi) {
+  extends MongoRepo[JsObject, DatastoreId](env, reactiveMongoApi) {
   override def collectionName: String = "AuditEvents"
 
   override def format: Format[JsObject] = json.DefaultFormat
@@ -729,7 +727,7 @@ abstract class MongoRepo[Of, Id <: ValueType](
       }
     }
 
-  override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] = count(query)
+  override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] = super.count(query)
 
   override def deleteByIdLogically(id: String)(
     implicit ec: ExecutionContext): Future[Boolean] = super.deleteByIdLogically(id, Json.obj())
@@ -825,9 +823,9 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     implicit ec: ExecutionContext): Future[Long] = super.insertMany(values, Json.obj("_tenant" -> tenant.value))
 
   override def exists(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean] = exists(query ++ Json.obj("_tenant" -> tenant.value))
+    implicit ec: ExecutionContext): Future[Boolean] = super.exists(query ++ Json.obj("_tenant" -> tenant.value))
 
-  override def count()(implicit ec: ExecutionContext): Future[Long] = count(Json.obj("_tenant" -> tenant.value))
+  override def count()(implicit ec: ExecutionContext): Future[Long] = super.count(Json.obj("_tenant" -> tenant.value))
 
   override def findWithProjection(query: JsObject, projection: JsObject)(
     implicit ec: ExecutionContext): Future[Seq[JsObject]] =

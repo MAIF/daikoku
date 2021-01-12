@@ -33,6 +33,14 @@ trait Repo[Of, Id <: ValueType] {
 
   def extractId(value: Of): String
 
+  def collectionName: String
+
+  def indices: Seq[Index.Default] = Seq.empty
+
+  def ensureIndices(implicit ec: ExecutionContext): Future[Unit]
+
+  def collection(implicit ec: ExecutionContext): Future[JSONCollection]
+
   def count()(implicit ec: ExecutionContext): Future[Long]
 
   def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long]
@@ -212,24 +220,11 @@ trait Repo[Of, Id <: ValueType] {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-trait RepositoryMongo[Of, Id <: ValueType] extends Repo[Of, Id] {
-  def collectionName: String
+trait UserSessionRepo extends Repo[UserSession, DatastoreId]
 
-  def indices: Seq[Index.Default] = Seq.empty
+trait PasswordResetRepo extends Repo[PasswordReset, DatastoreId]
 
-  def ensureIndices(implicit ec: ExecutionContext): Future[Unit]
-
-  def collection(implicit ec: ExecutionContext): Future[JSONCollection]
-
-  override def tableName: String = "ignored"
-}
-
-
-trait UserSessionRepo extends Repo[UserSession, MongoId]
-
-trait PasswordResetRepo extends Repo[PasswordReset, MongoId]
-
-trait AccountCreationRepo extends Repo[AccountCreation, MongoId]
+trait AccountCreationRepo extends Repo[AccountCreation, DatastoreId]
 
 trait TenantRepo extends Repo[Tenant, TenantId]
 
@@ -263,9 +258,9 @@ trait ApiSubscriptionRepo
 
 trait ApiRepo extends TenantCapableRepo[Api, ApiId]
 
-trait AuditTrailRepo extends TenantCapableRepo[JsObject, MongoId]
+trait AuditTrailRepo extends TenantCapableRepo[JsObject, DatastoreId]
 
-trait ConsumptionRepo extends TenantCapableRepo[ApiKeyConsumption, MongoId] {
+trait ConsumptionRepo extends TenantCapableRepo[ApiKeyConsumption, DatastoreId] {
   def getLastConsumptionsforAllTenant(filter: JsObject)(
     implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]]
 
@@ -279,9 +274,9 @@ trait ConsumptionRepo extends TenantCapableRepo[ApiKeyConsumption, MongoId] {
   }
 }
 
-trait TranslationRepo extends TenantCapableRepo[Translation, MongoId]
+trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId]
 
-trait MessageRepo extends TenantCapableRepo[Message, MongoId]
+trait MessageRepo extends TenantCapableRepo[Message, DatastoreId]
 
 trait DataStore {
   def start(): Future[Unit]

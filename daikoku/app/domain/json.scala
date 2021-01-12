@@ -194,14 +194,14 @@ object json {
       } get
     override def writes(o: UserId): JsValue = JsString(o.value)
   }
-  val MongoIdFormat = new Format[MongoId] {
-    override def reads(json: JsValue): JsResult[MongoId] =
+  val MongoIdFormat = new Format[DatastoreId] {
+    override def reads(json: JsValue): JsResult[DatastoreId] =
       Try {
-        JsSuccess(MongoId(json.as[String]))
+        JsSuccess(DatastoreId(json.as[String]))
       } recover {
         case e => JsError(e.getMessage)
       } get
-    override def writes(o: MongoId): JsValue = JsString(o.value)
+    override def writes(o: DatastoreId): JsValue = JsString(o.value)
   }
   val ChatIdFormat = new Format[ChatId] {
     override def reads(json: JsValue): JsResult[ChatId] =

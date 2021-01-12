@@ -20,8 +20,8 @@ import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoApi
-import storage.postgres.{MongoDataStore, PostgresConnection}
-import storage.DataStore
+import storage.postgres.PostgresConnection
+import storage.{DataStore, Manager}
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -242,7 +242,7 @@ class DaikokuEnv(ws: WSClient,
     actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
 
   private val daikokuConfig = new Config(configuration)
-  private val mongoDataStore = new MongoDataStore(this, db, reactiveMongoApi)
+  private val _dataStore: DataStore = Manager.getDataStore(this, db, reactiveMongoApi)
   private val s3assetsStore =
     new AssetsDataStore(actorSystem)(actorSystem.dispatcher, materializer)
 
@@ -250,7 +250,7 @@ class DaikokuEnv(ws: WSClient,
     actorSystem.dispatcher
   override def defaultActorSystem: ActorSystem = actorSystem
   override def defaultMaterializer: Materializer = materializer
-  override def dataStore: DataStore = mongoDataStore
+  override def dataStore: DataStore = _dataStore
   override def wsClient: WSClient = ws
   override def config: Config = daikokuConfig
   override def assetsStore: AssetsDataStore = s3assetsStore
@@ -425,7 +425,7 @@ class DaikokuEnv(ws: WSClient,
       }
     }
 
-    mongoDataStore.start()
+    dataStore.start()
 
     Source
       .tick(1.second, 5.seconds, ())
@@ -443,7 +443,7 @@ class DaikokuEnv(ws: WSClient,
 
   override def onShutdown(): Unit = {
     implicit val ec: ExecutionContext = defaultExecutionContext
-    mongoDataStore.stop()
+    dataStore.stop()
     auditActor ! PoisonPill
     Await.result(actorSystem.terminate(), 20.seconds)
   }

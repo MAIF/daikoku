@@ -225,12 +225,12 @@ class NotificationAdminApiController(daa: DaikokuApiAction,
 class UserSessionAdminApiController(daa: DaikokuApiAction,
                                     env: Env,
                                     cc: ControllerComponents)
-    extends AdminApiController[UserSession, MongoId](daa, env, cc) {
+    extends AdminApiController[UserSession, DatastoreId](daa, env, cc) {
   override def entityClass = classOf[UserSession]
   override def entityName: String = "user-session"
   override def pathRoot: String = s"/admin-api/sessions"
   override def entityStore(tenant: Tenant,
-                           ds: DataStore): Repo[UserSession, MongoId] =
+                           ds: DataStore): Repo[UserSession, DatastoreId] =
     ds.userSessionRepo
   override def toJson(entity: UserSession): JsValue = entity.asJson
   override def fromJson(entity: JsValue): Either[String, UserSession] =
@@ -243,12 +243,12 @@ class UserSessionAdminApiController(daa: DaikokuApiAction,
 class ApiKeyConsumptionAdminApiController(daa: DaikokuApiAction,
                                           env: Env,
                                           cc: ControllerComponents)
-    extends AdminApiController[ApiKeyConsumption, MongoId](daa, env, cc) {
+    extends AdminApiController[ApiKeyConsumption, DatastoreId](daa, env, cc) {
   override def entityClass = classOf[ApiKeyConsumption]
   override def entityName: String = "api-key-consumption"
   override def pathRoot: String = s"/admin-api/consumptions"
   override def entityStore(tenant: Tenant,
-                           ds: DataStore): Repo[ApiKeyConsumption, MongoId] =
+                           ds: DataStore): Repo[ApiKeyConsumption, DatastoreId] =
     ds.consumptionRepo.forTenant(tenant)
   override def toJson(entity: ApiKeyConsumption): JsValue = entity.asJson
   override def fromJson(entity: JsValue): Either[String, ApiKeyConsumption] =
@@ -261,12 +261,12 @@ class ApiKeyConsumptionAdminApiController(daa: DaikokuApiAction,
 class AuditEventAdminApiController(daa: DaikokuApiAction,
                                    env: Env,
                                    cc: ControllerComponents)
-    extends AdminApiController[JsObject, MongoId](daa, env, cc) {
+    extends AdminApiController[JsObject, DatastoreId](daa, env, cc) {
   override def entityClass = classOf[JsObject]
   override def entityName: String = "audit-event"
   override def pathRoot: String = s"/admin-api/${entityName}s"
   override def entityStore(tenant: Tenant,
-                           ds: DataStore): Repo[JsObject, MongoId] =
+                           ds: DataStore): Repo[JsObject, DatastoreId] =
     ds.auditTrailRepo.forTenant(tenant)
   override def toJson(entity: JsObject): JsValue = entity
   override def fromJson(entity: JsValue): Either[String, JsObject] =
@@ -297,12 +297,12 @@ class CredentialsAdminApiController(DaikokuApiAction: DaikokuApiAction,
 class MessagesAdminApiController(daa: DaikokuApiAction,
                                  env: Env,
                                  cc: ControllerComponents)
-    extends AdminApiController[Message, MongoId](daa, env, cc) {
+    extends AdminApiController[Message, DatastoreId](daa, env, cc) {
   override def entityClass = classOf[Message]
   override def entityName: String = "message"
   override def pathRoot: String = s"/admin-api/${entityName}s"
   override def entityStore(tenant: Tenant,
-                           ds: DataStore): Repo[Message, MongoId] =
+                           ds: DataStore): Repo[Message, DatastoreId] =
     ds.messageRepo.forTenant(tenant)
   override def toJson(entity: Message): JsValue = entity.asJson
   override def fromJson(entity: JsValue): Either[String, Message] =
