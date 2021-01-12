@@ -439,7 +439,7 @@ const TeamMembersComponent = (props) => {
     <TeamBackOffice
       tab="Members"
       apiId={props.match.params.apiId}
-      title={`${props.currentTeam.name} - ${t('Member', this.props.currentLanguage, true)}`}>
+      title={`${props.currentTeam.name} - ${t('Member', props.currentLanguage, true)}`}>
       <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
         <TeamMembersSimpleComponent {...props} />
       </Can>
