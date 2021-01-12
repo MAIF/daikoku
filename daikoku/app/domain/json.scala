@@ -2617,4 +2617,9 @@ object json {
     Format(Reads.seq(CustomMetadataFormat), Writes.seq(CustomMetadataFormat))
   val SeqMessagesFormat =
     Format(Reads.seq(MessageFormat), Writes.seq(MessageFormat))
+
+  val DefaultFormat = new Format[JsObject] {
+    override def reads(json: JsValue): JsResult[JsObject] = JsSuccess(json.as[JsObject])
+    override def writes(o: JsObject): JsValue = o
+  }
 }

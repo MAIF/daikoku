@@ -24,7 +24,7 @@ import play.api.mvc._
 import play.api.routing.Router
 import play.modules.reactivemongo.{ReactiveMongoApi, ReactiveMongoApiFromContext}
 import router.Routes
-import storage.PostgresConnection
+import storage.postgres.PostgresConnection
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}

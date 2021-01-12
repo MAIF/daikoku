@@ -20,7 +20,8 @@ import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoApi
-import storage.{DataStore, MongoDataStore, PostgresConnection}
+import storage.postgres.{MongoDataStore, PostgresConnection}
+import storage.DataStore
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}

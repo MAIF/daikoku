@@ -1,8 +1,8 @@
-package storage
+package storage.postgres
 
 import akka.actor.ActorSystem
-import org.jooq.{DSLContext, SQLDialect}
 import org.jooq.impl.DSL
+import org.jooq.{DSLContext, SQLDialect}
 import play.api.Logger
 import play.api.db.{Database, Databases}
 

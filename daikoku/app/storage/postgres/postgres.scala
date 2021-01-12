@@ -1,4 +1,4 @@
-package storage
+package storage.postgres
 
 import akka.NotUsed
 import akka.http.scaladsl.util.FastFuture
@@ -12,10 +12,8 @@ import org.jooq.impl.DSL
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.commands.WriteResult
-import reactivemongo.api.indexes.Index
-import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
-import storage.Helper.{convertQuery, getContentFromJson, getContentsListFromJson, quotes, recordToJson}
+import storage._
+import storage.postgres.Helper._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -160,13 +158,14 @@ case class MongoTenantCapableConsumptionRepo(
 
   private def lastConsumptions(tenantId: Option[TenantId], filter: JsObject)(
     implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]] = {
+
     val rep = tenantId match {
       case Some(t) => forTenant(t).asInstanceOf[MongoTenantAwareRepo[ApiKeyConsumption, MongoId]]
       case None => forAllTenant().asInstanceOf[MongoRepo[ApiKeyConsumption, MongoId]]
     }
 
     db.query { dsl =>
-      val result = recordToJson(dsl.fetch(
+      recordToJson(dsl.fetch(
         "SELECT _id, content->>'clientId' as clientid, MAX(content->>'from') as maxfrom " +
           "FROM {0} " +
           "WHERE {1} " +
@@ -177,57 +176,20 @@ case class MongoTenantCapableConsumptionRepo(
         .as[JsArray]
         .value
         .toSeq
-
-      logger.error(result.mkString("\n"))
-
-      result.flatMap(json => {
-        logger.error(s"SELECT * FROM ${rep.tableName} WHERE ${
-          convertQuery(Json.obj(
-            "clientId" -> (json \ "clientid").as[String],
-            "from" -> (json \ "maxfrom").as[JsValue])
+        .flatMap(json => {
+          getContentFromJson(
+            recordToJson(
+              dsl.fetch(
+                "SELECT * FROM {0} WHERE {1}",
+                DSL.table(rep.tableName),
+                DSL.table(convertQuery(
+                  Json.obj("clientId" -> (json \ "clientid").as[String],
+                    "from" -> (json \ "maxfrom").as[JsValue]))
+                ))),
+            rep.format
           )
-        }")
-
-        getContentFromJson(
-          recordToJson(
-            dsl.fetch(
-              "SELECT * FROM {0} WHERE {1}",
-              DSL.table(rep.tableName),
-              DSL.table(convertQuery(
-                Json.obj("clientId" -> (json \ "clientid").as[String],
-                  "from" -> (json \ "maxfrom").as[JsValue]))
-              ))),
-          rep.format
-        )
-      })
+        })
     }
-    //    rep.collection.flatMap { col =>
-    //      col
-    //        .aggregatorContext[JsObject](
-    //          firstOperator = Match(filter),
-    //          otherOperators =
-    //            List(Group(JsString("$clientId"))("maxFrom" -> MaxField("from"))),
-    //        )
-    //        .prepared
-    //        .cursor
-    //        .collect[List](-1, Cursor.FailOnError[List[JsObject]]())
-    //        .flatMap { agg =>
-    //          val futures: List[Future[Option[ApiKeyConsumption]]] = agg.map(
-    //            json =>
-    //              col
-    //                .find(Json.obj("clientId" -> (json \ "_id").as[String],
-    //                               "from" -> (json \ "maxFrom" \ "$long").as[Long]),
-    //                      None)
-    //                .one[JsObject](ReadPreference.primaryPreferred)
-    //                .map { results =>
-    //                  results.map(rep.format.reads).collect {
-    //                    case JsSuccess(e, _) => e
-    //                  }
-    //              }
-    //          )
-    //          Future.sequence(futures).map(_.flatten)
-    //        }
-    //    }
   }
 
   override def getLastConsumptionsforAllTenant(filter: JsObject)(
@@ -841,39 +803,6 @@ abstract class MongoRepo[Of, Id <: ValueType](
 
   override def count()(implicit ec: ExecutionContext): Future[Long] = count(JsObject.empty)
 
-  //  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
-  //    collection.flatMap { col =>
-  //      logger.debug(s"$collectionName.findAllRaw({})")
-  //      col
-  //        .find(Json.obj(), None)
-  //        .cursor[JsObject](ReadPreference.primaryPreferred)
-  //        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-  //    }
-
-  //  def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
-  //    Source
-  //      .future(collection.flatMap { col =>
-  //        logger.debug(s"$collectionName.streamAll({})")
-  //        col
-  //          .find(Json.obj(), None)
-  //          .cursor[JsObject](ReadPreference.primaryPreferred)
-  //          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-  //          .map { docs =>
-  //            docs
-  //              .map(format.reads)
-  //              .map {
-  //                case j @ JsSuccess(_, _) => j
-  //                case j @ JsError(_) =>
-  //                  println(s"error: $j")
-  //                  j
-  //              }
-  //              .collect {
-  //                case JsSuccess(e, _) => e
-  //              }
-  //          }
-  //      })
-  //      .flatMapConcat(seq => Source(seq.toList))
-
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
     logger.error(s"$tableName")
 
@@ -924,12 +853,6 @@ abstract class MongoRepo[Of, Id <: ValueType](
           )
           .execute() > 0
     }
-  }
-
-  override def save(value: Of)(
-    implicit ec: ExecutionContext): Future[Boolean] = {
-    val payload = format.writes(value).as[JsObject]
-    save(Json.obj("_id" -> extractId(value)), payload)
   }
 
   override def save(query: JsObject, value: JsObject)(
@@ -1195,36 +1118,6 @@ abstract class MongoRepo[Of, Id <: ValueType](
   override def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id.value))
 
-  //  override def findMinByQuery(query: JsObject, field: String)(
-  //      implicit ec: ExecutionContext): Future[Option[Long]] =
-  //    collection.flatMap { col =>
-  //      import col.BatchCommands.AggregationFramework
-  //      import AggregationFramework.{Group, Match, MinField}
-  //
-  //      col
-  //        .aggregatorContext[JsObject](
-  //          firstOperator = Match(query),
-  //          otherOperators =
-  //            List(Group(JsString("$clientId"))("min" -> MinField(field))),
-  //          explain = false,
-  //          allowDiskUse = false,
-  //          bypassDocumentValidation = false,
-  //          readConcern = ReadConcern.Majority,
-  //          readPreference = ReadPreference.primaryPreferred,
-  //          writeConcern = WriteConcern.Default,
-  //          batchSize = None,
-  //          cursorOptions = CursorOptions.empty,
-  //          maxTime = None,
-  //          hint = None,
-  //          comment = None,
-  //          collation = None
-  //        )
-  //        .prepared
-  //        .cursor
-  //        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-  //        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
-  //    }
-
   override def findMaxByQuery(query: JsObject, field: String)(
     implicit ec: ExecutionContext): Future[Option[Long]] =
     db.query { dsl =>
@@ -1383,41 +1276,6 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
     }
   }
 
-  //  def findAllRaw()(implicit ec: ExecutionContext): Future[Seq[JsValue]] =
-  //    collection.flatMap { col =>
-  //      logger.debug(s"$collectionName.findAllRaw(${Json.prettyPrint(
-  //        Json.obj("_tenant" -> tenant.value))})")
-  //      col
-  //        .find(Json.obj("_tenant" -> tenant.value), None)
-  //        .cursor[JsObject](ReadPreference.primaryPreferred)
-  //        .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-  //    }
-
-  //  def streamAll()(implicit ec: ExecutionContext): Source[Of, NotUsed] =
-  //    Source
-  //      .future(collection.flatMap { col =>
-  //        logger.debug(s"$collectionName.streamAll(${Json.prettyPrint(
-  //          Json.obj("_tenant" -> tenant.value))})")
-  //        col
-  //          .find(Json.obj("_tenant" -> tenant.value), None)
-  //          .cursor[JsObject](ReadPreference.primaryPreferred)
-  //          .collect[Seq](maxDocs = -1, Cursor.FailOnError[Seq[JsObject]]())
-  //          .map { docs =>
-  //            docs
-  //              .map(format.reads)
-  //              .map {
-  //                case j @ JsSuccess(_, _) => j
-  //                case j @ JsError(_) =>
-  //                  println(s"error: $j")
-  //                  j
-  //              }
-  //              .collect {
-  //                case JsSuccess(e, _) => e
-  //              }
-  //          }
-  //      })
-  //      .flatMapConcat(seq => Source(seq.toList))
-
   def streamAllRaw()(implicit ec: ExecutionContext): Source[JsValue, NotUsed] =
     Source
       .future(
@@ -1461,12 +1319,6 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
         )
           .execute() > 0
     }
-  }
-
-  override def save(value: Of)(
-    implicit ec: ExecutionContext): Future[Boolean] = {
-    val payload = format.writes(value).as[JsObject]
-    save(Json.obj("_id" -> extractId(value)), payload)
   }
 
   override def save(query: JsObject, value: JsObject)(
@@ -1566,36 +1418,6 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       result
     }
   }
-
-  //  override def findMinByQuery(query: JsObject, field: String)(
-  //      implicit ec: ExecutionContext): Future[Option[Long]] =
-  //    collection.flatMap { col =>
-  //      import col.BatchCommands.AggregationFramework
-  //      import AggregationFramework.{Group, Match, MinField}
-  //
-  //      col
-  //        .aggregatorContext[JsObject](
-  //          firstOperator = Match(query),
-  //          otherOperators =
-  //            List(Group(JsString("$clientId"))("min" -> MinField(field))),
-  //          explain = false,
-  //          allowDiskUse = false,
-  //          bypassDocumentValidation = false,
-  //          readConcern = ReadConcern.Majority,
-  //          readPreference = ReadPreference.primaryPreferred,
-  //          writeConcern = WriteConcern.Default,
-  //          batchSize = None,
-  //          cursorOptions = CursorOptions.empty,
-  //          maxTime = None,
-  //          hint = None,
-  //          comment = None,
-  //          collation = None
-  //        )
-  //        .prepared
-  //        .cursor
-  //        .collect[List](1, Cursor.FailOnError[List[JsObject]]())
-  //        .map(agg => agg.headOption.map(v => (v \ "min").as[Long]))
-  //    }
 
   override def findMaxByQuery(query: JsObject, field: String)(
     implicit ec: ExecutionContext): Future[Option[Long]] = {
@@ -1736,33 +1558,4 @@ abstract class MongoTenantAwareRepo[Of, Id <: ValueType](
       (queryRes, count)
     }
   }
-
-  override def findAll()(implicit ec: ExecutionContext): Future[Seq[Of]] =
-    find(Json.obj())
-
-  override def findById(id: String)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
-    findOne(Json.obj("_id" -> id))
-
-  override def findById(id: Id)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
-    findOne(Json.obj("_id" -> id.value))
-
-  override def deleteById(id: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    delete(Json.obj("_id" -> id))
-
-  override def deleteById(id: Id)(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    delete(Json.obj("_id" -> id.value))
-
-  override def deleteAll()(implicit ec: ExecutionContext): Future[Boolean] =
-    delete(Json.obj())
-
-  override def exists(id: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    exists(Json.obj("_id" -> id))
-
-  override def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
-    exists(Json.obj("_id" -> id.value))
 }
