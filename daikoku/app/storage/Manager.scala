@@ -8,8 +8,8 @@ import storage.postgres.{PostgresConnection, PostgresDataStore}
 object Manager {
   def getDataStore(env: Env, postgresConnection: PostgresConnection, reactiveMongoApi: ReactiveMongoApi): DataStore = {
     // TODO - Faire le switch selon la configuration
-    new MongoDataStore(env, reactiveMongoApi)
+    // new MongoDataStore(env, reactiveMongoApi)
 
-//    new PostgresDataStore(env, postgresConnection)
+    new PostgresDataStore(env, postgresConnection)
   }
 }
