@@ -12,7 +12,7 @@
     "watch": "webpack --watch --mode development --liveReload -d --color",
     "build": "rm -rf ../public/react-app && mkdir ../public/react-app && webpack --mode production --progress",
     "cypress": "cypress open",
-    "test:cypress": "cypress run -s cypress/integration/*.spec.js"
+    "test:cypress": "cypress run"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "5.15.1",

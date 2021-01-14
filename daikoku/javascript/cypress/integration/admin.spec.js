@@ -17,7 +17,7 @@ describe('Messages page', () => {
       .visit('http://localhost:9000/apis')
       .get('.navbar a.messages-link').click()
       .url().should('include', '/settings/messages')
-      .get('main h1').should('have.text', 'Messages')
+      .get('main h1').should('have.text', 'Messages');
   });
 });
 
@@ -56,7 +56,11 @@ describe('teams page', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Teams').click()
       .url().should('include', '/settings/teams')
-      .get('.avatar-with-action').should('have.length', 5); //todo: test edit && memebers
+      .get('.avatar-with-action').should('have.length', 5)
+      .visit('http://localhost:9000/settings/teams/consumers/members')
+      .get('.avatar-with-action').should('have.length', 1)
+      .visit('http://localhost:9000/settings/teams/consumers')
+      .get('main h1').should('have.text', 'Team - Consumers');
   });
 });
 
@@ -65,7 +69,9 @@ describe('tenants page', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Tenants').click()
       .url().should('include', '/settings/tenants')
-      .get('.avatar-with-action').should('have.length', 1); //todo: test edit
+      .get('.avatar-with-action').should('have.length', 1)
+      .visit('http://localhost:9000/settings/tenants/evil-corp')
+      .get('main h1').should('have.text', 'Evil Corp.');
   });
 });
 
@@ -74,7 +80,9 @@ describe('users page', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Users').click()
       .url().should('include', '/settings/users')
-      .get('.avatar-with-action').should('have.length', 2); //todo: test edit
+      .get('.avatar-with-action').should('have.length', 2)
+      .visit('http://localhost:9000/settings/users/adminfoobar')
+      .get('main h1').should('have.text', 'Admin - admin@foo.bar');
   });
 });
 
