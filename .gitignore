@@ -16,3 +16,5 @@ mongo-data
 /demo/config/mongo-data/
 /demo/config/redis-data/
 daikoku/javascript/cypress/videos
+daikoku/javascript/cypress/results
+daikoku/javascript/index.json
