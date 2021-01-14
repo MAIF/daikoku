@@ -28,10 +28,10 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
-    - name: run backend in Background
+    - name: initialize backend build
       run: |
         cd daikoku
-        sbt  'run -Dhttp.port=9000 -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson' -Djline.terminal=none < /dev/null &
+        sbt  'clean compile'
     - name: install javascript deps
       run: |
         cd daikoku/javascript
@@ -40,6 +40,7 @@ jobs:
     - name: Cypress run and publish report
       uses: cypress-io/github-action@v2
       with:
+        start: cd .. && sbt  'run -Dhttp.port=9000 -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson'
         wait-on: 'http://localhost:9000'
         command: yarn test:cypress
         working-directory: daikoku/javascript
