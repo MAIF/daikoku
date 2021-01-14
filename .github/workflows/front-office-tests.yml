@@ -31,7 +31,7 @@ jobs:
     - name: initialize backend build
       run: |
         cd daikoku
-        sbt  'clean compile'
+        sbt  ';clean;compile'
     - name: install javascript deps
       run: |
         cd daikoku/javascript
