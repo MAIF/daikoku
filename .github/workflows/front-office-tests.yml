@@ -37,34 +37,11 @@ jobs:
         cd daikoku/javascript
         yarn
         yarn build
-    - name: Cypress run
+    - name: Cypress run and publish report
       uses: cypress-io/github-action@v2
       with:
         wait-on: 'http://localhost:9000'
         command: yarn test:cypress
         working-directory: daikoku/javascript
       continue-on-error: true
-    - name: Copy test execution videos
-      if: ${{ failure() }}
-      run: |
-        mkdir report
-        cp -r cypress/videos report/videos
-    - name: Merge test results into one
-      if: ${{ failure() }}
-      run: yarn cypress:report:merge    
-    - name: Generate HTML report
-      if: ${{ failure() }}
-      run: yarn cypress:report:generate
-    - name: Commit files
-      if: ${{ failure() }}
-      run: |
-        git config --local user.email "daikoku-github-actions@users.noreply.github.com"
-        git config --local user.name "daikoku-github-actions"
-        git add --all
-        git commit -am "Add cypress tests report"
-    - name: Push documentation
-      if: ${{ failure() }}
-      uses: ad-m/github-push-action@master
-      with:
-        branch: master
-        github_token: ${{ secrets.GITHUB_TOKEN}}
+      env: CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
