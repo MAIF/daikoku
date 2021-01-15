@@ -14,11 +14,13 @@ import play.api.libs.json._
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
 import storage.postgres.Helper._
+import storage.postgres.jooq.reactive.ReactivePgAsyncPool
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait RepositoryPostgres[Of, Id <: ValueType] extends Repo[Of, Id] {
   override def collectionName: String = "ignored"
+
   override def ensureIndices(implicit ec: ExecutionContext): Future[Unit] = {
     // TODO - voir si on vérifie la présence des tables dans la base comme pour les collections Postgres
     Future.successful(Seq.empty[Boolean])
@@ -46,8 +48,8 @@ trait PostgresTenantCapableRepo[A, Id <: ValueType]
 }
 
 case class PostgresTenantCapableTeamRepo(
-                                       _repo: () => PostgresRepo[Team, TeamId],
-                                       _tenantRepo: TenantId => PostgresTenantAwareRepo[Team, TeamId])
+                                          _repo: () => PostgresRepo[Team, TeamId],
+                                          _tenantRepo: TenantId => PostgresTenantAwareRepo[Team, TeamId])
   extends PostgresTenantCapableRepo[Team, TeamId]
     with TeamRepo {
   override def tenantRepo(
@@ -58,8 +60,8 @@ case class PostgresTenantCapableTeamRepo(
 }
 
 case class PostgresTenantCapableApiRepo(
-                                      _repo: () => PostgresRepo[Api, ApiId],
-                                      _tenantRepo: TenantId => PostgresTenantAwareRepo[Api, ApiId])
+                                         _repo: () => PostgresRepo[Api, ApiId],
+                                         _tenantRepo: TenantId => PostgresTenantAwareRepo[Api, ApiId])
   extends PostgresTenantCapableRepo[Api, ApiId]
     with ApiRepo {
   override def tenantRepo(tenant: TenantId): PostgresTenantAwareRepo[Api, ApiId] =
@@ -69,10 +71,10 @@ case class PostgresTenantCapableApiRepo(
 }
 
 case class PostgresTenantCapableApiSubscriptionRepo(
-                                                  _repo: () => PostgresRepo[ApiSubscription, ApiSubscriptionId],
-                                                  _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiSubscription,
-                                                    ApiSubscriptionId]
-                                                ) extends PostgresTenantCapableRepo[ApiSubscription, ApiSubscriptionId]
+                                                     _repo: () => PostgresRepo[ApiSubscription, ApiSubscriptionId],
+                                                     _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiSubscription,
+                                                       ApiSubscriptionId]
+                                                   ) extends PostgresTenantCapableRepo[ApiSubscription, ApiSubscriptionId]
   with ApiSubscriptionRepo {
   override def tenantRepo(tenant: TenantId)
   : PostgresTenantAwareRepo[ApiSubscription, ApiSubscriptionId] =
@@ -82,10 +84,10 @@ case class PostgresTenantCapableApiSubscriptionRepo(
 }
 
 case class PostgresTenantCapableApiDocumentationPageRepo(
-                                                       _repo: () => PostgresRepo[ApiDocumentationPage, ApiDocumentationPageId],
-                                                       _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiDocumentationPage,
-                                                         ApiDocumentationPageId]
-                                                     ) extends PostgresTenantCapableRepo[ApiDocumentationPage, ApiDocumentationPageId]
+                                                          _repo: () => PostgresRepo[ApiDocumentationPage, ApiDocumentationPageId],
+                                                          _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiDocumentationPage,
+                                                            ApiDocumentationPageId]
+                                                        ) extends PostgresTenantCapableRepo[ApiDocumentationPage, ApiDocumentationPageId]
   with ApiDocumentationPageRepo {
   override def tenantRepo(tenant: TenantId)
   : PostgresTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId] =
@@ -96,9 +98,9 @@ case class PostgresTenantCapableApiDocumentationPageRepo(
 }
 
 case class PostgresTenantCapableNotificationRepo(
-                                               _repo: () => PostgresRepo[Notification, NotificationId],
-                                               _tenantRepo: TenantId => PostgresTenantAwareRepo[Notification, NotificationId]
-                                             ) extends PostgresTenantCapableRepo[Notification, NotificationId]
+                                                  _repo: () => PostgresRepo[Notification, NotificationId],
+                                                  _tenantRepo: TenantId => PostgresTenantAwareRepo[Notification, NotificationId]
+                                                ) extends PostgresTenantCapableRepo[Notification, NotificationId]
   with NotificationRepo {
   override def tenantRepo(
                            tenant: TenantId): PostgresTenantAwareRepo[Notification, NotificationId] =
@@ -108,8 +110,8 @@ case class PostgresTenantCapableNotificationRepo(
 }
 
 case class PostgresTenantCapableAuditTrailRepo(
-                                             _repo: () => PostgresRepo[JsObject, DatastoreId],
-                                             _tenantRepo: TenantId => PostgresTenantAwareRepo[JsObject, DatastoreId])
+                                                _repo: () => PostgresRepo[JsObject, DatastoreId],
+                                                _tenantRepo: TenantId => PostgresTenantAwareRepo[JsObject, DatastoreId])
   extends PostgresTenantCapableRepo[JsObject, DatastoreId]
     with AuditTrailRepo {
   override def tenantRepo(
@@ -120,9 +122,9 @@ case class PostgresTenantCapableAuditTrailRepo(
 }
 
 case class PostgresTenantCapableTranslationRepo(
-                                              _repo: () => PostgresRepo[Translation, DatastoreId],
-                                              _tenantRepo: TenantId => PostgresTenantAwareRepo[Translation, DatastoreId]
-                                            ) extends PostgresTenantCapableRepo[Translation, DatastoreId]
+                                                 _repo: () => PostgresRepo[Translation, DatastoreId],
+                                                 _tenantRepo: TenantId => PostgresTenantAwareRepo[Translation, DatastoreId]
+                                               ) extends PostgresTenantCapableRepo[Translation, DatastoreId]
   with TranslationRepo {
   override def tenantRepo(
                            tenant: TenantId): PostgresTenantAwareRepo[Translation, DatastoreId] =
@@ -132,9 +134,9 @@ case class PostgresTenantCapableTranslationRepo(
 }
 
 case class PostgresTenantCapableMessageRepo(
-                                          _repo: () => PostgresRepo[Message, DatastoreId],
-                                          _tenantRepo: TenantId => PostgresTenantAwareRepo[Message, DatastoreId]
-                                        ) extends PostgresTenantCapableRepo[Message, DatastoreId]
+                                             _repo: () => PostgresRepo[Message, DatastoreId],
+                                             _tenantRepo: TenantId => PostgresTenantAwareRepo[Message, DatastoreId]
+                                           ) extends PostgresTenantCapableRepo[Message, DatastoreId]
   with MessageRepo {
   override def tenantRepo(
                            tenant: TenantId): PostgresTenantAwareRepo[Message, DatastoreId] =
@@ -144,10 +146,10 @@ case class PostgresTenantCapableMessageRepo(
 }
 
 case class PostgresTenantCapableConsumptionRepo(
-                                              _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
-                                              _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId],
-                                              db: PostgresConnection
-                                            ) extends PostgresTenantCapableRepo[ApiKeyConsumption, DatastoreId]
+                                                 _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
+                                                 _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId],
+                                                 reactivePgAsyncPool: ReactivePgAsyncPool
+                                               ) extends PostgresTenantCapableRepo[ApiKeyConsumption, DatastoreId]
   with ConsumptionRepo {
 
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
@@ -175,33 +177,40 @@ case class PostgresTenantCapableConsumptionRepo(
       case None => forAllTenant().asInstanceOf[PostgresRepo[ApiKeyConsumption, DatastoreId]]
     }
 
-    db.query { dsl =>
-      recordToJson(dsl.fetch(
+    reactivePgAsyncPool.query { dsl =>
+      dsl.resultQuery(
         "SELECT _id, content->>'clientId' as clientid, MAX(content->>'from') as maxfrom " +
           "FROM {0} " +
           "WHERE {1} " +
           "GROUP BY content->>'clientId', _id",
         DSL.table(rep.tableName),
         DSL.table(convertQuery(filter))
-      ))
-        .as[JsArray]
-        .value
-        .toSeq
-        .flatMap(json => {
-          getContentFromJson(
-            recordToJson(
-              dsl.fetch(
-                "SELECT * FROM {0} WHERE {1}",
-                DSL.table(rep.tableName),
-                DSL.table(convertQuery(
-                  Json.obj("clientId" -> (json \ "clientid").as[String],
-                    "from" -> (json \ "maxfrom").as[JsValue]))
-                ))),
-            rep.format
-          )
-        })
+      )
     }
+      .flatMap(res =>
+          Future.sequence(
+            res.map(queryResult => findOne(
+              Json.obj(
+                "clientId" -> queryResult.get("clientid", classOf[String]),
+                "from" -> queryResult.get("maxfrom", classOf[Long])
+              ),
+              rep.tableName,
+              rep.format))
+          )
+      )
+      .map(r => r.flatten)
   }
+
+  def findOne(query: JsObject, tableName: String, format: Format[ApiKeyConsumption])
+             (implicit ec: ExecutionContext) =
+    reactivePgAsyncPool
+      .queryOne(dsl =>
+        dsl.resultQuery(
+          "SELECT * FROM {0} WHERE {1}",
+          DSL.table(tableName),
+          DSL.table(convertQuery(query)))
+      )
+      .map(getContentFromJson(_, format))
 
   override def getLastConsumptionsforAllTenant(filter: JsObject)(
     implicit ec: ExecutionContext
@@ -213,59 +222,59 @@ case class PostgresTenantCapableConsumptionRepo(
                                            ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
-class PostgresDataStore(env: Env, db: PostgresConnection) extends DataStore {
+class PostgresDataStore(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool) extends DataStore {
 
   private val logger: Logger = Logger("PostgresDataStore")
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
-  private val _tenantRepo: TenantRepo = new PostgresTenantRepo(env, db)
-  private val _userRepo: UserRepo = new PostgresUserRepo(env, db)
+  private val _tenantRepo: TenantRepo = new PostgresTenantRepo(env, reactivePgAsyncPool)
+  private val _userRepo: UserRepo = new PostgresUserRepo(env, reactivePgAsyncPool)
   private val _teamRepo: TeamRepo = PostgresTenantCapableTeamRepo(
-    () => new PostgresTeamRepo(env, db),
-    t => new PostgresTenantTeamRepo(env, db, t))
+    () => new PostgresTeamRepo(env, reactivePgAsyncPool),
+    t => new PostgresTenantTeamRepo(env, reactivePgAsyncPool, t))
   private val _apiRepo: ApiRepo = PostgresTenantCapableApiRepo(
-    () => new PostgresApiRepo(env, db),
-    t => new PostgresTenantApiRepo(env, db, t))
+    () => new PostgresApiRepo(env, reactivePgAsyncPool),
+    t => new PostgresTenantApiRepo(env, reactivePgAsyncPool, t))
   private val _apiSubscriptionRepo: ApiSubscriptionRepo =
     PostgresTenantCapableApiSubscriptionRepo(
-      () => new PostgresApiSubscriptionRepo(env, db),
-      t => new PostgresTenantApiSubscriptionRepo(env, db, t)
+      () => new PostgresApiSubscriptionRepo(env, reactivePgAsyncPool),
+      t => new PostgresTenantApiSubscriptionRepo(env, reactivePgAsyncPool, t)
     )
   private val _apiDocumentationPageRepo: ApiDocumentationPageRepo =
     PostgresTenantCapableApiDocumentationPageRepo(
-      () => new PostgresApiDocumentationPageRepo(env, db),
-      t => new PostgresTenantApiDocumentationPageRepo(env, db, t)
+      () => new PostgresApiDocumentationPageRepo(env, reactivePgAsyncPool),
+      t => new PostgresTenantApiDocumentationPageRepo(env, reactivePgAsyncPool, t)
     )
   private val _notificationRepo: NotificationRepo =
     PostgresTenantCapableNotificationRepo(
-      () => new PostgresNotificationRepo(env, db),
-      t => new PostgresTenantNotificationRepo(env, db, t)
+      () => new PostgresNotificationRepo(env, reactivePgAsyncPool),
+      t => new PostgresTenantNotificationRepo(env, reactivePgAsyncPool, t)
     )
   private val _userSessionRepo: UserSessionRepo =
-    new PostgresUserSessionRepo(env, db)
+    new PostgresUserSessionRepo(env, reactivePgAsyncPool)
   private val _auditTrailRepo: AuditTrailRepo =
     PostgresTenantCapableAuditTrailRepo(
-      () => new PostgresAuditTrailRepo(env, db),
-      t => new PostgresTenantAuditTrailRepo(env, db, t)
+      () => new PostgresAuditTrailRepo(env, reactivePgAsyncPool),
+      t => new PostgresTenantAuditTrailRepo(env, reactivePgAsyncPool, t)
     )
   private val _consumptionRepo: ConsumptionRepo =
     PostgresTenantCapableConsumptionRepo(
-      () => new PostgresConsumptionRepo(env, db),
-      t => new PostgresTenantConsumptionRepo(env, db, t),
-      db
+      () => new PostgresConsumptionRepo(env, reactivePgAsyncPool),
+      t => new PostgresTenantConsumptionRepo(env, reactivePgAsyncPool, t),
+      reactivePgAsyncPool
     )
   private val _passwordResetRepo: PasswordResetRepo =
-    new PostgresPasswordResetRepo(env, db)
+    new PostgresPasswordResetRepo(env, reactivePgAsyncPool)
   private val _accountCreationRepo: AccountCreationRepo =
-    new PostgresAccountCreationRepo(env, db)
+    new PostgresAccountCreationRepo(env, reactivePgAsyncPool)
   private val _translationRepo: TranslationRepo =
     PostgresTenantCapableTranslationRepo(
-      () => new PostgresTranslationRepo(env, db),
-      t => new PostgresTenantTranslationRepo(env, db, t))
+      () => new PostgresTranslationRepo(env, reactivePgAsyncPool),
+      t => new PostgresTenantTranslationRepo(env, reactivePgAsyncPool, t))
   private val _messageRepo: MessageRepo =
     PostgresTenantCapableMessageRepo(
-      () => new PostgresMessageRepo(env, db),
-      t => new PostgresTenantMessageRepo(env, db, t)
+      () => new PostgresMessageRepo(env, reactivePgAsyncPool),
+      t => new PostgresTenantMessageRepo(env, reactivePgAsyncPool, t)
     )
 
   override def tenantRepo: TenantRepo = _tenantRepo
@@ -428,8 +437,8 @@ class PostgresDataStore(env: Env, db: PostgresConnection) extends DataStore {
   }
 }
 
-class PostgresTenantRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[Tenant, TenantId](env, db)
+class PostgresTenantRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[Tenant, TenantId](env, reactivePgAsyncPool)
     with TenantRepo {
   override def tableName: String = "tenants"
 
@@ -438,8 +447,8 @@ class PostgresTenantRepo(env: Env, db: PostgresConnection)
   override def extractId(value: Tenant): String = value.id.value
 }
 
-class PostgresPasswordResetRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[PasswordReset, DatastoreId](env, db)
+class PostgresPasswordResetRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[PasswordReset, DatastoreId](env, reactivePgAsyncPool)
     with PasswordResetRepo {
   override def tableName: String = "password_reset"
 
@@ -448,8 +457,8 @@ class PostgresPasswordResetRepo(env: Env, db: PostgresConnection)
   override def extractId(value: PasswordReset): String = value.id.value
 }
 
-class PostgresAccountCreationRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[AccountCreation, DatastoreId](env, db)
+class PostgresAccountCreationRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[AccountCreation, DatastoreId](env, reactivePgAsyncPool)
     with AccountCreationRepo {
   override def tableName: String = "account_creation"
 
@@ -459,9 +468,9 @@ class PostgresAccountCreationRepo(env: Env, db: PostgresConnection)
 }
 
 class PostgresTenantTeamRepo(env: Env,
-                          db: PostgresConnection,
-                          tenant: TenantId)
-  extends PostgresTenantAwareRepo[Team, TeamId](env, db, tenant) {
+                             reactivePgAsyncPool: ReactivePgAsyncPool,
+                             tenant: TenantId)
+  extends PostgresTenantAwareRepo[Team, TeamId](env, reactivePgAsyncPool, tenant) {
   override def tableName: String = "teams"
 
   override def format: Format[Team] = json.TeamFormat
@@ -470,9 +479,9 @@ class PostgresTenantTeamRepo(env: Env,
 }
 
 class PostgresTenantApiRepo(env: Env,
-                         db: PostgresConnection,
-                         tenant: TenantId)
-  extends PostgresTenantAwareRepo[Api, ApiId](env, db, tenant) {
+                            reactivePgAsyncPool: ReactivePgAsyncPool,
+                            tenant: TenantId)
+  extends PostgresTenantAwareRepo[Api, ApiId](env, reactivePgAsyncPool, tenant) {
   override def format: Format[Api] = json.ApiFormat
 
   override def tableName: String = "apis"
@@ -481,10 +490,10 @@ class PostgresTenantApiRepo(env: Env,
 }
 
 class PostgresTenantTranslationRepo(env: Env,
-                                 db: PostgresConnection,
-                                 tenant: TenantId)
+                                    reactivePgAsyncPool: ReactivePgAsyncPool,
+                                    tenant: TenantId)
   extends PostgresTenantAwareRepo[Translation, DatastoreId](env,
-    db,
+    reactivePgAsyncPool,
     tenant) {
   override def tableName: String = "translations"
 
@@ -494,10 +503,10 @@ class PostgresTenantTranslationRepo(env: Env,
 }
 
 class PostgresTenantMessageRepo(env: Env,
-                             db: PostgresConnection,
-                             tenant: TenantId)
+                                reactivePgAsyncPool: ReactivePgAsyncPool,
+                                tenant: TenantId)
   extends PostgresTenantAwareRepo[Message, DatastoreId](env,
-    db,
+    reactivePgAsyncPool,
     tenant) {
   override def tableName: String = "messages"
 
@@ -507,11 +516,11 @@ class PostgresTenantMessageRepo(env: Env,
 }
 
 class PostgresTenantApiSubscriptionRepo(env: Env,
-                                     db: PostgresConnection,
-                                     tenant: TenantId)
+                                        reactivePgAsyncPool: ReactivePgAsyncPool,
+                                        tenant: TenantId)
   extends PostgresTenantAwareRepo[ApiSubscription, ApiSubscriptionId](
     env,
-    db,
+    reactivePgAsyncPool,
     tenant) {
   override def tableName: String = "api_subscriptions"
 
@@ -521,11 +530,11 @@ class PostgresTenantApiSubscriptionRepo(env: Env,
 }
 
 class PostgresTenantApiDocumentationPageRepo(env: Env,
-                                          db: PostgresConnection,
-                                          tenant: TenantId)
+                                             reactivePgAsyncPool: ReactivePgAsyncPool,
+                                             tenant: TenantId)
   extends PostgresTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId](
     env,
-    db,
+    reactivePgAsyncPool,
     tenant) {
   override def tableName: String = "api_documentation_pages"
 
@@ -536,10 +545,10 @@ class PostgresTenantApiDocumentationPageRepo(env: Env,
 }
 
 class PostgresTenantNotificationRepo(env: Env,
-                                  db: PostgresConnection,
-                                  tenant: TenantId)
+                                     reactivePgAsyncPool: ReactivePgAsyncPool,
+                                     tenant: TenantId)
   extends PostgresTenantAwareRepo[Notification, NotificationId](env,
-    db,
+    reactivePgAsyncPool,
     tenant) {
   override def tableName: String = "notifications"
 
@@ -550,10 +559,10 @@ class PostgresTenantNotificationRepo(env: Env,
 }
 
 class PostgresTenantConsumptionRepo(env: Env,
-                                 db: PostgresConnection,
-                                 tenant: TenantId)
+                                    reactivePgAsyncPool: ReactivePgAsyncPool,
+                                    tenant: TenantId)
   extends PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId](env,
-    db,
+    reactivePgAsyncPool,
     tenant) {
   override def tableName: String = "consumptions"
 
@@ -564,10 +573,10 @@ class PostgresTenantConsumptionRepo(env: Env,
 }
 
 class PostgresTenantAuditTrailRepo(env: Env,
-                                db: PostgresConnection,
-                                tenant: TenantId)
+                                   reactivePgAsyncPool: ReactivePgAsyncPool,
+                                   tenant: TenantId)
   extends PostgresTenantAwareRepo[JsObject, DatastoreId](env,
-    db,
+    reactivePgAsyncPool,
     tenant) {
   val _fmt = new Format[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
@@ -583,8 +592,8 @@ class PostgresTenantAuditTrailRepo(env: Env,
   override def extractId(value: JsObject): String = (value \ "_id").as[String]
 }
 
-class PostgresUserRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[User, UserId](env, db)
+class PostgresUserRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[User, UserId](env, reactivePgAsyncPool)
     with UserRepo {
   override def tableName: String = "users"
 
@@ -593,8 +602,8 @@ class PostgresUserRepo(env: Env, db: PostgresConnection)
   override def extractId(value: User): String = value.id.value
 }
 
-class PostgresTeamRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[Team, TeamId](env, db) {
+class PostgresTeamRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[Team, TeamId](env, reactivePgAsyncPool) {
   override def tableName: String = "teams"
 
   override def format: Format[Team] = json.TeamFormat
@@ -602,8 +611,8 @@ class PostgresTeamRepo(env: Env, db: PostgresConnection)
   override def extractId(value: Team): String = value.id.value
 }
 
-class PostgresTranslationRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[Translation, DatastoreId](env, db) {
+class PostgresTranslationRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[Translation, DatastoreId](env, reactivePgAsyncPool) {
   override def tableName: String = "translations"
 
   override def format: Format[Translation] = json.TranslationFormat
@@ -611,8 +620,8 @@ class PostgresTranslationRepo(env: Env, db: PostgresConnection)
   override def extractId(value: Translation): String = value.id.value
 }
 
-class PostgresMessageRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[Message, DatastoreId](env, db) {
+class PostgresMessageRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[Message, DatastoreId](env, reactivePgAsyncPool) {
   override def tableName: String = "messages"
 
   override def format: Format[Message] = json.MessageFormat
@@ -620,8 +629,8 @@ class PostgresMessageRepo(env: Env, db: PostgresConnection)
   override def extractId(value: Message): String = value.id.value
 }
 
-class PostgresApiRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[Api, ApiId](env, db) {
+class PostgresApiRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[Api, ApiId](env, reactivePgAsyncPool) {
   override def tableName: String = "apis"
 
   override def format: Format[Api] = json.ApiFormat
@@ -629,8 +638,8 @@ class PostgresApiRepo(env: Env, db: PostgresConnection)
   override def extractId(value: Api): String = value.id.value
 }
 
-class PostgresApiSubscriptionRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[ApiSubscription, ApiSubscriptionId](env, db) {
+class PostgresApiSubscriptionRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[ApiSubscription, ApiSubscriptionId](env, reactivePgAsyncPool) {
   override def tableName: String = "api_subscriptions"
 
   override def format: Format[ApiSubscription] = json.ApiSubscriptionFormat
@@ -639,10 +648,10 @@ class PostgresApiSubscriptionRepo(env: Env, db: PostgresConnection)
 }
 
 class PostgresApiDocumentationPageRepo(env: Env,
-                                    db: PostgresConnection)
+                                       reactivePgAsyncPool: ReactivePgAsyncPool)
   extends PostgresRepo[ApiDocumentationPage, ApiDocumentationPageId](
     env,
-    db) {
+    reactivePgAsyncPool) {
   override def tableName: String = "api_documentation_pages"
 
   override def format: Format[ApiDocumentationPage] =
@@ -651,8 +660,8 @@ class PostgresApiDocumentationPageRepo(env: Env,
   override def extractId(value: ApiDocumentationPage): String = value.id.value
 }
 
-class PostgresNotificationRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[Notification, NotificationId](env, db) {
+class PostgresNotificationRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[Notification, NotificationId](env, reactivePgAsyncPool) {
   override def tableName: String = "notifications"
 
   override def format: Format[Notification] =
@@ -661,8 +670,8 @@ class PostgresNotificationRepo(env: Env, db: PostgresConnection)
   override def extractId(value: Notification): String = value.id.value
 }
 
-class PostgresConsumptionRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[ApiKeyConsumption, DatastoreId](env, db) {
+class PostgresConsumptionRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[ApiKeyConsumption, DatastoreId](env, reactivePgAsyncPool) {
   override def tableName: String = "consumptions"
 
   override def format: Format[ApiKeyConsumption] = json.ConsumptionFormat
@@ -670,8 +679,8 @@ class PostgresConsumptionRepo(env: Env, db: PostgresConnection)
   override def extractId(value: ApiKeyConsumption): String = value.id.value
 }
 
-class PostgresUserSessionRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[UserSession, DatastoreId](env, db)
+class PostgresUserSessionRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[UserSession, DatastoreId](env, reactivePgAsyncPool)
     with UserSessionRepo {
   override def tableName: String = "user_sessions"
 
@@ -681,8 +690,8 @@ class PostgresUserSessionRepo(env: Env, db: PostgresConnection)
   override def extractId(value: UserSession): String = value.id.value
 }
 
-class PostgresAuditTrailRepo(env: Env, db: PostgresConnection)
-  extends PostgresRepo[JsObject, DatastoreId](env, db) {
+class PostgresAuditTrailRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends PostgresRepo[JsObject, DatastoreId](env, reactivePgAsyncPool) {
   val _fmt = new Format[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
       JsSuccess(json.as[JsObject])
@@ -698,8 +707,8 @@ class PostgresAuditTrailRepo(env: Env, db: PostgresConnection)
 }
 
 abstract class PostgresRepo[Of, Id <: ValueType](
-                                               env: Env,
-                                               db: PostgresConnection)
+                                                  env: Env,
+                                                  reactivePgAsyncPool: ReactivePgAsyncPool)
   extends RepositoryPostgres[Of, Id] {
 
   private val logger: Logger = Logger(s"PostgresRepo")
@@ -721,139 +730,106 @@ abstract class PostgresRepo[Of, Id <: ValueType](
 
     sort match {
       case None =>
-        db.query { dsl =>
-          try {
-            val result = recordToJson(
-              if (query.values.isEmpty) dsl.fetch("SELECT * FROM {0}", DSL.table(tableName))
-              else
-                dsl.fetch(
-                  "SELECT * FROM {0} WHERE {1}",
-                  DSL.table(tableName),
-                  DSL.table(convertQuery(query))
-                )
+        reactivePgAsyncPool.query { dsl =>
+          if (query.values.isEmpty) dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName))
+          else
+            dsl.resultQuery(
+              "SELECT * FROM {0} WHERE {1}",
+              DSL.table(tableName),
+              DSL.table(convertQuery(query))
             )
-
-            getContentsListFromJson(result, format)
-          } catch {
-            case err: Throwable => logger.error(s"$err")
-              Seq()
-          }
         }
+          .map(getContentsListFromJson(_, format))
       case Some(s) =>
-        // TODO - transformer le sort
-        logger.error(s"FIND $tableName with $s")
-
-        db.query { dsl =>
-          try {
-            val result = recordToJson(
-              if (query.values.isEmpty)
-                dsl.fetch(
-                  "SELECT *, {2} FROM {0} ORDER BY {1}",
-                  DSL.table(tableName),
-                  DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
-                  DSL.table(s.keys.map { key =>
-                    s"content->>'$key' as $quotes$key$quotes"
-                  }.mkString(","))
-                )
-              else
-                dsl.fetch(
-                  "SELECT *, {3} FROM {0} WHERE {1} ORDER BY {2}",
-                  DSL.table(tableName),
-                  DSL.table(convertQuery(query)),
-                  DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
-                  DSL.table(s.keys.map { key =>
-                    s"content->>'$key' as $quotes$key$quotes"
-                  }.mkString(","))
-                )
-            )
-
-            getContentsListFromJson(result, format)
-          } catch {
-            case err: Throwable => logger.error(s"$err")
-              Seq()
-          }
+        reactivePgAsyncPool.query { dsl =>
+          if (query.values.isEmpty)
+            dsl.resultQuery(
+              "SELECT *, {2} FROM {0} ORDER BY {1}",
+              DSL.table(tableName),
+              DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
+              DSL.table(s.keys.map { key =>
+                s"content->>'$key' as $quotes$key$quotes"
+              }.mkString(",")))
+          else
+            dsl.resultQuery(
+              "SELECT *, {3} FROM {0} WHERE {1} ORDER BY {2}",
+              DSL.table(tableName),
+              DSL.table(convertQuery(query)),
+              DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
+              DSL.table(s.keys.map { key =>
+                s"content->>'$key' as $quotes$key$quotes"
+              }.mkString(",")))
         }
+          .map(getContentsListFromJson(_, format))
     }
   }
 
   override def count(query: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
-    db.query { dsl =>
-      logger.error(s"COUNT $query - $tableName - ${dsl.fetchCount(DSL.table(tableName))}")
-      if (query.values.isEmpty)
-        dsl.fetchCount(DSL.table(tableName))
-      else
-        dsl.fetchValue("SELECT COUNT(*) FROM {0} WHERE {1}",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query))
-        )
-          .asInstanceOf[Long]
-    }
+    logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
+
+    reactivePgAsyncPool
+      .queryOne(dsl =>
+        if (query.values.isEmpty)
+          dsl.resultQuery("SELECT COUNT(*) as count FROM {0}", DSL.table(tableName))
+        else
+          dsl.resultQuery("SELECT COUNT(*) as count FROM {0} WHERE {1}",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query))
+          )
+      )
+      .map(res => res.map(_.get("count", classOf[Long])).getOrElse(-1L))
   }
 
   override def count()(implicit ec: ExecutionContext): Future[Long] = count(JsObject.empty)
 
   def streamAllRaw(query: JsObject = Json.obj())(implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
-    logger.error(s"$tableName")
+    logger.debug(s"$tableName.streamAllRaw()")
 
     Source
       .future(
-        db.query { dsl =>
-          recordToJson(dsl.fetch("SELECT * FROM {0}", DSL.table(tableName)))
-            .asInstanceOf[JsArray]
-        }
+        reactivePgAsyncPool
+          .query(dsl => dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName)))
+          .map(_.asInstanceOf[JsArray])
       )
   }
 
-  override def findOne(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
-    db.query { dsl =>
-      try {
-        val result = recordToJson(
-          dsl.fetch(
-            "SELECT * FROM {0} WHERE {1} LIMIT 1",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query)))
-        )
-
-        getContentFromJson(result, format)
-      } catch {
-        case err: Throwable => logger.error(s"$err")
-          None
-      }
-    }
+  override def findOne(query: JsObject)(implicit ec: ExecutionContext): Future[Option[Of]] =
+    reactivePgAsyncPool
+      .queryOne(
+        dsl => dsl.resultQuery(
+          "SELECT * FROM {0} WHERE {1} LIMIT 1",
+          DSL.table(tableName),
+          DSL.table(convertQuery(query)))
+      )
+      .map(getContentFromJson(_, format))
 
   override def delete(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.delete(${Json.prettyPrint(query)})")
 
-    logger.error(s"delete query : ${convertQuery(query)}")
-
-    db.query { dsl =>
-      if (query.values.isEmpty)
-        dsl
-          .query("DELETE FROM {0}", DSL.table(tableName))
-          .execute() > 0
-      else
-        dsl
-          .query(
+    reactivePgAsyncPool
+      .execute(dsl =>
+        if (query.values.isEmpty)
+          dsl.resultQuery("DELETE FROM {0}", DSL.table(tableName))
+        else
+          dsl.resultQuery(
             "DELETE FROM {0} WHERE {1}",
             DSL.table(tableName),
             DSL.table(convertQuery(query))
           )
-          .execute() > 0
-    }
+      )
+      .map(_ > 0)
   }
 
   override def save(query: JsObject, value: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error(s"save : $query - $tableName")
+    logger.debug(s"$tableName.save(${Json.prettyPrint(query)})")
 
-    db.query { dsl =>
-      logger.debug(s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})")
+    reactivePgAsyncPool.execute { dsl =>
       if (value.keys.contains("_deleted"))
         dsl
-          .query("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
+          .resultQuery("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
             "ON CONFLICT (_id) DO UPDATE " +
             "set _deleted = {2}, content = {3}",
             DSL.table(tableName),
@@ -861,23 +837,22 @@ abstract class PostgresRepo[Of, Id <: ValueType](
             DSL.inline((value \ "_deleted").as[Boolean]),
             DSL.inline(value)
           )
-          .execute() > 0
       else
         dsl
-          .query("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
+          .resultQuery("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
             DSL.table(tableName),
             DSL.inline((value \ "_id").as[String]),
             DSL.inline(value)
           )
-          .execute() > 0
     }
+      .map(_ > 0)
   }
 
   override def insertMany(values: Seq[Of])(
     implicit ec: ExecutionContext): Future[Long] =
-    db.query { dsl =>
+    reactivePgAsyncPool.execute { dsl =>
       val payloads = values.map(v => format.writes(v).as[JsObject])
-      dsl.query(
+      dsl.resultQuery(
         "INSERT INTO {0}(_id, content) VALUES{1}",
         DSL.table(tableName),
         DSL.table(payloads.map { payload =>
@@ -885,194 +860,157 @@ abstract class PostgresRepo[Of, Id <: ValueType](
         }
           .mkString(","))
       )
-        .execute()
     }
+      .map(_.asInstanceOf[Long])
 
   override def updateMany(query: JsObject, value: JsObject)(
     implicit ec: ExecutionContext): Future[Long] =
-    db.query { dsl =>
-      dsl
-        .query("UPDATE {0} SET content = content || {1} WHERE {2}",
-          DSL.table(tableName),
-          DSL.inline(value),
-          DSL.table(convertQuery(query))
-        )
-        .execute()
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("UPDATE {0} SET content = content || {1} WHERE {2}",
+        DSL.table(tableName),
+        DSL.inline(value),
+        DSL.table(convertQuery(query))
+      )
     }
+      .map(_.asInstanceOf[Long])
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
-    logger.error(s"UPDATE ${DSL.table(tableName)} SET content = content || " +
-      s"${DSL.inline(queryUpdate)} WHERE ${DSL.table(convertQuery(query))}")
+    logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)}")
 
-    db.query { dsl =>
-      dsl
-        .query("UPDATE {0} " +
-          "SET {1}" +
-          "WHERE {2}",
-          DSL.table(tableName),
-          DSL.inline(convertQuery(queryUpdate)),
-          DSL.table(convertQuery(query))
-        )
-        .execute()
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("UPDATE {0} " +
+        "SET {1}" +
+        "WHERE {2}",
+        DSL.table(tableName),
+        DSL.inline(convertQuery(queryUpdate)),
+        DSL.table(convertQuery(query))
+      )
     }
+      .map(_.asInstanceOf[Long])
   }
 
   override def deleteByIdLogically(id: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    db.query { dsl =>
-      logger.error("deleteByIdLogically with String")
-      dsl
-        .query("UPDATE {0} " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE _id = {1} AND _deleted = false",
-          DSL.table(tableName),
-          DSL.inline(id)
-        )
-        .execute() > 0
+    implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.debug(s"$tableName.deleteByIdLogically($id)")
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("UPDATE {0} " +
+        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+        "WHERE _id = {1} AND _deleted = false",
+        DSL.table(tableName),
+        DSL.inline(id)
+      )
     }
+      .map(_ > 0)
+  }
 
   override def deleteByIdLogically(id: Id)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("deleteByIdLogically with Id")
+    logger.debug(s"$tableName.deleteByIdLogically($id)")
     deleteByIdLogically(id.value)
   }
 
   override def deleteLogically(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    db.query { dsl =>
-      logger.error("deleteLogically with Query")
-      dsl
-        .query("UPDATE {0} " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE _deleted = false AND {1}",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query))
-        )
-        .execute() > 0
+    implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("UPDATE {0} " +
+        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+        "WHERE _deleted = false AND {1}",
+        DSL.table(tableName),
+        DSL.table(convertQuery(query))
+      )
     }
+      .map(_ > 0)
+  }
 
-  override def deleteAllLogically()(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    db.query { dsl =>
-      logger.error("deleteAllLogically")
+  override def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.debug(s"$tableName.deleteAllLogically()")
+    reactivePgAsyncPool.execute { dsl =>
       dsl
-        .query("UPDATE {0} " +
+        .resultQuery("UPDATE {0} " +
           "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
           "WHERE _deleted = false",
           DSL.table(tableName)
         )
-        .execute() > 0
     }
+      .map(_ > 0)
+  }
 
   override def exists(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] =
-    db.query { dsl =>
-      val result = dsl.fetchExists(dsl.selectFrom(
-        DSL
-          .table(tableName)
-          .where(DSL.condition("exists (SELECT 1 FROM {0} WHERE {1})",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query))
-          )))
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("SELECT 1 FROM {0} WHERE {1}",
+        DSL.table(tableName),
+        DSL.table(convertQuery(query))
       )
-
-      logger.error(s"exists - $query - $tableName - $result")
-
-      result
     }
+      .map(_ > 0)
 
   override def findWithProjection(query: JsObject, projection: JsObject)
                                  (implicit ec: ExecutionContext): Future[Seq[JsObject]] =
-    db.query { dsl =>
+    reactivePgAsyncPool.query { dsl =>
       logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
-      try {
-        val result = recordToJson(
-          if (query.values.isEmpty) dsl.fetch(
-            "SELECT {1} FROM {0}",
-            DSL.table(tableName),
-            if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-          )
-          else
-            dsl.fetch(
-              "SELECT {2} FROM {0} WHERE {1}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query)),
-              if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-            )
+      if (query.values.isEmpty) dsl.resultQuery(
+        "SELECT {1} FROM {0}",
+        DSL.table(tableName),
+        if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+      )
+      else
+        dsl.resultQuery(
+          "SELECT {2} FROM {0} WHERE {1}",
+          DSL.table(tableName),
+          DSL.table(convertQuery(query)),
+          if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
         )
-
-        getContentsListFromJson(result, format)
-          .map(_.asInstanceOf[JsObject])
-      } catch {
-        case err: Throwable => logger.error(s"$err")
-          Seq()
-      }
     }
+      .map(getContentsListFromJson(_, format))
+      .map(_.asInstanceOf[Seq[JsObject]])
 
   override def findOneWithProjection(query: JsObject, projection: JsObject)
-                                    (implicit ec: ExecutionContext): Future[Option[JsObject]] =
-    db.query { dsl =>
-      logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
-      try {
-        val result = recordToJson(
-          if (query.values.isEmpty) dsl.fetch(
+                                    (implicit ec: ExecutionContext): Future[Option[JsObject]] = {
+    logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+    reactivePgAsyncPool
+      .queryOne { dsl =>
+        if (query.values.isEmpty)
+          dsl.resultQuery(
             "SELECT {1} FROM {0}",
             DSL.table(tableName),
-            if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-          )
-          else
-            dsl.fetch(
-              "SELECT {2} FROM {0} WHERE {1}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query)),
-              if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-            )
-        )
-
-        getContentFromJson(result, format)
-          .asInstanceOf[Option[JsObject]]
-      } catch {
-        case err: Throwable => logger.error(s"$err")
-          None
+            if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
+        else
+          dsl.resultQuery(
+            "SELECT {2} FROM {0} WHERE {1}",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query)),
+            if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
       }
-    }
+      .map(getContentFromJson(_, format))
+      .asInstanceOf[Future[Option[JsObject]]]
+  }
 
   override def findWithPagination(query: JsObject, page: Int, pageSize: Int)
                                  (implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
     for {
-      count <- db.query { dsl =>
-        if (query.values.isEmpty)
-          dsl.fetchCount(DSL.table(tableName))
-        else
-          dsl.fetchValue("SELECT COUNT(*) FROM {0} WHERE {1}",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query))
-          )
-            .asInstanceOf[Long]
-      }
+      count <- count(query)
       queryRes <- {
-        db.query { dsl =>
-          val result = recordToJson(
-            if (query.values.isEmpty) dsl.fetch(
-              "SELECT * FROM {0} ORDER BY _id DESC LIMIT {1} OFFSET {2}",
-              DSL.table(tableName),
-              pageSize,
-              page * pageSize
-            )
-            else
-              dsl.fetch(
-                "SELECT * FROM {0} WHERE {1} ORDER BY _id DESC LIMIT {2} OFFSET {3}",
-                DSL.table(tableName),
-                DSL.table(convertQuery(query)),
-                pageSize,
-                page * pageSize
-              )
+        reactivePgAsyncPool.query { dsl =>
+          if (query.values.isEmpty) dsl.resultQuery(
+            "SELECT * FROM {0} ORDER BY _id DESC LIMIT {1} OFFSET {2}",
+            DSL.table(tableName),
+            DSL.inline(pageSize),
+            DSL.inline(page * pageSize)
           )
-
-          getContentsListFromJson(result, format)
+          else
+            dsl.resultQuery(
+              "SELECT * FROM {0} WHERE {1} ORDER BY _id DESC LIMIT {2} OFFSET {3}",
+              DSL.table(tableName),
+              DSL.table(convertQuery(query)),
+              DSL.inline(pageSize),
+              DSL.inline(page * pageSize)
+            )
         }
+          .map(getContentsListFromJson(_, format))
       }
     } yield {
       (queryRes, count)
@@ -1081,24 +1019,23 @@ abstract class PostgresRepo[Of, Id <: ValueType](
 
   override def findMaxByQuery(query: JsObject, field: String)(
     implicit ec: ExecutionContext): Future[Option[Long]] =
-    db.query { dsl =>
-      val result = dsl.fetchValue(
-        "SELECT MAX({2})::bigint " +
+    reactivePgAsyncPool.queryOne { dsl =>
+      dsl.resultQuery(
+        "SELECT MAX({2})::bigint as total " +
           "FROM {0} " +
           "WHERE {1}",
         DSL.table(tableName),
         DSL.table(convertQuery(query)),
         DSL.table(s"content->>'$field'")
       )
-
-      Option(result).asInstanceOf[Option[Long]]
     }
+      .map(res => res.map(_.get("total", classOf[Long])))
 }
 
 abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
-                                                          env: Env,
-                                                          db: PostgresConnection,
-                                                          tenant: TenantId)
+                                                             env: Env,
+                                                             reactivePgAsyncPool: ReactivePgAsyncPool,
+                                                             tenant: TenantId)
   extends RepositoryPostgres[Of, Id] {
 
   val logger: Logger = Logger(s"PostgresTenantAwareRepo")
@@ -1114,60 +1051,54 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
   override def deleteByIdLogically(id: String)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error(s"deleteByIdLogically $id : String")
+    logger.debug(s"$tableName.deleteByIdLogically($id)")
 
-    db.query { dsl =>
-      dsl
-        .query("UPDATE {0} " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE _id = {1} AND content ->> '_tenant' = {2}",
-          DSL.table(tableName),
-          DSL.inline(id),
-          DSL.inline(tenant.value)
-        )
-        .execute() > 0
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("UPDATE {0} " +
+        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+        "WHERE _id = {1} AND content ->> '_tenant' = {2}",
+        DSL.table(tableName),
+        DSL.inline(id),
+        DSL.inline(tenant.value)
+      )
     }
+      .map(_ > 0)
   }
 
   override def deleteByIdLogically(id: Id)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("deleteByIdLogically id: Id")
-
     deleteByIdLogically(id.value)
   }
 
   override def deleteLogically(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("deleteLogically query : JsObject")
+    logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
 
-    db.query { dsl =>
-      dsl
-        .query("UPDATE {0} " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE content ->> '_tenant' = {1} AND {2}",
-          DSL.table(tableName),
-          DSL.inline(tenant.value),
-          DSL.table(convertQuery(query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value)))
-        )
-        .execute() > 0
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("UPDATE {0} " +
+        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+        "WHERE content ->> '_tenant' = {1} AND {2}",
+        DSL.table(tableName),
+        DSL.inline(tenant.value),
+        DSL.table(convertQuery(query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value)))
+      )
     }
-
+      .map(_ > 0)
   }
 
   override def deleteAllLogically()(
     implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("deleteAllLogically")
+    logger.debug(s"$tableName.deleteAllLogically()")
 
-    db.query { dsl =>
-      dsl
-        .query("UPDATE {0} " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE content ->> '_tenant' = {1} AND _deleted = false",
-          DSL.table(tableName),
-          DSL.inline(tenant.value)
-        )
-        .execute() > 0
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("UPDATE {0} " +
+        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+        "WHERE content ->> '_tenant' = {1} AND _deleted = false",
+        DSL.table(tableName),
+        DSL.inline(tenant.value)
+      )
     }
+      .map(_ > 0)
   }
 
   override def find(
@@ -1178,144 +1109,109 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
     sort match {
       case None =>
-        db.query { dsl =>
+        reactivePgAsyncPool.query { dsl =>
           if (query.values.isEmpty)
-            logger.error(s"SELECT * FROM $tableName")
+            dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName))
           else
-            logger.error(s"SELECT * FROM $tableName WHERE ${convertQuery(query ++ Json.obj("_tenant" -> tenant.value))} ")
-
-          try {
-            val result = recordToJson(
-              if (query.values.isEmpty) dsl.fetch("SELECT * FROM {0}", DSL.table(tableName))
-              else
-                dsl.fetch(
-                  "SELECT * FROM {0} WHERE {1}",
-                  DSL.table(tableName),
-                  DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))))
-            )
-
-            getContentsListFromJson(result, format)
-          } catch {
-            case err: Throwable => logger.error(s"$err")
-              Seq()
-          }
+            dsl.resultQuery(
+              "SELECT * FROM {0} WHERE {1}",
+              DSL.table(tableName),
+              DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))))
         }
+          .map(getContentsListFromJson(_, format))
       case Some(s) =>
-        // TODO - transformer le sort
-        logger.error(s"FIND $tableName with $s")
-        db.query { dsl =>
-          try {
-            val result = recordToJson(
-              if (query.values.isEmpty)
-                dsl.fetch(
-                  "SELECT *, {2} FROM {0} ORDER BY {1}",
-                  DSL.table(tableName),
-                  DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
-                  DSL.table(s.keys.map { key =>
-                    s"content->>'$key' as $quotes$key$quotes"
-                  }.mkString(","))
-                )
-              else
-                dsl.fetch(
-                  "SELECT *, {3} FROM {0} WHERE {1} ORDER BY {2}",
-                  DSL.table(tableName),
-                  DSL.table(convertQuery(query)),
-                  DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
-                  DSL.table(s.keys.map { key =>
-                    s"content->>'$key' as $quotes$key$quotes"
-                  }.mkString(","))
-                )
+        logger.error(s"$tableName.find($query - $sort)")
+        reactivePgAsyncPool.query { dsl =>
+          if (query.values.isEmpty)
+            dsl.resultQuery(
+              "SELECT *, {2} FROM {0} ORDER BY {1}",
+              DSL.table(tableName),
+              DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
+              DSL.table(s.keys.map { key =>
+                s"content->>'$key' as $quotes$key$quotes"
+              }.mkString(","))
             )
-
-            getContentsListFromJson(result, format)
-          } catch {
-            case err: Throwable => logger.error(s"$err")
-              Seq()
-          }
+          else
+            dsl.resultQuery(
+              "SELECT *, {3} FROM {0} WHERE {1} ORDER BY {2}",
+              DSL.table(tableName),
+              DSL.table(convertQuery(query)),
+              DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
+              DSL.table(s.keys.map { key =>
+                s"content->>'$key' as $quotes$key$quotes"
+              }.mkString(","))
+            )
         }
+          .map(getContentsListFromJson(_, format))
     }
   }
 
   def streamAllRaw(query: JsObject = Json.obj())(implicit ec: ExecutionContext): Source[JsValue, NotUsed] =
     Source
       .future(
-        db.query { dsl =>
-          recordToJson(dsl.fetch("SELECT * FROM {0}", DSL.table(tableName)))
-            .asInstanceOf[JsArray]
+        reactivePgAsyncPool.query { dsl =>
+          dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName))
         }
+          .map(_.asInstanceOf[JsArray])
       )
 
   override def findOne(query: JsObject)(
     implicit ec: ExecutionContext): Future[Option[Of]] =
-    db.query { dsl =>
-      try {
-        val result = recordToJson(
-          dsl.fetch(
-            "SELECT * FROM {0} WHERE {1} LIMIT 1",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))))
-        )
-
-        getContentFromJson(result, format)
-      } catch {
-        case err: Throwable => logger.error(s"$err")
-          None
-      }
+    reactivePgAsyncPool.queryOne { dsl =>
+      dsl.resultQuery(
+        "SELECT * FROM {0} WHERE {1} LIMIT 1",
+        DSL.table(tableName),
+        DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
+      )
     }
+      .map(getContentFromJson(_, format))
 
-  override def delete(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.error("override def delete(query: JsObject)")
+  override def delete(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.delete(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
 
-    db.query { dsl =>
+    reactivePgAsyncPool.execute { dsl =>
       if (query.values.isEmpty)
-        dsl.query("DELETE FROM {0}", DSL.table(tableName)).execute() > 0
+        dsl.resultQuery("DELETE FROM {0}", DSL.table(tableName))
       else
-        dsl.query(
+        dsl.resultQuery(
           "DELETE FROM {0} WHERE {1}",
           DSL.table(tableName),
           DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
         )
-          .execute() > 0
     }
+      .map(_ > 0)
   }
 
   override def save(query: JsObject, value: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-
-    db.query { dsl =>
-      logger.debug(s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})")
+    logger.debug(s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})")
+    reactivePgAsyncPool.execute { dsl =>
       if (value.keys.contains("_deleted"))
-        dsl
-          .query("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
-            "ON CONFLICT (_id) DO UPDATE " +
-            "set _deleted = {2}, content = {3}",
-            DSL.table(tableName),
-            DSL.inline((value \ "_id").as[String]),
-            DSL.inline((value \ "_deleted").as[Boolean]),
-            DSL.inline(value)
-          )
-          .execute() > 0
+        dsl.resultQuery("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
+          "ON CONFLICT (_id) DO UPDATE " +
+          "set _deleted = {2}, content = {3}",
+          DSL.table(tableName),
+          DSL.inline((value \ "_id").as[String]),
+          DSL.inline((value \ "_deleted").as[Boolean]),
+          DSL.inline(value)
+        )
       else
-        dsl
-          .query("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
-            DSL.table(tableName),
-            DSL.inline((value \ "_id").as[String]),
-            DSL.inline(value)
-          )
-          .execute() > 0
+        dsl.resultQuery("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
+          DSL.table(tableName),
+          DSL.inline((value \ "_id").as[String]),
+          DSL.inline(value)
+        )
     }
+      .map(_ > 0)
   }
 
-  override def insertMany(values: Seq[Of])(
-    implicit ec: ExecutionContext): Future[Long] = {
-
+  override def insertMany(values: Seq[Of])(implicit ec: ExecutionContext): Future[Long] = {
+    logger.debug(s"$tableName.insertMany()")
     val payloads = values.map(v =>
       format.writes(v).as[JsObject] ++ Json.obj("_tenant" -> tenant.value))
 
-    db.query { dsl =>
-      dsl.query(
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery(
         "INSERT INTO {0}(_id, content) VALUES{1}",
         DSL.table(tableName),
         DSL.table(payloads.map { payload =>
@@ -1323,199 +1219,150 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         }
           .mkString(","))
       )
-        .execute()
     }
+      .map(_.asInstanceOf[Long])
   }
 
   override def updateMany(query: JsObject, value: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
-    logger.error("updateMany(query: JsObject, value: JsObject)")
+    logger.debug(s"$tableName.updateMany(${Json.prettyPrint(query)})")
 
-    db.query { dsl =>
-      dsl
-        .query("UPDATE {0} SET content = content || {1} WHERE {2}",
-          DSL.table(tableName),
-          DSL.inline(value),
-          DSL.table(convertQuery(query))
-        )
-        .execute()
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("UPDATE {0} SET content = content || {1} WHERE {2}",
+        DSL.table(tableName),
+        DSL.inline(value),
+        DSL.table(convertQuery(query))
+      )
     }
+      .map(_.asInstanceOf[Long])
   }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
-    logger.error("updateManyByQuery(query: JsObject, queryUpdate: JsObject)")
-    logger.error(s"UPDATE ${DSL.table(tableName)} SET " +
-      s"${DSL.table(convertQuery(queryUpdate))} WHERE ${DSL.table(convertQuery(query))}")
+    logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)})")
 
-    db.query { dsl =>
-      dsl
-        .query("UPDATE {0} " +
-          "SET {1}" +
-          "WHERE {2}",
-          DSL.table(tableName),
-          DSL.table(convertQuery(queryUpdate)),
-          DSL.table(convertQuery(query))
-        )
-        .execute()
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("UPDATE {0} " +
+        "SET {1}" +
+        "WHERE {2}",
+        DSL.table(tableName),
+        DSL.table(convertQuery(queryUpdate)),
+        DSL.table(convertQuery(query))
+      )
     }
+      .map(_.asInstanceOf[Long])
   }
 
   override def exists(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean] = {
-    db.query { dsl =>
-      val result = dsl.fetchExists(dsl.selectFrom(
-        DSL
-          .table(tableName)
-          .where(DSL.condition("exists (SELECT 1 FROM {0} WHERE {1})",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
-            )))
-      ))
-
-      logger.error(s"exits $query - $tableName - $result")
-
-      result
+    implicit ec: ExecutionContext): Future[Boolean] =
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("SELECT 1 FROM {0} WHERE {1}",
+        DSL.table(tableName),
+        DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
+      )
     }
-  }
+      .map(_ > 0)
 
   override def findMaxByQuery(query: JsObject, field: String)(
     implicit ec: ExecutionContext): Future[Option[Long]] = {
+    logger.debug(s"$tableName.findMaxByQuery(${Json.prettyPrint(query)})")
 
-    logger.error(s"findMaxByQuery - $tableName - $query - $field")
-    logger.error(s"SELECT MAX(content->>'$field') FROM ${DSL.table(tableName)} WHERE ${DSL.table(convertQuery(query))}")
-
-    db.query { dsl =>
-      val result = dsl.fetchValue(
-        "SELECT MAX({2})::bigint " +
+    reactivePgAsyncPool.queryOne { dsl =>
+      dsl.resultQuery(
+        "SELECT MAX({2})::bigint as total " +
           "FROM {0} " +
           "WHERE {1}",
         DSL.table(tableName),
         DSL.table(convertQuery(query)),
         DSL.table(s"content->>'$field'")
       )
-
-      Option(result).asInstanceOf[Option[Long]]
     }
+      .map(_.map(res => res.get("total", classOf[Long])))
   }
 
   override def count(query: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
-
-    logger.error(s"Count with tenant : $query")
-    db.query { dsl =>
-      if (query.values.isEmpty)
-        dsl.fetchCount(DSL.table(tableName))
-      else
-        dsl.fetchValue("SELECT COUNT(*) FROM {0} WHERE {1}",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query))
-        )
-          .asInstanceOf[Long]
-    }
+    logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
+    reactivePgAsyncPool
+      .queryOne(dsl =>
+        if (query.values.isEmpty)
+          dsl.resultQuery("SELECT COUNT(*) as count FROM {0}", DSL.table(tableName))
+        else
+          dsl.resultQuery("SELECT COUNT(*) as count FROM {0} WHERE {1}",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query))
+          )
+      )
+      .map(res => res.map(_.get("count", classOf[Long])).getOrElse(-1L))
   }
 
   override def count()(implicit ec: ExecutionContext): Future[Long] = count(Json.obj("_tenant" -> tenant.value))
 
   override def findWithProjection(query: JsObject, projection: JsObject)
                                  (implicit ec: ExecutionContext): Future[Seq[JsObject]] =
-    db.query { dsl =>
+    reactivePgAsyncPool.query { dsl =>
       logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
-      try {
-        val result = recordToJson(
-          if (query.values.isEmpty) dsl.fetch(
-            "SELECT {1} FROM {0}",
-            DSL.table(tableName),
-            if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-          )
-          else
-            dsl.fetch(
-              "SELECT {2} FROM {0} WHERE {1}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))),
-              if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-            )
+      if (query.values.isEmpty) dsl.resultQuery(
+        "SELECT {1} FROM {0}",
+        DSL.table(tableName),
+        if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+      )
+      else
+        dsl.resultQuery(
+          "SELECT {2} FROM {0} WHERE {1}",
+          DSL.table(tableName),
+          DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))),
+          if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
         )
-
-        getContentsListFromJson(result, format)
-          .map(_.asInstanceOf[JsObject])
-      } catch {
-        case err: Throwable => logger.error(s"$err")
-          Seq()
-      }
     }
+      .map(getContentsListFromJson(_, format))
+      .map(_.asInstanceOf[Seq[JsObject]])
 
   override def findOneWithProjection(query: JsObject, projection: JsObject)
                                     (implicit ec: ExecutionContext): Future[Option[JsObject]] =
-    db.query { dsl =>
-      logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
-      try {
-        val result = recordToJson(
-          if (query.values.isEmpty) dsl.fetch(
+    reactivePgAsyncPool
+      .queryOne { dsl =>
+        if (query.values.isEmpty)
+          dsl.resultQuery(
             "SELECT {1} FROM {0}",
             DSL.table(tableName),
-            if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-          )
-          else
-            dsl.fetch(
-              "SELECT {2} FROM {0} WHERE {1}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))),
-              if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-            )
-        )
-
-        getContentFromJson(result, format)
-          .asInstanceOf[Option[JsObject]]
-      } catch {
-        case err: Throwable => logger.error(s"$err")
-          None
+            if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
+        else
+          dsl.resultQuery(
+            "SELECT {2} FROM {0} WHERE {1}",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))),
+            if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
       }
-    }
+      .map(getContentFromJson(_, format))
+      .asInstanceOf[Future[Option[JsObject]]]
 
   override def findWithPagination(query: JsObject, page: Int, pageSize: Int)
                                  (implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
-    logger.error(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
+    logger.debug(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
     for {
-      count <- db.query { dsl =>
-        if (query.values.isEmpty)
-          logger.error(s"SELECT COUNT(*) FROM ${DSL.table(tableName)}")
-        else
-          logger.error(s"SELECT COUNT(*) FROM ${DSL.table(tableName)} WHERE ${DSL.table(convertQuery(query))}")
-
-        if (query.values.isEmpty)
-          dsl.fetchCount(DSL.table(tableName))
-        else
-          dsl.fetchValue("SELECT COUNT(*) FROM {0} WHERE {1}",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query))
-          )
-            .asInstanceOf[Long]
-      }
-      queryRes <- {
-        db.query { dsl =>
-          val result = recordToJson(
-            if (query.values.isEmpty) dsl.fetch(
+        count <- count(query)
+        queryRes <- {
+          reactivePgAsyncPool.query { dsl =>
+            if (query.values.isEmpty) dsl.resultQuery(
               "SELECT * FROM {0} ORDER BY _id DESC LIMIT {1} OFFSET {2}",
               DSL.table(tableName),
-              pageSize,
-              page * pageSize
+              DSL.inline(pageSize),
+              DSL.inline(page * pageSize)
             )
             else
-              dsl.fetch(
+              dsl.resultQuery(
                 "SELECT * FROM {0} WHERE {1} ORDER BY _id DESC LIMIT {2} OFFSET {3}",
                 DSL.table(tableName),
                 DSL.table(convertQuery(query)),
-                pageSize,
-                page * pageSize
+                DSL.inline(pageSize.toString),
+                DSL.inline((page * pageSize).toString)
               )
-          )
-
-          getContentsListFromJson(result, format)
+          }
+            .map(getContentsListFromJson(_, format))
         }
+      } yield {
+        (queryRes, count)
       }
-    } yield {
-      (queryRes, count)
-    }
   }
 }

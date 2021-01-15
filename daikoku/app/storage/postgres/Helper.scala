@@ -4,6 +4,7 @@ import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import org.jooq.{JSONFormat, Record, Result}
 import play.api.Logger
 import play.api.libs.json._
+import storage.postgres.jooq.api.QueryResult
 
 object Helper {
 
@@ -82,7 +83,14 @@ object Helper {
             "1 = 1"
         }
       case value: JsArray if field._1 == "$or" => "(" + value.as[List[JsObject]].map(convertQuery).mkString(" OR ") + ")"
-      case value: JsArray if field._1 == "$in" => _inOperatorToString(value.as[List[String]])
+      case value: JsArray if field._1 == "$in" =>
+        logger.error(s"$field")
+        try {
+          _inOperatorToString(value.as[List[String]])
+        } catch {
+          case _: Throwable => "('DEFAULT VALUE TO AVOID EMPTY LIST')"
+        }
+
       case value: JsArray if field._1 == "$nin" => _inOperatorToString(value.as[List[String]])
       case value: JsValue if field._1 == "$lte" => value.toString
       case value: JsValue if field._1 == "$gte" => value.toString
@@ -100,43 +108,28 @@ object Helper {
       .mkString(" AND ")
   }
 
-  def recordToJson(record: Result[Record]): JsValue = Json.parse(
-    record.formatJSON(new JSONFormat()
-      .header(false)
-      .recordFormat(org.jooq.JSONFormat.RecordFormat.OBJECT))
-  )
-
-  def getContentFromJson[Of](value: JsValue, format: Format[Of]): Option[Of] = {
-    if (value.isInstanceOf[JsArray] && value.as[JsArray].value.nonEmpty) {
-      logger.debug(s" recordToJson : ${value(0)}")
-
-      format.reads((value(0) \ "content").as[JsObject]) match {
-        case JsSuccess(e, _) => Some(e)
-        case JsError(_) => None
-      }
-    } else {
-      logger.debug(s" recordToJson : not record found")
-      None
-    }
+  def recordToJson(res: QueryResult) : JsValue = {
+    val content = res.get("content", classOf[String])
+    Json.parse(content)
   }
 
-  def getContentsListFromJson[Of](value: JsValue, format: Format[Of]): Seq[Of] = {
-    if (value.isInstanceOf[JsArray]) {
+  def getContentFromJson[Of](queryResult: Option[QueryResult], format: Format[Of]): Option[Of] = {
+    queryResult.flatMap(f => format.reads(recordToJson(f)) match {
+      case JsSuccess(e, _) => Some(e)
+      case JsError(_) => None
+    })
+  }
+
+  def getContentsListFromJson[Of](queryResults: List[QueryResult], format: Format[Of]): Seq[Of] = {
       logger.debug("getContentsListFromJson")
 
-      value.as[JsArray]
-        .value
+    queryResults
         .flatMap { json =>
-          format.reads((json \ "content").as[JsObject]) match {
+          format.reads(recordToJson(json)) match {
             case JsSuccess(e, _) => Some(e)
             case JsError(_) => None
           }
         }
-        .toSeq
-    } else {
-      logger.debug(s" getContentsListFromJson : can't convert record to list of json")
-      Seq()
-    }
   }
 
   var quotes = "\""
