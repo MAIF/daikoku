@@ -45,7 +45,6 @@ CREATE TABLE daikoku."translations" (
 );
 CREATE TABLE daikoku."messages" (
 	_id character varying PRIMARY KEY,
-	_deleted BOOLEAN,
 	content JSONB
 );
 CREATE TABLE daikoku."api_subscriptions" (
@@ -70,7 +69,6 @@ CREATE TABLE daikoku."consumptions" (
 );
 CREATE TABLE daikoku."audit_events" (
 	_id character varying PRIMARY KEY,
-	_deleted BOOLEAN,
 	content JSONB
 );
 CREATE TABLE daikoku."users" (
@@ -80,6 +78,5 @@ CREATE TABLE daikoku."users" (
 );
 CREATE TABLE daikoku."user_sessions" (
 	_id character varying PRIMARY KEY,
-	_deleted BOOLEAN,
 	content JSONB
 );
