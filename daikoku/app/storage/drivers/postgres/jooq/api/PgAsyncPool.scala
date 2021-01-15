@@ -1,4 +1,4 @@
-package storage.postgres.jooq.api
+package storage.drivers.postgres.jooq.api
 
 import scala.concurrent.Future
 

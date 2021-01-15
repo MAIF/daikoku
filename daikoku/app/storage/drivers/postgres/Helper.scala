@@ -1,10 +1,9 @@
-package storage.postgres
+package storage.drivers.postgres
 
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
-import org.jooq.{JSONFormat, Record, Result}
 import play.api.Logger
 import play.api.libs.json._
-import storage.postgres.jooq.api.QueryResult
+import storage.drivers.postgres.jooq.api.QueryResult
 
 object Helper {
 

@@ -16,15 +16,12 @@ import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, OtoroshiClient}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import play.api.ApplicationLoader.Context
 import play.api._
-import play.api.db.Database
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
 import play.api.i18n.I18nSupport
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc._
 import play.api.routing.Router
-import play.modules.reactivemongo.{ReactiveMongoApi, ReactiveMongoApiFromContext}
 import router.Routes
-import storage.postgres.PostgresConnection
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -40,15 +37,10 @@ class DaikokuLoader extends ApplicationLoader {
 package object modules {
 
   class DaikokuComponentsInstances(context: Context)
-      extends ReactiveMongoApiFromContext(context)
-      //with BuiltInComponentsFromContext(context)
+      extends BuiltInComponentsFromContext(context)
       with AssetsComponents
       with AhcWSComponents
       with I18nSupport {
-
-    implicit lazy val reactiveMongo: ReactiveMongoApi = reactiveMongoApi
-
-    implicit lazy val db: PostgresConnection = wire[PostgresConnection]
 
     implicit lazy val env: Env = wire[DaikokuEnv]
 

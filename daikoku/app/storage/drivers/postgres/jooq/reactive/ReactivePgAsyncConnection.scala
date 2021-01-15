@@ -1,8 +1,8 @@
-package storage.postgres.jooq.reactive
+package storage.drivers.postgres.jooq.reactive
 
 import io.vertx.sqlclient.SqlConnection
 import org.jooq.Configuration
-import storage.postgres.jooq.api.{PgAsyncConnection, PgAsyncTransaction}
+import storage.drivers.postgres.jooq.api.{PgAsyncConnection, PgAsyncTransaction}
 
 import scala.concurrent.{Future, Promise}
 import scala.util.Success

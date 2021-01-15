@@ -1,4 +1,4 @@
-package storage.postgres.jooq.reactive
+package storage.drivers.postgres.jooq.reactive
 
 import io.vertx.core.{AsyncResult, Handler}
 import io.vertx.sqlclient.{Row, RowSet, SqlClient}
@@ -7,7 +7,7 @@ import org.jooq.conf.ParamType
 import org.jooq.exception.TooManyRowsException
 import org.jooq.impl.DSL
 import play.api.Logger
-import storage.postgres.jooq.api.{PgAsyncClient, QueryResult}
+import storage.drivers.postgres.jooq.api.{PgAsyncClient, QueryResult}
 
 import java.util.concurrent.Executors
 import java.util.stream.StreamSupport

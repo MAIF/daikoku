@@ -1,4 +1,4 @@
-package storage.mongo
+package storage.drivers.mongo
 
 import akka.NotUsed
 import akka.http.scaladsl.util.FastFuture
@@ -8,10 +8,11 @@ import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
+import play.api.ApplicationLoader.Context
 import play.api.Logger
 import play.api.libs.json._
-import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.indexes.Index
+import play.api.routing.Router
+import play.modules.reactivemongo.{ReactiveMongoApi, ReactiveMongoApiFromContext}
 import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
@@ -221,11 +222,18 @@ case class MongoTenantCapableConsumptionRepo(
                                            ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
-class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends DataStore {
+class MongoDataStore(context: Context, env: Env)
+  extends ReactiveMongoApiFromContext(context)
+  with DataStore {
 
-  val logger = Logger("MongoDataStore")
-  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ece: ExecutionContext = env.defaultExecutionContext
+
+  lazy val router: Router = play.api.routing.Router.empty
+  lazy val httpFilters = Seq.empty[play.api.mvc.EssentialFilter]
+
+  lazy val logger: Logger = Logger("MongoDataStore")
+
+  logger.info("used")
 
   private val _tenantRepo: TenantRepo = new MongoTenantRepo(env, reactiveMongoApi)
   private val _userRepo: UserRepo = new MongoUserRepo(env, reactiveMongoApi)
@@ -337,7 +345,7 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
       translationRepo.forAllTenant()
     )
     Source(collections).flatMapConcat { collection =>
-      collection.streamAllRaw().map { doc =>
+      collection.streamAllRaw()(ec).map { doc =>
         if (pretty) {
           ByteString(
             Json.prettyPrint(Json.obj("type" -> collection.collectionName,
@@ -351,10 +359,8 @@ class MongoDataStore(env: Env, reactiveMongoApi: ReactiveMongoApi)
     }
   }
 
-  override def importFromStream(source: Source[ByteString, _])(
-    implicit ec: ExecutionContext,
-    mat: Materializer,
-    env: Env): Future[Unit] = {
+  override def importFromStream(source: Source[ByteString, _]): Future[Unit] = {
+
     for {
       _ <- env.dataStore.tenantRepo.deleteAll()
       _ <- env.dataStore.passwordResetRepo.deleteAll()

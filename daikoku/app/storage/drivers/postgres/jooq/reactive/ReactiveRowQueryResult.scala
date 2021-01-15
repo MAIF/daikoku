@@ -1,10 +1,10 @@
-package storage.postgres.jooq.reactive
+package storage.drivers.postgres.jooq.reactive
 
 import io.vertx.core.json.{JsonArray, JsonObject}
 import io.vertx.sqlclient.Row
 import org.jooq.tools.Convert
 import org.jooq.{Converter, Field, JSON, JSONB, Record, Table}
-import storage.postgres.jooq.api.QueryResult
+import storage.drivers.postgres.jooq.api.QueryResult
 
 import java.util
 

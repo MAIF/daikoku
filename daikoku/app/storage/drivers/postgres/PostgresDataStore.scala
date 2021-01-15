@@ -1,22 +1,28 @@
-package storage.postgres
+package storage.drivers.postgres
 
 import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
 import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
-import org.jooq.impl.DSL
-import play.api.Logger
+import io.vertx.core.Vertx
+import io.vertx.pgclient.{PgConnectOptions, PgPool}
+import io.vertx.sqlclient.PoolOptions
+import org.jooq.SQLDialect
+import org.jooq.impl.{DSL, DefaultConfiguration}
+import play.api.{Configuration, Environment, Logger}
 import play.api.libs.json._
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
-import storage.postgres.Helper._
-import storage.postgres.jooq.reactive.ReactivePgAsyncPool
+import storage.drivers.postgres.Helper._
+import storage.drivers.postgres.jooq.reactive.ReactivePgAsyncPool
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 trait RepositoryPostgres[Of, Id <: ValueType] extends Repo[Of, Id] {
   override def collectionName: String = "ignored"
@@ -222,10 +228,34 @@ case class PostgresTenantCapableConsumptionRepo(
                                            ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
-class PostgresDataStore(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool) extends DataStore {
+class PostgresDataStore(configuration: Configuration, env: Env)
+  extends DataStore {
 
-  private val logger: Logger = Logger("PostgresDataStore")
+  private lazy val logger: Logger = Logger("PostgresDataStore")
+
   implicit val ec: ExecutionContext = env.defaultExecutionContext
+
+  lazy val jooqConfig = new DefaultConfiguration
+  jooqConfig.setSQLDialect(SQLDialect.POSTGRES)
+
+  private lazy val poolOptions: PoolOptions = new PoolOptions().setMaxSize(3)
+
+  private lazy val options: PgConnectOptions = new PgConnectOptions()
+    .setPort(configuration.getOptional[Int]("daikoku.postgres.port").getOrElse(5432))
+    .setHost(configuration.getOptional[String]("daikoku.postgres.host").getOrElse("localhost"))
+    .setDatabase(configuration.getOptional[String]("daikoku.postgres.database").getOrElse("default"))
+    .setUser(configuration.getOptional[String]("daikoku.postgres.username").getOrElse("postgres"))
+    .setPassword(configuration.getOptional[String]("daikoku.postgres.password").getOrElse("postgres"))
+    .setProperties(Map(
+      "search_path" -> configuration.getOptional[String]("daikoku.postgres.schema").getOrElse("default")
+    ).asJava)
+
+  logger.info(s"used : ${options.getDatabase}")
+
+  private lazy val reactivePgAsyncPool = new ReactivePgAsyncPool(
+    PgPool.pool(Vertx.vertx, options, poolOptions),
+    jooqConfig
+  )
 
   private val _tenantRepo: TenantRepo = new PostgresTenantRepo(env, reactivePgAsyncPool)
   private val _userRepo: UserRepo = new PostgresUserRepo(env, reactivePgAsyncPool)
@@ -355,10 +385,7 @@ class PostgresDataStore(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool) exte
     }
   }
 
-  override def importFromStream(source: Source[ByteString, _])(
-    implicit ec: ExecutionContext,
-    mat: Materializer,
-    env: Env): Future[Unit] = {
+  override def importFromStream(source: Source[ByteString, _]): Future[Unit] = {
     for {
       _ <- env.dataStore.tenantRepo.deleteAll()
       _ <- env.dataStore.passwordResetRepo.deleteAll()
@@ -431,7 +458,7 @@ class PostgresDataStore(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool) exte
             FastFuture.successful(false)
         }
         .toMat(Sink.ignore)(Keep.right)
-        .run()
+        .run()(env.defaultMaterializer)
     } yield ()
 
   }
@@ -790,7 +817,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
       .future(
         reactivePgAsyncPool
           .query(dsl => dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName)))
-          .map(_.asInstanceOf[JsArray])
+          .map { res => JsArray(res.map(recordToJson))}
       )
   }
 

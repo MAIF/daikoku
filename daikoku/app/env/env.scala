@@ -15,13 +15,15 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
+import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
 import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoApi
-import storage.postgres.PostgresConnection
-import storage.{DataStore, Manager}
+import storage.drivers.mongo.MongoDataStore
+import storage.drivers.postgres.PostgresDataStore
+import storage.DataStore
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -227,8 +229,7 @@ sealed trait Env {
 class DaikokuEnv(ws: WSClient,
                  val environment: Environment,
                  configuration: Configuration,
-                 reactiveMongoApi: ReactiveMongoApi,
-                 db: PostgresConnection,
+                 context: Context,
                  messagesApi: MessagesApi)
     extends Env {
 
@@ -242,7 +243,14 @@ class DaikokuEnv(ws: WSClient,
     actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
 
   private val daikokuConfig = new Config(configuration)
-  private val _dataStore: DataStore = Manager.getDataStore(this, db, reactiveMongoApi)
+
+  private lazy val _dataStore: DataStore =
+    configuration.getOptional[String]("daikoku.storage").getOrElse("mongo") match {
+      case "mongo"              => new MongoDataStore(context, this)
+      case "postgres"           => new PostgresDataStore(configuration, this)
+      case e                   => throw new RuntimeException(s"Bad storage value from conf: $e")
+    }
+
   private val s3assetsStore =
     new AssetsDataStore(actorSystem)(actorSystem.dispatcher, materializer)
 
