@@ -9,7 +9,7 @@ export const Help = ({ label, text, place }) => {
         {label} <i className="fas fa-question-circle ml-1" />
       </BeautifulTitle>
     );
-  } else if (text) {
+  } else if (!label && text) {
     return (
       <BeautifulTitle place={place} title={text}>
         <i className="fas fa-question-circle ml-1" />

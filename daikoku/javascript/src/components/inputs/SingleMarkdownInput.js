@@ -207,7 +207,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
   return (
     <div className="d-flex flex-column">
       <label htmlFor={`input-${props.label}`} className="col-form-label d-flex align-items-center">
-        {props.label} <Help place="right" text={props.help} />
+        <Help place="right" text={props.help} label={props.label}/>
       </label>
       <div
         style={{
