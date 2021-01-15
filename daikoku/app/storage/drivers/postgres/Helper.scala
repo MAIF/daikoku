@@ -83,7 +83,6 @@ object Helper {
         }
       case value: JsArray if field._1 == "$or" => "(" + value.as[List[JsObject]].map(convertQuery).mkString(" OR ") + ")"
       case value: JsArray if field._1 == "$in" =>
-        logger.error(s"$field")
         try {
           _inOperatorToString(value.as[List[String]])
         } catch {
