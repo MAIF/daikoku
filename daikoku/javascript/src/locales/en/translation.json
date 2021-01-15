@@ -763,5 +763,7 @@
     "Subscriptions": "Subscriptions",
     "Plan consumption": "Plan consumption",
     "Income": "Income",
-    "Edition": "Edition"
+    "Edition": "Edition",
+    "Custom header": "Custom header",
+    "api.custom.header.help": "Use {{title}} to insert API title, {{ description }} to insert API small description. Add \"btn-edit\" class to link to admin API edition admin page"
 }

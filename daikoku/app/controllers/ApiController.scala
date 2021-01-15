@@ -1080,17 +1080,21 @@ class ApiController(DaikokuAction: DaikokuAction,
       import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 
       val name = (ctx.request.body.as[JsObject] \ "name").as[String].toLowerCase.trim
+      val id = (ctx.request.body.as[JsObject] \ "id").asOpt[String].map(_.trim)
       ctx.setCtxValue("api.name", name)
 
       val maybeHumanReadableId = name.urlPathSegmentSanitized
 
-      env.dataStore.apiRepo
-        .forTenant(ctx.tenant.id)
-        .findAllNotDeleted()
-        .map { apis =>
-          val withSameName = apis.exists(api => api.humanReadableId == maybeHumanReadableId)
-          Ok(Json.obj("exists" -> withSameName))
-        }
+      id match {
+        case Some(value) => env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId, "_id" -> Json.obj("$ne" -> value)))
+          .map (exists => Ok(Json.obj("exists" -> exists)))
+        case None => env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId))
+          .map (exists => Ok(Json.obj("exists" -> exists)))
+      }
     }
   }
 

@@ -763,5 +763,7 @@
   "Subscriptions": "Souscriptions",
   "Plan consumption": "Consommation du plan",
   "Income": "Revenu",
-  "Edition": "Edition"
+  "Edition": "Edition",
+  "Custom header": "Entête personnalisé",
+  "api.custom.header.help": "Utiliser {{title}} pour inserer le nom de l'API, {{ description }} pour la petite description. Ajouter la classe \"btn-edit\" pour créer un lien vers la page d'edition de l'API"
 }

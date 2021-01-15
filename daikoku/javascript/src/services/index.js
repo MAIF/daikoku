@@ -889,7 +889,7 @@ export const fetchNewApi = () => fetchEntity('/api/entities/api');
 export const fetchNewUser = () => fetchEntity('/api/entities/user');
 export const fetchNewOtoroshi = () => fetchEntity('/api/entities/otoroshi');
 
-export function checkIfApiNameIsUnique(name) {
+export function checkIfApiNameIsUnique(name, id) {
   return fetch('/api/apis/_names', {
     method: 'POST',
     credentials: 'include',
@@ -897,7 +897,7 @@ export function checkIfApiNameIsUnique(name) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, id }),
   }).then((r) => r.json());
 }
 

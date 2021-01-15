@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import * as Services from '../../../services';
 import { ApiCartidge, ApiConsole, ApiDocumentation, ApiPricing, ApiSwagger, ApiRedoc } from '.';
 import { converter } from '../../../services/showdown';
-import { Can, manage, api as API, access, backoffice, user } from '../../utils';
+import { Can, manage, api as API } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal } from '../../../core';
 
@@ -30,6 +30,56 @@ const ApiDescription = ({ api }) => {
       />
     </div>
   );
+};
+
+const ApiHeader = ({api, ownerTeam, redirectToEditPage}) => {
+  const handleBtnEditClick = () => redirectToEditPage(api);
+  useEffect(() => {
+    var els = document.querySelectorAll('.btn-edit');
+    
+    if (els.length) {
+      els.forEach(el => el.addEventListener('click', handleBtnEditClick, false));
+      return () => {
+        els.forEach(el => el.removeEventListener('click', handleBtnEditClick, false));
+      };
+    }
+  }, []);
+
+
+  const EditButton = () => <Can I={manage} a={API} team={ownerTeam}>
+    <a href="#" className="team__settings ml-2" onClick={() => redirectToEditPage(api)}>
+      <button type="button" className="btn btn-sm btn-access-negative">
+        <i className="fas fa-edit" />
+      </button>
+    </a>
+  </Can>;
+
+  if (api.header) {
+    const apiHeader = api.header
+      .replace('{{title}}', api.name)
+      .replace('{{description}}', api.smallDescription);
+    
+    return (
+      <section className="api__header col-12 mb-4">
+        <div
+          className="api-description"
+          dangerouslySetInnerHTML={{ __html: converter.makeHtml(apiHeader) }}
+        />
+      </section>
+    );
+  } else {
+    return (
+      <section className="api__header col-12 mb-4 p-3">
+        <div className="container">
+          <h1 className="jumbotron-heading">
+            {api.name}
+            <EditButton />
+          </h1>
+          <p className="lead">{api.smallDescription}</p>
+        </div>
+      </section>
+    );
+  }
 };
 
 const ApiHomeComponent = ({
@@ -138,21 +188,7 @@ const ApiHomeComponent = ({
 
   return (
     <main role="main" className="row">
-      <section className="organisation__header col-12 mb-4 p-3">
-        <div className="container">
-          <h1 className="jumbotron-heading">
-            {api.name}
-            <Can I={manage} a={API} team={ownerTeam}>
-              <a href="#" className="team__settings ml-2" onClick={() => redirectToEditPage(api)}>
-                <button type="button" className="btn btn-sm btn-access-negative">
-                  <i className="fas fa-edit" />
-                </button>
-              </a>
-            </Can>
-          </h1>
-          <p className="lead">{api.smallDescription}</p>
-        </div>
-      </section>
+      <ApiHeader api={api} ownerTeam={ownerTeam} redirectToEditPage={redirectToEditPage}/>
       <div className="container">
         <div className="row">
           <div className="col mt-3 onglets">

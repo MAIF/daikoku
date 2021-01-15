@@ -10,7 +10,7 @@ class NameAlreadyExists extends Component {
   state = { exists: false };
 
   update = (props) => {
-    Services.checkIfApiNameIsUnique(props.rawValue.name).then((r) =>
+    Services.checkIfApiNameIsUnique(props.rawValue.name, props.rawValue._id).then((r) =>
       this.setState({ exists: r.exists })
     );
   };
@@ -26,13 +26,12 @@ class NameAlreadyExists extends Component {
   }
 
   render() {
-    return (
-      <div className="form-group row">
-        <label htmlFor="input-Name" className="col-xs-12 col-sm-2 col-form-label" />
-        <div
-          className="col-sm-10"
-          style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          {this.props.creating && this.state.exists ? (
+    if (this.state.exists) {
+      return (
+        <div className="form-group row">
+          <div
+            className="col-sm-12"
+            style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <span className="badge badge-danger">
               <Translation
                 i18nkey="api.already.exists"
@@ -41,10 +40,12 @@ class NameAlreadyExists extends Component {
                 api with name "{this.props.rawValue.name}" already exists
               </Translation>
             </span>
-          ) : null}
+          </div>
         </div>
-      </div>
-    );
+      );
+    } else {
+      return null;
+    }
   }
 }
 
@@ -69,6 +70,14 @@ export class TeamApiInfo extends Component {
     smallDescription: {
       type: 'text',
       props: { label: t('Small desc.', this.props.currentLanguage) },
+    },
+    header: {
+      type: 'markdown',
+      props: {
+        label: t('Custom header', this.props.currentLanguage),
+        help: t('api.custom.header.help', this.props.currentLanguage, false, `Use {{title}} to insert API title, {{ description }} to insert API small description.
+         Add "btn-edit" class to link to admin API edition admin page.`)
+      },
     },
     currentVersion: {
       type: 'string',
@@ -131,10 +140,11 @@ export class TeamApiInfo extends Component {
 
   formFlow = [
     '_id',
+    'published',
     'name',
     'nameAlreadyExists',
     'smallDescription',
-    'published',
+    'header',
     `>>> ${t('Versions and tags', this.props.currentLanguage)}`,
     'currentVersion',
     'supportedVersions',
