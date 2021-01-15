@@ -26,6 +26,7 @@ jobs:
       with:
         java-version: 11
     #test DK
+    - uses: coursier/cache-action@v5
     - name: test
       id: test
       run: |
