@@ -119,3 +119,11 @@ We'd like to thank all the contributors who worked on this release!
 - Multiple subscriptions are not saved in api.subscriptions [#205](https://github.com/MAIF/daikoku/issues/205)
 - Api subsriptions page is broken [#204](https://github.com/MAIF/daikoku/issues/204)
 
+## [v1.0.15] - 2021-01-15
+
+## :beetle: Bug Fixes
+
+- team backoffice - team members page is crashing [#208](https://github.com/MAIF/daikoku/issues/208)
+- Team edition page is crashing [#207](https://github.com/MAIF/daikoku/issues/207)
+- Subscription metadata modal crashe [#206](https://github.com/MAIF/daikoku/issues/206)
+
