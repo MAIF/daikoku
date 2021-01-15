@@ -16,8 +16,10 @@ import org.jooq.SQLDialect
 import org.jooq.impl.{DSL, DefaultConfiguration}
 import play.api.{Configuration, Environment, Logger}
 import play.api.libs.json._
+import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
+import storage.drivers.mongo.RepositoryMongo
 import storage.drivers.postgres.Helper._
 import storage.drivers.postgres.jooq.reactive.ReactivePgAsyncPool
 
@@ -736,18 +738,9 @@ class PostgresAuditTrailRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
 abstract class PostgresRepo[Of, Id <: ValueType](
                                                   env: Env,
                                                   reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends RepositoryPostgres[Of, Id] {
+  extends CommonRepo[Of, Id](env, reactivePgAsyncPool) {
 
-  private val logger: Logger = Logger(s"PostgresRepo")
-
-  implicit val jsObjectFormat = new OFormat[JsObject] {
-    override def reads(json: JsValue): JsResult[JsObject] =
-      json.validate[JsObject](Reads.JsObjectReads)
-
-    override def writes(o: JsObject): JsObject = o
-  }
-
-  val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
+  private lazy val logger: Logger = Logger(s"PostgresRepo")
 
   override def find(
                      query: JsObject,
@@ -791,131 +784,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     }
   }
 
-  override def count(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Long] = {
-    logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
-
-    reactivePgAsyncPool
-      .queryOne(dsl =>
-        if (query.values.isEmpty)
-          dsl.resultQuery("SELECT COUNT(*) as count FROM {0}", DSL.table(tableName))
-        else
-          dsl.resultQuery("SELECT COUNT(*) as count FROM {0} WHERE {1}",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query))
-          )
-      )
-      .map(res => res.map(_.get("count", classOf[Long])).getOrElse(-1L))
-  }
-
   override def count()(implicit ec: ExecutionContext): Future[Long] = count(JsObject.empty)
-
-  def streamAllRaw(query: JsObject = Json.obj())(implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
-    logger.debug(s"$tableName.streamAllRaw()")
-
-    Source
-      .future(
-        reactivePgAsyncPool
-          .query(dsl => dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName)))
-          .map { res => JsArray(res.map(recordToJson))}
-      )
-  }
-
-  override def findOne(query: JsObject)(implicit ec: ExecutionContext): Future[Option[Of]] =
-    reactivePgAsyncPool
-      .queryOne(
-        dsl => dsl.resultQuery(
-          "SELECT * FROM {0} WHERE {1} LIMIT 1",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query)))
-      )
-      .map(getContentFromJson(_, format))
-
-  override def delete(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.delete(${Json.prettyPrint(query)})")
-
-    reactivePgAsyncPool
-      .execute(dsl =>
-        if (query.values.isEmpty)
-          dsl.resultQuery("DELETE FROM {0}", DSL.table(tableName))
-        else
-          dsl.resultQuery(
-            "DELETE FROM {0} WHERE {1}",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query))
-          )
-      )
-      .map(_ > 0)
-  }
-
-  override def save(query: JsObject, value: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.save(${Json.prettyPrint(query)})")
-
-    reactivePgAsyncPool.execute { dsl =>
-      if (value.keys.contains("_deleted"))
-        dsl
-          .resultQuery("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
-            "ON CONFLICT (_id) DO UPDATE " +
-            "set _deleted = {2}, content = {3}",
-            DSL.table(tableName),
-            DSL.inline((value \ "_id").as[String]),
-            DSL.inline((value \ "_deleted").as[Boolean]),
-            DSL.inline(value)
-          )
-      else
-        dsl
-          .resultQuery("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
-            DSL.table(tableName),
-            DSL.inline((value \ "_id").as[String]),
-            DSL.inline(value)
-          )
-    }
-      .map(_ > 0)
-  }
-
-  override def insertMany(values: Seq[Of])(
-    implicit ec: ExecutionContext): Future[Long] =
-    reactivePgAsyncPool.execute { dsl =>
-      val payloads = values.map(v => format.writes(v).as[JsObject])
-      dsl.resultQuery(
-        "INSERT INTO {0}(_id, content) VALUES{1}",
-        DSL.table(tableName),
-        DSL.table(payloads.map { payload =>
-          s"(${DSL.inline((payload \ "_id").as[String])}, ${DSL.inline(payload)})"
-        }
-          .mkString(","))
-      )
-    }
-      .map(_.asInstanceOf[Long])
-
-  override def updateMany(query: JsObject, value: JsObject)(
-    implicit ec: ExecutionContext): Future[Long] =
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("UPDATE {0} SET content = content || {1} WHERE {2}",
-        DSL.table(tableName),
-        DSL.inline(value),
-        DSL.table(convertQuery(query))
-      )
-    }
-      .map(_.asInstanceOf[Long])
-
-  override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-    implicit ec: ExecutionContext): Future[Long] = {
-    logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)}")
-
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("UPDATE {0} " +
-        "SET {1}" +
-        "WHERE {2}",
-        DSL.table(tableName),
-        DSL.inline(convertQuery(queryUpdate)),
-        DSL.table(convertQuery(query))
-      )
-    }
-      .map(_.asInstanceOf[Long])
-  }
 
   override def deleteByIdLogically(id: String)(
     implicit ec: ExecutionContext): Future[Boolean] = {
@@ -964,117 +833,18 @@ abstract class PostgresRepo[Of, Id <: ValueType](
       .map(_ > 0)
   }
 
-  override def exists(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("SELECT 1 FROM {0} WHERE {1}",
-        DSL.table(tableName),
-        DSL.table(convertQuery(query))
-      )
-    }
-      .map(_ > 0)
-
-  override def findWithProjection(query: JsObject, projection: JsObject)
-                                 (implicit ec: ExecutionContext): Future[Seq[JsObject]] =
-    reactivePgAsyncPool.query { dsl =>
-      logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
-      if (query.values.isEmpty) dsl.resultQuery(
-        "SELECT {1} FROM {0}",
-        DSL.table(tableName),
-        if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-      )
-      else
-        dsl.resultQuery(
-          "SELECT {2} FROM {0} WHERE {1}",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query)),
-          if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
-        )
-    }
-      .map(getContentsListFromJson(_, format))
-      .map(_.asInstanceOf[Seq[JsObject]])
-
-  override def findOneWithProjection(query: JsObject, projection: JsObject)
-                                    (implicit ec: ExecutionContext): Future[Option[JsObject]] = {
-    logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
-    reactivePgAsyncPool
-      .queryOne { dsl =>
-        if (query.values.isEmpty)
-          dsl.resultQuery(
-            "SELECT {1} FROM {0}",
-            DSL.table(tableName),
-            if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
-        else
-          dsl.resultQuery(
-            "SELECT {2} FROM {0} WHERE {1}",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query)),
-            if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
-      }
-      .map(getContentFromJson(_, format))
-      .asInstanceOf[Future[Option[JsObject]]]
-  }
-
   override def findWithPagination(query: JsObject, page: Int, pageSize: Int)
-                                 (implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
-    logger.debug(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
-    for {
-      count <- count(query)
-      queryRes <- {
-        reactivePgAsyncPool.query { dsl =>
-          if (query.values.isEmpty) dsl.resultQuery(
-            "SELECT * FROM {0} ORDER BY _id DESC LIMIT {1} OFFSET {2}",
-            DSL.table(tableName),
-            DSL.inline(pageSize),
-            DSL.inline(page * pageSize)
-          )
-          else
-            dsl.resultQuery(
-              "SELECT * FROM {0} WHERE {1} ORDER BY _id DESC LIMIT {2} OFFSET {3}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query)),
-              DSL.inline(pageSize),
-              DSL.inline(page * pageSize)
-            )
-        }
-          .map(getContentsListFromJson(_, format))
-      }
-    } yield {
-      (queryRes, count)
-    }
-  }
-
-  override def findMaxByQuery(query: JsObject, field: String)(
-    implicit ec: ExecutionContext): Future[Option[Long]] =
-    reactivePgAsyncPool.queryOne { dsl =>
-      dsl.resultQuery(
-        "SELECT MAX({2})::bigint as total " +
-          "FROM {0} " +
-          "WHERE {1}",
-        DSL.table(tableName),
-        DSL.table(convertQuery(query)),
-        DSL.table(s"content->>'$field'")
-      )
-    }
-      .map(res => res.map(_.get("total", classOf[Long])))
+                                 (implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
+    super.findWithPagination(query, page, pageSize)
 }
 
 abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
                                                              env: Env,
                                                              reactivePgAsyncPool: ReactivePgAsyncPool,
                                                              tenant: TenantId)
-  extends RepositoryPostgres[Of, Id] {
+  extends CommonRepo[Of, Id](env, reactivePgAsyncPool) {
 
   val logger: Logger = Logger(s"PostgresTenantAwareRepo")
-
-  implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
-    override def reads(json: JsValue): JsResult[JsObject] =
-      json.validate[JsObject](Reads.JsObjectReads)
-
-    override def writes(o: JsObject): JsObject = o
-  }
-
-  val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
   override def deleteByIdLogically(id: String)(
     implicit ec: ExecutionContext): Future[Boolean] = {
@@ -1173,69 +943,141 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     }
   }
 
-  def streamAllRaw(query: JsObject = Json.obj())(implicit ec: ExecutionContext): Source[JsValue, NotUsed] =
+  override def findOne(query: JsObject)(
+    implicit ec: ExecutionContext): Future[Option[Of]] = super.findOne(query ++ Json.obj("_tenant" -> tenant.value))
+
+  override def delete(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean] =
+    super.delete(query ++ Json.obj("_tenant" -> tenant.value))
+
+  override def insertMany(values: Seq[Of])(implicit ec: ExecutionContext): Future[Long] =
+    super.insertMany(values, Json.obj("_tenant" -> tenant.value))
+
+  override def exists(query: JsObject)(
+    implicit ec: ExecutionContext): Future[Boolean] = super.exists(query ++ Json.obj("_tenant" -> tenant.value))
+
+  override def count()(implicit ec: ExecutionContext): Future[Long] = count(Json.obj("_tenant" -> tenant.value))
+
+  override def findWithProjection(query: JsObject, projection: JsObject)
+                                 (implicit ec: ExecutionContext): Future[Seq[JsObject]] =
+    super.findWithProjection(query ++ Json.obj("_tenant" -> tenant.value), projection)
+
+  override def findOneWithProjection(query: JsObject, projection: JsObject)
+                                    (implicit ec: ExecutionContext): Future[Option[JsObject]] =
+    super.findOneWithProjection(query ++ Json.obj("_tenant" -> tenant.value), projection)
+}
+
+abstract class CommonRepo[Of, Id <: ValueType](env: Env,
+                                                reactivePgAsyncPool: ReactivePgAsyncPool)
+  extends RepositoryPostgres[Of, Id] {
+
+  private val logger = Logger("CommonMongoRepo")
+
+  val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
+
+  implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
+    override def reads(json: JsValue): JsResult[JsObject] =
+      json.validate[JsObject](Reads.JsObjectReads)
+
+    override def writes(o: JsObject): JsObject = o
+  }
+
+  override def count(query: JsObject)(
+    implicit ec: ExecutionContext): Future[Long] = {
+    logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
+    reactivePgAsyncPool
+      .queryOne(dsl =>
+        if (query.values.isEmpty)
+          dsl.resultQuery("SELECT COUNT(*) as count FROM {0}", DSL.table(tableName))
+        else
+          dsl.resultQuery("SELECT COUNT(*) as count FROM {0} WHERE {1}",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query))
+          )
+      )
+      .map(res => res.map(_.get("count", classOf[Long])).getOrElse(0L))
+  }
+
+  override def exists(query: JsObject)(
+    implicit ec: ExecutionContext): Future[Boolean] =
+    reactivePgAsyncPool.execute { dsl =>
+      dsl.resultQuery("SELECT 1 FROM {0} WHERE {1}",
+        DSL.table(tableName),
+        DSL.table(convertQuery(query))
+      )
+    }
+      .map(_ > 0)
+
+  override def streamAllRaw(query: JsObject = Json.obj())(implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
+    logger.debug(s"$tableName.streamAllRaw(${Json.prettyPrint(query)})")
+
     Source
       .future(
-        reactivePgAsyncPool.query { dsl =>
-          dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName))
-        }
-          .map(_.asInstanceOf[JsArray])
+        reactivePgAsyncPool
+          .query(dsl => dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName)))
+          .map { res => JsArray(res.map(recordToJson))}
       )
+  }
 
   override def findOne(query: JsObject)(
     implicit ec: ExecutionContext): Future[Option[Of]] =
-    reactivePgAsyncPool.queryOne { dsl =>
-      dsl.resultQuery(
-        "SELECT * FROM {0} WHERE {1} LIMIT 1",
-        DSL.table(tableName),
-        DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
-      )
-    }
-      .map(getContentFromJson(_, format))
-
-  override def delete(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.delete(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
-
-    reactivePgAsyncPool.execute { dsl =>
-      if (query.values.isEmpty)
-        dsl.resultQuery("DELETE FROM {0}", DSL.table(tableName))
-      else
-        dsl.resultQuery(
-          "DELETE FROM {0} WHERE {1}",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
+      reactivePgAsyncPool
+        .queryOne(
+          dsl => dsl.resultQuery(
+            "SELECT * FROM {0} WHERE {1} LIMIT 1",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query)))
         )
-    }
+        .map(getContentFromJson(_, format))
+
+  override def delete(query: JsObject)(
+    implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.debug(s"$tableName.delete(${Json.prettyPrint(query)})")
+
+    reactivePgAsyncPool
+      .execute(dsl =>
+        if (query.values.isEmpty)
+          dsl.resultQuery("DELETE FROM {0}", DSL.table(tableName))
+        else
+          dsl.resultQuery(
+            "DELETE FROM {0} WHERE {1}",
+            DSL.table(tableName),
+            DSL.table(convertQuery(query))
+          )
+      )
       .map(_ > 0)
   }
 
   override def save(query: JsObject, value: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.create(${Json.prettyPrint(query)}, ${Json.prettyPrint(value)})")
+    logger.debug(s"$tableName.save(${Json.prettyPrint(query)})")
+
     reactivePgAsyncPool.execute { dsl =>
       if (value.keys.contains("_deleted"))
-        dsl.resultQuery("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
-          "ON CONFLICT (_id) DO UPDATE " +
-          "set _deleted = {2}, content = {3}",
-          DSL.table(tableName),
-          DSL.inline((value \ "_id").as[String]),
-          DSL.inline((value \ "_deleted").as[Boolean]),
-          DSL.inline(value)
-        )
+        dsl
+          .resultQuery("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
+            "ON CONFLICT (_id) DO UPDATE " +
+            "set _deleted = {2}, content = {3}",
+            DSL.table(tableName),
+            DSL.inline((value \ "_id").as[String]),
+            DSL.inline((value \ "_deleted").as[Boolean]),
+            DSL.inline(value)
+          )
       else
-        dsl.resultQuery("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
-          DSL.table(tableName),
-          DSL.inline((value \ "_id").as[String]),
-          DSL.inline(value)
-        )
+        dsl
+          .resultQuery("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
+            DSL.table(tableName),
+            DSL.inline((value \ "_id").as[String]),
+            DSL.inline(value)
+          )
     }
       .map(_ > 0)
   }
 
-  override def insertMany(values: Seq[Of])(implicit ec: ExecutionContext): Future[Long] = {
+  def insertMany(values: Seq[Of], addToPayload: JsObject)(
+    implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.insertMany()")
     val payloads = values.map(v =>
-      format.writes(v).as[JsObject] ++ Json.obj("_tenant" -> tenant.value))
+      format.writes(v).as[JsObject] ++ addToPayload)
 
     reactivePgAsyncPool.execute { dsl =>
       dsl.resultQuery(
@@ -1249,6 +1091,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     }
       .map(_.asInstanceOf[Long])
   }
+
+  override def insertMany(values: Seq[Of])(
+    implicit ec: ExecutionContext): Future[Long] = insertMany(values, Json.obj())
 
   override def updateMany(query: JsObject, value: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
@@ -1280,16 +1125,6 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       .map(_.asInstanceOf[Long])
   }
 
-  override def exists(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("SELECT 1 FROM {0} WHERE {1}",
-        DSL.table(tableName),
-        DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value)))
-      )
-    }
-      .map(_ > 0)
-
   override def findMaxByQuery(query: JsObject, field: String)(
     implicit ec: ExecutionContext): Future[Option[Long]] = {
     logger.debug(s"$tableName.findMaxByQuery(${Json.prettyPrint(query)})")
@@ -1307,26 +1142,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       .map(_.map(res => res.get("total", classOf[Long])))
   }
 
-  override def count(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Long] = {
-    logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
-    reactivePgAsyncPool
-      .queryOne(dsl =>
-        if (query.values.isEmpty)
-          dsl.resultQuery("SELECT COUNT(*) as count FROM {0}", DSL.table(tableName))
-        else
-          dsl.resultQuery("SELECT COUNT(*) as count FROM {0} WHERE {1}",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query))
-          )
-      )
-      .map(res => res.map(_.get("count", classOf[Long])).getOrElse(-1L))
-  }
-
-  override def count()(implicit ec: ExecutionContext): Future[Long] = count(Json.obj("_tenant" -> tenant.value))
-
-  override def findWithProjection(query: JsObject, projection: JsObject)
-                                 (implicit ec: ExecutionContext): Future[Seq[JsObject]] =
+  override def findWithProjection(query: JsObject, projection: JsObject)(
+    implicit ec: ExecutionContext
+  ): Future[Seq[JsObject]] =
     reactivePgAsyncPool.query { dsl =>
       logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
       if (query.values.isEmpty) dsl.resultQuery(
@@ -1338,15 +1156,17 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         dsl.resultQuery(
           "SELECT {2} FROM {0} WHERE {1}",
           DSL.table(tableName),
-          DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))),
+          DSL.table(convertQuery(query)),
           if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
         )
     }
       .map(getContentsListFromJson(_, format))
       .map(_.asInstanceOf[Seq[JsObject]])
 
-  override def findOneWithProjection(query: JsObject, projection: JsObject)
-                                    (implicit ec: ExecutionContext): Future[Option[JsObject]] =
+  override def findOneWithProjection(query: JsObject, projection: JsObject)(
+    implicit ec: ExecutionContext
+  ): Future[Option[JsObject]] = {
+    logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
     reactivePgAsyncPool
       .queryOne { dsl =>
         if (query.values.isEmpty)
@@ -1358,38 +1178,40 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           dsl.resultQuery(
             "SELECT {2} FROM {0} WHERE {1}",
             DSL.table(tableName),
-            DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))),
+            DSL.table(convertQuery(query)),
             if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
       }
       .map(getContentFromJson(_, format))
       .asInstanceOf[Future[Option[JsObject]]]
+  }
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)
-                                 (implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
+    implicit ec: ExecutionContext
+  ): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
     for {
-        count <- count(query)
-        queryRes <- {
-          reactivePgAsyncPool.query { dsl =>
-            if (query.values.isEmpty) dsl.resultQuery(
-              "SELECT * FROM {0} ORDER BY _id DESC LIMIT {1} OFFSET {2}",
+      count <- count(query)
+      queryRes <- {
+        reactivePgAsyncPool.query { dsl =>
+          if (query.values.isEmpty) dsl.resultQuery(
+            "SELECT * FROM {0} ORDER BY _id DESC LIMIT {1} OFFSET {2}",
+            DSL.table(tableName),
+            DSL.inline(pageSize),
+            DSL.inline(page * pageSize)
+          )
+          else
+            dsl.resultQuery(
+              "SELECT * FROM {0} WHERE {1} ORDER BY _id DESC LIMIT {2} OFFSET {3}",
               DSL.table(tableName),
-              DSL.inline(pageSize),
-              DSL.inline(page * pageSize)
+              DSL.table(convertQuery(query)),
+              DSL.inline(pageSize.toString),
+              DSL.inline((page * pageSize).toString)
             )
-            else
-              dsl.resultQuery(
-                "SELECT * FROM {0} WHERE {1} ORDER BY _id DESC LIMIT {2} OFFSET {3}",
-                DSL.table(tableName),
-                DSL.table(convertQuery(query)),
-                DSL.inline(pageSize.toString),
-                DSL.inline((page * pageSize).toString)
-              )
-          }
-            .map(getContentsListFromJson(_, format))
         }
-      } yield {
-        (queryRes, count)
+          .map(getContentsListFromJson(_, format))
       }
+    } yield {
+      (queryRes, count)
+    }
   }
 }
