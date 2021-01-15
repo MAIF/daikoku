@@ -204,7 +204,7 @@ const ApiHomeComponent = ({
                   </span>
                 )}
               </li>
-              {!connectedUser.isGuest &&
+              {!connectedUser.isGuest && (
                 <li className="nav-item">
                   {api.swagger && api.testing.enabled && (
                     <Link
@@ -219,7 +219,7 @@ const ApiHomeComponent = ({
                     <span className={'nav-link disabled'}>Try it !</span>
                   )}
                 </li>
-              }
+              )}
             </ul>
           </div>
         </div>
