@@ -259,7 +259,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     jooqConfig
   )
 
-  def getSchema: String = configuration.getOptional[String]("daikoku.postgres.schema").getOrElse("default")
+  def getSchema: String = configuration.getOptional[String]("daikoku.postgres.schema").getOrElse("public")
 
   private val _tenantRepo: TenantRepo = new PostgresTenantRepo(env, reactivePgAsyncPool)
   private val _userRepo: UserRepo = new PostgresUserRepo(env, reactivePgAsyncPool)

@@ -61,9 +61,30 @@ or
 
 ## DB configuration
 
+> Choose database
+
+| name | type | default value  | description |
+| ---- |:----:| -------------- | ----- |
+|`daikoku.storage` | string | "mongo" | You can use mongo or postgres database |
+
+
+> Mongo configuration
+
 | name | type | default value  | description |
 | ---- |:----:| -------------- | ----- |
 |`mongodb.uri` | string | "mongodb://localhost:27017/daikoku" | the uri to mongdb datastore |
+
+
+> Postgres configuration
+
+| name | type | default value  | description |
+| ---- |:----:| -------------- | ----- |
+|`daikoku.postgres.port` | int | 5432 | the port used to connect to datastore |
+|`daikoku.postgres.host` | string | "localhost" | the host where datastore is |
+|`daikoku.postgres.database` | string | "default" | the name of the database |
+|`daikoku.postgres.username` | string | "postgres" | the user used to connect to database |
+|`daikoku.postgres.password` | string | "postgres" | the password used to connect to database |
+|`daikoku.postgres.schema` | string | "public" | the current schema |
 
 ## Play specific configuration
 
