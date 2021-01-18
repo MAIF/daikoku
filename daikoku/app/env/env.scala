@@ -270,6 +270,11 @@ class DaikokuEnv(ws: WSClient,
     def tryToInitDatastore(): Future[Unit] = {
       dataStore.isEmpty().map {
         case true =>
+          dataStore match {
+            case store: PostgresDataStore => Await.result(store.checkDatabase(), 10 seconds)
+            case _ =>
+          }
+
           config.init.data.from match {
             case Some(path)
                 if path.startsWith("http://") || path

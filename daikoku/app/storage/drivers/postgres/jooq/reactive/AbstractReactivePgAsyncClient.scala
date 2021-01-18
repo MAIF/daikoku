@@ -33,6 +33,11 @@ abstract class AbstractReactivePgAsyncClient[Client <: SqlClient](
     }
 
     p.future
+      .recover { u =>
+        logger.error(u.getMessage)
+      }
+
+    p.future
   }
 
   def toCompletionHandler[U](p: Promise[U]): Handler[AsyncResult[U]] =
@@ -45,13 +50,13 @@ abstract class AbstractReactivePgAsyncClient[Client <: SqlClient](
   override def queryOne[R <: Record](queryFunction: DSLContext => _ <: ResultQuery[R]):
   Future[Option[QueryResult]] =
     rawPreparedQuery(queryFunction)
-      .flatMap(res =>
+      .flatMap(res => {
         res.size() match {
           case 0 => Future.successful(None)
           case 1 => Future.successful(Some(new ReactiveRowQueryResult(res.iterator.next)))
           case _ => Future.failed(new TooManyRowsException(s"Found more than one row: ${res.size}"))
         }
-      )
+      })
 
   def query[R <: Record](queryFunction: DSLContext => _ <: ResultQuery[R]): Future[List[QueryResult]] =
     rawPreparedQuery(queryFunction).map(asList)

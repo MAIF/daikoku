@@ -113,9 +113,11 @@ package object modules {
       wire[Routes]
     }
 
-    verifier.start()
 //    statsJob.start()
+    verifier.start()
+
     env.onStartup()
+
     applicationLifecycle.addStopHook { () =>
       verifier.stop()
       statsJob.stop()

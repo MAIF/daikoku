@@ -1,9 +1,8 @@
 package storage.drivers.postgres
 
 import akka.NotUsed
-import akka.actor.ActorSystem
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
 import akka.util.ByteString
 import fr.maif.otoroshi.daikoku.domain._
@@ -14,16 +13,17 @@ import io.vertx.pgclient.{PgConnectOptions, PgPool}
 import io.vertx.sqlclient.PoolOptions
 import org.jooq.SQLDialect
 import org.jooq.impl.{DSL, DefaultConfiguration}
-import play.api.{Configuration, Environment, Logger}
+import play.api.{Configuration, Logger}
 import play.api.libs.json._
-import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
-import storage.drivers.mongo.RepositoryMongo
 import storage.drivers.postgres.Helper._
+import storage.drivers.postgres.jooq.api.QueryResult
 import storage.drivers.postgres.jooq.reactive.ReactivePgAsyncPool
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.immutable
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 trait RepositoryPostgres[Of, Id <: ValueType] extends Repo[Of, Id] {
@@ -196,15 +196,15 @@ case class PostgresTenantCapableConsumptionRepo(
       )
     }
       .flatMap(res =>
-          Future.sequence(
-            res.map(queryResult => findOne(
-              Json.obj(
-                "clientId" -> queryResult.get("clientid", classOf[String]),
-                "from" -> queryResult.get("maxfrom", classOf[Long])
-              ),
-              rep.tableName,
-              rep.format))
-          )
+        Future.sequence(
+          res.map(queryResult => findOne(
+            Json.obj(
+              "clientId" -> queryResult.get("clientid", classOf[String]),
+              "from" -> queryResult.get("maxfrom", classOf[Long])
+            ),
+            rep.tableName,
+            rep.format))
+        )
       )
       .map(r => r.flatten)
   }
@@ -249,7 +249,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     .setUser(configuration.getOptional[String]("daikoku.postgres.username").getOrElse("postgres"))
     .setPassword(configuration.getOptional[String]("daikoku.postgres.password").getOrElse("postgres"))
     .setProperties(Map(
-      "search_path" -> configuration.getOptional[String]("daikoku.postgres.schema").getOrElse("default")
+      "search_path" -> getSchema
     ).asJava)
 
   logger.info(s"used : ${options.getDatabase}")
@@ -258,6 +258,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     PgPool.pool(Vertx.vertx, options, poolOptions),
     jooqConfig
   )
+
+  def getSchema: String = configuration.getOptional[String]("daikoku.postgres.schema").getOrElse("default")
 
   private val _tenantRepo: TenantRepo = new PostgresTenantRepo(env, reactivePgAsyncPool)
   private val _userRepo: UserRepo = new PostgresUserRepo(env, reactivePgAsyncPool)
@@ -345,12 +347,71 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   override def stop(): Future[Unit] = Future.successful(())
 
   override def isEmpty(): Future[Boolean] = {
-    for {
-      tenants <- tenantRepo.count()
-    } yield {
-      tenants == 0
-    }
+    checkIfTenantsTableExists()
+      .flatMap {
+        case true => tenantRepo.count()
+        case false => Future.successful(0L)
+      }
+      .map(_ == 0)
   }
+
+  def checkIfTenantsTableExists(): Future[Boolean] = {
+    reactivePgAsyncPool
+      .queryOne( dsl =>
+        dsl.resultQuery("SELECT EXISTS (" +
+          "SELECT FROM information_schema.tables " +
+          "WHERE table_schema = {0} AND table_name = 'tenants')",
+          DSL.inline(getSchema))
+      )
+      .map(res => res.exists(_.get("exists", classOf[Boolean])))
+  }
+
+  def checkDatabase(): Future[Any] = {
+      reactivePgAsyncPool
+        .queryOne(dsl =>
+          dsl.resultQuery("SELECT COUNT(*) " +
+            "FROM information_schema.tables " +
+            "WHERE table_schema = {0}", DSL.inline(getSchema))
+        )
+        .map(res => res.map(_.get("count", classOf[Long])).getOrElse(0L))
+        .map(s => {
+          if (s == 0)
+            // Voluntarily wait for the future to avoid continuing the process without tables
+            Await.result(createDatabase(), 10 seconds)
+          s
+        })
+  }
+
+  def createDatabase() =
+    Future.sequence(
+      Map(
+      "tenants" -> true,
+      "password_reset" -> true,
+      "account_creation" -> true,
+      "teams" -> true,
+      "apis" -> true,
+      "translations" -> true,
+      "messages" -> false,
+      "api_subscriptions" -> true,
+      "api_documentation_pages" -> true,
+      "notifications" -> true,
+      "consumptions" -> true,
+      "audit_events" -> false,
+      "users" -> true,
+      "user_sessions" -> false
+    )
+      .map { case (key, value) => createTable(key, value) })
+
+  def createTable(table: String, allFields: Boolean): Future[Int] =
+    reactivePgAsyncPool.execute(dsl =>
+      dsl.resultQuery(s"CREATE TABLE {0}.{1} (" +
+        s"_id character varying PRIMARY KEY," +
+        s"{2}" +
+        s"content JSONB)",
+        DSL.table(s"${quotes}${DSL.table(getSchema)}$quotes"),
+        DSL.table(table),
+        DSL.table(if (allFields) "_deleted BOOLEAN," else "")))
+      .map(r => r)
 
   override def exportAsStream(pretty: Boolean)(
     implicit ec: ExecutionContext,
@@ -917,7 +978,6 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         }
           .map(getContentsListFromJson(_, format))
       case Some(s) =>
-        logger.error(s"$tableName.find($query - $sort)")
         reactivePgAsyncPool.query { dsl =>
           if (query.values.isEmpty)
             dsl.resultQuery(
@@ -967,7 +1027,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 }
 
 abstract class CommonRepo[Of, Id <: ValueType](env: Env,
-                                                reactivePgAsyncPool: ReactivePgAsyncPool)
+                                               reactivePgAsyncPool: ReactivePgAsyncPool)
   extends RepositoryPostgres[Of, Id] {
 
   private val logger = Logger("CommonMongoRepo")
@@ -1014,20 +1074,21 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
       .future(
         reactivePgAsyncPool
           .query(dsl => dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName)))
-          .map { res => JsArray(res.map(recordToJson))}
+          .map { res => JsArray(res.map(recordToJson)) }
       )
   }
 
   override def findOne(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
-      reactivePgAsyncPool
-        .queryOne(
-          dsl => dsl.resultQuery(
-            "SELECT * FROM {0} WHERE {1} LIMIT 1",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query)))
-        )
-        .map(getContentFromJson(_, format))
+    implicit ec: ExecutionContext): Future[Option[Of]] = {
+    reactivePgAsyncPool
+      .queryOne(
+        dsl => dsl.resultQuery(
+          "SELECT * FROM {0} WHERE {1} LIMIT 1",
+          DSL.table(tableName),
+          DSL.table(convertQuery(query)))
+      )
+      .map(getContentFromJson(_, format))
+  }
 
   override def delete(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {

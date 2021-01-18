@@ -1,7 +1,6 @@
 package fr.maif.otoroshi.daikoku.login
 
 import java.util.concurrent.TimeUnit
-
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import fr.maif.otoroshi.daikoku.domain._
@@ -14,6 +13,7 @@ import play.api.mvc._
 import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import play.api.Logger
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration.FiniteDuration
