@@ -1,7 +1,6 @@
 package fr.maif.otoroshi.daikoku.env
 
 import java.nio.file.Paths
-
 import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
@@ -16,12 +15,15 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
+import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
 import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoApi
-import storage.{DataStore, MongoDataStore}
+import storage.drivers.mongo.MongoDataStore
+import storage.drivers.postgres.PostgresDataStore
+import storage.DataStore
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -227,7 +229,7 @@ sealed trait Env {
 class DaikokuEnv(ws: WSClient,
                  val environment: Environment,
                  configuration: Configuration,
-                 reactiveMongoApi: ReactiveMongoApi,
+                 context: Context,
                  messagesApi: MessagesApi)
     extends Env {
 
@@ -241,7 +243,14 @@ class DaikokuEnv(ws: WSClient,
     actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
 
   private val daikokuConfig = new Config(configuration)
-  private val mongoDataStore = new MongoDataStore(this, reactiveMongoApi)
+
+  private lazy val _dataStore: DataStore =
+    configuration.getOptional[String]("daikoku.storage").getOrElse("mongo") match {
+      case "mongo"              => new MongoDataStore(context, this)
+      case "postgres"           => new PostgresDataStore(configuration, this)
+      case e                   => throw new RuntimeException(s"Bad storage value from conf: $e")
+    }
+
   private val s3assetsStore =
     new AssetsDataStore(actorSystem)(actorSystem.dispatcher, materializer)
 
@@ -249,7 +258,7 @@ class DaikokuEnv(ws: WSClient,
     actorSystem.dispatcher
   override def defaultActorSystem: ActorSystem = actorSystem
   override def defaultMaterializer: Materializer = materializer
-  override def dataStore: DataStore = mongoDataStore
+  override def dataStore: DataStore = _dataStore
   override def wsClient: WSClient = ws
   override def config: Config = daikokuConfig
   override def assetsStore: AssetsDataStore = s3assetsStore
@@ -261,6 +270,11 @@ class DaikokuEnv(ws: WSClient,
     def tryToInitDatastore(): Future[Unit] = {
       dataStore.isEmpty().map {
         case true =>
+          dataStore match {
+            case store: PostgresDataStore => Await.result(store.checkDatabase(), 10 seconds)
+            case _ =>
+          }
+
           config.init.data.from match {
             case Some(path)
                 if path.startsWith("http://") || path
@@ -424,7 +438,7 @@ class DaikokuEnv(ws: WSClient,
       }
     }
 
-    mongoDataStore.start()
+    dataStore.start()
 
     Source
       .tick(1.second, 5.seconds, ())
@@ -442,7 +456,7 @@ class DaikokuEnv(ws: WSClient,
 
   override def onShutdown(): Unit = {
     implicit val ec: ExecutionContext = defaultExecutionContext
-    mongoDataStore.stop()
+    dataStore.stop()
     auditActor ! PoisonPill
     Await.result(actorSystem.terminate(), 20.seconds)
   }

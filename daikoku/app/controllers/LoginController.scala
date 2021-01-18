@@ -94,7 +94,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                                    tenant)
       case Some(user) =>
         val session = UserSession(
-          id = MongoId(BSONObjectID.generate().stringify),
+          id = DatastoreId(BSONObjectID.generate().stringify),
           userId = user.id,
           userName = user.name,
           userEmail = user.email,
@@ -306,7 +306,7 @@ class LoginController(DaikokuAction: DaikokuAction,
             val randomId = IdGenerator.token(128)
             env.dataStore.accountCreationRepo
               .save(AccountCreation(
-                id = MongoId(BSONObjectID.generate().stringify),
+                id = DatastoreId(BSONObjectID.generate().stringify),
                 randomId = randomId,
                 email = email,
                 name = name,
@@ -429,7 +429,7 @@ class LoginController(DaikokuAction: DaikokuAction,
           case Right(_) => {
             val randomId = IdGenerator.token(128)
             env.dataStore.passwordResetRepo.save(PasswordReset(
-              id = MongoId(BSONObjectID.generate().stringify),
+              id = DatastoreId(BSONObjectID.generate().stringify),
               randomId = randomId,
               email = email,
               password = BCrypt.hashpw(password1, BCrypt.gensalt()),

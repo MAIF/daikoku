@@ -253,7 +253,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                                       from,
                                       to)
             cons = ApiKeyConsumption(
-              id = MongoId(BSONObjectID.generate().stringify),
+              id = DatastoreId(BSONObjectID.generate().stringify),
               tenant = tenant.id,
               team = subscription.team,
               api = api.id,

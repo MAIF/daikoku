@@ -2,17 +2,11 @@ package fr.maif.otoroshi.daikoku
 
 import java.security.SecureRandom
 import java.util.regex.Pattern
-
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
@@ -27,10 +21,6 @@ import play.api.i18n.I18nSupport
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc._
 import play.api.routing.Router
-import play.modules.reactivemongo.{
-  ReactiveMongoApi,
-  ReactiveMongoApiFromContext
-}
 import router.Routes
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -47,13 +37,10 @@ class DaikokuLoader extends ApplicationLoader {
 package object modules {
 
   class DaikokuComponentsInstances(context: Context)
-      extends ReactiveMongoApiFromContext(context)
-      //with BuiltInComponentsFromContext(context)
+      extends BuiltInComponentsFromContext(context)
       with AssetsComponents
       with AhcWSComponents
       with I18nSupport {
-
-    implicit lazy val reactiveMongo: ReactiveMongoApi = reactiveMongoApi
 
     implicit lazy val env: Env = wire[DaikokuEnv]
 
@@ -126,9 +113,11 @@ package object modules {
       wire[Routes]
     }
 
-    verifier.start()
 //    statsJob.start()
+    verifier.start()
+
     env.onStartup()
+
     applicationLifecycle.addStopHook { () =>
       verifier.stop()
       statsJob.stop()

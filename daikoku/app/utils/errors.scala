@@ -41,7 +41,8 @@ object Errors {
                           req: RequestHeader,
                           maybeCauseId: Option[String] = None,
                           env: Env,
-                          tenant: Tenant = defaultTenant): Future[Result] = {
+                          tenant: Tenant =
+                          defaultTenant): Future[Result] = {
 
     val accept =
       req.headers.get("Accept").getOrElse("text/html").split(",").toSeq

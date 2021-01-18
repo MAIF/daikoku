@@ -14,7 +14,7 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
   PublicUserAccess,
   TenantAdminOnly
 }
-import fr.maif.otoroshi.daikoku.domain.{Message, MessageType, MongoId, UserId}
+import fr.maif.otoroshi.daikoku.domain.{Message, MessageType, DatastoreId, UserId}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.messages._
 import org.joda.time.DateTime
@@ -60,7 +60,7 @@ class MessageController(DaikokuAction: DaikokuAction,
         (body \ "chat").asOpt[String].map(UserId).getOrElse(ctx.user.id)
 
       val message = Message(
-        id = MongoId(BSONObjectID.generate().stringify),
+        id = DatastoreId(BSONObjectID.generate().stringify),
         tenant = ctx.tenant.id,
         messageType = MessageType.Tenant(ctx.tenant.id), //todo: update it when user can send messages to team admins
         sender = ctx.user.id,
