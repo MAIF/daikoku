@@ -32,8 +32,9 @@ const ApiDescription = ({ api }) => {
   );
 };
 
-const ApiHeader = ({api, ownerTeam, redirectToEditPage}) => {
-  const handleBtnEditClick = () => redirectToEditPage(api);
+const ApiHeader = ({api, ownerTeam, editUrl, history}) => {
+  const handleBtnEditClick = () => history.push(editUrl);
+  
   useEffect(() => {
     var els = document.querySelectorAll('.btn-edit');
     
@@ -47,11 +48,11 @@ const ApiHeader = ({api, ownerTeam, redirectToEditPage}) => {
 
 
   const EditButton = () => <Can I={manage} a={API} team={ownerTeam}>
-    <a href="#" className="team__settings ml-2" onClick={() => redirectToEditPage(api)}>
+    <Link to={editUrl} className="team__settings ml-2">
       <button type="button" className="btn btn-sm btn-access-negative">
         <i className="fas fa-edit" />
       </button>
-    </a>
+    </Link>
   </Can>;
 
   if (api.header) {
@@ -168,9 +169,9 @@ const ApiHomeComponent = ({
       .then(() => updateSubscriptions(api._id, match.params.teamId));
   };
 
-  const redirectToEditPage = (api) => {
+  const editUrl = (api) => {
     const adminTeam = myTeams.find((team) => api.team === team._id);
-    history.push(`/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`);
+    return `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`;
   };
 
   if (!api || !ownerTeam) {
@@ -188,7 +189,7 @@ const ApiHomeComponent = ({
 
   return (
     <main role="main" className="row">
-      <ApiHeader api={api} ownerTeam={ownerTeam} redirectToEditPage={redirectToEditPage}/>
+      <ApiHeader api={api} ownerTeam={ownerTeam} editUrl={editUrl(api)} history={history}/>
       <div className="container">
         <div className="row">
           <div className="col mt-3 onglets">
