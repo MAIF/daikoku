@@ -74,6 +74,8 @@ libraryDependencies ++= Seq(
   "commons-logging" % "commons-logging" % "1.1.1",
 )
 
+dependencyOverrides += "io.netty" % "netty-handler" % "4.1.58.Final"
+
 scalacOptions ++= Seq(
   "-feature",
   "-language:higherKinds",
