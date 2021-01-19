@@ -29,7 +29,8 @@ abstract class AbstractReactivePgAsyncClient[Client <: SqlClient](
     val p = Promise[RowSet[Row]]
 
     Future {
-      client.query(query.getSQL, toCompletionHandler(p))
+      client.query(query.getSQL)
+        .execute(toCompletionHandler(p))
     }
 
     p.future
@@ -80,7 +81,8 @@ abstract class AbstractReactivePgAsyncClient[Client <: SqlClient](
     val prom = Promise[RowSet[Row]]
 
     Future {
-      client.query(query.getSQL, toCompletionHandler(prom))
+      client.query(query.getSQL)
+        .execute(toCompletionHandler(prom))
     }
 
     prom.future.map(_.rowCount)

@@ -59,7 +59,7 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "42.2.18",
   "org.jooq" % "jooq" % "3.14.4",
   "org.jooq" % "jooq-meta" % "3.14.4",
-  "io.vertx" % "vertx-pg-client" % "3.9.5",
+  "io.vertx" % "vertx-pg-client" % "4.0.0",
 
   "org.reactivemongo" %% "play2-reactivemongo" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",

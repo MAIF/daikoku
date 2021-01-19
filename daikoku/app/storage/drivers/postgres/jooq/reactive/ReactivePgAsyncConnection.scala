@@ -2,7 +2,7 @@ package storage.drivers.postgres.jooq.reactive
 
 import io.vertx.sqlclient.SqlConnection
 import org.jooq.Configuration
-import storage.drivers.postgres.jooq.api.{PgAsyncConnection, PgAsyncTransaction}
+import storage.drivers.postgres.jooq.api.PgAsyncConnection
 
 import scala.concurrent.{Future, Promise}
 import scala.util.Success
@@ -15,9 +15,5 @@ class ReactivePgAsyncConnection(client: SqlConnection, configuration: Configurat
     val p = Promise[Any]
     client.closeHandler(_ => p.complete(Success(())))
     p.future
-  }
-
-  override def begin: Future[PgAsyncTransaction] = {
-    Future.successful(new ReactivePgAsyncTransaction(client.begin(), configuration))
   }
 }
