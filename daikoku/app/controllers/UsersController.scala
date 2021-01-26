@@ -27,7 +27,9 @@ class UsersController(DaikokuAction: DaikokuAction,
 
   def allTenantUsers() = DaikokuAction.async { ctx =>
     TenantAdminOnly(
-      AuditTrailEvent("@{user.name} has accessed all users list"))(ctx.tenant.id.value, ctx) { (_, _) =>
+      AuditTrailEvent("@{user.name} has accessed all users list"))(
+      ctx.tenant.id.value,
+      ctx) { (_, _) =>
       env.dataStore.userRepo.findAllNotDeleted().map { users =>
         Ok(JsArray(users.map(_.asSimpleJson)))
       }
@@ -59,7 +61,8 @@ class UsersController(DaikokuAction: DaikokuAction,
                 Conflict(Json.obj("error" -> "user have already this status")))
             case Some(user) =>
               val userToSave = user.copy(isDaikokuAdmin = isDaikokuAdmin)
-              env.dataStore.userRepo.save(userToSave)
+              env.dataStore.userRepo
+                .save(userToSave)
                 .map(_ => Ok(userToSave.asJson))
             case None =>
               FastFuture.successful(

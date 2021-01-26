@@ -32,35 +32,36 @@ const ApiDescription = ({ api }) => {
   );
 };
 
-const ApiHeader = ({api, ownerTeam, editUrl, history}) => {
+const ApiHeader = ({ api, ownerTeam, editUrl, history }) => {
   const handleBtnEditClick = () => history.push(editUrl);
-  
+
   useEffect(() => {
     //fo custom header component
     var els = document.querySelectorAll('.btn-edit');
-    
+
     if (els.length) {
-      els.forEach(el => el.addEventListener('click', handleBtnEditClick, false));
+      els.forEach((el) => el.addEventListener('click', handleBtnEditClick, false));
       return () => {
-        els.forEach(el => el.removeEventListener('click', handleBtnEditClick, false));
+        els.forEach((el) => el.removeEventListener('click', handleBtnEditClick, false));
       };
     }
   }, []);
 
-
-  const EditButton = () => <Can I={manage} a={API} team={ownerTeam}>
-    <Link to={editUrl} className="team__settings ml-2">
-      <button type="button" className="btn btn-sm btn-access-negative">
-        <i className="fas fa-edit" />
-      </button>
-    </Link>
-  </Can>;
+  const EditButton = () => (
+    <Can I={manage} a={API} team={ownerTeam}>
+      <Link to={editUrl} className="team__settings ml-2">
+        <button type="button" className="btn btn-sm btn-access-negative">
+          <i className="fas fa-edit" />
+        </button>
+      </Link>
+    </Can>
+  );
 
   if (api.header) {
     const apiHeader = api.header
       .replace('{{title}}', api.name)
       .replace('{{description}}', api.smallDescription);
-    
+
     return (
       <section className="api__header col-12 mb-4">
         <div
@@ -115,7 +116,7 @@ const ApiHomeComponent = ({
       Services.getVisibleApi(apiId),
       Services.getMySubscriptions(apiId),
       Services.myTeams(),
-    ]).then(([api, {subscriptions, requests}, teams]) => {
+    ]).then(([api, { subscriptions, requests }, teams]) => {
       if (api.error) {
         setError({ error: { status: 404, message: api.error } });
       } else {
@@ -171,8 +172,10 @@ const ApiHomeComponent = ({
   };
 
   const editUrl = (api) => {
-    return Option(myTeams.find((team) => api.team === team._id))
-      .fold(() => '#', adminTeam => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`);
+    return Option(myTeams.find((team) => api.team === team._id)).fold(
+      () => '#',
+      (adminTeam) => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`
+    );
   };
 
   if (!api || !ownerTeam) {
@@ -190,7 +193,7 @@ const ApiHomeComponent = ({
 
   return (
     <main role="main" className="row">
-      <ApiHeader api={api} ownerTeam={ownerTeam} editUrl={editUrl(api)} history={history}/>
+      <ApiHeader api={api} ownerTeam={ownerTeam} editUrl={editUrl(api)} history={history} />
       <div className="container">
         <div className="row">
           <div className="col mt-3 onglets">

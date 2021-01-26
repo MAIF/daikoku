@@ -75,8 +75,13 @@ export class TeamApiInfo extends Component {
       type: 'markdown',
       props: {
         label: t('Custom header', this.props.currentLanguage),
-        help: t('api.custom.header.help', this.props.currentLanguage, false, `Use {{title}} to insert API title, {{ description }} to insert API small description.
-         Add "btn-edit" class to link to admin API edition admin page.`)
+        help: t(
+          'api.custom.header.help',
+          this.props.currentLanguage,
+          false,
+          `Use {{title}} to insert API title, {{ description }} to insert API small description.
+         Add "btn-edit" class to link to admin API edition admin page.`
+        ),
       },
     },
     currentVersion: {
