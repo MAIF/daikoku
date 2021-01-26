@@ -127,3 +127,15 @@ We'd like to thank all the contributors who worked on this release!
 - Team edition page is crashing [#207](https://github.com/MAIF/daikoku/issues/207)
 - Subscription metadata modal crashe [#206](https://github.com/MAIF/daikoku/issues/206)
 
+## [v1.0.16] - 2021-01-26
+
+## :star: New Features
+
+- Customize API header page [#210](https://github.com/MAIF/daikoku/issues/210)
+
+## :beetle: Bug Fixes
+
+- Tenant admin message issues [#213](https://github.com/MAIF/daikoku/issues/213)
+- Sidebar in userBackOffice is hide when user is tenant admin [#212](https://github.com/MAIF/daikoku/issues/212)
+- Some title are rendered twice [#209](https://github.com/MAIF/daikoku/issues/209)
+
