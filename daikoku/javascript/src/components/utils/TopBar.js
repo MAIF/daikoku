@@ -398,7 +398,7 @@ export class TopBarComponent extends Component {
                     title={t('Access to the notifications', this.props.currentLanguage)}>
                     <i className="fas fa-bell" />
                   </Link>
-                  {this.props.connectedUser.isDaikokuAdmin && (
+                  {(this.props.connectedUser.isDaikokuAdmin || this.props.isTenantAdmin) && (
                     <MessagesTopBarTools
                       currentLanguage={this.props.currentLanguage}
                       connectedUser={this.props.connectedUser}

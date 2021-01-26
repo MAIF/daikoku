@@ -26,8 +26,8 @@ class UsersController(DaikokuAction: DaikokuAction,
   implicit val ev = env
 
   def allTenantUsers() = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(
-      AuditTrailEvent("@{user.name} has accessed all users list"))(ctx) {
+    TenantAdminOnly(
+      AuditTrailEvent("@{user.name} has accessed all users list"))(ctx.tenant.id.value, ctx) { (_, _) =>
       env.dataStore.userRepo.findAllNotDeleted().map { users =>
         Ok(JsArray(users.map(_.asSimpleJson)))
       }
@@ -58,34 +58,9 @@ class UsersController(DaikokuAction: DaikokuAction,
               FastFuture.successful(
                 Conflict(Json.obj("error" -> "user have already this status")))
             case Some(user) =>
-              env.dataStore.teamRepo
-                .forTenant(ctx.tenant)
-                .findOneNotDeleted(Json.obj("type" -> "Admin"))
-                .flatMap {
-                  case Some(adminTeam) =>
-                    val userToSave = user.copy(isDaikokuAdmin = isDaikokuAdmin)
-                    val admins: Set[UserWithPermission] =
-                      if (isDaikokuAdmin)
-                        adminTeam.users + UserWithPermission(
-                          user.id,
-                          TeamPermission.Administrator)
-                      else
-                        adminTeam.users - UserWithPermission(
-                          user.id,
-                          TeamPermission.Administrator)
-
-                    for {
-                      _ <- env.dataStore.userRepo.save(userToSave)
-                      _ <- env.dataStore.teamRepo
-                        .forTenant(ctx.tenant)
-                        .save(adminTeam.copy(users = admins))
-                    } yield {
-                      Ok(userToSave.asJson)
-                    }
-                  case None =>
-                    FastFuture.successful(BadRequest(Json.obj(
-                      "error" -> "No admin team found, please contact support")))
-                }
+              val userToSave = user.copy(isDaikokuAdmin = isDaikokuAdmin)
+              env.dataStore.userRepo.save(userToSave)
+                .map(_ => Ok(userToSave.asJson))
             case None =>
               FastFuture.successful(
                 NotFound(Json.obj("error" -> "User not found")))
