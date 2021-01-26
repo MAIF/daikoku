@@ -56,7 +56,7 @@ describe('teams page', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Teams').click()
       .url().should('include', '/settings/teams')
-      .get('.avatar-with-action').should('have.length', 5)
+      .get('.avatar-with-action').should('have.length', 6)
       .visit('http://localhost:9000/settings/teams/consumers/members')
       .get('.avatar-with-action').should('have.length', 1)
       .visit('http://localhost:9000/settings/teams/consumers')
@@ -80,7 +80,7 @@ describe('users page', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Users').click()
       .url().should('include', '/settings/users')
-      .get('.avatar-with-action').should('have.length', 2)
+      .get('.avatar-with-action').should('have.length', 3)
       .visit('http://localhost:9000/settings/users/adminfoobar')
       .get('main h1').should('have.text', 'Admin - admin@foo.bar');
   });

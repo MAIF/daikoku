@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import * as Services from '../../../services';
 import { ApiCartidge, ApiConsole, ApiDocumentation, ApiPricing, ApiSwagger, ApiRedoc } from '.';
 import { converter } from '../../../services/showdown';
-import { Can, manage, api as API } from '../../utils';
+import { Can, manage, api as API, Option } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal } from '../../../core';
 
@@ -36,6 +36,7 @@ const ApiHeader = ({api, ownerTeam, editUrl, history}) => {
   const handleBtnEditClick = () => history.push(editUrl);
   
   useEffect(() => {
+    //fo custom header component
     var els = document.querySelectorAll('.btn-edit');
     
     if (els.length) {
@@ -100,8 +101,8 @@ const ApiHomeComponent = ({
   const [myTeams, setMyTeams] = useState([]);
 
   useEffect(() => {
-    updateSubscriptions(match.params.apiId, match.params.teamId);
-  }, [match.params.apiId, match.params.teamId]);
+    updateSubscriptions(match.params.apiId);
+  }, [match.params.apiId]);
 
   useEffect(() => {
     if (api) {
@@ -109,18 +110,18 @@ const ApiHomeComponent = ({
     }
   }, [api]);
 
-  const updateSubscriptions = (apiId, teamId) => {
+  const updateSubscriptions = (apiId) => {
     Promise.all([
       Services.getVisibleApi(apiId),
-      Services.apiSubscriptions(apiId, teamId),
+      Services.getMySubscriptions(apiId),
       Services.myTeams(),
-    ]).then(([api, subscriptions, teams]) => {
+    ]).then(([api, {subscriptions, requests}, teams]) => {
       if (api.error) {
         setError({ error: { status: 404, message: api.error } });
       } else {
         setApi(api);
         setSubscriptions(subscriptions);
-        setPendingSubscriptions(api.pendingRequests);
+        setPendingSubscriptions(requests);
         setMyTeams(teams);
       }
     });
@@ -166,12 +167,12 @@ const ApiHomeComponent = ({
           }
         });
       })
-      .then(() => updateSubscriptions(api._id, match.params.teamId));
+      .then(() => updateSubscriptions(api._id));
   };
 
   const editUrl = (api) => {
-    const adminTeam = myTeams.find((team) => api.team === team._id);
-    return `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`;
+    return Option(myTeams.find((team) => api.team === team._id))
+      .fold(() => '#', adminTeam => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`);
   };
 
   if (!api || !ownerTeam) {
@@ -272,7 +273,6 @@ const ApiHomeComponent = ({
                 api={api}
                 subscriptions={subscriptions}
                 askForApikeys={(teams, plan) => askForApikeys(teams, plan)}
-                pendingSubscriptions={pendingSubscriptions}
                 currentLanguage={currentLanguage}
                 tenant={tenant}
                 openContactModal={() =>
