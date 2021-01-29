@@ -54,7 +54,7 @@ abstract class AbstractReactivePgAsyncClient[Client <: SqlClient](
       .flatMap(res => {
         res.size() match {
           case 0 => Future.successful(None)
-          case 1 => Future.successful(Some(new ReactiveRowQueryResult(res.iterator.next)))
+          case 1 => Future.successful(Some(ReactiveRowQueryResult(res.iterator.next)))
           case _ => Future.failed(new TooManyRowsException(s"Found more than one row: ${res.size}"))
         }
       })
@@ -68,7 +68,7 @@ abstract class AbstractReactivePgAsyncClient[Client <: SqlClient](
     StreamSupport
       .stream(result.spliterator(), false)
       .forEach { o =>
-        out = out :+ new ReactiveRowQueryResult(o)
+        out = out :+ ReactiveRowQueryResult(o)
       }
 
     out

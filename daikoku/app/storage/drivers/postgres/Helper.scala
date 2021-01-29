@@ -1,9 +1,10 @@
 package storage.drivers.postgres
 
-import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import play.api.Logger
 import play.api.libs.json._
 import storage.drivers.postgres.jooq.api.QueryResult
+
+import scala.annotation.tailrec
 
 object Helper {
 
@@ -17,7 +18,7 @@ object Helper {
   }
 
   private def _removeQuotes(str: Any): String = str.toString
-    .replace("\"", "")
+    .replace(quotes, "")
 
   private def _manageProperty(key: String, jsValue: JsValue): String = {
     val value = _removeQuotes(jsValue)
@@ -27,7 +28,7 @@ object Helper {
     if (key.contains(".")) {
       val parts = key.split("\\.")
       if (parts.length > 2)
-        throw new NotImplementedException("Queries with three dots in the property are not supported")
+        throw new UnsupportedOperationException("Queries with three dots in the property are not supported")
 
       out = s"(content->'${_removeQuotes(parts(0))}' @> '[{$quotes${parts(1)}$quotes : $quotes$value$quotes}]' OR " +
         s"content->'${_removeQuotes(parts(0))}' @> '{$quotes${parts(1)}$quotes : $quotes$value$quotes}')"
@@ -35,6 +36,16 @@ object Helper {
       out = s"(content->>'$key' = '$value' OR content->'$key' @> '$quotes$value$quotes')"
 
     out.replace("= 'null'", "is null")
+  }
+
+  @tailrec
+  private def convertRegexOperator(key: String, regex: String): String = {
+    regex match {
+      case "%%" => "1 = 1"
+      case value if value.startsWith("^") => convertRegexOperator(key, s"${regex.substring(1)}%")
+      case value if value.endsWith("$") => convertRegexOperator(key, s"%${regex.substring(1)}")
+      case value => s"content->>'$key' LIKE ${value.replace(".", "%")}"
+    }
   }
 
   private def _convertTuple(field: (String, JsValue)): String = {
@@ -54,10 +65,9 @@ object Helper {
           case Some((key: String, _: JsValue)) if key == "$nin" =>
             s"content->>'${field._1}' NOT IN ${_convertTuple(value.fields.head)}"
 
-          case Some((key: String, _: JsValue)) if key == "$regex" =>
-            val regex = value.fields.head._2.as[String].replaceAll(".*", "%")
-            if (regex == "%%") "1 = 1"
-            else  s"content->>'${field._1}' LIKE $regex"
+          case Some((key: String, _: JsValue)) if key == "$regex" => convertRegexOperator(
+            field._1, value.fields.head._2.as[String].replaceAll(".*", "%")
+          )
 
           case Some((key: String, _: JsValue)) if key == "$options" =>
             "1 = 1"
@@ -70,6 +80,9 @@ object Helper {
 
           case Some((key: String, _: JsValue)) if key == "$lt" =>
             s"(content->>'${field._1}')::bigint < ${_convertTuple(value.fields.head)}"
+
+          case Some((key: String, _: JsValue)) if key == "$lt" =>
+            s"(content->>'${field._1}')::bigint > ${_convertTuple(value.fields.head)}"
 
           case Some((key: String, _: JsValue)) if key == "$and" =>
             _convertTuple(value.fields.head)
@@ -92,6 +105,7 @@ object Helper {
       case value: JsArray if field._1 == "$nin" => _inOperatorToString(value.as[List[String]])
       case value: JsValue if field._1 == "$lte" => value.toString
       case value: JsValue if field._1 == "$gte" => value.toString
+      case value: JsValue if field._1 == "$gt" => value.toString
       case value: JsValue if field._1 == "$lt" => value.toString
       case value: JsValue if field._1 == "$ne" => value.toString
       case value: JsArray if field._1 == "$and" => value.as[List[JsObject]].map(convertQuery).mkString(" AND ")
@@ -130,5 +144,5 @@ object Helper {
         }
   }
 
-  var quotes = "\""
+  val quotes = "\""
 }

@@ -739,8 +739,6 @@ abstract class MongoRepo[Of, Id <: ValueType](
       }
     }
 
-  override def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long] = super.count(query)
-
   override def deleteByIdLogically(id: String)(
     implicit ec: ExecutionContext): Future[Boolean] = super.deleteByIdLogically(id, Json.obj())
 

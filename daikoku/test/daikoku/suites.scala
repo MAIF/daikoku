@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import com.auth0.jwt.algorithms.Algorithm
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import com.themillhousegroup.scoup.Scoup
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._

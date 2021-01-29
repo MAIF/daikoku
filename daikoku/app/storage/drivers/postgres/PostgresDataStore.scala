@@ -18,12 +18,9 @@ import play.api.libs.json._
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
 import storage.drivers.postgres.Helper._
-import storage.drivers.postgres.jooq.api.QueryResult
 import storage.drivers.postgres.jooq.reactive.ReactivePgAsyncPool
 
-import scala.collection.immutable
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 trait RepositoryPostgres[Of, Id <: ValueType] extends Repo[Of, Id] {
@@ -376,8 +373,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         .map(res => res.map(_.get("count", classOf[Long])).getOrElse(0L))
         .map(s => {
           if (s == 0)
-            // Voluntarily wait for the future to avoid continuing the process without tables
-            Await.result(createDatabase(), 10 seconds)
+            createDatabase()
           s
         })
   }
@@ -1030,7 +1026,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
                                                reactivePgAsyncPool: ReactivePgAsyncPool)
   extends RepositoryPostgres[Of, Id] {
 
-  private val logger = Logger("CommonMongoRepo")
+  private val logger = Logger("CommonPostgresRepo")
 
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
@@ -1211,14 +1207,14 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
       if (query.values.isEmpty) dsl.resultQuery(
         "SELECT {1} FROM {0}",
         DSL.table(tableName),
-        if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+        DSL.table(if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
       )
       else
         dsl.resultQuery(
           "SELECT {2} FROM {0} WHERE {1}",
           DSL.table(tableName),
           DSL.table(convertQuery(query)),
-          if (projection.values.isEmpty) "*" else projection.keys.mkString(",")
+          DSL.table(if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
         )
     }
       .map(getContentsListFromJson(_, format))

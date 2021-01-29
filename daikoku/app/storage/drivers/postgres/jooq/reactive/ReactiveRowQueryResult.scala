@@ -8,7 +8,7 @@ import storage.drivers.postgres.jooq.api.QueryResult
 
 import java.util
 
-class ReactiveRowQueryResult(current: Row) extends QueryResult {
+case class ReactiveRowQueryResult(current: Row) extends QueryResult {
 
   def get[T](field: Field[T]): T =
     handleValue(current.getValue(field.getName), field.getConverter).get
@@ -39,8 +39,8 @@ class ReactiveRowQueryResult(current: Row) extends QueryResult {
           return Some(Convert.convert(JSONB.valueOf(jsonObject.encode), converter))
     }
 
-    // Quand on lit un champ json avec la valeur null (la valeur JSON nulle, pas celle de la BDD)
-    // la valeur lue est juste un Object (pas une sous classe)
+    // When incoming null value (null JSON value, not the database null value)
+    // we'll read the value as an object (not a sub class)
     if (value.getClass == classOf[Any])
       return Some(JSON.valueOf("null").asInstanceOf[T])
 
