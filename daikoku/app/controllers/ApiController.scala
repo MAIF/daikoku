@@ -720,8 +720,8 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   }
 
-  def getMyTeamsApiSubscriptions(apiId: String) = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(ctx) {
+  def getMyTeamsApiSubscriptions(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(ctx) {
 
       def findSubscriptions(api: Api, teams: Seq[Team]): Future[Result] = {
         for {
@@ -742,7 +742,6 @@ class ApiController(DaikokuAction: DaikokuAction,
               )
             )
         } yield {
-
           Ok(
             Json.obj(
               "subscriptions" -> JsArray(
