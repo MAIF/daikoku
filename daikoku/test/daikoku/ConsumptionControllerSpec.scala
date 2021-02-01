@@ -324,10 +324,11 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       respConsumption.status mustBe 200
 
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
-        .as[Long] mustBe 3000L
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total")
-        .as[Long] mustBe 70L
+      val maybeConsumption = json.SeqConsumptionFormat.reads((respConsumption.json \ "consumptions").as[JsArray])
+      maybeConsumption.isSuccess mustBe true
+
+      maybeConsumption.get.head.billing.hits mustBe 1000L
+      maybeConsumption.get.head.billing.total mustBe 30L
 
     }
 
@@ -414,10 +415,11 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       respConsumption.status mustBe 200
 
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
-        .as[Long] mustBe 3000L
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total")
-        .as[Long] mustBe 70L
+      val maybeConsumption = json.SeqConsumptionFormat.reads((respConsumption.json \ "consumptions").as[JsArray])
+      maybeConsumption.isSuccess mustBe true
+
+      maybeConsumption.get.head.billing.hits mustBe 1000L
+      maybeConsumption.get.head.billing.total mustBe 30L
     }
 
     "sync team billing/consumptions" in {
@@ -501,11 +503,11 @@ class ConsumptionControllerSpec()
           s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$threeDayAgo&to=$to"
       )(tenant, session)
       respConsumption.status mustBe 200
+      val maybeConsumption = json.SeqConsumptionFormat.reads((respConsumption.json \ "consumptions").as[JsArray])
+      maybeConsumption.isSuccess mustBe true
 
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
-        .as[Long] mustBe 3000L
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total")
-        .as[Long] mustBe 70L
+      maybeConsumption.get.head.billing.hits mustBe 1000L
+      maybeConsumption.get.head.billing.total mustBe 30L
     }
 
     "sync team income/group consumption" in {
@@ -590,10 +592,11 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       respConsumption.status mustBe 200
 
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "hits")
-        .as[Long] mustBe 3000L
-      (respConsumption.json \ "consumptions" \ 1 \ "billing" \ "total")
-        .as[Long] mustBe 70L
+      val maybeConsumption = json.SeqConsumptionFormat.reads((respConsumption.json \ "consumptions").as[JsArray])
+      maybeConsumption.isSuccess mustBe true
+
+      maybeConsumption.get.head.billing.hits mustBe 1000L
+      maybeConsumption.get.head.billing.total mustBe 30L
     }
   }
 

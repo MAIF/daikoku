@@ -85,6 +85,7 @@ describe('Team back-office', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Team Income').click()
       .url().should('include', '/testers/settings/income')
+      .get('.month__and__total button.btn-access-negative').click()
       .get('.col.apis').should('be.visible')
       .get('.api__billing__card').click()
       .get('.col.apikeys h3').should('have.text', 'test API');
@@ -94,6 +95,7 @@ describe('Team back-office', () => {
     cy
       .get('nav#sidebar a.nav-link').contains('Team billing').click()
       .url().should('include', '/testers/settings/billing')
+      .get('.month__and__total button.btn-access-negative').click()
       .get('.col.apis').should('be.visible')
       .get('.api__billing__card').click()
       .get('.col.apikeys h3').should('have.text', 'test API');
