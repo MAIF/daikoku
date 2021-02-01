@@ -293,7 +293,7 @@ const ApiHomeComponent = ({
             )}
             {tab === 'pricing' && (
               <ApiPricing
-                userIsTenantAdmin={connectedUser.isDaikokuAdmin}
+                connectedUser={connectedUser}
                 api={api}
                 myTeams={myTeams}
                 ownerTeam={ownerTeam}

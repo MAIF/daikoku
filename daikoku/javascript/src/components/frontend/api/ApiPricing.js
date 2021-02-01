@@ -6,7 +6,7 @@ import { currencies } from '../../../services/currencies';
 import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { t, Translation } from '../../../locales';
-import { Can, access, apikey, getCurrencySymbol, formatCurrency } from '../../utils';
+import { Can, access, apikey, getCurrencySymbol, formatCurrency, BeautifulTitle } from '../../utils';
 
 const Curreny = ({ plan }) => {
   const cur = _.find(currencies, (c) => c.code === plan.currency.code);
@@ -259,6 +259,17 @@ export class ApiPricingCard extends Component {
                 )}
               </Can>
             )}
+            {this.props.connectedUser.isGuest && (
+              <BeautifulTitle title={t('get.apikey.requires.login', this.props.currentLanguage, false, 'Get an API key requires you to be logged in')} className="col-12">
+                <button type="button" className="btn btn-sm btn-access-negative col-12" disabled="disabled">
+                  <Translation
+                    i18nkey='Get API key'
+                    language={this.props.currentLanguage}>
+                    Get API key
+                </Translation>
+                </button>
+              </BeautifulTitle>
+            )}
           </div>
         </div>
       </div>
@@ -315,6 +326,7 @@ export class ApiPricing extends Component {
                     updateSubscriptions={this.props.updateSubscriptions}
                     currentLanguage={this.props.currentLanguage}
                     tenant={this.props.tenant}
+                    connectedUser={this.props.connectedUser}
                   />
                 </div>
               ))}
