@@ -267,6 +267,7 @@ export class TenantEditComponent extends Component {
     'authProviderSettings',
     'creationSecurity',
     'subscriptionSecurity',
+    'hideTeamsPage',
     `>>> ${t('Audit trail (Elastic)', this.props.currentLanguage)}`,
     'auditTrailConfig.elasticConfigs',
     `>>> ${t('Audit trail (Webhooks)', this.props.currentLanguage)}`,
@@ -562,6 +563,19 @@ export class TenantEditComponent extends Component {
           this.props.currentLanguage,
           false,
           'if enabled, personnal teams will not be able to subscribed to an API'
+        ),
+      },
+    },
+    hideTeamsPage: {
+      type: 'bool',
+      props: {
+        currentLanguage: this.props.currentLanguage,
+        label: t('Hide teams page', this.props.currentLanguage),
+        help: t(
+          'hide.teams.page.help',
+          this.props.currentLanguage,
+          false,
+          'if enabled, /teams will be inaccessible'
         ),
       },
     },

@@ -225,10 +225,14 @@ export class TopBarComponent extends Component {
         <Link className="dropdown-item" to={'/settings/me'}>
           <i className="fas fa-user" /> {t('My profile', this.props.currentLanguage)}
         </Link>
-        <div className="dropdown-divider" />
-        <Link className="dropdown-item" to={'/teams'}>
-          <i className="fas fa-users" /> {t('All teams', this.props.currentLanguage)}
-        </Link>
+        {!this.props.tenant.hideTeamsPage && (
+          <>
+              <div className="dropdown-divider" />
+              <Link className="dropdown-item" to={'/teams'}>
+                <i className="fas fa-users" /> {t('All teams', this.props.currentLanguage)}
+              </Link>
+          </>
+        )}
         <div className="dropdown-divider" />
         <Can I={manage} a={tenant}>
           <Link className="dropdown-item" to={'/settings/teams'}>

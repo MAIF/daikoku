@@ -174,7 +174,9 @@ const TeamBackOfficeComponent = ({
   // }
 
   useEffect(() => {
-    document.title = title;
+    if (title) {
+      document.title = title;
+    }
   }, [title]);
 
   if (!currentTeam) {

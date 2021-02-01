@@ -119,6 +119,7 @@ case class Tenant(
     adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     creationSecurity: Option[Boolean] = None,
     subscriptionSecurity: Option[Boolean] = None,
+    hideTeamsPage: Option[Boolean] = None,
     defaultMessage: Option[String] = None
 ) extends CanJson[Tenant] {
 
@@ -165,6 +166,10 @@ case class Tenant(
       "subscriptionSecurity" -> subscriptionSecurity
         .map(JsBoolean)
         .getOrElse(JsBoolean(true))
+        .as[JsValue],
+      "hideTeamsPage" -> hideTeamsPage
+        .map(JsBoolean)
+        .getOrElse(JsBoolean(false))
         .as[JsValue],
       "defaultMessage" -> defaultMessage
         .map(JsString.apply)

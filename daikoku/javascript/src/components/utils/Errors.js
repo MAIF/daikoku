@@ -2,6 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { goBack } from 'connected-react-router';
+import {t} from '../../locales';
 
 const getErrorLabel = (status, error) => {
   if (status === 400) {
@@ -21,7 +22,8 @@ const getErrorLabel = (status, error) => {
   }
 };
 
-const ErrorComponent = ({ error, goBack }) => {
+const ErrorComponent = ({ error, goBack, tenant, currentLanguage }) => {
+  document.title = `${tenant} - ${t('Error', currentLanguage)}`;
   const label = getErrorLabel(error.status, error);
 
   if (!label) {
@@ -50,6 +52,8 @@ const ErrorComponent = ({ error, goBack }) => {
 };
 
 const mapStateToProps = (state) => ({
+  tenant: state.context.tenant.name,
+  currentLanguage: state.context.currentLanguage,
   error: state.error,
   router: state.router,
 });

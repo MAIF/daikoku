@@ -349,14 +349,14 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
                 <InitializeFromOtoroshi match={p.match} history={p.history} location={p.location} />
               )}
             />
-            <FrontOfficeRoute
+            {!tenant.hideTeamsPage && <FrontOfficeRoute
               title={`${tenant.name} - ${t('Teams', currentLanguage)}`}
               exact
               path="/teams"
               render={(p) => (
                 <TeamChooser match={p.match} history={p.history} location={p.location} />
               )}
-            />
+            />}
 
             {/* NEW ROUTING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */}
             {/* NEW ROUTING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */}
@@ -633,7 +633,9 @@ const FrontOfficeRoute = (props) => {
 
 const RouteWithTitle = (props) => {
   useEffect(() => {
-    document.title = props.title;
+    if (props.title) {
+      document.title = props.title;
+    }
   }, [props.title]);
 
   return <Route {...props} />;
