@@ -53,7 +53,6 @@
 }
 
 .card-skin {
-  padding: 10px;
   height: 175px;
   width: 100%;
   display: flex;
@@ -65,6 +64,7 @@
   font-size: 25pt;
   text-align: center;
   position: relative;
+  overflow: hidden;
 }
 
 .plan-name {
@@ -97,8 +97,43 @@ a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {
   &.api--forbidden {
     cursor: not-allowed;
   }
+}
 
-  &:hover {
-    //text-decoration: underline;
+.view-selectors {
+  .active {
+    color: $link-hover-color;;
   }
 }
+
+
+.api-card {
+  .plan-body {
+    max-height: 250px;
+  }
+
+  .api-description {
+    white-space: pre-wrap;
+    overflow: scroll;
+  }
+  .card-img-top {
+      button.btn {
+        display: none ;
+        position: absolute;
+
+        &.btn-edit {
+          top: 10px;
+          right: 10px;
+        }
+      }
+    }
+
+  &:hover {
+    .card-img-top {
+      button.btn {
+        display: block ;
+      }
+    }
+  }
+}
+
+.card-img-top:hover .btn { display: block;}

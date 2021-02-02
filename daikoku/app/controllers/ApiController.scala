@@ -56,8 +56,8 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def apiSwagger(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent("@{user.name} has accessed swagger of api @{api.name} on team @{team.name}"))(ctx) {
+  def apiSwagger(teamId: String, apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed swagger of api @{api.name} on team @{team.name}"))(ctx) {
 
       def fetchSwagger(api: Api): Future[Result] = {
         api.swagger match {
@@ -1164,6 +1164,7 @@ class ApiController(DaikokuAction: DaikokuAction,
           .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team)))
           .asSimpleJson.as[JsObject] ++ translation
         val authorizations = teams
+          .filter(t => t.`type` != TeamType.Admin)
           .map(
             team =>
               Json.obj(
