@@ -19,8 +19,9 @@ case class ReactiveRowQueryResult(current: Row) extends QueryResult {
   def get[T](index: Int, field: Field[T]): T =
     handleValue(current.getValue(index), field.getConverter).get
 
-  override def get[T](columnName: String, `type`: Class[T]): T =
+  override def get[T](columnName: String, `type`: Class[T]): T = {
     Convert.convert(current.getValue(columnName), `type`)
+  }
 
   private def handleValue[T](value: Any, converter: Converter[_, T]): Option[T] = {
     if (value == null)

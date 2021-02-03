@@ -4,7 +4,7 @@ import play.api.Logger
 import play.api.libs.json._
 import storage.drivers.postgres.jooq.api.QueryResult
 
-import scala.annotation.tailrec
+import scala.collection.Set
 
 object Helper {
 
@@ -38,16 +38,6 @@ object Helper {
     out.replace("= 'null'", "is null")
   }
 
-  @tailrec
-  private def convertRegexOperator(key: String, regex: String): String = {
-    regex match {
-      case "%%" => "1 = 1"
-      case value if value.startsWith("^") => convertRegexOperator(key, s"${regex.substring(1)}%")
-      case value if value.endsWith("$") => convertRegexOperator(key, s"%${regex.substring(1)}")
-      case value => s"content->>'$key' LIKE ${value.replace(".", "%")}"
-    }
-  }
-
   private def _convertTuple(field: (String, JsValue)): String = {
     logger.debug(s"_convertTuple - $field")
 
@@ -65,9 +55,7 @@ object Helper {
           case Some((key: String, _: JsValue)) if key == "$nin" =>
             s"content->>'${field._1}' NOT IN ${_convertTuple(value.fields.head)}"
 
-          case Some((key: String, _: JsValue)) if key == "$regex" => convertRegexOperator(
-            field._1, value.fields.head._2.as[String].replaceAll(".*", "%")
-          )
+          case Some((key: String, _: JsValue)) if key == "$regex" => s"content->>'${field._1}' ~ '${value.fields.head._2.as[String]}'"
 
           case Some((key: String, _: JsValue)) if key == "$options" =>
             "1 = 1"
@@ -120,13 +108,13 @@ object Helper {
       .mkString(" AND ")
   }
 
-  def recordToJson(res: QueryResult) : JsValue = {
+  def recordContentToJson(res: QueryResult) : JsValue = {
     val content = res.get("content", classOf[String])
     Json.parse(content)
   }
 
   def getContentFromJson[Of](queryResult: Option[QueryResult], format: Format[Of]): Option[Of] = {
-    queryResult.flatMap(f => format.reads(recordToJson(f)) match {
+    queryResult.flatMap(f => format.reads(recordContentToJson(f)) match {
       case JsSuccess(e, _) => Some(e)
       case JsError(_) => None
     })
@@ -137,11 +125,31 @@ object Helper {
 
     queryResults
         .flatMap { json =>
-          format.reads(recordToJson(json)) match {
+          format.reads(recordContentToJson(json)) match {
             case JsSuccess(e, _) => Some(e)
             case JsError(_) => None
           }
         }
+  }
+
+  def recordFieldsToJson(res: QueryResult, fields: Set[String]) : JsValue = {
+    var out = Json.obj()
+
+    fields.foreach { field =>
+      out = out + (field -> JsString(res.get(field.toLowerCase, classOf[String])))
+    }
+
+    out
+  }
+
+  def getFieldsFromJson(queryResult: Option[QueryResult], fields: Set[String]): Option[JsValue] = {
+    queryResult.map(f => recordFieldsToJson(f, fields))
+  }
+
+  def getFieldsListFromJson(queryResults: List[QueryResult], fields: Set[String]): Seq[JsValue] = {
+    logger.debug("getContentsListFromJson")
+
+    queryResults.map { json => recordFieldsToJson(json, fields)}
   }
 
   val quotes = "\""

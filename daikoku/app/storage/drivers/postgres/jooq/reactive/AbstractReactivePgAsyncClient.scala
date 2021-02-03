@@ -45,7 +45,8 @@ abstract class AbstractReactivePgAsyncClient[Client <: SqlClient](
     res => if (res.succeeded()) p.success(res.result()) else p.failure(res.cause())
 
   def log(query: Query): Unit = {
-    logger.debug(s"Executing ${query.getSQL(ParamType.INLINED)}")
+    val sql = query.getSQL(ParamType.INLINED)
+    logger.debug(s"Executing $sql")
   }
 
   override def queryOne[R <: Record](queryFunction: DSLContext => _ <: ResultQuery[R]):

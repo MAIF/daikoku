@@ -366,16 +366,34 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   def checkDatabase(): Future[Any] = {
       reactivePgAsyncPool
         .queryOne(dsl =>
-          dsl.resultQuery("SELECT COUNT(*) " +
-            "FROM information_schema.tables " +
-            "WHERE table_schema = {0}", DSL.inline(getSchema))
-        )
-        .map(res => res.map(_.get("count", classOf[Long])).getOrElse(0L))
-        .map(s => {
-          if (s == 0)
-            createDatabase()
-          s
-        })
+          dsl.resultQuery(
+            "SELECT schema_name FROM information_schema.schemata WHERE schema_name = {0}",
+            DSL.inline(getSchema)))
+        .map(res => res.map(_.get("schema_name", classOf[String])))
+        .map {
+          case Some(_) => checkTables()
+          case _ =>
+            for {
+              _ <- reactivePgAsyncPool
+                .execute(dsl => dsl.resultQuery("CREATE SCHEMA {0}", DSL.table(getSchema)))
+              res <- checkTables()
+            } yield res
+        }
+  }
+
+  private def checkTables(): Future[Any] = {
+    reactivePgAsyncPool
+      .queryOne(dsl =>
+        dsl.resultQuery("SELECT COUNT(*) " +
+          "FROM information_schema.tables " +
+          "WHERE table_schema = {0}", DSL.inline(getSchema))
+      )
+      .map(res => res.map(_.get("count", classOf[Long])).getOrElse(0L))
+      .map(s => {
+        if (s == 0)
+          createDatabase()
+        s
+      })
   }
 
   def createDatabase() =
@@ -1070,7 +1088,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
       .future(
         reactivePgAsyncPool
           .query(dsl => dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName)))
-          .map { res => JsArray(res.map(recordToJson)) }
+          .map { res => JsArray(res.map(recordContentToJson)) }
       )
   }
 
@@ -1203,42 +1221,43 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     implicit ec: ExecutionContext
   ): Future[Seq[JsObject]] =
     reactivePgAsyncPool.query { dsl =>
-      logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+      logger.debug(s"$tableName.findWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+
       if (query.values.isEmpty) dsl.resultQuery(
         "SELECT {1} FROM {0}",
         DSL.table(tableName),
-        DSL.table(if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
+        DSL.table(if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
       )
       else
         dsl.resultQuery(
           "SELECT {2} FROM {0} WHERE {1}",
           DSL.table(tableName),
           DSL.table(convertQuery(query)),
-          DSL.table(if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
+          DSL.table(if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
         )
     }
-      .map(getContentsListFromJson(_, format))
+      .map(getFieldsListFromJson(_, projection.keys))
       .map(_.asInstanceOf[Seq[JsObject]])
 
   override def findOneWithProjection(query: JsObject, projection: JsObject)(
     implicit ec: ExecutionContext
   ): Future[Option[JsObject]] = {
-    logger.debug(s"$tableName.find(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+    logger.debug(s"$tableName.findOneWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
     reactivePgAsyncPool
       .queryOne { dsl =>
         if (query.values.isEmpty)
           dsl.resultQuery(
             "SELECT {1} FROM {0}",
             DSL.table(tableName),
-            if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
+            if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
         else
           dsl.resultQuery(
             "SELECT {2} FROM {0} WHERE {1}",
             DSL.table(tableName),
             DSL.table(convertQuery(query)),
-            if (projection.values.isEmpty) "*" else projection.keys.mkString(","))
+            if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
       }
-      .map(getContentFromJson(_, format))
+      .map(getFieldsFromJson(_, projection.keys))
       .asInstanceOf[Future[Option[JsObject]]]
   }
 
