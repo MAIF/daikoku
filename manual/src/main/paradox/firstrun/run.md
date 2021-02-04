@@ -21,7 +21,7 @@ java -jar daikoku.jar
 ## From docker
 
 ```sh
-docker run -p "8080:8080" maif/daikoku:1.0.15
+docker run -p "8080:8080" maif/daikoku:1.0.16
 ```
 
 You can also pass useful args like :
@@ -39,13 +39,13 @@ The list of possible env variables is available @ref:[here](../firstrun/env.md).
 You can use a volume to provide configuration like :
 
 ```sh
-docker run -p "8080:8080" -v "$(pwd):/usr/app/daikoku/conf" maif/daikoku:1.0.15
+docker run -p "8080:8080" -v "$(pwd):/usr/app/daikoku/conf" maif/daikoku:1.0.16
 ```
 
 You can also use a volume if you choose to use exports files :
 
 ```sh
-docker run -p "8080:8080" -v "$(pwd):/usr/app/daikoku/imports" maif/daikoku :1.0.15 -Ddaikoku.init.data.from=/usr/app/daikoku/imports/export.ndjson
+docker run -p "8080:8080" -v "$(pwd):/usr/app/daikoku/imports" maif/daikoku :1.0.16 -Ddaikoku.init.data.from=/usr/app/daikoku/imports/export.ndjson
 ```
 
 ## Run examples

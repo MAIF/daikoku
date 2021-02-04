@@ -11,6 +11,7 @@ import { UserBackOffice } from '../../backoffice';
 import { Spinner, validatePassword, ValidateEmail } from '../../utils';
 import { t, Translation } from '../../../locales';
 import { updateUser } from '../../../core';
+import { udpateLanguage } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -337,6 +338,9 @@ class MyProfileComponent extends Component {
         Services.updateUserById(this.state.user).then((user) => {
           this.setState({ user }, () => {
             this.props.updateUser(user);
+            if (this.props.currentLanguage !== user.defaultLanguage) {
+              this.props.updateLanguage(user.defaultLanguage);
+            }
             toastr.success(
               t(
                 'user.updated.success',
@@ -471,6 +475,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   updateUser: (u) => updateUser(u),
+  updateLanguage: (l) => udpateLanguage(l)
 };
 
 export const MyProfile = connect(mapStateToProps, mapDispatchToProps)(MyProfileComponent);

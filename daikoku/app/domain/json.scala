@@ -1270,6 +1270,8 @@ object json {
               .asOpt[Boolean],
             subscriptionSecurity = (json \ "subscriptionSecurity")
               .asOpt[Boolean],
+            hideTeamsPage = (json \ "hideTeamsPage")
+              .asOpt[Boolean],
             defaultMessage = (json \ "defaultMessage")
               .asOpt[String],
           )
@@ -1309,6 +1311,10 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "subscriptionSecurity" -> o.subscriptionSecurity
+        .map(JsBoolean)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "hideTeamsPage" -> o.hideTeamsPage
         .map(JsBoolean)
         .getOrElse(JsNull)
         .as[JsValue],

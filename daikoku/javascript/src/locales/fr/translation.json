@@ -765,5 +765,6 @@
   "Income": "Revenu",
   "Edition": "Edition",
   "Custom header": "Entête personnalisé",
-  "api.custom.header.help": "Utiliser {{title}} pour inserer le nom de l'API, {{ description }} pour la petite description. Ajouter la classe \"btn-edit\" pour créer un lien vers la page d'edition de l'API"
+  "api.custom.header.help": "Utiliser {{title}} pour inserer le nom de l'API, {{ description }} pour la petite description. Ajouter la classe \"btn-edit\" pour créer un lien vers la page d'edition de l'API",
+  "get.apikey.requires.login": "Obtenir une clé d'API nécessite que vous soyez connecté"
 }

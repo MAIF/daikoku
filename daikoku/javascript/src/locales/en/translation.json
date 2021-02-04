@@ -765,5 +765,6 @@
     "Income": "Income",
     "Edition": "Edition",
     "Custom header": "Custom header",
-    "api.custom.header.help": "Use {{title}} to insert API title, {{ description }} to insert API small description. Add \"btn-edit\" class to link to admin API edition admin page"
+    "api.custom.header.help": "Use {{title}} to insert API title, {{ description }} to insert API small description. Add \"btn-edit\" class to link to admin API edition admin page",
+    "get.apikey.requires.login": "Get an API key requires you to be logged in"
 }

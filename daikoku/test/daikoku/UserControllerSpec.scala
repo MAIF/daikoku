@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.{
   DaikokuSpecHelper,
   OneServerPerSuiteWithMyComponents
@@ -22,7 +21,7 @@ class UserControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, user, userAdmin),
-        teams = Seq()
+        teams = Seq(defaultAdminTeam)
       )
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
@@ -47,7 +46,6 @@ class UserControllerSpec()
       val resp =
         httpJsonCallBlocking(s"/api/admin/users/${user.id.value}")(tenant,
                                                                    session)
-      AppLogger.info(Json.stringify(resp.json))
       resp.status mustBe 200
       val eventualUser =
         fr.maif.otoroshi.daikoku.domain.json.UserFormat.reads(resp.json)
@@ -165,7 +163,6 @@ class UserControllerSpec()
       val respRemove = httpJsonCallBlocking(
         s"/api/admin/users/${user.id.value}")(tenant, session)
       respRemove.status mustBe 200
-      logger.debug(Json.stringify(resp2.json))
       val eventualUser2 =
         fr.maif.otoroshi.daikoku.domain.json.UserFormat.reads(resp2.json)
       eventualUser2.isSuccess mustBe true
@@ -181,12 +178,12 @@ class UserControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(randomUser),
-        teams = Seq()
+        teams = Seq(defaultAdminTeam)
       )
       val session = loginWithBlocking(randomUser, tenant)
 
       val resp = httpJsonCallBlocking("/api/admin/users")(tenant, session)
-      resp.status mustBe 401
+      resp.status mustBe 403
     }
 
     "not find user by id" in {

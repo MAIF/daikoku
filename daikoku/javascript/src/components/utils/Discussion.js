@@ -135,7 +135,7 @@ const DiscussionComponent = (props) => {
     );
   }
 
-  if (props.connectedUser.isDaikokuAdmin || props.connectedUser.isGuest) {
+  if (props.connectedUser.isDaikokuAdmin || props.isTenantAdmin || props.connectedUser.isGuest) {
     return null;
   }
 

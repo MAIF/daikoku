@@ -31,6 +31,7 @@ The user session duration can be set here, by default it last 24h.
 
 A creation security option can be activated to forbid all unauthorized team to create API. You just have to authorize the team from the team edit page.
 A subscription security option can be activated to forbid all personal team to subscribe to an API.
+It's possible to hide teams page (/teams) to prevent everyone for knowing all teams in the organisation. This is a feature primally intended for public tenants.
 
 ### Audit trail
 

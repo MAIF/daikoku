@@ -498,7 +498,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         .filter(_._2)
         .map(_._1)
 
-      val source =  subSource
+      val source = subSource
         .via(createSubFlow)
         .via(updateTeamConcurrentFlow)
 
@@ -720,8 +720,8 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   }
 
-  def getMyTeamsApiSubscriptions(apiId: String) = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(ctx) {
+  def getMyTeamsApiSubscriptions(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(ctx) {
 
       def findSubscriptions(api: Api, teams: Seq[Team]): Future[Result] = {
         for {
@@ -742,7 +742,6 @@ class ApiController(DaikokuAction: DaikokuAction,
               )
             )
         } yield {
-
           Ok(
             Json.obj(
               "subscriptions" -> JsArray(
@@ -816,7 +815,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               customMaxPerSecond = (body \ "customMaxPerSecond").asOpt[Long],
               customMaxPerDay = (body \ "customMaxPerDay").asOpt[Long],
               customMaxPerMonth = (body \ "customMaxPerMonth").asOpt[Long],
-              customReadOnly =  (body \ "customReadOnly").asOpt[Boolean]
+              customReadOnly = (body \ "customReadOnly").asOpt[Boolean]
             )
             apiService.updateSubscription(ctx.tenant, subToSave, api)
               .map {
@@ -1089,11 +1088,11 @@ class ApiController(DaikokuAction: DaikokuAction,
         case Some(value) => env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId, "_id" -> Json.obj("$ne" -> value)))
-          .map (exists => Ok(Json.obj("exists" -> exists)))
+          .map(exists => Ok(Json.obj("exists" -> exists)))
         case None => env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId))
-          .map (exists => Ok(Json.obj("exists" -> exists)))
+          .map(exists => Ok(Json.obj("exists" -> exists)))
       }
     }
   }

@@ -15,7 +15,7 @@ import {
   team,
   asset,
   daikoku,
-  tenant,
+  tenant as TENANT,
 } from '../utils';
 import { t, Translation } from '../../locales';
 
@@ -174,7 +174,9 @@ const TeamBackOfficeComponent = ({
   // }
 
   useEffect(() => {
-    document.title = title;
+    if (title) {
+      document.title = title;
+    }
   }, [title]);
 
   if (!currentTeam) {
@@ -372,7 +374,7 @@ const UserBackOfficeComponent = ({
                   </li>
                 </ul>
 
-                <Can I={manage} a={tenant}>
+                <Can I={manage} a={TENANT}>
                   <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                     <Translation i18nkey="Tenant administration" language={currentLanguage}>
                       Tenant administration
