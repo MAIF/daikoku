@@ -384,6 +384,12 @@ POST    /api/reset                                      fr.maif.otoroshi.daikoku
 GET     /api/state/export                               fr.maif.otoroshi.daikoku.ctrls.StateController.exportState()
 ### NoDocs ###
 POST    /api/state/import                               fr.maif.otoroshi.daikoku.ctrls.StateController.importState()
+### NoDocs ###
+POST    /api/state/migrate                              fr.maif.otoroshi.daikoku.ctrls.StateController.migrateStateToPostgres()
+### NoDocs ###
+POST    /api/state/lock                                 fr.maif.otoroshi.daikoku.ctrls.StateController.enableMaintenanceMode()
+POST    /api/state/unlock                               fr.maif.otoroshi.daikoku.ctrls.StateController.disableMaintenanceMode()
+GET    /api/state/lock                                  fr.maif.otoroshi.daikoku.ctrls.StateController.isMaintenanceMode()
 
 ### NoDocs ###
 GET     /fakeotoroshi/api/stats                                      fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiStats(from: String, to: String, apikey: String)

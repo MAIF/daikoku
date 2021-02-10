@@ -1,7 +1,6 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import java.util.concurrent.TimeUnit
-
 import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
@@ -99,6 +98,28 @@ case class AuditTrailConfig(
   override def asJson: JsValue = json.AuditTrailConfigFormat.writes(this)
 }
 
+sealed trait TenantMode {
+  def name: String
+}
+object TenantMode {
+  case object Maintenance extends TenantMode {
+    def name: String = "Maintenance"
+  }
+  case object Construction extends TenantMode {
+    def name: String = "Construction"
+  }
+  case object Default extends TenantMode {
+    def name: String = "Default"
+  }
+
+  def apply(name: String): Option[TenantMode] = name.toLowerCase() match {
+    case "maintenance"    => Some(Maintenance)
+    case "construction"   => Some(Construction)
+    case "default"        => Some(Default)
+    case _                => Some(Default)
+  }
+}
+
 case class Tenant(
     id: TenantId,
     enabled: Boolean = true,
@@ -120,7 +141,8 @@ case class Tenant(
     creationSecurity: Option[Boolean] = None,
     subscriptionSecurity: Option[Boolean] = None,
     hideTeamsPage: Option[Boolean] = None,
-    defaultMessage: Option[String] = None
+    defaultMessage: Option[String] = None,
+    tenantMode: Option[TenantMode] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -173,6 +195,10 @@ case class Tenant(
         .as[JsValue],
       "defaultMessage" -> defaultMessage
         .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "tenantMode" -> tenantMode
+        .map(mode => JsString.apply(mode.name))
         .getOrElse(JsNull)
         .as[JsValue]
     )

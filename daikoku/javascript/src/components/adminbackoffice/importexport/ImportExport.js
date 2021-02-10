@@ -6,7 +6,14 @@ import { Can, manage, daikoku } from '../../utils';
 import { t, Translation } from '../../../locales';
 
 export class ImportExportComponent extends Component {
-  state = { uploading: false };
+  state = {
+    uploading: false,
+    migration: {
+      processing: false,
+      error: "",
+      onSuccessMessage: ""
+    }
+  };
 
   importState = () => {
     if (this.input) {
@@ -24,7 +31,30 @@ export class ImportExportComponent extends Component {
     });
   };
 
+  migrate = () => {
+    this.setState({
+      migration: {
+        processing: true,
+        error: "",
+        onSuccessMessage: ""
+      }
+    }, () => {
+      Services.migrateMongoToPostgres()
+        .then(async res => {
+          this.setState({
+            migration: {
+              processing: false,
+              error: res.status !== 200 ? (await res.json()).error : "",
+              onSuccessMessage: res.status === 200 ? (await res.json()).message : ""
+            }
+          })
+        })
+    })
+  }
+
   render() {
+    const { processing, error, onSuccessMessage } = this.state.migration;
+
     return (
       <UserBackOffice tab="Import / Export">
         <Can I={manage} a={daikoku} dispatchError>
@@ -61,6 +91,34 @@ export class ImportExportComponent extends Component {
                   ref={(r) => (this.input = r)}
                   onChange={this.actuallyImportState}
                 />
+              </div>
+              <h2 className="my-2">
+                <Translation i18nkey="Mongo migration" language={this.props.currentLanguage}>
+                  Mongo migration
+                </Translation>
+              </h2>
+              <div className="section p-3">
+                <button
+                  type="button"
+                  onClick={this.migrate}
+                  className="btn btn-outline-primary">
+                  <i className="fas fa-database mr-1" />
+                  {processing
+                    ? t('migration in progress ...', this.props.currentLanguage)
+                    : t('migrate database', this.props.currentLanguage)}
+                </button>
+                {
+                  error.length > 0 &&
+                  <div className="alert alert-danger my-0 mt-3" role="alert">
+                    {error}
+                  </div>
+                }
+                {
+                  onSuccessMessage.length > 0 &&
+                  <div className="alert alert-success my-0 mt-3" role="alert">
+                    {onSuccessMessage}
+                  </div>
+                }
               </div>
             </div>
           </div>

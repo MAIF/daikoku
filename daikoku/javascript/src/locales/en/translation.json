@@ -766,5 +766,13 @@
     "Edition": "Edition",
     "Custom header": "Custom header",
     "api.custom.header.help": "Use {{title}} to insert API title, {{ description }} to insert API small description. Add \"btn-edit\" class to link to admin API edition admin page",
-    "get.apikey.requires.login": "Get an API key requires you to be logged in"
+    "get.apikey.requires.login": "Get an API key requires you to be logged in",
+    "Mongo migration": "MongoDB to Postgres migration",
+    "migration in progress ...": "migration in progress ...",
+    "migrate database": "migrate database",
+    "Maintenance mode": "Maintenance mode",
+    "Construction mode": "Construction mode",
+    "Default mode": "Default mode",
+    "Global maintenance mode enabled": "Global maintenance mode enabled",
+    "Disable maintenance": "Disable maintenance"
 }

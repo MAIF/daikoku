@@ -2,7 +2,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
 import akka.util.ByteString
-import fr.maif.otoroshi.daikoku.actions.DaikokuAction
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.DaikokuAdminOnly
 import fr.maif.otoroshi.daikoku.domain._
@@ -13,9 +13,10 @@ import fr.maif.otoroshi.daikoku.utils.admin._
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{AbstractController, BodyParser, ControllerComponents}
+import play.api.mvc.{AbstractController, Action, AnyContent, BodyParser, ControllerComponents}
 import storage.{DataStore, Repo}
 import cats.implicits._
+import storage.drivers.postgres.PostgresDataStore
 
 class StateController(DaikokuAction: DaikokuAction,
                       env: Env,
@@ -53,6 +54,87 @@ class StateController(DaikokuAction: DaikokuAction,
       env.dataStore
         .importFromStream(ctx.request.body)
         .map(_ => Ok(Json.obj("done" -> true)))
+    }
+  }
+
+  def migrateStateToPostgres(): Action[AnyContent] = DaikokuAction.async { ctx =>
+    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has migrated state to postgres"))(ctx) {
+      // 1 - Check if postgres instance is present
+      // 2 - Switch all tenants in TenantMode.Maintenance
+      // 3 - Delete all user sessions except current one
+      // 4 - Create schema and tables
+      // 5 - Migrate data
+
+      val postgresStore = new PostgresDataStore(env.rawConfiguration, env)
+      (for {
+        _ <- postgresStore.checkIfTenantsTableExists()
+        _ <- env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
+          tenants.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode("Maintenance"))))
+        }
+        _ <- removeAllUserSessions(ctx)
+        _ <- postgresStore.checkDatabase()
+        _ <- {
+          val source = env.dataStore.exportAsStream(pretty = false)
+          postgresStore.importFromStream(source)
+        }
+      } yield {
+        env.updateDataStore(postgresStore)
+        Ok(Json.obj(
+          "done" -> true,
+          "message" -> "You're now running on postgres database"
+        ))
+      })
+        .recoverWith {
+          case e: Throwable => {
+            postgresStore.stop()
+            FastFuture.successful(BadRequest(Json.obj("error" -> e.getMessage)))
+          }
+        }
+    }
+  }
+
+  private def removeAllUserSessions(ctx: DaikokuActionContext[AnyContent]) = {
+    env.dataStore.userSessionRepo.findAllNotDeleted()
+      .map(_.filter(session => session.sessionId != ctx.session.sessionId))
+      .map(_.map(session => env.dataStore.userSessionRepo.deleteById(session.sessionId.value)))
+  }
+
+  def enableMaintenanceMode(): Action[AnyContent] = DaikokuAction.async { ctx =>
+    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has enabled maintenance mode on all tenants"))(ctx) {
+      removeAllUserSessions(ctx)
+        .flatMap { _ =>
+          env.dataStore
+            .tenantRepo
+            .findAllNotDeleted()
+            .map(_.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode("Maintenance")))))
+        }
+        .map { _ =>
+          Ok(Json.obj("done" -> true))
+        }
+    }
+  }
+
+  def disableMaintenanceMode(): Action[AnyContent] = DaikokuAction.async { ctx =>
+    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has disabled maintenance mode on all tenants"))(ctx) {
+      env.dataStore
+        .tenantRepo
+        .findAllNotDeleted()
+        .map(_.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = None))))
+        .map { _ =>
+          Ok(Json.obj("done" -> true))
+        }
+    }
+  }
+
+  def isMaintenanceMode: Action[AnyContent] = DaikokuAction.async { ctx =>
+    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has accessed to maintenance mode"))(ctx) {
+      env.dataStore
+        .tenantRepo
+        .findAllNotDeleted()
+        .map {  tenants =>
+          tenants.forall(tenant => tenant.tenantMode.isDefined && tenant.tenantMode.get.equals(TenantMode.Maintenance))
+        }
+        .map(locked => Ok(Json.obj("isMaintenanceMode" -> locked)))
     }
   }
 }

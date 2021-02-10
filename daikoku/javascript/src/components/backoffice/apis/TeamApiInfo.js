@@ -140,7 +140,7 @@ export class TeamApiInfo extends Component {
         selectClassName: 'full-width-select',
         transformer: (t) => ({ label: t.name, value: t._id }),
       },
-    },
+    }
   };
 
   formFlow = [

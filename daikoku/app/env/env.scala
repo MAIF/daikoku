@@ -20,7 +20,6 @@ import play.api.i18n.MessagesApi
 import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
-import play.modules.reactivemongo.ReactiveMongoApi
 import storage.drivers.mongo.MongoDataStore
 import storage.drivers.postgres.PostgresDataStore
 import storage.DataStore
@@ -217,9 +216,11 @@ sealed trait Env {
   def defaultMaterializer: Materializer
   def defaultExecutionContext: ExecutionContext
   def dataStore: DataStore
+  def updateDataStore(newDataStore: DataStore)(implicit ec : ExecutionContext): Future[Unit]
   def assetsStore: AssetsDataStore
   def wsClient: WSClient
   def config: Config
+  def rawConfiguration: Configuration
   def identityFilters(implicit mat: Materializer,
                       ec: ExecutionContext): Seq[EssentialFilter]
   def expositionFilters(implicit mat: Materializer,
@@ -244,7 +245,7 @@ class DaikokuEnv(ws: WSClient,
 
   private val daikokuConfig = new Config(configuration)
 
-  private lazy val _dataStore: DataStore =
+  private var _dataStore: DataStore =
     configuration.getOptional[String]("daikoku.storage") match {
       case Some("mongo")        => new MongoDataStore(context, this)
       case Some("postgres")     => new PostgresDataStore(configuration, this)
@@ -255,6 +256,8 @@ class DaikokuEnv(ws: WSClient,
   private val s3assetsStore =
     new AssetsDataStore(actorSystem)(actorSystem.dispatcher, materializer)
 
+  override def rawConfiguration: Configuration = configuration
+
   override def defaultExecutionContext: ExecutionContext =
     actorSystem.dispatcher
   override def defaultActorSystem: ActorSystem = actorSystem
@@ -263,6 +266,13 @@ class DaikokuEnv(ws: WSClient,
   override def wsClient: WSClient = ws
   override def config: Config = daikokuConfig
   override def assetsStore: AssetsDataStore = s3assetsStore
+
+  override def updateDataStore(newDataStore: DataStore)(implicit ec : ExecutionContext): Future[Unit] = {
+    _dataStore.stop()
+      .map { _ =>
+        _dataStore = newDataStore
+      }
+  }
 
   override def onStartup(): Unit = {
 
@@ -444,6 +454,17 @@ class DaikokuEnv(ws: WSClient,
     }
 
     dataStore.start()
+
+    /*configuration.getOptional[Boolean]("daikoku.migrateMongoToPg") match {
+      case Some(true) =>
+        configuration.getOptional[String]("daikoku.storage") match {
+          case Some("mongo")        => throw new RuntimeException(s"wrong storage used to migrate database. Switch to postgres or remove `daikoku.migrateMongoToPg` variable")
+          case Some("postgres")     =>
+            val mongo = new MongoDataStore(context, this)
+            val stream = mongo.exportAsStream(pretty = false)(mongo.ece)
+            Await.result(store.importFromStream(stream), 5.minutes)
+        }
+    }*/
 
     Source
       .tick(1.second, 5.seconds, ())

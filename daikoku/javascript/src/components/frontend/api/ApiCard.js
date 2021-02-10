@@ -17,6 +17,9 @@ export class ApiCard extends Component {
   isPending = (api) =>
     api.authorizations && api.authorizations.every((a) => a.pending || a.authorized);
 
+  isMaintenanceMode = (tenant) =>
+    tenant && tenant.tenantMode && tenant.tenantMode.toLowerCase() !== "Default";
+
   redirectToApiPage = (auth) => {
     if (auth) {
       this.props.redirectToApiPage();
@@ -30,6 +33,8 @@ export class ApiCard extends Component {
     const allTeamsAreAuthorized = this.allTeamsAuthorizedOn(api);
     const isPending = this.isPending(api);
 
+    const isMaintenanceMode = this.isMaintenanceMode(this.props.tenant)
+
     return (
       <div className="row border-bottom py-4">
         <div className="col-12 d-flex justify-content-between">
@@ -41,15 +46,18 @@ export class ApiCard extends Component {
 
           <div className="ml-2">
             <div className="btn_group d-flex align-items-start">
-              <Can I={manage} a={API} team={team}>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-access-negative mr-1 mb-1"
-                  onClick={this.props.redirectToEditPage}>
-                  <i className="fas fa-edit" />
-                </button>
-              </Can>
-              {!allTeamsAreAuthorized &&
+              {isMaintenanceMode ?
+                <span className="badge badge-danger mr-3 my-auto">Maintenance mode</span> :
+                <Can I={manage} a={API} team={team}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-access-negative mr-1 mb-1"
+                    onClick={this.props.redirectToEditPage}>
+                    <i className="fas fa-edit" />
+                  </button>
+                </Can>
+              }
+              {!isMaintenanceMode && !allTeamsAreAuthorized &&
                 !isPending &&
                 !['Private', 'AdminOnly'].includes(api.visibility) && (
                   <ActionWithTeamSelector

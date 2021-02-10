@@ -311,6 +311,7 @@ class ApiListComponent extends Component {
                 key={api._id}
                 user={user}
                 api={api}
+                tenant={this.props.tenant}
                 showTeam={this.props.showTeam}
                 teamVisible={this.props.teamVisible}
                 team={this.props.teams.find((t) => t._id === api.team)}
