@@ -306,6 +306,19 @@ class TenantController(DaikokuAction: DaikokuAction,
         case JsSuccess(tenant, _) => {
           ctx.setCtxValue("tenant.name", tenant.name)
           ctx.setCtxValue("tenant.id", tenant.id)
+
+          tenant.tenantMode match {
+            case Some(value) =>
+              value match {
+                case TenantMode.Maintenance | TenantMode.Construction =>
+                  env.dataStore.userSessionRepo.findAllNotDeleted()
+                    .map(_.filter(session => session.sessionId != ctx.session.sessionId))
+                    .map(_.map(session => env.dataStore.userSessionRepo.deleteById(session.sessionId.value)))
+                case _ =>
+              }
+            case _ =>
+          }
+
           for {
             _ <- env.dataStore.tenantRepo.save(tenant)
             _ <- env.dataStore.teamRepo

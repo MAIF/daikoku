@@ -16,6 +16,7 @@ import play.api.libs.streams.Accumulator
 import play.api.mvc.{AbstractController, Action, AnyContent, BodyParser, ControllerComponents}
 import storage.{DataStore, Repo}
 import cats.implicits._
+import storage.drivers.mongo.MongoDataStore
 import storage.drivers.postgres.PostgresDataStore
 
 class StateController(DaikokuAction: DaikokuAction,
@@ -65,31 +66,36 @@ class StateController(DaikokuAction: DaikokuAction,
       // 4 - Create schema and tables
       // 5 - Migrate data
 
-      val postgresStore = new PostgresDataStore(env.rawConfiguration, env)
-      (for {
-        _ <- postgresStore.checkIfTenantsTableExists()
-        _ <- env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
-          tenants.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode("Maintenance"))))
-        }
-        _ <- removeAllUserSessions(ctx)
-        _ <- postgresStore.checkDatabase()
-        _ <- {
-          val source = env.dataStore.exportAsStream(pretty = false)
-          postgresStore.importFromStream(source)
-        }
-      } yield {
-        env.updateDataStore(postgresStore)
-        Ok(Json.obj(
+      env.dataStore match {
+        case _: PostgresDataStore => FastFuture.successful(Ok(Json.obj(
           "done" -> true,
-          "message" -> "You're now running on postgres database"
-        ))
-      })
-        .recoverWith {
-          case e: Throwable => {
-            postgresStore.stop()
-            FastFuture.successful(BadRequest(Json.obj("error" -> e.getMessage)))
-          }
-        }
+          "message" -> "You're already on postgres"
+        )))
+        case _  =>
+          val postgresStore = new PostgresDataStore(env.rawConfiguration, env)
+          (for {
+            _ <- postgresStore.checkIfTenantsTableExists()
+            _ <- env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
+              tenants.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode("Maintenance"))))
+            }
+            _ <- removeAllUserSessions(ctx)
+            _ <- postgresStore.checkDatabase()
+            source = env.dataStore.exportAsStream(pretty = false)
+            _ <- postgresStore.importFromStream(source)
+          } yield {
+            env.updateDataStore(postgresStore)
+            Ok(Json.obj(
+              "done" -> true,
+              "message" -> "You're now running on postgres - Don't forget to switch your storage environment variable to postgres on the next reboot"
+            ))
+          })
+            .recoverWith {
+              case e: Throwable => {
+                postgresStore.stop()
+                FastFuture.successful(BadRequest(Json.obj("error" -> e.getMessage)))
+              }
+            }
+      }
     }
   }
 

@@ -1568,3 +1568,17 @@ export function migrateMongoToPostgres() {
     credentials: 'include'
   });
 }
+
+export function enableMaintenanceMode() {
+  return fetch(`/api/state/lock`, { method: 'POST' })
+    .then(() => {
+      window.location.reload();
+    });
+}
+
+export function disableMaintenanceMode() {
+  return fetch(`/api/state/unlock`, { method: 'POST' })
+    .then(() => {
+      window.location.reload();
+    });
+}

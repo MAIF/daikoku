@@ -252,7 +252,7 @@ export class TopBarComponent extends Component {
         <Can I={manage} a={tenant}>
           <div className="dropdown-divider" />
         </Can>
-        {this.props.connectedUser.isDaikokuAdmin && <a className="dropdown-item" href="#" onClick={isMaintenanceMode ? this.disableMaintenanceMode : this.enableMaintenanceMode}>
+        {this.props.connectedUser.isDaikokuAdmin && <a className="dropdown-item" href="#" onClick={isMaintenanceMode ? Services.disableMaintenanceMode : Services.enableMaintenanceMode}>
           <i className="fas fa-lock" /> {t(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode', this.props.currentLanguage)}
         </a>}
         {this.props.tenant.mode === 'Dev' && (
@@ -266,20 +266,6 @@ export class TopBarComponent extends Component {
       </div>
     );
   };
-
-  enableMaintenanceMode = () => {
-    fetch(`/api/state/lock`, { method: 'POST' })
-      .then(() => {
-        window.location.reload();
-      });
-  }
-
-  disableMaintenanceMode = () => {
-    fetch(`/api/state/unlock`, { method: 'POST' })
-      .then(() => {
-        window.location.reload();
-      });
-  }
 
   reset = () => {
     fetch('/api/reset', {

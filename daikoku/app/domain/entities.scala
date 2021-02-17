@@ -101,6 +101,7 @@ case class AuditTrailConfig(
 sealed trait TenantMode {
   def name: String
 }
+
 object TenantMode {
   case object Maintenance extends TenantMode {
     def name: String = "Maintenance"

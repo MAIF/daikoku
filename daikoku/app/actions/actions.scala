@@ -39,6 +39,18 @@ object tenantSecurity {
         .getOrElse(FastFuture.successful(true))
     }
   }
+
+  def isDefaultMode(tenant: Tenant, user: User): Boolean = {
+    tenant.tenantMode match {
+      case None => true
+      case Some(value) =>
+        value match {
+          case TenantMode.Maintenance | TenantMode.Construction => user.isDaikokuAdmin
+          case _ => true
+        }
+    }
+  }
+
 }
 
 case class DaikokuTenantActionContext[A](request: Request[A], tenant: Tenant)
@@ -85,70 +97,51 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
   override def invokeBlock[A](
                                request: Request[A],
                                block: DaikokuActionContext[A] => Future[Result]): Future[Result] = {
-    val tenant = request.attrs.get(IdentityAttrs.TenantKey)
-    val user = request.attrs.get(IdentityAttrs.UserKey)
-
-    var locked: Future[Boolean] = Future {
-      false
-    }
-
-    locked = (tenant, user) match {
-      case (Some(tenant), Some(user)) if tenant.tenantMode.contains(TenantMode.Maintenance) &&
-        !user.isDaikokuAdmin => env.dataStore.tenantRepo.findAllNotDeleted().map(tenants => {
-        tenants.forall(t => t.tenantMode.contains(TenantMode.Maintenance))
-      })
-      case _ => Future {
-        false
-      }
-    }
-
-    locked.flatMap {
-      case true => Errors.craftResponseResult(
-        "Global Maintenance mode enabled - You're not authorized to connect",
-        Results.NotFound,
+    (
+      request.attrs.get(IdentityAttrs.TenantKey),
+      request.attrs.get(IdentityAttrs.SessionKey),
+      request.attrs.get(IdentityAttrs.ImpersonatorKey),
+      request.attrs.get(IdentityAttrs.UserKey),
+      request.attrs.get(IdentityAttrs.TenantAdminKey)
+    ) match {
+      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user) => Errors.craftResponseResult(
+        s"${tenant.tenantMode.get.toString} mode enabled",
+        Results.ServiceUnavailable,
         request,
         None,
-        env)
-      case false =>
-        (
-          tenant,
-          request.attrs.get(IdentityAttrs.SessionKey),
-          request.attrs.get(IdentityAttrs.ImpersonatorKey),
-          user,
-          request.attrs.get(IdentityAttrs.TenantAdminKey)
-        ) match {
-          case (Some(tenant),
-          Some(session),
-          Some(imper),
-          Some(user),
-          Some(isTenantAdmin)) =>
-            if (user.tenants.contains(tenant.id)) {
-              tenantSecurity
-                .userCanCreateApi(tenant, user)(env, ec)
-                .flatMap(
-                  permission =>
-                    block(
-                      DaikokuActionContext(request,
-                        user,
-                        tenant,
-                        session,
-                        imper,
-                        isTenantAdmin,
-                        permission)))
-            } else {
-              logger.info(
-                s"User ${user.email} is not registered on tenant ${tenant.name}")
-              session.invalidate()(ec, env).map { _ =>
-                Results.Redirect("/")
-              }
-            }
-          case _ =>
-            Errors.craftResponseResult("User not found :-(",
-              Results.NotFound,
-              request,
-              None,
-              env)
+        env,
+        tenant)
+      case (Some(tenant),
+      Some(session),
+      Some(imper),
+      Some(user),
+      Some(isTenantAdmin)) =>
+        if (user.tenants.contains(tenant.id)) {
+          tenantSecurity
+            .userCanCreateApi(tenant, user)(env, ec)
+            .flatMap(
+              permission =>
+                block(
+                  DaikokuActionContext(request,
+                    user,
+                    tenant,
+                    session,
+                    imper,
+                    isTenantAdmin,
+                    permission)))
+        } else {
+          logger.info(
+            s"User ${user.email} is not registered on tenant ${tenant.name}")
+          session.invalidate()(ec, env).map { _ =>
+            Results.Redirect("/")
+          }
         }
+      case _ =>
+        Errors.craftResponseResult("User not found :-(",
+          Results.NotFound,
+          request,
+          None,
+          env)
     }
   }
 
@@ -165,93 +158,74 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
   override def invokeBlock[A](
                                request: Request[A],
                                block: DaikokuActionContext[A] => Future[Result]): Future[Result] = {
-    val tenant = request.attrs.get(IdentityAttrs.TenantKey)
-    val user = request.attrs.get(IdentityAttrs.UserKey)
-
-    var locked: Future[Boolean] = Future {
-      false
-    }
-
-    locked = (tenant, user) match {
-      case (Some(tenant), Some(user)) if tenant.tenantMode.contains(TenantMode.Maintenance) &&
-        !user.isDaikokuAdmin => env.dataStore.tenantRepo.findAllNotDeleted().map(tenants => {
-        tenants.forall(t => t.tenantMode.contains(TenantMode.Maintenance))
-      })
-      case _ => Future {
-        false
-      }
-    }
-
-    locked.flatMap {
-      case true => Errors.craftResponseResult(
-        "Global Maintenance mode enabled - You're not authorized to connect",
-        Results.NotFound,
+    (
+      request.attrs.get(IdentityAttrs.TenantKey),
+      request.attrs.get(IdentityAttrs.SessionKey),
+      request.attrs.get(IdentityAttrs.ImpersonatorKey),
+      request.attrs.get(IdentityAttrs.UserKey),
+      request.attrs.get(IdentityAttrs.TenantAdminKey)
+    ) match {
+      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user) => Errors.craftResponseResult(
+        s"${tenant.tenantMode.get.toString} mode enabled",
+        Results.ServiceUnavailable,
         request,
         None,
-        env)
-      case false =>
-        (
-          request.attrs.get(IdentityAttrs.TenantKey),
-          request.attrs.get(IdentityAttrs.SessionKey),
-          request.attrs.get(IdentityAttrs.ImpersonatorKey),
-          request.attrs.get(IdentityAttrs.UserKey),
-          request.attrs.get(IdentityAttrs.TenantAdminKey)
-        ) match {
-          case (Some(tenant),
-          Some(session),
-          Some(imper),
-          Some(user),
-          Some(isTenantAdmin)) =>
-            if (user.tenants.contains(tenant.id)) {
-              tenantSecurity
-                .userCanCreateApi(tenant, user)(env, ec)
-                .flatMap(
-                  security =>
-                    block(
-                      DaikokuActionContext(request,
-                        user,
-                        tenant,
-                        session,
-                        imper,
-                        isTenantAdmin,
-                        security)))
-            } else {
-              logger.info(
-                s"User ${user.email} is not registered on tenant ${tenant.name}")
-              session.invalidate()(ec, env).map { _ =>
-                Results.Redirect("/")
-              }
-            }
-          case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
-            Errors.craftResponseResult("This tenant is private, bye bye.",
-              Results.Unauthorized,
-              request,
-              None,
-              env)
-          case (Some(tenant), None, _, Some(user), Some(isTenantAdmin)) =>
-            block(
-              DaikokuActionContext(request,
-                user,
-                tenant,
-                GuestUserSession(user, tenant),
-                None,
-                isTenantAdmin))
-          case (Some(tenant), None, _, None, _) if !tenant.isPrivate =>
-            val guestUser = GuestUser(tenant.id)
-            block(
-              DaikokuActionContext(request,
-                guestUser,
-                tenant,
-                GuestUserSession(guestUser, tenant),
-                None,
-                isTenantAdmin = false))
-          case _ =>
-            Errors.craftResponseResult("User not found :-(",
-              Results.NotFound,
-              request,
-              None,
-              env)
+        env,
+        tenant)
+      case (Some(tenant),
+      Some(session),
+      Some(imper),
+      Some(user),
+      Some(isTenantAdmin)) =>
+        if (user.tenants.contains(tenant.id)) {
+          tenantSecurity
+            .userCanCreateApi(tenant, user)(env, ec)
+            .flatMap(
+              security =>
+                block(
+                  DaikokuActionContext(request,
+                    user,
+                    tenant,
+                    session,
+                    imper,
+                    isTenantAdmin,
+                    security)))
+        } else {
+          logger.info(
+            s"User ${user.email} is not registered on tenant ${tenant.name}")
+          session.invalidate()(ec, env).map { _ =>
+            Results.Redirect("/")
+          }
         }
+      case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
+        Errors.craftResponseResult("This tenant is private, bye bye.",
+          Results.Unauthorized,
+          request,
+          None,
+          env)
+      case (Some(tenant), None, _, Some(user), Some(isTenantAdmin)) =>
+        block(
+          DaikokuActionContext(request,
+            user,
+            tenant,
+            GuestUserSession(user, tenant),
+            None,
+            isTenantAdmin))
+      case (Some(tenant), None, _, None, _) if !tenant.isPrivate =>
+        val guestUser = GuestUser(tenant.id)
+        block(
+          DaikokuActionContext(request,
+            guestUser,
+            tenant,
+            GuestUserSession(guestUser, tenant),
+            None,
+            isTenantAdmin = false))
+      case _ =>
+        Errors.craftResponseResult("User not found :-(",
+          Results.NotFound,
+          request,
+          None,
+          env)
     }
   }
 
@@ -270,89 +244,69 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
                                request: Request[A],
                                block: DaikokuActionMaybeWithoutUserContext[A] => Future[Result])
   : Future[Result] = {
-    val tenant = request.attrs.get(IdentityAttrs.TenantKey)
-    val user = request.attrs.get(IdentityAttrs.UserKey)
-
-    var locked: Future[Boolean] = Future {
-      false
-    }
-
-    locked = (tenant, user) match {
-      case (Some(tenant), Some(user)) if
-        !user.isDaikokuAdmin && tenant.tenantMode.contains(TenantMode.Maintenance) =>
-        env.dataStore.tenantRepo.findAllNotDeleted().map(tenants => {
-          tenants.forall(t => t.tenantMode.contains(TenantMode.Maintenance))
-        })
-      case _ => Future {
-        false
-      }
-    }
-
-    locked.flatMap {
-      case true => Errors.craftResponseResult(
-        s"Global Maintenance mode enabled - You're not authorized to connect",
-        Results.NotFound,
+    (
+      request.attrs.get(IdentityAttrs.TenantKey),
+      request.attrs.get(IdentityAttrs.SessionKey),
+      request.attrs.get(IdentityAttrs.ImpersonatorKey),
+      request.attrs.get(IdentityAttrs.UserKey),
+      request.attrs.get(IdentityAttrs.TenantAdminKey)
+    ) match {
+      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user) => Errors.craftResponseResult(
+        s"${tenant.tenantMode.get.toString} mode enabled",
+        Results.ServiceUnavailable,
         request,
         None,
-        env)
-      case false =>
-        (
-          request.attrs.get(IdentityAttrs.TenantKey),
-          request.attrs.get(IdentityAttrs.SessionKey),
-          request.attrs.get(IdentityAttrs.ImpersonatorKey),
-          request.attrs.get(IdentityAttrs.UserKey),
-          request.attrs.get(IdentityAttrs.TenantAdminKey)
-        ) match {
-          case (Some(tenant),
-          Some(session),
-          Some(imper),
-          Some(user),
-          Some(isTenantAdmin)) =>
-            if (user.tenants.contains(tenant.id)) {
-              tenantSecurity
-                .userCanCreateApi(tenant, user)(env, ec)
-                .flatMap(
-                  perm =>
-                    block(
-                      DaikokuActionMaybeWithoutUserContext(request,
-                        Some(user),
-                        tenant,
-                        Some(session),
-                        imper,
-                        isTenantAdmin,
-                        perm)))
-            } else {
-              logger.info(
-                s"User ${user.email} is not registered on tenant ${tenant.name}")
-              session.invalidate()(ec, env).map { _ =>
-                Results.Redirect("/")
-              }
-            }
-          case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
-            block(
-              DaikokuActionMaybeWithoutUserContext(request,
-                None,
-                tenant,
-                None,
-                None,
-                isTenantAdmin = false))
-          case (Some(tenant), _, _, _, _) =>
-            val user = GuestUser(tenant.id)
-            block(
-              DaikokuActionMaybeWithoutUserContext(
-                request,
-                Some(user),
-                tenant,
-                Some(GuestUserSession(user, tenant)),
-                None,
-                isTenantAdmin = false))
-          case _ =>
-            Errors.craftResponseResult("Tenant not found :-(",
-              Results.NotFound,
-              request,
-              None,
-              env)
+        env,
+        tenant)
+      case (Some(tenant),
+      Some(session),
+      Some(imper),
+      Some(user),
+      Some(isTenantAdmin)) =>
+        if (user.tenants.contains(tenant.id)) {
+          tenantSecurity
+            .userCanCreateApi(tenant, user)(env, ec)
+            .flatMap(
+              perm =>
+                block(
+                  DaikokuActionMaybeWithoutUserContext(request,
+                    Some(user),
+                    tenant,
+                    Some(session),
+                    imper,
+                    isTenantAdmin,
+                    perm)))
+        } else {
+          logger.info(
+            s"User ${user.email} is not registered on tenant ${tenant.name}")
+          session.invalidate()(ec, env).map { _ =>
+            Results.Redirect("/")
+          }
         }
+      case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
+        block(
+          DaikokuActionMaybeWithoutUserContext(request,
+            None,
+            tenant,
+            None,
+            None,
+            isTenantAdmin = false))
+      case (Some(tenant), _, _, _, _) =>
+        val user = GuestUser(tenant.id)
+        block(
+          DaikokuActionMaybeWithoutUserContext(
+            request,
+            Some(user),
+            tenant,
+            Some(GuestUserSession(user, tenant)),
+            None,
+            isTenantAdmin = false))
+      case _ =>
+        Errors.craftResponseResult("Tenant not found :-(",
+          Results.NotFound,
+          request,
+          None,
+          env)
     }
   }
 
