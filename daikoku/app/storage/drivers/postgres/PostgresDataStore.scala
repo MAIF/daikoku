@@ -5,21 +5,19 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
 import akka.util.ByteString
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import io.vertx.core.Vertx
 import io.vertx.pgclient.{PgConnectOptions, PgPool}
-import io.vertx.sqlclient.PoolOptions
-import org.jooq.SQLDialect
-import org.jooq.impl.{DSL, DefaultConfiguration}
+import io.vertx.sqlclient.{PoolOptions, Row, RowSet}
 import play.api.{Configuration, Logger}
 import play.api.libs.json._
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
 import storage.drivers.postgres.Helper._
-import storage.drivers.postgres.jooq.api.PgAsyncConnection
-import storage.drivers.postgres.jooq.reactive.ReactivePgAsyncPool
+import storage.drivers.postgres.pgimplicits.EnhancedRow
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -154,9 +152,11 @@ case class PostgresTenantCapableMessageRepo(
 case class PostgresTenantCapableConsumptionRepo(
                                                  _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
                                                  _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId],
-                                                 reactivePgAsyncPool: ReactivePgAsyncPool
+                                                 reactivePg: ReactivePg
                                                ) extends PostgresTenantCapableRepo[ApiKeyConsumption, DatastoreId]
   with ConsumptionRepo {
+
+  private implicit val logger = Logger("daikoku-reactive-pg-PostgresTenantCapableConsumptionRepo")
 
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
@@ -173,8 +173,6 @@ case class PostgresTenantCapableConsumptionRepo(
 
   override def repo(): PostgresRepo[ApiKeyConsumption, DatastoreId] = _repo()
 
-  val logger: Logger = Logger("TEST")
-
   private def lastConsumptions(tenantId: Option[TenantId], filter: JsObject)(
     implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]] = {
 
@@ -183,40 +181,29 @@ case class PostgresTenantCapableConsumptionRepo(
       case None => forAllTenant().asInstanceOf[PostgresRepo[ApiKeyConsumption, DatastoreId]]
     }
 
-    reactivePgAsyncPool.query { dsl =>
-      dsl.resultQuery(
-        "SELECT _id, content->>'clientId' as clientid, MAX(content->>'from') as maxfrom " +
-          "FROM {0} " +
-          "WHERE {1} " +
-          "GROUP BY content->>'clientId', _id",
-        DSL.table(rep.tableName),
-        DSL.table(convertQuery(filter))
-      )
+    val (sql, params) = convertQuery(filter)
+
+    reactivePg.querySeq(
+        s"SELECT _id, content->>'clientId' as clientid, MAX(content->>'from') as maxfrom FROM ${rep.tableName} " +
+          s"WHERE $sql " +
+          "GROUP BY content->>'clientId', _id", params)
+    { row =>
+          Json.obj(
+            "clientId" -> row.getString("clientid"),
+            "from" -> row.getLong("maxfrom").longValue()
+          ).some
     }
-      .flatMap(res =>
-        Future.sequence(
-          res.map(queryResult => findOne(
-            Json.obj(
-              "clientId" -> queryResult.get("clientid", classOf[String]),
-              "from" -> queryResult.get("maxfrom", classOf[Long])
-            ),
-            rep.tableName,
-            rep.format))
-        )
-      )
-      .map(r => r.flatten)
+      .map(res => Future.sequence(res.map(queryResult => findOne(queryResult, rep.tableName, rep.format))))
+      .flatMap(r => r.map(res => res.collect {
+        case Some(value) => value
+      }))
   }
 
   def findOne(query: JsObject, tableName: String, format: Format[ApiKeyConsumption])
-             (implicit ec: ExecutionContext) =
-    reactivePgAsyncPool
-      .queryOne(dsl =>
-        dsl.resultQuery(
-          "SELECT * FROM {0} WHERE {1}",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query)))
-      )
-      .map(getContentFromJson(_, format))
+             (implicit ec: ExecutionContext) = {
+    val (sql, params) = convertQuery(query)
+    reactivePg.queryOne(s"SELECT * FROM $tableName WHERE $sql", params) { rowToJson(_, format) }
+  }
 
   override def getLastConsumptionsforAllTenant(filter: JsObject)(
     implicit ec: ExecutionContext
@@ -231,12 +218,10 @@ case class PostgresTenantCapableConsumptionRepo(
 class PostgresDataStore(configuration: Configuration, env: Env)
   extends DataStore {
 
-  private lazy val logger: Logger = Logger("PostgresDataStore")
+  private implicit lazy val logger: Logger = Logger("PostgresDataStore")
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
-  lazy val jooqConfig = new DefaultConfiguration
-  jooqConfig.setSQLDialect(SQLDialect.POSTGRES)
 
   private lazy val poolOptions: PoolOptions = new PoolOptions().setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))
 
@@ -252,63 +237,58 @@ class PostgresDataStore(configuration: Configuration, env: Env)
 
   logger.info(s"used : ${options.getDatabase}")
 
-  private lazy val reactivePgAsyncPool = new ReactivePgAsyncPool(
-    PgPool.pool(Vertx.vertx, options, poolOptions),
-    jooqConfig
-  )
+  private lazy val reactivePg = new ReactivePg(PgPool.pool(Vertx.vertx, options, poolOptions), configuration)(ec)
 
   def getSchema: String = configuration.get[String]("daikoku.postgres.schema")
 
-  def instanceIsAvailable(): Future[PgAsyncConnection] = reactivePgAsyncPool.connection
-
-  private val _tenantRepo: TenantRepo = new PostgresTenantRepo(env, reactivePgAsyncPool)
-  private val _userRepo: UserRepo = new PostgresUserRepo(env, reactivePgAsyncPool)
+  private val _tenantRepo: TenantRepo = new PostgresTenantRepo(env, reactivePg)
+  private val _userRepo: UserRepo = new PostgresUserRepo(env, reactivePg)
   private val _teamRepo: TeamRepo = PostgresTenantCapableTeamRepo(
-    () => new PostgresTeamRepo(env, reactivePgAsyncPool),
-    t => new PostgresTenantTeamRepo(env, reactivePgAsyncPool, t))
+    () => new PostgresTeamRepo(env, reactivePg),
+    t => new PostgresTenantTeamRepo(env, reactivePg, t))
   private val _apiRepo: ApiRepo = PostgresTenantCapableApiRepo(
-    () => new PostgresApiRepo(env, reactivePgAsyncPool),
-    t => new PostgresTenantApiRepo(env, reactivePgAsyncPool, t))
+    () => new PostgresApiRepo(env, reactivePg),
+    t => new PostgresTenantApiRepo(env, reactivePg, t))
   private val _apiSubscriptionRepo: ApiSubscriptionRepo =
     PostgresTenantCapableApiSubscriptionRepo(
-      () => new PostgresApiSubscriptionRepo(env, reactivePgAsyncPool),
-      t => new PostgresTenantApiSubscriptionRepo(env, reactivePgAsyncPool, t)
+      () => new PostgresApiSubscriptionRepo(env, reactivePg),
+      t => new PostgresTenantApiSubscriptionRepo(env, reactivePg, t)
     )
   private val _apiDocumentationPageRepo: ApiDocumentationPageRepo =
     PostgresTenantCapableApiDocumentationPageRepo(
-      () => new PostgresApiDocumentationPageRepo(env, reactivePgAsyncPool),
-      t => new PostgresTenantApiDocumentationPageRepo(env, reactivePgAsyncPool, t)
+      () => new PostgresApiDocumentationPageRepo(env, reactivePg),
+      t => new PostgresTenantApiDocumentationPageRepo(env, reactivePg, t)
     )
   private val _notificationRepo: NotificationRepo =
     PostgresTenantCapableNotificationRepo(
-      () => new PostgresNotificationRepo(env, reactivePgAsyncPool),
-      t => new PostgresTenantNotificationRepo(env, reactivePgAsyncPool, t)
+      () => new PostgresNotificationRepo(env, reactivePg),
+      t => new PostgresTenantNotificationRepo(env, reactivePg, t)
     )
   private val _userSessionRepo: UserSessionRepo =
-    new PostgresUserSessionRepo(env, reactivePgAsyncPool)
+    new PostgresUserSessionRepo(env, reactivePg)
   private val _auditTrailRepo: AuditTrailRepo =
     PostgresTenantCapableAuditTrailRepo(
-      () => new PostgresAuditTrailRepo(env, reactivePgAsyncPool),
-      t => new PostgresTenantAuditTrailRepo(env, reactivePgAsyncPool, t)
+      () => new PostgresAuditTrailRepo(env, reactivePg),
+      t => new PostgresTenantAuditTrailRepo(env, reactivePg, t)
     )
   private val _consumptionRepo: ConsumptionRepo =
     PostgresTenantCapableConsumptionRepo(
-      () => new PostgresConsumptionRepo(env, reactivePgAsyncPool),
-      t => new PostgresTenantConsumptionRepo(env, reactivePgAsyncPool, t),
-      reactivePgAsyncPool
+      () => new PostgresConsumptionRepo(env, reactivePg),
+      t => new PostgresTenantConsumptionRepo(env, reactivePg, t),
+      reactivePg
     )
   private val _passwordResetRepo: PasswordResetRepo =
-    new PostgresPasswordResetRepo(env, reactivePgAsyncPool)
+    new PostgresPasswordResetRepo(env, reactivePg)
   private val _accountCreationRepo: AccountCreationRepo =
-    new PostgresAccountCreationRepo(env, reactivePgAsyncPool)
+    new PostgresAccountCreationRepo(env, reactivePg)
   private val _translationRepo: TranslationRepo =
     PostgresTenantCapableTranslationRepo(
-      () => new PostgresTranslationRepo(env, reactivePgAsyncPool),
-      t => new PostgresTenantTranslationRepo(env, reactivePgAsyncPool, t))
+      () => new PostgresTranslationRepo(env, reactivePg),
+      t => new PostgresTenantTranslationRepo(env, reactivePg, t))
   private val _messageRepo: MessageRepo =
     PostgresTenantCapableMessageRepo(
-      () => new PostgresMessageRepo(env, reactivePgAsyncPool),
-      t => new PostgresTenantMessageRepo(env, reactivePgAsyncPool, t)
+      () => new PostgresMessageRepo(env, reactivePg),
+      t => new PostgresTenantMessageRepo(env, reactivePg, t)
     )
 
   override def tenantRepo: TenantRepo = _tenantRepo
@@ -355,43 +335,34 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       .map(_ == 0)
   }
 
-  def checkIfTenantsTableExists(): Future[Boolean] = {
-    reactivePgAsyncPool
-      .queryOne( dsl =>
-        dsl.resultQuery("SELECT EXISTS (" +
-          "SELECT FROM information_schema.tables " +
-          "WHERE table_schema = {0} AND table_name = 'tenants')",
-          DSL.inline(getSchema))
-      )
-      .map(res => res.exists(_.get("exists", classOf[Boolean])))
-  }
+  def checkIfTenantsTableExists(): Future[Boolean] =
+    reactivePg.queryOne("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = 'tenants')",
+      Seq(getSchema)) { row =>
+      row.optBoolean("exists")
+    }.map(_.getOrElse(false))
 
   def checkDatabase(): Future[Any] = {
-      reactivePgAsyncPool
-        .queryOne(dsl =>
-          dsl.resultQuery(
-            "SELECT schema_name FROM information_schema.schemata WHERE schema_name = {0}",
-            DSL.inline(getSchema)))
-        .map(res => res.map(_.get("schema_name", classOf[String])))
+      reactivePg.queryOne("SELECT schema_name FROM information_schema.schemata WHERE schema_name = $1",
+            Seq(getSchema)) { row =>
+        row.optString("schema_name")
+      }
         .map {
           case Some(_) => checkTables()
           case _ =>
             for {
-              _ <- reactivePgAsyncPool
-                .execute(dsl => dsl.resultQuery("CREATE SCHEMA {0}", DSL.table(getSchema)))
+              _ <- reactivePg.query(s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
               res <- checkTables()
             } yield res
         }
   }
 
   private def checkTables(): Future[Any] = {
-    reactivePgAsyncPool
-      .queryOne(dsl =>
-        dsl.resultQuery("SELECT COUNT(*) " +
+    reactivePg.queryOne("SELECT COUNT(*) " +
           "FROM information_schema.tables " +
-          "WHERE table_schema = {0}", DSL.inline(getSchema))
-      )
-      .map(res => res.map(_.get("count", classOf[Long])).getOrElse(0L))
+          "WHERE table_schema = $1", Seq(getSchema)) { row =>
+        row.optLong("count")
+      }
+      .map(_.getOrElse(0L))
       .map(s => {
         if (s == 0)
           createDatabase()
@@ -419,16 +390,13 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     )
       .map { case (key, value) => createTable(key, value) })
 
-  def createTable(table: String, allFields: Boolean): Future[Int] =
-    reactivePgAsyncPool.execute(dsl =>
-      dsl.resultQuery(s"CREATE TABLE {0}.{1} (" +
+  def createTable(table: String, allFields: Boolean): Future[RowSet[Row]] = {
+    reactivePg.query(s"CREATE TABLE '$getSchema'.$table (" +
         s"_id character varying PRIMARY KEY," +
-        s"{2}" +
-        s"content JSONB)",
-        DSL.table(s"${quotes}${DSL.table(getSchema)}$quotes"),
-        DSL.table(table),
-        DSL.table(if (allFields) "_deleted BOOLEAN," else "")))
-      .map(r => r)
+        s"${if (allFields) "_deleted BOOLEAN," else ""}" +
+        s"content JSONB)")
+  }
+
 
   override def exportAsStream(pretty: Boolean)(
     implicit ec: ExecutionContext,
@@ -544,8 +512,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   }
 }
 
-class PostgresTenantRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[Tenant, TenantId](env, reactivePgAsyncPool)
+class PostgresTenantRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[Tenant, TenantId](env, reactivePg)
     with TenantRepo {
   override def tableName: String = "tenants"
 
@@ -554,8 +522,8 @@ class PostgresTenantRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
   override def extractId(value: Tenant): String = value.id.value
 }
 
-class PostgresPasswordResetRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[PasswordReset, DatastoreId](env, reactivePgAsyncPool)
+class PostgresPasswordResetRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[PasswordReset, DatastoreId](env, reactivePg)
     with PasswordResetRepo {
   override def tableName: String = "password_reset"
 
@@ -564,8 +532,8 @@ class PostgresPasswordResetRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPo
   override def extractId(value: PasswordReset): String = value.id.value
 }
 
-class PostgresAccountCreationRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[AccountCreation, DatastoreId](env, reactivePgAsyncPool)
+class PostgresAccountCreationRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[AccountCreation, DatastoreId](env, reactivePg)
     with AccountCreationRepo {
   override def tableName: String = "account_creation"
 
@@ -575,9 +543,9 @@ class PostgresAccountCreationRepo(env: Env, reactivePgAsyncPool: ReactivePgAsync
 }
 
 class PostgresTenantTeamRepo(env: Env,
-                             reactivePgAsyncPool: ReactivePgAsyncPool,
+                             reactivePg: ReactivePg,
                              tenant: TenantId)
-  extends PostgresTenantAwareRepo[Team, TeamId](env, reactivePgAsyncPool, tenant) {
+  extends PostgresTenantAwareRepo[Team, TeamId](env, reactivePg, tenant) {
   override def tableName: String = "teams"
 
   override def format: Format[Team] = json.TeamFormat
@@ -586,9 +554,9 @@ class PostgresTenantTeamRepo(env: Env,
 }
 
 class PostgresTenantApiRepo(env: Env,
-                            reactivePgAsyncPool: ReactivePgAsyncPool,
+                            reactivePg: ReactivePg,
                             tenant: TenantId)
-  extends PostgresTenantAwareRepo[Api, ApiId](env, reactivePgAsyncPool, tenant) {
+  extends PostgresTenantAwareRepo[Api, ApiId](env, reactivePg, tenant) {
   override def format: Format[Api] = json.ApiFormat
 
   override def tableName: String = "apis"
@@ -597,10 +565,10 @@ class PostgresTenantApiRepo(env: Env,
 }
 
 class PostgresTenantTranslationRepo(env: Env,
-                                    reactivePgAsyncPool: ReactivePgAsyncPool,
+                                    reactivePg: ReactivePg,
                                     tenant: TenantId)
   extends PostgresTenantAwareRepo[Translation, DatastoreId](env,
-    reactivePgAsyncPool,
+    reactivePg,
     tenant) {
   override def tableName: String = "translations"
 
@@ -610,10 +578,10 @@ class PostgresTenantTranslationRepo(env: Env,
 }
 
 class PostgresTenantMessageRepo(env: Env,
-                                reactivePgAsyncPool: ReactivePgAsyncPool,
+                                reactivePg: ReactivePg,
                                 tenant: TenantId)
   extends PostgresTenantAwareRepo[Message, DatastoreId](env,
-    reactivePgAsyncPool,
+    reactivePg,
     tenant) {
   override def tableName: String = "messages"
 
@@ -623,11 +591,11 @@ class PostgresTenantMessageRepo(env: Env,
 }
 
 class PostgresTenantApiSubscriptionRepo(env: Env,
-                                        reactivePgAsyncPool: ReactivePgAsyncPool,
+                                        reactivePg: ReactivePg,
                                         tenant: TenantId)
   extends PostgresTenantAwareRepo[ApiSubscription, ApiSubscriptionId](
     env,
-    reactivePgAsyncPool,
+    reactivePg,
     tenant) {
   override def tableName: String = "api_subscriptions"
 
@@ -637,11 +605,11 @@ class PostgresTenantApiSubscriptionRepo(env: Env,
 }
 
 class PostgresTenantApiDocumentationPageRepo(env: Env,
-                                             reactivePgAsyncPool: ReactivePgAsyncPool,
+                                             reactivePg: ReactivePg,
                                              tenant: TenantId)
   extends PostgresTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId](
     env,
-    reactivePgAsyncPool,
+    reactivePg,
     tenant) {
   override def tableName: String = "api_documentation_pages"
 
@@ -652,10 +620,10 @@ class PostgresTenantApiDocumentationPageRepo(env: Env,
 }
 
 class PostgresTenantNotificationRepo(env: Env,
-                                     reactivePgAsyncPool: ReactivePgAsyncPool,
+                                     reactivePg: ReactivePg,
                                      tenant: TenantId)
   extends PostgresTenantAwareRepo[Notification, NotificationId](env,
-    reactivePgAsyncPool,
+    reactivePg,
     tenant) {
   override def tableName: String = "notifications"
 
@@ -666,10 +634,10 @@ class PostgresTenantNotificationRepo(env: Env,
 }
 
 class PostgresTenantConsumptionRepo(env: Env,
-                                    reactivePgAsyncPool: ReactivePgAsyncPool,
+                                    reactivePg: ReactivePg,
                                     tenant: TenantId)
   extends PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId](env,
-    reactivePgAsyncPool,
+    reactivePg,
     tenant) {
   override def tableName: String = "consumptions"
 
@@ -680,10 +648,10 @@ class PostgresTenantConsumptionRepo(env: Env,
 }
 
 class PostgresTenantAuditTrailRepo(env: Env,
-                                   reactivePgAsyncPool: ReactivePgAsyncPool,
+                                   reactivePg: ReactivePg,
                                    tenant: TenantId)
   extends PostgresTenantAwareRepo[JsObject, DatastoreId](env,
-    reactivePgAsyncPool,
+    reactivePg,
     tenant) {
   val _fmt = new Format[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
@@ -699,8 +667,8 @@ class PostgresTenantAuditTrailRepo(env: Env,
   override def extractId(value: JsObject): String = (value \ "_id").as[String]
 }
 
-class PostgresUserRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[User, UserId](env, reactivePgAsyncPool)
+class PostgresUserRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[User, UserId](env, reactivePg)
     with UserRepo {
   override def tableName: String = "users"
 
@@ -709,8 +677,8 @@ class PostgresUserRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
   override def extractId(value: User): String = value.id.value
 }
 
-class PostgresTeamRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[Team, TeamId](env, reactivePgAsyncPool) {
+class PostgresTeamRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[Team, TeamId](env, reactivePg) {
   override def tableName: String = "teams"
 
   override def format: Format[Team] = json.TeamFormat
@@ -718,8 +686,8 @@ class PostgresTeamRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
   override def extractId(value: Team): String = value.id.value
 }
 
-class PostgresTranslationRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[Translation, DatastoreId](env, reactivePgAsyncPool) {
+class PostgresTranslationRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[Translation, DatastoreId](env, reactivePg) {
   override def tableName: String = "translations"
 
   override def format: Format[Translation] = json.TranslationFormat
@@ -727,8 +695,8 @@ class PostgresTranslationRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool
   override def extractId(value: Translation): String = value.id.value
 }
 
-class PostgresMessageRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[Message, DatastoreId](env, reactivePgAsyncPool) {
+class PostgresMessageRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[Message, DatastoreId](env, reactivePg) {
   override def tableName: String = "messages"
 
   override def format: Format[Message] = json.MessageFormat
@@ -736,8 +704,8 @@ class PostgresMessageRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
   override def extractId(value: Message): String = value.id.value
 }
 
-class PostgresApiRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[Api, ApiId](env, reactivePgAsyncPool) {
+class PostgresApiRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[Api, ApiId](env, reactivePg) {
   override def tableName: String = "apis"
 
   override def format: Format[Api] = json.ApiFormat
@@ -745,8 +713,8 @@ class PostgresApiRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
   override def extractId(value: Api): String = value.id.value
 }
 
-class PostgresApiSubscriptionRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[ApiSubscription, ApiSubscriptionId](env, reactivePgAsyncPool) {
+class PostgresApiSubscriptionRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[ApiSubscription, ApiSubscriptionId](env, reactivePg) {
   override def tableName: String = "api_subscriptions"
 
   override def format: Format[ApiSubscription] = json.ApiSubscriptionFormat
@@ -755,10 +723,10 @@ class PostgresApiSubscriptionRepo(env: Env, reactivePgAsyncPool: ReactivePgAsync
 }
 
 class PostgresApiDocumentationPageRepo(env: Env,
-                                       reactivePgAsyncPool: ReactivePgAsyncPool)
+                                       reactivePg: ReactivePg)
   extends PostgresRepo[ApiDocumentationPage, ApiDocumentationPageId](
     env,
-    reactivePgAsyncPool) {
+    reactivePg) {
   override def tableName: String = "api_documentation_pages"
 
   override def format: Format[ApiDocumentationPage] =
@@ -767,8 +735,8 @@ class PostgresApiDocumentationPageRepo(env: Env,
   override def extractId(value: ApiDocumentationPage): String = value.id.value
 }
 
-class PostgresNotificationRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[Notification, NotificationId](env, reactivePgAsyncPool) {
+class PostgresNotificationRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[Notification, NotificationId](env, reactivePg) {
   override def tableName: String = "notifications"
 
   override def format: Format[Notification] =
@@ -777,8 +745,8 @@ class PostgresNotificationRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPoo
   override def extractId(value: Notification): String = value.id.value
 }
 
-class PostgresConsumptionRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[ApiKeyConsumption, DatastoreId](env, reactivePgAsyncPool) {
+class PostgresConsumptionRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[ApiKeyConsumption, DatastoreId](env, reactivePg) {
   override def tableName: String = "consumptions"
 
   override def format: Format[ApiKeyConsumption] = json.ConsumptionFormat
@@ -786,8 +754,8 @@ class PostgresConsumptionRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool
   override def extractId(value: ApiKeyConsumption): String = value.id.value
 }
 
-class PostgresUserSessionRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[UserSession, DatastoreId](env, reactivePgAsyncPool)
+class PostgresUserSessionRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[UserSession, DatastoreId](env, reactivePg)
     with UserSessionRepo {
   override def tableName: String = "user_sessions"
 
@@ -797,8 +765,8 @@ class PostgresUserSessionRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool
   override def extractId(value: UserSession): String = value.id.value
 }
 
-class PostgresAuditTrailRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends PostgresRepo[JsObject, DatastoreId](env, reactivePgAsyncPool) {
+class PostgresAuditTrailRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[JsObject, DatastoreId](env, reactivePg) {
   val _fmt = new Format[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
       JsSuccess(json.as[JsObject])
@@ -815,10 +783,10 @@ class PostgresAuditTrailRepo(env: Env, reactivePgAsyncPool: ReactivePgAsyncPool)
 
 abstract class PostgresRepo[Of, Id <: ValueType](
                                                   env: Env,
-                                                  reactivePgAsyncPool: ReactivePgAsyncPool)
-  extends CommonRepo[Of, Id](env, reactivePgAsyncPool) {
+                                                  reactivePg: ReactivePg)
+  extends CommonRepo[Of, Id](env, reactivePg) {
 
-  private lazy val logger: Logger = Logger(s"PostgresRepo")
+  private implicit lazy val logger: Logger = Logger(s"PostgresRepo")
 
   override def find(
                      query: JsObject,
@@ -828,37 +796,30 @@ abstract class PostgresRepo[Of, Id <: ValueType](
 
     sort match {
       case None =>
-        reactivePgAsyncPool.query { dsl =>
-          if (query.values.isEmpty) dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName))
-          else
-            dsl.resultQuery(
-              "SELECT * FROM {0} WHERE {1}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query))
-            )
-        }
-          .map(getContentsListFromJson(_, format))
-      case Some(s) =>
-        reactivePgAsyncPool.query { dsl =>
           if (query.values.isEmpty)
-            dsl.resultQuery(
-              "SELECT *, {2} FROM {0} ORDER BY {1}",
-              DSL.table(tableName),
-              DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
-              DSL.table(s.keys.map { key =>
+            reactivePg.querySeq(s"SELECT * FROM $tableName"){ rowToJson(_, format) }
+          else {
+            val (sql, params) = convertQuery(query)
+            reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", Seq(params)){ rowToJson(_, format) }
+          }
+
+      case Some(s) =>
+          if (query.values.isEmpty) reactivePg.querySeq(s"SELECT *, $$2 FROM $tableName ORDER BY $$1",
+            Seq(
+              s.keys.map(key => s"$quotes$key$quotes").mkString(","),
+              s.keys.map { key =>
                 s"content->>'$key' as $quotes$key$quotes"
-              }.mkString(",")))
-          else
-            dsl.resultQuery(
-              "SELECT *, {3} FROM {0} WHERE {1} ORDER BY {2}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query)),
-              DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
-              DSL.table(s.keys.map { key =>
-                s"content->>'$key' as $quotes$key$quotes"
-              }.mkString(",")))
-        }
-          .map(getContentsListFromJson(_, format))
+              }.mkString(","))) { rowToJson(_, format) }
+          else {
+            val (sql, params) = convertQuery(query)
+            reactivePg.querySeq(s"SELECT *, $${params.size+1} FROM $tableName WHERE $sql ORDER BY $${params.size}",
+              params ++ Seq(
+                s.keys.map(key => s"$quotes$key$quotes").mkString(","),
+                s.keys.map { key =>
+                  s"content->>'$key' as $quotes$key$quotes"
+                }.mkString(",")
+              )) { rowToJson(_, format) }
+          }
     }
   }
 
@@ -867,15 +828,12 @@ abstract class PostgresRepo[Of, Id <: ValueType](
   override def deleteByIdLogically(id: String)(
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteByIdLogically($id)")
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("UPDATE {0} " +
+    reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        "WHERE _id = {1} AND _deleted = false",
-        DSL.table(tableName),
-        DSL.inline(id)
+        s"WHERE _id = $$1 AND _deleted = false",
+        Seq(id)
       )
-    }
-      .map(_ > 0)
+      .map(_.size() > 0)
   }
 
   override def deleteByIdLogically(id: Id)(
@@ -887,28 +845,19 @@ abstract class PostgresRepo[Of, Id <: ValueType](
   override def deleteLogically(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("UPDATE {0} " +
+    val (sql, params) = convertQuery(query)
+    reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        "WHERE _deleted = false AND {1}",
-        DSL.table(tableName),
-        DSL.table(convertQuery(query))
-      )
-    }
-      .map(_ > 0)
+        s"WHERE _deleted = false AND $sql", params)
+      .map(_.size() > 0)
   }
 
   override def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteAllLogically()")
-    reactivePgAsyncPool.execute { dsl =>
-      dsl
-        .resultQuery("UPDATE {0} " +
+    reactivePg.query(s"UPDATE $tableName " +
           "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE _deleted = false",
-          DSL.table(tableName)
-        )
-    }
-      .map(_ > 0)
+          "WHERE _deleted = false")
+      .map(_.size() > 0)
   }
 
   override def findWithPagination(query: JsObject, page: Int, pageSize: Int)
@@ -918,26 +867,21 @@ abstract class PostgresRepo[Of, Id <: ValueType](
 
 abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
                                                              env: Env,
-                                                             reactivePgAsyncPool: ReactivePgAsyncPool,
+                                                             reactivePg: ReactivePg,
                                                              tenant: TenantId)
-  extends CommonRepo[Of, Id](env, reactivePgAsyncPool) {
+  extends CommonRepo[Of, Id](env, reactivePg) {
 
-  val logger: Logger = Logger(s"PostgresTenantAwareRepo")
+  implicit val logger: Logger = Logger(s"PostgresTenantAwareRepo")
 
   override def deleteByIdLogically(id: String)(
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteByIdLogically($id)")
 
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("UPDATE {0} " +
+    reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        "WHERE _id = {1} AND content ->> '_tenant' = {2}",
-        DSL.table(tableName),
-        DSL.inline(id),
-        DSL.inline(tenant.value)
-      )
-    }
-      .map(_ > 0)
+        s"WHERE _id = $$1 AND content ->> '_tenant' = $$2",
+      Seq(id, tenant.value))
+      .map(_.size() > 0)
   }
 
   override def deleteByIdLogically(id: Id)(
@@ -948,32 +892,25 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
   override def deleteLogically(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
-
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("UPDATE {0} " +
+    val (sql, params) = convertQuery(query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value))
+    reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        "WHERE content ->> '_tenant' = {1} AND {2}",
-        DSL.table(tableName),
-        DSL.inline(tenant.value),
-        DSL.table(convertQuery(query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value)))
+        s"WHERE content ->> '_tenant' = ${getParam(params.size)} AND $sql",
+        params ++ Seq(tenant.value)
       )
-    }
-      .map(_ > 0)
+      .map(_.size() > 0)
   }
 
   override def deleteAllLogically()(
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteAllLogically()")
 
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("UPDATE {0} " +
+    reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        "WHERE content ->> '_tenant' = {1} AND _deleted = false",
-        DSL.table(tableName),
-        DSL.inline(tenant.value)
+        s"WHERE content ->> '_tenant' = $$1 AND _deleted = false",
+        Seq(tenant.value)
       )
-    }
-      .map(_ > 0)
+      .map(_.size() > 0)
   }
 
   override def find(
@@ -984,39 +921,30 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
     sort match {
       case None =>
-        reactivePgAsyncPool.query { dsl =>
-          if (query.values.isEmpty)
-            dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName))
-          else
-            dsl.resultQuery(
-              "SELECT * FROM {0} WHERE {1}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query ++ Json.obj("_tenant" -> tenant.value))))
+        if (query.values.isEmpty)
+        reactivePg.querySeq(s"SELECT * FROM $tableName") { rowToJson(_, format)}
+        else {
+          val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
+          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params) { rowToJson(_, format) }
         }
-          .map(getContentsListFromJson(_, format))
       case Some(s) =>
-        reactivePgAsyncPool.query { dsl =>
-          if (query.values.isEmpty)
-            dsl.resultQuery(
-              "SELECT *, {2} FROM {0} ORDER BY {1}",
-              DSL.table(tableName),
-              DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
-              DSL.table(s.keys.map { key =>
+        if (query.values.isEmpty)
+          reactivePg.querySeq(s"SELECT *, $$2 FROM $tableName ORDER BY $$1", Seq(
+            s.keys.map(key => s"$quotes$key$quotes").mkString(","),
+            s.keys.map { key =>
+              s"content->>'$key' as $quotes$key$quotes"
+            }.mkString(",")
+          )) { rowToJson(_, format) }
+        else {
+          val (sql, params) = convertQuery(query)
+          reactivePg.querySeq(s"SELECT *, ${getParam(params.size +1)} FROM $tableName WHERE $sql ORDER BY ${getParam(params.size)}",
+            params ++ Seq(
+              s.keys.map(key => s"$quotes$key$quotes").mkString(","),
+              s.keys.map { key =>
                 s"content->>'$key' as $quotes$key$quotes"
-              }.mkString(","))
-            )
-          else
-            dsl.resultQuery(
-              "SELECT *, {3} FROM {0} WHERE {1} ORDER BY {2}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query)),
-              DSL.table(s.keys.map(key => s"$quotes$key$quotes").mkString(",")),
-              DSL.table(s.keys.map { key =>
-                s"content->>'$key' as $quotes$key$quotes"
-              }.mkString(","))
-            )
+              }.mkString(",")
+            )) { rowToJson(_, format) }
         }
-          .map(getContentsListFromJson(_, format))
     }
   }
 
@@ -1044,10 +972,10 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 }
 
 abstract class CommonRepo[Of, Id <: ValueType](env: Env,
-                                               reactivePgAsyncPool: ReactivePgAsyncPool)
+                                               reactivePg: ReactivePg)
   extends RepositoryPostgres[Of, Id] {
 
-  private val logger = Logger("CommonPostgresRepo")
+  private implicit val logger = Logger("CommonPostgresRepo")
 
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
@@ -1061,94 +989,76 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
   override def count(query: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
-    reactivePgAsyncPool
-      .queryOne(dsl =>
-        if (query.values.isEmpty)
-          dsl.resultQuery("SELECT COUNT(*) as count FROM {0}", DSL.table(tableName))
-        else
-          dsl.resultQuery("SELECT COUNT(*) as count FROM {0} WHERE {1}",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query))
-          )
-      )
-      .map(res => res.map(_.get("count", classOf[Long])).getOrElse(0L))
+    if (query.values.isEmpty)
+        reactivePg.queryOne(s"SELECT COUNT(*) as count FROM $tableName")
+        { _.optLong("count") }
+          .map(_.getOrElse(0L))
+    else {
+      val (sql, params) = convertQuery(query)
+      reactivePg.queryOne(s"SELECT COUNT(*) as count FROM $tableName WHERE $sql", params)
+      { _.optLong("count") }
+      .map(_.getOrElse(0L))
+    }
   }
 
   override def exists(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("SELECT 1 FROM {0} WHERE {1}",
-        DSL.table(tableName),
-        DSL.table(convertQuery(query))
-      )
-    }
-      .map(_ > 0)
+    implicit ec: ExecutionContext): Future[Boolean] = {
+    val (sql, params) = convertQuery(query)
+    reactivePg.query(s"SELECT 1 FROM $tableName WHERE $sql", params)
+      .map(_.size() > 0)
+  }
 
   override def streamAllRaw(query: JsObject = Json.obj())(implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
     logger.debug(s"$tableName.streamAllRaw(${Json.prettyPrint(query)})")
 
     Source
       .future(
-        reactivePgAsyncPool
-          .query(dsl => dsl.resultQuery("SELECT * FROM {0}", DSL.table(tableName)))
-          .map { res => JsArray(res.map(recordContentToJson)) }
+        reactivePg
+          .querySeq(s"SELECT * FROM $tableName") { row =>
+            rowToJson(row, format)
+          }
+          .map(res => JsArray(res.map(r => r.asInstanceOf[JsValue])))
       )
   }
 
   override def findOne(query: JsObject)(
     implicit ec: ExecutionContext): Future[Option[Of]] = {
-    reactivePgAsyncPool
-      .queryOne(
-        dsl => dsl.resultQuery(
-          "SELECT * FROM {0} WHERE {1} LIMIT 1",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query)))
-      )
-      .map(getContentFromJson(_, format))
+    val (sql, params) = convertQuery(query)
+    reactivePg
+      .queryOne(s"SELECT * FROM $tableName WHERE $sql LIMIT 1", params) { row =>
+        rowToJson(row, format)
+      }
   }
 
   override def delete(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.delete(${Json.prettyPrint(query)})")
 
-    reactivePgAsyncPool
-      .execute(dsl =>
-        if (query.values.isEmpty)
-          dsl.resultQuery("DELETE FROM {0}", DSL.table(tableName))
-        else
-          dsl.resultQuery(
-            "DELETE FROM {0} WHERE {1}",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query))
-          )
-      )
-      .map(_ > 0)
+    if (query.values.isEmpty)
+      reactivePg.query(s"DELETE FROM $tableName")
+        .map(_.size() > 0)
+    else {
+      val (sql, params) = convertQuery(query)
+      reactivePg.query(s"DELETE FROM $tableName WHERE $sql", params)
+    }
+      .map(_.size() > 0)
   }
 
   override def save(query: JsObject, value: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.save(${Json.prettyPrint(query)})")
 
-    reactivePgAsyncPool.execute { dsl =>
+    (
       if (value.keys.contains("_deleted"))
-        dsl
-          .resultQuery("INSERT INTO {0}(_id, _deleted, content) VALUES({1},{2},{3}) " +
-            "ON CONFLICT (_id) DO UPDATE " +
-            "set _deleted = {2}, content = {3}",
-            DSL.table(tableName),
-            DSL.inline((value \ "_id").as[String]),
-            DSL.inline((value \ "_deleted").as[Boolean]),
-            DSL.inline(value)
-          )
+      reactivePg.query(s"INSERT INTO $tableName(_id, _deleted, content) VALUES($$1,$$2,$$3) " +
+          "ON CONFLICT (_id) DO UPDATE " +
+          s"set _deleted = $$2, content = $$3",
+      Seq((value \ "_id").as[String], (value \ "_deleted").as[Boolean].asInstanceOf[AnyRef], value))
       else
-        dsl
-          .resultQuery("INSERT INTO {0}(_id, content) VALUES({1},{2}) ON CONFLICT (_id) DO UPDATE set content = {2}",
-            DSL.table(tableName),
-            DSL.inline((value \ "_id").as[String]),
-            DSL.inline(value)
-          )
-    }
-      .map(_ > 0)
+        reactivePg.query(s"INSERT INTO $tableName(_id, content) VALUES($$1,$$2) ON CONFLICT (_id) DO UPDATE set content = $$2",
+        Seq((value \ "_id").as[String], value))
+    )
+      .map(_.size() > 0)
   }
 
   def insertMany(values: Seq[Of], addToPayload: JsObject)(
@@ -1157,16 +1067,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     val payloads = values.map(v =>
       format.writes(v).as[JsObject] ++ addToPayload)
 
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery(
-        "INSERT INTO {0}(_id, content) VALUES{1}",
-        DSL.table(tableName),
-        DSL.table(payloads.map { payload =>
-          s"(${DSL.inline((payload \ "_id").as[String])}, ${DSL.inline(payload)})"
-        }
+    reactivePg.query(s"INSERT INTO $tableName(_id, content) VALUES $$1",
+        Seq(
+          payloads.map { payload =>
+            s"(${(payload \ "_id").as[String]}, $payload)"
+          }
           .mkString(","))
       )
-    }
       .map(_.asInstanceOf[Long])
   }
 
@@ -1177,13 +1084,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.updateMany(${Json.prettyPrint(query)})")
 
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("UPDATE {0} SET content = content || {1} WHERE {2}",
-        DSL.table(tableName),
-        DSL.inline(value),
-        DSL.table(convertQuery(query))
-      )
-    }
+    val (sql, params) = convertQuery(query)
+    reactivePg.query(s"UPDATE $tableName SET content = content || ${getParam(params.size)} WHERE $sql",
+        params ++ Seq(value))
       .map(_.asInstanceOf[Long])
   }
 
@@ -1191,15 +1094,11 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)})")
 
-    reactivePgAsyncPool.execute { dsl =>
-      dsl.resultQuery("UPDATE {0} " +
-        "SET {1}" +
-        "WHERE {2}",
-        DSL.table(tableName),
-        DSL.table(convertQuery(queryUpdate)),
-        DSL.table(convertQuery(query))
-      )
-    }
+    val (sql1, params1) = convertQuery(queryUpdate)
+    val (sql2, params2) = convertQuery(query)
+    reactivePg.query(s"UPDATE $tableName SET $sql1 WHERE $sql2",
+      params1 ++ params2
+    )
       .map(_.asInstanceOf[Long])
   }
 
@@ -1207,87 +1106,82 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     implicit ec: ExecutionContext): Future[Option[Long]] = {
     logger.debug(s"$tableName.findMaxByQuery(${Json.prettyPrint(query)})")
 
-    reactivePgAsyncPool.queryOne { dsl =>
-      dsl.resultQuery(
-        "SELECT MAX({2})::bigint as total " +
-          "FROM {0} " +
-          "WHERE {1}",
-        DSL.table(tableName),
-        DSL.table(convertQuery(query)),
-        DSL.table(s"content->>'$field'")
-      )
-    }
-      .map(_.map(res => res.get("total", classOf[Long])))
+    val (sql, params) = convertQuery(query)
+    reactivePg.queryOne(
+        s"SELECT MAX(${getParam(params.size)})::bigint as total FROM $tableName WHERE $sql",
+        params ++ Seq(s"content->>'$field'")
+      ) { row => row.optLong("total") }
   }
 
   override def findWithProjection(query: JsObject, projection: JsObject)(
     implicit ec: ExecutionContext
-  ): Future[Seq[JsObject]] =
-    reactivePgAsyncPool.query { dsl =>
-      logger.debug(s"$tableName.findWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+  ): Future[Seq[JsObject]] = {
+    logger.debug(s"$tableName.findWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
 
-      if (query.values.isEmpty) dsl.resultQuery(
-        "SELECT {1} FROM {0}",
-        DSL.table(tableName),
-        DSL.table(if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
-      )
-      else
-        dsl.resultQuery(
-          "SELECT {2} FROM {0} WHERE {1}",
-          DSL.table(tableName),
-          DSL.table(convertQuery(query)),
-          DSL.table(if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
-        )
+    if (query.values.isEmpty)
+      reactivePg.querySeq(s"SELECT * FROM $tableName"){ row =>
+        projection.keys.map(key => Json.obj(key -> row.getString(key)))
+          .foldLeft(Json.obj())(_ ++ _)
+          .some
+      }
+    else {
+      val (sql, params ) = convertQuery(query)
+      reactivePg.querySeq(s"SELECT ${getParam(params.size)} FROM $tableName WHERE $sql",
+        params ++ Seq(projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
+      ){ row =>
+        projection.keys.map(key => Json.obj(key -> row.getString(key)))
+          .foldLeft(Json.obj())(_ ++ _)
+          .some
+      }
     }
-      .map(getFieldsListFromJson(_, projection.keys))
-      .map(_.asInstanceOf[Seq[JsObject]])
+  }
 
   override def findOneWithProjection(query: JsObject, projection: JsObject)(
     implicit ec: ExecutionContext
   ): Future[Option[JsObject]] = {
     logger.debug(s"$tableName.findOneWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
-    reactivePgAsyncPool
-      .queryOne { dsl =>
-        if (query.values.isEmpty)
-          dsl.resultQuery(
-            "SELECT {1} FROM {0}",
-            DSL.table(tableName),
-            if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
-        else
-          dsl.resultQuery(
-            "SELECT {2} FROM {0} WHERE {1}",
-            DSL.table(tableName),
-            DSL.table(convertQuery(query)),
-            if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
+
+    if (query.values.isEmpty) {
+      reactivePg.queryOne(s"SELECT $$1 FROM $tableName",
+        Seq(if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))) { row =>
+        projection.keys.map(key =>
+          Json.obj(key -> row.getString(key))
+        )
+          .foldLeft(Json.obj())(_ ++ _)
+          .some
       }
-      .map(getFieldsFromJson(_, projection.keys))
-      .asInstanceOf[Future[Option[JsObject]]]
+    }
+    else {
+      val (sql, params) = convertQuery(query)
+      reactivePg.queryOne(s"SELECT ${getParam(params.size)} FROM $tableName WHERE $sql",
+        params ++ Seq(
+          if (projection.values.isEmpty) "*" else projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))) { row =>
+        projection.keys.map(key =>
+          Json.obj(key -> row.getString(key))
+        )
+          .foldLeft(Json.obj())(_ ++ _)
+          .some
+      }
+    }
   }
 
   override def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
     implicit ec: ExecutionContext
   ): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
+
     for {
       count <- count(query)
       queryRes <- {
-        reactivePgAsyncPool.query { dsl =>
-          if (query.values.isEmpty) dsl.resultQuery(
-            "SELECT * FROM {0} ORDER BY _id DESC LIMIT {1} OFFSET {2}",
-            DSL.table(tableName),
-            DSL.inline(pageSize),
-            DSL.inline(page * pageSize)
-          )
-          else
-            dsl.resultQuery(
-              "SELECT * FROM {0} WHERE {1} ORDER BY _id DESC LIMIT {2} OFFSET {3}",
-              DSL.table(tableName),
-              DSL.table(convertQuery(query)),
-              DSL.inline(pageSize.toString),
-              DSL.inline((page * pageSize).toString)
-            )
+          if (query.values.isEmpty)
+            reactivePg.querySeq(
+          s"SELECT * FROM $tableName ORDER BY _id DESC LIMIT $$1 OFFSET $$2",
+              Seq(pageSize.toString, (page * pageSize).toString)) { rowToJson(_, format) }
+          else {
+            val (sql, params) = convertQuery(query)
+            reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql ORDER BY _id DESC LIMIT ${params.size} OFFSET ${params.size+1}",
+            params ++ Seq(pageSize.toString, (page * pageSize).toString)) { rowToJson(_, format) }
         }
-          .map(getContentsListFromJson(_, format))
       }
     } yield {
       (queryRes, count)
