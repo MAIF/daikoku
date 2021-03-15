@@ -10,6 +10,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import io.vertx.core.Vertx
+import io.vertx.core.json.JsonObject
 import io.vertx.pgclient.{PgConnectOptions, PgPool}
 import io.vertx.sqlclient.{PoolOptions, Row, RowSet}
 import play.api.{Configuration, Logger}
@@ -184,13 +185,13 @@ case class PostgresTenantCapableConsumptionRepo(
     val (sql, params) = convertQuery(filter)
 
     reactivePg.querySeq(
-        s"SELECT _id, content->>'clientId' as clientid, MAX(content->>'from') as maxfrom FROM ${rep.tableName} " +
+        s"SELECT _id, content->>'clientId', MAX(content->>'from') FROM ${rep.tableName} " +
           s"WHERE $sql " +
           "GROUP BY content->>'clientId', _id", params)
     { row =>
           Json.obj(
-            "clientId" -> row.getString("clientid"),
-            "from" -> row.getLong("maxfrom").longValue()
+            "clientId" -> row.getString(1),
+            "from" -> String.valueOf(row.getValue(2))
           ).some
     }
       .map(res => Future.sequence(res.map(queryResult => findOne(queryResult, rep.tableName, rep.format))))
@@ -350,14 +351,14 @@ class PostgresDataStore(configuration: Configuration, env: Env)
           case Some(_) => checkTables()
           case _ =>
             for {
-              _ <- reactivePg.query(s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
+              _ <- reactivePg.rawQuery(s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
               res <- checkTables()
             } yield res
         }
   }
 
   private def checkTables(): Future[Any] = {
-    reactivePg.queryOne("SELECT COUNT(*) " +
+    reactivePg.queryOne("SELECT COUNT(*) as count " +
           "FROM information_schema.tables " +
           "WHERE table_schema = $1", Seq(getSchema)) { row =>
         row.optLong("count")
@@ -366,7 +367,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       .map(s => {
         if (s == 0)
           createDatabase()
-        s
+        else
+          s
       })
   }
 
@@ -391,7 +393,11 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       .map { case (key, value) => createTable(key, value) })
 
   def createTable(table: String, allFields: Boolean): Future[RowSet[Row]] = {
-    reactivePg.query(s"CREATE TABLE '$getSchema'.$table (" +
+    logger.error(s"CREATE TABLE $getSchema.$table (" +
+      s"_id character varying PRIMARY KEY," +
+      s"${if (allFields) "_deleted BOOLEAN," else ""}" +
+      s"content JSONB)")
+    reactivePg.rawQuery(s"CREATE TABLE $getSchema.$table (" +
         s"_id character varying PRIMARY KEY," +
         s"${if (allFields) "_deleted BOOLEAN," else ""}" +
         s"content JSONB)")
@@ -792,7 +798,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
                      query: JsObject,
                      sort: Option[JsObject] = None,
                      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
-    logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
+    logger.error(s"$tableName.find(${Json.prettyPrint(query)})")
 
     sort match {
       case None =>
@@ -800,7 +806,9 @@ abstract class PostgresRepo[Of, Id <: ValueType](
             reactivePg.querySeq(s"SELECT * FROM $tableName"){ rowToJson(_, format) }
           else {
             val (sql, params) = convertQuery(query)
-            reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", Seq(params)){ rowToJson(_, format) }
+            logger.error(s"$sql")
+            logger.error(s"$params")
+            reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params){ rowToJson(_, format) }
           }
 
       case Some(s) =>
@@ -830,7 +838,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     logger.debug(s"$tableName.deleteByIdLogically($id)")
     reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE _id = $$1 AND _deleted = false",
+        s"WHERE _id = $$1 AND _deleted = false  RETURNING _id",
         Seq(id)
       )
       .map(_.size() > 0)
@@ -848,7 +856,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     val (sql, params) = convertQuery(query)
     reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE _deleted = false AND $sql", params)
+        s"WHERE _deleted = false AND $sql  RETURNING _id", params)
       .map(_.size() > 0)
   }
 
@@ -856,7 +864,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     logger.debug(s"$tableName.deleteAllLogically()")
     reactivePg.query(s"UPDATE $tableName " +
           "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE _deleted = false")
+          "WHERE _deleted = false RETURNING _id")
       .map(_.size() > 0)
   }
 
@@ -879,7 +887,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
     reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE _id = $$1 AND content ->> '_tenant' = $$2",
+        s"WHERE _id = $$1 AND content ->> '_tenant' = $$2  RETURNING _id",
       Seq(id, tenant.value))
       .map(_.size() > 0)
   }
@@ -895,7 +903,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     val (sql, params) = convertQuery(query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value))
     reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE content ->> '_tenant' = ${getParam(params.size)} AND $sql",
+        s"WHERE content ->> '_tenant' = ${getParam(params.size)} AND $sql  RETURNING _id",
         params ++ Seq(tenant.value)
       )
       .map(_.size() > 0)
@@ -907,7 +915,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
     reactivePg.query(s"UPDATE $tableName " +
         "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE content ->> '_tenant' = $$1 AND _deleted = false",
+        s"WHERE content ->> '_tenant' = $$1 AND _deleted = false  RETURNING _id",
         Seq(tenant.value)
       )
       .map(_.size() > 0)
@@ -917,7 +925,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
                      query: JsObject,
                      sort: Option[JsObject] = None,
                      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
-    logger.debug(s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
+    logger.error(s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
 
     sort match {
       case None =>
@@ -925,6 +933,8 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         reactivePg.querySeq(s"SELECT * FROM $tableName") { rowToJson(_, format)}
         else {
           val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
+          logger.error(s"$sql")
+          logger.error(s"$params")
           reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params) { rowToJson(_, format) }
         }
       case Some(s) =>
@@ -989,6 +999,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
   override def count(query: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
+
     if (query.values.isEmpty)
         reactivePg.queryOne(s"SELECT COUNT(*) as count FROM $tableName")
         { _.optLong("count") }
@@ -1004,6 +1015,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
   override def exists(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
     val (sql, params) = convertQuery(query)
+    logger.error(s"$sql")
     reactivePg.query(s"SELECT 1 FROM $tableName WHERE $sql", params)
       .map(_.size() > 0)
   }
@@ -1025,8 +1037,11 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     implicit ec: ExecutionContext): Future[Option[Of]] = {
     val (sql, params) = convertQuery(query)
     reactivePg
-      .queryOne(s"SELECT * FROM $tableName WHERE $sql LIMIT 1", params) { row =>
-        rowToJson(row, format)
+      .queryOne(s"SELECT * FROM $tableName WHERE " + sql + " LIMIT 1", params) { row =>
+        row.optJsObject("content").map(format.reads).collect {
+          case JsSuccess(s, _) => s
+          case JsError(errors) => None.asInstanceOf[Of]
+        }
       }
   }
 
@@ -1046,35 +1061,48 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
 
   override def save(query: JsObject, value: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.debug(s"$tableName.save(${Json.prettyPrint(query)})")
+    logger.debug(s"$tableName.save(${Json.prettyPrint(query)}) with value ${Json.prettyPrint(value)}")
 
+    logger.error(s"${(value \ "closed").asOpt[String]}")
     (
       if (value.keys.contains("_deleted"))
       reactivePg.query(s"INSERT INTO $tableName(_id, _deleted, content) VALUES($$1,$$2,$$3) " +
           "ON CONFLICT (_id) DO UPDATE " +
           s"set _deleted = $$2, content = $$3",
-      Seq((value \ "_id").as[String], (value \ "_deleted").as[Boolean].asInstanceOf[AnyRef], value))
+      Seq(
+        (value \ "_id").as[String],
+        java.lang.Boolean.valueOf((value \ "_deleted").as[Boolean]),
+        new JsonObject(Json.stringify(value)))
+      )
       else
-        reactivePg.query(s"INSERT INTO $tableName(_id, content) VALUES($$1,$$2) ON CONFLICT (_id) DO UPDATE set content = $$2",
-        Seq((value \ "_id").as[String], value))
+        reactivePg.query(s"INSERT INTO $tableName(_id, content) VALUES($$1,$$2) " +
+          "ON CONFLICT (_id) DO UPDATE " +
+          s"set content = $$2",
+        Seq((value \ "_id").as[String], new JsonObject(Json.stringify(value))))
     )
-      .map(_.size() > 0)
+      .map(_ => true)
+      .recover(_ => false)
   }
 
   def insertMany(values: Seq[Of], addToPayload: JsObject)(
     implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.insertMany()")
-    val payloads = values.map(v =>
-      format.writes(v).as[JsObject] ++ addToPayload)
 
-    reactivePg.query(s"INSERT INTO $tableName(_id, content) VALUES $$1",
-        Seq(
-          payloads.map { payload =>
-            s"(${(payload \ "_id").as[String]}, $payload)"
-          }
-          .mkString(","))
-      )
-      .map(_.asInstanceOf[Long])
+    val payloads = values.map(v => format.writes(v).as[JsObject] ++ addToPayload)
+
+    var orParams = Seq[AnyRef]()
+    var query : List[(String)] = List()
+
+    for (payload <- payloads) {
+      query = query :+ s"($${orParams.size}, $${orParams.size+1})"
+      orParams = orParams ++ Seq((payload \ "_id").as[String], new JsonObject(Json.stringify(payload)))
+    }
+
+    reactivePg.query(
+      s"INSERT INTO $tableName(_id, content) VALUES ${query.mkString(",")}  RETURNING _id",
+      orParams
+    )
+      .map(_.size())
   }
 
   override def insertMany(values: Seq[Of])(
@@ -1085,9 +1113,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     logger.debug(s"$tableName.updateMany(${Json.prettyPrint(query)})")
 
     val (sql, params) = convertQuery(query)
-    reactivePg.query(s"UPDATE $tableName SET content = content || ${getParam(params.size)} WHERE $sql",
-        params ++ Seq(value))
-      .map(_.asInstanceOf[Long])
+    reactivePg.query(s"UPDATE $tableName SET content = content || ${getParam(params.size)} WHERE $sql RETURNING _id",
+        params ++ Seq(new JsonObject(Json.stringify(value))))
+      .map(_.size())
   }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
@@ -1096,10 +1124,10 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
 
     val (sql1, params1) = convertQuery(queryUpdate)
     val (sql2, params2) = convertQuery(query)
-    reactivePg.query(s"UPDATE $tableName SET $sql1 WHERE $sql2",
+    reactivePg.query(s"UPDATE $tableName SET $sql1 WHERE $sql2  RETURNING _id",
       params1 ++ params2
     )
-      .map(_.asInstanceOf[Long])
+      .map(_.size())
   }
 
   override def findMaxByQuery(query: JsObject, field: String)(
@@ -1108,9 +1136,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
 
     val (sql, params) = convertQuery(query)
     reactivePg.queryOne(
-        s"SELECT MAX(${getParam(params.size)})::bigint as total FROM $tableName WHERE $sql",
-        params ++ Seq(s"content->>'$field'")
-      ) { row => row.optLong("total") }
+        s"SELECT MAX(content->>${getParam(params.size)})::bigint as total FROM $tableName WHERE $sql",
+        params ++ Seq(field)
+      ) {  row => Some(row.getLong(0).asInstanceOf[Long]) }
   }
 
   override def findWithProjection(query: JsObject, projection: JsObject)(
@@ -1174,13 +1202,15 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
       count <- count(query)
       queryRes <- {
           if (query.values.isEmpty)
-            reactivePg.querySeq(
-          s"SELECT * FROM $tableName ORDER BY _id DESC LIMIT $$1 OFFSET $$2",
-              Seq(pageSize.toString, (page * pageSize).toString)) { rowToJson(_, format) }
+              reactivePg.querySeq(
+                s"SELECT * FROM $tableName ORDER BY _id DESC LIMIT $$1 OFFSET $$2",
+                Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize)))
+              { row => rowToJson(row, format) }
           else {
             val (sql, params) = convertQuery(query)
-            reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql ORDER BY _id DESC LIMIT ${params.size} OFFSET ${params.size+1}",
-            params ++ Seq(pageSize.toString, (page * pageSize).toString)) { rowToJson(_, format) }
+            reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql ORDER BY _id DESC LIMIT $$${params.size+1} OFFSET $$${params.size+2}",
+            params ++ Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize)))
+            { row => rowToJson(row, format) }
         }
       }
     } yield {
