@@ -66,8 +66,8 @@ object Helper {
     if (field._1 == "$push") {
       val entry = field._2.as[JsObject].fields.head
       return (
-        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(params.size+1)} || ${getParam(params.size+2)})",
-        params ++ Seq(entry._1, entry._1, entry._2)
+        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(params.size)} || ${getParam(params.size+1)})",
+        params ++ Seq(entry._1, entry._2)
       )
     }
 

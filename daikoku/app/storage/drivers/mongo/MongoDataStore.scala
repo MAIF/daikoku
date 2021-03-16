@@ -922,10 +922,6 @@ abstract class CommonMongoRepo[Of, Id <: ValueType](
         .map(_.map(format.reads).collect {
           case JsSuccess(e, _) => e
         })
-        .recover(e => {
-          logger.error("findOneError", e)
-          None
-        })
   }
 
   override def delete(query: JsObject)(

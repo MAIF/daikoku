@@ -236,12 +236,10 @@ object utils {
           .run()
         _ <- Source(messages.toList)
           .mapAsync(1)(
-            i => {
-              println(i)
+            i =>
               daikokuComponents.env.dataStore.messageRepo
                 .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext)
-            })
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)
           .run()
       } yield ()

@@ -393,7 +393,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       .map { case (key, value) => createTable(key, value) })
 
   def createTable(table: String, allFields: Boolean): Future[RowSet[Row]] = {
-    logger.error(s"CREATE TABLE $getSchema.$table (" +
+    logger.debug(s"CREATE TABLE $getSchema.$table (" +
       s"_id character varying PRIMARY KEY," +
       s"${if (allFields) "_deleted BOOLEAN," else ""}" +
       s"content JSONB)")
@@ -798,7 +798,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
                      query: JsObject,
                      sort: Option[JsObject] = None,
                      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
-    logger.error(s"$tableName.find(${Json.prettyPrint(query)})")
+    logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
 
     sort match {
       case None =>
@@ -806,8 +806,6 @@ abstract class PostgresRepo[Of, Id <: ValueType](
             reactivePg.querySeq(s"SELECT * FROM $tableName"){ rowToJson(_, format) }
           else {
             val (sql, params) = convertQuery(query)
-            logger.error(s"$sql")
-            logger.error(s"$params")
             reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params){ rowToJson(_, format) }
           }
 
@@ -925,7 +923,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
                      query: JsObject,
                      sort: Option[JsObject] = None,
                      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
-    logger.error(s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
+    logger.debug(s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
 
     sort match {
       case None =>
@@ -933,8 +931,6 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         reactivePg.querySeq(s"SELECT * FROM $tableName") { rowToJson(_, format)}
         else {
           val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
-          logger.error(s"$sql")
-          logger.error(s"$params")
           reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params) { rowToJson(_, format) }
         }
       case Some(s) =>
@@ -1015,7 +1011,6 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
   override def exists(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {
     val (sql, params) = convertQuery(query)
-    logger.error(s"$sql")
     reactivePg.query(s"SELECT 1 FROM $tableName WHERE $sql", params)
       .map(_.size() > 0)
   }
@@ -1063,7 +1058,6 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.save(${Json.prettyPrint(query)}) with value ${Json.prettyPrint(value)}")
 
-    logger.error(s"${(value \ "closed").asOpt[String]}")
     (
       if (value.keys.contains("_deleted"))
       reactivePg.query(s"INSERT INTO $tableName(_id, _deleted, content) VALUES($$1,$$2,$$3) " +
@@ -1124,7 +1118,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
 
     val (sql1, params1) = convertQuery(queryUpdate)
     val (sql2, params2) = convertQuery(query)
-    reactivePg.query(s"UPDATE $tableName SET $sql1 WHERE $sql2  RETURNING _id",
+    reactivePg.query(s"UPDATE $tableName SET $sql1 WHERE $sql2 RETURNING _id",
       params1 ++ params2
     )
       .map(_.size())
