@@ -6,7 +6,7 @@ import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.DaikokuAdminOnly
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.PublicUserAccess
-import fr.maif.otoroshi.daikoku.domain.{MongoId, UserSession, UserSessionId}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, UserSession, UserSessionId}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -56,7 +56,7 @@ class SessionController(DaikokuAction: DaikokuAction,
         .asOpt[Int]
         .getOrElse(86400)
       val session = UserSession(
-        id = MongoId(BSONObjectID.generate().stringify),
+        id = DatastoreId(BSONObjectID.generate().stringify),
         userId = ctx.user.id,
         userName = ctx.user.name,
         userEmail = ctx.user.email,

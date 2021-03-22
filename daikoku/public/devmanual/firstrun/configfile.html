@@ -415,6 +415,30 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   </tbody>
 </table>
 <h2><a href="#db-configuration" name="db-configuration" class="anchor"><span class="anchor-link"></span></a>DB configuration</h2>
+<blockquote>
+  <p>Choose database</p>
+</blockquote>
+<table>
+  <thead>
+    <tr>
+      <th>name </th>
+      <th align="center">type </th>
+      <th>default value </th>
+      <th>description </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>daikoku.storage</code> </td>
+      <td align="center">string </td>
+      <td>&ldquo;mongo&rdquo; </td>
+      <td>You can use mongo or postgres database </td>
+    </tr>
+  </tbody>
+</table>
+<blockquote>
+  <p>Mongo configuration</p>
+</blockquote>
 <table>
   <thead>
     <tr>
@@ -430,6 +454,57 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
       <td align="center">string </td>
       <td>&ldquo;<a href="mongodb://localhost:27017/daikoku">mongodb://localhost:27017/daikoku</a>&rdquo; </td>
       <td>the uri to mongdb datastore </td>
+    </tr>
+  </tbody>
+</table>
+<blockquote>
+  <p>Postgres configuration</p>
+</blockquote>
+<table>
+  <thead>
+    <tr>
+      <th>name </th>
+      <th align="center">type </th>
+      <th>default value </th>
+      <th>description </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>daikoku.postgres.port</code> </td>
+      <td align="center">int </td>
+      <td>5432 </td>
+      <td>the port used to connect to datastore </td>
+    </tr>
+    <tr>
+      <td><code>daikoku.postgres.host</code> </td>
+      <td align="center">string </td>
+      <td>&ldquo;localhost&rdquo; </td>
+      <td>the host where datastore is </td>
+    </tr>
+    <tr>
+      <td><code>daikoku.postgres.database</code> </td>
+      <td align="center">string </td>
+      <td>&ldquo;default&rdquo; </td>
+      <td>the name of the database </td>
+    </tr>
+    <tr>
+      <td><code>daikoku.postgres.username</code> </td>
+      <td align="center">string </td>
+      <td>&ldquo;postgres&rdquo; </td>
+      <td>the user used to connect to database </td>
+    </tr>
+    <tr>
+      <td><code>daikoku.postgres.password</code> </td>
+      <td align="center">string </td>
+      <td>&ldquo;postgres&rdquo; </td>
+      <td>the password used to connect to database </td>
+    </tr>
+    <tr>
+      <td><code>daikoku.postgres.schema</code> </td>
+      <td align="center">string </td>
+      <td>&ldquo;public&rdquo; </td>
+      <td>the current schema </td>
     </tr>
   </tbody>
 </table>

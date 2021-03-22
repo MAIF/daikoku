@@ -7,7 +7,7 @@ import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TranslationElement._
-import fr.maif.otoroshi.daikoku.domain.{ApiId, MongoId, TeamId, Translation}
+import fr.maif.otoroshi.daikoku.domain.{ApiId, DatastoreId, TeamId, Translation}
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
@@ -41,7 +41,7 @@ class TranslationController(DaikokuAction: DaikokuAction,
                         case (key, value) =>
                           Translation(
                             id =
-                              MongoId(s"$language.${ctx.tenant.id.value}.$key"),
+                              DatastoreId(s"$language.${ctx.tenant.id.value}.$key"),
                             tenant = ctx.tenant.id,
                             language = language,
                             key = key,
@@ -79,7 +79,7 @@ class TranslationController(DaikokuAction: DaikokuAction,
                 values.as[JsObject].fields.map {
                   case (key, value) =>
                     Translation(
-                      id = MongoId(s"$language.${ctx.tenant.id.value}.$key"),
+                      id = DatastoreId(s"$language.${ctx.tenant.id.value}.$key"),
                       tenant = ctx.tenant.id,
                       language = language,
                       key = key,
@@ -111,7 +111,7 @@ class TranslationController(DaikokuAction: DaikokuAction,
               values.as[JsObject].fields.map {
                 case (key, value) =>
                   Translation(
-                    id = MongoId(s"$language.${ctx.tenant.id.value}.$key"),
+                    id = DatastoreId(s"$language.${ctx.tenant.id.value}.$key"),
                     tenant = ctx.tenant.id,
                     language = language,
                     key = key,

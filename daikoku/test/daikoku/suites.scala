@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
 import java.util.concurrent.TimeUnit
-
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import com.auth0.jwt.algorithms.Algorithm
@@ -305,7 +304,7 @@ object utils {
                     .map(_ => t))
               .flatMap { team =>
                 val session = UserSession(
-                  id = MongoId(BSONObjectID.generate().stringify),
+                  id = DatastoreId(BSONObjectID.generate().stringify),
                   userId = user.id,
                   userName = user.name,
                   userEmail = user.email,

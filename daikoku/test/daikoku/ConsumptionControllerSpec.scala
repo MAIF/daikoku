@@ -52,7 +52,7 @@ class ConsumptionControllerSpec()
   )
 
   val yesterdayConsumption: ApiKeyConsumption = ApiKeyConsumption(
-    id = MongoId("test"),
+    id = DatastoreId("test"),
     tenant = tenant.id,
     team = teamConsumerId,
     api = defaultApi.id,

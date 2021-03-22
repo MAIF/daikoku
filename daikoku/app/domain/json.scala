@@ -222,14 +222,14 @@ object json {
       } get
     override def writes(o: UserId): JsValue = JsString(o.value)
   }
-  val MongoIdFormat = new Format[MongoId] {
-    override def reads(json: JsValue): JsResult[MongoId] =
+  val DatastoreIdFormat = new Format[DatastoreId] {
+    override def reads(json: JsValue): JsResult[DatastoreId] =
       Try {
-        JsSuccess(MongoId(json.as[String]))
+        JsSuccess(DatastoreId(json.as[String]))
       } recover {
         case e => JsError(e.getMessage)
       } get
-    override def writes(o: MongoId): JsValue = JsString(o.value)
+    override def writes(o: DatastoreId): JsValue = JsString(o.value)
   }
   val ChatIdFormat = new Format[ChatId] {
     override def reads(json: JsValue): JsResult[ChatId] =
@@ -2160,7 +2160,7 @@ object json {
       Try {
         JsSuccess(
           UserSession(
-            id = (json \ "_id").as(MongoIdFormat),
+            id = (json \ "_id").as(DatastoreIdFormat),
             sessionId = (json \ "sessionId").as(UserSessionIdFormat),
             userId = (json \ "userId").as(UserIdFormat),
             userName = (json \ "userName").as[String],
@@ -2221,7 +2221,7 @@ object json {
         Try {
           JsSuccess(
             ApiKeyConsumption(
-              id = (json \ "_id").as(MongoIdFormat),
+              id = (json \ "_id").as(DatastoreIdFormat),
               tenant = (json \ "_tenant").as(TenantIdFormat),
               team = (json \ "team").as(TeamIdFormat),
               api = (json \ "api").as(ApiIdFormat),
@@ -2241,7 +2241,7 @@ object json {
         } get
 
       override def writes(o: ApiKeyConsumption): JsValue = Json.obj(
-        "_id" -> MongoIdFormat.writes(o.id),
+        "_id" -> DatastoreIdFormat.writes(o.id),
         "_tenant" -> TenantIdFormat.writes(o.tenant),
         "team" -> TeamIdFormat.writes(o.team),
         "api" -> ApiIdFormat.writes(o.api),
@@ -2354,7 +2354,7 @@ object json {
       Try {
         JsSuccess(
           PasswordReset(
-            id = (json \ "_id").as(MongoIdFormat),
+            id = (json \ "_id").as(DatastoreIdFormat),
             deleted = (json \ "_deleted").as[Boolean],
             randomId = (json \ "randomId").as[String],
             email = (json \ "email").as[String],
@@ -2386,7 +2386,7 @@ object json {
         Try {
           JsSuccess(
             AccountCreation(
-              id = (json \ "_id").as(MongoIdFormat),
+              id = (json \ "_id").as(DatastoreIdFormat),
               deleted = (json \ "_deleted").as[Boolean],
               randomId = (json \ "randomId").as[String],
               email = (json \ "email").as[String],
@@ -2487,7 +2487,7 @@ object json {
       Try {
         JsSuccess(
           Translation(
-            id = (json \ "_id").as(MongoIdFormat),
+            id = (json \ "_id").as(DatastoreIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             element = (json \ "element").as(TranslationElementFormat),
             language = (json \ "language").as[String],
@@ -2546,7 +2546,7 @@ object json {
         Try {
           JsSuccess(
             Message(
-              id = (json \ "_id").as(MongoIdFormat),
+              id = (json \ "_id").as(DatastoreIdFormat),
               tenant = (json \ "_tenant").as(TenantIdFormat),
               messageType = (json \ "messageType").as(MessageTypeFormat),
               chat = (json \ "chat").as(UserIdFormat),
@@ -2650,4 +2650,9 @@ object json {
     Format(Reads.seq(CustomMetadataFormat), Writes.seq(CustomMetadataFormat))
   val SeqMessagesFormat =
     Format(Reads.seq(MessageFormat), Writes.seq(MessageFormat))
+
+  val DefaultFormat = new Format[JsObject] {
+    override def reads(json: JsValue): JsResult[JsObject] = JsSuccess(json.as[JsObject])
+    override def writes(o: JsObject): JsValue = o
+  }
 }

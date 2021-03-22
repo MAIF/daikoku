@@ -35,6 +35,7 @@ assemblyMergeStrategy in assembly := {
 }
 
 libraryDependencies ++= Seq(
+  jdbc,
   ws,
   filters,
   "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test,
@@ -54,6 +55,12 @@ libraryDependencies ++= Seq(
   "javax.xml.bind" % "jaxb-api" % "2.3.1",
   "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1",
   "com.sun.xml.bind" % "jaxb-impl" % "2.3.0.1",
+
+  "org.postgresql" % "postgresql" % "42.2.18",
+  "org.jooq" % "jooq" % "3.14.4",
+  "org.jooq" % "jooq-meta" % "3.14.4",
+  "io.vertx" % "vertx-pg-client" % "4.0.0",
+
   "org.reactivemongo" %% "play2-reactivemongo" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",
@@ -64,8 +71,10 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-core" % "1.11.779",
   "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1",
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.893",
-  "commons-logging" % "commons-logging" % "1.1.1"
+  "commons-logging" % "commons-logging" % "1.1.1",
 )
+
+dependencyOverrides += "io.netty" % "netty-handler" % "4.1.58.Final"
 
 scalacOptions ++= Seq(
   "-feature",
