@@ -117,7 +117,6 @@ class DaikokuApiActionWithoutTenant(val parser: BodyParser[AnyContent],
   override def invokeBlock[A](
       request: Request[A],
       block: Request[A] => Future[Result]): Future[Result] = {
-    println("invokeBlock")
     env.config.adminApiConfig match {
       case OtoroshiAdminApiConfig(headerName, algo) =>
         request.headers.get(headerName) match {

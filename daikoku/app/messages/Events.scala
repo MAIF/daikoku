@@ -115,6 +115,7 @@ class MessageActor(
           val value: JsValue = closed.map(s => JsNumber(s)).getOrElse(JsNull)
           Json.obj("chat" -> chat, "closed" -> value)
         })
+
       val response: Future[Seq[Message]] =
         env.dataStore.messageRepo
           .forTenant(tenant)
@@ -153,7 +154,7 @@ class MessageActor(
 
       response pipeTo sender()
 
-    case ReadMessages(user, chat, date, tenant) =>
+    case ReadMessages(user, chat, date, tenant) => {
       env.dataStore.messageRepo
         .forTenant(tenant)
         .updateManyByQuery(
@@ -165,6 +166,7 @@ class MessageActor(
             )),
           Json.obj("$push" -> Json.obj("readBy" -> user.id.asJson))
         )
+    }
 
     case GetLastChatDate(chat, tenant, maybeDate) =>
       val date: Long = maybeDate.getOrElse(DateTime.now().toDate.getTime)

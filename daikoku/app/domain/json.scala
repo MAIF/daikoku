@@ -1284,7 +1284,6 @@ object json {
         )
       } recover {
         case e: Throwable =>
-          print(e.getMessage)
           JsError(e.getMessage)
         case e => JsError(e.getMessage)
       } get
