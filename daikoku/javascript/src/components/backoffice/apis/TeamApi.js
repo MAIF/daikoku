@@ -353,6 +353,8 @@ class TeamApiComponent extends Component {
                   <div className="mt-2">
                     {editedApi && this.state.tab === 'infos' && (
                       <TeamApiInfo
+                        tenant={this.props.tenant}
+                        team={this.props.currentTeam}
                         currentLanguage={this.props.currentLanguage}
                         creating={
                           this.props.location &&
