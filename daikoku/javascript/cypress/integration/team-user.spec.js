@@ -2,12 +2,7 @@ describe('Login page & login form', () => {
   it('load well', () => {
     cy
       .clearCookie('daikoku-session')
-      .visit('http://localhost:9000')
-      .get('h1.jumbotron-heading').should('have.text', 'Evil Corp.');
-  });
-
-  it ('work', () => {
-    cy.get('a.btn').contains('Connect').click()
+      .visit('http://localhost:9000/auth/Local/login')
       .get('input[name=username]').type('tester@foo.bar')
       .get('input[name=password]').type('password')
       .get('button').click()

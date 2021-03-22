@@ -1547,6 +1547,7 @@ object json {
             smallDescription =
               (json \ "smallDescription").asOpt[String].getOrElse(""),
             header = (json \ "header").asOpt[String],
+            image = (json \ "image").asOpt[String],
             currentVersion = (json \ "currentVersion").as(VersionFormat),
             supportedVersions = (json \ "supportedVersions")
               .asOpt(SeqVersionFormat)
@@ -1589,6 +1590,7 @@ object json {
       "name" -> o.name,
       "smallDescription" -> o.smallDescription,
       "header" -> o.header.map(JsString).getOrElse(JsNull).as[JsValue],
+      "image" -> o.image.map(JsString).getOrElse(JsNull).as[JsValue],
       "description" -> o.description,
       "currentVersion" -> VersionFormat.writes(o.currentVersion),
       "supportedVersions" -> JsArray(o.supportedVersions.map(_.asJson).toSeq),
