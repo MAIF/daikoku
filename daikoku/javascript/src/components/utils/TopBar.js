@@ -138,6 +138,7 @@ export class TopBarComponent extends Component {
     unreadNotifications: false,
     search: '',
     teams: [],
+    isMaintenanceMode: false
   };
 
   componentDidCatch(e) {
@@ -203,6 +204,8 @@ export class TopBarComponent extends Component {
 
     Services.teams().then((teams) => this.setState({ teams }));
 
+    Services.isMaintenanceMode().then(res => this.setState({ isMaintenanceMode: res.isMaintenanceMode }))
+
     this.checkNavigationErrors(this.props);
   }
 
@@ -211,6 +214,7 @@ export class TopBarComponent extends Component {
   }
 
   userMenu = () => {
+    const { isMaintenanceMode } = this.state;
     return (
       <div className="dropdown-menu dropdown-menu-right">
         <p className="dropdown-item">
@@ -227,10 +231,10 @@ export class TopBarComponent extends Component {
         </Link>
         {!this.props.tenant.hideTeamsPage && (
           <>
-              <div className="dropdown-divider" />
-              <Link className="dropdown-item" to={'/teams'}>
-                <i className="fas fa-users" /> {t('All teams', this.props.currentLanguage)}
-              </Link>
+            <div className="dropdown-divider" />
+            <Link className="dropdown-item" to={'/teams'}>
+              <i className="fas fa-users" /> {t('All teams', this.props.currentLanguage)}
+            </Link>
           </>
         )}
         <div className="dropdown-divider" />
@@ -248,6 +252,9 @@ export class TopBarComponent extends Component {
         <Can I={manage} a={tenant}>
           <div className="dropdown-divider" />
         </Can>
+        {this.props.connectedUser.isDaikokuAdmin && <a className="dropdown-item" href="#" onClick={isMaintenanceMode ? Services.disableMaintenanceMode : Services.enableMaintenanceMode}>
+          <i className="fas fa-lock" /> {t(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode', this.props.currentLanguage)}
+        </a>}
         {this.props.tenant.mode === 'Dev' && (
           <a className="dropdown-item" href="#" onClick={this.reset}>
             <i className="fas fa-skull-crossbones" /> {t('Reset', this.props.currentLanguage)}
@@ -392,6 +399,9 @@ export class TopBarComponent extends Component {
               )}
               {!this.props.connectedUser.isGuest && (
                 <div className="d-flex justify-content-end align-items-center mt-1 mt-lg-0">
+                  {this.state.isMaintenanceMode && <span className="badge badge-danger mr-3">
+                    {t("Global maintenance mode enabled", this.props.currentLanguage)}
+                  </span>}
                   <DarkModeActivator />
                   <Link
                     className={classNames({
@@ -416,11 +426,9 @@ export class TopBarComponent extends Component {
                       data-toggle="dropdown"
                       title={
                         impersonator
-                          ? `${this.props.connectedUser.name} (${
-                              this.props.connectedUser.email
-                            }) ${t('Impersonated by', this.props.currentLanguage)} ${
-                              impersonator.name
-                            } (${impersonator.email})`
+                          ? `${this.props.connectedUser.name} (${this.props.connectedUser.email
+                          }) ${t('Impersonated by', this.props.currentLanguage)} ${impersonator.name
+                          } (${impersonator.email})`
                           : this.props.connectedUser.name
                       }
                       alt="user menu"

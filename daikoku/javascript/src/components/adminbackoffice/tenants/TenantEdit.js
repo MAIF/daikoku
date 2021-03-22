@@ -244,6 +244,7 @@ export class TenantEditComponent extends Component {
     'domain',
     'defaultLanguage',
     'contact',
+    'tenantMode',
     `>>> ${t('Tenant Style', this.props.currentLanguage)}`,
     'style.logo',
     'style.logoFromAssets',
@@ -739,6 +740,17 @@ export class TenantEditComponent extends Component {
       props: {
         label: t('Use V4 auth.', this.props.currentLanguage),
       },
+    },
+    'tenantMode': {
+      type: 'select',
+      props: {
+        label: t('Modes', this.props.currentLanguage),
+        possibleValues: [
+          { label: t('Default mode', this.props.currentLanguage), value: "default", },
+          { label: t('Maintenance mode', this.props.currentLanguage), value: "maintenance", },
+          { label: t('Construction mode', this.props.currentLanguage), value: "construction", }
+        ]
+      }
     },
   };
 

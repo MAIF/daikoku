@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { goBack } from 'connected-react-router';
-import {t} from '../../locales';
+import { t } from '../../locales';
 
 const getErrorLabel = (status, error) => {
   if (status === 400) {
@@ -29,6 +29,7 @@ const ErrorComponent = ({ error, goBack, tenant, currentLanguage }) => {
   if (!label) {
     return null;
   }
+
   return (
     <div className="row">
       <div className="col">

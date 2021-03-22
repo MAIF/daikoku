@@ -1,20 +1,15 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import java.util.concurrent.TimeUnit
-
 import com.auth0.jwt.JWT
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
-import fr.maif.otoroshi.daikoku.domain.SubscriptionProcess.{Automatic, Manual}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
+import fr.maif.otoroshi.daikoku.domain.TenantMode.{Construction, Maintenance, Default}
 import fr.maif.otoroshi.daikoku.domain.TranslationElement._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.utils._
@@ -257,6 +252,16 @@ object json {
         case e => JsError(e.getMessage)
       } get
     override def writes(o: ApiId): JsValue = JsString(o.value)
+  }
+  val TenantModeFormat = new Format[Option[TenantMode]] {
+    override def reads(json: JsValue): JsResult[Option[TenantMode]] = json.asOpt[String] match {
+      case Some("maintenance" | "Maintenance") => JsSuccess(Some(Maintenance))
+      case Some("construction" | "Construction") => JsSuccess(Some(Construction))
+      case Some("default" | "Default") => JsSuccess(Some(Default))
+      case Some(str) => JsError(s"Bad value for tenant mode : $str")
+      case _ => JsSuccess(None)
+    }
+    override def writes(o: Option[TenantMode]): JsValue = o.map(tenant => JsString(tenant.name)).getOrElse(JsNull)
   }
   val ApiSubscriptionIdFormat = new Format[ApiSubscriptionId] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionId] =
@@ -1274,9 +1279,13 @@ object json {
               .asOpt[Boolean],
             defaultMessage = (json \ "defaultMessage")
               .asOpt[String],
+         tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat).get
           )
         )
       } recover {
+        case e: Throwable =>
+          print(e.getMessage)
+          JsError(e.getMessage)
         case e => JsError(e.getMessage)
       } get
     override def writes(o: Tenant): JsValue = Json.obj(
@@ -1321,7 +1330,8 @@ object json {
       "defaultMessage" -> o.defaultMessage
         .map(JsString.apply)
         .getOrElse(JsNull)
-        .as[JsValue]
+        .as[JsValue],
+      "tenantMode" -> TenantModeFormat.writes(o.tenantMode)
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {

@@ -311,18 +311,24 @@ const ApiListComponent = (props) => {
                 key={api._id}
                 user={user}
                 api={api}
-                showTeam={props.showTeam}
-                teamVisible={props.teamVisible}
-                team={props.teams.find((t) => t._id === api.team)}
-                myTeams={props.myTeams}
-                askForApiAccess={(teams) => props.askForApiAccess(api, teams)}
-                redirectToTeamPage={(team) => props.redirectToTeamPage(team)}
-                redirectToApiPage={() => props.redirectToApiPage(api)}
-                redirectToEditPage={() => props.redirectToEditPage(api)}
-                handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
-                handleCategorySelect={(category) => setSelectedCategory(categories.find((c) => c.value === category))}
-                currentLanguage={props.currentLanguage}
-                view={view}
+                tenant={this.props.tenant}
+                showTeam={this.props.showTeam}
+                teamVisible={this.props.teamVisible}
+                team={this.props.teams.find((t) => t._id === api.team)}
+                myTeams={this.props.myTeams}
+                askForApiAccess={(teams) => this.props.askForApiAccess(api, teams)}
+                redirectToTeamPage={(team) => this.props.redirectToTeamPage(team)}
+                redirectToApiPage={() => this.props.redirectToApiPage(api)}
+                redirectToEditPage={() => this.props.redirectToEditPage(api)}
+                handleTagSelect={(tag) =>
+                  this.setState({ selectedTag: this.state.tags.find((t) => t.value === tag) })
+                }
+                handleCategorySelect={(category) =>
+                  this.setState({
+                    selectedCategory: this.state.categories.find((c) => c.value === category),
+                  })
+                }
+                currentLanguage={this.props.currentLanguage}
               />
             ))}
           </div>

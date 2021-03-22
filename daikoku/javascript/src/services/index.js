@@ -423,6 +423,16 @@ export function teams() {
   }).then((r) => r.json());
 }
 
+export function isMaintenanceMode() {
+  return fetch('/api/state/lock', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
 export function createTeam(team) {
   return fetch('/api/teams', {
     method: 'POST',
@@ -1550,4 +1560,25 @@ export function lastDateChat(chatId, date) {
       'Content-Type': 'application/json',
     },
   }).then((r) => r.json());
+}
+
+export function migrateMongoToPostgres() {
+  return fetch('/api/state/migrate', {
+    method: 'POST',
+    credentials: 'include'
+  });
+}
+
+export function enableMaintenanceMode() {
+  return fetch(`/api/state/lock`, { method: 'POST' })
+    .then(() => {
+      window.location.reload();
+    });
+}
+
+export function disableMaintenanceMode() {
+  return fetch(`/api/state/unlock`, { method: 'POST' })
+    .then(() => {
+      window.location.reload();
+    });
 }

@@ -18,6 +18,7 @@ import play.api.libs.json._
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
 import storage.drivers.postgres.Helper._
+import storage.drivers.postgres.jooq.api.PgAsyncConnection
 import storage.drivers.postgres.jooq.reactive.ReactivePgAsyncPool
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -237,14 +238,14 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   lazy val jooqConfig = new DefaultConfiguration
   jooqConfig.setSQLDialect(SQLDialect.POSTGRES)
 
-  private lazy val poolOptions: PoolOptions = new PoolOptions().setMaxSize(3)
+  private lazy val poolOptions: PoolOptions = new PoolOptions().setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))
 
   private lazy val options: PgConnectOptions = new PgConnectOptions()
-    .setPort(configuration.getOptional[Int]("daikoku.postgres.port").getOrElse(5432))
-    .setHost(configuration.getOptional[String]("daikoku.postgres.host").getOrElse("localhost"))
-    .setDatabase(configuration.getOptional[String]("daikoku.postgres.database").getOrElse("default"))
-    .setUser(configuration.getOptional[String]("daikoku.postgres.username").getOrElse("postgres"))
-    .setPassword(configuration.getOptional[String]("daikoku.postgres.password").getOrElse("postgres"))
+    .setPort(configuration.get[Int]("daikoku.postgres.port"))
+    .setHost(configuration.get[String]("daikoku.postgres.host"))
+    .setDatabase(configuration.get[String]("daikoku.postgres.database"))
+    .setUser(configuration.get[String]("daikoku.postgres.username"))
+    .setPassword(configuration.get[String]("daikoku.postgres.password"))
     .setProperties(Map(
       "search_path" -> getSchema
     ).asJava)
@@ -256,7 +257,9 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     jooqConfig
   )
 
-  def getSchema: String = configuration.getOptional[String]("daikoku.postgres.schema").getOrElse("public")
+  def getSchema: String = configuration.get[String]("daikoku.postgres.schema")
+
+  def instanceIsAvailable(): Future[PgAsyncConnection] = reactivePgAsyncPool.connection
 
   private val _tenantRepo: TenantRepo = new PostgresTenantRepo(env, reactivePgAsyncPool)
   private val _userRepo: UserRepo = new PostgresUserRepo(env, reactivePgAsyncPool)
@@ -464,19 +467,19 @@ class PostgresDataStore(configuration: Configuration, env: Env)
 
   override def importFromStream(source: Source[ByteString, _]): Future[Unit] = {
     for {
-      _ <- env.dataStore.tenantRepo.deleteAll()
-      _ <- env.dataStore.passwordResetRepo.deleteAll()
-      _ <- env.dataStore.accountCreationRepo.deleteAll()
-      _ <- env.dataStore.userRepo.deleteAll()
-      _ <- env.dataStore.teamRepo.forAllTenant().deleteAll()
-      _ <- env.dataStore.apiRepo.forAllTenant().deleteAll()
-      _ <- env.dataStore.apiSubscriptionRepo.forAllTenant().deleteAll()
-      _ <- env.dataStore.apiDocumentationPageRepo.forAllTenant().deleteAll()
-      _ <- env.dataStore.notificationRepo.forAllTenant().deleteAll()
-      _ <- env.dataStore.consumptionRepo.forAllTenant().deleteAll()
-      _ <- env.dataStore.auditTrailRepo.forAllTenant().deleteAll()
-      _ <- env.dataStore.userSessionRepo.deleteAll()
-      _ <- env.dataStore.translationRepo.forAllTenant().deleteAll()
+      _ <- tenantRepo.deleteAll()
+      _ <- passwordResetRepo.deleteAll()
+      _ <- accountCreationRepo.deleteAll()
+      _ <- userRepo.deleteAll()
+      _ <- teamRepo.forAllTenant().deleteAll()
+      _ <- apiRepo.forAllTenant().deleteAll()
+      _ <- apiSubscriptionRepo.forAllTenant().deleteAll()
+      _ <- apiDocumentationPageRepo.forAllTenant().deleteAll()
+      _ <- notificationRepo.forAllTenant().deleteAll()
+      _ <- consumptionRepo.forAllTenant().deleteAll()
+      _ <- auditTrailRepo.forAllTenant().deleteAll()
+      _ <- userSessionRepo.deleteAll()
+      _ <- translationRepo.forAllTenant().deleteAll()
       _ <- source
         .via(Framing.delimiter(ByteString("\n"), 1000000000, true))
         .map(_.utf8String)
@@ -486,49 +489,49 @@ class PostgresDataStore(configuration: Configuration, env: Env)
           ((json \ "type").as[String], (json \ "payload").as[JsValue]))
         .mapAsync(1) {
           case ("Tenants", payload) =>
-            env.dataStore.tenantRepo.save(TenantFormat.reads(payload).get)
+            tenantRepo.save(TenantFormat.reads(payload).get)
           case ("PasswordReset", payload) =>
-            env.dataStore.passwordResetRepo.save(
+            passwordResetRepo.save(
               PasswordResetFormat.reads(payload).get)
           case ("AccountCreation", payload) =>
-            env.dataStore.accountCreationRepo.save(
+            accountCreationRepo.save(
               AccountCreationFormat.reads(payload).get)
           case ("Users", payload) =>
-            env.dataStore.userRepo.save(UserFormat.reads(payload).get)
+            userRepo.save(UserFormat.reads(payload).get)
           case ("Teams", payload) =>
-            env.dataStore.teamRepo
+            teamRepo
               .forAllTenant()
               .save(TeamFormat.reads(payload).get)
           case ("Apis", payload) =>
-            env.dataStore.apiRepo
+            apiRepo
               .forAllTenant()
               .save(ApiFormat.reads(payload).get)
           case ("ApiSubscriptions", payload) =>
-            env.dataStore.apiSubscriptionRepo
+            apiSubscriptionRepo
               .forAllTenant()
               .save(ApiSubscriptionFormat.reads(payload).get)
           case ("ApiDocumentationPages", payload) =>
-            env.dataStore.apiDocumentationPageRepo
+            apiDocumentationPageRepo
               .forAllTenant()
               .save(ApiDocumentationPageFormat.reads(payload).get)
           case ("Notifications", payload) =>
-            env.dataStore.notificationRepo
+            notificationRepo
               .forAllTenant()
               .save(NotificationFormat.reads(payload).get)
           case ("Consumptions", payload) =>
-            env.dataStore.consumptionRepo
+            consumptionRepo
               .forAllTenant()
               .save(ConsumptionFormat.reads(payload).get)
           case ("Translations", payload) =>
-            env.dataStore.translationRepo
+            translationRepo
               .forAllTenant()
               .save(TranslationFormat.reads(payload).get)
           case ("AuditEvents", payload) =>
-            env.dataStore.auditTrailRepo
+            auditTrailRepo
               .forAllTenant()
               .save(payload.as[JsObject])
           case ("UserSessions", payload) =>
-            env.dataStore.userSessionRepo.save(
+            userSessionRepo.save(
               UserSessionFormat.reads(payload).get)
           case (typ, _) =>
             logger.info(s"Unknown type: $typ")
