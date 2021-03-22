@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { Spinner } from '../../utils';
 import * as Services from '../../../services';
 import { t, Translation } from '../../../locales';
+import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -49,6 +50,26 @@ class NameAlreadyExists extends Component {
   }
 }
 
+const StyleLogoAssetButton = (props) => {
+  const tenant = props.tenant ? props.tenant : { domain: window.location.origin };
+  const domain = tenant.domain;
+  const origin =
+    window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+  return (
+    <div className="form-group d-flex justify-content-end">
+      <AssetChooserByModal
+        typeFilter={MimeTypeFilter.image}
+        onlyPreview
+        team={props.team}
+        teamId={props.team._id}
+        label={t('Set api image from asset', props.currentLanguage)}
+        currentLanguage={props.currentLanguage}
+        onSelect={(asset) => props.changeValue('image', origin + asset.link)}
+      />
+    </div>
+  );
+};
+
 export class TeamApiInfo extends Component {
   formSchema = {
     _id: {
@@ -82,6 +103,18 @@ export class TeamApiInfo extends Component {
           `Use {{title}} to insert API title, {{ description }} to insert API small description.
          Add "btn-edit" class to link to admin API edition admin page.`
         ),
+      },
+    },
+    'image': {
+      type: 'string',
+      props: { label: t('Image', this.props.currentLanguage) },
+    },
+    'imageFromAssets': {
+      type: StyleLogoAssetButton,
+      props: {
+        tenant: this.props.tenant,
+        team: this.props.team,
+        currentLanguage: this.props.currentLanguage
       },
     },
     currentVersion: {
@@ -149,6 +182,8 @@ export class TeamApiInfo extends Component {
     'name',
     'nameAlreadyExists',
     'smallDescription',
+    'image',
+    'imageFromAssets',
     'header',
     `>>> ${t('Versions and tags', this.props.currentLanguage)}`,
     'currentVersion',

@@ -2,8 +2,7 @@ describe('Login', () => {
   it('login', () => {
     cy
       .clearCookie('daikoku-session')
-      .visit('http://localhost:9000')
-      .get('a.btn').contains('Connect').click()
+      .visit('http://localhost:9000/auth/Local/login')
       .get('input[name=username]').type('admin@foo.bar')
       .get('input[name=password]').type('password')
       .get('button').click()

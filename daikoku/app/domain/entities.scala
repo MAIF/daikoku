@@ -1165,6 +1165,7 @@ case class Api(
     name: String,
     smallDescription: String,
     header: Option[String] = None,
+    image: Option[String] = None,
     description: String,
     currentVersion: Version = Version("1.0.0"),
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
@@ -1179,8 +1180,7 @@ case class Api(
     visibility: ApiVisibility,
     possibleUsagePlans: Seq[UsagePlan],
     defaultUsagePlan: UsagePlanId,
-    authorizedTeams: Seq[TeamId] = Seq.empty,
-    managedServices: Seq[OtoroshiService] = Seq.empty
+    authorizedTeams: Seq[TeamId] = Seq.empty
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
@@ -1192,6 +1192,7 @@ case class Api(
     "name" -> name,
     "smallDescription" -> smallDescription,
     "header" -> header.map(JsString).getOrElse(JsNull).as[JsValue],
+    "image" -> image.map(JsString).getOrElse(JsNull).as[JsValue],
     "description" -> description,
     "currentVersion" -> currentVersion.asJson,
     "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),

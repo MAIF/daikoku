@@ -1,12 +1,11 @@
+// todo: turn tenant public
 describe('Login page & login form', () => {
   it('load well', () => {
     cy
       .clearCookie('daikoku-session')
-      .visit('http://localhost:9000/auth/Local/login')
-      .get('input[name=username]').type('user@foo.bar')
-      .get('input[name=password]').type('password')
-      .get('button').click()
-      .url().should('include', '/apis');
+      .visit('http://localhost:9000')
+      .url().should('include', '/apis')
+      .get('h1.jumbotron-heading').should('have.text', 'Evil Corp.');
   });
 });
 
@@ -24,16 +23,7 @@ describe('API page', () => {
         const text = $title.text();
         expect(text).to.include('Swagger Petstore (1.0.0)');
       })
-      .get('a.nav-link').contains('Try it !').click()
-      .get('#swagger-ui').should('be.visible') ;
-  });
-});
-
-describe('Profile page', () => {
-  it('load well', () => {
-    cy
-      .visit('http://localhost:9000/settings/me')
-      .get('main h1').should('have.text', 'User - user@foo.bar');
+      .get('a.nav-link').contains('Try it !').should('not.exist');
   });
 });
 
@@ -43,4 +33,4 @@ describe('Team apis page', () => {
       .visit('http://localhost:9000/testers')
       .get('h1.jumbotron-heading').should('have.text', 'Testers');
   });
-})
+});

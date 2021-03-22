@@ -5,7 +5,7 @@
 @import fr.maif.otoroshi.daikoku.domain.Tenant
 @import fr.maif.otoroshi.daikoku.domain.Team
 
-@(user: User, session: UserSession,tenant: Tenant, host: String, env: Env, isTenantAdmin: Boolean, apiCreationPermitted: Boolean)
+@(user: User, session: UserSession, tenant: Tenant, host: String, env: Env, isTenantAdmin: Boolean, apiCreationPermitted: Boolean)
 
 @customStyle = {
   @(tenant.colorTheme())
