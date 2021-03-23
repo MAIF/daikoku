@@ -1093,7 +1093,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
   }
 
   override def findOne(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Option[Of]] = {
+    implicit ec: ExecutionContext): Future[Option[Of]] =
     reactivePgAsyncPool
       .queryOne(
         dsl => dsl.resultQuery(
@@ -1102,7 +1102,6 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
           DSL.table(convertQuery(query)))
       )
       .map(getContentFromJson(_, format))
-  }
 
   override def delete(query: JsObject)(
     implicit ec: ExecutionContext): Future[Boolean] = {

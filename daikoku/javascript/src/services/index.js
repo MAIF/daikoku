@@ -1551,3 +1551,18 @@ export function lastDateChat(chatId, date) {
     },
   }).then((r) => r.json());
 }
+
+export function checkConnection(config, user) {
+  return fetch(`/api/auth/ldap/_check`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: user ? JSON.stringify({
+      config,
+      user
+    }) : JSON.stringify(config),
+  }).then((r) => r.json());
+}

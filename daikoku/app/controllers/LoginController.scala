@@ -2,13 +2,8 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
-
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -19,7 +14,7 @@ import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator}
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
@@ -168,13 +163,13 @@ class LoginController(DaikokuAction: DaikokuAction,
                         )(ctx.request)
                     )
                   case AuthProvider.LDAP =>
-                    val ldapConfig =
-                      LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
-                    bindUser(
-                      ldapConfig.sessionMaxAge,
-                      ctx.tenant,
-                      ctx.request,
-                      LdapSupport.bindUser(username, password, ctx.tenant, env))
+                    val ldapConfig = LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
+
+                    LdapSupport.bindUser(username, password, ctx.tenant, env, Some(ldapConfig)) match {
+                      case Left(_) => bindUser(ldapConfig.sessionMaxAge, ctx.tenant, ctx.request, FastFuture.successful(None))
+                      case Right(user) => bindUser(ldapConfig.sessionMaxAge, ctx.tenant, ctx.request, user.map(u => Some(u)))
+                    }
+
                   case AuthProvider.OAuth2 =>
                     val maybeOAuth2Config = OAuth2Config
                       .fromJson(ctx.tenant.authProviderSettings)
@@ -510,6 +505,31 @@ class LoginController(DaikokuAction: DaikokuAction,
                 BadRequest(Json.obj("error" -> "Bad creation id")))
           }
       }
+    }
+  }
+
+  def checkLdapConnection() = DaikokuAction.async(parse.json) { ctx =>
+    if ((ctx.request.body \ "user").isDefined) {
+        val username = (ctx.request.body \ "user" \ "username").as[String]
+        val password = (ctx.request.body \ "user" \ "password").as[String]
+
+        LdapConfig.fromJson((ctx.request.body \ "config").as[JsValue]) match {
+          case Left(_)       => FastFuture.successful(BadRequest(Json.obj("error" -> "bad auth. module. config")))
+          case Right(config) =>
+            LdapSupport.bindUser(username, password, ctx.tenant, env, Some(config)) match {
+              case Left(err) => FastFuture.successful(Ok(Json.obj("works" -> false, "error" -> err)))
+              case Right(_)  => FastFuture.successful(Ok(Json.obj("works" -> true)))
+            }
+        }
+    } else {
+        LdapConfig.fromJson(ctx.request.body) match {
+          case Left(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "bad auth. module. config")))
+          case Right(config) =>
+            LdapSupport.checkConnection(config).map {
+              case (works, _) if works => Ok(Json.obj("works" -> works))
+              case (works, error) => Ok(Json.obj("works" -> works, "error" -> error))
+            }
+        }
     }
   }
 }
