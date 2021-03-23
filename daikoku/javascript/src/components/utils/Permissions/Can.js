@@ -64,15 +64,15 @@ const CanComponent = ({
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams, apiCreationPermitted)
     : CanIDoAction(
-        connectedUser,
-        I,
-        a,
-        team,
-        apiCreationPermitted,
-        isTenantAdmin,
-        whichOne,
-        tenant
-      );
+      connectedUser,
+      I,
+      a,
+      team,
+      apiCreationPermitted,
+      isTenantAdmin,
+      whichOne,
+      tenant
+    );
 
   if (!authorized) {
     if (dispatchError) {

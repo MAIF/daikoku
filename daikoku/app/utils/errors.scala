@@ -46,6 +46,7 @@ object Errors {
 
     val accept =
       req.headers.get("Accept").getOrElse("text/html").split(",").toSeq
+
     if (accept.contains("text/html")) { // in a browser
       FastFuture.successful(
         status
@@ -54,7 +55,8 @@ object Errors {
               message = message,
               req.domain,
               _env = env,
-              tenant = tenant
+              tenant = tenant,
+              loginLink = s"/auth/${tenant.authProvider}/login"
             )
           )
           .withHeaders(

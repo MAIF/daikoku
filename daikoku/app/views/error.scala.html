@@ -1,6 +1,6 @@
 @import fr.maif.otoroshi.daikoku.env.DaikokuMode
 
-@(message: String, host: String, _env: fr.maif.otoroshi.daikoku.env.Env, tenant: fr.maif.otoroshi.daikoku.domain.Tenant)
+@(message: String, host: String, _env: fr.maif.otoroshi.daikoku.env.Env, tenant: fr.maif.otoroshi.daikoku.domain.Tenant, loginLink: String)
 
 @customStyle = {
   @(tenant.colorTheme())
@@ -17,7 +17,13 @@
   @(tenant.moareJs())
 }
 
-@main(tenant.style.map(_.title).getOrElse(tenant.name) + " - error", moreStyles = customStyle, moreScripts = customJs, favicon = tenant.favicon()) {
+
+@main(
+  tenant.style.map(_.title).getOrElse(tenant.name) + " - error",
+  moreStyles = customStyle,
+  moreScripts = customJs,
+  favicon = tenant.favicon()
+) {
 <div class="container login">
   <div id="app">
     <div class="row" style="padding-top: 60px;">
@@ -27,10 +33,19 @@
         </div>
       </header>
       <div class="jumbotron col-12 text-center mt-5">
-        <h1 class="mb-5">Error - @message</h1>
+        @tenant.tenantMode.toString match {
+          case "Some(Maintenance)" | "Some(Construction)" => {<h1 class="mb-5">@message</h1>}
+          case _ => {<h1 class="mb-5">Error - @message</h1>}
+        }
         <div class="col-6 offset-3">
           <img src="/assets/images/daikoku.svg" alt="logo Daikoku" class="img-fluid" />
         </div>
+        @if(tenant.tenantMode.toString == "Some(Maintenance)" ||
+        tenant.tenantMode.toString == "Some(Construction)") {
+            <a href=@loginLink class="mt-5 btn btn-sm btn-access-negative" style="border: 1px solid #000">
+              Retourner à la page d'accueil
+            </a>
+        }
       </div>
     </div>
   </div>

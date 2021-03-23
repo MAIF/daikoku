@@ -1,20 +1,15 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import java.util.concurrent.TimeUnit
-
 import com.auth0.jwt.JWT
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
-import fr.maif.otoroshi.daikoku.domain.SubscriptionProcess.{Automatic, Manual}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
+import fr.maif.otoroshi.daikoku.domain.TenantMode
 import fr.maif.otoroshi.daikoku.domain.TranslationElement._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.utils._
@@ -23,7 +18,6 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
-import play.api.Logger
 import play.api.libs.json._
 
 import scala.concurrent.duration.FiniteDuration
@@ -257,6 +251,16 @@ object json {
         case e => JsError(e.getMessage)
       } get
     override def writes(o: ApiId): JsValue = JsString(o.value)
+  }
+  val TenantModeFormat = new Format[TenantMode] {
+    override def reads(json: JsValue): JsResult[TenantMode] = json.asOpt[String].map(_.toLowerCase) match {
+      case Some("maintenance") => JsSuccess(TenantMode.Maintenance)
+      case Some("construction") => JsSuccess(TenantMode.Construction)
+      case Some("default") => JsSuccess(TenantMode.Default)
+      case None => JsSuccess(TenantMode.Default)
+      case Some(str) => JsError(s"Bad value for tenant mode : $str")
+    }
+    override def writes(o: TenantMode): JsValue = JsString(o.name)
   }
   val ApiSubscriptionIdFormat = new Format[ApiSubscriptionId] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionId] =
@@ -1274,10 +1278,16 @@ object json {
               .asOpt[Boolean],
             defaultMessage = (json \ "defaultMessage")
               .asOpt[String],
+         tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat)
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e: Throwable =>
+          AppLogger.warn(e.getMessage)
+          JsError(e.getMessage)
+        case e =>
+          AppLogger.warn(e.getMessage)
+          JsError(e.getMessage)
       } get
     override def writes(o: Tenant): JsValue = Json.obj(
       "_id" -> TenantIdFormat.writes(o.id),
@@ -1320,6 +1330,10 @@ object json {
         .as[JsValue],
       "defaultMessage" -> o.defaultMessage
         .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "tenantMode" ->  o.tenantMode
+        .map(TenantModeFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )

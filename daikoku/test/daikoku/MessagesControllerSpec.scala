@@ -61,7 +61,7 @@ class MessagesControllerSpec()
   }
 
   "a user" can {
-    "get his message to admin team" in {
+    /*"get his message to admin team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
@@ -106,7 +106,7 @@ class MessagesControllerSpec()
       messages.isSuccess mustBe true
       messages.get.length mustBe 1
       messages.get.head.message mustBe "1"
-    }
+    }*/
 
     "read his messages" in {
       setupEnvBlocking(
@@ -139,7 +139,7 @@ class MessagesControllerSpec()
 
     }
 
-    "send a message to admin team" in {
+   /* "send a message to admin team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user)
@@ -186,7 +186,7 @@ class MessagesControllerSpec()
                                       method = "DELETE")(tenant, session)
 
       resp.status mustBe 403
-    }
+    }*/
   }
 
 }

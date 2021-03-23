@@ -423,6 +423,16 @@ export function teams() {
   }).then((r) => r.json());
 }
 
+export function isMaintenanceMode() {
+  return fetch('/api/state/lock', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
 export function createTeam(team) {
   return fetch('/api/teams', {
     method: 'POST',
@@ -1552,14 +1562,39 @@ export function lastDateChat(chatId, date) {
   }).then((r) => r.json());
 }
 
-export function checkConnection(config, user) {
-  return fetch(`/api/auth/ldap/_check`, {
+export function migrateMongoToPostgres() {
+  return fetch('/api/state/migrate', {
+    method: 'POST',
+    credentials: 'include'
+  });
+}
+
+export function enableMaintenanceMode() {
+  return fetch('/api/state/lock', {
     method: 'POST',
     credentials: 'include',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-    },
+    }
+  })
+    .then((r) => r.json());
+}
+
+export function disableMaintenanceMode() {
+  return fetch('/api/state/unlock', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }
+  })
+    .then((r) => r.json());
+}
+
+export function checkConnection(config, user) {
+  return fetch(`/api/auth/ldap/_check`, {
     body: user ? JSON.stringify({
       config,
       user
