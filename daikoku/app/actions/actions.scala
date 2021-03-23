@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.actions
 
 import akka.http.scaladsl.util.FastFuture
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -10,7 +11,6 @@ import play.api.Logger
 import play.api.libs.json.{JsString, Json}
 import play.api.mvc._
 
-import java.lang.ProcessBuilder.Redirect
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -40,12 +40,12 @@ object tenantSecurity {
     }
   }
 
-  def isDefaultMode(tenant: Tenant, user: User): Boolean = {
+  def isDefaultMode(tenant: Tenant, user: Option[User]): Boolean = {
     tenant.tenantMode match {
       case None => true
       case Some(value) =>
         value match {
-          case TenantMode.Maintenance | TenantMode.Construction => user.isDaikokuAdmin
+          case TenantMode.Maintenance | TenantMode.Construction => user.exists(_.isDaikokuAdmin)
           case _ => true
         }
     }
@@ -104,7 +104,7 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user) => Errors.craftResponseResult(
+      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user.some) => Errors.craftResponseResult(
         s"${tenant.tenantMode.get.toString} mode enabled",
         Results.ServiceUnavailable,
         request,
@@ -165,7 +165,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user) => Errors.craftResponseResult(
+      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user.some) => Errors.craftResponseResult(
         s"${tenant.tenantMode.get.toString} mode enabled",
         Results.ServiceUnavailable,
         request,
@@ -251,7 +251,8 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user) => Errors.craftResponseResult(
+      case (Some(tenant), _, _, maybeUser, _) if !tenantSecurity.isDefaultMode(tenant, maybeUser) =>
+        Errors.craftResponseResult(
         s"${tenant.tenantMode.get.toString} mode enabled",
         Results.ServiceUnavailable,
         request,

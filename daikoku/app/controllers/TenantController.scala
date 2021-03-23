@@ -1,13 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import java.util.concurrent.TimeUnit
-
 import akka.http.scaladsl.util.FastFuture
 import com.nimbusds.jose.jwk.KeyType
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -24,6 +19,7 @@ import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
 import reactivemongo.bson.BSONObjectID
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
 import scala.util.Try
 
@@ -303,7 +299,7 @@ class TenantController(DaikokuAction: DaikokuAction,
           FastFuture.successful(
             BadRequest(Json.obj("error" -> "Error while parsing payload",
                                 "msg" -> e.toString)))
-        case JsSuccess(tenant, _) => {
+        case JsSuccess(tenant, _) =>
           ctx.setCtxValue("tenant.name", tenant.name)
           ctx.setCtxValue("tenant.id", tenant.id)
 
@@ -311,9 +307,8 @@ class TenantController(DaikokuAction: DaikokuAction,
             case Some(value) =>
               value match {
                 case TenantMode.Maintenance | TenantMode.Construction =>
-                  env.dataStore.userSessionRepo.findAllNotDeleted()
-                    .map(_.filter(session => session.sessionId != ctx.session.sessionId))
-                    .map(_.map(session => env.dataStore.userSessionRepo.deleteById(session.sessionId.value)))
+                  env.dataStore.userSessionRepo.find(Json.obj("_id" -> Json.obj("$ne" -> ctx.session.sessionId.asJson)))
+                    .map(seq => env.dataStore.userSessionRepo.delete(Json.obj("_id" -> Json.obj("$in" -> JsArray(seq.map(_.sessionId.asJson))))))
                 case _ =>
               }
             case _ =>
@@ -334,7 +329,6 @@ class TenantController(DaikokuAction: DaikokuAction,
               Json.obj("tenant" -> tenant.asJsonWithJwt,
                        "uiPayload" -> tenant.toUiPayload(env)))
           }
-        }
       }
     }
   }

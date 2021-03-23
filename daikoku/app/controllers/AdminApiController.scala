@@ -2,6 +2,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
 import akka.util.ByteString
+import cats.implicits._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.DaikokuAdminOnly
@@ -11,13 +12,11 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import fr.maif.otoroshi.daikoku.utils.admin._
 import play.api.http.HttpEntity
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{AbstractController, Action, AnyContent, BodyParser, ControllerComponents}
-import storage.{DataStore, Repo}
-import cats.implicits._
-import storage.drivers.mongo.MongoDataStore
+import play.api.mvc._
 import storage.drivers.postgres.PostgresDataStore
+import storage.{DataStore, Repo}
 
 class StateController(DaikokuAction: DaikokuAction,
                       env: Env,
@@ -76,7 +75,7 @@ class StateController(DaikokuAction: DaikokuAction,
           (for {
             _ <- postgresStore.checkIfTenantsTableExists()
             _ <- env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
-              tenants.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode("Maintenance"))))
+              tenants.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode.Maintenance.some)))
             }
             _ <- removeAllUserSessions(ctx)
             _ <- postgresStore.checkDatabase()
@@ -100,9 +99,10 @@ class StateController(DaikokuAction: DaikokuAction,
   }
 
   private def removeAllUserSessions(ctx: DaikokuActionContext[AnyContent]) = {
-    env.dataStore.userSessionRepo.findAllNotDeleted()
-      .map(_.filter(session => session.sessionId != ctx.session.sessionId))
-      .map(_.map(session => env.dataStore.userSessionRepo.deleteById(session.sessionId.value)))
+    env.dataStore.userSessionRepo
+      .findNotDeleted(Json.obj("_id" -> Json.obj("$ne" -> ctx.session.sessionId.asJson)))
+      .flatMap(seq => env.dataStore.userSessionRepo
+        .delete(Json.obj("_id" -> Json.obj("$in" -> JsArray(seq.map(_.sessionId.asJson))))))
   }
 
   def enableMaintenanceMode(): Action[AnyContent] = DaikokuAction.async { ctx =>
@@ -112,11 +112,9 @@ class StateController(DaikokuAction: DaikokuAction,
           env.dataStore
             .tenantRepo
             .findAllNotDeleted()
-            .map(_.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode("Maintenance")))))
+            .map(_.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode.Maintenance.some))))
         }
-        .map { _ =>
-          Ok(Json.obj("done" -> true))
-        }
+        .map(_ => Ok(ctx.tenant.copy(tenantMode = TenantMode.Maintenance.some).toUiPayload(env)))
     }
   }
 
@@ -126,9 +124,7 @@ class StateController(DaikokuAction: DaikokuAction,
         .tenantRepo
         .findAllNotDeleted()
         .map(_.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = None))))
-        .map { _ =>
-          Ok(Json.obj("done" -> true))
-        }
+        .map(_ => Ok(ctx.tenant.copy(tenantMode = None).toUiPayload(env)))
     }
   }
 

@@ -1570,15 +1570,25 @@ export function migrateMongoToPostgres() {
 }
 
 export function enableMaintenanceMode() {
-  return fetch(`/api/state/lock`, { method: 'POST' })
-    .then(() => {
-      window.location.reload();
-    });
+  return fetch('/api/state/lock', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }
+  })
+    .then((r) => r.json());
 }
 
 export function disableMaintenanceMode() {
-  return fetch(`/api/state/unlock`, { method: 'POST' })
-    .then(() => {
-      window.location.reload();
-    });
+  return fetch('/api/state/unlock', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }
+  })
+    .then((r) => r.json());
 }
