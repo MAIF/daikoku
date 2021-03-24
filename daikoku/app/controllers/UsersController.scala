@@ -1,7 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import java.util.concurrent.TimeUnit
-
 import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
@@ -9,9 +8,10 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig, LdapSupport}
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
-import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
+import play.api.libs.json.{JsArray, JsError, JsObject, JsSuccess, Json}
 import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
@@ -47,6 +47,15 @@ class UsersController(DaikokuAction: DaikokuAction,
         case None => NotFound(Json.obj("error" -> "user not found"))
       }
     }
+  }
+
+  def findUserByAttributes() = DaikokuAction.async(parse.json) { ctx =>
+      env.dataStore.userRepo.findOne(Json.obj(
+        "_deleted" -> false,
+      ) ++ (ctx.request.body \ "attributes").as[JsObject]).map {
+        case Some(user) => Ok(user.asJson)
+        case None => NotFound(Json.obj("error" -> "user not found"))
+      }
   }
 
   def setAdminStatus(id: String) = DaikokuAction.async(parse.json) { ctx =>
@@ -204,6 +213,25 @@ class UsersController(DaikokuAction: DaikokuAction,
           }
         case e: JsError => FastFuture.successful(BadRequest(JsError.toJson(e)))
       }
+    }
+  }
+
+  def createLDAPUser() = DaikokuAction.async(parse.json) { ctx =>
+    LdapConfig.fromJson(ctx.tenant.authProviderSettings) match {
+      case Left(err) => FastFuture.successful(BadRequest(Json.obj("error" -> err.getMessage)))
+      case Right(config) =>
+        LdapSupport.createUser(
+          (ctx.request.body \ "email").as[String],
+          config.serverUrl.filter(_ => true),
+          config,
+          ctx.tenant.id,
+          env
+        )
+          .map { user =>
+            FastFuture.successful(Ok(user.asJson))
+          }.getOrElse(
+          FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to create user from LDAP")))
+        )
     }
   }
 

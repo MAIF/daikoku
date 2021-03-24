@@ -769,12 +769,17 @@
   "Custom header": "Entête personnalisé",
   "api.custom.header.help": "Utiliser {{title}} pour inserer le nom de l'API, {{ description }} pour la petite description. Ajouter la classe \"btn-edit\" pour créer un lien vers la page d'edition de l'API",
   "get.apikey.requires.login": "Obtenir une clé d'API nécessite que vous soyez connecté",
-  "Mongo migration" : "Migration de MongoDB vers Postgres",
+  "Mongo migration": "Migration de MongoDB vers Postgres",
   "migration in progress ...": "migration en cours ...",
   "migrate database": "migrer la base",
   "Maintenance mode": "En maintenance",
   "Construction mode": "En construction",
   "Default mode": "Par défaut",
   "Global maintenance mode enabled": "Mode global maintenance activé",
-  "Disable maintenance": "Désactive la maintenance"
+  "Disable maintenance": "Désactive la maintenance",
+  "or": "ou",
+  "Find LDAP member by email ...": "Trouver un utilisateur LDAP via email",
+  "LDAP user found": "Utilisateur LDAP trouvé",
+  "User already in team": "Utilisateur déjà dans l'équipe",
+  "User already invited": "Déjà dans l'attente de l'utilisateur"
 }

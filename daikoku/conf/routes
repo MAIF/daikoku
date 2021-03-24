@@ -50,7 +50,11 @@ GET     /auth/:provider/callback                        fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /auth/:provider/logout                          fr.maif.otoroshi.daikoku.ctrls.LoginController.logout(provider)
 ### NoDocs ###
-POST    /api/auth/ldap/_check                          fr.maif.otoroshi.daikoku.ctrls.LoginController.checkLdapConnection()
+POST    /api/auth/ldap/_check                           fr.maif.otoroshi.daikoku.ctrls.LoginController.checkLdapConnection()
+### NoDocs ###
+GET     /api/auth/ldap/users/:email                     fr.maif.otoroshi.daikoku.ctrls.LoginController.checkUser(email)
+### NoDocs ###
+POST    /api/auth/ldap/users                            fr.maif.otoroshi.daikoku.ctrls.UsersController.createLDAPUser()
 
 ### NoDocs ###
 GET     /api/me/teams/own                               fr.maif.otoroshi.daikoku.ctrls.ApiController.myOwnTeam()
@@ -348,6 +352,8 @@ DELETE  /api/admin/users/:id                            fr.maif.otoroshi.daikoku
 POST    /api/admin/users                                fr.maif.otoroshi.daikoku.ctrls.UsersController.createUser()
 ### NoDocs ###
 GET     /api/admin/users                                fr.maif.otoroshi.daikoku.ctrls.UsersController.allTenantUsers()
+### NoDocs ###
+POST    /api/admin/users/_search                        fr.maif.otoroshi.daikoku.ctrls.UsersController.findUserByAttributes()
 ### NoDocs ###
 GET     /api/admin/auditTrail                           fr.maif.otoroshi.daikoku.ctrls.AuditTrailController.auditTrail()
 

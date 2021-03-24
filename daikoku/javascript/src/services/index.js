@@ -1595,9 +1595,53 @@ export function disableMaintenanceMode() {
 
 export function checkConnection(config, user) {
   return fetch(`/api/auth/ldap/_check`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
     body: user ? JSON.stringify({
       config,
       user
     }) : JSON.stringify(config),
+  }).then((r) => r.json());
+};
+
+export function searchLdapMember(email) {
+  return fetch(`/api/auth/ldap/users/${email}`, {
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }
+  });
+};
+
+export function findUserByEmail(email) {
+  return fetch(`/api/admin/users/_search`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      attributes: {
+        email
+      }
+    })
+  });
+};
+
+export function createUserFromLDAP(email) {
+  return fetch('/api/auth/ldap/users', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
   }).then((r) => r.json());
 }

@@ -532,4 +532,11 @@ class LoginController(DaikokuAction: DaikokuAction,
         }
     }
   }
+
+  def checkUser(email: String) = DaikokuAction.async { ctx =>
+      LdapSupport.getUser(email, ctx.tenant).flatMap {
+        case (false, err)     => FastFuture.successful(BadRequest(Json.obj("error" -> err)))
+        case (true, message)  => FastFuture.successful(Ok(Json.obj("message" -> message)))
+      }
+  }
 }
