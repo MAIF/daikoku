@@ -4,6 +4,7 @@ on:
     paths:
       - 'daikoku/app/**'
       - 'daikoku/javascript/**'
+      - '.github/workflows/front-office-tests.yml'
   pull_request:
     paths:
       - 'daikoku/app/**'
