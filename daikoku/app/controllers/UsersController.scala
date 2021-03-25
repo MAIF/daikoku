@@ -222,7 +222,7 @@ class UsersController(DaikokuAction: DaikokuAction,
       case Right(config) =>
         LdapSupport.createUser(
           (ctx.request.body \ "email").as[String],
-          config.serverUrl.filter(_ => true),
+          config.serverUrls.filter(_ => true),
           config,
           ctx.tenant.id,
           env

@@ -11,7 +11,7 @@ const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 export class LDAPConfig extends Component {
   static defaultConfig = {
     sessionMaxAge: 86400,
-    serverUrl: [
+    serverUrls: [
       'ldap://ldap.forumsys.com:389'
     ],
     searchBase: 'dc=example,dc=com',
@@ -28,7 +28,7 @@ export class LDAPConfig extends Component {
 
   formFlow = [
     'sessionMaxAge',
-    'serverUrl',
+    'serverUrls',
     'searchBase',
     'userBase',
     'groupFilter',
@@ -48,7 +48,7 @@ export class LDAPConfig extends Component {
         label: t('Session max. age', this.props.currentLanguage),
       },
     },
-    serverUrl: {
+    serverUrls: {
       type: 'array',
       props: {
         label: t('LDAP Server URLs', this.props.currentLanguage, true)
@@ -119,8 +119,8 @@ export class LDAPConfig extends Component {
     if (this.props.rawValue.authProvider === 'LDAP') {
       const { value } = this.props;
 
-      if (value.serverUrl)
-        value.serverUrl = isArray(value.serverUrl) ? value.serverUrl : [value.serverUrl];
+      if (value.serverUrls)
+        value.serverUrls = isArray(value.serverUrls) ? value.serverUrls : [value.serverUrls];
 
       this.props.onChange({ ...LDAPConfig.defaultConfig, ...value });
     }

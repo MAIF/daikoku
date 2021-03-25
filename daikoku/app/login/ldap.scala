@@ -45,7 +45,10 @@ object LdapConfig {
       Right(
         LdapConfig(
           sessionMaxAge = (json \ "sessionMaxAge").asOpt[Int].getOrElse(86400),
-          serverUrl = (json \ "serverUrl").asOpt[Seq[String]].getOrElse(Seq.empty[String]),
+          serverUrls = (json \ "serverUrl").asOpt[String] match {
+            case Some(url) => Seq(url)
+            case None => (json \ "serverUrls").asOpt[Seq[String]].getOrElse(Seq.empty[String])
+          },
           searchBase = (json \ "searchBase").as[String],
           userBase = (json \ "userBase").asOpt[String].filterNot(_.trim.isEmpty),
           groupFilter =
@@ -69,7 +72,7 @@ object LdapConfig {
 
 case class LdapConfig(
     sessionMaxAge: Int = 86400,
-    serverUrl: Seq[String] = Seq.empty[String],
+    serverUrls: Seq[String] = Seq.empty[String],
     searchBase: String,
     userBase: Option[String] = None,
     groupFilter: Option[String] = None,
@@ -84,7 +87,7 @@ case class LdapConfig(
   def asJson: JsObject = Json.obj(
     "type" -> "ldap",
     "sessionMaxAge" -> this.sessionMaxAge,
-    "serverUrl" -> this.serverUrl,
+    "serverUrls" -> this.serverUrls,
     "searchBase" -> this.searchBase,
     "userBase" -> this.userBase
       .map(JsString.apply)
@@ -344,7 +347,7 @@ object LdapSupport {
       case None => LdapConfig.fromJsons(tenant.authProviderSettings)
     }
 
-    _bindUser(ldapConfig.serverUrl.filter(_ => true), username, password, ldapConfig, tenant, _env)
+    _bindUser(ldapConfig.serverUrls.filter(_ => true), username, password, ldapConfig, tenant, _env)
   }
 
   def checkConnection(config: LdapConfig): Future[(Boolean, String)] = {
@@ -361,7 +364,7 @@ object LdapSupport {
     config.adminPassword.foreach(p => env.put(Context.SECURITY_CREDENTIALS, p))
 
     Try {
-      for (url <- config.serverUrl) {
+      for (url <- config.serverUrls) {
         env.put(Context.PROVIDER_URL, url)
         scala.util.Try {
           val ctx2 = new InitialDirContext(env)
@@ -381,11 +384,11 @@ object LdapSupport {
   def getUser(email: String, tenant: Tenant) (implicit ec: ExecutionContext): Future[(Boolean, String)] = {
     val ldapConfig = LdapConfig.fromJsons(tenant.authProviderSettings)
 
-    if (ldapConfig.serverUrl.isEmpty) {
+    if (ldapConfig.serverUrls.isEmpty) {
       FastFuture.successful((false,"Missing LDAP URLs server"))
     } else {
       FastFuture.successful(
-        ldapConfig.serverUrl.find { url =>
+        ldapConfig.serverUrls.find { url =>
           Try {
             println(ldapConfig.userBase.map(_ + ",").getOrElse("") + ldapConfig.searchBase)
             println(ldapConfig.searchFilter.replace("${username}", email))
