@@ -217,21 +217,27 @@ class UsersController(DaikokuAction: DaikokuAction,
   }
 
   def createLDAPUser() = DaikokuAction.async(parse.json) { ctx =>
-    LdapConfig.fromJson(ctx.tenant.authProviderSettings) match {
-      case Left(err) => FastFuture.successful(BadRequest(Json.obj("error" -> err.getMessage)))
-      case Right(config) =>
-        LdapSupport.createUser(
-          (ctx.request.body \ "email").as[String],
-          config.serverUrls.filter(_ => true),
-          config,
-          ctx.tenant.id,
-          env
-        )
-          .map { user =>
-            FastFuture.successful(Ok(user.asJson))
-          }.getOrElse(
-          FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to create user from LDAP")))
-        )
+    TeamAdminOnly(
+      AuditTrailEvent(
+        "@{user.name} has created LDAP user profile"))(
+      (ctx.request.body \ "teamId").as[String],
+      ctx)  { _ =>
+        LdapConfig.fromJson(ctx.tenant.authProviderSettings) match {
+          case Left(err) => FastFuture.successful(BadRequest(Json.obj("error" -> err.getMessage)))
+          case Right(config) =>
+            LdapSupport.createUser(
+              (ctx.request.body \ "email").as[String],
+              config.serverUrls.filter(_ => true),
+              config,
+              ctx.tenant.id,
+              env
+            )
+              .map { user =>
+                FastFuture.successful(Ok(user.asJson))
+              }.getOrElse(
+              FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to create user from LDAP")))
+            )
+        }
     }
   }
 
