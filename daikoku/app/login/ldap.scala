@@ -390,9 +390,6 @@ object LdapSupport {
       FastFuture.successful(
         ldapConfig.serverUrls.find { url =>
           Try {
-            println(ldapConfig.userBase.map(_ + ",").getOrElse("") + ldapConfig.searchBase)
-            println(ldapConfig.searchFilter.replace("${username}", email))
-
             val ctx = getInitialLdapContext(
               ldapConfig.adminUsername.map(u => u).getOrElse(""),
               ldapConfig.adminPassword.map(p => p).getOrElse(""),
