@@ -1634,7 +1634,7 @@ export function findUserByEmail(email) {
   });
 };
 
-export function createUserFromLDAP(email) {
+export function createUserFromLDAP(email, teamId) {
   return fetch('/api/auth/ldap/users', {
     method: 'POST',
     credentials: 'include',
@@ -1642,6 +1642,9 @@ export function createUserFromLDAP(email) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({
+      email,
+      teamId
+    }),
   }).then((r) => r.json());
 }

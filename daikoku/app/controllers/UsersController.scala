@@ -232,11 +232,14 @@ class UsersController(DaikokuAction: DaikokuAction,
               ctx.tenant.id,
               env
             )
-              .map { user =>
-                FastFuture.successful(Ok(user.asJson))
-              }.getOrElse(
-              FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to create user from LDAP")))
-            )
+              .flatMap { res =>
+                res.map(user => FastFuture.successful(Created(user.asJson)))
+                  .getOrElse(
+                    FastFuture.successful(BadRequest(Json.obj(
+                      "error" -> "Failed to create user from LDAP : empty response from createUser"
+                    )))
+                  )
+              }
         }
     }
   }

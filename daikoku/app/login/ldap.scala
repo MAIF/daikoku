@@ -418,11 +418,11 @@ object LdapSupport {
 
   def createUser(email: String, urls: Seq[String], ldapConfig: LdapConfig, tenantId: TenantId, env: Env)(
                 implicit ec: ExecutionContext
-  ): Option[User] = {
+  ): Future[Option[User]] = {
     if (urls.isEmpty)
-      None
+      FastFuture.successful(None)
     else {
-      Try {
+      try {
         val url = urls.head
 
         val ctx = getInitialLdapContext(
@@ -441,7 +441,9 @@ object LdapSupport {
           ldapConfig.searchFilter.replace("${username}", email),
           searchControls)
 
-        val boundUser = if (res.hasMore) {
+        ctx.close()
+
+        if(res.hasMore) {
           val item = res.next()
 
           val dn = item.getNameInNamespace
@@ -455,20 +457,17 @@ object LdapSupport {
           for {
             _ <- env.dataStore.userRepo.save(user)
           } yield {
-            user
+            res.close()
+            Some(user)
           }
-        }
-        res.close()
-        ctx.close()
-        boundUser
-      } recover {
+        } else
+          FastFuture.successful(None)
+      } catch {
         case _: ServiceUnavailableException | _: CommunicationException =>
           createUser(email, urls.tail, ldapConfig, tenantId, env)
-        case _ => None
-      } get
+        case _ : Throwable => FastFuture.successful(None)
+      }
     }
-
-    None
   }
 }
 

@@ -1,9 +1,7 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.login.LdapConfig
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}
@@ -315,6 +313,41 @@ class UserControllerSpec()
           method = "PUT",
           body = Some(Json.obj("isDaikokuAdmin" -> true)))(tenant, session)
       resp.status mustBe 401
+    }
+
+
+  }
+
+  "a teamAdmin" can {
+    "create LDAP user" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(authProviderSettings = Json.obj(
+          "serverUrls" -> Seq("ldap://ldap.forumsys.com:389"),
+          "searchBase" -> "dc=example,dc=com",
+          "adminUsername" -> "cn=read-only-admin,dc=example,dc=com",
+          "adminPassword" -> "password",
+          "userBase" -> "",
+          "searchFilter" -> "(mail=${username})",
+          "groupFilter" -> "ou=mathematicians",
+          "adminGroupFilter" -> "ou=scientists",
+          "nameField" -> "cn",
+          "emailField" -> "mail"
+        ))),
+        users = Seq(tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val resp = httpJsonCallBlocking(
+        path = "/api/auth/ldap/users",
+        method = "POST",
+        body = Some(Json.obj(
+          "email" -> "gauss@ldap.forumsys.com",
+          "teamId" -> defaultAdminTeam.id.value)
+        ))(tenant, session)
+
+      resp.status mustBe 201
     }
   }
 }

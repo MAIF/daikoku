@@ -180,7 +180,7 @@ export class TeamMembersSimpleComponent extends Component {
     const optUser = await Services.findUserByEmail(email)
 
     if (optUser.status !== 200) {
-      const createdUser = await Services.createUserFromLDAP(email)
+      const createdUser = await Services.createUserFromLDAP(email, this.props.currentTeam._id)
       this._addMember(createdUser);
     } else {
       const user = await optUser.json();
