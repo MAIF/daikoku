@@ -1592,3 +1592,12 @@ export function disableMaintenanceMode() {
   })
     .then((r) => r.json());
 }
+
+export function checkConnection(config, user) {
+  return fetch(`/api/auth/ldap/_check`, {
+    body: user ? JSON.stringify({
+      config,
+      user
+    }) : JSON.stringify(config),
+  }).then((r) => r.json());
+}

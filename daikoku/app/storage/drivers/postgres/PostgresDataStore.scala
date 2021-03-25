@@ -185,14 +185,14 @@ case class PostgresTenantCapableConsumptionRepo(
     val (sql, params) = convertQuery(filter)
 
     reactivePg.querySeq(
-        s"SELECT _id, content->>'clientId', MAX(content->>'from') FROM ${rep.tableName} " +
-          s"WHERE $sql " +
-          "GROUP BY content->>'clientId', _id", params)
+      s"SELECT _id, content->>'clientId', MAX(content->>'from') FROM ${rep.tableName} " +
+        s"WHERE $sql " +
+        "GROUP BY content->>'clientId', _id", params)
     { row =>
-          Json.obj(
-            "clientId" -> row.getString(1),
-            "from" -> String.valueOf(row.getValue(2))
-          ).some
+      Json.obj(
+        "clientId" -> row.getString(1),
+        "from" -> String.valueOf(row.getValue(2))
+      ).some
     }
       .map(res => Future.sequence(res.map(queryResult => findOne(queryResult, rep.tableName, rep.format))))
       .flatMap(r => r.map(res => res.collect {
@@ -343,26 +343,26 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     }.map(_.getOrElse(false))
 
   def checkDatabase(): Future[Any] = {
-      reactivePg.queryOne("SELECT schema_name FROM information_schema.schemata WHERE schema_name = $1",
-            Seq(getSchema)) { row =>
-        row.optString("schema_name")
+    reactivePg.queryOne("SELECT schema_name FROM information_schema.schemata WHERE schema_name = $1",
+      Seq(getSchema)) { row =>
+      row.optString("schema_name")
+    }
+      .map {
+        case Some(_) => checkTables()
+        case _ =>
+          for {
+            _ <- reactivePg.rawQuery(s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
+            res <- checkTables()
+          } yield res
       }
-        .map {
-          case Some(_) => checkTables()
-          case _ =>
-            for {
-              _ <- reactivePg.rawQuery(s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
-              res <- checkTables()
-            } yield res
-        }
   }
 
   private def checkTables(): Future[Any] = {
     reactivePg.queryOne("SELECT COUNT(*) as count " +
-          "FROM information_schema.tables " +
-          "WHERE table_schema = $1", Seq(getSchema)) { row =>
-        row.optLong("count")
-      }
+      "FROM information_schema.tables " +
+      "WHERE table_schema = $1", Seq(getSchema)) { row =>
+      row.optLong("count")
+    }
       .map(_.getOrElse(0L))
       .map(s => {
         if (s == 0)
@@ -375,22 +375,22 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   def createDatabase() =
     Future.sequence(
       Map(
-      "tenants" -> true,
-      "password_reset" -> true,
-      "account_creation" -> true,
-      "teams" -> true,
-      "apis" -> true,
-      "translations" -> true,
-      "messages" -> false,
-      "api_subscriptions" -> true,
-      "api_documentation_pages" -> true,
-      "notifications" -> true,
-      "consumptions" -> true,
-      "audit_events" -> false,
-      "users" -> true,
-      "user_sessions" -> false
-    )
-      .map { case (key, value) => createTable(key, value) })
+        "tenants" -> true,
+        "password_reset" -> true,
+        "account_creation" -> true,
+        "teams" -> true,
+        "apis" -> true,
+        "translations" -> true,
+        "messages" -> false,
+        "api_subscriptions" -> true,
+        "api_documentation_pages" -> true,
+        "notifications" -> true,
+        "consumptions" -> true,
+        "audit_events" -> false,
+        "users" -> true,
+        "user_sessions" -> false
+      )
+        .map { case (key, value) => createTable(key, value) })
 
   def createTable(table: String, allFields: Boolean): Future[RowSet[Row]] = {
     logger.debug(s"CREATE TABLE $getSchema.$table (" +
@@ -398,9 +398,9 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       s"${if (allFields) "_deleted BOOLEAN," else ""}" +
       s"content JSONB)")
     reactivePg.rawQuery(s"CREATE TABLE $getSchema.$table (" +
-        s"_id character varying PRIMARY KEY," +
-        s"${if (allFields) "_deleted BOOLEAN," else ""}" +
-        s"content JSONB)")
+      s"_id character varying PRIMARY KEY," +
+      s"${if (allFields) "_deleted BOOLEAN," else ""}" +
+      s"content JSONB)")
   }
 
 
@@ -802,30 +802,30 @@ abstract class PostgresRepo[Of, Id <: ValueType](
 
     sort match {
       case None =>
-          if (query.values.isEmpty)
-            reactivePg.querySeq(s"SELECT * FROM $tableName"){ rowToJson(_, format) }
-          else {
-            val (sql, params) = convertQuery(query)
-            reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params){ rowToJson(_, format) }
-          }
+        if (query.values.isEmpty)
+          reactivePg.querySeq(s"SELECT * FROM $tableName"){ rowToJson(_, format) }
+        else {
+          val (sql, params) = convertQuery(query)
+          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params){ rowToJson(_, format) }
+        }
 
       case Some(s) =>
-          if (query.values.isEmpty) reactivePg.querySeq(s"SELECT *, $$2 FROM $tableName ORDER BY $$1",
-            Seq(
+        if (query.values.isEmpty) reactivePg.querySeq(s"SELECT *, $$2 FROM $tableName ORDER BY $$1",
+          Seq(
+            s.keys.map(key => s"$quotes$key$quotes").mkString(","),
+            s.keys.map { key =>
+              s"content->>'$key' as $quotes$key$quotes"
+            }.mkString(","))) { rowToJson(_, format) }
+        else {
+          val (sql, params) = convertQuery(query)
+          reactivePg.querySeq(s"SELECT *, $${params.size+1} FROM $tableName WHERE $sql ORDER BY $${params.size}",
+            params ++ Seq(
               s.keys.map(key => s"$quotes$key$quotes").mkString(","),
               s.keys.map { key =>
                 s"content->>'$key' as $quotes$key$quotes"
-              }.mkString(","))) { rowToJson(_, format) }
-          else {
-            val (sql, params) = convertQuery(query)
-            reactivePg.querySeq(s"SELECT *, $${params.size+1} FROM $tableName WHERE $sql ORDER BY $${params.size}",
-              params ++ Seq(
-                s.keys.map(key => s"$quotes$key$quotes").mkString(","),
-                s.keys.map { key =>
-                  s"content->>'$key' as $quotes$key$quotes"
-                }.mkString(",")
-              )) { rowToJson(_, format) }
-          }
+              }.mkString(",")
+            )) { rowToJson(_, format) }
+        }
     }
   }
 
@@ -835,10 +835,10 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteByIdLogically($id)")
     reactivePg.query(s"UPDATE $tableName " +
-        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE _id = $$1 AND _deleted = false  RETURNING _id",
-        Seq(id)
-      )
+      "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+      s"WHERE _id = $$1 AND _deleted = false  RETURNING _id",
+      Seq(id)
+    )
       .map(_.size() > 0)
   }
 
@@ -853,16 +853,16 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
     val (sql, params) = convertQuery(query)
     reactivePg.query(s"UPDATE $tableName " +
-        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE _deleted = false AND $sql  RETURNING _id", params)
+      "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+      s"WHERE _deleted = false AND $sql  RETURNING _id", params)
       .map(_.size() > 0)
   }
 
   override def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteAllLogically()")
     reactivePg.query(s"UPDATE $tableName " +
-          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-          "WHERE _deleted = false RETURNING _id")
+      "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+      "WHERE _deleted = false RETURNING _id")
       .map(_.size() > 0)
   }
 
@@ -884,8 +884,8 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     logger.debug(s"$tableName.deleteByIdLogically($id)")
 
     reactivePg.query(s"UPDATE $tableName " +
-        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE _id = $$1 AND content ->> '_tenant' = $$2  RETURNING _id",
+      "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+      s"WHERE _id = $$1 AND content ->> '_tenant' = $$2  RETURNING _id",
       Seq(id, tenant.value))
       .map(_.size() > 0)
   }
@@ -900,10 +900,10 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
     val (sql, params) = convertQuery(query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value))
     reactivePg.query(s"UPDATE $tableName " +
-        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE content ->> '_tenant' = ${getParam(params.size)} AND $sql  RETURNING _id",
-        params ++ Seq(tenant.value)
-      )
+      "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+      s"WHERE content ->> '_tenant' = ${getParam(params.size)} AND $sql  RETURNING _id",
+      params ++ Seq(tenant.value)
+    )
       .map(_.size() > 0)
   }
 
@@ -912,10 +912,10 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     logger.debug(s"$tableName.deleteAllLogically()")
 
     reactivePg.query(s"UPDATE $tableName " +
-        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        s"WHERE content ->> '_tenant' = $$1 AND _deleted = false  RETURNING _id",
-        Seq(tenant.value)
-      )
+      "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+      s"WHERE content ->> '_tenant' = $$1 AND _deleted = false  RETURNING _id",
+      Seq(tenant.value)
+    )
       .map(_.size() > 0)
   }
 
@@ -928,7 +928,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     sort match {
       case None =>
         if (query.values.isEmpty)
-        reactivePg.querySeq(s"SELECT * FROM $tableName") { rowToJson(_, format)}
+          reactivePg.querySeq(s"SELECT * FROM $tableName") { rowToJson(_, format)}
         else {
           val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
           reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params) { rowToJson(_, format) }
@@ -997,14 +997,14 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
 
     if (query.values.isEmpty)
-        reactivePg.queryOne(s"SELECT COUNT(*) as count FROM $tableName")
-        { _.optLong("count") }
-          .map(_.getOrElse(0L))
+      reactivePg.queryOne(s"SELECT COUNT(*) as count FROM $tableName")
+      { _.optLong("count") }
+        .map(_.getOrElse(0L))
     else {
       val (sql, params) = convertQuery(query)
       reactivePg.queryOne(s"SELECT COUNT(*) as count FROM $tableName WHERE $sql", params)
       { _.optLong("count") }
-      .map(_.getOrElse(0L))
+        .map(_.getOrElse(0L))
     }
   }
 
@@ -1060,20 +1060,20 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
 
     (
       if (value.keys.contains("_deleted"))
-      reactivePg.query(s"INSERT INTO $tableName(_id, _deleted, content) VALUES($$1,$$2,$$3) " +
+        reactivePg.query(s"INSERT INTO $tableName(_id, _deleted, content) VALUES($$1,$$2,$$3) " +
           "ON CONFLICT (_id) DO UPDATE " +
           s"set _deleted = $$2, content = $$3",
-      Seq(
-        (value \ "_id").as[String],
-        java.lang.Boolean.valueOf((value \ "_deleted").as[Boolean]),
-        new JsonObject(Json.stringify(value)))
-      )
+          Seq(
+            (value \ "_id").as[String],
+            java.lang.Boolean.valueOf((value \ "_deleted").as[Boolean]),
+            new JsonObject(Json.stringify(value)))
+        )
       else
         reactivePg.query(s"INSERT INTO $tableName(_id, content) VALUES($$1,$$2) " +
           "ON CONFLICT (_id) DO UPDATE " +
           s"set content = $$2",
-        Seq((value \ "_id").as[String], new JsonObject(Json.stringify(value))))
-    )
+          Seq((value \ "_id").as[String], new JsonObject(Json.stringify(value))))
+      )
       .map(_ => true)
       .recover(_ => false)
   }
@@ -1108,7 +1108,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
 
     val (sql, params) = convertQuery(query)
     reactivePg.query(s"UPDATE $tableName SET content = content || ${getParam(params.size)} WHERE $sql RETURNING _id",
-        params ++ Seq(new JsonObject(Json.stringify(value))))
+      params ++ Seq(new JsonObject(Json.stringify(value))))
       .map(_.size())
   }
 
@@ -1130,9 +1130,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
 
     val (sql, params) = convertQuery(query)
     reactivePg.queryOne(
-        s"SELECT MAX(content->>${getParam(params.size)})::bigint as total FROM $tableName WHERE $sql",
-        params ++ Seq(field)
-      ) {  row => Some(row.getLong(0).asInstanceOf[Long]) }
+      s"SELECT MAX(content->>${getParam(params.size)})::bigint as total FROM $tableName WHERE $sql",
+      params ++ Seq(field)
+    ) {  row => Some(row.getLong(0).asInstanceOf[Long]) }
   }
 
   override def findWithProjection(query: JsObject, projection: JsObject)(
@@ -1195,16 +1195,16 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
     for {
       count <- count(query)
       queryRes <- {
-          if (query.values.isEmpty)
-              reactivePg.querySeq(
-                s"SELECT * FROM $tableName ORDER BY _id DESC LIMIT $$1 OFFSET $$2",
-                Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize)))
-              { row => rowToJson(row, format) }
-          else {
-            val (sql, params) = convertQuery(query)
-            reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql ORDER BY _id DESC LIMIT $$${params.size+1} OFFSET $$${params.size+2}",
+        if (query.values.isEmpty)
+          reactivePg.querySeq(
+            s"SELECT * FROM $tableName ORDER BY _id DESC LIMIT $$1 OFFSET $$2",
+            Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize)))
+          { row => rowToJson(row, format) }
+        else {
+          val (sql, params) = convertQuery(query)
+          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql ORDER BY _id DESC LIMIT $$${params.size+1} OFFSET $$${params.size+2}",
             params ++ Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize)))
-            { row => rowToJson(row, format) }
+          { row => rowToJson(row, format) }
         }
       }
     } yield {
