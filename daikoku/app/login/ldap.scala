@@ -6,13 +6,15 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+import org.joda.time.DurationFieldType.seconds
 import play.api.Logger
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
 import javax.naming.CommunicationException
 import javax.naming.ldap.{Control, InitialLdapContext}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -209,7 +211,7 @@ object LdapSupport {
     implicit ec: ExecutionContext
   ): Either[String, Future[User]] = {
     if (urls.isEmpty)
-      Left(s"Missing LDAP server URLs or all down")
+      Left("All servers down")
     else {
       Try {
         val url = urls.head
@@ -347,7 +349,10 @@ object LdapSupport {
       case None => LdapConfig.fromJsons(tenant.authProviderSettings)
     }
 
-    _bindUser(ldapConfig.serverUrls.filter(_ => true), username, password, ldapConfig, tenant, _env)
+    if (ldapConfig.serverUrls.isEmpty)
+      Left("Missing LDAP server URLs")
+    else
+      _bindUser(ldapConfig.serverUrls.filter(_ => true), username, password, ldapConfig, tenant, _env)
   }
 
   def checkConnection(config: LdapConfig): Future[(Boolean, String)] = {
@@ -367,11 +372,11 @@ object LdapSupport {
       for (url <- config.serverUrls) {
         env.put(Context.PROVIDER_URL, url)
         scala.util.Try {
-          val ctx2 = new InitialDirContext(env)
+          val ctx2 = Await.result(FastFuture.successful(new InitialDirContext(env)), 10 seconds)
           ctx2.close()
         } match {
           case Success(_) => return FastFuture.successful((true, "--"))
-          case Failure(_: ServiceUnavailableException | _: CommunicationException) =>
+          case Failure(_: ServiceUnavailableException | _: CommunicationException | _: TimeoutException) =>
           case Failure(e) => throw e
         }
       }
