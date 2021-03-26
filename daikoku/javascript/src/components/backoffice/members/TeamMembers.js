@@ -269,18 +269,19 @@ export class TeamMembersSimpleComponent extends Component {
       let successfull = true;
 
       if (members.find(f => f.email === email)) {
-        toastr.error(t("User already in team", this.props.currentLanguage));
+        toastr.info(t("User already in team", this.props.currentLanguage));
         successfull = false;
       }
       else if (users.pendingUsers.find(f => f.email === email)) {
-        toastr.error(t("User already invited", this.props.currentLanguage));
+        toastr.info(t("User already invited", this.props.currentLanguage));
         successfull = false;
       }
 
       this.setState({
         ldap: {
           ...this.state.ldap,
-          foundMember: successfull ? email : null
+          foundMember: successfull ? email : null,
+          searchMember: ""
         }
       });
     }

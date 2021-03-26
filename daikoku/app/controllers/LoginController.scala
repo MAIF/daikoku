@@ -166,13 +166,12 @@ class LoginController(DaikokuAction: DaikokuAction,
                     val ldapConfig = LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
 
                     LdapSupport.bindUser(username, password, ctx.tenant, env, Some(ldapConfig)) match {
-                      case Left(err) if err == "All servers down" =>
+                      case Left(_) =>
                         val localConfig = LocalLoginConfig.fromJsons(ctx.tenant.authProviderSettings)
                         bindUser(localConfig.sessionMaxAge,
                           ctx.tenant,
                           ctx.request,
                           LocalLoginSupport.bindUser(username, password, ctx.tenant, env))
-                      case Left(_) => bindUser(ldapConfig.sessionMaxAge, ctx.tenant, ctx.request, FastFuture.successful(None))
                       case Right(user) => bindUser(ldapConfig.sessionMaxAge, ctx.tenant, ctx.request, user.map(u => Some(u)))
                     }
 
@@ -540,7 +539,7 @@ class LoginController(DaikokuAction: DaikokuAction,
   }
 
   def checkUser(email: String) = DaikokuAction.async { ctx =>
-      LdapSupport.getUser(email, ctx.tenant).flatMap {
+      LdapSupport.existsUser(email, ctx.tenant).flatMap {
         case (false, err)     => FastFuture.successful(BadRequest(Json.obj("error" -> err)))
         case (true, message)  => FastFuture.successful(Ok(Json.obj("message" -> message)))
       }

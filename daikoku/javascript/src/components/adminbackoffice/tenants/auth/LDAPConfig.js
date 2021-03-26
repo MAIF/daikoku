@@ -2,8 +2,7 @@ import React, { Component } from 'react';
 import { t, Translation } from '../../../../locales';
 import { Spinner } from '../../../utils';
 
-import { checkConnection } from '../../../../services';
-import { isArray } from 'xstate/lib/utils';
+import * as Services from '../../../../services/index';
 import { toastr } from 'react-redux-toastr';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
@@ -11,12 +10,11 @@ const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 export class LDAPConfig extends Component {
   static defaultConfig = {
     sessionMaxAge: 86400,
-    serverUrls: [
-      'ldap://ldap.forumsys.com:389'
-    ],
+    serverUrls: ['ldap://ldap.forumsys.com:389'],
+    connectTimeout: 2,
     searchBase: 'dc=example,dc=com',
     userBase: '',
-    searchFilter: '(uid=${username})',
+    searchFilter: '(mail=${username})',
     groupFilter: '()',
     adminGroupFilter: '()',
     adminUsername: 'cn=read-only-admin,dc=example,dc=com',
@@ -29,6 +27,7 @@ export class LDAPConfig extends Component {
   formFlow = [
     'sessionMaxAge',
     'serverUrls',
+    'connectTimeout',
     'searchBase',
     'userBase',
     'groupFilter',
@@ -52,6 +51,13 @@ export class LDAPConfig extends Component {
       type: 'array',
       props: {
         label: t('LDAP Server URLs', this.props.currentLanguage, true)
+      },
+    },
+    connectTimeout: {
+      type: 'number',
+      props: {
+        suffix: t('seconds', this.props.currentLanguage),
+        label: t('Connect timeout', this.props.currentLanguage),
       },
     },
     searchBase: {
@@ -116,18 +122,12 @@ export class LDAPConfig extends Component {
   }
 
   componentDidMount() {
-    if (this.props.rawValue.authProvider === 'LDAP') {
-      const { value } = this.props;
-
-      if (value.serverUrls)
-        value.serverUrls = isArray(value.serverUrls) ? value.serverUrls : [value.serverUrls];
-
-      this.props.onChange({ ...LDAPConfig.defaultConfig, ...value });
-    }
+    if (this.props.rawValue.authProvider === 'LDAP')
+      this.props.onChange({ ...LDAPConfig.defaultConfig, ...this.props.value });
   }
 
   checkConnection = (value, user) => {
-    checkConnection(value, user)
+    Services.checkConnection(value, user)
       .then(res => {
         if (res.works)
           toastr.success(t('Worked!'));

@@ -781,5 +781,6 @@
     "Find LDAP member by email ...": "Find LDAP member by email ...",
     "LDAP user found": "Utilisateur LDAP trouvé",
     "User already in team": "User already in team",
-    "User already invited": "User already invited"
+    "User already invited": "User already invited",
+    "Connect timeout": "Connect timeout"
 }

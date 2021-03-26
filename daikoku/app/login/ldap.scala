@@ -6,14 +6,12 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
-import org.joda.time.DurationFieldType.seconds
 import play.api.Logger
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
-import javax.naming.CommunicationException
 import javax.naming.ldap.{Control, InitialLdapContext}
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success, Try}
@@ -51,6 +49,7 @@ object LdapConfig {
             case Some(url) => Seq(url)
             case None => (json \ "serverUrls").asOpt[Seq[String]].getOrElse(Seq.empty[String])
           },
+          connectTimeout = (json \ "connectTimeout").asOpt[Int].getOrElse(2),
           searchBase = (json \ "searchBase").as[String],
           userBase = (json \ "userBase").asOpt[String].filterNot(_.trim.isEmpty),
           groupFilter =
@@ -75,6 +74,7 @@ object LdapConfig {
 case class LdapConfig(
     sessionMaxAge: Int = 86400,
     serverUrls: Seq[String] = Seq.empty[String],
+    connectTimeout: Int = 2,
     searchBase: String,
     userBase: Option[String] = None,
     groupFilter: Option[String] = None,
@@ -90,6 +90,7 @@ case class LdapConfig(
     "type" -> "ldap",
     "sessionMaxAge" -> this.sessionMaxAge,
     "serverUrls" -> this.serverUrls,
+    "connectTimeout" -> this.connectTimeout,
     "searchBase" -> this.searchBase,
     "userBase" -> this.userBase
       .map(JsString.apply)
@@ -166,7 +167,7 @@ object LdapSupport {
       }
         .getOrElse(Seq.empty[String])
     } recover {
-      case e => Seq.empty[String]
+      case _ => Seq.empty[String]
     } get
   }
 
@@ -215,42 +216,42 @@ object LdapSupport {
     else {
       Try {
         val url = urls.head
+        Await.result(Future {
+          val ctx = getInitialLdapContext(
+            ldapConfig.adminUsername.map(u => u).getOrElse(""),
+            ldapConfig.adminPassword.map(p => p).getOrElse(""),
+            url
+          )
 
-        val ctx = getInitialLdapContext(
-          ldapConfig.adminUsername.map(u => u).getOrElse(""),
-          ldapConfig.adminPassword.map(p => p).getOrElse(""),
-          url
-        )
+          val searchControls = getDefaultSearchControls()
 
-        val searchControls = getDefaultSearchControls()
+          val usersInGroup: Seq[String] =
+            getUsersInGroup(ldapConfig.groupFilter, ctx, ldapConfig.searchBase, searchControls)
+          val usersInAdminGroup: Seq[String] =
+            getUsersInGroup(ldapConfig.adminGroupFilter, ctx, ldapConfig.searchBase, searchControls)
 
-        val usersInGroup: Seq[String] =
-          getUsersInGroup(ldapConfig.groupFilter, ctx, ldapConfig.searchBase, searchControls)
-        val usersInAdminGroup: Seq[String] =
-          getUsersInGroup(ldapConfig.adminGroupFilter, ctx, ldapConfig.searchBase, searchControls)
+          val res = ctx.search(
+            ldapConfig.userBase.map(_ + ",").getOrElse("") + ldapConfig.searchBase,
+            ldapConfig.searchFilter.replace("${username}", username),
+            searchControls)
 
-        val res = ctx.search(
-          ldapConfig.userBase.map(_ + ",").getOrElse("") + ldapConfig.searchBase,
-          ldapConfig.searchFilter.replace("${username}", username),
-          searchControls)
+          val boundUser = if (res.hasMore) {
+            val item = res.next()
 
-        val boundUser = if (res.hasMore) {
-          val item = res.next()
+            val dn = item.getNameInNamespace
+            val attrs = item.getAttributes
+            val email = attrs.get(ldapConfig.emailField).toString.split(":").last.trim
+            val name = attrs.get(ldapConfig.nameField).toString.split(":").last.trim
 
-          val dn = item.getNameInNamespace
-          val attrs = item.getAttributes
-          val email = attrs.get(ldapConfig.emailField).toString.split(":").last.trim
-          val name = attrs.get(ldapConfig.nameField).toString.split(":").last.trim
-
-          if (ldapConfig.adminGroupFilter.exists(_ => usersInAdminGroup.contains(dn))) {
+            if (ldapConfig.adminGroupFilter.exists(_ => usersInAdminGroup.contains(dn))) {
               getInitialDirContext(dn, password, url)
                 .close()
 
               Right(_env.dataStore.userRepo.findOne(
-                  Json.obj(
-                    "_deleted" -> false,
-                    "email" -> email
-                  ))
+                Json.obj(
+                  "_deleted" -> false,
+                  "email" -> email
+                ))
                 .flatMap {
                   case Some(user) =>
                     val newUser = user.copy(
@@ -281,16 +282,16 @@ object LdapSupport {
                       user
                     }
                 })
-          }
-          else if (ldapConfig.groupFilter.forall(_ => usersInGroup.contains(dn))) {
+            }
+            else if (ldapConfig.groupFilter.forall(_ => usersInGroup.contains(dn))) {
               getInitialDirContext(dn, password, url)
                 .close()
 
               Right(_env.dataStore.userRepo.findOne(
-                  Json.obj(
-                    "_deleted" -> false,
-                    "email" -> email
-                  ))
+                Json.obj(
+                  "_deleted" -> false,
+                  "email" -> email
+                ))
                 .flatMap {
                   case Some(user) =>
                     val newUser = user.copy(
@@ -320,23 +321,22 @@ object LdapSupport {
                       user
                     }
                 })
-          }
-          else {
+            }
+            else {
+              Left(s"no user found")
+            }
+          } else {
             Left(s"no user found")
           }
-        } else {
-          Left(s"no user found")
-        }
 
-        res.close()
-        ctx.close()
-        boundUser
+          res.close()
+          ctx.close()
+          boundUser
+        }, Duration(s"${ldapConfig.connectTimeout} seconds"))
       } recover {
-        case _: ServiceUnavailableException | _: CommunicationException =>
+        case _: ServiceUnavailableException | _: CommunicationException | _: TimeoutException =>
           _bindUser(urls.tail, username, password, ldapConfig, tenant, _env)
-        case e =>
-          println(e.getMessage)
-          Left(s"bind failed ${e.getMessage}")
+        case e => Left(s"bind failed ${e.getMessage}")
       } get
     }
   }
@@ -355,7 +355,7 @@ object LdapSupport {
       _bindUser(ldapConfig.serverUrls.filter(_ => true), username, password, ldapConfig, tenant, _env)
   }
 
-  def checkConnection(config: LdapConfig): Future[(Boolean, String)] = {
+  def checkConnection(config: LdapConfig)(implicit ec: ExecutionContext): Future[(Boolean, String)] = {
     if (config.adminUsername.isEmpty || config.adminUsername.get.trim.isEmpty) {
       FastFuture.successful((false, "Empty admin username are not allowed for this LDAP auth. module"))
     } else  if (config.adminPassword.isEmpty || config.adminPassword.get.trim.isEmpty) {
@@ -372,8 +372,10 @@ object LdapSupport {
       for (url <- config.serverUrls) {
         env.put(Context.PROVIDER_URL, url)
         scala.util.Try {
-          val ctx2 = Await.result(FastFuture.successful(new InitialDirContext(env)), 10 seconds)
-          ctx2.close()
+          Await.result(Future {
+            val ctx2 = new InitialDirContext(env)
+            ctx2.close()
+          }, Duration(s"${config.connectTimeout} seconds"))
         } match {
           case Success(_) => return FastFuture.successful((true, "--"))
           case Failure(_: ServiceUnavailableException | _: CommunicationException | _: TimeoutException) =>
@@ -386,7 +388,7 @@ object LdapSupport {
     } get
   }
 
-  def getUser(email: String, tenant: Tenant) (implicit ec: ExecutionContext): Future[(Boolean, String)] = {
+  def existsUser(email: String, tenant: Tenant) (implicit ec: ExecutionContext): Future[(Boolean, String)] = {
     val ldapConfig = LdapConfig.fromJsons(tenant.authProviderSettings)
 
     if (ldapConfig.serverUrls.isEmpty) {
@@ -410,9 +412,7 @@ object LdapSupport {
             ctx.close()
             res.asScala.nonEmpty
           } recover {
-            case e =>
-              println(e)
-              false
+            case e => false
           } get
         }
           .map(_  => (true, "user found"))

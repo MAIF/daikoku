@@ -1569,38 +1569,28 @@ export function migrateMongoToPostgres() {
   });
 }
 
+const POST_HEADERS = {
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  }
+}
+
 export function enableMaintenanceMode() {
-  return fetch('/api/state/lock', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    }
-  })
+  return fetch('/api/state/lock', POST_HEADERS)
     .then((r) => r.json());
 }
 
 export function disableMaintenanceMode() {
-  return fetch('/api/state/unlock', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    }
-  })
+  return fetch('/api/state/unlock', POST_HEADERS)
     .then((r) => r.json());
 }
 
 export function checkConnection(config, user) {
   return fetch(`/api/auth/ldap/_check`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...POST_HEADERS,
     body: user ? JSON.stringify({
       config,
       user
@@ -1619,13 +1609,8 @@ export function searchLdapMember(email) {
 };
 
 export function findUserByEmail(email) {
-  return fetch(`/api/admin/users/_search`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+  return fetch('/api/admin/users/_search', {
+    ...POST_HEADERS,
     body: JSON.stringify({
       attributes: {
         email
@@ -1636,12 +1621,7 @@ export function findUserByEmail(email) {
 
 export function createUserFromLDAP(email, teamId) {
   return fetch('/api/auth/ldap/users', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...POST_HEADERS,
     body: JSON.stringify({
       email,
       teamId
