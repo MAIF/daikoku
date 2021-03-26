@@ -11,7 +11,7 @@ import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
 import javax.naming.ldap.{Control, InitialLdapContext}
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.{Duration}
 import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success, Try}
