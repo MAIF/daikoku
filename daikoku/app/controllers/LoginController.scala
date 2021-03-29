@@ -130,6 +130,27 @@ class LoginController(DaikokuAction: DaikokuAction,
                                    None,
                                    env,
                                    ctx.tenant)
+      case Some(p) if p == AuthProvider.OAuth2 =>
+        val maybeOAuth2Config = OAuth2Config.fromJson(ctx.tenant.authProviderSettings)
+
+        maybeOAuth2Config match {
+          case Right(authConfig) =>
+            bindUser(
+              authConfig.sessionMaxAge,
+              ctx.tenant,
+              ctx.request,
+              OAuth2Support
+                .bindUser(ctx.request, authConfig, ctx.tenant, env)
+                .map(_.toOption))
+          case Left(e) =>
+            AppLogger.error("Error during OAuthConfig read", e)
+            Errors.craftResponseResult("Invalid OAuth Config",
+              Results.BadRequest,
+              ctx.request,
+              None,
+              env,
+              ctx.tenant)
+        }
       case Some(p) =>
         ctx.request.body.asFormUrlEncoded match {
           case None =>
@@ -169,29 +190,13 @@ class LoginController(DaikokuAction: DaikokuAction,
                       case Left(_) => bindUser(ldapConfig.sessionMaxAge, ctx.tenant, ctx.request, FastFuture.successful(None))
                       case Right(user) => bindUser(ldapConfig.sessionMaxAge, ctx.tenant, ctx.request, user.map(u => Some(u)))
                     }
-
-                  case AuthProvider.OAuth2 =>
-                    val maybeOAuth2Config = OAuth2Config
-                      .fromJson(ctx.tenant.authProviderSettings)
-
-                    maybeOAuth2Config match {
-                      case Right(authConfig) =>
-                        bindUser(
-                          authConfig.sessionMaxAge,
-                          ctx.tenant,
-                          ctx.request,
-                          OAuth2Support
-                            .bindUser(ctx.request, authConfig, ctx.tenant, env)
-                            .map(_.toOption))
-                      case Left(e) =>
-                        AppLogger.error("Error during OAuthConfig read", e)
-                        Errors.craftResponseResult("Invalid OAuth Config",
-                                                   Results.BadRequest,
-                                                   ctx.request,
-                                                   None,
-                                                   env,
-                                                   ctx.tenant)
-                    }
+                  case _ =>
+                    Errors.craftResponseResult("No matching provider found",
+                      Results.BadRequest,
+                      ctx.request,
+                      None,
+                      env,
+                      ctx.tenant)
                 }
               case _ =>
                 Errors.craftResponseResult("No credentials found",
@@ -213,16 +218,16 @@ class LoginController(DaikokuAction: DaikokuAction,
     actualLogin(provider, ctx)
   }
 
-  def logout(provider: String) = DaikokuAction.async { ctx =>
+  def logout() = DaikokuAction.async { ctx =>
     val host = ctx.request.headers
       .get("Otoroshi-Proxied-Host")
       .orElse(ctx.request.headers.get("X-Forwarded-Host"))
       .getOrElse(ctx.request.host)
-    val redirect =
-      ctx.request
+    val redirect = ctx.request
         .getQueryString("redirect")
         .getOrElse(s"${ctx.request.theProtocol}://$host/")
-    AuthProvider(provider) match {
+
+    AuthProvider(ctx.tenant.authProvider.name) match {
       case Some(AuthProvider.Otoroshi) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
@@ -231,13 +236,12 @@ class LoginController(DaikokuAction: DaikokuAction,
       case Some(AuthProvider.OAuth2) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
-          val actualRedirectUrl = OAuth2Config
-            .fromJson(ctx.tenant.authProviderSettings)
-            .getOrElse(OAuth2Config()) //todo: pas sur de moi
-            .logoutUrl
-            .replace("${redirect}", URLEncoder.encode(redirect, "UTF-8"))
-          Redirect(actualRedirectUrl).removingFromSession("sessionId")(
-            ctx.request)
+          Redirect(OAuth2Config
+            .fromJson(ctx.tenant.authProviderSettings) match {
+            case Left(_) => redirect
+            case Right(config: OAuth2Config) => config.logoutUrl
+              .replace("${redirect}", URLEncoder.encode(redirect, "UTF-8"))
+          }).removingFromSession("sessionId")(ctx.request)
         }
       case _ =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
@@ -247,11 +251,11 @@ class LoginController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def userLogout() = DaikokuAction { ctx =>
+  /*def userLogout() = DaikokuAction { ctx =>
     Redirect(
       fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
         .logout(ctx.tenant.authProvider.name))
-  }
+  }*/
 
   ///////// Local login module routes /////////////
 

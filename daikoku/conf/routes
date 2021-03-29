@@ -28,7 +28,7 @@ GET     /apis/*path                                     fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /consumptions/*path                             fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
 ### NoDocs ###
-GET     /logout                                         fr.maif.otoroshi.daikoku.ctrls.LoginController.userLogout()
+GET     /logout                                         fr.maif.otoroshi.daikoku.ctrls.LoginController.logout()
 ### NoDocs ###
 GET     /health                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.health()
 
@@ -48,7 +48,7 @@ POST    /auth/:provider/callback                        fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /auth/:provider/callback                        fr.maif.otoroshi.daikoku.ctrls.LoginController.loginGet(provider)
 ### NoDocs ###
-GET     /auth/:provider/logout                          fr.maif.otoroshi.daikoku.ctrls.LoginController.logout(provider)
+#GET     /auth/:provider/logout                          fr.maif.otoroshi.daikoku.ctrls.LoginController.logout(provider: String ?= None)
 ### NoDocs ###
 POST    /api/auth/ldap/_check                          fr.maif.otoroshi.daikoku.ctrls.LoginController.checkLdapConnection()
 

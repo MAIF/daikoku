@@ -131,8 +131,9 @@ object OAuth2Support {
     val clientId = authConfig.clientId
     val clientSecret = authConfig.clientSecret
     val redirectUri = authConfig.callbackUrl
+
     request.getQueryString("error") match {
-      case Some(error) => Left("No code :(").asFuture
+      case Some(_) => Left("No code :(").asFuture
       case None => {
         request.getQueryString("code") match {
           case None => Left("No code :(").asFuture
@@ -161,8 +162,7 @@ object OAuth2Support {
             }
             future1
               .flatMap { resp =>
-                val accessToken =
-                  (resp.json \ authConfig.accessTokenField).as[String]
+                val accessToken = (resp.json \ authConfig.accessTokenField).as[String]
                 if (authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined) {
                   val algoSettings = authConfig.jwtVerifier.get
                   val tokenHeader =

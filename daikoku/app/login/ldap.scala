@@ -328,9 +328,7 @@ object LdapSupport {
       } recover {
         case _: ServiceUnavailableException | _: CommunicationException =>
           _bindUser(urls.tail, username, password, ldapConfig, tenant, _env)
-        case e =>
-          println(e.getMessage)
-          Left(s"bind failed ${e.getMessage}")
+        case e => Left(s"bind failed ${e.getMessage}")
       } get
     }
   }
