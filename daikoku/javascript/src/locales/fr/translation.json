@@ -294,6 +294,8 @@
   "Admin password": "Mot de passe admin",
   "Name field name": "Champ nom",
   "Email field name": "Champ email",
+  "Email of Daikoku Admins": "Email des admins Daikoku",
+  "Picture field name": "Champ image",
   "URL of the OIDC config": "URL de config. OIDC",
   "Get from OIDC config 2": "Récuperer depuis OIDC config 2",
   "Use JSON payloads": "Utiliser un payloads JSON",

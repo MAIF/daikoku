@@ -59,6 +59,7 @@ object OAuth2Config {
             (json \ "accessTokenField").asOpt[String].getOrElse("access_token"),
           nameField = (json \ "nameField").asOpt[String].getOrElse("name"),
           emailField = (json \ "emailField").asOpt[String].getOrElse("email"),
+          pictureField = (json \ "pictureField").asOpt[String].getOrElse("picture"),
           scope = (json \ "scope")
             .asOpt[String]
             .getOrElse("openid profile email name"),
@@ -70,7 +71,10 @@ object OAuth2Config {
             .flatMap(v => AlgoSettings.fromJson(v).toOption),
           callbackUrl = (json \ "callbackUrl")
             .asOpt[String]
-            .getOrElse("http://daikoku.foo.bar:8080/auth/OAuth/callback")
+            .getOrElse("http://daikoku.foo.bar:8080/auth/OAuth/callback"),
+          daikokuAdmins = (json \ "daikokuAdmins")
+            .asOpt[Seq[String]]
+            .getOrElse(Seq.empty[String])
         )
       )
     } recover {
@@ -83,11 +87,11 @@ case class OAuth2Config(
     sessionMaxAge: Int = 86400,
     clientId: String = "client",
     clientSecret: String = "secret",
-    tokenUrl: String = "http://localhost:8082/oauth/token",
+    tokenUrl: String = "http://<oauth-domain>/oauth/token",
     authorizeUrl: String = "http://localhost:8082/oauth/authorize",
-    userInfoUrl: String = "http://localhost:8082/userinfo",
-    loginUrl: String = "http://localhost:8082/login",
-    logoutUrl: String = "http://localhost:8082/logout",
+    userInfoUrl: String = "http://<oauth-domain>/userinfo",
+    loginUrl: String = "https://<oauth-domain>/authorize",
+    logoutUrl: String = "http://daikoku.foo.bar:8080/logout",
     scope: String = "openid profile email name",
     useJson: Boolean = false,
     readProfileFromToken: Boolean = false,
@@ -95,7 +99,9 @@ case class OAuth2Config(
     accessTokenField: String = "access_token",
     nameField: String = "name",
     emailField: String = "email",
-    callbackUrl: String = "http://daikoku.foo.bar:8080/auth/OAuth/callback"
+    pictureField: String = "picture",
+    callbackUrl: String = "http://daikoku.foo.bar:8080/auth/oauth2/callback",
+    daikokuAdmins: Seq[String] = Seq.empty[String]
 ) {
   def asJson = Json.obj(
     "type" -> "oauth2",
@@ -114,7 +120,9 @@ case class OAuth2Config(
     "accessTokenField" -> this.accessTokenField,
     "nameField" -> this.nameField,
     "emailField" -> this.emailField,
-    "callbackUrl" -> this.callbackUrl
+    "pictureField" -> this.pictureField,
+    "callbackUrl" -> this.callbackUrl,
+    "daikokuAdmins" -> this.daikokuAdmins
   )
 }
 
@@ -221,10 +229,14 @@ object OAuth2Support {
                 val email = (userFromOauth \ authConfig.emailField)
                   .asOpt[String]
                   .getOrElse("no.name@foo.bar")
+                val picture = (userFromOauth \ authConfig.pictureField).asOpt[String]
+
+                val isDaikokuAdmin = authConfig.daikokuAdmins.contains(email)
+
                 _env.dataStore.userRepo
                   .findOne(Json.obj("_deleted" -> false, "email" -> email))
                   .flatMap {
-                    case None => {
+                    case None =>
                       val userId = UserId(BSONObjectID.generate().stringify)
                       val team = Team(
                         id = TeamId(BSONObjectID.generate().stringify),
@@ -242,12 +254,12 @@ object OAuth2Support {
                         origins = Set(AuthProvider.OAuth2),
                         name = name,
                         email = email,
-                        picture = email.gravatar, // TODO: changeit
-                        isDaikokuAdmin = false, // TODO: changeit
+                        picture = picture.getOrElse(User.DEFAULT_IMAGE),
+                        pictureFromProvider = picture.isDefined,
+                        isDaikokuAdmin = isDaikokuAdmin,
                         lastTenant = Some(tenant.id),
                         personalToken = Some(IdGenerator.token(32)),
                         defaultLanguage = None
-                        // lastTeams = Map((tenant.id, team.id))
                       )
                       for {
                         _ <- _env.dataStore.teamRepo
@@ -257,22 +269,27 @@ object OAuth2Support {
                       } yield {
                         Right(user)
                       }
-                    }
-                    case Some(u) => {
+                    case Some(u) =>
                       val updatedUser = u.copy(
                         name = name,
                         email = email,
                         tenants = u.tenants + tenant.id,
-                        origins = u.origins + AuthProvider.OAuth2
-                        // picture = email.gravatar, // TODO: changeit
-                        // isDaikokuAdmin = false // TODO: changeit
+                        origins = u.origins + AuthProvider.OAuth2,
+                        picture = if (picture.isDefined && u.pictureFromProvider) picture.get
+                        else
+                          u.picture == User.DEFAULT_IMAGE match {
+                            case true if picture.isDefined && u.pictureFromProvider => picture.get
+                            case true if picture.isEmpty => User.DEFAULT_IMAGE
+                            case false => u.picture
+                          }
+                        ,
+                        isDaikokuAdmin = if(u.isDaikokuAdmin) true else isDaikokuAdmin
                       )
                       for {
                         _ <- _env.dataStore.userRepo.save(updatedUser)
                       } yield {
                         Right(updatedUser)
                       }
-                    }
                   }
               }
           }

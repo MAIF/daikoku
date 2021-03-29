@@ -294,6 +294,8 @@
     "Admin password": "Admin password",
     "Name field name": "Name field name",
     "Email field name": "Email field name",
+    "Picture field name": "Picture field name",
+    "Email of Daikoku Admins": "Email of Daikoku Admins",
     "URL of the OIDC config": "URL of the OIDC config",
     "Get from OIDC config 2": "Get from OIDC config 2",
     "Use JSON payloads": "Use JSON payloads",

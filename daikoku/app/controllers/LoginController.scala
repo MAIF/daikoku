@@ -290,7 +290,7 @@ class LoginController(DaikokuAction: DaikokuAction,
     val email = (body \ "email").as[String]
     val name = (body \ "name").as[String]
     val avatar =
-      (body \ "avatar").asOpt[String].getOrElse("/assets/images/anonymous.jpg")
+      (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
     val password1 = (body \ "password1").as[String]
     val password2 = (body \ "password2").as[String]
     env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
