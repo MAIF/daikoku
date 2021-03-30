@@ -1594,7 +1594,13 @@ export function disableMaintenanceMode() {
 }
 
 export function checkConnection(config, user) {
-  return fetch(`/api/auth/ldap/_check`, {
+  return fetch('/api/auth/ldap/_check', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
     body: user ? JSON.stringify({
       config,
       user
