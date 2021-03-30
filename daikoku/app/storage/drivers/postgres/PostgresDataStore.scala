@@ -20,6 +20,7 @@ import storage._
 import storage.drivers.postgres.Helper._
 import storage.drivers.postgres.pgimplicits.EnhancedRow
 
+import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.MapHasAsJava
 
@@ -347,9 +348,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       Seq(getSchema)) { row =>
       row.optString("schema_name")
     }
-      .map {
+      .flatMap {
         case Some(_) => checkTables()
         case _ =>
+          logger.info(s"Create missing schema : $getSchema")
           for {
             _ <- reactivePg.rawQuery(s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
             res <- checkTables()
@@ -372,7 +374,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       })
   }
 
-  def createDatabase() =
+  def createDatabase(): Future[immutable.Iterable[RowSet[Row]]] = {
+    logger.info("create missing tables")
     Future.sequence(
       Map(
         "tenants" -> true,
@@ -391,6 +394,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         "user_sessions" -> false
       )
         .map { case (key, value) => createTable(key, value) })
+  }
 
   def createTable(table: String, allFields: Boolean): Future[RowSet[Row]] = {
     logger.debug(s"CREATE TABLE $getSchema.$table (" +

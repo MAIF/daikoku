@@ -278,17 +278,15 @@ class DaikokuEnv(ws: WSClient,
 
     implicit val ec: ExecutionContext = defaultExecutionContext
 
+
     def tryToInitDatastore(): Future[Unit] = {
       dataStore.isEmpty().map {
         case true =>
-          Future {
-            dataStore match {
+            (dataStore match {
               case store: PostgresDataStore => store.checkDatabase()
-              case _ =>
-            }
-          }
-            .onComplete {
-              _ =>
+              case _ => FastFuture.successful(None)
+            })
+            .map { _ =>
                 config.init.data.from match {
                   case Some(path)
                     if path.startsWith("http://") || path
@@ -454,17 +452,6 @@ class DaikokuEnv(ws: WSClient,
     }
 
     dataStore.start()
-
-    /*configuration.getOptional[Boolean]("daikoku.migrateMongoToPg") match {
-      case Some(true) =>
-        configuration.getOptional[String]("daikoku.storage") match {
-          case Some("mongo")        => throw new RuntimeException(s"wrong storage used to migrate database. Switch to postgres or remove `daikoku.migrateMongoToPg` variable")
-          case Some("postgres")     =>
-            val mongo = new MongoDataStore(context, this)
-            val stream = mongo.exportAsStream(pretty = false)(mongo.ece)
-            Await.result(store.importFromStream(stream), 5.minutes)
-        }
-    }*/
 
     Source
       .tick(1.second, 5.seconds, ())
