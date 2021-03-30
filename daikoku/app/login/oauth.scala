@@ -91,7 +91,7 @@ case class OAuth2Config(
     authorizeUrl: String = "http://localhost:8082/oauth/authorize",
     userInfoUrl: String = "http://<oauth-domain>/userinfo",
     loginUrl: String = "https://<oauth-domain>/authorize",
-    logoutUrl: String = "http://daikoku.foo.bar:8080/logout",
+    logoutUrl: String = "http://daikoku.foo.bar:8080/v2/logout?returnTo=${redirect}",
     scope: String = "openid profile email name",
     useJson: Boolean = false,
     readProfileFromToken: Boolean = false,

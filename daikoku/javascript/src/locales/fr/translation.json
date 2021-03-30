@@ -527,6 +527,7 @@
   "Create your account": "Créer un compte",
   "Reset your password": "Réinitialisation votre mot de passe",
   "Connect to your account": "Se connecter",
+  "Connect to your thrid party account": "Se connecter via un tiers",
   "Username": "Nom d'utilisateur",
   "Login": "Se connecter",
   "Forgot your password ?": "Mot de passe oublié ?",
@@ -778,5 +779,6 @@
   "Construction mode": "En construction",
   "Default mode": "Par défaut",
   "Global maintenance mode enabled": "Mode global maintenance activé",
-  "Disable maintenance": "Désactive la maintenance"
+  "Disable maintenance": "Désactive la maintenance",
+  "login.failed": "Utilisateur inconnu ou mot de passe invalide"
 }
