@@ -311,13 +311,11 @@ class DaikokuEnv(ws: WSClient,
                       }
                     Await.result(initialDataFu, 10 seconds)
                   case Some(path) =>
-                    AppLogger.warn(
-                      s"Main dataStore seems to be empty, importing from $path ...")
+                    AppLogger.warn(s"Main dataStore seems to be empty, importing from $path ...")
                     implicit val ec: ExecutionContext = defaultExecutionContext
                     implicit val mat: Materializer = defaultMaterializer
                     implicit val env: DaikokuEnv = this
-                    val initialDataFu =
-                      dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
+                    val initialDataFu = dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
                     Await.result(initialDataFu, 10 seconds)
                   case _ =>
                     import fr.maif.otoroshi.daikoku.domain._

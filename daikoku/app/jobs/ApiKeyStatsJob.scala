@@ -286,7 +286,8 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                   .forTenant(tenant.id)
                   .save(Json.obj("clientId" -> subscription.apiKey.clientId,
                                  "from" -> DateTimeFormat.writes(from)),
-                        cons.asJson.as[JsObject] - "_id")
+                        //cons.asJson.as[JsObject] - "_id")
+                    cons.asJson.as[JsObject] ++ Json.obj("_id" -> DatastoreId(BSONObjectID.generate().stringify).value))
               } else {
                 env.dataStore.consumptionRepo
                   .forTenant(tenant.id)
