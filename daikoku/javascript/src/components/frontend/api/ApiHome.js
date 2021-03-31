@@ -9,10 +9,11 @@ import { ApiCartidge, ApiConsole, ApiDocumentation, ApiPricing, ApiSwagger, ApiR
 import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, Option } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
-import { setError, openContactModal } from '../../../core';
+import { setError, openContactModal, updateUser } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
 import { Translation, t } from '../../../locales';
+import StarsButton from './StarsButton';
 window.hljs = hljs;
 
 const ApiDescription = ({ api }) => {
@@ -32,7 +33,7 @@ const ApiDescription = ({ api }) => {
   );
 };
 
-const ApiHeader = ({ api, ownerTeam, editUrl, history }) => {
+const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar }) => {
   const handleBtnEditClick = () => history.push(editUrl);
 
   useEffect(() => {
@@ -74,9 +75,15 @@ const ApiHeader = ({ api, ownerTeam, editUrl, history }) => {
     return (
       <section className="api__header col-12 mb-4 p-3">
         <div className="container">
-          <h1 className="jumbotron-heading">
+          <h1 className="jumbotron-heading" style={{ position: "relative" }}>
             {api.name}
             <EditButton />
+            <div style={{ position: "absolute", right: 0, bottom: 0 }}>
+              <StarsButton
+                stars={api.stars}
+                starred={connectedUser.starredApis.includes(api._id)}
+                toggleStar={toggleStar} />
+            </div>
           </h1>
           <p className="lead">{api.smallDescription}</p>
         </div>
@@ -93,6 +100,7 @@ const ApiHomeComponent = ({
   setError,
   currentLanguage,
   connectedUser,
+  updateUser,
   tenant,
 }) => {
   const [api, setApi] = useState(undefined);
@@ -178,6 +186,25 @@ const ApiHomeComponent = ({
     );
   };
 
+  const toggleStar = () => {
+    Services.toggleStar(api._id)
+      .then(res => {
+        if (res.status === 204) {
+          const alreadyStarred = connectedUser.starredApis.includes(api._id);
+          api.stars += alreadyStarred ? -1 : 1;
+          setApi(api);
+
+          updateUser({
+            ...connectedUser,
+            starredApis: alreadyStarred ? connectedUser.starredApis.filter(id => id !== api._id) : [
+              ...connectedUser.starredApis,
+              api._id
+            ]
+          })
+        }
+      });
+  }
+
   if (!api || !ownerTeam) {
     return null;
   }
@@ -193,7 +220,8 @@ const ApiHomeComponent = ({
 
   return (
     <main role="main" className="row">
-      <ApiHeader api={api} ownerTeam={ownerTeam} editUrl={editUrl(api)} history={history} />
+      <ApiHeader api={api} ownerTeam={ownerTeam} editUrl={editUrl(api)} history={history}
+        connectedUser={connectedUser} toggleStar={toggleStar} />
       <div className="container">
         <div className="row">
           <div className="col mt-3 onglets">
@@ -218,9 +246,8 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${
-                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                  }`}
+                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                    }`}
                   to={`/${match.params.teamId}/${apiId}/documentation`}>
                   <Translation i18nkey="Documentation" language={currentLanguage}>
                     Documentation
@@ -357,6 +384,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   setError,
   openContactModal,
+  updateUser
 };
 
 export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);

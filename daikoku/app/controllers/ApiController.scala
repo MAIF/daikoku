@@ -1620,6 +1620,28 @@ class ApiController(DaikokuAction: DaikokuAction,
       }
     }
   }
+
+  def toggleStar(apiId: String) = DaikokuAction.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has starred @{api.name} - @{api.id}"))(ctx) {
+      env.dataStore.apiRepo
+        .forTenant(ctx.tenant.id)
+        .findByIdNotDeleted(apiId)
+        .flatMap {
+          case Some(api) =>
+              val starred = ctx.user.starredApis.contains(api.id)
+              val newStars = api.stars + (if (starred) -1 else 1)
+              for {
+                _ <- env.dataStore.userRepo.save(ctx.user.copy(starredApis =
+                  if (starred) ctx.user.starredApis.filter(id => id != api.id) else ctx.user.starredApis ++ Seq(api.id)
+                ))
+                _ <- env.dataStore.apiRepo.forAllTenant().save(api.copy(stars = newStars))
+              } yield {
+                NoContent
+              }
+          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
+        }
+    }
+  }
 }
 
 
