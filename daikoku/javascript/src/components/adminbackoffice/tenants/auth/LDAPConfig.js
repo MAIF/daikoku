@@ -3,9 +3,6 @@ import { toastr } from 'react-redux-toastr';
 
 import { t, Translation } from '../../../../locales';
 import { Spinner } from '../../../utils';
-
-import * as Services from '../../../../services/index';
-import { toastr } from 'react-redux-toastr';
 import { Help } from '../../../inputs';
 import { checkConnection } from '../../../../services';
 
@@ -137,8 +134,14 @@ export class LDAPConfig extends Component {
   };
 
   componentDidMount() {
-    if (this.props.rawValue.authProvider === 'LDAP')
-      this.props.onChange({ ...LDAPConfig.defaultConfig, ...this.props.value });
+    if (this.props.rawValue.authProvider === 'LDAP') {
+      const { value } = this.props;
+
+      if (value.serverUrl)
+        value.serverUrl = Array.isArray(value.serverUrl) ? value.serverUrl : [value.serverUrl];
+
+      this.props.onChange({ ...LDAPConfig.defaultConfig, ...value });
+    }
   }
 
   checkConnection = (user) => {

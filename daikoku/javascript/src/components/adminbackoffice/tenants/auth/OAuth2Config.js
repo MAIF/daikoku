@@ -271,7 +271,7 @@ export class OAuth2Config extends Component {
     tokenUrl: 'http://<oauth-domain>/oauth/token',
     userInfoUrl: 'http://<oauth-domain>/userinfo',
     loginUrl: 'http://<oauth-domain>/authorize',
-    logoutUrl: 'http://daikoku.foo.bar:8080/logout',
+    logoutUrl: 'http://daikoku.foo.bar:8080/v2/logout?returnTo=${redirect}',
     callbackUrl: 'http://daikoku.foo.bar:8080/auth/oauth2/callback',
     accessTokenField: 'id_token',
     scope: 'openid profile email name',

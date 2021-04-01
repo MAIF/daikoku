@@ -1596,6 +1596,20 @@ export function checkConnection(config, user) {
       user
     }) : JSON.stringify(config),
   }).then((r) => r.json());
+}
+
+export function login(username, password, action) {
+  const body = new URLSearchParams()
+  body.append("username", username);
+  body.append("password", password);
+
+  return fetch(action, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: body
+  })
 };
 
 export function searchLdapMember(teamId, email) {

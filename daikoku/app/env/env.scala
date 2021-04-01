@@ -278,17 +278,15 @@ class DaikokuEnv(ws: WSClient,
 
     implicit val ec: ExecutionContext = defaultExecutionContext
 
+
     def tryToInitDatastore(): Future[Unit] = {
       dataStore.isEmpty().map {
         case true =>
-          Future {
-            dataStore match {
+            (dataStore match {
               case store: PostgresDataStore => store.checkDatabase()
-              case _ =>
-            }
-          }
-            .onComplete {
-              _ =>
+              case _ => FastFuture.successful(None)
+            })
+            .map { _ =>
                 config.init.data.from match {
                   case Some(path)
                     if path.startsWith("http://") || path
@@ -313,13 +311,11 @@ class DaikokuEnv(ws: WSClient,
                       }
                     Await.result(initialDataFu, 10 seconds)
                   case Some(path) =>
-                    AppLogger.warn(
-                      s"Main dataStore seems to be empty, importing from $path ...")
+                    AppLogger.warn(s"Main dataStore seems to be empty, importing from $path ...")
                     implicit val ec: ExecutionContext = defaultExecutionContext
                     implicit val mat: Materializer = defaultMaterializer
                     implicit val env: DaikokuEnv = this
-                    val initialDataFu =
-                      dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
+                    val initialDataFu = dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
                     Await.result(initialDataFu, 10 seconds)
                   case _ =>
                     import fr.maif.otoroshi.daikoku.domain._
@@ -454,17 +450,6 @@ class DaikokuEnv(ws: WSClient,
     }
 
     dataStore.start()
-
-    /*configuration.getOptional[Boolean]("daikoku.migrateMongoToPg") match {
-      case Some(true) =>
-        configuration.getOptional[String]("daikoku.storage") match {
-          case Some("mongo")        => throw new RuntimeException(s"wrong storage used to migrate database. Switch to postgres or remove `daikoku.migrateMongoToPg` variable")
-          case Some("postgres")     =>
-            val mongo = new MongoDataStore(context, this)
-            val stream = mongo.exportAsStream(pretty = false)(mongo.ece)
-            Await.result(store.importFromStream(stream), 5.minutes)
-        }
-    }*/
 
     Source
       .tick(1.second, 5.seconds, ())

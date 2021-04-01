@@ -39,7 +39,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                                    None,
                                    env,
                                    ctx.tenant)
-      case Some(p) if ctx.tenant.authProvider != p =>
+      case Some(p) if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
         Errors.craftResponseResult("Bad authentication provider",
                                    Results.BadRequest,
                                    ctx.request,
@@ -80,13 +80,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                request: RequestHeader,
                f: => Future[Option[User]]): Future[Result] = {
     f.flatMap {
-      case None =>
-        Errors.craftResponseResult("User not found",
-                                   Results.BadRequest,
-                                   request,
-                                   None,
-                                   env,
-                                   tenant)
+      case None => FastFuture.successful(BadRequest(Json.obj("error" -> true)))
       case Some(user) =>
         val session = UserSession(
           id = DatastoreId(BSONObjectID.generate().stringify),
@@ -123,7 +117,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                                    None,
                                    env,
                                    ctx.tenant)
-      case Some(p) if ctx.tenant.authProvider != p =>
+      case Some(p) if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
         Errors.craftResponseResult("Bad authentication provider",
                                    Results.BadRequest,
                                    ctx.request,
@@ -255,12 +249,6 @@ class LoginController(DaikokuAction: DaikokuAction,
         }
     }
   }
-
-  /*def userLogout() = DaikokuAction { ctx =>
-    Redirect(
-      fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
-        .logout(ctx.tenant.authProvider.name))
-  }*/
 
   ///////// Local login module routes /////////////
 

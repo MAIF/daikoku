@@ -20,6 +20,7 @@ import storage._
 import storage.drivers.postgres.Helper._
 import storage.drivers.postgres.pgimplicits.EnhancedRow
 
+import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.MapHasAsJava
 
@@ -223,6 +224,22 @@ class PostgresDataStore(configuration: Configuration, env: Env)
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
+  private val TABLES = Map(
+    "tenants" -> true,
+    "password_reset" -> true,
+    "account_creation" -> true,
+    "teams" -> true,
+    "apis" -> true,
+    "translations" -> true,
+    "messages" -> false,
+    "api_subscriptions" -> true,
+    "api_documentation_pages" -> true,
+    "notifications" -> true,
+    "consumptions" -> true,
+    "audit_events" -> false,
+    "users" -> true,
+    "user_sessions" -> false
+  )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions().setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))
 
@@ -347,9 +364,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       Seq(getSchema)) { row =>
       row.optString("schema_name")
     }
-      .map {
+      .flatMap {
         case Some(_) => checkTables()
         case _ =>
+          logger.info(s"Create missing schema : $getSchema")
           for {
             _ <- reactivePg.rawQuery(s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
             res <- checkTables()
@@ -372,25 +390,15 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       })
   }
 
-  def createDatabase() =
-    Future.sequence(
-      Map(
-        "tenants" -> true,
-        "password_reset" -> true,
-        "account_creation" -> true,
-        "teams" -> true,
-        "apis" -> true,
-        "translations" -> true,
-        "messages" -> false,
-        "api_subscriptions" -> true,
-        "api_documentation_pages" -> true,
-        "notifications" -> true,
-        "consumptions" -> true,
-        "audit_events" -> false,
-        "users" -> true,
-        "user_sessions" -> false
-      )
-        .map { case (key, value) => createTable(key, value) })
+  def createDatabase(): Future[immutable.Iterable[RowSet[Row]]] = {
+    logger.info("create missing tables")
+    Future.sequence(TABLES.map { case (key, value) => createTable(key, value) })
+  }
+
+  def cleanDatabase() = {
+    logger.info("clean all tables")
+    Future.sequence(TABLES.map { case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key") })
+  }
 
   def createTable(table: String, allFields: Boolean): Future[RowSet[Row]] = {
     logger.debug(s"CREATE TABLE $getSchema.$table (" +
@@ -440,81 +448,72 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   }
 
   override def importFromStream(source: Source[ByteString, _]): Future[Unit] = {
-    for {
-      _ <- tenantRepo.deleteAll()
-      _ <- passwordResetRepo.deleteAll()
-      _ <- accountCreationRepo.deleteAll()
-      _ <- userRepo.deleteAll()
-      _ <- teamRepo.forAllTenant().deleteAll()
-      _ <- apiRepo.forAllTenant().deleteAll()
-      _ <- apiSubscriptionRepo.forAllTenant().deleteAll()
-      _ <- apiDocumentationPageRepo.forAllTenant().deleteAll()
-      _ <- notificationRepo.forAllTenant().deleteAll()
-      _ <- consumptionRepo.forAllTenant().deleteAll()
-      _ <- auditTrailRepo.forAllTenant().deleteAll()
-      _ <- userSessionRepo.deleteAll()
-      _ <- translationRepo.forAllTenant().deleteAll()
-      _ <- source
-        .via(Framing.delimiter(ByteString("\n"), 1000000000, true))
-        .map(_.utf8String)
-        .map(Json.parse)
-        .map(json => json.as[JsObject])
-        .map(json =>
-          ((json \ "type").as[String], (json \ "payload").as[JsValue]))
-        .mapAsync(1) {
-          case ("Tenants", payload) =>
-            tenantRepo.save(TenantFormat.reads(payload).get)
-          case ("PasswordReset", payload) =>
-            passwordResetRepo.save(
-              PasswordResetFormat.reads(payload).get)
-          case ("AccountCreation", payload) =>
-            accountCreationRepo.save(
-              AccountCreationFormat.reads(payload).get)
-          case ("Users", payload) =>
-            userRepo.save(UserFormat.reads(payload).get)
-          case ("Teams", payload) =>
-            teamRepo
-              .forAllTenant()
-              .save(TeamFormat.reads(payload).get)
-          case ("Apis", payload) =>
-            apiRepo
-              .forAllTenant()
-              .save(ApiFormat.reads(payload).get)
-          case ("ApiSubscriptions", payload) =>
-            apiSubscriptionRepo
-              .forAllTenant()
-              .save(ApiSubscriptionFormat.reads(payload).get)
-          case ("ApiDocumentationPages", payload) =>
-            apiDocumentationPageRepo
-              .forAllTenant()
-              .save(ApiDocumentationPageFormat.reads(payload).get)
-          case ("Notifications", payload) =>
-            notificationRepo
-              .forAllTenant()
-              .save(NotificationFormat.reads(payload).get)
-          case ("Consumptions", payload) =>
-            consumptionRepo
-              .forAllTenant()
-              .save(ConsumptionFormat.reads(payload).get)
-          case ("Translations", payload) =>
-            translationRepo
-              .forAllTenant()
-              .save(TranslationFormat.reads(payload).get)
-          case ("AuditEvents", payload) =>
-            auditTrailRepo
-              .forAllTenant()
-              .save(payload.as[JsObject])
-          case ("UserSessions", payload) =>
-            userSessionRepo.save(
-              UserSessionFormat.reads(payload).get)
-          case (typ, _) =>
-            logger.info(s"Unknown type: $typ")
-            FastFuture.successful(false)
-        }
-        .toMat(Sink.ignore)(Keep.right)
-        .run()(env.defaultMaterializer)
-    } yield ()
+    logger.error("importFromStream")
 
+    cleanDatabase()
+      .map { value =>
+        println(value)
+        source
+          .via(Framing.delimiter(ByteString("\n"), 1000000000, allowTruncation = true))
+          .map(_.utf8String)
+          .map(Json.parse)
+          .map(json => json.as[JsObject])
+          .map(json => {
+            ((json \ "type").as[String], (json \ "payload").as[JsValue])
+          })
+          .mapAsync(1) {
+            case ("Tenants", payload) =>
+              tenantRepo.save(TenantFormat.reads(payload).get)
+            case ("PasswordReset", payload) =>
+              passwordResetRepo.save(
+                PasswordResetFormat.reads(payload).get)
+            case ("AccountCreation", payload) =>
+              accountCreationRepo.save(
+                AccountCreationFormat.reads(payload).get)
+            case ("Users", payload) =>
+              userRepo.save(UserFormat.reads(payload).get)
+            case ("Teams", payload) =>
+              teamRepo
+                .forAllTenant()
+                .save(TeamFormat.reads(payload).get)
+            case ("Apis", payload) =>
+              apiRepo
+                .forAllTenant()
+                .save(ApiFormat.reads(payload).get)
+            case ("ApiSubscriptions", payload) =>
+              apiSubscriptionRepo
+                .forAllTenant()
+                .save(ApiSubscriptionFormat.reads(payload).get)
+            case ("ApiDocumentationPages", payload) =>
+              apiDocumentationPageRepo
+                .forAllTenant()
+                .save(ApiDocumentationPageFormat.reads(payload).get)
+            case ("Notifications", payload) =>
+              notificationRepo
+                .forAllTenant()
+                .save(NotificationFormat.reads(payload).get)
+            case ("Consumptions", payload) =>
+              consumptionRepo
+                .forAllTenant()
+                .save(ConsumptionFormat.reads(payload).get)
+            case ("Translations", payload) =>
+              translationRepo
+                .forAllTenant()
+                .save(TranslationFormat.reads(payload).get)
+            case ("AuditEvents", payload) =>
+              auditTrailRepo
+                .forAllTenant()
+                .save(payload.as[JsObject])
+            case ("UserSessions", payload) =>
+              userSessionRepo.save(
+                UserSessionFormat.reads(payload).get)
+            case (typ, _) =>
+              logger.error(s"Unknown type: $typ")
+              FastFuture.successful(false)
+          }
+          .toMat(Sink.ignore)(Keep.right)
+          .run()(env.defaultMaterializer)
+      }
   }
 }
 
@@ -1148,10 +1147,20 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
       }
     else {
       val (sql, params ) = convertQuery(query)
-      reactivePg.querySeq(s"SELECT ${getParam(params.size)} FROM $tableName WHERE $sql",
-        params ++ Seq(projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", "))
+      reactivePg.querySeq(s"SELECT " +
+        s"${projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", ")} FROM $tableName WHERE $sql",
+        params
       ){ row =>
-        projection.keys.map(key => Json.obj(key -> row.getString(key)))
+        projection.keys
+          .filter(key => {
+            try {
+              row.getString(key)
+              true
+            } catch {
+              case _: Throwable => false
+            }
+          })
+          .map(key => Json.obj(key -> row.getString(key)))
           .foldLeft(Json.obj())(_ ++ _)
           .some
       }

@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Translation } from '../../locales';
+import * as Services from '../../services/index';
 
 export class LoginPage extends Component {
   state = {
@@ -8,6 +9,7 @@ export class LoginPage extends Component {
     password: '',
     error: null,
     message: null,
+    loginError: null
   };
 
   onChange = (e) => {
@@ -22,7 +24,24 @@ export class LoginPage extends Component {
     };
   };
 
+  submit = e => {
+    e.preventDefault();
+    const { username, password } = this.state;
+
+    Services.login(username, password, this.props.action)
+      .then(async res => {
+        if (res.status === 400)
+          this.setState({
+            loginError: true
+          });
+        else if (res.redirected)
+          window.location.href = res.url;
+      })
+  }
+
   render() {
+    const { loginError } = this.state;
+
     return (
       <div>
         <div className="login__container text-center">
@@ -47,7 +66,7 @@ export class LoginPage extends Component {
           <form
             className="form-horizontal text-left"
             method={this.props.method}
-            action={this.props.action}>
+            onSubmit={this.submit}>
             <input type="hidden" name="token" className="form-control" value={this.props.token} />
             <div className="form-group">
               <label className="control-label">
@@ -81,6 +100,11 @@ export class LoginPage extends Component {
                 />
               </div>
             </div>
+            {loginError && <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
+              <Translation language={this.props.tenant.defaultLanguage} i18nkey="login.failed">
+                User not found or invalid credentials
+              </Translation>
+            </p>}
             <div className="form-group">
               <label className="col-sm-2 control-label" />
               <div className="col-sm-10">

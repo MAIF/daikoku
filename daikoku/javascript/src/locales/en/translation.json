@@ -527,6 +527,7 @@
     "Create your account": "Create your account",
     "Reset your password": "Reset your password",
     "Connect to your account": "Connect to your account",
+    "Connect to your thrid party account": "Connect to your thrid party account",
     "Username": "Username",
     "Login": "Login",
     "Forgot your password ?": "Forgot your password ?",
@@ -779,6 +780,7 @@
     "Default mode": "Default mode",
     "Global maintenance mode enabled": "Global maintenance mode enabled",
     "Disable maintenance": "Disable maintenance",
+    "login.failed": "User not found or invalid credentials"
     "or": "or",
     "Find LDAP member by email ...": "Find LDAP member by email ...",
     "LDAP user found": "Utilisateur LDAP trouvé",

@@ -16,10 +16,22 @@ import { MessagesTopBarTools } from '../backoffice/messages';
 const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) => {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState(false);
+
+  function submit(e) {
+    e.preventDefault();
+
+    Services.login(login, password, loginAction)
+      .then(async res => {
+        if (res.status === 400)
+          setLoginError(true)
+        else if (res.redirected)
+          window.location.href = res.url;
+      })
+  }
 
   switch (loginProvider) {
     case 'Local':
-    case 'LDAP':
       return (
         <div className="d-flex justify-content-end mt-1 mt-lg-0">
           <div className="dropdown">
@@ -31,7 +43,7 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
               alt="user menu"
             />
             <div className="dropdown-menu dropdown-menu-right" style={{ width: '300px' }}>
-              <form className="form-horizontal text-left mx-1" action={loginAction} method="POST">
+              <form className="form-horizontal text-left mx-1" onSubmit={submit} method="POST">
                 <div className="form-group">
                   <label htmlFor="username">
                     <Translation i18nkey="Email address" language={currentLanguage}>
@@ -69,9 +81,14 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
                     </a>
                   </small>
                 </div>
+                {loginError && <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
+                  <Translation language={currentLanguage} i18nkey="login.failed">
+                    User not found or invalid credentials
+                  </Translation>
+                </p>}
                 <button type="submit" className="btn btn-access-negative" style={{ marginLeft: 0 }}>
-                  <Translation i18nkey="Login" language={currentLanguage}>
-                    Login
+                  <Translation i18nkey="Connect to your account" language={currentLanguage}>
+                    Connect to your account
                   </Translation>
                 </button>
               </form>
@@ -86,6 +103,7 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
         </div>
       );
     case 'OAuth2':
+    case 'LDAP':
     default:
       return (
         <div className="d-flex justify-content-end mt-1 mt-lg-0">
@@ -97,9 +115,26 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
               data-toggle="dropdown"
               alt="user menu"
             />
-            <div className="dropdown-menu dropdown-menu-right" style={{ width: '300px' }}>
-              <a className="dropdown-item" href={`/auth/${loginProvider}/login`}>
-                sign-in
+            <div className="dropdown-menu dropdown-menu-right" style={{ width: '320px' }}>
+              <a
+                className="btn btn-access-negative my-2 ml-2"
+                href={`/auth/Local/login`}>
+                <i className="fas fa-user mr-1" />
+                <Translation
+                  i18nkey="Connect to your account"
+                  language={currentLanguage}>
+                  Connect to your account
+                </Translation>
+              </a>
+              <a
+                className="btn btn-access-negative my-2 ml-2"
+                href={`/auth/${loginProvider}/login`}>
+                <i className="fas fa-user mr-1" />
+                <Translation
+                  i18nkey="Connect to your thrid party account"
+                  language={currentLanguage}>
+                  Connect to your thrid party account
+                </Translation>
               </a>
             </div>
           </div>
