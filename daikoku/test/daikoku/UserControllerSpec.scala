@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.login.LdapConfig
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -340,7 +339,7 @@ class UserControllerSpec()
       val session = loginWithBlocking(tenantAdmin, tenant)
 
       val resp = httpJsonCallBlocking(
-        path = "/api/auth/ldap/users",
+        path = s"/api/teams/${defaultAdminTeam.id.value}/ldap/users",
         method = "POST",
         body = Some(Json.obj(
           "email" -> "gauss@ldap.forumsys.com",

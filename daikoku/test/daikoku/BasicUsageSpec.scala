@@ -151,14 +151,17 @@ class BasicUsageSpec()
 
       val session = loginWithBlocking(tenantAdmin, tenant)
 
+      val validEmail = "gauss@ldap.forumsys.com"
+      val unknownEmail = "toto@ldap.forumsys.com"
+
       var resp = httpJsonCallBlocking(
-        path = s"/api/auth/ldap/users/gauss@ldap.forumsys.com"
+        path = s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/${validEmail}"
       )(tenant, session)
 
       resp.status mustBe 200
 
       resp = httpJsonCallBlocking(
-        path = s"/api/auth/ldap/users/toto@ldap.forumsys.com"
+        path = s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/${unknownEmail}"
       )(tenant, session)
 
       resp.status mustBe 400
