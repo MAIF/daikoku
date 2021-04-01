@@ -13,7 +13,7 @@ describe('API page', () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/testers/test-api')
-      .get('h1.jumbotron-heading').should('have.text', 'test API')
+      .get('h1.jumbotron-heading').contains('have.text', 'test API')
       .get('a.nav-link').contains('Plans').click()
       .get('.card').should('have.length', 2)
       .get('a.nav-link').contains('Documentation').click()

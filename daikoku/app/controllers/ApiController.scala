@@ -1624,9 +1624,6 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def toggleStar(apiId: String) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has starred @{api.name} - @{api.id}"))(ctx) {
-      if(ctx.user.isGuest)
-        FastFuture.successful(Unauthorized("Can't star apis on guest mode"))
-      else
       env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
         .findByIdNotDeleted(apiId)

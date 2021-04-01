@@ -1443,10 +1443,7 @@ object json {
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
-            starredApis = (json \ "starredApis")
-              .asOpt[Seq[String]]
-              .map(ids => ids.map(ApiId))
-              .getOrElse(Seq.empty)
+            starredApis = (json \ "starredApis").asOpt(SetApiIdFormat).getOrElse(Set.empty)
           )
         )
       } recover {
@@ -1474,7 +1471,7 @@ object json {
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "isGuest" -> o.isGuest,
-      "starredApis" -> o.starredApis.map(_.value)
+      "starredApis" -> SetApiIdFormat.writes(o.starredApis)
     )
   }
 
@@ -2656,6 +2653,8 @@ object json {
     Format(Reads.seq(TeamFormat), Writes.seq(TeamFormat))
   val SeqApiFormat =
     Format(Reads.seq(ApiFormat), Writes.seq(ApiFormat))
+  val SetApiIdFormat =
+    Format(Reads.set(ApiIdFormat), Writes.set(ApiIdFormat))
   val SetUserWithPermissionFormat =
     Format(Reads.set(UserWithPermissionFormat),
            Writes.set(UserWithPermissionFormat))

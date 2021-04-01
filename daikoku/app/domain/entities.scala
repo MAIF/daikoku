@@ -982,7 +982,7 @@ case class User(
     metadata: Map[String, String] = Map.empty,
     defaultLanguage: Option[String],
     isGuest: Boolean = false,
-    starredApis: Seq[ApiId] = Seq.empty[ApiId]
+    starredApis: Set[ApiId] = Set.empty[ApiId]
 ) extends CanJson[User] {
   override def asJson: JsValue = json.UserFormat.writes(this)
   def humanReadableId = email.urlPathSegmentSanitized
