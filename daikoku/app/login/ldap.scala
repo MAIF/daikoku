@@ -389,35 +389,38 @@ object LdapSupport {
   }
 
   def existsUser(email: String, tenant: Tenant) (implicit ec: ExecutionContext): Future[(Boolean, String)] = {
-    val ldapConfig = LdapConfig.fromJsons(tenant.authProviderSettings)
-
-    if (ldapConfig.serverUrls.isEmpty) {
-      FastFuture.successful((false,"Missing LDAP URLs server"))
-    } else {
-      FastFuture.successful(
-        ldapConfig.serverUrls.find { url =>
-          Try {
-            val ctx = getInitialLdapContext(
-              ldapConfig.adminUsername.map(u => u).getOrElse(""),
-              ldapConfig.adminPassword.map(p => p).getOrElse(""),
-              url
-            )
-
-            val res = ctx.search(
-                ldapConfig.userBase.map(_ + ",").getOrElse("") + ldapConfig.searchBase,
-                ldapConfig.searchFilter.replace("${username}", email),
-                getDefaultSearchControls()
+    try {
+      val ldapConfig = LdapConfig.fromJsons(tenant.authProviderSettings)
+      if (ldapConfig.serverUrls.isEmpty) {
+        FastFuture.successful((false,"Missing LDAP URLs server"))
+      } else {
+        FastFuture.successful(
+          ldapConfig.serverUrls.find { url =>
+            Try {
+              val ctx = getInitialLdapContext(
+                ldapConfig.adminUsername.map(u => u).getOrElse(""),
+                ldapConfig.adminPassword.map(p => p).getOrElse(""),
+                url
               )
 
-            ctx.close()
-            res.asScala.nonEmpty
-          } recover {
-            case e => false
-          } get
-        }
-          .map(_  => (true, "user found"))
-          .getOrElse((false, "Unknown user"))
-      )
+              val res = ctx.search(
+                  ldapConfig.userBase.map(_ + ",").getOrElse("") + ldapConfig.searchBase,
+                  ldapConfig.searchFilter.replace("${username}", email),
+                  getDefaultSearchControls()
+                )
+
+              ctx.close()
+              res.asScala.nonEmpty
+            } recover {
+              case e => false
+            } get
+          }
+            .map(_  => (true, "user found"))
+            .getOrElse((false, "Unknown user"))
+        )
+      }
+    } catch {
+      case _: Throwable => FastFuture.successful((false,"Missing LDAP configuration on tenant"))
     }
   }
 

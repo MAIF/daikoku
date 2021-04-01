@@ -1598,8 +1598,8 @@ export function checkConnection(config, user) {
   }).then((r) => r.json());
 };
 
-export function searchLdapMember(email) {
-  return fetch(`/api/auth/ldap/users/${email}`, {
+export function searchLdapMember(teamId, email) {
+  return fetch(`/api/teams/${teamId}/ldap/users/${email}`, {
     credentials: 'include',
     headers: {
       Accept: 'application/json',
@@ -1608,8 +1608,8 @@ export function searchLdapMember(email) {
   });
 };
 
-export function findUserByEmail(email) {
-  return fetch('/api/admin/users/_search', {
+export function findUserByEmail(teamId, email) {
+  return fetch(`/api/teams/${teamId}/users/_search`, {
     ...POST_HEADERS,
     body: JSON.stringify({
       attributes: {
@@ -1619,8 +1619,8 @@ export function findUserByEmail(email) {
   });
 };
 
-export function createUserFromLDAP(email, teamId) {
-  return fetch('/api/auth/ldap/users', {
+export function createUserFromLDAP(teamId, email) {
+  return fetch(`/api/teams/${teamId}/ldap/users`, {
     ...POST_HEADERS,
     body: JSON.stringify({
       email,

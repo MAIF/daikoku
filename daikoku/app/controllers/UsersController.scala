@@ -49,15 +49,6 @@ class UsersController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def findUserByAttributes() = DaikokuAction.async(parse.json) { ctx =>
-      env.dataStore.userRepo.findOne(Json.obj(
-        "_deleted" -> false,
-      ) ++ (ctx.request.body \ "attributes").as[JsObject]).map {
-        case Some(user) => Ok(user.asJson)
-        case None => NotFound(Json.obj("error" -> "user not found"))
-      }
-  }
-
   def setAdminStatus(id: String) = DaikokuAction.async(parse.json) { ctx =>
     DaikokuAdminOnly(
       AuditTrailEvent(
@@ -213,34 +204,6 @@ class UsersController(DaikokuAction: DaikokuAction,
           }
         case e: JsError => FastFuture.successful(BadRequest(JsError.toJson(e)))
       }
-    }
-  }
-
-  def createLDAPUser() = DaikokuAction.async(parse.json) { ctx =>
-    TeamAdminOnly(
-      AuditTrailEvent(
-        "@{user.name} has created LDAP user profile"))(
-      (ctx.request.body \ "teamId").as[String],
-      ctx)  { _ =>
-        LdapConfig.fromJson(ctx.tenant.authProviderSettings) match {
-          case Left(err) => FastFuture.successful(BadRequest(Json.obj("error" -> err.getMessage)))
-          case Right(config) =>
-            LdapSupport.createUser(
-              (ctx.request.body \ "email").as[String],
-              config.serverUrls.filter(_ => true),
-              config,
-              ctx.tenant.id,
-              env
-            )
-              .flatMap { res =>
-                res.map(user => FastFuture.successful(Created(user.asJson)))
-                  .getOrElse(
-                    FastFuture.successful(BadRequest(Json.obj(
-                      "error" -> "Failed to create user from LDAP : empty response from createUser"
-                    )))
-                  )
-              }
-        }
     }
   }
 

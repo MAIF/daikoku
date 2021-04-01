@@ -177,10 +177,10 @@ export class TeamMembersSimpleComponent extends Component {
 
   addLdapUserToTeam = async () => {
     const email = this.state.ldap.foundMember
-    const optUser = await Services.findUserByEmail(email)
+    const optUser = await Services.findUserByEmail(this.props.currentTeam._id, email)
 
     if (optUser.status !== 200) {
-      const createdUser = await Services.createUserFromLDAP(email, this.props.currentTeam._id)
+      const createdUser = await Services.createUserFromLDAP( this.props.currentTeam._id, email)
       this._addMember(createdUser);
     } else {
       const user = await optUser.json();
@@ -253,9 +253,9 @@ export class TeamMembersSimpleComponent extends Component {
   searchLdapMember = async () => {
     const email = this.state.ldap.searchMember;
 
-    const hasMember = await Services.searchLdapMember(email)
+    const hasMember = await Services.searchLdapMember(this.props.currentTeam._id, email)
     if (hasMember.status !== 200) {
-      toastr.error("User not found");
+      toastr.error((await hasMember.json()).error);
       this.setState({
         ldap: {
           ...this.state.ldap,
