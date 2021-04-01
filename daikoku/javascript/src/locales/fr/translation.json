@@ -780,7 +780,7 @@
   "Default mode": "Par défaut",
   "Global maintenance mode enabled": "Mode global maintenance activé",
   "Disable maintenance": "Désactive la maintenance",
-  "login.failed": "Utilisateur inconnu ou mot de passe invalide"
+  "login.failed": "Utilisateur inconnu ou mot de passe invalide",
   "or": "ou",
   "Find LDAP member by email ...": "Trouver un utilisateur LDAP via email",
   "LDAP user found": "Utilisateur LDAP trouvé",
