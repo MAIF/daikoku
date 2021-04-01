@@ -1569,41 +1569,62 @@ export function migrateMongoToPostgres() {
   });
 }
 
+const POST_HEADERS = {
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  }
+}
+
 export function enableMaintenanceMode() {
-  return fetch('/api/state/lock', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    }
-  })
+  return fetch('/api/state/lock', POST_HEADERS)
     .then((r) => r.json());
 }
 
 export function disableMaintenanceMode() {
-  return fetch('/api/state/unlock', {
-    method: 'POST',
+  return fetch('/api/state/unlock', POST_HEADERS)
+    .then((r) => r.json());
+}
+
+export function checkConnection(config, user) {
+  return fetch(`/api/auth/ldap/_check`, {
+    ...POST_HEADERS,
+    body: user ? JSON.stringify({
+      config,
+      user
+    }) : JSON.stringify(config),
+  }).then((r) => r.json());
+};
+
+export function searchLdapMember(teamId, email) {
+  return fetch(`/api/teams/${teamId}/ldap/users/${email}`, {
     credentials: 'include',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     }
-  })
-    .then((r) => r.json());
-}
+  });
+};
 
-export function checkConnection(config, user) {
-  return fetch('/api/auth/ldap/_check', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: user ? JSON.stringify({
-      config,
-      user
-    }) : JSON.stringify(config),
+export function findUserByEmail(teamId, email) {
+  return fetch(`/api/teams/${teamId}/users/_search`, {
+    ...POST_HEADERS,
+    body: JSON.stringify({
+      attributes: {
+        email
+      }
+    })
+  });
+};
+
+export function createUserFromLDAP(teamId, email) {
+  return fetch(`/api/teams/${teamId}/ldap/users`, {
+    ...POST_HEADERS,
+    body: JSON.stringify({
+      email,
+      teamId
+    }),
   }).then((r) => r.json());
 }
