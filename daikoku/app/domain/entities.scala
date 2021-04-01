@@ -961,6 +961,10 @@ case class ApiDocumentationPage(id: ApiDocumentationPageId,
     json.ApiDocumentationPageFormat.writes(this).as[JsObject]
 }
 
+object User {
+  val DEFAULT_IMAGE = "/assets/images/anonymous.jpg"
+}
+
 case class User(
     id: UserId,
     deleted: Boolean = false,
@@ -968,7 +972,7 @@ case class User(
     origins: Set[AuthProvider],
     name: String,
     email: String,
-    picture: String = "/assets/images/anonymous.jpg",
+    picture: String = User.DEFAULT_IMAGE,
     pictureFromProvider: Boolean = true,
     personalToken: Option[String],
     isDaikokuAdmin: Boolean = false,

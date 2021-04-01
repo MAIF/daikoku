@@ -267,13 +267,13 @@ export class OAuth2Config extends Component {
     sessionMaxAge: 86400,
     clientId: 'client',
     clientSecret: 'secret',
-    authorizeUrl: 'http://my.iam.local:8082/oauth/authorize',
-    tokenUrl: 'http://my.iam.local:8082/oauth/token',
-    userInfoUrl: 'http://my.iam.local:8082/userinfo',
-    loginUrl: 'http://my.iam.local:8082/login',
-    logoutUrl: 'http://my.iam.local:8082/logout',
-    callbackUrl: 'http://daikoku.foo.bar:8080/auth/OAuth/callback',
-    accessTokenField: 'access_token',
+    authorizeUrl: 'https://<oauth-domain>/authorize',
+    tokenUrl: 'http://<oauth-domain>/oauth/token',
+    userInfoUrl: 'http://<oauth-domain>/userinfo',
+    loginUrl: 'http://<oauth-domain>/authorize',
+    logoutUrl: 'http://daikoku.foo.bar:8080/logout',
+    callbackUrl: 'http://daikoku.foo.bar:8080/auth/oauth2/callback',
+    accessTokenField: 'id_token',
     scope: 'openid profile email name',
     useJson: false,
     readProfileFromToken: false,
@@ -284,7 +284,9 @@ export class OAuth2Config extends Component {
     },
     nameField: 'name',
     emailField: 'email',
+    pictureField: 'picture',
     otoroshiDataField: 'app_metadata | otoroshi_data',
+    daikokuAdmins: []
   };
 
   formFlow = [
@@ -304,6 +306,8 @@ export class OAuth2Config extends Component {
     'accessTokenField',
     'nameField',
     'emailField',
+    'pictureField',
+    'daikokuAdmins',
     'jwtVerifier',
   ];
 
@@ -411,6 +415,18 @@ export class OAuth2Config extends Component {
       type: 'string',
       props: {
         label: t('Email field name', this.props.currentLanguage),
+      },
+    },
+    pictureField: {
+      type: 'string',
+      props: {
+        label: t('Picture field name', this.props.currentLanguage),
+      },
+    },
+    daikokuAdmins: {
+      type: 'array',
+      props: {
+        label: t('Email of Daikoku Admins', this.props.currentLanguage),
       },
     },
     jwtVerifier: {
