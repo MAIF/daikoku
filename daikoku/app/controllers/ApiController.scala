@@ -10,6 +10,7 @@ import controllers.AppError
 import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
+import fr.maif.otoroshi.daikoku.audit.AuthorizationLevel.NotAuthorized
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.TeamUser
@@ -1622,7 +1623,10 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def toggleStar(apiId: String) = DaikokuAction.async { ctx =>
-    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has starred @{api.name} - @{api.id}"))(ctx) {
+    PublicUserAccess(AuditTrailEvent(s"@{user.name} has starred @{api.name} - @{api.id}"))(ctx) {
+      if(ctx.user.isGuest)
+        FastFuture.successful(Unauthorized("Can't star apis on guest mode"))
+      else
       env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
         .findByIdNotDeleted(apiId)

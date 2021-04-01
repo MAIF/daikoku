@@ -1623,6 +1623,50 @@ class ApiControllerSpec()
       )(tenant, session)
       resp.status mustBe 404
     }
+
+    "can star an api" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner),
+        apis = Seq(defaultApi)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      var apiResp = httpJsonCallBlocking(
+        path = s"/api/me/visible-apis/${defaultApi.id.value}"
+      )(tenant, session)
+
+      (apiResp.json \ "stars").as[Int] mustBe 0
+
+      var resp = httpJsonCallBlocking(
+        path = s"/api/apis/${defaultApi.id.value}/stars",
+        method = "PUT"
+      )(tenant, session)
+
+      resp.status mustBe 204
+
+      apiResp = httpJsonCallBlocking(
+        path = s"/api/me/visible-apis/${defaultApi.id.value}"
+      )(tenant, session)
+
+      (apiResp.json \ "stars").as[Int] mustBe 1
+
+      resp = httpJsonCallBlocking(
+        path = s"/api/apis/${defaultApi.id.value}/stars",
+        method = "PUT"
+      )(tenant, session)
+
+      resp.status mustBe 204
+
+      apiResp = httpJsonCallBlocking(
+        path = s"/api/me/visible-apis/${defaultApi.id.value}"
+      )(tenant, session)
+
+      (apiResp.json \ "stars").as[Int] mustBe 0
+
+    }
   }
 
   "a subscription" should {
@@ -2460,6 +2504,21 @@ class ApiControllerSpec()
       val respApiOk = httpJsonCallBlocking(
         s"/api/me/visible-apis/${defaultApi.id.value}")(tenant, userSession)
       respApiOk.status mustBe 200
+    }
+    "can not star an api" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        apis = Seq(
+          defaultApi.copy(visibility = ApiVisibility.PublicWithAuthorizations,
+            authorizedTeams = Seq.empty)),
+      )
+
+      val resp = httpJsonCallWithoutSessionBlocking(
+        path = s"/api/apis/${defaultApi.id.value}/stars",
+        method = "PUT"
+      )(tenant)
+
+      assert(resp.status != 204)
     }
   }
 

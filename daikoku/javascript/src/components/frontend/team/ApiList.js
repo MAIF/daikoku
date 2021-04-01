@@ -201,9 +201,7 @@ const ApiListComponent = (props) => {
         starredApis.push(a)
       else
         unstarredApis.push(a)
-    })
-
-    console.log(starredApis, unstarredApis)
+    });
 
     return [
       ...starredApis.sort((a, b) => (a.stars === b.stars ? 0 : (a.stars < b.stars ? 1 : -1))),
