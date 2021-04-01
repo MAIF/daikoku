@@ -11,12 +11,11 @@ const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 export class LDAPConfig extends Component {
   static defaultConfig = {
     sessionMaxAge: 86400,
-    serverUrl: [
-      'ldap://ldap.forumsys.com:389'
-    ],
+    serverUrls: ['ldap://ldap.forumsys.com:389'],
+    connectTimeout: 2,
     searchBase: 'dc=example,dc=com',
     userBase: '',
-    searchFilter: '(uid=${username})',
+    searchFilter: '(mail=${username})',
     groupFilter: '()',
     adminGroupFilter: '()',
     adminUsername: 'cn=read-only-admin,dc=example,dc=com',
@@ -28,7 +27,8 @@ export class LDAPConfig extends Component {
 
   formFlow = [
     'sessionMaxAge',
-    'serverUrl',
+    'serverUrls',
+    'connectTimeout',
     'searchBase',
     'userBase',
     'groupFilter',
@@ -50,10 +50,17 @@ export class LDAPConfig extends Component {
         label: t('Session max. age', this.props.currentLanguage),
       },
     },
-    serverUrl: {
+    serverUrls: {
       type: 'array',
       props: {
         label: t('LDAP Server URLs', this.props.currentLanguage, true)
+      },
+    },
+    connectTimeout: {
+      type: 'number',
+      props: {
+        suffix: t('seconds', this.props.currentLanguage),
+        label: t('Connect timeout', this.props.currentLanguage),
       },
     },
     searchBase: {

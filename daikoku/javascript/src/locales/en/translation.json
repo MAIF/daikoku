@@ -781,4 +781,10 @@
     "Global maintenance mode enabled": "Global maintenance mode enabled",
     "Disable maintenance": "Disable maintenance",
     "login.failed": "User not found or invalid credentials"
+    "or": "or",
+    "Find LDAP member by email ...": "Find LDAP member by email ...",
+    "LDAP user found": "Utilisateur LDAP trouvé",
+    "User already in team": "User already in team",
+    "User already invited": "User already invited",
+    "Connect timeout": "Connect timeout"
 }

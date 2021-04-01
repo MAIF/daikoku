@@ -1,8 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, JsonFraming, Merge, Partition, Sink, Source}
-import akka.stream.{FlowShape, Materializer, SourceShape}
+import akka.stream.scaladsl.{Flow, GraphDSL, JsonFraming, Merge, Partition, Sink, Source}
+import akka.stream.{FlowShape, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import cats.data.EitherT
@@ -13,13 +13,13 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.audit.AuthorizationLevel.NotAuthorized
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.TeamUser
 import fr.maif.otoroshi.daikoku.domain.TranslationElement.ApiTranslationElement
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.login.LdapSupport
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
