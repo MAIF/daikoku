@@ -1,9 +1,13 @@
-import React, { Component } from 'react';
+import React, { Component, useState } from 'react';
+import { toastr } from 'react-redux-toastr';
+
 import { t, Translation } from '../../../../locales';
 import { Spinner } from '../../../utils';
 
 import * as Services from '../../../../services/index';
 import { toastr } from 'react-redux-toastr';
+import { Help } from '../../../inputs';
+import { checkConnection } from '../../../../services';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
@@ -37,6 +41,8 @@ export class LDAPConfig extends Component {
     'adminPassword',
     'nameField',
     'emailField',
+    'testing',
+    'testingWithUser'
   ];
 
   formSchema = {
@@ -114,37 +120,39 @@ export class LDAPConfig extends Component {
         label: t('Email field name', this.props.currentLanguage),
       },
     },
+    testing: {
+      type: CheckingAdminConnection,
+      props: {
+        label: t('Testing connection', this.props.currentLanguage),
+        checkConnection: () => this.checkConnection()
+      },
+    },
+    testingWithUser: {
+      type: CheckingUserConnection,
+      props: {
+        label: t('Testing user', this.props.currentLanguage),
+        checkConnection: (username, password) => this.checkConnection({ username, password })
+      },
+    }
   };
-
-  state = {
-    username: "",
-    password: ""
-  }
 
   componentDidMount() {
     if (this.props.rawValue.authProvider === 'LDAP')
       this.props.onChange({ ...LDAPConfig.defaultConfig, ...this.props.value });
   }
 
-  checkConnection = (value, user) => {
-    Services.checkConnection(value, user)
+  checkConnection = (user) => {
+    checkConnection(this.props.value, user)
       .then(res => {
         if (res.works)
           toastr.success(t('Worked!'));
         else
           toastr.error(res.error);
-      })
-  }
-
-  handleChange = e => {
-    this.setState({
-      [e.target.name]: e.target.value
-    });
+      });
   }
 
   render() {
     const { value, onChange } = this.props;
-    const { username, password } = this.state;
 
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -155,61 +163,53 @@ export class LDAPConfig extends Component {
           schema={this.formSchema}
           style={{ marginTop: 50 }}
         />
-        <CheckingAdminConnection
-          {...this.props}
-          checkConnection={() => this.checkConnection(value)}
-        />
-        <CheckingUserConnection
-          {...this.props}
-          username={username}
-          password={password}
-          handleChange={this.handleChange}
-          checkConnection={() => this.checkConnection(value, { username, password })}
-        />
       </React.Suspense>
     );
   }
 }
 
 
-function CheckingAdminConnection({ currentLanguage, checkConnection }) {
+const CheckingAdminConnection = (props) => {
   return (
-    <div>
-      <div className="form-group row d-flex px-2">
-        <label htmlFor="input-Testing buttons" className="col-xs-12 col-sm-2 col-form-label">{t('Testing connection', currentLanguage)}</label>
-        <div className="col-sm-10 pl-3" id="input-Testing buttons">
-          <button
-            type="button"
-            className="btn btn-access-negative mr-1" onClick={checkConnection}>
-            <Translation i18nkey="Testing" language={currentLanguage}>
-              Testing
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label">
+        <Help text={props.help} label={props.label} />
+      </label>
+      <div className="col-sm-10 pl-3" id="input-Testing buttons">
+        <a
+          type="button"
+          className="btn btn-outline-primary mr-1" onClick={props.checkConnection}>
+          <Translation i18nkey="Testing" language={props.currentLanguage}>
+            Testing
           </Translation>
-          </button>
-        </div>
+        </a>
       </div>
     </div>
-  )
-}
+  );
+};
 
-function CheckingUserConnection({ currentLanguage, checkConnection, username, password, handleChange }) {
+const  CheckingUserConnection = (props) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
   return (
-    <div>
-      <div className="form-group row d-flex px-2">
-        <label htmlFor="input-Testing buttons" className="col-xs-12 col-sm-2 col-form-label">{t('Testing user', currentLanguage)}</label>
-        <div className="col-sm-10 pl-3 d-flex" id="input-Testing buttons">
-          <input type="text" value={username} onChange={handleChange}
-            placeholder="username" name="username" className="form-control mr-1" />
-          <input type="password" value={password} onChange={handleChange}
-            placeholder="password" name="password" className="form-control mr-1" />
-          <button
-            type="button"
-            className="btn btn-access-negative form-control" onClick={checkConnection}>
-            <Translation i18nkey="Testing" language={currentLanguage}>
-              Testing
-            </Translation>
-          </button>
-        </div>
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label">
+        <Help text={props.help} label={props.label} />
+      </label>
+      <div className="col-sm-10 pl-3 d-flex" id="input-Testing buttons">
+        <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+          placeholder="username" className="form-control mr-1" />
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+          placeholder="password" className="form-control mr-1" />
+        <a
+          type="button"
+          className="btn btn-outline-primary" onClick={() => props.checkConnection(username, password)}>
+          <Translation i18nkey="Testing" language={props.currentLanguage}>
+            Testing
+          </Translation>
+        </a>
       </div>
     </div>
-  )
-}
+  );
+};
