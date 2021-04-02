@@ -89,6 +89,19 @@ case class MongoTenantCapableApiDocumentationPageRepo(
     _repo()
 }
 
+case class MongoTenantCapableApiPostRepo(
+                                                       _repo: () => MongoRepo[ApiPost,ApiPostId],
+                                                       _tenantRepo: TenantId => MongoTenantAwareRepo[ApiPost, ApiPostId]
+                                                     ) extends MongoTenantCapableRepo[ApiPost, ApiPostId]
+  with ApiPostRepo {
+  override def tenantRepo(tenant: TenantId)
+  : MongoTenantAwareRepo[ApiPost, ApiPostId] =
+    _tenantRepo(tenant)
+
+  override def repo(): MongoRepo[ApiPost, ApiPostId] =
+    _repo()
+}
+
 case class MongoTenantCapableNotificationRepo(
                                                _repo: () => MongoRepo[Notification, NotificationId],
                                                _tenantRepo: TenantId => MongoTenantAwareRepo[Notification, NotificationId]
@@ -253,6 +266,13 @@ class MongoDataStore(context: Context, env: Env)
       () => new MongoApiDocumentationPageRepo(env, reactiveMongoApi),
       t => new MongoTenantApiDocumentationPageRepo(env, reactiveMongoApi, t)
     )
+
+  private val _apiApiPostRepo: ApiPostRepo =
+    MongoTenantCapableApiPostRepo(
+      () => new MongoApiPostRepo(env, reactiveMongoApi),
+      t => new MongoTenantApiPostRepo(env, reactiveMongoApi, t)
+    )
+
   private val _notificationRepo: NotificationRepo =
     MongoTenantCapableNotificationRepo(
       () => new MongoNotificationRepo(env, reactiveMongoApi),
@@ -293,6 +313,8 @@ class MongoDataStore(context: Context, env: Env)
 
   override def apiDocumentationPageRepo: ApiDocumentationPageRepo =
     _apiDocumentationPageRepo
+
+  override def apiPostRepo: ApiPostRepo = _apiApiPostRepo
 
   override def notificationRepo: NotificationRepo = _notificationRepo
 
@@ -339,6 +361,7 @@ class MongoDataStore(context: Context, env: Env)
       apiRepo.forAllTenant(),
       apiSubscriptionRepo.forAllTenant(),
       apiDocumentationPageRepo.forAllTenant(),
+      apiPostRepo.forAllTenant(),
       notificationRepo.forAllTenant(),
       auditTrailRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
@@ -371,6 +394,7 @@ class MongoDataStore(context: Context, env: Env)
       _ <- apiRepo.forAllTenant().deleteAll()
       _ <- apiSubscriptionRepo.forAllTenant().deleteAll()
       _ <- apiDocumentationPageRepo.forAllTenant().deleteAll()
+      _ <- apiPostRepo.forAllTenant().deleteAll()
       _ <- notificationRepo.forAllTenant().deleteAll()
       _ <- consumptionRepo.forAllTenant().deleteAll()
       _ <- auditTrailRepo.forAllTenant().deleteAll()
@@ -411,6 +435,10 @@ class MongoDataStore(context: Context, env: Env)
             apiDocumentationPageRepo
               .forAllTenant()
               .save(ApiDocumentationPageFormat.reads(payload).get)
+          case ("ApiPosts", payload) =>
+            apiPostRepo
+              .forAllTenant()
+              .save(ApiPostFormat.reads(payload).get)
           case ("Notifications", payload) =>
             notificationRepo
               .forAllTenant()
@@ -552,6 +580,20 @@ class MongoTenantApiDocumentationPageRepo(env: Env,
   override def extractId(value: ApiDocumentationPage): String = value.id.value
 }
 
+class MongoTenantApiPostRepo(env: Env,
+                                          reactiveMongoApi: ReactiveMongoApi,
+                                          tenant: TenantId)
+  extends MongoTenantAwareRepo[ApiPost, ApiPostId](
+    env,
+    reactiveMongoApi,
+    tenant) {
+  override def collectionName: String = "ApiPosts"
+
+  override def format: Format[ApiPost] = json.ApiPostFormat
+
+  override def extractId(value: ApiPost): String = value.id.value
+}
+
 class MongoTenantNotificationRepo(env: Env,
                                   reactiveMongoApi: ReactiveMongoApi,
                                   tenant: TenantId)
@@ -660,6 +702,15 @@ class MongoApiDocumentationPageRepo(env: Env,
     json.ApiDocumentationPageFormat
 
   override def extractId(value: ApiDocumentationPage): String = value.id.value
+}
+
+class MongoApiPostRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
+  extends MongoRepo[ApiPost, ApiPostId](env, reactiveMongoApi) {
+  override def collectionName: String = "ApiPosts"
+
+  override def format: Format[ApiPost] = json.ApiPostFormat
+
+  override def extractId(value: ApiPost): String = value.id.value
 }
 
 class MongoNotificationRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)

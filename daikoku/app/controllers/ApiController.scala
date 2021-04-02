@@ -1620,6 +1620,83 @@ class ApiController(DaikokuAction: DaikokuAction,
       }
     }
   }
+
+  def getPosts(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed posts for @{api.id}"))(ctx) {
+      ctx.setCtxValue("api.id", apiId)
+
+      val limit: Int  = ctx.request.queryString.get("limit").flatMap(_.headOption) match {
+        case Some(value) => Integer.valueOf(value)
+        case None => 1
+      }
+      val offset: Int = ctx.request.queryString.get("offset").flatMap(_.headOption) match {
+        case Some(value) => Integer.valueOf(value)
+        case None => 0
+      }
+
+      getPostsImpl(ctx.tenant, apiId, limit, offset).map {
+        case Left(r) => NotFound(r)
+        case Right(r) => Ok(r)
+      }
+    }
+  }
+
+  private def getPostsImpl(tenant: Tenant, apiId: String, limit: Int, offset: Int):
+    Future[Either[JsValue, JsValue]] = {
+      env.dataStore.apiRepo.forTenant(tenant.id).findByIdOrHrId(apiId).flatMap {
+        case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
+        case Some(api) =>
+          env.dataStore.apiPostRepo
+            .forTenant(tenant.id)
+            .findWithPagination(Json.obj(
+              "_id" -> Json.obj(
+                "$in" -> JsArray(api.posts.map(_.asJson))
+              )
+            ), offset, limit)
+            .map(data => Right(Json.obj(
+              "posts" -> JsArray(data._1.map(_.asJson)),
+              "total" -> data._2
+            )))
+      }
+  }
+
+  def createPost(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has accessed posts for @{api.id}"))(teamId, ctx) { _ =>
+
+      val postId = ApiPostId(BSONObjectID.generate().stringify)
+
+      val body = ApiPost(
+        id = postId,
+        tenant = ctx.tenant.id,
+        lastModificationAt = DateTime.now(),
+        title = (ctx.request.body \ "title").as[String],
+        content = (ctx.request.body \ "content").as[String]
+      )
+
+      env.dataStore.apiPostRepo
+        .forAllTenant()
+        .save(body)
+        .flatMap {
+          case true =>
+            env.dataStore.apiRepo
+              .forAllTenant()
+              .findByIdNotDeleted(apiId)
+              .flatMap {
+                case Some(api) =>
+                  env.dataStore.apiRepo.forAllTenant()
+                    .save(api.copy(posts = api.posts ++ Seq(postId)))
+                    .flatMap {
+                      case true => FastFuture.successful(Ok(Json.obj("created" -> true)))
+                      case false => FastFuture.successful(BadRequest("Failed to create post"))
+                    }
+                case None =>
+                  AppLogger.error("Api not found after post creation")
+                  FastFuture.successful(BadRequest("Failed to create post : Api not found"))
+              }
+          case false => FastFuture.successful(BadRequest("Failed to create post"))
+        }
+    }
+  }
 }
 
 
