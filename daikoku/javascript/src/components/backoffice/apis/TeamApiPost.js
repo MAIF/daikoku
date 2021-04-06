@@ -26,12 +26,12 @@ export class TeamApiPost extends React.Component {
     ];
 
     schema = {
-        title: { type: 'string', props: { label: t('Page title', this.props.currentLanguage) } },
+        title: { type: 'string', props: { label: t('team_api_post.title', this.props.currentLanguage) } },
         content: {
             type: 'markdown',
             props: {
                 currentLanguage: this.props.currentLanguage,
-                label: 'Page content',
+                label: t('team_api_post.content', this.props.currentLanguage),
                 height: '320px',
                 team: this.props.team
             },
@@ -48,10 +48,12 @@ export class TeamApiPost extends React.Component {
                 this.setState({
                     posts: [
                         ...this.state.posts,
-                        ...data.posts.map(p => ({
-                            ...p,
-                            isOpen: false
-                        }))
+                        ...data.posts
+                            .filter(p => !this.state.posts.find(o => o._id === p._id))
+                            .map(p => ({
+                                ...p,
+                                isOpen: false
+                            }))
                     ],
                     newPostOpen: data.posts.length === 0,
                     pagination: {
@@ -92,25 +94,48 @@ export class TeamApiPost extends React.Component {
     }
 
     savePost = i => {
-        Services.savePost(this.props.api._id, this.props.team._id, this.state.posts.find((_, j) => j === i))
+        const { api, team, currentLanguage } = this.props;
+        const post = this.state.posts.find((_, j) => j === i)
+        Services.savePost(api._id, team._id, post._id, post)
             .then(res => {
                 if (res.status === 200)
-                    toastr.success(t('Post saved'))
+                    toastr.success(t('team_api_post.saved', currentLanguage))
                 else
-                    toastr.error(t('Something went wrong'))
+                    toastr.error(t('team_api_post.failed', currentLanguage))
             });
     }
 
     publishPost = () => {
-        Services.publishNewPost(this.props.api._id, this.props.team._id, {
+        const { api, team, currentLanguage } = this.props;
+        Services.publishNewPost(api._id, team._id, {
             ...this.state.selected,
             "_id": ""
         })
             .then(res => {
-                if (res.status === 200)
-                    toastr.success(t('Post saved'))
+                if (res.status === 200) {
+                    toastr.success(t('team_api_post.saved', currentLanguage))
+                    this.toggleNewPost()
+                }
                 else
-                    toastr.error(t('Something went wrong'))
+                    toastr.error(t('team_api_post.failed', currentLanguage))
+            })
+    }
+
+    removePost = (postId, i) => {
+        const { api, team, currentLanguage } = this.props;
+        window.confirm(t('team_api_post.delete.confirm', currentLanguage))
+            .then(ok => {
+                if (ok)
+                    Services.removePost(api._id, team._id, postId)
+                        .then(res => {
+                            if (res.status === 200) {
+                                toastr.success(t('team_api_post.saved', currentLanguage));
+                                this.setState({
+                                    posts: this.state.posts.filter((_, j) => j !== i)
+                                })
+                            } else
+                                toastr.error(t('team_api_post.failed', currentLanguage));
+                        })
             })
     }
 
@@ -119,7 +144,7 @@ export class TeamApiPost extends React.Component {
         const { team, currentLanguage } = this.props
         return (
             <div>
-                <div className="">
+                <div>
                     {newPostOpen ? <>
                         <React.Suspense fallback={<Spinner />}>
                             <LazyForm
@@ -130,23 +155,29 @@ export class TeamApiPost extends React.Component {
                             />
                         </React.Suspense>
                         <div className="m-3">
-                            <button className="btn btn-outline-success mr-1" onClick={this.publishPost}>{t('Publish post', currentLanguage)}</button>
+                            <button className="btn btn-outline-success mr-1" onClick={this.publishPost}>{t('team_api_post.publish', currentLanguage)}</button>
                             <button className="btn btn-outline-danger" onClick={this.toggleNewPost}>{t('Cancel', currentLanguage)}</button>
                         </div>
                     </> :
-                        <button className="btn btn-outline-info" onClick={this.toggleNewPost}>{t('New Post', currentLanguage)}</button>}
+                        <button className="btn btn-outline-info my-3"
+                            onClick={this.toggleNewPost}>{t('team_api_post.new', currentLanguage)}</button>}
                 </div>
                 {!newPostOpen && <div>
                     <h2>{t('Posts', currentLanguage)}</h2>
                     <div>
-                        {posts.length === 0 && <p>{t('Any posts', currentLanguage)}</p>}
+                        {posts.length === 0 && <p>{t('team_api_post.empty_posts_list', currentLanguage)}</p>}
                         {posts.map((post, i) => (
                             <div key={i}>
                                 <div className="d-flex justify-content-between align-items-center">
                                     <p>{post.title}</p>
-                                    <button className="btn btn-outline-info" onClick={() => this.togglePost(i)}>
-                                        <i className={`fas fa-chevron-${post.isOpen ? "up" : "down"}`} />
-                                    </button>
+                                    <div>
+                                        <button className="btn btn-outline-danger mr-1" onClick={() => this.removePost(post._id, i)}>
+                                            <i className="fas fa-trash" />
+                                        </button>
+                                        <button className="btn btn-outline-info" onClick={() => this.togglePost(i)}>
+                                            <i className={`fas fa-chevron-${post.isOpen ? "up" : "down"}`} />
+                                        </button>
+                                    </div>
                                 </div>
                                 {post.isOpen && <>
                                     <React.Suspense fallback={<div>loading ...</div>}>
@@ -159,7 +190,7 @@ export class TeamApiPost extends React.Component {
                                         />
                                     </React.Suspense>
                                     <button className="btn btn-outline-success m-3" onClick={() => this.savePost(i)}>
-                                        {t('Save post', currentLanguage)}
+                                        {t('team_api_post.save', currentLanguage)}
                                     </button>
                                 </>
                                 }
@@ -169,7 +200,7 @@ export class TeamApiPost extends React.Component {
                     {
                         posts.length < pagination.total &&
                         <button className="btn btn-outline-info" onClick={this.loadOldPosts}>
-                            {t('Load old posts', currentLanguage)}
+                            {t('team_api_post.load_old_posts', currentLanguage)}
                         </button>
                     }
                 </div>}

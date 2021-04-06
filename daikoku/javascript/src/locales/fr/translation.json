@@ -786,5 +786,16 @@
   "LDAP user found": "Utilisateur LDAP trouvé",
   "User already in team": "Utilisateur déjà dans l'équipe",
   "User already invited": "Déjà dans l'attente de l'utilisateur",
-  "Connect timeout": "Timeout de connexion"
+  "Connect timeout": "Timeout de connexion",
+  "team_api_post.delete.confirm": "Êtes-vous sûr de vouloir supprimer cette publication ?",
+  "team_api_post.saved": "Publication enregistrée",
+  "team_api_post.failed": "Une erreur est survenue",
+  "team_api_post.new": "Nouvelle publication",
+  "team_api_post.empty_posts_list": "Aucune publication",
+  "team_api_post.load_old_posts": "Charger plus de publications",
+  "team_api_post.save": "Enregister",
+  "team_api_post.publish": "Publier la publication",
+  "team_api_post.title": "Titre de la publication",
+  "team_api_post.content": "Contenu",
+  "New Published Post": "Une nouvelle publication a été publiée"
 }

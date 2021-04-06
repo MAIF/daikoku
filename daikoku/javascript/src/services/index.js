@@ -1660,3 +1660,18 @@ export function publishNewPost(apiId, teamId, post) {
     body: JSON.stringify(post)
   });
 }
+
+export function removePost(apiId, teamId, postId) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
+    ...POST_HEADERS,
+    method: 'DELETE'
+  });
+}
+
+export function savePost(apiId, teamId, postId, content) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify(content)
+  });
+}

@@ -1091,12 +1091,12 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
 
     if (query.values.isEmpty)
       reactivePg.query(s"DELETE FROM $tableName")
-        .map(_.size() > 0)
+        .map(_ => true)
     else {
       val (sql, params) = convertQuery(query)
       reactivePg.query(s"DELETE FROM $tableName WHERE $sql", params)
     }
-      .map(_.size() > 0)
+      .map(_ => true)
   }
 
   override def save(query: JsObject, value: JsObject)(

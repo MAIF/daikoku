@@ -147,7 +147,11 @@ POST    /api/teams/:teamId/users/_search                         fr.maif.otorosh
 ### NoDocs ###
 POST    /api/teams/:teamId/ldap/users                            fr.maif.otoroshi.daikoku.ctrls.TeamController.createLDAPUser(teamId)
 ### NoDocs ###
-POST    /api/teams/:teamId/apis/:apiId/posts                     fr.maif.otoroshi.daikoku.ctrls.ApiController.createPost(teamId, apiId)
+POST        /api/teams/:teamId/apis/:apiId/posts                     fr.maif.otoroshi.daikoku.ctrls.ApiController.createPost(teamId, apiId)
+### NoDocs ###
+PUT         /api/teams/:teamId/apis/:apiId/posts/:postId             fr.maif.otoroshi.daikoku.ctrls.ApiController.updatePost(teamId, apiId, postId)
+### NoDocs ###
+DELETE      /api/teams/:teamId/apis/:apiId/posts/:postId             fr.maif.otoroshi.daikoku.ctrls.ApiController.removePost(teamId, apiId, postId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)

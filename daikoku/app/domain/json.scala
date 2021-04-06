@@ -1880,6 +1880,7 @@ object json {
         case "ApiKeyRotationEnded" => ApiKeyRotationEndedFormat.reads(json)
         case "TeamInvitation"      => TeamInvitationFormat.reads(json)
         case "ApiKeyRefresh"       => ApiKeyRefreshFormat.reads(json)
+        case "NewPostPublished"    => NewPostPublishedFormat.reads(json)
         case str                   => JsError(s"Bad notification value: $str")
       }
       override def writes(o: NotificationAction) = o match {
@@ -1913,9 +1914,31 @@ object json {
         case p: ApiKeyRefresh =>
           ApiKeyRefreshFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "ApiKeyRefresh")
+        case p: NewPostPublished =>
+          NewPostPublishedFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "NewPostPublished"
+          )
 
       }
     }
+
+  val NewPostPublishedFormat = new Format[NewPostPublished] {
+    override def reads(json: JsValue): JsResult[NewPostPublished] =
+      Try {
+        JsSuccess(
+          NewPostPublished(
+            apiName = (json \ "apiName").asOpt[String].getOrElse(""),
+            teamId = (json \ "teamId").as(TeamIdFormat).value
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: NewPostPublished): JsValue = Json.obj(
+      "apiName" -> o.apiName,
+      "teamId" -> o.teamId
+    )
+  }
 
   val ApiAccessFormat = new Format[ApiAccess] {
     override def reads(json: JsValue): JsResult[ApiAccess] =

@@ -1416,6 +1416,9 @@ object NotificationAction {
 
   case class ApiKeyRefresh(subscription: String, api: String, plan: String)
       extends NotificationAction
+
+  case class NewPostPublished(teamId: String, apiName: String)
+      extends NotificationAction
 }
 
 sealed trait NotificationType {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { t } from "../../../locales";
 import * as Services from '../../../services/index';
 import { converter } from '../../../services/showdown';
+import { formatDate } from "../../utils";
 
 export function ApiPost({ api, currentLanguage }) {
     const [posts, setPosts] = useState([]);
@@ -30,11 +31,19 @@ export function ApiPost({ api, currentLanguage }) {
             });
     }, [pagination.offset, pagination.limit]);
 
+    function formatDate(lastModificationAt) {
+        const date = new Date(lastModificationAt);
+        return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short' }).format(date)
+    }
+
     return (
         <div className="container-fluid">
             {posts.map((post, i) => (
-                <div key={i}>
-                    <h1 className="w-100">{post.title}</h1>
+                <div key={i} className="jumbotron">
+                    <div className="d-flex justify-content-between align-items-center">
+                        <h1>{post.title}</h1>
+                        <span>{formatDate(post.lastModificationAt)}</span>
+                    </div>
                     <div
                         className="api-post"
                         dangerouslySetInnerHTML={{ __html: converter.makeHtml(post.content) }}
@@ -43,8 +52,8 @@ export function ApiPost({ api, currentLanguage }) {
             ))}
             {posts.length < pagination.total && <button className="btn btn-outline-info" onClick={() => {
                 setPagination({
-                    limit: 10,
-                    offset: posts.length < 10 ? 0 : (pagination.offset + 1)
+                    limit: 1,
+                    offset: pagination.offset + 1
                 })
             }}>{t('Load older posts', currentLanguage)}</button>}
         </div >

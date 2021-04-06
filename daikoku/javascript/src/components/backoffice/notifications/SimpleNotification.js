@@ -87,6 +87,12 @@ export class SimpleNotification extends Component {
             title={t('Apikey refresh', this.props.currentLanguage)}
           />
         );
+      case 'NewPostPublished':
+        return (
+          <i className="fas fa-newspaper-alt"
+            style={{ marginRight: 5 }}
+            title={t('New Published Post', this.props.currentLanguage)} />
+        )
     }
   };
 
@@ -175,6 +181,7 @@ export class SimpleNotification extends Component {
       case 'ApiAccess':
         return `${sender.name}/${this.props.getTeam(action.team).name}`;
       case 'TeamAccess':
+      case 'NewPostPublished':
         return sender.name;
       case 'TeamInvitation':
         return this.props.getTeam(action.team).name;
@@ -325,6 +332,20 @@ export class SimpleNotification extends Component {
                       {notification.sender.name}, as admin of{' '}
                       {this.props.getTeam(notification.action.team).name}, invit you in his team.
                     </Translation>
+                  </div>
+                )}
+                {notification.action.type === 'NewPostPublished' && (
+                  <div>
+                    <Translation
+                      i18nkey="team.invitation"
+                      language={this.props.currentLanguage}
+                      replacements={[
+                        notification.sender.name,
+                        this.props.getTeam(notification.action.teamId).name,
+                      ]}>
+                      {notification.sender.name}, as admin of{' '}
+                      {this.props.getTeam(notification.action.teamId).name}, has published a new post on {notification.action.apiName}.
+                  </Translation>
                   </div>
                 )}
               </h5>
