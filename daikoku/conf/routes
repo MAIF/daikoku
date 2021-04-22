@@ -114,6 +114,8 @@ POST    /api/apis/:apiId/access                         fr.maif.otoroshi.daikoku
 PUT     /api/apis/:apiId/stars                          fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleStar(apiId)
 ### NoDocs ###
 POST    /api/apis/_names                                fr.maif.otoroshi.daikoku.ctrls.ApiController.verifyNameUniqueness()
+### NoDocs ###
+GET     /api/apis/:apiId/posts                          fr.maif.otoroshi.daikoku.ctrls.ApiController.getPosts(apiId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscription/:id/informations         fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionInformations(teamId, id)
@@ -146,6 +148,12 @@ GET     /api/teams/:teamId/ldap/users/:email                     fr.maif.otorosh
 POST    /api/teams/:teamId/users/_search                         fr.maif.otoroshi.daikoku.ctrls.TeamController.findUserByAttributes(teamId)
 ### NoDocs ###
 POST    /api/teams/:teamId/ldap/users                            fr.maif.otoroshi.daikoku.ctrls.TeamController.createLDAPUser(teamId)
+### NoDocs ###
+POST        /api/teams/:teamId/apis/:apiId/posts                     fr.maif.otoroshi.daikoku.ctrls.ApiController.createPost(teamId, apiId)
+### NoDocs ###
+PUT         /api/teams/:teamId/apis/:apiId/posts/:postId             fr.maif.otoroshi.daikoku.ctrls.ApiController.updatePost(teamId, apiId, postId)
+### NoDocs ###
+DELETE      /api/teams/:teamId/apis/:apiId/posts/:postId             fr.maif.otoroshi.daikoku.ctrls.ApiController.removePost(teamId, apiId, postId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)

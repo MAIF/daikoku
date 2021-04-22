@@ -1653,3 +1653,36 @@ export function createUserFromLDAP(teamId, email) {
     }),
   }).then((r) => r.json());
 }
+
+export function getAPIPosts(apiId, offset = 0, limit = 1) {
+  return fetch(`/api/apis/${apiId}/posts?offset=${offset}&limit=${limit}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  })
+    .then((r) => r.json());
+}
+
+export function publishNewPost(apiId, teamId, post) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/posts`, {
+    ...POST_HEADERS,
+    body: JSON.stringify(post)
+  });
+}
+
+export function removePost(apiId, teamId, postId) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
+    ...POST_HEADERS,
+    method: 'DELETE'
+  });
+}
+
+export function savePost(apiId, teamId, postId, content) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify(content)
+  });
+}

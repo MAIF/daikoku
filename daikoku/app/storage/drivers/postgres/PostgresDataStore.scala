@@ -103,6 +103,18 @@ case class PostgresTenantCapableApiDocumentationPageRepo(
     _repo()
 }
 
+case class PostgresTenantCapableApiPostRepo(
+                                                          _repo: () => PostgresRepo[ApiPost, ApiPostId],
+                                                          _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiPost, ApiPostId]
+                                                        ) extends PostgresTenantCapableRepo[ApiPost, ApiPostId]
+  with ApiPostRepo {
+  override def tenantRepo(tenant: TenantId)
+  : PostgresTenantAwareRepo[ApiPost, ApiPostId] = _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[ApiPost, ApiPostId] =
+    _repo()
+}
+
 case class PostgresTenantCapableNotificationRepo(
                                                   _repo: () => PostgresRepo[Notification, NotificationId],
                                                   _tenantRepo: TenantId => PostgresTenantAwareRepo[Notification, NotificationId]
@@ -238,7 +250,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     "consumptions" -> true,
     "audit_events" -> false,
     "users" -> true,
-    "user_sessions" -> false
+    "user_sessions" -> false,
+    "api_posts" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions().setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))
@@ -276,6 +289,11 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     PostgresTenantCapableApiDocumentationPageRepo(
       () => new PostgresApiDocumentationPageRepo(env, reactivePg),
       t => new PostgresTenantApiDocumentationPageRepo(env, reactivePg, t)
+    )
+  private val _apiPostRepo: ApiPostRepo =
+    PostgresTenantCapableApiPostRepo(
+      () => new PostgresApiPostRepo(env, reactivePg),
+      t => new PostgresTenantApiPostRepo(env, reactivePg, t)
     )
   private val _notificationRepo: NotificationRepo =
     PostgresTenantCapableNotificationRepo(
@@ -321,6 +339,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
 
   override def apiDocumentationPageRepo: ApiDocumentationPageRepo =
     _apiDocumentationPageRepo
+
+  override def apiPostRepo: ApiPostRepo = _apiPostRepo
 
   override def notificationRepo: NotificationRepo = _notificationRepo
 
@@ -427,6 +447,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       apiRepo.forAllTenant(),
       apiSubscriptionRepo.forAllTenant(),
       apiDocumentationPageRepo.forAllTenant(),
+      apiPostRepo.forAllTenant(),
       notificationRepo.forAllTenant(),
       auditTrailRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
@@ -488,6 +509,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
               apiDocumentationPageRepo
                 .forAllTenant()
                 .save(ApiDocumentationPageFormat.reads(payload).get)
+            case ("ApiPosts", payload) =>
+                apiPostRepo
+                  .forAllTenant()
+                  .save(ApiPostFormat.reads(payload).get)
             case ("Notifications", payload) =>
               notificationRepo
                 .forAllTenant()
@@ -624,6 +649,18 @@ class PostgresTenantApiDocumentationPageRepo(env: Env,
   override def extractId(value: ApiDocumentationPage): String = value.id.value
 }
 
+class PostgresTenantApiPostRepo(env: Env, reactivePg: ReactivePg, tenant: TenantId)
+  extends PostgresTenantAwareRepo[ApiPost, ApiPostId](
+    env,
+    reactivePg,
+    tenant) {
+  override def tableName: String = "api_posts"
+
+  override def format: Format[ApiPost] = json.ApiPostFormat
+
+  override def extractId(value: ApiPost): String = value.id.value
+}
+
 class PostgresTenantNotificationRepo(env: Env,
                                      reactivePg: ReactivePg,
                                      tenant: TenantId)
@@ -738,6 +775,15 @@ class PostgresApiDocumentationPageRepo(env: Env,
     json.ApiDocumentationPageFormat
 
   override def extractId(value: ApiDocumentationPage): String = value.id.value
+}
+
+class PostgresApiPostRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[ApiPost, ApiPostId](env, reactivePg) {
+  override def tableName: String = "api_posts"
+
+  override def format: Format[ApiPost] = json.ApiPostFormat
+
+  override def extractId(value: ApiPost): String = value.id.value
 }
 
 class PostgresNotificationRepo(env: Env, reactivePg: ReactivePg)
@@ -1045,12 +1091,12 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env,
 
     if (query.values.isEmpty)
       reactivePg.query(s"DELETE FROM $tableName")
-        .map(_.size() > 0)
+        .map(_ => true)
     else {
       val (sql, params) = convertQuery(query)
       reactivePg.query(s"DELETE FROM $tableName WHERE $sql", params)
     }
-      .map(_.size() > 0)
+      .map(_ => true)
   }
 
   override def save(query: JsObject, value: JsObject)(

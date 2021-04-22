@@ -12,3 +12,4 @@ export * from './utils';
 export * from './TeamApiConsumption';
 export * from './TeamPlanConsumption';
 export * from './TeamApiSubscriptions';
+export * from './TeamApiPost';

@@ -493,6 +493,11 @@ case class DatastoreId(value: String) extends ValueType with CanJson[DatastoreId
 case class ChatId(value: String) extends ValueType with CanJson[ChatId] {
   def asJson: JsValue = JsString(value)
 }
+case class ApiPostId(value: String)
+  extends ValueType
+    with CanJson[ApiPostId] {
+  def asJson: JsValue = JsString(value)
+}
 
 trait BillingTimeUnit extends CanJson[BillingTimeUnit] {
   def name: String
@@ -961,6 +966,17 @@ case class ApiDocumentationPage(id: ApiDocumentationPageId,
     json.ApiDocumentationPageFormat.writes(this).as[JsObject]
 }
 
+case class ApiPost(id: ApiPostId,
+                   tenant: TenantId,
+                   deleted: Boolean = false,
+                   title: String,
+                   lastModificationAt: DateTime,
+                   content: String)
+  extends CanJson[ApiPost] {
+  def humanReadableId: String = title.urlPathSegmentSanitized
+  override def asJson: JsValue = json.ApiPostFormat.writes(this)
+}
+
 object User {
   val DEFAULT_IMAGE = "/assets/images/anonymous.jpg"
 }
@@ -1215,6 +1231,7 @@ case class Api(
     possibleUsagePlans: Seq[UsagePlan],
     defaultUsagePlan: UsagePlanId,
     authorizedTeams: Seq[TeamId] = Seq.empty,
+    posts: Seq[ApiPostId] = Seq.empty,
     stars: Int = 0
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
@@ -1235,6 +1252,7 @@ case class Api(
     "categories" -> JsArray(categories.map(JsString.apply).toSeq),
     "visibility" -> visibility.name,
     "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
+    "posts" -> SeqPostIdFormat.writes(posts),
     "stars" -> stars
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
@@ -1403,6 +1421,9 @@ object NotificationAction {
       extends NotificationAction
 
   case class ApiKeyRefresh(subscription: String, api: String, plan: String)
+      extends NotificationAction
+
+  case class NewPostPublished(teamId: String, apiName: String)
       extends NotificationAction
 }
 

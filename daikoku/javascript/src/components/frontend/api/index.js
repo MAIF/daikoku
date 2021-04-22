@@ -6,3 +6,4 @@ export * from './ApiSwagger';
 export * from './ApiRedoc';
 export * from './ApiConsole';
 export * from './ApiCard';
+export * from './ApiPost';

@@ -1622,6 +1622,133 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def getPosts(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed posts for @{api.id}"))(ctx) {
+      ctx.setCtxValue("api.id", apiId)
+
+      val limit: Int  = ctx.request.queryString.get("limit").flatMap(_.headOption) match {
+        case Some(value) => Integer.valueOf(value)
+        case None => 1
+      }
+      val offset: Int = ctx.request.queryString.get("offset").flatMap(_.headOption) match {
+        case Some(value) => Integer.valueOf(value)
+        case None => 0
+      }
+
+      getPostsImpl(ctx.tenant, apiId, limit, offset).map {
+        case Left(r) => NotFound(r)
+        case Right(r) => Ok(r)
+      }
+    }
+  }
+
+  private def getPostsImpl(tenant: Tenant, apiId: String, limit: Int, offset: Int):
+    Future[Either[JsValue, JsValue]] = {
+      env.dataStore.apiRepo.forTenant(tenant.id).findByIdOrHrId(apiId).flatMap {
+        case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
+        case Some(api) =>
+          env.dataStore.apiPostRepo
+            .forTenant(tenant.id)
+            .findWithPagination(Json.obj(
+              "_id" -> Json.obj(
+                "$in" -> JsArray(api.posts.map(_.asJson))
+              )
+            ), offset, limit)
+            .map(data => Right(Json.obj(
+              "posts" -> JsArray(data._1.map(_.asJson)),
+              "total" -> data._2
+            )))
+      }
+  }
+
+  def createPost(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has accessed posts for @{api.id}"))(teamId, ctx) { _ =>
+
+      val postId = ApiPostId(BSONObjectID.generate().stringify)
+
+      val body = ApiPost(
+        id = postId,
+        tenant = ctx.tenant.id,
+        lastModificationAt = DateTime.now(),
+        title = (ctx.request.body \ "title").as[String],
+        content = (ctx.request.body \ "content").as[String]
+      )
+
+      env.dataStore.apiPostRepo
+        .forAllTenant()
+        .save(body)
+        .flatMap {
+          case true =>
+            env.dataStore.apiRepo
+              .forAllTenant()
+              .findByIdNotDeleted(apiId)
+              .flatMap {
+                case Some(api) =>
+                  env.dataStore.apiRepo.forAllTenant()
+                    .save(api.copy(posts = api.posts ++ Seq(postId)))
+                    .flatMap {
+                      case true =>
+                        for {
+                          subs <- env.dataStore.apiSubscriptionRepo
+                            .forAllTenant()
+                            .find(Json.obj("api" -> apiId))
+                          api <- env.dataStore.apiRepo.forAllTenant().findByIdNotDeleted(apiId)
+                          _ <- {
+                            Future.sequence(subs.toSet[ApiSubscription].map(sub =>
+                              env.dataStore.notificationRepo
+                                .forAllTenant()
+                                .save(Notification(
+                                  id = NotificationId(BSONObjectID.generate().stringify),
+                                  tenant = ctx.tenant.id,
+                                  sender = ctx.user,
+                                  action = NotificationAction.NewPostPublished(teamId, api.map(_.name).getOrElse("")),
+                                  notificationType = NotificationType.AcceptOnly,
+                                  team = Some(sub.team)
+                                ))
+                            ))
+                          }
+                        } yield {
+                          Ok(Json.obj("created" -> true))
+                        }
+                      case false => FastFuture.successful(BadRequest("Failed to create post"))
+                    }
+                case None =>
+                  AppLogger.error("Api not found after post creation")
+                  FastFuture.successful(BadRequest("Failed to create post : Api not found"))
+              }
+          case false => FastFuture.successful(BadRequest("Failed to create post"))
+        }
+    }
+  }
+
+  def updatePost(teamId: String, apiId: String, postId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has updated posts for @{api.id}"))(teamId, ctx) { _ =>
+      env.dataStore.apiPostRepo
+        .forAllTenant()
+        .findByIdNotDeleted(postId)
+        .flatMap {
+          case Some(post) =>
+            env.dataStore.apiPostRepo
+              .forAllTenant()
+              .save(post.copy(content = (ctx.request.body \ "content").as[String]))
+              .flatMap {
+                case true => FastFuture.successful(Ok("Post saved"))
+                case false => FastFuture.successful(BadRequest("Something went wrong"))
+              }
+          case None => FastFuture.successful(BadRequest("Post not found"))
+        }
+    }
+  }
+
+  def removePost(teamId: String, apiId: String, postId: String) = DaikokuAction.async { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has removed posts for @{api.id}"))(teamId, ctx) { _ =>
+      env.dataStore.apiPostRepo
+        .forAllTenant()
+        .deleteById(postId)
+        .flatMap {
+          case true => FastFuture.successful(Ok("Post removed"))
+          case false => FastFuture.successful(BadRequest("Something went wrong"))
+          
   def toggleStar(apiId: String) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has starred @{api.name} - @{api.id}"))(ctx) {
       env.dataStore.apiRepo

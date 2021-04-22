@@ -289,6 +289,15 @@ object json {
       } get
     override def writes(o: ApiDocumentationPageId): JsValue = JsString(o.value)
   }
+  val ApiPostIdFormat = new Format[ApiPostId] {
+    override def reads(json: JsValue): JsResult[ApiPostId] =
+      Try {
+        JsSuccess(ApiPostId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: ApiPostId): JsValue = JsString(o.value)
+  }
   val TenantIdFormat = new Format[TenantId] {
     override def reads(json: JsValue): JsResult[TenantId] =
       Try {
@@ -297,6 +306,15 @@ object json {
         case e => JsError(e.getMessage)
       } get
     override def writes(o: TenantId): JsValue = JsString(o.value)
+  }
+  val PostIdFormat = new Format[ApiPostId] {
+    override def reads(json: JsValue): JsResult[ApiPostId] =
+      Try {
+        JsSuccess(ApiPostId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: ApiPostId): JsValue = JsString(o.value)
   }
   val OtoroshiGroupFormat = new Format[OtoroshiGroup] {
     override def reads(json: JsValue): JsResult[OtoroshiGroup] =
@@ -1133,6 +1151,32 @@ object json {
       // "api" -> o.api.asJson,
     )
   }
+  val ApiPostFormat = new Format[ApiPost] {
+    override def reads(json: JsValue): JsResult[ApiPost] =
+      Try {
+        JsSuccess(
+          ApiPost(
+            id = (json \ "_id").as(ApiPostIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
+            title = (json \ "title").as[String],
+            lastModificationAt = (json \ "lastModificationAt").as(DateTimeFormat),
+            content = (json \ "content").asOpt[String].getOrElse("")
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: ApiPost): JsValue = Json.obj(
+      "_id" -> ApiPostIdFormat.writes(o.id),
+      "_humanReadableId" -> o.humanReadableId,
+      "_tenant" -> o.tenant.asJson,
+      "_deleted" -> o.deleted,
+      "title" -> o.title,
+      "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
+      "content" -> o.content
+    )
+  }
   val ApiDocumentationFormat = new Format[ApiDocumentation] {
     override def reads(json: JsValue): JsResult[ApiDocumentation] =
       Try {
@@ -1582,6 +1626,9 @@ object json {
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(SeqTeamIdFormat)
               .getOrElse(Seq.empty),
+            posts = (json \ "posts")
+              .asOpt(SeqPostIdFormat)
+              .getOrElse(Seq.empty),
             stars = (json \ "stars").asOpt[Int].getOrElse(0)
           )
         )
@@ -1617,6 +1664,7 @@ object json {
         o.possibleUsagePlans.map(UsagePlanFormat.writes)),
       "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),
       "authorizedTeams" -> JsArray(o.authorizedTeams.map(TeamIdFormat.writes)),
+      "posts" -> SeqPostIdFormat.writes(o.posts),
       "stars" -> o.stars
     )
   }
@@ -1836,6 +1884,7 @@ object json {
         case "ApiKeyRotationEnded" => ApiKeyRotationEndedFormat.reads(json)
         case "TeamInvitation"      => TeamInvitationFormat.reads(json)
         case "ApiKeyRefresh"       => ApiKeyRefreshFormat.reads(json)
+        case "NewPostPublished"    => NewPostPublishedFormat.reads(json)
         case str                   => JsError(s"Bad notification value: $str")
       }
       override def writes(o: NotificationAction) = o match {
@@ -1869,9 +1918,31 @@ object json {
         case p: ApiKeyRefresh =>
           ApiKeyRefreshFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "ApiKeyRefresh")
+        case p: NewPostPublished =>
+          NewPostPublishedFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "NewPostPublished"
+          )
 
       }
     }
+
+  val NewPostPublishedFormat = new Format[NewPostPublished] {
+    override def reads(json: JsValue): JsResult[NewPostPublished] =
+      Try {
+        JsSuccess(
+          NewPostPublished(
+            apiName = (json \ "apiName").asOpt[String].getOrElse(""),
+            teamId = (json \ "teamId").as(TeamIdFormat).value
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+    override def writes(o: NewPostPublished): JsValue = Json.obj(
+      "apiName" -> o.apiName,
+      "teamId" -> o.teamId
+    )
+  }
 
   val ApiAccessFormat = new Format[ApiAccess] {
     override def reads(json: JsValue): JsResult[ApiAccess] =
@@ -2626,6 +2697,8 @@ object json {
     Format(Reads.seq(VersionFormat), Writes.seq(VersionFormat))
   val SeqTeamIdFormat =
     Format(Reads.seq(TeamIdFormat), Writes.seq(TeamIdFormat))
+  val SeqPostIdFormat =
+    Format(Reads.seq(PostIdFormat), Writes.seq(PostIdFormat))
   val SeqOtoroshiGroupFormat =
     Format(Reads.seq(OtoroshiGroupFormat), Writes.seq(OtoroshiGroupFormat))
   val SeqTenantIdFormat =

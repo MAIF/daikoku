@@ -786,5 +786,16 @@
     "LDAP user found": "Utilisateur LDAP trouvé",
     "User already in team": "User already in team",
     "User already invited": "User already invited",
-    "Connect timeout": "Connect timeout"
+    "Connect timeout": "Connect timeout",
+    "team_api_post.delete.confirm": "Are you sure to delete this post ?",
+    "team_api_post.saved": "Post saved",
+    "team_api_post.failed": "Something went wrong",
+    "team_api_post.new": "New Post",
+    "team_api_post.empty_posts_list": "No posts",
+    "team_api_post.load_old_posts": "Load old posts",
+    "team_api_post.save": "Save post",
+    "team_api_post.publish": "Publish post",
+    "team_api_post.title": "Title of post",
+    "team_api_post.content": "Content",
+    "New Published Post": "New post published on api"
 }

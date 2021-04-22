@@ -15,6 +15,7 @@ import {
   TeamApiPricing,
   TeamApiSwagger,
   TeamApiTesting,
+  TeamApiPost
 } from '.';
 
 import { setError, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
@@ -229,9 +230,8 @@ class TeamApiComponent extends Component {
       <TeamBackOffice
         tab="Apis"
         isLoading={!editedApi}
-        title={`${this.props.currentTeam.name} - ${
-          this.state.api ? this.state.api.name : t('API', this.props.currentLanguage)
-        }`}>
+        title={`${this.props.currentTeam.name} - ${this.state.api ? this.state.api.name : t('API', this.props.currentLanguage)
+          }`}>
         <Can I={manage} a={API} team={this.props.currentTeam} dispatchError>
           {!editedApi && (
             <h3>
@@ -346,6 +346,17 @@ class TeamApiComponent extends Component {
                       </Translation>
                     </Link>
                   </li>
+                  <li className="nav-item">
+                    <Link
+                      className={`nav-link ${tab === 'posts' ? 'active' : ''}`}
+                      to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/posts`}
+                      onClick={() => this.setState({ tab: 'posts' })}>
+                      <i className="fas fa-newspaper mr-1" />
+                      <Translation i18nkey="Latest Posts" language={this.props.currentLanguage}>
+                        Latest Posts
+                      </Translation>
+                    </Link>
+                  </li>
                 </ul>
               </div>
               <div className="row">
@@ -432,6 +443,15 @@ class TeamApiComponent extends Component {
                         otoroshiSettings={this.state.otoroshiSettings}
                         openSubMetadataModal={this.props.openSubMetadataModal}
                         openTestingApiKeyModal={this.props.openTestingApiKeyModal}
+                      />
+                    )}
+                    {editedApi && this.state.tab === "posts" && (
+                      <TeamApiPost
+                        currentLanguage={this.props.currentLanguage}
+                        value={editedApi}
+                        team={this.props.currentTeam}
+                        api={this.state.api}
+                        onChange={(api) => this.setState({ api })}
                       />
                     )}
                   </div>

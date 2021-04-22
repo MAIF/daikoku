@@ -5,7 +5,15 @@ import { toastr } from 'react-redux-toastr';
 import { Link } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { ApiCartidge, ApiConsole, ApiDocumentation, ApiPricing, ApiSwagger, ApiRedoc } from '.';
+import {
+  ApiCartidge,
+  ApiConsole,
+  ApiDocumentation,
+  ApiPricing,
+  ApiSwagger,
+  ApiRedoc,
+  ApiPost
+} from '.';
 import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, Option } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
@@ -237,6 +245,15 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
+                  className={`nav-link ${tab === 'posts' ? 'active' : ''}`}
+                  to={`/${match.params.teamId}/${apiId}/posts`}>
+                  <Translation i18nkey="Latest Posts" language={currentLanguage}>
+                    Latest Posts
+                  </Translation>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link
                   className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/pricing`}>
                   <Translation i18nkey="Plan" language={currentLanguage} isPlural={true}>
@@ -368,6 +385,14 @@ const ApiHomeComponent = ({
                 match={match}
                 subscriptions={subscriptions}
                 updateSubscriptions={updateSubscriptions}
+              />
+            )}
+            {tab === 'posts' && (
+              <ApiPost
+                api={api}
+                ownerTeam={ownerTeam}
+                match={match}
+                currentLanguage={currentLanguage}
               />
             )}
           </div>
