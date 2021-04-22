@@ -1610,6 +1610,17 @@ export function login(username, password, action) {
     },
     body: body
   })
+}
+
+export function toggleStar(apiId) {
+  return fetch(`/api/apis/${apiId}/stars`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }
+  })
 };
 
 export function searchLdapMember(teamId, email) {

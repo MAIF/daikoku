@@ -111,6 +111,8 @@ GET     /api/apis/:apiId/doc                            fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/apis/:apiId/access                         fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiAccess(apiId)
 ### NoDocs ###
+PUT     /api/apis/:apiId/stars                          fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleStar(apiId)
+### NoDocs ###
 POST    /api/apis/_names                                fr.maif.otoroshi.daikoku.ctrls.ApiController.verifyNameUniqueness()
 
 ### NoDocs ###

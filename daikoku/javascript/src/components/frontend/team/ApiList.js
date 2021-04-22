@@ -194,10 +194,24 @@ const ApiListComponent = (props) => {
         } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
       });
 
-  const paginateApis = filteredApis.slice(
-    offset,
-    offset + pageNumber
-  );
+  const paginateApis = (() => {
+    const starredApis = [], unstarredApis = [];
+    filteredApis.forEach(a => {
+      if (props.connectedUser.starredApis.includes(a._id))
+        starredApis.push(a)
+      else
+        unstarredApis.push(a)
+    });
+
+    return [
+      ...starredApis.sort((a, b) => (a.stars === b.stars ? 0 : (a.stars < b.stars ? 1 : -1))),
+      ...unstarredApis.sort((a, b) => (a.stars === b.stars ? 0 : (a.stars < b.stars ? 1 : -1)))
+    ]
+  })()
+    .slice(
+      offset,
+      offset + pageNumber
+    );
 
   return (
     <section className="container">
@@ -320,6 +334,7 @@ const ApiListComponent = (props) => {
                 redirectToApiPage={() => props.redirectToApiPage(api)}
                 redirectToEditPage={() => props.redirectToEditPage(api)}
                 handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
+                toggleStar={() => props.toggleStar(api)}
                 handleCategorySelect={(category) => setSelectedCategory(categories.find((c) => c.value === category))}
                 currentLanguage={props.currentLanguage}
                 view={view}
