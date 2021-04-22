@@ -1486,7 +1486,8 @@ object json {
             metadata = (json \ "metadata")
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty),
-            defaultLanguage = (json \ "defaultLanguage").asOpt[String]
+            defaultLanguage = (json \ "defaultLanguage").asOpt[String],
+            starredApis = (json \ "starredApis").asOpt(SetApiIdFormat).getOrElse(Set.empty)
           )
         )
       } recover {
@@ -1513,7 +1514,8 @@ object json {
       "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
-      "isGuest" -> o.isGuest
+      "isGuest" -> o.isGuest,
+      "starredApis" -> SetApiIdFormat.writes(o.starredApis)
     )
   }
 
@@ -1626,7 +1628,8 @@ object json {
               .getOrElse(Seq.empty),
             posts = (json \ "posts")
               .asOpt(SeqPostIdFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            stars = (json \ "stars").asOpt[Int].getOrElse(0)
           )
         )
       } recover {
@@ -1661,7 +1664,8 @@ object json {
         o.possibleUsagePlans.map(UsagePlanFormat.writes)),
       "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),
       "authorizedTeams" -> JsArray(o.authorizedTeams.map(TeamIdFormat.writes)),
-      "posts" -> SeqPostIdFormat.writes(o.posts)
+      "posts" -> SeqPostIdFormat.writes(o.posts),
+      "stars" -> o.stars
     )
   }
 
@@ -2722,6 +2726,8 @@ object json {
     Format(Reads.seq(TeamFormat), Writes.seq(TeamFormat))
   val SeqApiFormat =
     Format(Reads.seq(ApiFormat), Writes.seq(ApiFormat))
+  val SetApiIdFormat =
+    Format(Reads.set(ApiIdFormat), Writes.set(ApiIdFormat))
   val SetUserWithPermissionFormat =
     Format(Reads.set(UserWithPermissionFormat),
            Writes.set(UserWithPermissionFormat))

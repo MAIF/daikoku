@@ -4,6 +4,7 @@ import * as Services from '../../../services';
 import { ApiList } from './ApiList';
 import { connect } from 'react-redux';
 import { Can, read, team } from '../../utils';
+import { updateUser } from '../../../core';
 import { setError, updateTeamPromise } from '../../../core';
 
 class TeamHomeComponent extends Component {
@@ -41,6 +42,30 @@ class TeamHomeComponent extends Component {
       this.fetchData(this.props.match.params.teamId)
     );
   };
+
+  toggleStar = api => {
+    Services.toggleStar(api._id)
+      .then(res => {
+        if (res.status === 204) {
+          const alreadyStarred = this.props.connectedUser.starredApis.includes(api._id);
+          this.setState({
+            apis: this.state.apis.map(a => {
+              if (a._id === api._id)
+                a.stars += alreadyStarred ? -1 : 1
+              return a
+            })
+          });
+
+          this.props.updateUser({
+            ...this.props.connectedUser,
+            starredApis: alreadyStarred ? this.props.connectedUser.starredApis.filter(id => id !== api._id) : [
+              ...this.props.connectedUser.starredApis,
+              api._id
+            ]
+          })
+        }
+      });
+  }
 
   redirectToApiPage = (api) => {
     if (api.visibility === 'Public' || api.authorized) {
@@ -111,6 +136,7 @@ class TeamHomeComponent extends Component {
           teams={this.state.teams}
           teamVisible={false}
           askForApiAccess={this.askForApiAccess}
+          toggleStar={this.toggleStar}
           redirectToApiPage={this.redirectToApiPage}
           redirectToEditPage={this.redirectToEditPage}
           redirectToTeamPage={this.redirectToTeamPage}
@@ -133,6 +159,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   updateTeam: (team) => updateTeamPromise(team),
   setError: (error) => setError(error),
+  updateUser: (u) => updateUser(u)
 };
 
 export const TeamHome = connect(mapStateToProps, mapDispatchToProps)(TeamHomeComponent);

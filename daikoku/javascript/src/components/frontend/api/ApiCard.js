@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import { Can, manage, api as API } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { Translation, t } from '../../../locales';
+import StarsButton from './StarsButton';
 
 export const ApiCard = (props) => {
   const isAuthorized = props.api.visibility === 'Public' || props.api.authorizations.some((a) => a.authorized);
@@ -65,7 +66,7 @@ export const ApiCard = (props) => {
     return (
       <div className="card mb-4 shadow-sm api-card" style={{ width: '250px' }}>
         <div className={classNames('card-img-top card-link card-skin', { 'card-skin': !api.image })} data-holder-rendered="true">
-          {api.image && <img style={{height: '100%', width: '100%'}} src={api.image} alt={api.name} />}
+          {api.image && <img style={{ height: '100%', width: '100%' }} src={api.image} alt={api.name} />}
           {!api.image && <span>{api.name}</span>}
           {accessButton()}
           <Can I={manage} a={API} team={team}>
@@ -118,6 +119,10 @@ export const ApiCard = (props) => {
               </button>
             </Can>
             {accessButton()}
+            <StarsButton
+              stars={api.stars}
+              starred={props.user.starredApis.includes(api._id)}
+              toggleStar={props.toggleStar} />
           </div>
         </div>
       </div>

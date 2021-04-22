@@ -997,7 +997,8 @@ case class User(
     lastTenant: Option[TenantId],
     metadata: Map[String, String] = Map.empty,
     defaultLanguage: Option[String],
-    isGuest: Boolean = false
+    isGuest: Boolean = false,
+    starredApis: Set[ApiId] = Set.empty[ApiId]
 ) extends CanJson[User] {
   override def asJson: JsValue = json.UserFormat.writes(this)
   def humanReadableId = email.urlPathSegmentSanitized
@@ -1008,7 +1009,8 @@ case class User(
       "name" -> name,
       "email" -> email,
       "picture" -> picture,
-      "isDaikokuAdmin" -> isDaikokuAdmin
+      "isDaikokuAdmin" -> isDaikokuAdmin,
+      "starredApis" -> starredApis.map(_.value)
     )
   }
   def toUiPayload(): JsValue = {
@@ -1021,7 +1023,8 @@ case class User(
       "isDaikokuAdmin" -> isDaikokuAdmin,
       "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
-      "isGuest" -> isGuest
+      "isGuest" -> isGuest,
+      "starredApis" -> starredApis.map(_.value)
     )
   }
 }
@@ -1228,7 +1231,8 @@ case class Api(
     possibleUsagePlans: Seq[UsagePlan],
     defaultUsagePlan: UsagePlanId,
     authorizedTeams: Seq[TeamId] = Seq.empty,
-    posts: Seq[ApiPostId] = Seq.empty
+    posts: Seq[ApiPostId] = Seq.empty,
+    stars: Int = 0
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
@@ -1248,7 +1252,8 @@ case class Api(
     "categories" -> JsArray(categories.map(JsString.apply).toSeq),
     "visibility" -> visibility.name,
     "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
-    "posts" -> SeqPostIdFormat.writes(posts)
+    "posts" -> SeqPostIdFormat.writes(posts),
+    "stars" -> stars
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
@@ -1261,7 +1266,8 @@ case class Api(
       "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
       "tags" -> JsArray(tags.map(JsString.apply).toSeq),
       "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "visibility" -> visibility.name
+      "visibility" -> visibility.name,
+      "stars" -> stars
     )
   }
 }
