@@ -127,6 +127,7 @@ case class Tenant(
     deleted: Boolean = false,
     name: String,
     domain: String,
+    exposedPort: Option[Int] = None,
     contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
@@ -141,6 +142,7 @@ case class Tenant(
     adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     creationSecurity: Option[Boolean] = None,
     subscriptionSecurity: Option[Boolean] = None,
+    apiReferenceHideForGuest: Option[Boolean] = Some(true),
     hideTeamsPage: Option[Boolean] = None,
     defaultMessage: Option[String] = None,
     tenantMode: Option[TenantMode] = None
@@ -187,6 +189,10 @@ case class Tenant(
         .getOrElse(JsBoolean(false))
         .as[JsValue],
       "subscriptionSecurity" -> subscriptionSecurity
+        .map(JsBoolean)
+        .getOrElse(JsBoolean(true))
+        .as[JsValue],
+      "apiReferenceHideForGuest" -> apiReferenceHideForGuest
         .map(JsBoolean)
         .getOrElse(JsBoolean(true))
         .as[JsValue],

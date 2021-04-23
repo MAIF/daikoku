@@ -262,7 +262,7 @@ const ApiHomeComponent = ({
                   </Translation>
                 </Link>
               </li>
-              <li className="nav-item">
+              {!(tenant.apiReferenceHideForGuest && connectedUser.isGuest) && <li className="nav-item">
                 {api.swagger && (
                   <Link
                     className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
@@ -279,7 +279,7 @@ const ApiHomeComponent = ({
                     </Translation>
                   </span>
                 )}
-              </li>
+              </li>}
               {!connectedUser.isGuest && (
                 <li className="nav-item">
                   {api.swagger && api.testing.enabled && (
@@ -374,7 +374,7 @@ const ApiHomeComponent = ({
                 testing={api.testing}
               />
             )}
-            {tab === 'redoc' && (
+            {tab === 'redoc' && !(tenant.apiReferenceHideForGuest && connectedUser.isGuest) && (
               <ApiRedoc api={api} teamId={teamId} ownerTeam={ownerTeam} match={match} />
             )}
             {tab === 'console' && (

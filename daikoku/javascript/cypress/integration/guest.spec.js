@@ -20,11 +20,7 @@ describe('API page', () => {
       .get('.card').should('have.length', 2)
       .get('a.nav-link').contains('Documentation').click()
       .get('.api-description #introduction').should('have.text', 'Introduction')
-      .get('a.nav-link').contains('Api Reference').click()
-      .get('#redoc-container h1').should(($title) => {
-        const text = $title.text();
-        expect(text).to.include('Swagger Petstore (1.0.0)');
-      })
+      .get('a.nav-link').contains('Api Reference').should('not.exist')
       .get('a.nav-link').contains('Try it !').should('not.exist');
   });
 });

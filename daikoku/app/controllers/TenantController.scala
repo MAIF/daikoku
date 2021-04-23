@@ -25,9 +25,7 @@ import scala.util.Try
 
 class TenantController(DaikokuAction: DaikokuAction,
                        DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
-                       apiService: ApiService,
                        env: Env,
-                       otoroshiClient: OtoroshiClient,
                        cc: ControllerComponents)
     extends AbstractController(cc)
     with I18nSupport {
@@ -134,10 +132,11 @@ class TenantController(DaikokuAction: DaikokuAction,
                 FastFuture.successful(())
               }
               fu.map { _ =>
-                env.config.exposedPort match {
-                  case 80    => Redirect(s"http://${tenant.domain}/")
-                  case 443   => Redirect(s"https://${tenant.domain}/")
-                  case value => Redirect(s"http://${tenant.domain}:$value/")
+                tenant.exposedPort match {
+                  case Some(80)    => Redirect(s"http://${tenant.domain}/")
+                  case Some(443)   => Redirect(s"https://${tenant.domain}/")
+                  case Some(port) => Redirect(s"http://${tenant.domain}:$port/")
+                  case None   => Redirect(s"https://${tenant.domain}/")
                 }
               }
             }

@@ -31,10 +31,9 @@ class EntitiesController(DaikokuAction: DaikokuAction,
       Ok(
         Tenant(
           id = TenantId(BSONObjectID.generate().stringify),
-          deleted = false,
-          enabled = true,
           name = "New organization",
           domain = "organization.foo.bar",
+          exposedPort = Some(env.config.exposedPort),
           contact = "contact@foo.bar",
           defaultLanguage = None,
           style = Some(DaikokuStyle()),

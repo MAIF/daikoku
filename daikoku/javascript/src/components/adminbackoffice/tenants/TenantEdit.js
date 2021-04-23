@@ -242,6 +242,7 @@ export class TenantEditComponent extends Component {
     'enabled',
     'name',
     'domain',
+    'exposedPort',
     'defaultLanguage',
     'contact',
     'tenantMode',
@@ -269,6 +270,7 @@ export class TenantEditComponent extends Component {
     'isPrivate',
     'creationSecurity',
     'subscriptionSecurity',
+    'apiReferenceHideForGuest',
     'hideTeamsPage',
     `>>> ${t('Audit trail (Elastic)', this.props.currentLanguage)}`,
     'auditTrailConfig.elasticConfigs',
@@ -378,6 +380,12 @@ export class TenantEditComponent extends Component {
     domain: {
       type: 'string',
       props: { label: t('Domain name', this.props.currentLanguage) },
+    },
+    exposedPort: {
+      type: 'string',
+      props: {
+        label: t('Exposed port', this.props.currentLanguage) 
+      },
     },
     defaultLanguage: {
       type: 'select',
@@ -568,6 +576,19 @@ export class TenantEditComponent extends Component {
         ),
       },
     },
+    apiReferenceHideForGuest: {
+      type: 'bool',
+      props: {
+        currentLanguage: this.props.currentLanguage,
+        label: t('Api reference visibility', this.props.currentLanguage),
+        help: t(
+          'appi.reference.visibility.help',
+          this.props.currentLanguage,
+          false,
+          'if enabled, guest user can\'t see api reference on public api'
+        ),
+      },
+    },
     hideTeamsPage: {
       type: 'bool',
       props: {
@@ -747,9 +768,9 @@ export class TenantEditComponent extends Component {
       props: {
         label: t('Modes', this.props.currentLanguage),
         possibleValues: [
-          { label: t('Default mode', this.props.currentLanguage), value: "default", },
-          { label: t('Maintenance mode', this.props.currentLanguage), value: "maintenance", },
-          { label: t('Construction mode', this.props.currentLanguage), value: "construction", }
+          { label: t('Default mode', this.props.currentLanguage), value: 'default', },
+          { label: t('Maintenance mode', this.props.currentLanguage), value: 'maintenance', },
+          { label: t('Construction mode', this.props.currentLanguage), value: 'construction', }
         ]
       }
     },
@@ -771,14 +792,14 @@ export class TenantEditComponent extends Component {
     }
   }
 
-  static getDerivedStateFromProps(props, state) {
-    if (state.tenant && props.match.params.tenantId !== state.tenant._humanReadableId) {
-      Services.oneTenant(props.match.params.tenantId).then((tenant) => {
-        return { tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } };
-      });
-    }
-    return null;
-  }
+  // static getDerivedStateFromProps(props, state) {
+  //   if (state.tenant && props.match.params.tenantId !== state.tenant._humanReadableId) {
+  //     Services.oneTenant(props.match.params.tenantId).then((tenant) => {
+  //       return { tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } };
+  //     });
+  //   }
+  //   return null;
+  // }
 
   save = () => {
     if (this.state.create) {

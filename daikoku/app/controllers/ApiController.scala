@@ -73,23 +73,27 @@ class ApiController(DaikokuAction: DaikokuAction,
         }
       }
 
-      env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(teamId).flatMap {
-        case Some(team) =>
-          ctx.setCtxValue("team.name", team.name)
-          env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(apiId).flatMap {
-            case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-            case Some(api) if api.visibility == ApiVisibility.Public =>
-              ctx.setCtxValue("api.name", api.name)
-              fetchSwagger(api)
-            case Some(api) if api.team == team.id =>
-              ctx.setCtxValue("api.name", api.name)
-              fetchSwagger(api)
-            case Some(api) if api.visibility != ApiVisibility.Public && api.authorizedTeams.contains(team.id) =>
-              ctx.setCtxValue("api.name", api.name)
-              fetchSwagger(api)
-            case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api")))
-          }
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Team not found")))
+      (ctx.tenant.apiReferenceHideForGuest, ctx.user.isGuest) match {
+        case (None, true) => FastFuture.successful(Forbidden(Json.obj("error" -> "Tenant is set up for hide api reference for Guest user")))
+        case (Some(true), true) => FastFuture.successful(Forbidden(Json.obj("error" -> "Tenant is set up for hide api reference for Guest user")))
+        case (_, _) => env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(teamId).flatMap {
+          case Some(team) =>
+            ctx.setCtxValue("team.name", team.name)
+            env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(apiId).flatMap {
+              case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
+              case Some(api) if api.visibility == ApiVisibility.Public =>
+                ctx.setCtxValue("api.name", api.name)
+                fetchSwagger(api)
+              case Some(api) if api.team == team.id =>
+                ctx.setCtxValue("api.name", api.name)
+                fetchSwagger(api)
+              case Some(api) if api.visibility != ApiVisibility.Public && api.authorizedTeams.contains(team.id) =>
+                ctx.setCtxValue("api.name", api.name)
+                fetchSwagger(api)
+              case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api")))
+            }
+          case None => FastFuture.successful(NotFound(Json.obj("error" -> "Team not found")))
+        }
       }
     }
   }
@@ -251,7 +255,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         if (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
           .intersect(myTeams.map(_.id))
           .nonEmpty) {
-          val betterApis = api
+          val betterApi = api
             .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || p.typeName == "Admin" || myTeams.exists(_.id == api.team)))
             .asJson.as[JsObject] ++ Json.obj(
             "pendingRequests" -> JsArray(
@@ -261,7 +265,7 @@ class ApiController(DaikokuAction: DaikokuAction,
             "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
           )
           ctx.setCtxValue("api.name", api.name)
-          Ok(betterApis)
+          Ok(if(ctx.tenant.apiReferenceHideForGuest.getOrElse(true) && ctx.user.isGuest) betterApi - "swagger" else  betterApi)
         } else {
           Unauthorized(Json.obj("error" -> "You're not authorized on this api"))
         }
