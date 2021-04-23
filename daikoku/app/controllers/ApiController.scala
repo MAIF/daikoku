@@ -1626,7 +1626,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed posts for @{api.id}"))(ctx) {
       ctx.setCtxValue("api.id", apiId)
 
-      val limit: Int  = ctx.request.queryString.get("limit").flatMap(_.headOption) match {
+      val limit: Int = ctx.request.queryString.get("limit").flatMap(_.headOption) match {
         case Some(value) => Integer.valueOf(value)
         case None => 1
       }
@@ -1643,22 +1643,22 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   private def getPostsImpl(tenant: Tenant, apiId: String, limit: Int, offset: Int):
-    Future[Either[JsValue, JsValue]] = {
-      env.dataStore.apiRepo.forTenant(tenant.id).findByIdOrHrId(apiId).flatMap {
-        case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
-        case Some(api) =>
-          env.dataStore.apiPostRepo
-            .forTenant(tenant.id)
-            .findWithPagination(Json.obj(
-              "_id" -> Json.obj(
-                "$in" -> JsArray(api.posts.map(_.asJson))
-              )
-            ), offset, limit)
-            .map(data => Right(Json.obj(
-              "posts" -> JsArray(data._1.map(_.asJson)),
-              "total" -> data._2
-            )))
-      }
+  Future[Either[JsValue, JsValue]] = {
+    env.dataStore.apiRepo.forTenant(tenant.id).findByIdOrHrId(apiId).flatMap {
+      case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
+      case Some(api) =>
+        env.dataStore.apiPostRepo
+          .forTenant(tenant.id)
+          .findWithPagination(Json.obj(
+            "_id" -> Json.obj(
+              "$in" -> JsArray(api.posts.map(_.asJson))
+            )
+          ), offset, limit)
+          .map(data => Right(Json.obj(
+            "posts" -> JsArray(data._1.map(_.asJson)),
+            "total" -> data._2
+          )))
+    }
   }
 
   def createPost(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
@@ -1748,7 +1748,10 @@ class ApiController(DaikokuAction: DaikokuAction,
         .flatMap {
           case true => FastFuture.successful(Ok("Post removed"))
           case false => FastFuture.successful(BadRequest("Something went wrong"))
-          
+        }
+    }
+  }
+
   def toggleStar(apiId: String) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has starred @{api.name} - @{api.id}"))(ctx) {
       env.dataStore.apiRepo
@@ -1756,16 +1759,16 @@ class ApiController(DaikokuAction: DaikokuAction,
         .findByIdNotDeleted(apiId)
         .flatMap {
           case Some(api) =>
-              val starred = ctx.user.starredApis.contains(api.id)
-              val newStars = api.stars + (if (starred) -1 else 1)
-              for {
-                _ <- env.dataStore.userRepo.save(ctx.user.copy(starredApis =
-                  if (starred) ctx.user.starredApis.filter(id => id != api.id) else ctx.user.starredApis ++ Seq(api.id)
-                ))
-                _ <- env.dataStore.apiRepo.forAllTenant().save(api.copy(stars = newStars))
-              } yield {
-                NoContent
-              }
+            val starred = ctx.user.starredApis.contains(api.id)
+            val newStars = api.stars + (if (starred) -1 else 1)
+            for {
+              _ <- env.dataStore.userRepo.save(ctx.user.copy(starredApis =
+                if (starred) ctx.user.starredApis.filter(id => id != api.id) else ctx.user.starredApis ++ Seq(api.id)
+              ))
+              _ <- env.dataStore.apiRepo.forAllTenant().save(api.copy(stars = newStars))
+            } yield {
+              NoContent
+            }
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         }
     }

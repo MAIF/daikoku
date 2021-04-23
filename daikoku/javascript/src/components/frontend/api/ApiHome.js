@@ -83,10 +83,10 @@ const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar
     return (
       <section className="api__header col-12 mb-4 p-3">
         <div className="container">
-          <h1 className="jumbotron-heading" style={{ position: "relative" }}>
+          <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
             {api.name}
             <EditButton />
-            <div style={{ position: "absolute", right: 0, bottom: 0 }}>
+            <div style={{ position: 'absolute', right: 0, bottom: 0 }}>
               <StarsButton
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
@@ -208,10 +208,10 @@ const ApiHomeComponent = ({
               ...connectedUser.starredApis,
               api._id
             ]
-          })
+          });
         }
       });
-  }
+  };
 
   if (!api || !ownerTeam) {
     return null;
@@ -240,15 +240,6 @@ const ApiHomeComponent = ({
                   to={`/${match.params.teamId}/${apiId}`}>
                   <Translation i18nkey="Description" language={currentLanguage}>
                     Description
-                  </Translation>
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  className={`nav-link ${tab === 'posts' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/posts`}>
-                  <Translation i18nkey="Latest Posts" language={currentLanguage}>
-                    Latest Posts
                   </Translation>
                 </Link>
               </li>
@@ -305,6 +296,15 @@ const ApiHomeComponent = ({
                   )}
                 </li>
               )}
+              {!!api.posts.length && <li className="nav-item">
+                <Link
+                  className={`nav-link ${tab === 'posts' ? 'active' : ''}`}
+                  to={`/${match.params.teamId}/${apiId}/posts`}>
+                  <Translation i18nkey="News" language={currentLanguage}>
+                    News
+                  </Translation>
+                </Link>
+              </li>}
             </ul>
           </div>
         </div>

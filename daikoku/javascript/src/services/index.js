@@ -1576,7 +1576,7 @@ const POST_HEADERS = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
   }
-}
+};
 
 export function enableMaintenanceMode() {
   return fetch('/api/state/lock', POST_HEADERS)
@@ -1589,7 +1589,7 @@ export function disableMaintenanceMode() {
 }
 
 export function checkConnection(config, user) {
-  return fetch(`/api/auth/ldap/_check`, {
+  return fetch('/api/auth/ldap/_check', {
     ...POST_HEADERS,
     body: user ? JSON.stringify({
       config,
@@ -1599,9 +1599,9 @@ export function checkConnection(config, user) {
 }
 
 export function login(username, password, action) {
-  const body = new URLSearchParams()
-  body.append("username", username);
-  body.append("password", password);
+  const body = new URLSearchParams();
+  body.append('username', username);
+  body.append('password', password);
 
   return fetch(action, {
     method: 'POST',
@@ -1609,7 +1609,7 @@ export function login(username, password, action) {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: body
-  })
+  });
 }
 
 export function toggleStar(apiId) {
@@ -1620,8 +1620,8 @@ export function toggleStar(apiId) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     }
-  })
-};
+  });
+}
 
 export function searchLdapMember(teamId, email) {
   return fetch(`/api/teams/${teamId}/ldap/users/${email}`, {
@@ -1631,7 +1631,7 @@ export function searchLdapMember(teamId, email) {
       'Content-Type': 'application/json',
     }
   });
-};
+}
 
 export function findUserByEmail(teamId, email) {
   return fetch(`/api/teams/${teamId}/users/_search`, {
@@ -1642,7 +1642,7 @@ export function findUserByEmail(teamId, email) {
       }
     })
   });
-};
+}
 
 export function createUserFromLDAP(teamId, email) {
   return fetch(`/api/teams/${teamId}/ldap/users`, {

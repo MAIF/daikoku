@@ -797,5 +797,6 @@
   "team_api_post.publish": "Publier la publication",
   "team_api_post.title": "Titre de la publication",
   "team_api_post.content": "Contenu",
-  "New Published Post": "Une nouvelle publication a été publiée"
+  "New Published Post": "Une nouvelle publication a été publiée",
+  "News": "Informations"
 }

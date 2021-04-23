@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { t } from "../../../locales";
+import React, { useState, useEffect } from 'react';
+import { t } from '../../../locales';
 import * as Services from '../../../services/index';
 import { converter } from '../../../services/showdown';
-import { formatDate } from "../../utils";
 
 export function ApiPost({ api, currentLanguage }) {
     const [posts, setPosts] = useState([]);
@@ -11,7 +10,7 @@ export function ApiPost({ api, currentLanguage }) {
         limit: 1,
         offset: 0,
         total: 0
-    })
+    });
 
     useEffect(() => {
         Services.getAPIPosts(api._id, pagination.offset, pagination.limit)
@@ -21,19 +20,19 @@ export function ApiPost({ api, currentLanguage }) {
                     ...data.posts
                 ].reduce((acc, post) => {
                     if (!acc.find(p => p._id === post._id))
-                        acc.push(post)
+                        acc.push(post);
                     return acc;
-                }, []))
+                }, []));
                 setPagination({
                     ...pagination,
                     total: data.total
-                })
+                });
             });
     }, [pagination.offset, pagination.limit]);
 
     function formatDate(lastModificationAt) {
         const date = new Date(lastModificationAt);
-        return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short' }).format(date)
+        return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short' }).format(date);
     }
 
     return (
@@ -54,7 +53,7 @@ export function ApiPost({ api, currentLanguage }) {
                 setPagination({
                     limit: 1,
                     offset: pagination.offset + 1
-                })
+                });
             }}>{t('Load older posts', currentLanguage)}</button>}
         </div >
     );
