@@ -23,14 +23,14 @@ export class OtoDatePicker extends Component {
     const { from, to } = this.props;
     const dateFormat = 'YYYY-MM-DD HH:mm:ss';
     return (
-        <RangePicker
-          defaultValue={[from, to]}
-          showTime={{ format: 'HH:mm:ss' }}
-          format={dateFormat}
-          placeholder={['Start Time', 'End Time']}
-          onChange={this.onChange}
-          onOk={(value) => value}
-        />
+      <RangePicker
+        defaultValue={[from, to]}
+        showTime={{ format: 'HH:mm:ss' }}
+        format={dateFormat}
+        placeholder={['Start Time', 'End Time']}
+        onChange={this.onChange}
+        onOk={(value) => value}
+      />
     );
   }
 }

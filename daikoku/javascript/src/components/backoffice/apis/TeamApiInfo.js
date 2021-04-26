@@ -105,16 +105,16 @@ export class TeamApiInfo extends Component {
         ),
       },
     },
-    'image': {
+    image: {
       type: 'string',
       props: { label: t('Image', this.props.currentLanguage) },
     },
-    'imageFromAssets': {
+    imageFromAssets: {
       type: StyleLogoAssetButton,
       props: {
         tenant: this.props.tenant,
         team: this.props.team,
-        currentLanguage: this.props.currentLanguage
+        currentLanguage: this.props.currentLanguage,
       },
     },
     currentVersion: {
@@ -173,7 +173,7 @@ export class TeamApiInfo extends Component {
         selectClassName: 'full-width-select',
         transformer: (t) => ({ label: t.name, value: t._id }),
       },
-    }
+    },
   };
 
   formFlow = [

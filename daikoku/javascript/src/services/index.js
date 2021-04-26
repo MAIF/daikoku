@@ -1565,7 +1565,7 @@ export function lastDateChat(chatId, date) {
 export function migrateMongoToPostgres() {
   return fetch('/api/state/migrate', {
     method: 'POST',
-    credentials: 'include'
+    credentials: 'include',
   });
 }
 
@@ -1575,26 +1575,26 @@ const POST_HEADERS = {
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',
-  }
+  },
 };
 
 export function enableMaintenanceMode() {
-  return fetch('/api/state/lock', POST_HEADERS)
-    .then((r) => r.json());
+  return fetch('/api/state/lock', POST_HEADERS).then((r) => r.json());
 }
 
 export function disableMaintenanceMode() {
-  return fetch('/api/state/unlock', POST_HEADERS)
-    .then((r) => r.json());
+  return fetch('/api/state/unlock', POST_HEADERS).then((r) => r.json());
 }
 
 export function checkConnection(config, user) {
   return fetch('/api/auth/ldap/_check', {
     ...POST_HEADERS,
-    body: user ? JSON.stringify({
-      config,
-      user
-    }) : JSON.stringify(config),
+    body: user
+      ? JSON.stringify({
+          config,
+          user,
+        })
+      : JSON.stringify(config),
   }).then((r) => r.json());
 }
 
@@ -1606,9 +1606,9 @@ export function login(username, password, action) {
   return fetch(action, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: body
+    body: body,
   });
 }
 
@@ -1619,7 +1619,7 @@ export function toggleStar(apiId) {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-    }
+    },
   });
 }
 
@@ -1629,7 +1629,7 @@ export function searchLdapMember(teamId, email) {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-    }
+    },
   });
 }
 
@@ -1638,9 +1638,9 @@ export function findUserByEmail(teamId, email) {
     ...POST_HEADERS,
     body: JSON.stringify({
       attributes: {
-        email
-      }
-    })
+        email,
+      },
+    }),
   });
 }
 
@@ -1649,7 +1649,7 @@ export function createUserFromLDAP(teamId, email) {
     ...POST_HEADERS,
     body: JSON.stringify({
       email,
-      teamId
+      teamId,
     }),
   }).then((r) => r.json());
 }
@@ -1661,21 +1661,20 @@ export function getAPIPosts(apiId, offset = 0, limit = 1) {
     headers: {
       Accept: 'application/json',
     },
-  })
-    .then((r) => r.json());
+  }).then((r) => r.json());
 }
 
 export function publishNewPost(apiId, teamId, post) {
   return fetch(`/api/teams/${teamId}/apis/${apiId}/posts`, {
     ...POST_HEADERS,
-    body: JSON.stringify(post)
+    body: JSON.stringify(post),
   });
 }
 
 export function removePost(apiId, teamId, postId) {
   return fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
     ...POST_HEADERS,
-    method: 'DELETE'
+    method: 'DELETE',
   });
 }
 
@@ -1683,6 +1682,6 @@ export function savePost(apiId, teamId, postId, content) {
   return fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
     ...POST_HEADERS,
     method: 'PUT',
-    body: JSON.stringify(content)
+    body: JSON.stringify(content),
   });
 }

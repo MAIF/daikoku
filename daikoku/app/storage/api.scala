@@ -45,130 +45,130 @@ trait Repo[Of, Id <: ValueType] {
 
   def count(query: JsObject)(implicit ec: ExecutionContext): Future[Long]
 
-  def streamAllRaw(query: JsObject = Json.obj())(implicit ec: ExecutionContext): Source[JsValue, NotUsed]
+  def streamAllRaw(query: JsObject = Json.obj())(
+      implicit ec: ExecutionContext): Source[JsValue, NotUsed]
 
   def find(query: JsObject, sort: Option[JsObject] = None, maxDocs: Int = -1)(
-    implicit ec: ExecutionContext): Future[Seq[Of]]
+      implicit ec: ExecutionContext): Future[Seq[Of]]
 
   def findWithProjection(query: JsObject, projection: JsObject)(
-    implicit ec: ExecutionContext): Future[Seq[JsObject]]
+      implicit ec: ExecutionContext): Future[Seq[JsObject]]
 
-  def findOne(query: JsObject)(implicit ec: ExecutionContext): Future[Option[Of]]
+  def findOne(query: JsObject)(
+      implicit ec: ExecutionContext): Future[Option[Of]]
 
   def findOneWithProjection(query: JsObject, projection: JsObject)(
-    implicit ec: ExecutionContext
+      implicit ec: ExecutionContext
   ): Future[Option[JsObject]]
 
   def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
-    implicit ec: ExecutionContext
+      implicit ec: ExecutionContext
   ): Future[(Seq[Of], Long)]
 
-  def delete(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean]
+  def delete(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean]
 
-  def save(value: Of)(
-    implicit ec: ExecutionContext): Future[Boolean] = {
+  def save(value: Of)(implicit ec: ExecutionContext): Future[Boolean] = {
     val payload = format.writes(value).as[JsObject]
     save(Json.obj("_id" -> extractId(value)), payload)
   }
 
   def save(query: JsObject, value: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean]
+      implicit ec: ExecutionContext): Future[Boolean]
 
   def insertMany(values: Seq[Of])(implicit ec: ExecutionContext): Future[Long]
 
   def updateMany(query: JsObject, Value: JsObject)(
-    implicit ec: ExecutionContext): Future[Long]
+      implicit ec: ExecutionContext): Future[Long]
 
   def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-    implicit ec: ExecutionContext): Future[Long]
+      implicit ec: ExecutionContext): Future[Long]
 
   def exists(query: JsObject)(implicit ec: ExecutionContext): Future[Boolean]
 
   def findMaxByQuery(query: JsObject = Json.obj(), field: String)(
-    implicit ec: ExecutionContext): Future[Option[Long]]
+      implicit ec: ExecutionContext): Future[Option[Long]]
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   def findByIdOrHrId(id: String, hrid: String)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
+      implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("$or" -> Json.arr(Json.obj("_id" -> id),
-        Json.obj("_humanReadableId" -> hrid))))
+                                 Json.obj("_humanReadableId" -> hrid))))
 
   def findByIdOrHrId(id: Id, hrid: String)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
+      implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("$or" -> Json.arr(Json.obj("_id" -> id.value),
-        Json.obj("_humanReadableId" -> hrid))))
+                                 Json.obj("_humanReadableId" -> hrid))))
 
   def findByIdOrHrId(idOrHrid: String)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
+      implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("$or" -> Json.arr(Json.obj("_id" -> idOrHrid),
-        Json.obj("_humanReadableId" -> idOrHrid))))
+                                 Json.obj("_humanReadableId" -> idOrHrid))))
 
   def findByIdOrHrIdNotDeleted(id: String, hrid: String)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
+      implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("_deleted" -> false,
-        "$or" -> Json.arr(Json.obj("_id" -> id),
-          Json.obj("_humanReadableId" -> hrid))))
+               "$or" -> Json.arr(Json.obj("_id" -> id),
+                                 Json.obj("_humanReadableId" -> hrid))))
 
   def findByIdOrHrIdNotDeleted(id: Id, hrid: String)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
+      implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("_deleted" -> false,
-        "$or" -> Json.arr(Json.obj("_id" -> id.value),
-          Json.obj("_humanReadableId" -> hrid))))
+               "$or" -> Json.arr(Json.obj("_id" -> id.value),
+                                 Json.obj("_humanReadableId" -> hrid))))
 
   def findByIdOrHrIdNotDeleted(idOrHrid: String)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
+      implicit ec: ExecutionContext): Future[Option[Of]] =
     findOneNotDeleted(
       Json.obj("_deleted" -> false,
-        "$or" -> Json.arr(Json.obj("_id" -> idOrHrid),
-          Json.obj("_humanReadableId" -> idOrHrid))))
+               "$or" -> Json.arr(Json.obj("_id" -> idOrHrid),
+                                 Json.obj("_humanReadableId" -> idOrHrid))))
 
   def deleteByIdOrHrId(id: String, hrid: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
+      implicit ec: ExecutionContext): Future[Boolean] =
     delete(
       Json.obj("$or" -> Json.arr(Json.obj("_id" -> id),
-        Json.obj("_humanReadableId" -> hrid))))
+                                 Json.obj("_humanReadableId" -> hrid))))
 
   def deleteByIdOrHrId(id: Id, hrid: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
+      implicit ec: ExecutionContext): Future[Boolean] =
     delete(
       Json.obj("$or" -> Json.arr(Json.obj("_id" -> id.value),
-        Json.obj("_humanReadableId" -> hrid))))
+                                 Json.obj("_humanReadableId" -> hrid))))
 
   def deleteLogicallyByIdOrHrId(id: String, hrid: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
+      implicit ec: ExecutionContext): Future[Boolean] =
     deleteLogically(
       Json.obj("$or" -> Json.arr(Json.obj("_id" -> id),
-        Json.obj("_humanReadableId" -> hrid))))
+                                 Json.obj("_humanReadableId" -> hrid))))
 
   def deleteLogicallyByIdOrHrId(id: Id, hrid: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
+      implicit ec: ExecutionContext): Future[Boolean] =
     deleteLogically(
       Json.obj("$or" -> Json.arr(Json.obj("_id" -> id.value),
-        Json.obj("_humanReadableId" -> hrid))))
+                                 Json.obj("_humanReadableId" -> hrid))))
 
   def existsByIdOrHrId(id: String, hrid: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
+      implicit ec: ExecutionContext): Future[Boolean] =
     findByIdOrHrId(id, hrid).map(_.isDefined)
 
   def existsByIdOrHrId(id: Id, hrid: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
+      implicit ec: ExecutionContext): Future[Boolean] =
     findByIdOrHrId(id, hrid).map(_.isDefined)
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   def deleteByIdLogically(id: String)(
-    implicit ec: ExecutionContext): Future[Boolean]
+      implicit ec: ExecutionContext): Future[Boolean]
 
   def deleteByIdLogically(id: Id)(
-    implicit ec: ExecutionContext): Future[Boolean]
+      implicit ec: ExecutionContext): Future[Boolean]
 
   def deleteLogically(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Boolean]
+      implicit ec: ExecutionContext): Future[Boolean]
 
   def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean]
 
@@ -176,19 +176,19 @@ trait Repo[Of, Id <: ValueType] {
     find(Json.obj("_deleted" -> false))
 
   def findNotDeleted(query: JsObject, maxDocs: Int = -1)(
-    implicit ec: ExecutionContext): Future[Seq[Of]] =
+      implicit ec: ExecutionContext): Future[Seq[Of]] =
     find(query ++ Json.obj("_deleted" -> false), maxDocs = maxDocs)
 
   def findOneNotDeleted(query: JsObject)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
+      implicit ec: ExecutionContext): Future[Option[Of]] =
     findOne(query ++ Json.obj("_deleted" -> false))
 
   def findByIdNotDeleted(id: String)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
+      implicit ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_deleted" -> false, "_id" -> id))
 
   def findByIdNotDeleted(id: Id)(
-    implicit ec: ExecutionContext): Future[Option[Of]] =
+      implicit ec: ExecutionContext): Future[Option[Of]] =
     findOne(Json.obj("_deleted" -> false, "_id" -> id.value))
 
   def findById(id: String)(implicit ec: ExecutionContext): Future[Option[Of]] =
@@ -200,19 +200,16 @@ trait Repo[Of, Id <: ValueType] {
   def findAll()(implicit ec: ExecutionContext): Future[Seq[Of]] =
     find(Json.obj())
 
-  def deleteById(id: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
+  def deleteById(id: String)(implicit ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id))
 
-  def deleteById(id: Id)(
-    implicit ec: ExecutionContext): Future[Boolean] =
+  def deleteById(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj("_id" -> id.value))
 
   def deleteAll()(implicit ec: ExecutionContext): Future[Boolean] =
     delete(Json.obj())
 
-  def exists(id: String)(
-    implicit ec: ExecutionContext): Future[Boolean] =
+  def exists(id: String)(implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id))
 
   def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
@@ -232,8 +229,8 @@ trait UserRepo extends Repo[User, UserId]
 
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
   def myTeams(tenant: Tenant, user: User)(
-    implicit env: Env,
-    ec: ExecutionContext): Future[Seq[Team]] = {
+      implicit env: Env,
+      ec: ExecutionContext): Future[Seq[Team]] = {
     if (user.isDaikokuAdmin) {
       env.dataStore.teamRepo
         .forTenant(tenant.id)
@@ -251,27 +248,28 @@ trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
 trait NotificationRepo extends TenantCapableRepo[Notification, NotificationId]
 
 trait ApiDocumentationPageRepo
-  extends TenantCapableRepo[ApiDocumentationPage, ApiDocumentationPageId]
+    extends TenantCapableRepo[ApiDocumentationPage, ApiDocumentationPageId]
 
 trait ApiPostRepo extends TenantCapableRepo[ApiPost, ApiPostId]
 
 trait ApiSubscriptionRepo
-  extends TenantCapableRepo[ApiSubscription, ApiSubscriptionId]
+    extends TenantCapableRepo[ApiSubscription, ApiSubscriptionId]
 
 trait ApiRepo extends TenantCapableRepo[Api, ApiId]
 
 trait AuditTrailRepo extends TenantCapableRepo[JsObject, DatastoreId]
 
-trait ConsumptionRepo extends TenantCapableRepo[ApiKeyConsumption, DatastoreId] {
+trait ConsumptionRepo
+    extends TenantCapableRepo[ApiKeyConsumption, DatastoreId] {
   def getLastConsumptionsforAllTenant(filter: JsObject)(
-    implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]]
+      implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]]
 
   def getLastConsumptionsForTenant(tenantId: TenantId, filter: JsObject)(
-    implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]]
+      implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]]
 
   def getLastConsumption(tenant: Tenant, query: JsObject)(
-    implicit env: Env,
-    ec: ExecutionContext): Future[Option[ApiKeyConsumption]] = {
+      implicit env: Env,
+      ec: ExecutionContext): Future[Option[ApiKeyConsumption]] = {
     getLastConsumptionsForTenant(tenant.id, query).map(_.headOption)
   }
 }

@@ -7,9 +7,12 @@ import { Translation, t } from '../../../locales';
 import StarsButton from './StarsButton';
 
 export const ApiCard = (props) => {
-  const isAuthorized = props.api.visibility === 'Public' || props.api.authorizations.some((a) => a.authorized);
-  const allTeamsAreAuthorized = props.api.visibility === 'Public' || props.api.authorizations.every((a) => a.authorized);
-  const isPending = props.api.authorizations && props.api.authorizations.every((a) => a.pending || a.authorized);
+  const isAuthorized =
+    props.api.visibility === 'Public' || props.api.authorizations.some((a) => a.authorized);
+  const allTeamsAreAuthorized =
+    props.api.visibility === 'Public' || props.api.authorizations.every((a) => a.authorized);
+  const isPending =
+    props.api.authorizations && props.api.authorizations.every((a) => a.pending || a.authorized);
   const api = props.api;
   const team = props.team || { name: '--', avatar: '#', _id: api.team };
 
@@ -20,9 +23,11 @@ export const ApiCard = (props) => {
   };
 
   const accessButton = () => {
-    if (!allTeamsAreAuthorized &&
+    if (
+      !allTeamsAreAuthorized &&
       !isPending &&
-      !['Private', 'AdminOnly'].includes(api.visibility)) {
+      !['Private', 'AdminOnly'].includes(api.visibility)
+    ) {
       return (
         <ActionWithTeamSelector
           title="Api access"
@@ -34,9 +39,7 @@ export const ApiCard = (props) => {
             [api.name]
           )}
           buttonLabel="Send"
-          pendingTeams={api.authorizations
-            .filter((auth) => auth.pending)
-            .map((auth) => auth.team)}
+          pendingTeams={api.authorizations.filter((auth) => auth.pending).map((auth) => auth.team)}
           authorizedTeams={api.authorizations
             .filter((auth) => auth.authorized)
             .map((auth) => auth.team)}
@@ -55,7 +58,7 @@ export const ApiCard = (props) => {
         <button className="btn btn-sm btn-access-negative mr-1">
           <Translation i18nkey="Pending request" language={props.currentLanguage}>
             Pending request
-        </Translation>
+          </Translation>
         </button>
       );
     }
@@ -65,8 +68,12 @@ export const ApiCard = (props) => {
   if (props.view === 'GRID') {
     return (
       <div className="card mb-4 shadow-sm api-card" style={{ width: '250px' }}>
-        <div className={classNames('card-img-top card-link card-skin', { 'card-skin': !api.image })} data-holder-rendered="true">
-          {api.image && <img style={{ height: '100%', width: '100%' }} src={api.image} alt={api.name} />}
+        <div
+          className={classNames('card-img-top card-link card-skin', { 'card-skin': !api.image })}
+          data-holder-rendered="true">
+          {api.image && (
+            <img style={{ height: '100%', width: '100%' }} src={api.image} alt={api.name} />
+          )}
           {!api.image && <span>{api.name}</span>}
           {accessButton()}
           <Can I={manage} a={API} team={team}>
@@ -84,9 +91,7 @@ export const ApiCard = (props) => {
             onClick={() => redirectToApiPage(isAuthorized)}>
             {api.name}
           </h4>
-          <span className="flex-grow-1 api-description my-2">
-            {api.smallDescription}
-          </span>
+          <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
           {props.teamVisible && (
             <small
               className="cursor-pointer underline-on-hover a-fake d-flex align-items-center justify-content-end"
@@ -122,7 +127,8 @@ export const ApiCard = (props) => {
             <StarsButton
               stars={api.stars}
               starred={props.user.starredApis.includes(api._id)}
-              toggleStar={props.toggleStar} />
+              toggleStar={props.toggleStar}
+            />
           </div>
         </div>
       </div>

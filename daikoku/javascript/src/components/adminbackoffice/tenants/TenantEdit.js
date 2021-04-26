@@ -384,7 +384,7 @@ export class TenantEditComponent extends Component {
     exposedPort: {
       type: 'string',
       props: {
-        label: t('Exposed port', this.props.currentLanguage) 
+        label: t('Exposed port', this.props.currentLanguage),
       },
     },
     defaultLanguage: {
@@ -585,7 +585,7 @@ export class TenantEditComponent extends Component {
           'appi.reference.visibility.help',
           this.props.currentLanguage,
           false,
-          'if enabled, guest user can\'t see api reference on public api'
+          "if enabled, guest user can't see api reference on public api"
         ),
       },
     },
@@ -763,16 +763,16 @@ export class TenantEditComponent extends Component {
         label: t('Use V4 auth.', this.props.currentLanguage),
       },
     },
-    'tenantMode': {
+    tenantMode: {
       type: 'select',
       props: {
         label: t('Modes', this.props.currentLanguage),
         possibleValues: [
-          { label: t('Default mode', this.props.currentLanguage), value: 'default', },
-          { label: t('Maintenance mode', this.props.currentLanguage), value: 'maintenance', },
-          { label: t('Construction mode', this.props.currentLanguage), value: 'construction', }
-        ]
-      }
+          { label: t('Default mode', this.props.currentLanguage), value: 'default' },
+          { label: t('Maintenance mode', this.props.currentLanguage), value: 'maintenance' },
+          { label: t('Construction mode', this.props.currentLanguage), value: 'construction' },
+        ],
+      },
     },
   };
 

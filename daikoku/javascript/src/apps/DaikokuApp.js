@@ -349,14 +349,16 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
                 <InitializeFromOtoroshi match={p.match} history={p.history} location={p.location} />
               )}
             />
-            {!tenant.hideTeamsPage && <FrontOfficeRoute
-              title={`${tenant.name} - ${t('Teams', currentLanguage)}`}
-              exact
-              path="/teams"
-              render={(p) => (
-                <TeamChooser match={p.match} history={p.history} location={p.location} />
-              )}
-            />}
+            {!tenant.hideTeamsPage && (
+              <FrontOfficeRoute
+                title={`${tenant.name} - ${t('Teams', currentLanguage)}`}
+                exact
+                path="/teams"
+                render={(p) => (
+                  <TeamChooser match={p.match} history={p.history} location={p.location} />
+                )}
+              />
+            )}
 
             {/* NEW ROUTING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */}
             {/* NEW ROUTING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */}

@@ -57,84 +57,106 @@ class StateController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def migrateStateToPostgres(): Action[AnyContent] = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has migrated state to postgres"))(ctx) {
-      // 1 - Check if postgres instance is present
-      // 2 - Switch all tenants in TenantMode.Maintenance
-      // 3 - Delete all user sessions except current one
-      // 4 - Create schema and tables
-      // 5 - Migrate data
+  def migrateStateToPostgres(): Action[AnyContent] = DaikokuAction.async {
+    ctx =>
+      DaikokuAdminOnly(
+        AuditTrailEvent(s"@{user.name} has migrated state to postgres"))(ctx) {
+        // 1 - Check if postgres instance is present
+        // 2 - Switch all tenants in TenantMode.Maintenance
+        // 3 - Delete all user sessions except current one
+        // 4 - Create schema and tables
+        // 5 - Migrate data
 
-      env.dataStore match {
-        case _: PostgresDataStore => FastFuture.successful(Ok(Json.obj(
-          "done" -> true,
-          "message" -> "You're already on postgres"
-        )))
-        case _  =>
-          val postgresStore = new PostgresDataStore(env.rawConfiguration, env)
-          (for {
-            _ <- postgresStore.checkIfTenantsTableExists()
-            _ <- env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
-              tenants.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode.Maintenance.some)))
-            }
-            _ <- removeAllUserSessions(ctx)
-            _ <- postgresStore.checkDatabase()
-            source = env.dataStore.exportAsStream(pretty = false)
-            _ <- postgresStore.importFromStream(source)
-          } yield {
-            env.updateDataStore(postgresStore)
-            Ok(Json.obj(
-              "done" -> true,
-              "message" -> "You're now running on postgres - Don't forget to switch your storage environment variable to postgres on the next reboot"
-            ))
-          })
-            .recoverWith {
-              case e: Throwable => {
-                postgresStore.stop()
-                FastFuture.successful(BadRequest(Json.obj("error" -> e.getMessage)))
+        env.dataStore match {
+          case _: PostgresDataStore =>
+            FastFuture.successful(
+              Ok(
+                Json.obj(
+                  "done" -> true,
+                  "message" -> "You're already on postgres"
+                )))
+          case _ =>
+            val postgresStore = new PostgresDataStore(env.rawConfiguration, env)
+            (for {
+              _ <- postgresStore.checkIfTenantsTableExists()
+              _ <- env.dataStore.tenantRepo.findAllNotDeleted().map { tenants =>
+                tenants.map(tenant =>
+                  env.dataStore.tenantRepo.save(
+                    tenant.copy(tenantMode = TenantMode.Maintenance.some)))
               }
-            }
+              _ <- removeAllUserSessions(ctx)
+              _ <- postgresStore.checkDatabase()
+              source = env.dataStore.exportAsStream(pretty = false)
+              _ <- postgresStore.importFromStream(source)
+            } yield {
+              env.updateDataStore(postgresStore)
+              Ok(
+                Json.obj(
+                  "done" -> true,
+                  "message" -> "You're now running on postgres - Don't forget to switch your storage environment variable to postgres on the next reboot"
+                ))
+            }).recoverWith {
+                case e: Throwable => {
+                  postgresStore.stop()
+                  FastFuture.successful(
+                    BadRequest(Json.obj("error" -> e.getMessage)))
+                }
+              }
+        }
       }
-    }
   }
 
   private def removeAllUserSessions(ctx: DaikokuActionContext[AnyContent]) = {
     env.dataStore.userSessionRepo
-      .findNotDeleted(Json.obj("_id" -> Json.obj("$ne" -> ctx.session.sessionId.asJson)))
-      .flatMap(seq => env.dataStore.userSessionRepo
-        .delete(Json.obj("_id" -> Json.obj("$in" -> JsArray(seq.map(_.sessionId.asJson))))))
+      .findNotDeleted(
+        Json.obj("_id" -> Json.obj("$ne" -> ctx.session.sessionId.asJson)))
+      .flatMap(seq =>
+        env.dataStore.userSessionRepo
+          .delete(Json.obj(
+            "_id" -> Json.obj("$in" -> JsArray(seq.map(_.sessionId.asJson))))))
   }
 
   def enableMaintenanceMode(): Action[AnyContent] = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has enabled maintenance mode on all tenants"))(ctx) {
+    DaikokuAdminOnly(
+      AuditTrailEvent(
+        s"@{user.name} has enabled maintenance mode on all tenants"))(ctx) {
       removeAllUserSessions(ctx)
         .flatMap { _ =>
-          env.dataStore
-            .tenantRepo
+          env.dataStore.tenantRepo
             .findAllNotDeleted()
-            .map(_.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = TenantMode.Maintenance.some))))
+            .map(_.map(tenant =>
+              env.dataStore.tenantRepo.save(
+                tenant.copy(tenantMode = TenantMode.Maintenance.some))))
         }
-        .map(_ => Ok(ctx.tenant.copy(tenantMode = TenantMode.Maintenance.some).toUiPayload(env)))
+        .map(_ =>
+          Ok(ctx.tenant
+            .copy(tenantMode = TenantMode.Maintenance.some)
+            .toUiPayload(env)))
     }
   }
 
-  def disableMaintenanceMode(): Action[AnyContent] = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has disabled maintenance mode on all tenants"))(ctx) {
-      env.dataStore
-        .tenantRepo
-        .findAllNotDeleted()
-        .map(_.map(tenant => env.dataStore.tenantRepo.save(tenant.copy(tenantMode = None))))
-        .map(_ => Ok(ctx.tenant.copy(tenantMode = None).toUiPayload(env)))
-    }
+  def disableMaintenanceMode(): Action[AnyContent] = DaikokuAction.async {
+    ctx =>
+      DaikokuAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has disabled maintenance mode on all tenants"))(ctx) {
+        env.dataStore.tenantRepo
+          .findAllNotDeleted()
+          .map(_.map(tenant =>
+            env.dataStore.tenantRepo.save(tenant.copy(tenantMode = None))))
+          .map(_ => Ok(ctx.tenant.copy(tenantMode = None).toUiPayload(env)))
+      }
   }
 
   def isMaintenanceMode: Action[AnyContent] = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has accessed to maintenance mode"))(ctx) {
-      env.dataStore
-        .tenantRepo
+    DaikokuAdminOnly(
+      AuditTrailEvent(s"@{user.name} has accessed to maintenance mode"))(ctx) {
+      env.dataStore.tenantRepo
         .findAllNotDeleted()
-        .map {  tenants =>
-          tenants.forall(tenant => tenant.tenantMode.isDefined && tenant.tenantMode.get.equals(TenantMode.Maintenance))
+        .map { tenants =>
+          tenants.forall(tenant =>
+            tenant.tenantMode.isDefined && tenant.tenantMode.get.equals(
+              TenantMode.Maintenance))
         }
         .map(locked => Ok(Json.obj("isMaintenanceMode" -> locked)))
     }
@@ -331,8 +353,9 @@ class ApiKeyConsumptionAdminApiController(daa: DaikokuApiAction,
   override def entityClass = classOf[ApiKeyConsumption]
   override def entityName: String = "api-key-consumption"
   override def pathRoot: String = s"/admin-api/consumptions"
-  override def entityStore(tenant: Tenant,
-                           ds: DataStore): Repo[ApiKeyConsumption, DatastoreId] =
+  override def entityStore(
+      tenant: Tenant,
+      ds: DataStore): Repo[ApiKeyConsumption, DatastoreId] =
     ds.consumptionRepo.forTenant(tenant)
   override def toJson(entity: ApiKeyConsumption): JsValue = entity.asJson
   override def fromJson(entity: JsValue): Either[String, ApiKeyConsumption] =

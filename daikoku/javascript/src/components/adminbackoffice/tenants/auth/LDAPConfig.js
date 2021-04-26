@@ -39,7 +39,7 @@ export class LDAPConfig extends Component {
     'nameField',
     'emailField',
     'testing',
-    'testingWithUser'
+    'testingWithUser',
   ];
 
   formSchema = {
@@ -53,7 +53,7 @@ export class LDAPConfig extends Component {
     serverUrls: {
       type: 'array',
       props: {
-        label: t('LDAP Server URLs', this.props.currentLanguage, true)
+        label: t('LDAP Server URLs', this.props.currentLanguage, true),
       },
     },
     connectTimeout: {
@@ -121,16 +121,16 @@ export class LDAPConfig extends Component {
       type: CheckingAdminConnection,
       props: {
         label: t('Testing connection', this.props.currentLanguage),
-        checkConnection: () => this.checkConnection()
+        checkConnection: () => this.checkConnection(),
       },
     },
     testingWithUser: {
       type: CheckingUserConnection,
       props: {
         label: t('Testing user', this.props.currentLanguage),
-        checkConnection: (username, password) => this.checkConnection({ username, password })
+        checkConnection: (username, password) => this.checkConnection({ username, password }),
       },
-    }
+    },
   };
 
   componentDidMount() {
@@ -145,14 +145,11 @@ export class LDAPConfig extends Component {
   }
 
   checkConnection = (user) => {
-    checkConnection(this.props.value, user)
-      .then(res => {
-        if (res.works)
-          toastr.success(t('Worked!'));
-        else
-          toastr.error(res.error);
-      });
-  }
+    checkConnection(this.props.value, user).then((res) => {
+      if (res.works) toastr.success(t('Worked!'));
+      else toastr.error(res.error);
+    });
+  };
 
   render() {
     const { value, onChange } = this.props;
@@ -171,7 +168,6 @@ export class LDAPConfig extends Component {
   }
 }
 
-
 const CheckingAdminConnection = (props) => {
   return (
     <div className="form-group row">
@@ -179,9 +175,7 @@ const CheckingAdminConnection = (props) => {
         <Help text={props.help} label={props.label} />
       </label>
       <div className="col-sm-10 pl-3" id="input-Testing buttons">
-        <a
-          type="button"
-          className="btn btn-outline-primary mr-1" onClick={props.checkConnection}>
+        <a type="button" className="btn btn-outline-primary mr-1" onClick={props.checkConnection}>
           <Translation i18nkey="Testing" language={props.currentLanguage}>
             Testing
           </Translation>
@@ -191,7 +185,7 @@ const CheckingAdminConnection = (props) => {
   );
 };
 
-const  CheckingUserConnection = (props) => {
+const CheckingUserConnection = (props) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -201,13 +195,24 @@ const  CheckingUserConnection = (props) => {
         <Help text={props.help} label={props.label} />
       </label>
       <div className="col-sm-10 pl-3 d-flex" id="input-Testing buttons">
-        <input type="text" value={username} onChange={e => setUsername(e.target.value)}
-          placeholder="username" className="form-control mr-1" />
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-          placeholder="password" className="form-control mr-1" />
+        <input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="username"
+          className="form-control mr-1"
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="password"
+          className="form-control mr-1"
+        />
         <a
           type="button"
-          className="btn btn-outline-primary" onClick={() => props.checkConnection(username, password)}>
+          className="btn btn-outline-primary"
+          onClick={() => props.checkConnection(username, password)}>
           <Translation i18nkey="Testing" language={props.currentLanguage}>
             Testing
           </Translation>

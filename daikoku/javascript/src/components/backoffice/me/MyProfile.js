@@ -475,7 +475,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   updateUser: (u) => updateUser(u),
-  updateLanguage: (l) => udpateLanguage(l)
+  updateLanguage: (l) => udpateLanguage(l),
 };
 
 export const MyProfile = connect(mapStateToProps, mapDispatchToProps)(MyProfileComponent);

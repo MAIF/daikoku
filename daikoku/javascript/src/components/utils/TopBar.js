@@ -8,7 +8,12 @@ import AsyncSelect from 'react-select/async';
 import { Sun, Moon } from 'react-feather';
 
 import * as Services from '../../services';
-import { logout, updateNotications, udpateLanguage, updateTenant } from '../../core/context/actions';
+import {
+  logout,
+  updateNotications,
+  udpateLanguage,
+  updateTenant,
+} from '../../core/context/actions';
 import { t, Translation, languages } from '../../locales';
 import { Can, manage, daikoku, tenant } from '../utils';
 import { MessagesTopBarTools } from '../backoffice/messages';
@@ -21,13 +26,10 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
   function submit(e) {
     e.preventDefault();
 
-    Services.login(login, password, loginAction)
-      .then(async res => {
-        if (res.status === 400)
-          setLoginError(true)
-        else if (res.redirected)
-          window.location.href = res.url;
-      })
+    Services.login(login, password, loginAction).then(async (res) => {
+      if (res.status === 400) setLoginError(true);
+      else if (res.redirected) window.location.href = res.url;
+    });
   }
 
   switch (loginProvider) {
@@ -81,11 +83,13 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
                     </a>
                   </small>
                 </div>
-                {loginError && <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
-                  <Translation language={currentLanguage} i18nkey="login.failed">
-                    User not found or invalid credentials
-                  </Translation>
-                </p>}
+                {loginError && (
+                  <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
+                    <Translation language={currentLanguage} i18nkey="login.failed">
+                      User not found or invalid credentials
+                    </Translation>
+                  </p>
+                )}
                 <button type="submit" className="btn btn-access-negative" style={{ marginLeft: 0 }}>
                   <Translation i18nkey="Connect to your account" language={currentLanguage}>
                     Connect to your account
@@ -116,13 +120,9 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
               alt="user menu"
             />
             <div className="dropdown-menu dropdown-menu-right" style={{ width: '320px' }}>
-              <a
-                className="btn btn-access-negative my-2 ml-2"
-                href={`/auth/Local/login`}>
+              <a className="btn btn-access-negative my-2 ml-2" href={`/auth/Local/login`}>
                 <i className="fas fa-user mr-1" />
-                <Translation
-                  i18nkey="Connect to your account"
-                  language={currentLanguage}>
+                <Translation i18nkey="Connect to your account" language={currentLanguage}>
                   Connect to your account
                 </Translation>
               </a>
@@ -173,16 +173,13 @@ const TopBarComponent = (props) => {
   const isMaintenanceMode = props.tenant.tenantMode && props.tenant.tenantMode !== 'Default';
 
   useEffect(() => {
-    Promise.all([
-      Services.myUnreadNotificationsCount(),
-      Services.teams()
-    ])
-      .then(([unreadNotifications, teams]) => {
+    Promise.all([Services.myUnreadNotificationsCount(), Services.teams()]).then(
+      ([unreadNotifications, teams]) => {
         props.updateNotificationsCount(unreadNotifications.count);
         setTeams(teams);
-      });
+      }
+    );
   }, []);
-
 
   const selectSearchedItem = (item) => {
     const team = teams.find((t) => t._id === item.team);
@@ -203,14 +200,15 @@ const TopBarComponent = (props) => {
   };
 
   const toggleMaintenanceMode = () => {
-    const toggleApi = isMaintenanceMode ? Services.disableMaintenanceMode : Services.enableMaintenanceMode;
+    const toggleApi = isMaintenanceMode
+      ? Services.disableMaintenanceMode
+      : Services.enableMaintenanceMode;
 
-    toggleApi()
-      .then(maybeTenant => {
-        if (maybeTenant._id) {
-          props.updateTenant(maybeTenant);
-        }
-      });
+    toggleApi().then((maybeTenant) => {
+      if (maybeTenant._id) {
+        props.updateTenant(maybeTenant);
+      }
+    });
   };
 
   const reset = () => {
@@ -314,8 +312,7 @@ const TopBarComponent = (props) => {
           <div className="d-flex flex-column flex-md-row mt-1 mt-xl-0">
             {props.impersonator && (
               <a href="/api/me/_deimpersonate" className="btn btn-danger">
-                <i className="fas fa-user-ninja" />{' '}
-                {t('Quit impersonation', props.currentLanguage)}
+                <i className="fas fa-user-ninja" /> {t('Quit impersonation', props.currentLanguage)}
                 <b className="ml-1">{impersonator.email}</b>
               </a>
             )}
@@ -339,9 +336,11 @@ const TopBarComponent = (props) => {
             )}
             {!props.connectedUser.isGuest && (
               <div className="d-flex justify-content-end align-items-center mt-1 mt-lg-0">
-                {isMaintenanceMode && <span className="badge badge-danger mr-3">
-                  {t('Global maintenance mode enabled', props.currentLanguage)}
-                </span>}
+                {isMaintenanceMode && (
+                  <span className="badge badge-danger mr-3">
+                    {t('Global maintenance mode enabled', props.currentLanguage)}
+                  </span>
+                )}
                 <DarkModeActivator />
                 <Link
                   className={classNames({
@@ -366,9 +365,10 @@ const TopBarComponent = (props) => {
                     data-toggle="dropdown"
                     title={
                       impersonator
-                        ? `${props.connectedUser.name} (${props.connectedUser.email
-                        }) ${t('Impersonated by', props.currentLanguage)} ${impersonator.name
-                        } (${impersonator.email})`
+                        ? `${props.connectedUser.name} (${props.connectedUser.email}) ${t(
+                            'Impersonated by',
+                            props.currentLanguage
+                          )} ${impersonator.name} (${impersonator.email})`
                         : props.connectedUser.name
                     }
                     alt="user menu"
@@ -409,12 +409,19 @@ const TopBarComponent = (props) => {
                     <Can I={manage} a={tenant}>
                       <div className="dropdown-divider" />
                     </Can>
-                    {props.connectedUser.isDaikokuAdmin && <a className="dropdown-item" href="#" onClick={toggleMaintenanceMode}>
-                      <i className="fas fa-lock" /> {t(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode', props.currentLanguage)}
-                    </a>}
+                    {props.connectedUser.isDaikokuAdmin && (
+                      <a className="dropdown-item" href="#" onClick={toggleMaintenanceMode}>
+                        <i className="fas fa-lock" />{' '}
+                        {t(
+                          isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode',
+                          props.currentLanguage
+                        )}
+                      </a>
+                    )}
                     {props.tenant.mode === 'Dev' && (
                       <a className="dropdown-item" href="#" onClick={reset}>
-                        <i className="fas fa-skull-crossbones" /> {t('Reset', props.currentLanguage)}
+                        <i className="fas fa-skull-crossbones" />{' '}
+                        {t('Reset', props.currentLanguage)}
                       </a>
                     )}
                     <a className="dropdown-item" href="/logout">

@@ -73,10 +73,9 @@ const ApiListComponent = (props) => {
           return e;
         })
         .then((newApi) => {
-          props.history.push(
-            `/${team._humanReadableId}/settings/apis/${newApi._id}/infos`,
-            { newApi: { ...newApi, team: team._id } }
-          );
+          props.history.push(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
+            newApi: { ...newApi, team: team._id },
+          });
         });
     }
   };
@@ -127,8 +126,8 @@ const ApiListComponent = (props) => {
     return (
       <div className="d-flex justify-content-between">
         <div className="preview">
-          <strong>{count}</strong>{' '}
-          {`${t('result', props.currentLanguage)}${count > 1 ? 's' : ''}`}&nbsp;
+          <strong>{count}</strong> {`${t('result', props.currentLanguage)}${count > 1 ? 's' : ''}`}
+          &nbsp;
           {!!searched && (
             <span>
               {t('matching', props.currentLanguage)} <strong>{searched}</strong>&nbsp;
@@ -136,8 +135,8 @@ const ApiListComponent = (props) => {
           )}
           {selectedCategory.value !== all.value && (
             <span>
-              {t('categorised in', props.currentLanguage)}{' '}
-              <strong>{selectedCategory.value}</strong>&nbsp;
+              {t('categorised in', props.currentLanguage)} <strong>{selectedCategory.value}</strong>
+              &nbsp;
             </span>
           )}
           {selectedTag.value !== all.value && (
@@ -146,9 +145,7 @@ const ApiListComponent = (props) => {
             </span>
           )}
         </div>
-        <div
-          className="clear cursor-pointer"
-          onClick={clearFilter}>
+        <div className="clear cursor-pointer" onClick={clearFilter}>
           <i className="far fa-times-circle mr-1" />
           <Translation i18nkey="clear filter" language={props.currentLanguage}>
             clear filter
@@ -168,50 +165,41 @@ const ApiListComponent = (props) => {
   const searchedTrim = searched.trim().toLowerCase();
 
   const categorisedApis = apis.filter(
-    (api) =>
-      selectedCategory.value === all.value ||
-      api.categories.includes(selectedCategory.value)
+    (api) => selectedCategory.value === all.value || api.categories.includes(selectedCategory.value)
   );
 
   const taggedApis = categorisedApis.filter(
-    (api) =>
-      selectedTag.value === all.value ||
-      api.tags.includes(selectedTag.value)
+    (api) => selectedTag.value === all.value || api.tags.includes(selectedTag.value)
   );
 
   const filteredApis =
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (teamMatch(api, searchedTrim)) {
-          return true;
-        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-      });
+          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (teamMatch(api, searchedTrim)) {
+            return true;
+          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+        });
 
   const paginateApis = (() => {
-    const starredApis = [], unstarredApis = [];
-    filteredApis.forEach(a => {
-      if (props.connectedUser.starredApis.includes(a._id))
-        starredApis.push(a)
-      else
-        unstarredApis.push(a)
+    const starredApis = [],
+      unstarredApis = [];
+    filteredApis.forEach((a) => {
+      if (props.connectedUser.starredApis.includes(a._id)) starredApis.push(a);
+      else unstarredApis.push(a);
     });
 
     return [
-      ...starredApis.sort((a, b) => (a.stars === b.stars ? 0 : (a.stars < b.stars ? 1 : -1))),
-      ...unstarredApis.sort((a, b) => (a.stars === b.stars ? 0 : (a.stars < b.stars ? 1 : -1)))
-    ]
-  })()
-    .slice(
-      offset,
-      offset + pageNumber
-    );
+      ...starredApis.sort((a, b) => (a.stars === b.stars ? 0 : a.stars < b.stars ? 1 : -1)),
+      ...unstarredApis.sort((a, b) => (a.stars === b.stars ? 0 : a.stars < b.stars ? 1 : -1)),
+    ];
+  })().slice(offset, offset + pageNumber);
 
   return (
     <section className="container">
@@ -256,70 +244,68 @@ const ApiListComponent = (props) => {
           }}
           classNamePrefix="reactSelect"
         />
-        {props.team &&
-          (!props.tenant.creationSecurity || props.team.apisCreationPermission) && (
-            <Can I={manage} a={api} team={props.team}>
-              <div className="col-12 col-sm-2">
-                <button
-                  className="btn btn-access-negative mb-2 float-right"
-                  onClick={() => createNewApi(props.team._id)}>
-                  <i className="fas fa-plus-square" /> API
-                  </button>
-              </div>
-            </Can>
-          )}
-        {props.apiCreationPermitted &&
-          !props.team &&
-          !props.connectedUser.isGuest && (
-            <ActionWithTeamSelector
-              title={t(
-                'api.creation.title.modal',
-                props.currentLanguage,
-                false,
-                'Select the team for which to create new api'
+        {props.team && (!props.tenant.creationSecurity || props.team.apisCreationPermission) && (
+          <Can I={manage} a={api} team={props.team}>
+            <div className="col-12 col-sm-2">
+              <button
+                className="btn btn-access-negative mb-2 float-right"
+                onClick={() => createNewApi(props.team._id)}>
+                <i className="fas fa-plus-square" /> API
+              </button>
+            </div>
+          </Can>
+        )}
+        {props.apiCreationPermitted && !props.team && !props.connectedUser.isGuest && (
+          <ActionWithTeamSelector
+            title={t(
+              'api.creation.title.modal',
+              props.currentLanguage,
+              false,
+              'Select the team for which to create new api'
+            )}
+            description={t(
+              'api.creation.description.modal',
+              props.currentLanguage,
+              false,
+              'You are going to create an api. For which team do you want to create it ?'
+            )}
+            teams={props.myTeams
+              .filter((t) => t.type !== 'Admin')
+              .filter((t) => !props.tenant.creationSecurity || t.apisCreationPermission)
+              .filter((t) =>
+                CanIDoAction(props.connectedUser, manage, api, t, props.apiCreationPermitted)
               )}
-              description={t(
-                'api.creation.description.modal',
-                props.currentLanguage,
-                false,
-                'You are going to create an api. For which team do you want to create it ?'
-              )}
-              teams={props.myTeams
-                .filter((t) => t.type !== 'Admin')
-                .filter((t) => !props.tenant.creationSecurity || t.apisCreationPermission)
-                .filter((t) =>
-                  CanIDoAction(
-                    props.connectedUser,
-                    manage,
-                    api,
-                    t,
-                    props.apiCreationPermitted
-                  )
-                )}
-              action={(team) => createNewApi(team)}
-              withAllTeamSelector={false}>
-              <div className="col-12 col-sm-2">
-                <button className="btn btn-access-negative mb-2 float-right">
-                  <i className="fas fa-plus-square" /> API
-                  </button>
-              </div>
-            </ActionWithTeamSelector>
-          )}
+            action={(team) => createNewApi(team)}
+            withAllTeamSelector={false}>
+            <div className="col-12 col-sm-2">
+              <button className="btn btn-access-negative mb-2 float-right">
+                <i className="fas fa-plus-square" /> API
+              </button>
+            </div>
+          </ActionWithTeamSelector>
+        )}
       </div>
       <div className="d-flex mb-1 view-selectors">
-        <button className={classNames('btn btn-access-negative mr-2', { active: view === LIST })} onClick={() => setView(LIST)}><List /></button>
-        <button className={classNames('btn btn-access-negative', { active: view === GRID })} onClick={() => setView(GRID)}><Grid /></button>
+        <button
+          className={classNames('btn btn-access-negative mr-2', { active: view === LIST })}
+          onClick={() => setView(LIST)}>
+          <List />
+        </button>
+        <button
+          className={classNames('btn btn-access-negative', { active: view === GRID })}
+          onClick={() => setView(GRID)}>
+          <Grid />
+        </button>
       </div>
       <div className="row">
         <div className="section col-9 d-flex flex-column">
-          <div className={classNames('d-flex justify-content-between col p-3', {
-            'flex-column': view === LIST,
-            'flex-wrap': view === GRID,
-            'flex-row': view === GRID
-          })}>
-            <div className="col-12 mb-1">
-              {filterPreview(filteredApis.length)}
-            </div>
+          <div
+            className={classNames('d-flex justify-content-between col p-3', {
+              'flex-column': view === LIST,
+              'flex-wrap': view === GRID,
+              'flex-row': view === GRID,
+            })}>
+            <div className="col-12 mb-1">{filterPreview(filteredApis.length)}</div>
             {paginateApis.map((api) => (
               <ApiCard
                 key={api._id}
@@ -335,7 +321,9 @@ const ApiListComponent = (props) => {
                 redirectToEditPage={() => props.redirectToEditPage(api)}
                 handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
                 toggleStar={() => props.toggleStar(api)}
-                handleCategorySelect={(category) => setSelectedCategory(categories.find((c) => c.value === category))}
+                handleCategorySelect={(category) =>
+                  setSelectedCategory(categories.find((c) => c.value === category))
+                }
                 currentLanguage={props.currentLanguage}
                 view={view}
               />

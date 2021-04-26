@@ -44,30 +44,27 @@ class MyHomeComponent extends Component {
     return Services.askForApiAccess(teams, api._id).then(() => this.fetchData());
   };
 
-  toggleStar = api => {
-    Services.toggleStar(api._id)
-      .then(res => {
-        if (res.status === 204) {
-          const alreadyStarred = this.props.connectedUser.starredApis.includes(api._id);
+  toggleStar = (api) => {
+    Services.toggleStar(api._id).then((res) => {
+      if (res.status === 204) {
+        const alreadyStarred = this.props.connectedUser.starredApis.includes(api._id);
 
-          this.setState({
-            apis: this.state.apis.map(a => {
-              if (a._id === api._id)
-                a.stars += alreadyStarred ? -1 : 1
-              return a
-            })
-          });
+        this.setState({
+          apis: this.state.apis.map((a) => {
+            if (a._id === api._id) a.stars += alreadyStarred ? -1 : 1;
+            return a;
+          }),
+        });
 
-          this.props.updateUser({
-            ...this.props.connectedUser,
-            starredApis: alreadyStarred ? this.props.connectedUser.starredApis.filter(id => id !== api._id) : [
-              ...this.props.connectedUser.starredApis,
-              api._id
-            ]
-          })
-        }
-      });
-  }
+        this.props.updateUser({
+          ...this.props.connectedUser,
+          starredApis: alreadyStarred
+            ? this.props.connectedUser.starredApis.filter((id) => id !== api._id)
+            : [...this.props.connectedUser.starredApis, api._id],
+        });
+      }
+    });
+  };
 
   redirectToTeamPage = (team) => {
     this.props.history.push(`/${team._humanReadableId}`);
@@ -187,7 +184,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   updateTeam: (team) => updateTeamPromise(team),
   openContactModal: (props) => openContactModal(props),
-  updateUser: (u) => updateUser(u)
+  updateUser: (u) => updateUser(u),
 };
 
 export const MyHome = connect(mapStateToProps, mapDispatchToProps)(MyHomeComponent);

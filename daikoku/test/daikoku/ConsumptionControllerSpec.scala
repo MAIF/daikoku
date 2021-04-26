@@ -324,7 +324,8 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       respConsumption.status mustBe 200
 
-      val maybeConsumption = json.SeqConsumptionFormat.reads((respConsumption.json \ "consumptions").as[JsArray])
+      val maybeConsumption = json.SeqConsumptionFormat.reads(
+        (respConsumption.json \ "consumptions").as[JsArray])
       maybeConsumption.isSuccess mustBe true
 
       maybeConsumption.get.head.billing.hits mustBe 1000L
@@ -415,7 +416,8 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       respConsumption.status mustBe 200
 
-      val maybeConsumption = json.SeqConsumptionFormat.reads((respConsumption.json \ "consumptions").as[JsArray])
+      val maybeConsumption = json.SeqConsumptionFormat.reads(
+        (respConsumption.json \ "consumptions").as[JsArray])
       maybeConsumption.isSuccess mustBe true
 
       maybeConsumption.get.head.billing.hits mustBe 1000L
@@ -503,7 +505,8 @@ class ConsumptionControllerSpec()
           s"/api/teams/${teamConsumerId.value}/subscription/${payperUserSub.id.value}/consumption?from=$threeDayAgo&to=$to"
       )(tenant, session)
       respConsumption.status mustBe 200
-      val maybeConsumption = json.SeqConsumptionFormat.reads((respConsumption.json \ "consumptions").as[JsArray])
+      val maybeConsumption = json.SeqConsumptionFormat.reads(
+        (respConsumption.json \ "consumptions").as[JsArray])
       maybeConsumption.isSuccess mustBe true
 
       maybeConsumption.get.head.billing.hits mustBe 1000L
@@ -592,7 +595,8 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       respConsumption.status mustBe 200
 
-      val maybeConsumption = json.SeqConsumptionFormat.reads((respConsumption.json \ "consumptions").as[JsArray])
+      val maybeConsumption = json.SeqConsumptionFormat.reads(
+        (respConsumption.json \ "consumptions").as[JsArray])
       maybeConsumption.isSuccess mustBe true
 
       maybeConsumption.get.head.billing.hits mustBe 1000L

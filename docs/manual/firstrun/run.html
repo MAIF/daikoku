@@ -216,7 +216,7 @@ cd daikoku-vx.x.x
 <pre class="prettyprint"><code class="language-sh">java -jar daikoku.jar
 </code></pre>
 <h2><a href="#from-docker" name="from-docker" class="anchor"><span class="anchor-link"></span></a>From docker</h2>
-<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; maif/daikoku:1.0.16
+<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; maif/daikoku:1.1.0
 </code></pre>
 <p>You can also pass useful args like :</p>
 <pre><code>docker run -p &quot;8080:8080&quot; daikoku -Dconfig.file=/usr/app/daikoku/conf/daikoku.conf -Dlogger.file=/usr/app/daikoku/conf/daikoku.xml
@@ -225,10 +225,10 @@ cd daikoku-vx.x.x
 <p>You can also provide some ENV variable using the <code>--env</code> flag to customize your Daikoku instance.</p>
 <p>The list of possible env variables is available <a href="env.html">here</a>.</p>
 <p>You can use a volume to provide configuration like :</p>
-<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; -v &quot;$(pwd):/usr/app/daikoku/conf&quot; maif/daikoku:1.0.16
+<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; -v &quot;$(pwd):/usr/app/daikoku/conf&quot; maif/daikoku:1.1.0
 </code></pre>
 <p>You can also use a volume if you choose to use exports files :</p>
-<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; -v &quot;$(pwd):/usr/app/daikoku/imports&quot; maif/daikoku :1.0.16 -Ddaikoku.init.data.from=/usr/app/daikoku/imports/export.ndjson
+<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; -v &quot;$(pwd):/usr/app/daikoku/imports&quot; maif/daikoku :1.1.0 -Ddaikoku.init.data.from=/usr/app/daikoku/imports/export.ndjson
 </code></pre>
 <h2><a href="#run-examples" name="run-examples" class="anchor"><span class="anchor-link"></span></a>Run examples</h2>
 <pre class="prettyprint"><code class="language-sh">$ java \

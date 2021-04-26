@@ -73,9 +73,7 @@ export class UnauthenticatedHomeComponent extends Component {
                     </a>
                   )}
 
-                  <a
-                    className="btn btn-access-negative my-2 ml-2"
-                    href={`/auth/Local/login`}>
+                  <a className="btn btn-access-negative my-2 ml-2" href={`/auth/Local/login`}>
                     <i className="fas fa-user mr-1" />
                     <Translation
                       i18nkey="Connect to your account"
@@ -83,7 +81,7 @@ export class UnauthenticatedHomeComponent extends Component {
                       Connect to your account
                     </Translation>
                   </a>
-                  {this.props.tenant.authProvider !== "Local" && (
+                  {this.props.tenant.authProvider !== 'Local' && (
                     <a
                       className="btn btn-access-negative my-2 ml-2"
                       href={`/auth/${this.props.tenant.authProvider}/login`}>
@@ -92,7 +90,7 @@ export class UnauthenticatedHomeComponent extends Component {
                         i18nkey="Connect to your thrid party account"
                         language={this.props.currentLanguage}>
                         Connect to your thrid party account
-                    </Translation>
+                      </Translation>
                     </a>
                   )}
                 </p>

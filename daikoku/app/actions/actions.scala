@@ -16,8 +16,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object tenantSecurity {
   def userCanCreateApi(tenant: Tenant, user: User)(
-    implicit env: Env,
-    ec: ExecutionContext): Future[Boolean] = {
+      implicit env: Env,
+      ec: ExecutionContext): Future[Boolean] = {
     if (user.isDaikokuAdmin) {
       FastFuture.successful(true)
     } else {
@@ -45,7 +45,8 @@ object tenantSecurity {
       case None => true
       case Some(value) =>
         value match {
-          case TenantMode.Maintenance | TenantMode.Construction => user.exists(_.isDaikokuAdmin)
+          case TenantMode.Maintenance | TenantMode.Construction =>
+            user.exists(_.isDaikokuAdmin)
           case _ => true
         }
     }
@@ -56,14 +57,14 @@ object tenantSecurity {
 case class DaikokuTenantActionContext[A](request: Request[A], tenant: Tenant)
 
 case class DaikokuActionMaybeWithoutUserContext[A](
-                                                    request: Request[A],
-                                                    user: Option[User],
-                                                    tenant: Tenant,
-                                                    session: Option[UserSession],
-                                                    impersonator: Option[User],
-                                                    isTenantAdmin: Boolean,
-                                                    apiCreationPermitted: Boolean = false,
-                                                    ctx: TrieMap[String, String] = new TrieMap[String, String]()) {
+    request: Request[A],
+    user: Option[User],
+    tenant: Tenant,
+    session: Option[UserSession],
+    impersonator: Option[User],
+    isTenantAdmin: Boolean,
+    apiCreationPermitted: Boolean = false,
+    ctx: TrieMap[String, String] = new TrieMap[String, String]()) {
   def setCtxValue(key: String, value: Any): Unit = {
     if (value != null) {
       ctx.put(key, value.toString)
@@ -79,7 +80,7 @@ case class DaikokuActionContext[A](request: Request[A],
                                    isTenantAdmin: Boolean,
                                    apiCreationPermitted: Boolean = false,
                                    ctx: TrieMap[String, String] =
-                                   new TrieMap[String, String]()) {
+                                     new TrieMap[String, String]()) {
   def setCtxValue(key: String, value: Any): Unit = {
     if (value != null) {
       ctx.put(key, value.toString)
@@ -88,15 +89,15 @@ case class DaikokuActionContext[A](request: Request[A],
 }
 
 class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
-  extends ActionBuilder[DaikokuActionContext, AnyContent]
+    extends ActionBuilder[DaikokuActionContext, AnyContent]
     with ActionFunction[Request, DaikokuActionContext] {
 
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
   val logger = Logger("daikoku-action")
 
   override def invokeBlock[A](
-                               request: Request[A],
-                               block: DaikokuActionContext[A] => Future[Result]): Future[Result] = {
+      request: Request[A],
+      block: DaikokuActionContext[A] => Future[Result]): Future[Result] = {
     (
       request.attrs.get(IdentityAttrs.TenantKey),
       request.attrs.get(IdentityAttrs.SessionKey),
@@ -104,18 +105,20 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user.some) => Errors.craftResponseResult(
-        s"${tenant.tenantMode.get.toString} mode enabled",
-        Results.ServiceUnavailable,
-        request,
-        None,
-        env,
-        tenant)
+      case (Some(tenant), _, _, Some(user), _)
+          if !tenantSecurity.isDefaultMode(tenant, user.some) =>
+        Errors.craftResponseResult(
+          s"${tenant.tenantMode.get.toString} mode enabled",
+          Results.ServiceUnavailable,
+          request,
+          None,
+          env,
+          tenant)
       case (Some(tenant),
-      Some(session),
-      Some(imper),
-      Some(user),
-      Some(isTenantAdmin)) =>
+            Some(session),
+            Some(imper),
+            Some(user),
+            Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
           tenantSecurity
             .userCanCreateApi(tenant, user)(env, ec)
@@ -123,12 +126,12 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
               permission =>
                 block(
                   DaikokuActionContext(request,
-                    user,
-                    tenant,
-                    session,
-                    imper,
-                    isTenantAdmin,
-                    permission)))
+                                       user,
+                                       tenant,
+                                       session,
+                                       imper,
+                                       isTenantAdmin,
+                                       permission)))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -138,10 +141,10 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
         }
       case _ =>
         Errors.craftResponseResult("User not found :-(",
-          Results.NotFound,
-          request,
-          None,
-          env)
+                                   Results.NotFound,
+                                   request,
+                                   None,
+                                   env)
     }
   }
 
@@ -150,14 +153,14 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
 
 //todo: maybe some refactoring
 class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
-  extends ActionBuilder[DaikokuActionContext, AnyContent] {
+    extends ActionBuilder[DaikokuActionContext, AnyContent] {
 
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
   val logger = Logger("daikoku-action-with-guest")
 
   override def invokeBlock[A](
-                               request: Request[A],
-                               block: DaikokuActionContext[A] => Future[Result]): Future[Result] = {
+      request: Request[A],
+      block: DaikokuActionContext[A] => Future[Result]): Future[Result] = {
     (
       request.attrs.get(IdentityAttrs.TenantKey),
       request.attrs.get(IdentityAttrs.SessionKey),
@@ -165,18 +168,20 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), _, _, Some(user), _) if !tenantSecurity.isDefaultMode(tenant, user.some) => Errors.craftResponseResult(
-        s"${tenant.tenantMode.get.toString} mode enabled",
-        Results.ServiceUnavailable,
-        request,
-        None,
-        env,
-        tenant)
+      case (Some(tenant), _, _, Some(user), _)
+          if !tenantSecurity.isDefaultMode(tenant, user.some) =>
+        Errors.craftResponseResult(
+          s"${tenant.tenantMode.get.toString} mode enabled",
+          Results.ServiceUnavailable,
+          request,
+          None,
+          env,
+          tenant)
       case (Some(tenant),
-      Some(session),
-      Some(imper),
-      Some(user),
-      Some(isTenantAdmin)) =>
+            Some(session),
+            Some(imper),
+            Some(user),
+            Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
           tenantSecurity
             .userCanCreateApi(tenant, user)(env, ec)
@@ -184,12 +189,12 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
               security =>
                 block(
                   DaikokuActionContext(request,
-                    user,
-                    tenant,
-                    session,
-                    imper,
-                    isTenantAdmin,
-                    security)))
+                                       user,
+                                       tenant,
+                                       session,
+                                       imper,
+                                       isTenantAdmin,
+                                       security)))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -199,33 +204,33 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
         }
       case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
         Errors.craftResponseResult("This tenant is private, bye bye.",
-          Results.Unauthorized,
-          request,
-          None,
-          env)
+                                   Results.Unauthorized,
+                                   request,
+                                   None,
+                                   env)
       case (Some(tenant), None, _, Some(user), Some(isTenantAdmin)) =>
         block(
           DaikokuActionContext(request,
-            user,
-            tenant,
-            GuestUserSession(user, tenant),
-            None,
-            isTenantAdmin))
+                               user,
+                               tenant,
+                               GuestUserSession(user, tenant),
+                               None,
+                               isTenantAdmin))
       case (Some(tenant), None, _, None, _) if !tenant.isPrivate =>
         val guestUser = GuestUser(tenant.id)
         block(
           DaikokuActionContext(request,
-            guestUser,
-            tenant,
-            GuestUserSession(guestUser, tenant),
-            None,
-            isTenantAdmin = false))
+                               guestUser,
+                               tenant,
+                               GuestUserSession(guestUser, tenant),
+                               None,
+                               isTenantAdmin = false))
       case _ =>
         Errors.craftResponseResult("User not found :-(",
-          Results.NotFound,
-          request,
-          None,
-          env)
+                                   Results.NotFound,
+                                   request,
+                                   None,
+                                   env)
     }
   }
 
@@ -234,16 +239,16 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
 
 class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
                                     env: Env)
-  extends ActionBuilder[DaikokuActionMaybeWithoutUserContext, AnyContent]
+    extends ActionBuilder[DaikokuActionMaybeWithoutUserContext, AnyContent]
     with ActionFunction[Request, DaikokuActionMaybeWithoutUserContext] {
 
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
   val logger = Logger("daikoku-action-maybe-without-user")
 
   override def invokeBlock[A](
-                               request: Request[A],
-                               block: DaikokuActionMaybeWithoutUserContext[A] => Future[Result])
-  : Future[Result] = {
+      request: Request[A],
+      block: DaikokuActionMaybeWithoutUserContext[A] => Future[Result])
+    : Future[Result] = {
     (
       request.attrs.get(IdentityAttrs.TenantKey),
       request.attrs.get(IdentityAttrs.SessionKey),
@@ -251,19 +256,20 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
       request.attrs.get(IdentityAttrs.UserKey),
       request.attrs.get(IdentityAttrs.TenantAdminKey)
     ) match {
-      case (Some(tenant), _, _, maybeUser, _) if !tenantSecurity.isDefaultMode(tenant, maybeUser) =>
+      case (Some(tenant), _, _, maybeUser, _)
+          if !tenantSecurity.isDefaultMode(tenant, maybeUser) =>
         Errors.craftResponseResult(
-        s"${tenant.tenantMode.get.toString} mode enabled",
-        Results.ServiceUnavailable,
-        request,
-        None,
-        env,
-        tenant)
+          s"${tenant.tenantMode.get.toString} mode enabled",
+          Results.ServiceUnavailable,
+          request,
+          None,
+          env,
+          tenant)
       case (Some(tenant),
-      Some(session),
-      Some(imper),
-      Some(user),
-      Some(isTenantAdmin)) =>
+            Some(session),
+            Some(imper),
+            Some(user),
+            Some(isTenantAdmin)) =>
         if (user.tenants.contains(tenant.id)) {
           tenantSecurity
             .userCanCreateApi(tenant, user)(env, ec)
@@ -271,12 +277,12 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
               perm =>
                 block(
                   DaikokuActionMaybeWithoutUserContext(request,
-                    Some(user),
-                    tenant,
-                    Some(session),
-                    imper,
-                    isTenantAdmin,
-                    perm)))
+                                                       Some(user),
+                                                       tenant,
+                                                       Some(session),
+                                                       imper,
+                                                       isTenantAdmin,
+                                                       perm)))
         } else {
           logger.info(
             s"User ${user.email} is not registered on tenant ${tenant.name}")
@@ -287,11 +293,11 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
       case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
         block(
           DaikokuActionMaybeWithoutUserContext(request,
-            None,
-            tenant,
-            None,
-            None,
-            isTenantAdmin = false))
+                                               None,
+                                               tenant,
+                                               None,
+                                               None,
+                                               isTenantAdmin = false))
       case (Some(tenant), _, _, _, _) =>
         val user = GuestUser(tenant.id)
         block(
@@ -304,10 +310,10 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
             isTenantAdmin = false))
       case _ =>
         Errors.craftResponseResult("Tenant not found :-(",
-          Results.NotFound,
-          request,
-          None,
-          env)
+                                   Results.NotFound,
+                                   request,
+                                   None,
+                                   env)
     }
   }
 
@@ -315,15 +321,15 @@ class DaikokuActionMaybeWithoutUser(val parser: BodyParser[AnyContent],
 }
 
 class DaikokuTenantAction(val parser: BodyParser[AnyContent], env: Env)
-  extends ActionBuilder[DaikokuTenantActionContext, AnyContent]
+    extends ActionBuilder[DaikokuTenantActionContext, AnyContent]
     with ActionFunction[Request, DaikokuTenantActionContext] {
 
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
   override def invokeBlock[A](
-                               request: Request[A],
-                               block: DaikokuTenantActionContext[A] => Future[Result])
-  : Future[Result] = {
+      request: Request[A],
+      block: DaikokuTenantActionContext[A] => Future[Result])
+    : Future[Result] = {
 
     TenantHelper.withTenant(request, env) { tenant =>
       block(DaikokuTenantActionContext[A](request, tenant))

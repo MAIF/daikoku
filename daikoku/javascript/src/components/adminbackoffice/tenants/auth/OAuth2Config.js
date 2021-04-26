@@ -286,7 +286,7 @@ export class OAuth2Config extends Component {
     emailField: 'email',
     pictureField: 'picture',
     otoroshiDataField: 'app_metadata | otoroshi_data',
-    daikokuAdmins: []
+    daikokuAdmins: [],
   };
 
   formFlow = [

@@ -114,10 +114,10 @@ object TenantMode {
   }
 
   def apply(name: String): Option[TenantMode] = name.toLowerCase() match {
-    case "maintenance"    => Some(Maintenance)
-    case "construction"   => Some(Construction)
-    case "default"        => Some(Default)
-    case _                => Some(Default)
+    case "maintenance"  => Some(Maintenance)
+    case "construction" => Some(Construction)
+    case "default"      => Some(Default)
+    case _              => Some(Default)
   }
 }
 
@@ -493,15 +493,15 @@ case class UserSessionId(value: String)
     with CanJson[UserSessionId] {
   def asJson: JsValue = JsString(value)
 }
-case class DatastoreId(value: String) extends ValueType with CanJson[DatastoreId] {
+case class DatastoreId(value: String)
+    extends ValueType
+    with CanJson[DatastoreId] {
   def asJson: JsValue = JsString(value)
 }
 case class ChatId(value: String) extends ValueType with CanJson[ChatId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiPostId(value: String)
-  extends ValueType
-    with CanJson[ApiPostId] {
+case class ApiPostId(value: String) extends ValueType with CanJson[ApiPostId] {
   def asJson: JsValue = JsString(value)
 }
 
@@ -978,7 +978,7 @@ case class ApiPost(id: ApiPostId,
                    title: String,
                    lastModificationAt: DateTime,
                    content: String)
-  extends CanJson[ApiPost] {
+    extends CanJson[ApiPost] {
   def humanReadableId: String = title.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiPostFormat.writes(this)
 }
@@ -1496,18 +1496,18 @@ case class UserSession(id: DatastoreId,
 }
 
 case class ApiKeyConsumption(
-                              id: DatastoreId,
-                              tenant: TenantId,
-                              team: TeamId,
-                              api: ApiId,
-                              plan: UsagePlanId,
-                              clientId: String,
-                              hits: Long,
-                              globalInformations: ApiKeyGlobalConsumptionInformations,
-                              quotas: ApiKeyQuotas,
-                              billing: ApiKeyBilling,
-                              from: DateTime,
-                              to: DateTime)
+    id: DatastoreId,
+    tenant: TenantId,
+    team: TeamId,
+    api: ApiId,
+    plan: UsagePlanId,
+    clientId: String,
+    hits: Long,
+    globalInformations: ApiKeyGlobalConsumptionInformations,
+    quotas: ApiKeyQuotas,
+    billing: ApiKeyBilling,
+    from: DateTime,
+    to: DateTime)
     extends CanJson[ApiKeyConsumption] {
   override def asJson: JsValue = json.ConsumptionFormat.writes(this)
 }
@@ -1541,28 +1541,28 @@ case class ApiKeyBilling(hits: Long, total: BigDecimal)
 }
 
 case class PasswordReset(
-                          id: DatastoreId,
-                          deleted: Boolean = false,
-                          randomId: String,
-                          email: String,
-                          password: String,
-                          user: UserId,
-                          creationDate: DateTime,
-                          validUntil: DateTime,
+    id: DatastoreId,
+    deleted: Boolean = false,
+    randomId: String,
+    email: String,
+    password: String,
+    user: UserId,
+    creationDate: DateTime,
+    validUntil: DateTime,
 ) extends CanJson[PasswordReset] {
   override def asJson: JsValue = json.PasswordResetFormat.writes(this)
 }
 
 case class AccountCreation(
-                            id: DatastoreId,
-                            deleted: Boolean = false,
-                            randomId: String,
-                            email: String,
-                            name: String,
-                            avatar: String,
-                            password: String,
-                            creationDate: DateTime,
-                            validUntil: DateTime,
+    id: DatastoreId,
+    deleted: Boolean = false,
+    randomId: String,
+    email: String,
+    name: String,
+    avatar: String,
+    password: String,
+    creationDate: DateTime,
+    validUntil: DateTime,
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }

@@ -141,7 +141,7 @@ export class AuditTrailList extends Component {
                     showLink={false}
                     extractKey={(item) => item._id}
                     injectTable={(t) => (this.table = t)}
-                    defaultSort='date'
+                    defaultSort="date"
                     defaultSortDesc={true}
                     injectTopBar={this.topBar}
                   />

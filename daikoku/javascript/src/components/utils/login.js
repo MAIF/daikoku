@@ -9,7 +9,7 @@ export class LoginPage extends Component {
     password: '',
     error: null,
     message: null,
-    loginError: null
+    loginError: null,
   };
 
   onChange = (e) => {
@@ -24,20 +24,18 @@ export class LoginPage extends Component {
     };
   };
 
-  submit = e => {
+  submit = (e) => {
     e.preventDefault();
     const { username, password } = this.state;
 
-    Services.login(username, password, this.props.action)
-      .then(async res => {
-        if (res.status === 400)
-          this.setState({
-            loginError: true
-          });
-        else if (res.redirected)
-          window.location.href = res.url;
-      })
-  }
+    Services.login(username, password, this.props.action).then(async (res) => {
+      if (res.status === 400)
+        this.setState({
+          loginError: true,
+        });
+      else if (res.redirected) window.location.href = res.url;
+    });
+  };
 
   render() {
     const { loginError } = this.state;
@@ -100,11 +98,13 @@ export class LoginPage extends Component {
                 />
               </div>
             </div>
-            {loginError && <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
-              <Translation language={this.props.tenant.defaultLanguage} i18nkey="login.failed">
-                User not found or invalid credentials
-              </Translation>
-            </p>}
+            {loginError && (
+              <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
+                <Translation language={this.props.tenant.defaultLanguage} i18nkey="login.failed">
+                  User not found or invalid credentials
+                </Translation>
+              </p>
+            )}
             <div className="form-group">
               <label className="col-sm-2 control-label" />
               <div className="col-sm-10">

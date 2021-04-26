@@ -59,7 +59,8 @@ object OAuth2Config {
             (json \ "accessTokenField").asOpt[String].getOrElse("access_token"),
           nameField = (json \ "nameField").asOpt[String].getOrElse("name"),
           emailField = (json \ "emailField").asOpt[String].getOrElse("email"),
-          pictureField = (json \ "pictureField").asOpt[String].getOrElse("picture"),
+          pictureField =
+            (json \ "pictureField").asOpt[String].getOrElse("picture"),
           scope = (json \ "scope")
             .asOpt[String]
             .getOrElse("openid profile email name"),
@@ -91,7 +92,8 @@ case class OAuth2Config(
     authorizeUrl: String = "http://localhost:8082/oauth/authorize",
     userInfoUrl: String = "http://<oauth-domain>/userinfo",
     loginUrl: String = "https://<oauth-domain>/authorize",
-    logoutUrl: String = "http://daikoku.foo.bar:8080/v2/logout?returnTo=${redirect}",
+    logoutUrl: String =
+      "http://daikoku.foo.bar:8080/v2/logout?returnTo=${redirect}",
     scope: String = "openid profile email name",
     useJson: Boolean = false,
     readProfileFromToken: Boolean = false,
@@ -170,7 +172,8 @@ object OAuth2Support {
             }
             future1
               .flatMap { resp =>
-                val accessToken = (resp.json \ authConfig.accessTokenField).as[String]
+                val accessToken =
+                  (resp.json \ authConfig.accessTokenField).as[String]
                 if (authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined) {
                   val algoSettings = authConfig.jwtVerifier.get
                   val tokenHeader =
@@ -229,7 +232,8 @@ object OAuth2Support {
                 val email = (userFromOauth \ authConfig.emailField)
                   .asOpt[String]
                   .getOrElse("no.name@foo.bar")
-                val picture = (userFromOauth \ authConfig.pictureField).asOpt[String]
+                val picture =
+                  (userFromOauth \ authConfig.pictureField).asOpt[String]
 
                 val isDaikokuAdmin = authConfig.daikokuAdmins.contains(email)
 
@@ -275,15 +279,19 @@ object OAuth2Support {
                         email = email,
                         tenants = u.tenants + tenant.id,
                         origins = u.origins + AuthProvider.OAuth2,
-                        picture = if (picture.isDefined && u.pictureFromProvider) picture.get
-                        else
-                          u.picture == User.DEFAULT_IMAGE match {
-                            case true if picture.isDefined && u.pictureFromProvider => picture.get
-                            case true if picture.isEmpty => User.DEFAULT_IMAGE
-                            case false => u.picture
-                          }
-                        ,
-                        isDaikokuAdmin = if(u.isDaikokuAdmin) true else isDaikokuAdmin
+                        picture =
+                          if (picture.isDefined && u.pictureFromProvider)
+                            picture.get
+                          else
+                            u.picture == User.DEFAULT_IMAGE match {
+                              case true
+                                  if picture.isDefined && u.pictureFromProvider =>
+                                picture.get
+                              case true if picture.isEmpty => User.DEFAULT_IMAGE
+                              case false                   => u.picture
+                            },
+                        isDaikokuAdmin =
+                          if (u.isDaikokuAdmin) true else isDaikokuAdmin
                       )
                       for {
                         _ <- _env.dataStore.userRepo.save(updatedUser)

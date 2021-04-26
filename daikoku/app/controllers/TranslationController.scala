@@ -40,8 +40,8 @@ class TranslationController(DaikokuAction: DaikokuAction,
                       values.as[JsObject].fields.map {
                         case (key, value) =>
                           Translation(
-                            id =
-                              DatastoreId(s"$language.${ctx.tenant.id.value}.$key"),
+                            id = DatastoreId(
+                              s"$language.${ctx.tenant.id.value}.$key"),
                             tenant = ctx.tenant.id,
                             language = language,
                             key = key,

@@ -2510,7 +2510,7 @@ class ApiControllerSpec()
         tenants = Seq(tenant),
         apis = Seq(
           defaultApi.copy(visibility = ApiVisibility.PublicWithAuthorizations,
-            authorizedTeams = Seq.empty)),
+                          authorizedTeams = Seq.empty)),
       )
 
       val resp = httpJsonCallWithoutSessionBlocking(

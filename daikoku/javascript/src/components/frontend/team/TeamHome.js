@@ -43,29 +43,26 @@ class TeamHomeComponent extends Component {
     );
   };
 
-  toggleStar = api => {
-    Services.toggleStar(api._id)
-      .then(res => {
-        if (res.status === 204) {
-          const alreadyStarred = this.props.connectedUser.starredApis.includes(api._id);
-          this.setState({
-            apis: this.state.apis.map(a => {
-              if (a._id === api._id)
-                a.stars += alreadyStarred ? -1 : 1
-              return a
-            })
-          });
+  toggleStar = (api) => {
+    Services.toggleStar(api._id).then((res) => {
+      if (res.status === 204) {
+        const alreadyStarred = this.props.connectedUser.starredApis.includes(api._id);
+        this.setState({
+          apis: this.state.apis.map((a) => {
+            if (a._id === api._id) a.stars += alreadyStarred ? -1 : 1;
+            return a;
+          }),
+        });
 
-          this.props.updateUser({
-            ...this.props.connectedUser,
-            starredApis: alreadyStarred ? this.props.connectedUser.starredApis.filter(id => id !== api._id) : [
-              ...this.props.connectedUser.starredApis,
-              api._id
-            ]
-          })
-        }
-      });
-  }
+        this.props.updateUser({
+          ...this.props.connectedUser,
+          starredApis: alreadyStarred
+            ? this.props.connectedUser.starredApis.filter((id) => id !== api._id)
+            : [...this.props.connectedUser.starredApis, api._id],
+        });
+      }
+    });
+  };
 
   redirectToApiPage = (api) => {
     if (api.visibility === 'Public' || api.authorized) {
@@ -159,7 +156,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   updateTeam: (team) => updateTeamPromise(team),
   setError: (error) => setError(error),
-  updateUser: (u) => updateUser(u)
+  updateUser: (u) => updateUser(u),
 };
 
 export const TeamHome = connect(mapStateToProps, mapDispatchToProps)(TeamHomeComponent);

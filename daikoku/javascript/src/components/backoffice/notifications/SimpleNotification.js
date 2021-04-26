@@ -89,10 +89,12 @@ export class SimpleNotification extends Component {
         );
       case 'NewPostPublished':
         return (
-          <i className="fas fa-newspaper-alt"
+          <i
+            className="fas fa-newspaper-alt"
             style={{ marginRight: 5 }}
-            title={t('New Published Post', this.props.currentLanguage)} />
-        )
+            title={t('New Published Post', this.props.currentLanguage)}
+          />
+        );
     }
   };
 
@@ -344,8 +346,9 @@ export class SimpleNotification extends Component {
                         this.props.getTeam(notification.action.teamId).name,
                       ]}>
                       {notification.sender.name}, as admin of{' '}
-                      {this.props.getTeam(notification.action.teamId).name}, has published a new post on {notification.action.apiName}.
-                  </Translation>
+                      {this.props.getTeam(notification.action.teamId).name}, has published a new
+                      post on {notification.action.apiName}.
+                    </Translation>
                   </div>
                 )}
               </h5>

@@ -3,7 +3,11 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuTenantAction, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -125,25 +129,25 @@ class LoginController(DaikokuAction: DaikokuAction,
                                    env,
                                    ctx.tenant)
       case Some(p) if p == AuthProvider.OAuth2 =>
-        val maybeOAuth2Config = OAuth2Config.fromJson(ctx.tenant.authProviderSettings)
+        val maybeOAuth2Config =
+          OAuth2Config.fromJson(ctx.tenant.authProviderSettings)
 
         maybeOAuth2Config match {
           case Right(authConfig) =>
-            bindUser(
-              authConfig.sessionMaxAge,
-              ctx.tenant,
-              ctx.request,
-              OAuth2Support
-                .bindUser(ctx.request, authConfig, ctx.tenant, env)
-                .map(_.toOption))
+            bindUser(authConfig.sessionMaxAge,
+                     ctx.tenant,
+                     ctx.request,
+                     OAuth2Support
+                       .bindUser(ctx.request, authConfig, ctx.tenant, env)
+                       .map(_.toOption))
           case Left(e) =>
             AppLogger.error("Error during OAuthConfig read", e)
             Errors.craftResponseResult("Invalid OAuth Config",
-              Results.BadRequest,
-              ctx.request,
-              None,
-              env,
-              ctx.tenant)
+                                       Results.BadRequest,
+                                       ctx.request,
+                                       None,
+                                       env,
+                                       ctx.tenant)
         }
       case Some(p) =>
         ctx.request.body.asFormUrlEncoded match {
@@ -178,24 +182,37 @@ class LoginController(DaikokuAction: DaikokuAction,
                         )(ctx.request)
                     )
                   case AuthProvider.LDAP =>
-                    val ldapConfig = LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
+                    val ldapConfig =
+                      LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
 
-                    LdapSupport.bindUser(username, password, ctx.tenant, env, Some(ldapConfig)) match {
+                    LdapSupport.bindUser(username,
+                                         password,
+                                         ctx.tenant,
+                                         env,
+                                         Some(ldapConfig)) match {
                       case Left(_) =>
-                        val localConfig = LocalLoginConfig.fromJsons(ctx.tenant.authProviderSettings)
+                        val localConfig = LocalLoginConfig.fromJsons(
+                          ctx.tenant.authProviderSettings)
                         bindUser(localConfig.sessionMaxAge,
-                          ctx.tenant,
-                          ctx.request,
-                          LocalLoginSupport.bindUser(username, password, ctx.tenant, env))
-                      case Right(user) => bindUser(ldapConfig.sessionMaxAge, ctx.tenant, ctx.request, user.map(u => Some(u)))
+                                 ctx.tenant,
+                                 ctx.request,
+                                 LocalLoginSupport.bindUser(username,
+                                                            password,
+                                                            ctx.tenant,
+                                                            env))
+                      case Right(user) =>
+                        bindUser(ldapConfig.sessionMaxAge,
+                                 ctx.tenant,
+                                 ctx.request,
+                                 user.map(u => Some(u)))
                     }
                   case _ =>
                     Errors.craftResponseResult("No matching provider found",
-                      Results.BadRequest,
-                      ctx.request,
-                      None,
-                      env,
-                      ctx.tenant)
+                                               Results.BadRequest,
+                                               ctx.request,
+                                               None,
+                                               env,
+                                               ctx.tenant)
                 }
               case _ =>
                 Errors.craftResponseResult("No credentials found",
@@ -223,8 +240,8 @@ class LoginController(DaikokuAction: DaikokuAction,
       .orElse(ctx.request.headers.get("X-Forwarded-Host"))
       .getOrElse(ctx.request.host)
     val redirect = ctx.request
-        .getQueryString("redirect")
-        .getOrElse(s"${ctx.request.theProtocol}://$host/")
+      .getQueryString("redirect")
+      .getOrElse(s"${ctx.request.theProtocol}://$host/")
 
     AuthProvider(ctx.tenant.authProvider.name) match {
       case Some(AuthProvider.Otoroshi) =>
@@ -238,8 +255,9 @@ class LoginController(DaikokuAction: DaikokuAction,
           Redirect(OAuth2Config
             .fromJson(ctx.tenant.authProviderSettings) match {
             case Left(_) => redirect
-            case Right(config: OAuth2Config) => config.logoutUrl
-              .replace("${redirect}", URLEncoder.encode(redirect, "UTF-8"))
+            case Right(config: OAuth2Config) =>
+              config.logoutUrl
+                .replace("${redirect}", URLEncoder.encode(redirect, "UTF-8"))
           }).removingFromSession("sessionId")(ctx.request)
         }
       case _ =>
@@ -507,26 +525,38 @@ class LoginController(DaikokuAction: DaikokuAction,
 
   def checkLdapConnection() = DaikokuAction.async(parse.json) { ctx =>
     if ((ctx.request.body \ "user").isDefined) {
-        val username = (ctx.request.body \ "user" \ "username").as[String]
-        val password = (ctx.request.body \ "user" \ "password").as[String]
+      val username = (ctx.request.body \ "user" \ "username").as[String]
+      val password = (ctx.request.body \ "user" \ "password").as[String]
 
-        LdapConfig.fromJson((ctx.request.body \ "config").as[JsValue]) match {
-          case Left(_)       => FastFuture.successful(BadRequest(Json.obj("error" -> "bad auth. module. config")))
-          case Right(config) =>
-            LdapSupport.bindUser(username, password, ctx.tenant, env, Some(config)) match {
-              case Left(err) => FastFuture.successful(Ok(Json.obj("works" -> false, "error" -> err)))
-              case Right(_)  => FastFuture.successful(Ok(Json.obj("works" -> true)))
-            }
-        }
+      LdapConfig.fromJson((ctx.request.body \ "config").as[JsValue]) match {
+        case Left(_) =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "bad auth. module. config")))
+        case Right(config) =>
+          LdapSupport.bindUser(username,
+                               password,
+                               ctx.tenant,
+                               env,
+                               Some(config)) match {
+            case Left(err) =>
+              FastFuture.successful(
+                Ok(Json.obj("works" -> false, "error" -> err)))
+            case Right(_) =>
+              FastFuture.successful(Ok(Json.obj("works" -> true)))
+          }
+      }
     } else {
-        LdapConfig.fromJson(ctx.request.body) match {
-          case Left(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "bad auth. module. config")))
-          case Right(config) =>
-            LdapSupport.checkConnection(config).map {
-              case (works, _) if works => Ok(Json.obj("works" -> works))
-              case (works, error) => Ok(Json.obj("works" -> works, "error" -> error))
-            }
-        }
+      LdapConfig.fromJson(ctx.request.body) match {
+        case Left(_) =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "bad auth. module. config")))
+        case Right(config) =>
+          LdapSupport.checkConnection(config).map {
+            case (works, _) if works => Ok(Json.obj("works" -> works))
+            case (works, error) =>
+              Ok(Json.obj("works" -> works, "error" -> error))
+          }
+      }
     }
   }
 }

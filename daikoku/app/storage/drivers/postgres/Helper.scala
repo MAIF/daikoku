@@ -8,22 +8,27 @@ object Helper {
 
   implicit val logger: Logger = Logger("Helper")
 
-  private def _inOperatorToString(values: List[String], params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
+  private def _inOperatorToString(
+      values: List[String],
+      params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
     if (values.isEmpty)
       ("('DEFAULT VALUE TO AVOID EMPTY LIST')", params)
     else {
       val n = params.size
       (
-        s"(${values.indices.map(i =>"$" + (n + 1 + i) + "").mkString(",")})",
+        s"(${values.indices.map(i => "$" + (n + 1 + i) + "").mkString(",")})",
         params ++ values
       )
     }
   }
 
-  private def _removeQuotes(str: Any): String = str.toString
-    .replace(quotes, "")
+  private def _removeQuotes(str: Any): String =
+    str.toString
+      .replace(quotes, "")
 
-  private def _manageProperty(key: String, jsValue: JsValue, params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
+  private def _manageProperty(key: String,
+                              jsValue: JsValue,
+                              params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
     val value = _removeQuotes(jsValue)
 
     var out = ""
@@ -33,10 +38,11 @@ object Helper {
     if (key.contains(".")) {
       val parts = key.split("\\.")
       if (parts.length > 2)
-        throw new UnsupportedOperationException("Queries with three dots in the property are not supported")
+        throw new UnsupportedOperationException(
+          "Queries with three dots in the property are not supported")
 
-      out = s"(content->$$${n+1} @> '[{$quotes${parts(1)}$quotes : $quotes$value$quotes}]' OR " +
-        s"content->$$${n+1} @> '{$quotes${parts(1)}$quotes : $quotes$value$quotes}')"
+      out = s"(content->$$${n + 1} @> '[{$quotes${parts(1)}$quotes : $quotes$value$quotes}]' OR " +
+        s"content->$$${n + 1} @> '{$quotes${parts(1)}$quotes : $quotes$value$quotes}')"
 
       outParams ++= Seq(
         _removeQuotes(parts(0))
@@ -46,7 +52,8 @@ object Helper {
         out = s"(content->>${getParam(n)} is null)"
         outParams ++= Seq(key)
       } else {
-        out = s"(content->>$$${n+1} = $$${n+2} OR content->$$${n+1} @> $$${n+3})"
+        out =
+          s"(content->>$$${n + 1} = $$${n + 2} OR content->$$${n + 1} @> $$${n + 3})"
         outParams ++= Seq(
           key,
           value,
@@ -58,15 +65,17 @@ object Helper {
     (out, outParams)
   }
 
-  def getParam(n: Int): String = "$" + (n+1).toString
+  def getParam(n: Int): String = "$" + (n + 1).toString
 
-  private def _convertTuple(field: (String, JsValue), params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
+  private def _convertTuple(field: (String, JsValue),
+                            params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
     logger.debug(s"_convertTuple - $field")
 
     if (field._1 == "$push") {
       val entry = field._2.as[JsObject].fields.head
       return (
-        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(params.size)} || ${getParam(params.size+1)})",
+        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(
+          params.size)} || ${getParam(params.size + 1)})",
         params ++ Seq(entry._1, entry._2)
       )
     }
@@ -84,11 +93,12 @@ object Helper {
 
           case Some((key: String, _: JsValue)) if key == "$regex" =>
             (
-              s"content->>${getParam(params.size)} ~ ${getParam(params.size+1)}",
+              s"content->>${getParam(params.size)} ~ ${getParam(params.size + 1)}",
               params ++ Seq(field._1, value.fields.head._2.as[String])
             )
 
-          case Some((key: String, _: JsValue)) if key == "$options" => ("1 = 1", params)
+          case Some((key: String, _: JsValue)) if key == "$options" =>
+            ("1 = 1", params)
 
           case Some((key: String, _: JsValue)) if key == "$gte" =>
             val (a, b) = _convertTuple(value.fields.head, params)
@@ -118,7 +128,8 @@ object Helper {
               b ++ Seq(field._1)
             )
 
-          case Some((key: String, _: JsValue)) if key == "$and" => _convertTuple(value.fields.head, params)
+          case Some((key: String, _: JsValue)) if key == "$and" =>
+            _convertTuple(value.fields.head, params)
 
           case Some((key: String, _: JsValue)) if key == "$ne" =>
             val (a, b) = _convertTuple(value.fields.head, params)
@@ -133,7 +144,7 @@ object Helper {
         }
       case value: JsArray if field._1 == "$or" =>
         var orParams = params
-        var l : List[(String)] = List()
+        var l: List[(String)] = List()
 
         for (q <- value.as[List[JsObject]]) {
           val res = convertQuery(q, orParams)
@@ -143,7 +154,6 @@ object Helper {
 
         ("(" + l.mkString(" OR ") + ")", orParams)
 
-
       case value: JsArray if field._1 == "$in" =>
         try {
           _inOperatorToString(value.as[List[String]], params)
@@ -151,15 +161,21 @@ object Helper {
           case _: Throwable => ("('DEFAULT VALUE TO AVOID EMPTY LIST')", params)
         }
 
-      case value: JsArray if field._1 == "$nin" => _inOperatorToString(value.as[List[String]], params)
-      case value: JsValue if field._1 == "$lte" => (getParam(params.size), params ++ Seq(BigInt(value.toString)))
-      case value: JsValue if field._1 == "$gte" => (getParam(params.size), params ++ Seq(BigInt(value.toString)))
-      case value: JsValue if field._1 == "$gt" => (getParam(params.size), params ++ Seq(BigInt(value.toString)))
-      case value: JsValue if field._1 == "$lt" => (getParam(params.size), params ++ Seq(BigInt(value.toString)))
-      case value: JsValue if field._1 == "$ne" => (getParam(params.size), params ++ Seq(value.toString))
+      case value: JsArray if field._1 == "$nin" =>
+        _inOperatorToString(value.as[List[String]], params)
+      case value: JsValue if field._1 == "$lte" =>
+        (getParam(params.size), params ++ Seq(BigInt(value.toString)))
+      case value: JsValue if field._1 == "$gte" =>
+        (getParam(params.size), params ++ Seq(BigInt(value.toString)))
+      case value: JsValue if field._1 == "$gt" =>
+        (getParam(params.size), params ++ Seq(BigInt(value.toString)))
+      case value: JsValue if field._1 == "$lt" =>
+        (getParam(params.size), params ++ Seq(BigInt(value.toString)))
+      case value: JsValue if field._1 == "$ne" =>
+        (getParam(params.size), params ++ Seq(value.toString))
       case value: JsArray if field._1 == "$and" =>
         var orParams = params
-        var l : List[(String)] = List()
+        var l: List[(String)] = List()
 
         for (q <- value.as[List[JsObject]]) {
           val res = convertQuery(q, orParams)
@@ -174,7 +190,8 @@ object Helper {
   }
 
   // convert jsObject query to jsonb syntax
-  def convertQuery(query: JsObject, params: Seq[AnyRef] = Seq.empty): (String, Seq[AnyRef]) = {
+  def convertQuery(query: JsObject,
+                   params: Seq[AnyRef] = Seq.empty): (String, Seq[AnyRef]) = {
     var l = ""
     var outParams = params
 
@@ -194,7 +211,7 @@ object Helper {
     import pgimplicits._
 
     row.optJsObject("content").map(format.reads).collect {
-      case JsSuccess(s, _) =>  s
+      case JsSuccess(s, _) => s
     }
   }
 

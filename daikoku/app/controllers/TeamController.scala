@@ -3,7 +3,10 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
@@ -14,7 +17,12 @@ import fr.maif.otoroshi.daikoku.login.{LdapConfig, LdapSupport}
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents
+}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -563,43 +571,61 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def checkUser(teamId: String, email: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(AuditTrailEvent("@{user.name} has find User with many attributes (@{u.id})"))(teamId, ctx) { _ =>
-      LdapSupport.existsUser(email, ctx.tenant).map {
-        case (false, err) => BadRequest(Json.obj("error" -> err))
-        case (true, message) => Ok(Json.obj("message" -> message))
-      }
+    TeamAdminOnly(
+      AuditTrailEvent(
+        "@{user.name} has find User with many attributes (@{u.id})"))(teamId,
+                                                                      ctx) {
+      _ =>
+        LdapSupport.existsUser(email, ctx.tenant).map {
+          case (false, err)    => BadRequest(Json.obj("error" -> err))
+          case (true, message) => Ok(Json.obj("message" -> message))
+        }
     }
   }
 
-  def findUserByAttributes(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamAdminOnly(AuditTrailEvent("@{user.name} has find User with many attributes (@{u.id})"))(teamId, ctx) { _ =>
-      env.dataStore.userRepo.findOne(Json.obj(
-        "_deleted" -> false,
-      ) ++ (ctx.request.body \ "attributes").as[JsObject]).map {
-        case Some(user) => Ok(user.asJson)
-        case None => NotFound(Json.obj("error" -> "user not found"))
+  def findUserByAttributes(teamId: String) = DaikokuAction.async(parse.json) {
+    ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          "@{user.name} has find User with many attributes (@{u.id})"))(teamId,
+                                                                        ctx) {
+        _ =>
+          env.dataStore.userRepo
+            .findOne(
+              Json.obj(
+                "_deleted" -> false,
+              ) ++ (ctx.request.body \ "attributes").as[JsObject])
+            .map {
+              case Some(user) => Ok(user.asJson)
+              case None       => NotFound(Json.obj("error" -> "user not found"))
+            }
       }
-    }
   }
 
   def createLDAPUser(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamAdminOnly(AuditTrailEvent("@{user.name} has created LDAP user profile"))(teamId, ctx)  { _ =>
+    TeamAdminOnly(
+      AuditTrailEvent("@{user.name} has created LDAP user profile"))(teamId,
+                                                                     ctx) { _ =>
       LdapConfig.fromJson(ctx.tenant.authProviderSettings) match {
-        case Left(err) => FastFuture.successful(BadRequest(Json.obj("error" -> err.getMessage)))
+        case Left(err) =>
+          FastFuture.successful(BadRequest(Json.obj("error" -> err.getMessage)))
         case Right(config) =>
-          LdapSupport.createUser(
-            (ctx.request.body \ "email").as[String],
-            config.serverUrls.filter(_ => true),
-            config,
-            ctx.tenant.id,
-            env
-          )
+          LdapSupport
+            .createUser(
+              (ctx.request.body \ "email").as[String],
+              config.serverUrls.filter(_ => true),
+              config,
+              ctx.tenant.id,
+              env
+            )
             .flatMap { res =>
-              res.map(user => FastFuture.successful(Created(user.asJson)))
+              res
+                .map(user => FastFuture.successful(Created(user.asJson)))
                 .getOrElse(
-                  FastFuture.successful(BadRequest(Json.obj(
-                    "error" -> "Failed to create user from LDAP : empty response from createUser"
-                  )))
+                  FastFuture.successful(
+                    BadRequest(Json.obj(
+                      "error" -> "Failed to create user from LDAP : empty response from createUser"
+                    )))
                 )
             }
       }

@@ -324,7 +324,8 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                               val user =
                                 _user.copy(tenants = _user.tenants + tenant.id)
                               val session = UserSession(
-                                id = DatastoreId(BSONObjectID.generate().stringify),
+                                id = DatastoreId(
+                                  BSONObjectID.generate().stringify),
                                 userId = user.id,
                                 userName = user.name,
                                 userEmail = user.email,

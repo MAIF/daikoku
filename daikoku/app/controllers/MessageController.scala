@@ -14,7 +14,12 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
   PublicUserAccess,
   TenantAdminOnly
 }
-import fr.maif.otoroshi.daikoku.domain.{Message, MessageType, DatastoreId, UserId}
+import fr.maif.otoroshi.daikoku.domain.{
+  Message,
+  MessageType,
+  DatastoreId,
+  UserId
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.messages._
 import org.joda.time.DateTime

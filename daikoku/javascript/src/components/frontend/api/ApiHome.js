@@ -12,7 +12,7 @@ import {
   ApiPricing,
   ApiSwagger,
   ApiRedoc,
-  ApiPost
+  ApiPost,
 } from '.';
 import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, Option } from '../../utils';
@@ -90,7 +90,8 @@ const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar
               <StarsButton
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
-                toggleStar={toggleStar} />
+                toggleStar={toggleStar}
+              />
             </div>
           </h1>
           <p className="lead">{api.smallDescription}</p>
@@ -195,22 +196,20 @@ const ApiHomeComponent = ({
   };
 
   const toggleStar = () => {
-    Services.toggleStar(api._id)
-      .then(res => {
-        if (res.status === 204) {
-          const alreadyStarred = connectedUser.starredApis.includes(api._id);
-          api.stars += alreadyStarred ? -1 : 1;
-          setApi(api);
+    Services.toggleStar(api._id).then((res) => {
+      if (res.status === 204) {
+        const alreadyStarred = connectedUser.starredApis.includes(api._id);
+        api.stars += alreadyStarred ? -1 : 1;
+        setApi(api);
 
-          updateUser({
-            ...connectedUser,
-            starredApis: alreadyStarred ? connectedUser.starredApis.filter(id => id !== api._id) : [
-              ...connectedUser.starredApis,
-              api._id
-            ]
-          });
-        }
-      });
+        updateUser({
+          ...connectedUser,
+          starredApis: alreadyStarred
+            ? connectedUser.starredApis.filter((id) => id !== api._id)
+            : [...connectedUser.starredApis, api._id],
+        });
+      }
+    });
   };
 
   if (!api || !ownerTeam) {
@@ -228,8 +227,14 @@ const ApiHomeComponent = ({
 
   return (
     <main role="main" className="row">
-      <ApiHeader api={api} ownerTeam={ownerTeam} editUrl={editUrl(api)} history={history}
-        connectedUser={connectedUser} toggleStar={toggleStar} />
+      <ApiHeader
+        api={api}
+        ownerTeam={ownerTeam}
+        editUrl={editUrl(api)}
+        history={history}
+        connectedUser={connectedUser}
+        toggleStar={toggleStar}
+      />
       <div className="container">
         <div className="row">
           <div className="col mt-3 onglets">
@@ -254,32 +259,35 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                    }`}
+                  className={`nav-link ${
+                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                  }`}
                   to={`/${match.params.teamId}/${apiId}/documentation`}>
                   <Translation i18nkey="Documentation" language={currentLanguage}>
                     Documentation
                   </Translation>
                 </Link>
               </li>
-              {!(tenant.apiReferenceHideForGuest && connectedUser.isGuest) && <li className="nav-item">
-                {api.swagger && (
-                  <Link
-                    className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
-                    to={`/${match.params.teamId}/${apiId}/redoc`}>
-                    <Translation i18nkey="Api Reference" language={currentLanguage}>
-                      Api Reference
-                    </Translation>
-                  </Link>
-                )}
-                {!api.swagger && (
-                  <span className={'nav-link disabled'}>
-                    <Translation i18nkey="Api Reference" language={currentLanguage}>
-                      Api Reference
-                    </Translation>
-                  </span>
-                )}
-              </li>}
+              {!(tenant.apiReferenceHideForGuest && connectedUser.isGuest) && (
+                <li className="nav-item">
+                  {api.swagger && (
+                    <Link
+                      className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
+                      to={`/${match.params.teamId}/${apiId}/redoc`}>
+                      <Translation i18nkey="Api Reference" language={currentLanguage}>
+                        Api Reference
+                      </Translation>
+                    </Link>
+                  )}
+                  {!api.swagger && (
+                    <span className={'nav-link disabled'}>
+                      <Translation i18nkey="Api Reference" language={currentLanguage}>
+                        Api Reference
+                      </Translation>
+                    </span>
+                  )}
+                </li>
+              )}
               {!connectedUser.isGuest && (
                 <li className="nav-item">
                   {api.swagger && api.testing.enabled && (
@@ -296,15 +304,17 @@ const ApiHomeComponent = ({
                   )}
                 </li>
               )}
-              {!!api.posts.length && <li className="nav-item">
-                <Link
-                  className={`nav-link ${tab === 'posts' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/posts`}>
-                  <Translation i18nkey="News" language={currentLanguage}>
-                    News
-                  </Translation>
-                </Link>
-              </li>}
+              {!!api.posts.length && (
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link ${tab === 'posts' ? 'active' : ''}`}
+                    to={`/${match.params.teamId}/${apiId}/posts`}>
+                    <Translation i18nkey="News" language={currentLanguage}>
+                      News
+                    </Translation>
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
         </div>
@@ -409,7 +419,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   setError,
   openContactModal,
-  updateUser
+  updateUser,
 };
 
 export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);
