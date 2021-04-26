@@ -12,7 +12,7 @@
     "watch": "webpack --watch --mode development --liveReload -d --color",
     "build": "rm -rf ../public/react-app && mkdir ../public/react-app && webpack --mode production --progress",
     "cypress": "cypress open",
-    "test:cypress": "cypress run --record --key $CYPRESS_RECORD_KEY",
+    "test:cypress": "cypress run",
     "cypress:report:merge": "mochawesome-merge cypress/results/json/*.json > cypress/results/index.json",
     "cypress:report:generate": "marge cypress/results/index.json --reportDir report --assetsDir report/assets --reportPageTitle index.html",
     "cypress:start:backend": "cd .. && sbt  'run -Dhttp.port=9000 -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson'"
@@ -20,7 +20,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "5.15.1",
     "@xstate/react": "1.2.2",
-    "antd": "4.10.0",
+    "antd": "4.15.3",
     "asciidoctor": "2.2.1",
     "bcryptjs": "2.4.3",
     "bootstrap": "4.5.3",

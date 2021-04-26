@@ -81,6 +81,7 @@ export class AuditTrailList extends Component {
   };
 
   updateDateRange = (from, to) => {
+    console.debug({from, to})
     this.setState({ from, to }, () => {
       this.update();
     });

@@ -1,11 +1,10 @@
 import React, { Component } from 'react';
 
-import DatePicker from 'antd/lib/date-picker';
-import LocaleProvider from 'antd/lib/locale-provider';
-import enUS from 'antd/lib/locale-provider/en_US';
-import 'antd/lib/date-picker/style/index.css';
+import { DatePicker } from 'antd';
+import 'antd/dist/antd.css';
 import './datepicker.css';
 
+const { RangePicker } = DatePicker;
 export class OtoDatePicker extends Component {
   onChange = (value) => {
     const from = value[0];
@@ -24,8 +23,7 @@ export class OtoDatePicker extends Component {
     const { from, to } = this.props;
     const dateFormat = 'YYYY-MM-DD HH:mm:ss';
     return (
-      <LocaleProvider locale={enUS}>
-        <DatePicker.RangePicker
+        <RangePicker
           defaultValue={[from, to]}
           showTime={{ format: 'HH:mm:ss' }}
           format={dateFormat}
@@ -33,7 +31,6 @@ export class OtoDatePicker extends Component {
           onChange={this.onChange}
           onOk={(value) => value}
         />
-      </LocaleProvider>
     );
   }
 }
