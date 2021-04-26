@@ -142,3 +142,23 @@ We'd like to thank all the contributors who worked on this release!
 ## [v1.1.1] - 2021-04-26
 
 
+## [v1.1.0] - 2021-04-26
+
+## :star: New Features
+
+- Audit Trail Admin View - Sort by default [#240](https://github.com/MAIF/daikoku/issues/240)
+- The API reference should be hidden for the guest user, configured by the tenant [#238](https://github.com/MAIF/daikoku/issues/238)
+- retrieve the user's membership of a team from the ldap [#233](https://github.com/MAIF/daikoku/issues/233)
+- Improve LDAP auth module [#225](https://github.com/MAIF/daikoku/issues/225)
+- Handle mongo to pg migration [#218](https://github.com/MAIF/daikoku/issues/218)
+- add postgrsql support [#111](https://github.com/MAIF/daikoku/issues/111)
+- apis can be starred [#50](https://github.com/MAIF/daikoku/issues/50)
+
+## :beetle: Bug Fixes
+
+- Date Range selector is not clickable in the Audit trail page [#241](https://github.com/MAIF/daikoku/issues/241)
+- Api's Plan page crash with guest user [#236](https://github.com/MAIF/daikoku/issues/236)
+- Tenant redirection is broken [#234](https://github.com/MAIF/daikoku/issues/234)
+- Better authentication [#229](https://github.com/MAIF/daikoku/issues/229)
+- Full feature for login with ldap or Oauth [#122](https://github.com/MAIF/daikoku/issues/122)
+
