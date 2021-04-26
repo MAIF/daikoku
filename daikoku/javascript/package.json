@@ -12,7 +12,7 @@
     "watch": "webpack --watch --mode development --liveReload -d --color",
     "build": "rm -rf ../public/react-app && mkdir ../public/react-app && webpack --mode production --progress",
     "cypress": "cypress open",
-    "test:cypress": "cypress run",
+    "test:cypress": "cypress run --record --key $CYPRESS_RECORD_KEY",
     "cypress:report:merge": "mochawesome-merge cypress/results/json/*.json > cypress/results/index.json",
     "cypress:report:generate": "marge cypress/results/index.json --reportDir report --assetsDir report/assets --reportPageTitle index.html",
     "cypress:start:backend": "cd .. && sbt  'run -Dhttp.port=9000 -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson'"
