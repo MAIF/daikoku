@@ -96,12 +96,12 @@ class StateController(DaikokuAction: DaikokuAction,
                   "message" -> "You're now running on postgres - Don't forget to switch your storage environment variable to postgres on the next reboot"
                 ))
             }).recoverWith {
-                case e: Throwable => {
-                  postgresStore.stop()
-                  FastFuture.successful(
-                    BadRequest(Json.obj("error" -> e.getMessage)))
-                }
+              case e: Throwable => {
+                postgresStore.stop()
+                FastFuture.successful(
+                  BadRequest(Json.obj("error" -> e.getMessage)))
               }
+            }
         }
       }
   }
