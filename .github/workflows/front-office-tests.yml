@@ -68,6 +68,8 @@ jobs:
     - name: Cypress run and publish report
       uses: cypress-io/github-action@v2
       with:
+        browser: chrome
+        headless: true   
         start: yarn cypress:start:backend
         wait-on: 'http://localhost:9000'
         command: yarn test:cypress
