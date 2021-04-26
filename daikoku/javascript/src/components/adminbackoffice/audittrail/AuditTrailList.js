@@ -18,6 +18,7 @@ export class AuditTrailList extends Component {
   columns = [
     {
       Header: 'Date',
+      id: 'date',
       accessor: (item) => item['@timestamp']['$long'], //todo: try to remove this $long prop from reactivemongo
       style: { textAlign: 'left' },
       Cell: ({ value }) => {
@@ -141,6 +142,7 @@ export class AuditTrailList extends Component {
                     showLink={false}
                     extractKey={(item) => item._id}
                     injectTable={(t) => (this.table = t)}
+                    defaultSort='date'
                     defaultSortDesc={true}
                     injectTopBar={this.topBar}
                   />
