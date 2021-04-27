@@ -798,5 +798,7 @@
     "team_api_post.title": "Title of post",
     "team_api_post.content": "Content",
     "New Published Post": "New post published on api",
-    "News": "News"
+    "News": "News",
+    "deleted": "deleted",
+    "Deleted API": "Deleted API"
 }
