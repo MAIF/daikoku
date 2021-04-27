@@ -108,7 +108,7 @@ export class TeamMembersSimpleComponent extends Component {
           'remove.member.alert',
           this.props.currentLanguage,
           false,
-          "You can't delete this user, it must remain an admin in a team."
+          'You can\'t delete this user, it must remain an admin in a team.'
         )
       );
     } else {
@@ -208,7 +208,7 @@ export class TeamMembersSimpleComponent extends Component {
           t(
             'remove.admin.alert',
             this.props.currentLanguage,
-            "You can't remove this admin status, it must remain an admin in a team."
+            'You can\'t remove this admin status, it must remain an admin in a team.'
           )
         );
       } else {
@@ -237,7 +237,7 @@ export class TeamMembersSimpleComponent extends Component {
         t(
           'not.admin.alert',
           this.props.currentLanguage,
-          "Your are not an administrator. You can't do that."
+          'Your are not an administrator. You can\'t do that.'
         )
       );
     }
@@ -258,7 +258,7 @@ export class TeamMembersSimpleComponent extends Component {
     Services.searchLdapMember(this.props.currentTeam._id, email)
       .then((hasMember) => {
         if (hasMember.error) {
-          toastr.error(hasMemeber.error);
+          toastr.error(hasMember.error);
           this.setState({
             ldap: {
               ...this.state.ldap,
@@ -289,7 +289,7 @@ export class TeamMembersSimpleComponent extends Component {
                   searchMember: '',
                 },
               });
-          })
+          });
         }
       })
       .catch((error) => {
@@ -300,7 +300,7 @@ export class TeamMembersSimpleComponent extends Component {
             foundMember: null,
           },
         });
-      })
+      });
   };
 
   render() {

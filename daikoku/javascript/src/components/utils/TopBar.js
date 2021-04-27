@@ -120,7 +120,7 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
               alt="user menu"
             />
             <div className="dropdown-menu dropdown-menu-right" style={{ width: '320px' }}>
-              <a className="btn btn-access-negative my-2 ml-2" href={`/auth/Local/login`}>
+              <a className="btn btn-access-negative my-2 ml-2" href={'/auth/Local/login'}>
                 <i className="fas fa-user mr-1" />
                 <Translation i18nkey="Connect to your account" language={currentLanguage}>
                   Connect to your account
