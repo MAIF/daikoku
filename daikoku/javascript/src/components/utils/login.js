@@ -28,7 +28,7 @@ export class LoginPage extends Component {
     e.preventDefault();
     const { username, password } = this.state;
 
-    Services.login(username, password, this.props.action).then(async (res) => {
+    Services.login(username, password, this.props.action).then((res) => {
       if (res.status === 400)
         this.setState({
           loginError: true,

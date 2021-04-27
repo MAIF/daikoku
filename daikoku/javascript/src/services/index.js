@@ -1630,7 +1630,7 @@ export function searchLdapMember(teamId, email) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  });
+  }).then((r) => r.json());
 }
 
 export function findUserByEmail(teamId, email) {
@@ -1641,7 +1641,7 @@ export function findUserByEmail(teamId, email) {
         email,
       },
     }),
-  });
+  }).then((r) => r.json());
 }
 
 export function createUserFromLDAP(teamId, email) {

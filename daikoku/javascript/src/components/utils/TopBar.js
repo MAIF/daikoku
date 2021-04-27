@@ -26,7 +26,7 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
   function submit(e) {
     e.preventDefault();
 
-    Services.login(login, password, loginAction).then(async (res) => {
+    Services.login(login, password, loginAction).then((res) => {
       if (res.status === 400) setLoginError(true);
       else if (res.redirected) window.location.href = res.url;
     });

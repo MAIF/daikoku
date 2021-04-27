@@ -175,17 +175,19 @@ export class TeamMembersSimpleComponent extends Component {
 
   // riemann@ldap.forumsys.com
 
-  addLdapUserToTeam = async () => {
+  addLdapUserToTeam = () => {
     const email = this.state.ldap.foundMember;
-    const optUser = await Services.findUserByEmail(this.props.currentTeam._id, email);
-
-    if (optUser.status !== 200) {
-      const createdUser = await Services.createUserFromLDAP(this.props.currentTeam._id, email);
-      this._addMember(createdUser);
-    } else {
-      const user = await optUser.json();
-      this._addMember(user);
-    }
+    
+    Services.findUserByEmail(this.props.currentTeam._id, email)
+      .then((optUser) => {
+        if (optUser.error) {
+          Services.createUserFromLDAP(this.props.currentTeam._id, email)
+            .then((createdUser) => this._addMember(createdUser));
+        } else {
+          const user = optUser;
+          this._addMember(user);
+        }
+      });
 
     this.setState({
       ldap: {
@@ -250,43 +252,55 @@ export class TeamMembersSimpleComponent extends Component {
     });
   };
 
-  searchLdapMember = async () => {
+  searchLdapMember = () => {
     const email = this.state.ldap.searchMember;
 
-    const hasMember = await Services.searchLdapMember(this.props.currentTeam._id, email);
-    if (hasMember.status !== 200) {
-      toastr.error((await hasMember.json()).error);
-      this.setState({
-        ldap: {
-          ...this.state.ldap,
-          foundMember: null,
-        },
-      });
-    } else {
-      const teamId = this.props.currentTeam._id;
-      const [members, users] = await Promise.all([
-        Services.members(teamId),
-        Services.addableUsersForTeam(teamId),
-      ]);
+    Services.searchLdapMember(this.props.currentTeam._id, email)
+      .then((hasMember) => {
+        if (hasMember.error) {
+          toastr.error(hasMemeber.error);
+          this.setState({
+            ldap: {
+              ...this.state.ldap,
+              foundMember: null,
+            },
+          });
+        } else {
+          const teamId = this.props.currentTeam._id;
+          Promise.all([
+            Services.members(teamId),
+            Services.addableUsersForTeam(teamId),
+          ])
+            .then(([members, users]) => {
+              let successfull = true;
 
-      let successfull = true;
+              if (members.find((f) => f.email === email)) {
+                toastr.info(t('User already in team', this.props.currentLanguage));
+                successfull = false;
+              } else if (users.pendingUsers.find((f) => f.email === email)) {
+                toastr.info(t('User already invited', this.props.currentLanguage));
+                successfull = false;
+              }
 
-      if (members.find((f) => f.email === email)) {
-        toastr.info(t('User already in team', this.props.currentLanguage));
-        successfull = false;
-      } else if (users.pendingUsers.find((f) => f.email === email)) {
-        toastr.info(t('User already invited', this.props.currentLanguage));
-        successfull = false;
-      }
-
-      this.setState({
-        ldap: {
-          ...this.state.ldap,
-          foundMember: successfull ? email : null,
-          searchMember: '',
-        },
-      });
-    }
+              this.setState({
+                ldap: {
+                  ...this.state.ldap,
+                  foundMember: successfull ? email : null,
+                  searchMember: '',
+                },
+              });
+          })
+        }
+      })
+      .catch((error) => {
+        toastr.error(error);
+        this.setState({
+          ldap: {
+            ...this.state.ldap,
+            foundMember: null,
+          },
+        });
+      })
   };
 
   render() {
