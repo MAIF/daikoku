@@ -8,7 +8,7 @@ import { UserBackOffice } from '../';
 import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
 import { updateNotications, openSubMetadataModal } from '../../../core';
-import { Translation } from '../../../locales';
+import { Translation, t } from '../../../locales';
 
 class NotificationListComponent extends Component {
   state = {
@@ -216,7 +216,7 @@ class NotificationListComponent extends Component {
 
                   return (
                     <div key={key}>
-                      <h2>{team ? team.name : 'For you'}</h2>
+                      <h2>{team ?  team.name : t('Personal', this.props.currentLanguage)}</h2>
                       {notifs
                         .sort((a, b) => {
                           return b.date - a.date;

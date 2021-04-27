@@ -800,5 +800,7 @@
     "New Published Post": "New post published on api",
     "News": "News",
     "deleted": "deleted",
-    "Deleted API": "Deleted API"
+    "Deleted API": "Deleted API",
+    "Personal": "Personal",
+    "team.invitation": "%s, as admin of %s, invit you in his team."
 }

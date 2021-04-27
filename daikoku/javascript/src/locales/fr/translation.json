@@ -800,5 +800,7 @@
   "New Published Post": "Une nouvelle publication a été publiée",
   "News": "Informations",
   "deleted": "dupprimé",
-  "Deleted API": "API supprimée"
+  "Deleted API": "API supprimée",
+  "Personal": "Personel",
+  "team.invitation": "%s, administrateur de %s, vous a invité a rejoindre son équipe."
 }
