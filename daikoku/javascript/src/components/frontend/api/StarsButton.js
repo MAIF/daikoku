@@ -1,6 +1,8 @@
-export default ({ stars, toggleStar, starred }) => (
+import React from 'react';
+
+const StarsButton = ({ stars, toggleStar, starred }) => (
   <div
-    className="d-flex"
+    className="d-flex flex-row"
     style={{
       borderRadius: '4px',
       border: '1px solid',
@@ -14,7 +16,7 @@ export default ({ stars, toggleStar, starred }) => (
       className="btn"
       style={{ color: 'var(--btn-bg-color, "#000")', padding: '0' }}
       onClick={toggleStar}>
-      <div style={{ padding: '2px 4px' }}>
+      <div className="d-flex flex-row" style={{ padding: '2px 4px' }}>
         <i className={`${starred ? 'fas' : 'far'} fa-star pl-2`} />
         <span className="px-2">{starred ? 'Unstar' : 'Star'}</span>
       </div>
@@ -24,3 +26,5 @@ export default ({ stars, toggleStar, starred }) => (
     </div>
   </div>
 );
+
+export default StarsButton;
