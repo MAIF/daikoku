@@ -19,8 +19,8 @@ mail.apikey.refresh.title=Votre clé d''api a été modifiée
 mail.apikey.refresh.body=Le secret de votre clé d''api pour l''api {0} et le plan {1} a été modifié suite à une demande de régénération.\
   Si vous ne travaillez pas avec un système d''intégration automatique des secrets, pensez à le modifier.
 mail.apikey.demand.title=Demande de clé d''API
-mail.apikey.demand.body={0} demande une clé d''api pour l'api {1}.\
-  Vous recevez ce message car vous êtes administrateur de l'équipe propriétaire.\
+mail.apikey.demand.body={0} demande une clé d''api pour l''api {1}.\
+  Vous recevez ce message car vous êtes administrateur de l''équipe propriétaire.\
   </br>\
   <a href="{2}">Accepter/rejeter la demande</a>
 mail.api.access.title=Demande d''accès à une API

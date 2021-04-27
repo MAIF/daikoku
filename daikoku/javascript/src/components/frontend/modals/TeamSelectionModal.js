@@ -39,7 +39,7 @@ export const TeamSelectorModal = ({
     if (!allowMultipleDemand && pendingTeams.includes(team._id)) {
       return (
         <button type="button" className="btn btn-sm btn-access disabled">
-          Request in progress...
+          <Translation i18nkey="Request in progress" language={currentLanguage} />
         </button>
       );
     } else if (allowMultipleDemand || !acceptedTeams.includes(team._id)) {
