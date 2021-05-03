@@ -162,3 +162,18 @@ We'd like to thank all the contributors who worked on this release!
 - Better authentication [#229](https://github.com/MAIF/daikoku/issues/229)
 - Full feature for login with ldap or Oauth [#122](https://github.com/MAIF/daikoku/issues/122)
 
+## [v1.1.1] - 2021-05-03
+
+## :star: New Features
+
+- Add a new view for API list [#219](https://github.com/MAIF/daikoku/issues/219)
+- It could be nice to display to guest user that Get an apikey need to be logged in [#217](https://github.com/MAIF/daikoku/issues/217)
+- Add ability to hide teams to users [#215](https://github.com/MAIF/daikoku/issues/215)
+
+## :beetle: Bug Fixes
+
+- Api list display big space between the first API [#247](https://github.com/MAIF/daikoku/issues/247)
+- Notification list crash if notification.api point to a deleted api [#245](https://github.com/MAIF/daikoku/issues/245)
+- Api to get notification seems to List all notif without tenant context [#244](https://github.com/MAIF/daikoku/issues/244)
+- Api page is crashing for guest users [#216](https://github.com/MAIF/daikoku/issues/216)
+
