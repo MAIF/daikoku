@@ -300,7 +300,7 @@ const ApiListComponent = (props) => {
       <div className="row">
         <div className="section col-9 d-flex flex-column">
           <div
-            className={classNames('d-flex justify-content-between col p-3', {
+            className={classNames('d-flex justify-content-between p-3', {
               'flex-column': view === LIST,
               'flex-wrap': view === GRID,
               'flex-row': view === GRID,
