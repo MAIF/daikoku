@@ -1097,9 +1097,11 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     super.findOneWithProjection(query ++ Json.obj("_tenant" -> tenant.value),
                                 projection)
 
-  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)
-                                 (implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
-    super.findWithPagination(query  ++ Json.obj("_tenant" -> tenant.value), page, pageSize)
+  override def findWithPagination(query: JsObject, page: Int, pageSize: Int)(
+      implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
+    super.findWithPagination(query ++ Json.obj("_tenant" -> tenant.value),
+                             page,
+                             pageSize)
 }
 
 abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)

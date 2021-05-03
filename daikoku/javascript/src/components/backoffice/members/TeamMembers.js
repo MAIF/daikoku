@@ -108,7 +108,7 @@ export class TeamMembersSimpleComponent extends Component {
           'remove.member.alert',
           this.props.currentLanguage,
           false,
-          'You can\'t delete this user, it must remain an admin in a team.'
+          "You can't delete this user, it must remain an admin in a team."
         )
       );
     } else {
@@ -177,17 +177,17 @@ export class TeamMembersSimpleComponent extends Component {
 
   addLdapUserToTeam = () => {
     const email = this.state.ldap.foundMember;
-    
-    Services.findUserByEmail(this.props.currentTeam._id, email)
-      .then((optUser) => {
-        if (optUser.error) {
-          Services.createUserFromLDAP(this.props.currentTeam._id, email)
-            .then((createdUser) => this._addMember(createdUser));
-        } else {
-          const user = optUser;
-          this._addMember(user);
-        }
-      });
+
+    Services.findUserByEmail(this.props.currentTeam._id, email).then((optUser) => {
+      if (optUser.error) {
+        Services.createUserFromLDAP(this.props.currentTeam._id, email).then((createdUser) =>
+          this._addMember(createdUser)
+        );
+      } else {
+        const user = optUser;
+        this._addMember(user);
+      }
+    });
 
     this.setState({
       ldap: {
@@ -208,7 +208,7 @@ export class TeamMembersSimpleComponent extends Component {
           t(
             'remove.admin.alert',
             this.props.currentLanguage,
-            'You can\'t remove this admin status, it must remain an admin in a team.'
+            "You can't remove this admin status, it must remain an admin in a team."
           )
         );
       } else {
@@ -237,7 +237,7 @@ export class TeamMembersSimpleComponent extends Component {
         t(
           'not.admin.alert',
           this.props.currentLanguage,
-          'Your are not an administrator. You can\'t do that.'
+          "Your are not an administrator. You can't do that."
         )
       );
     }
@@ -267,11 +267,8 @@ export class TeamMembersSimpleComponent extends Component {
           });
         } else {
           const teamId = this.props.currentTeam._id;
-          Promise.all([
-            Services.members(teamId),
-            Services.addableUsersForTeam(teamId),
-          ])
-            .then(([members, users]) => {
+          Promise.all([Services.members(teamId), Services.addableUsersForTeam(teamId)]).then(
+            ([members, users]) => {
               let successfull = true;
 
               if (members.find((f) => f.email === email)) {
@@ -289,7 +286,8 @@ export class TeamMembersSimpleComponent extends Component {
                   searchMember: '',
                 },
               });
-          });
+            }
+          );
         }
       })
       .catch((error) => {

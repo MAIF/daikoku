@@ -216,7 +216,7 @@ class NotificationListComponent extends Component {
 
                   return (
                     <div key={key}>
-                      <h2>{team ?  team.name : t('Personal', this.props.currentLanguage)}</h2>
+                      <h2>{team ? team.name : t('Personal', this.props.currentLanguage)}</h2>
                       {notifs
                         .sort((a, b) => {
                           return b.date - a.date;

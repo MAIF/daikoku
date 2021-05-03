@@ -209,8 +209,10 @@ export class SimpleNotification extends Component {
     let infos = {};
     if (['ApiAccess', 'ApiSubscription'].includes(notification.action.type)) {
       const api = getApi(notification.action.api);
-      const plan = !api ? {customName: t('deleted', this.props.currentLanguage)} : api.possibleUsagePlans.find((p) => p._id === notification.action.plan);
-      infos = { api: api || {name: t('Deleted API', this.props.currentLanguage)}, plan };
+      const plan = !api
+        ? { customName: t('deleted', this.props.currentLanguage) }
+        : api.possibleUsagePlans.find((p) => p._id === notification.action.plan);
+      infos = { api: api || { name: t('Deleted API', this.props.currentLanguage) }, plan };
     }
 
     let style = {};
