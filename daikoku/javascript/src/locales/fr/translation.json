@@ -1,6 +1,7 @@
 {
   "moment.locale": "fr",
   "moment.date.format": "DD MMM. YYYY à HH:mm z",
+  "moment.date.format.without.hours": "DD MMM. YYYY",
   "moment.date.format.short": "DD/MM/YYYY",
   "your teams": "Vos équipes",
   "find team": "Trouver une équipe",

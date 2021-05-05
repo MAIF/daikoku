@@ -7,4 +7,4 @@ export * from './ApiRedoc';
 export * from './ApiConsole';
 export * from './ApiCard';
 export * from './ApiPost';
-export * from './ApiIssue';
+export * from './issues/ApiIssue';
