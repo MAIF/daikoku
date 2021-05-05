@@ -41,7 +41,7 @@ libraryDependencies ++= Seq(
   ws,
   filters,
   "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test,
-  "com.themillhousegroup" %% "scoup" % "0.4.7" % Test,
+  "com.themillhousegroup" %% "scoup" % "0.5.0" % Test,
   "com.github.tomakehurst" % "wiremock" % wiremockVersion % Test,
   "com.github.tomakehurst" % "wiremock-jre8" % wiremockVersion % Test,
   "org.apache.commons" % "commons-lang3" % "3.10",

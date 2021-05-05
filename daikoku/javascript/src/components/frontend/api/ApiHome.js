@@ -13,6 +13,7 @@ import {
   ApiSwagger,
   ApiRedoc,
   ApiPost,
+  ApiIssue
 } from '.';
 import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, Option } from '../../utils';
@@ -259,9 +260,8 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${
-                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                  }`}
+                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                    }`}
                   to={`/${match.params.teamId}/${apiId}/documentation`}>
                   <Translation i18nkey="Documentation" language={currentLanguage}>
                     Documentation
@@ -315,6 +315,15 @@ const ApiHomeComponent = ({
                   </Link>
                 </li>
               )}
+              <li className="nav-item">
+                <Link
+                  className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
+                  to={`/${match.params.teamId}/${apiId}/issues`}>
+                  <Translation i18nkey="Issues" language={currentLanguage}>
+                    Issues
+                    </Translation>
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -399,6 +408,14 @@ const ApiHomeComponent = ({
             )}
             {tab === 'posts' && (
               <ApiPost
+                api={api}
+                ownerTeam={ownerTeam}
+                match={match}
+                currentLanguage={currentLanguage}
+              />
+            )}
+            {tab === 'issues' && (
+              <ApiIssue
                 api={api}
                 ownerTeam={ownerTeam}
                 match={match}

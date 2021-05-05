@@ -15,7 +15,7 @@ import {
   TeamApiPricing,
   TeamApiSwagger,
   TeamApiTesting,
-  TeamApiPost,
+  TeamApiPost
 } from '.';
 
 import { setError, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
@@ -230,9 +230,8 @@ class TeamApiComponent extends Component {
       <TeamBackOffice
         tab="Apis"
         isLoading={!editedApi}
-        title={`${this.props.currentTeam.name} - ${
-          this.state.api ? this.state.api.name : t('API', this.props.currentLanguage)
-        }`}>
+        title={`${this.props.currentTeam.name} - ${this.state.api ? this.state.api.name : t('API', this.props.currentLanguage)
+          }`}>
         <Can I={manage} a={API} team={this.props.currentTeam} dispatchError>
           {!editedApi && (
             <h3>
@@ -358,6 +357,7 @@ class TeamApiComponent extends Component {
                       </Translation>
                     </Link>
                   </li>
+
                 </ul>
               </div>
               <div className="row">
