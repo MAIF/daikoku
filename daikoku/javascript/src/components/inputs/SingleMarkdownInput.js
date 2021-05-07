@@ -237,7 +237,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
           </div>
         </div>
         <div className="d-flex flex-row">{injectButtons()}</div>
-        <div style={{ width: 250 }}>
+        <div style={{ width: (props.fixedWitdh || 250) }}>
           {props.assertChooserActive && (
             <AssetChooserByModal
               currentLanguage={props.currentLanguage}

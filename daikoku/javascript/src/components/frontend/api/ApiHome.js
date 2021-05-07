@@ -417,7 +417,9 @@ const ApiHomeComponent = ({
             {tab === 'issues' && (
               <ApiIssue
                 api={api}
+                history={history}
                 ownerTeam={ownerTeam}
+                connectedUser={connectedUser}
                 match={match}
                 currentLanguage={currentLanguage}
               />

@@ -1,11 +1,12 @@
 import moment from 'moment';
 import React, { useState, useEffect } from 'react';
-import { Switch, useParams } from 'react-router-dom';
+import { Switch, useParams, Route, useLocation } from 'react-router-dom';
 import { t } from '../../../../locales';
 import * as Services from '../../../../services/index';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
+import { NewIssue } from './NewIssue';
 
 export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
   const [filter, setFilter] = useState("open");
@@ -15,6 +16,10 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
   const issuesTags = ["ux", "ui", "bug", "enhancement", "hotfix"]
 
   const { issueId } = useParams()
+
+  const basePath = `/${ownerTeam._humanReadableId}/${api._humanReadableId}`
+
+  console.log(basePath)
 
   const issues = [
     {
@@ -46,9 +51,23 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
 
   return (
     <div className="container-fluid">
-      {issueId ? <ApiTimelineIssue issueId={issueId} currentLanguage={currentLanguage} /> :
-        <>
+      <Switch>
+        <Route exact path={`${basePath}/issues/new`} component={() =>
+          <NewIssue
+            user={props.connectedUser}
+            currentLanguage={currentLanguage}
+            basePath={basePath}
+            {...props} />
+        } />
+        <Route exact path={`${basePath}/issues/:issueId`} component={() => <ApiTimelineIssue
+          issueId={issueId}
+          team={ownerTeam}
+          api={api}
+          currentLanguage={currentLanguage}
+          connectedUser={props.connectedUser} />} />
+        <Route exact path={`${basePath}/issues/`} render={() => <>
           <ApiFilter
+            pathname={basePath}
             tags={issuesTags || []}
             handleFilter={value => setFilter(value)}
             filter={filter}
@@ -58,7 +77,8 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
             issues={issues || []}
             filter={filter}
           />
-        </>}
+        </>} />
+      </Switch>
     </div>
   );
 }
