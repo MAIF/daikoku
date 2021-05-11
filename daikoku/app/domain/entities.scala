@@ -504,6 +504,9 @@ case class ChatId(value: String) extends ValueType with CanJson[ChatId] {
 case class ApiPostId(value: String) extends ValueType with CanJson[ApiPostId] {
   def asJson: JsValue = JsString(value)
 }
+case class ApiIssueId(value: String) extends ValueType with CanJson[ApiIssueId] {
+  def asJson: JsValue = JsString(value)
+}
 
 trait BillingTimeUnit extends CanJson[BillingTimeUnit] {
   def name: String
@@ -983,6 +986,30 @@ case class ApiPost(id: ApiPostId,
   override def asJson: JsValue = json.ApiPostFormat.writes(this)
 }
 
+case class ApiTag(id: String, color: String)
+
+case class ApiIssueComment(by: UserId,
+                           createdAt: DateTime,
+                           lastModificationAt: DateTime,
+                           content: String)
+
+case class ApiIssue(id: ApiIssueId,
+                    seqId: Int,
+                    tenant: TenantId,
+                    deleted: Boolean = false,
+                    title: String,
+                    content: String,
+                    tags: Set[ApiTag],
+                    open: Boolean,
+                    createdAt: DateTime,
+                    by: UserId,
+                    comments: Seq[ApiIssueComment],
+                    lastModificationAt: DateTime)
+  extends CanJson[ApiIssue] {
+  def humanReadableId: String = seqId.toString
+  override def asJson: JsValue = json.ApiIssueFormat.writes(this)
+}
+
 object User {
   val DEFAULT_IMAGE = "/assets/images/anonymous.jpg"
 }
@@ -1238,6 +1265,7 @@ case class Api(
     defaultUsagePlan: UsagePlanId,
     authorizedTeams: Seq[TeamId] = Seq.empty,
     posts: Seq[ApiPostId] = Seq.empty,
+    issues: Seq[ApiIssueId] = Seq.empty,
     stars: Int = 0
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
@@ -1259,6 +1287,7 @@ case class Api(
     "visibility" -> visibility.name,
     "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
     "posts" -> SeqPostIdFormat.writes(posts),
+    "issues" -> SeqIssueIdFormat.writes(issues),
     "stars" -> stars
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
@@ -1431,6 +1460,12 @@ object NotificationAction {
 
   case class NewPostPublished(teamId: String, apiName: String)
       extends NotificationAction
+
+  case class NewIssueOpen(teamId: String, apiName: String)
+    extends NotificationAction
+
+  case class NewCommentOnIssue(teamId: String, apiName: String, seqId: String)
+    extends NotificationAction
 }
 
 sealed trait NotificationType {

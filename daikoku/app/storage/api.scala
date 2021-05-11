@@ -252,6 +252,8 @@ trait ApiDocumentationPageRepo
 
 trait ApiPostRepo extends TenantCapableRepo[ApiPost, ApiPostId]
 
+trait ApiIssueRepo extends TenantCapableRepo[ApiIssue, ApiIssueId]
+
 trait ApiSubscriptionRepo
     extends TenantCapableRepo[ApiSubscription, ApiSubscriptionId]
 
@@ -298,6 +300,8 @@ trait DataStore {
   def apiDocumentationPageRepo: ApiDocumentationPageRepo
 
   def apiPostRepo: ApiPostRepo
+
+  def apiIssueRepo: ApiIssueRepo
 
   def notificationRepo: NotificationRepo
 

@@ -140,8 +140,8 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
     },
     {
       name: t('Test asset'),
-      component: (
-        <BeautifulTitle placement="bottom" title={t('image url from asset', props.currentLanguage)}>
+      component: idx => (
+        <BeautifulTitle placement="bottom" title={t('image url from asset', props.currentLanguage)} key={`toolbar-btn-${idx}`}>
           <AssetChooserByModal
             typeFilter={MimeTypeFilter.image}
             onlyPreview
@@ -171,7 +171,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
   const injectButtons = () => {
     return commands.map((command, idx) => {
       if (command.component) {
-        return command.component;
+        return command.component(idx);
       }
       return (
         <button

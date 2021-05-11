@@ -122,6 +122,19 @@ case class PostgresTenantCapableApiPostRepo(
     _repo()
 }
 
+case class PostgresTenantCapableApiIssueRepo(
+                                             _repo: () => PostgresRepo[ApiIssue, ApiIssueId],
+                                             _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiIssue, ApiIssueId]
+                                           ) extends PostgresTenantCapableRepo[ApiIssue, ApiIssueId]
+  with ApiIssueRepo {
+  override def tenantRepo(
+                           tenant: TenantId): PostgresTenantAwareRepo[ApiIssue, ApiIssueId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[ApiIssue, ApiIssueId] =
+    _repo()
+}
+
 case class PostgresTenantCapableNotificationRepo(
     _repo: () => PostgresRepo[Notification, NotificationId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[Notification,
@@ -262,21 +275,22 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
   private val TABLES = Map(
-    "tenants" -> true,
-    "password_reset" -> true,
-    "account_creation" -> true,
-    "teams" -> true,
-    "apis" -> true,
-    "translations" -> true,
-    "messages" -> false,
-    "api_subscriptions" -> true,
+    "tenants"                 -> true,
+    "password_reset"          -> true,
+    "account_creation"        -> true,
+    "teams"                   -> true,
+    "apis"                    -> true,
+    "translations"            -> true,
+    "messages"                -> false,
+    "api_subscriptions"       -> true,
     "api_documentation_pages" -> true,
-    "notifications" -> true,
-    "consumptions" -> true,
-    "audit_events" -> false,
-    "users" -> true,
-    "user_sessions" -> false,
-    "api_posts" -> true
+    "notifications"           -> true,
+    "consumptions"            -> true,
+    "audit_events"            -> false,
+    "users"                   -> true,
+    "user_sessions"           -> false,
+    "api_posts"               -> true,
+    "api_issues"              -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -322,6 +336,11 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     PostgresTenantCapableApiPostRepo(
       () => new PostgresApiPostRepo(env, reactivePg),
       t => new PostgresTenantApiPostRepo(env, reactivePg, t)
+    )
+  private val _apiIssueRepo: ApiIssueRepo =
+    PostgresTenantCapableApiIssueRepo(
+      () => new PostgresApiIssueRepo(env, reactivePg),
+      t => new PostgresTenantApiIssueRepo(env, reactivePg, t)
     )
   private val _notificationRepo: NotificationRepo =
     PostgresTenantCapableNotificationRepo(
@@ -369,6 +388,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     _apiDocumentationPageRepo
 
   override def apiPostRepo: ApiPostRepo = _apiPostRepo
+
+  override def apiIssueRepo: ApiIssueRepo = _apiIssueRepo
 
   override def notificationRepo: NotificationRepo = _notificationRepo
 
@@ -487,6 +508,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       apiSubscriptionRepo.forAllTenant(),
       apiDocumentationPageRepo.forAllTenant(),
       apiPostRepo.forAllTenant(),
+      apiIssueRepo.forAllTenant(),
       notificationRepo.forAllTenant(),
       auditTrailRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
@@ -550,6 +572,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
               apiPostRepo
                 .forAllTenant()
                 .save(ApiPostFormat.reads(payload).get)
+            case ("ApiIssues", payload) =>
+              apiIssueRepo
+                .forAllTenant()
+                .save(ApiIssueFormat.reads(payload).get)
             case ("Notifications", payload) =>
               notificationRepo
                 .forAllTenant()
@@ -692,6 +718,17 @@ class PostgresTenantApiPostRepo(env: Env,
   override def extractId(value: ApiPost): String = value.id.value
 }
 
+class PostgresTenantApiIssueRepo(env: Env,
+                                 reactivePg: ReactivePg,
+                                 tenant: TenantId)
+  extends PostgresTenantAwareRepo[ApiIssue, ApiIssueId](env, reactivePg, tenant) {
+  override def tableName: String = "api_issues"
+
+  override def format: Format[ApiIssue] = json.ApiIssueFormat
+
+  override def extractId(value: ApiIssue): String = value.id.value
+}
+
 class PostgresTenantNotificationRepo(env: Env,
                                      reactivePg: ReactivePg,
                                      tenant: TenantId)
@@ -814,6 +851,15 @@ class PostgresApiPostRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[ApiPost] = json.ApiPostFormat
 
   override def extractId(value: ApiPost): String = value.id.value
+}
+
+class PostgresApiIssueRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[ApiIssue, ApiIssueId](env, reactivePg) {
+  override def tableName: String = "api_issues"
+
+  override def format: Format[ApiIssue] = json.ApiIssueFormat
+
+  override def extractId(value: ApiIssue): String = value.id.value
 }
 
 class PostgresNotificationRepo(env: Env, reactivePg: ReactivePg)

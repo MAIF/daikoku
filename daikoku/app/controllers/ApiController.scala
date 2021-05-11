@@ -1777,6 +1777,239 @@ class ApiController(DaikokuAction: DaikokuAction,
         }
     }
   }
+
+  def getIssues(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed issues for @{api.id}"))(ctx) {
+      ctx.setCtxValue("api.id", apiId)
+
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
+        case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Api not found")))
+        case Some(_) =>
+          env.dataStore.apiIssueRepo
+            .forTenant(ctx.tenant.id)
+            .findAll()
+            .flatMap(data => FastFuture.successful(Ok(JsArray(data.map(_.asJson)))))
+      }
+    }
+  }
+
+  def createIssue(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has accessed issues for @{api.id}"))(teamId, ctx) { _ =>
+
+      ApiIssueFormat.reads(ctx.request.body) match {
+        case JsSuccess(issue, _) =>
+          env.dataStore.apiIssueRepo
+            .forAllTenant()
+            .save(issue)
+            .flatMap {
+              case true =>
+                env.dataStore.apiRepo
+                  .forAllTenant()
+                  .findByIdNotDeleted(apiId)
+                  .flatMap {
+                    case Some(api) =>
+                      env.dataStore.apiRepo.forAllTenant()
+                        .save(api.copy(issues = api.issues ++ Seq(issue.id)))
+                        .flatMap {
+                          case true =>
+                            for {
+                              subs <- env.dataStore.apiSubscriptionRepo
+                                .forAllTenant()
+                                .find(Json.obj("api" -> apiId))
+                              api <- env.dataStore.apiRepo.forAllTenant().findByIdNotDeleted(apiId)
+                              _ <- {
+                                Future.sequence(subs.toSet[ApiSubscription].map(sub =>
+                                  env.dataStore.notificationRepo
+                                    .forAllTenant()
+                                    .save(Notification(
+                                      id = NotificationId(BSONObjectID.generate().stringify),
+                                      tenant = ctx.tenant.id,
+                                      sender = ctx.user,
+                                      action = NotificationAction.NewIssueOpen(teamId, api.map(_.name).getOrElse("")),
+                                      notificationType = NotificationType.AcceptOnly,
+                                      team = Some(sub.team)
+                                    ))
+                                ))
+                              }
+                            } yield {
+                              Ok(Json.obj("created" -> true))
+                            }
+                          case false => FastFuture.successful(BadRequest("Failed to create issue"))
+                        }
+                    case None =>
+                      AppLogger.error("Api not found after issue creation")
+                      FastFuture.successful(BadRequest("Failed to create issue : Api not found"))
+                  }
+              case false => FastFuture.successful(BadRequest("Failed to create issue"))
+            }
+        case JsError(_) => FastFuture.successful(BadRequest("Body can't be parse to issue case class"))
+      }
+    }
+  }
+
+  def updateIssue(teamId: String, apiId: String, issueId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has updated issues for @{api.id}"))(teamId, ctx) { _ =>
+      ApiIssueFormat.reads(ctx.request.body) match {
+        case JsError(_) => FastFuture.successful(BadRequest("Body can't be parse to issue case class"))
+        case JsSuccess(issue, _) =>
+          env.dataStore.apiIssueRepo
+            .forAllTenant()
+            .findByIdNotDeleted(issueId)
+            .flatMap {
+              case Some(_) =>
+                env.dataStore.apiIssueRepo
+                  .forAllTenant()
+                  .save(issue)
+                  .flatMap {
+                    case true => FastFuture.successful(Ok("Issue saved"))
+                    case false => FastFuture.successful(BadRequest("Something went wrong"))
+                  }
+              case None => FastFuture.successful(BadRequest("Issue not found"))
+            }
+      }
+    }
+  }
+
+  def removeIssue(teamId: String, apiId: String, issueId: String) = DaikokuAction.async { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has removed issues for @{api.id}"))(teamId, ctx) { _ =>
+      env.dataStore.apiIssueRepo
+        .forAllTenant()
+        .deleteById(issueId)
+        .flatMap {
+          case true => FastFuture.successful(Ok("Issue removed"))
+          case false => FastFuture.successful(BadRequest("Something went wrong"))
+        }
+    }
+  }
+
+  def getComments(apiId: String, issueId: String) = DaikokuAction.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed comments for @{api.id}"))(ctx) {
+      ctx.setCtxValue("api.id", apiId)
+
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
+        case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Api not found")))
+        case Some(_) =>
+          env.dataStore.apiIssueRepo
+            .forTenant(ctx.tenant.id)
+            .findById(issueId)
+            .flatMap(issue => FastFuture.successful(
+              Ok(
+                issue.map(_.comments).getOrElse(Seq.empty[ApiIssueComment])
+              )(Writes.seq(ApiIssueCommentFormat))
+            ))
+      }
+    }
+  }
+
+  def createComment(teamId: String, apiId: String, issueId: String) = DaikokuAction.async(parse.json) { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has created comments for @{api.id}"))(ctx) {
+      ApiIssueCommentFormat.reads(ctx.request.body) match {
+        case JsSuccess(comment, _) =>
+          env.dataStore.apiIssueRepo
+            .forAllTenant()
+            .findByIdNotDeleted(issueId)
+            .flatMap {
+              case Some(issue) =>
+                env.dataStore.apiIssueRepo.forAllTenant()
+                  .save(issue.copy(comments = issue.comments :+ comment))
+                  .flatMap {
+                    case true =>
+                      for {
+                        subs <- env.dataStore.apiSubscriptionRepo
+                          .forAllTenant()
+                          .find(Json.obj("api" -> apiId))
+                        api <- env.dataStore.apiRepo.forAllTenant().findByIdNotDeleted(apiId)
+                        _ <- {
+                          Future.sequence(subs.toSet[ApiSubscription].map(sub =>
+                            env.dataStore.notificationRepo
+                              .forAllTenant()
+                              .save(Notification(
+                                id = NotificationId(BSONObjectID.generate().stringify),
+                                tenant = ctx.tenant.id,
+                                sender = ctx.user,
+                                action = NotificationAction.NewCommentOnIssue(teamId, api.map(_.name).getOrElse(""), issue.humanReadableId),
+                                notificationType = NotificationType.AcceptOnly,
+                                team = Some(sub.team)
+                              ))
+                          ))
+                        }
+                      } yield {
+                        Ok(Json.obj("created" -> true))
+                      }
+                    case false => FastFuture.successful(BadRequest("Failed to create comment"))
+                  }
+              case None =>
+                AppLogger.error("Api not found after comment creation")
+                FastFuture.successful(BadRequest("Failed to create comment : Api not found"))
+            }
+        case JsError(_) => FastFuture.successful(BadRequest("Body can't be parse to comment case class"))
+      }
+    }
+  }
+
+  def updateComment(teamId: String, apiId: String, issueId: String, commentId: String) = DaikokuAction.async(parse.json) { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has updated comments for @{api.id}"))(ctx) {
+      ApiIssueCommentFormat.reads(ctx.request.body) match {
+        case JsError(_) => FastFuture.successful(BadRequest("Body can't be parse to comment case class"))
+        case JsSuccess(newComment, _) =>
+          env.dataStore.apiIssueRepo
+            .forAllTenant()
+            .findByIdNotDeleted(issueId)
+            .flatMap {
+              case Some(issue) =>
+                val userId = (ctx.request.body \ "userId").as[String]
+
+                // TODO - check if user is in team and authorize each team api editor to edit the first
+                //  comment (cauz it's the content of the issue)
+                issue.comments
+                  .sortBy(_.createdAt)
+                  .find(comment => comment.createdAt == commentId && comment.by.value == userId)
+                  .map { _ =>
+                    env.dataStore.apiIssueRepo
+                      .forAllTenant()
+                      .save(issue.copy(comments = issue.comments.map(comment => {
+                        if (comment.createdAt == commentId)
+                          newComment
+                        else
+                          comment
+                      })))
+                      .flatMap {
+                        case true => FastFuture.successful(Ok("Issue saved"))
+                        case false => FastFuture.successful(BadRequest("Something went wrong"))
+                      }
+                  }
+                  .getOrElse(FastFuture.successful(Unauthorized("You're not authorized to update this comment")))
+
+
+              case None => FastFuture.successful(BadRequest("Issue not found"))
+            }
+      }
+    }
+  }
+
+  def removeComment(teamId: String, apiId: String, issueId: String, commentId: String) = DaikokuAction.async(parse.json) { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has updated comments for @{api.id}"))(ctx) {
+      env.dataStore.apiIssueRepo
+        .forAllTenant()
+        .findByIdNotDeleted(issueId)
+        .flatMap {
+          case Some(issue) =>
+            val userId = (ctx.request.body \ "userId").as[String]
+
+            issue.comments
+              .sortBy(_.createdAt)
+              .find(comment => comment.createdAt == commentId && comment.by.value == userId)
+              .map { _ =>
+                env.dataStore.apiIssueRepo
+                  .forAllTenant()
+                  .save(issue.copy(comments = issue.comments.filter(_.createdAt != commentId)))
+                  .flatMap {
+                    case true => FastFuture.successful(Ok("Comment removed"))
+                    case false => FastFuture.successful(BadRequest("Something went wrong"))
+                  }
+              }
+              .getOrElse(FastFuture.successful(Unauthorized("You're not authorized to remove this comment")))
+  }
 }
 
 

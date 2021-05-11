@@ -21,10 +21,14 @@ const styles = {
         padding: '6px 12px',
         borderRadius: "2em",
         color: "#fff"
-    })
+    }),
+    commentBody: {
+        border: "1px solid #eee", borderBottomLeftRadius: "8px", borderBottomRightRadius: '8px',
+        backgroundColor: "#fff"
+    }
 }
 
-function Comment({ createdBy, createdDate, content, currentLanguage }) {
+function Comment({ createdBy, createdDate, content, currentLanguage, editing, editComment, handleEditCommentContent, saveComment }) {
     return (
         createdBy ? <div className="d-flex pb-4">
             <div className="dropdown pr-2">
@@ -41,14 +45,31 @@ function Comment({ createdBy, createdDate, content, currentLanguage }) {
                     <span className="pr-1" style={styles.bold}>{createdBy._humanReadableId}</span>
                     <span className="pr-1">commented on</span>
                     {moment(createdDate).format(t('moment.date.format.without.hours', currentLanguage))}
+                    {!editing && <button className="btn btn-xs btn-outline-secondary ml-auto" onClick={editComment}>
+                        <i className="fas fa-edit align-self-center" />
+                    </button>}
                 </div>
-                <div
-                    className="p-3" style={{
-                        border: "1px solid #eee", borderBottomLeftRadius: "8px", borderBottomRightRadius: '8px',
-                        backgroundColor: "#fff"
-                    }}
-                    dangerouslySetInnerHTML={{ __html: converter.makeHtml(content) }}
-                />
+                {editing ?
+                    <div className="p-3" style={styles.commentBody}>
+                        <React.Suspense fallback={<div>loading ...</div>}>
+                            <LazySingleMarkdownInput
+                                currentLanguage={currentLanguage}
+                                height='300px'
+                                value={content}
+                                fixedWitdh="0px"
+                                onChange={handleEditCommentContent}
+                            />
+                        </React.Suspense>
+                        <div className="d-flex mt-3 justify-content-end">
+                            <button className="btn btn-outline-danger mr-1" onClick={editComment}>
+                                Cancel
+                            </button>
+                            <button className="btn btn-success" onClick={saveComment}>Update Comment</button>
+                        </div>
+                    </div>
+                    : <div className="p-3" style={styles.commentBody}
+                        dangerouslySetInnerHTML={{ __html: converter.makeHtml(content) }}
+                    />}
             </div>
         </div> : null
     )
@@ -132,10 +153,31 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
         handleEdition(false)
         console.log(issue)
     }
-    
+
     function deleteIssue() {
         console.log("Ask to intention")
     }
+
+    function editComment(i) {
+        setIssue({
+            ...issue,
+            comments: issue.comments.map((comment, j) => {
+                if (i === j)
+                    comment.editing = comment.editing !== undefined ? !comment.editing : true
+                return comment
+            })
+        })
+    }
+
+    function handleEditCommentContent(newValue, i) {
+        console.log(newValue, i)
+    }
+
+    function saveComment(i) {
+        console.log(`Save comment ${i}`)
+    }
+
+    console.log(issue.comments)
 
     return (
         <div className="container">
@@ -181,7 +223,13 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                     <Comment {...issue} />
                     <div>
                         {(issue.comments || []).map((comment, i) => (
-                            <Comment {...comment} key={`comment${i}`} currentLanguage={currentLanguage} />
+                            <Comment {...comment}
+                                key={`comment${i}`}
+                                currentLanguage={currentLanguage}
+                                editComment={() => editComment(i)}
+                                handleEditCommentContent={e => handleEditCommentContent(e, i)}
+                                saveComment={() => saveComment(i)}
+                            />
                         ))}
                     </div>
                     <NewComment
@@ -195,7 +243,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                         <label htmlFor="tags">Tags</label>
                         <div id="tags">
                             {(issue.tags || []).map(tag => (
-                                <span className="badge badge-primary mr-1">{tag}</span>
+                                <span className="badge badge-primary mr-1" key={tag}>{tag}</span>
                             ))}
                         </div>
                     </div>
