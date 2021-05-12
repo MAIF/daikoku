@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { TextInput } from '../../../inputs';
+import CreatableSelect from 'react-select/creatable';
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
+import * as Services from '../../../../services';
 
 const styles = {
     commentHeader: {
@@ -12,21 +13,41 @@ const styles = {
     }
 }
 
-export function NewIssue({ currentLanguage, user, ...props }) {
-    const [issue, setIssue] = useState({ title: '', content: '' })
+export function NewIssue({ currentLanguage, user, api, ...props }) {
+    const { issuesTags, _id, team, _tenant } = api;
+
+    const [issue, setIssue] = useState({
+        _tenant: _tenant,
+        title: '',
+        tags: [],
+        comments: [{
+            by: user._id,
+            content: ''
+        }],
+        by: user._id
+    })
+
+    console.log(api)
+    console.log(issuesTags, _id, team)
 
     function createIssue() {
-        if (issue.title.length === 0 || issue.content.length === 0)
+        if (issue.title.length === 0 || issue.comments[0].content.length === 0)
             toastr.error("Title or content are too short");
         else {
-            // Create issue
-            // then => redirect
-            props.history.push(`${props.basePath}/issues`)
+            Services.createNewIssue(_id, team, issue)
+                .then(res => {
+                    if (res.status === 200) {
+                        toastr.success("Issue created")
+                        props.history.push(`${props.basePath}/issues`)
+                    } else
+                        res.text()
+                            .then(error => toastr.error(error));
+                });
         }
     }
 
     return (
-        <div className="d-flex pb-4">
+        <div className="d-flex">
             <div className="dropdown pr-2">
                 <img
                     style={{ width: 42 }}
@@ -36,15 +57,37 @@ export function NewIssue({ currentLanguage, user, ...props }) {
                     alt="user menu"
                 />
             </div>
-            <div className="container">
-                <div className="d-flex px-3 py-2" style={styles.commentHeader}>
-                    <input
-                        type='text'
-                        className="form-control"
-                        placeholder="Title"
-                        value={issue.title}
-                        onChange={e => setIssue({ ...issue, title: e.target.value })}
-                    />
+            <div>
+                <div className="px-3 py-2" style={styles.commentHeader}>
+                    <div>
+                        <label htmlFor="title">Title</label>
+                        <input
+                            id="title"
+                            type='text'
+                            className="form-control"
+                            placeholder="Title"
+                            value={issue.title}
+                            onChange={e => setIssue({ ...issue, title: e.target.value })}
+                        />
+                    </div>
+                    <div className="py-2">
+                        <label htmlFor="tags">Tags</label>
+                        <CreatableSelect
+                            id="tags"
+                            isMulti
+                            onChange={values => {
+                                console.log(values)
+                                setIssue({
+                                    ...issue,
+                                    issuesTags: [...values]
+                                })
+                            }}
+                            options={issuesTags}
+                            value={issue.tags}
+                            className="input-select reactSelect"
+                            classNamePrefix="reactSelect"
+                        />
+                    </div>
                 </div>
                 <div
                     className="p-3" style={{
@@ -55,9 +98,12 @@ export function NewIssue({ currentLanguage, user, ...props }) {
                         <LazySingleMarkdownInput
                             currentLanguage={currentLanguage}
                             height='300px'
-                            value={issue.content}
+                            value={issue.comments[0].content}
                             fixedWitdh="0px"
-                            onChange={content => setIssue({ ...issue, content })}
+                            onChange={content => setIssue({ ...issue, comments: [{
+                                ...issue.comments[0],
+                                content 
+                            }] })}
                         />
                     </React.Suspense>
                     <div className="d-flex mt-3 justify-content-end">

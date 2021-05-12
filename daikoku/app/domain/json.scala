@@ -326,10 +326,10 @@ object json {
 
     override def writes(o: ApiIssueId): JsValue = JsString(o.value)
   }
-  val ApiTagFormat = new Format[ApiTag] {
+  val ApiTagFormat = new Format[ApiIssueTag] {
     override def reads(json: JsValue) =
       Try {
-        JsSuccess(ApiTag(
+        JsSuccess(ApiIssueTag(
           id = (json \ "id").as[String],
           color = (json \ "color").as[String]
         ))
@@ -337,7 +337,7 @@ object json {
         case e => JsError(e.getMessage)
       } get
 
-    override def writes(o: ApiTag) = Json.obj(
+    override def writes(o: ApiIssueTag) = Json.obj(
       "id" -> o.id,
       "color" -> o.color
     )
@@ -347,8 +347,12 @@ object json {
       Try {
         JsSuccess(ApiIssueComment(
           by = (json \ "by").as(UserIdFormat),
-          createdAt = (json \ "createdAt").as(DateTimeFormat),
-          lastModificationAt = (json \ "lastModificationAt").as(DateTimeFormat),
+          createdAt = (json \ "createdAt")
+            .asOpt[DateTime](DateTimeFormat.reads)
+            .getOrElse(DateTime.now()),
+          lastModificationAt = (json \ "lastModificationAt")
+            .asOpt[DateTime](DateTimeFormat.reads)
+            .getOrElse(DateTime.now()),
           content = (json \ "content").as[String]
         ))
       } recover {
@@ -1263,7 +1267,7 @@ object json {
           ApiPost(
             id = (json \ "_id")
               .asOpt[ApiPostId](ApiPostIdFormat.reads)
-              .getOrElse(ApiIssueId(BSONObjectID.generate().stringify)),
+              .getOrElse(ApiPostId(BSONObjectID.generate().stringify)),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
@@ -1291,16 +1295,16 @@ object json {
       Try {
         JsSuccess(
           ApiIssue(
-            id = (json \ "id").as(ApiIssueIdFormat),
+            id = (json \ "_id").asOpt(ApiIssueIdFormat)
+              .getOrElse(ApiIssueId(BSONObjectID.generate().stringify)),
             seqId = (json \ "seqId").asOpt[Int].getOrElse(0),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
-            content = (json \ "content").asOpt[String].getOrElse(""),
             lastModificationAt = (json \ "lastModificationAt")
               .asOpt[DateTime](DateTimeFormat.reads)
             .getOrElse(DateTime.now()),
-            tags = (json \ "tags").asOpt[Set[ApiTag]](
+            tags = (json \ "tags").asOpt[Set[ApiIssueTag]](
               Reads.set(ApiTagFormat.reads))
               .getOrElse(Set.empty),
             open = (json \ "open").asOpt[Boolean].getOrElse(true),
@@ -1317,7 +1321,20 @@ object json {
         case e => JsError(e.getMessage)
       } get
 
-    override def writes(o: ApiIssue): JsValue = o.asJson
+    override def writes(o: ApiIssue): JsValue = Json.obj(
+      "_id" -> o.id.asJson,
+      "_humanReadableId" -> o.humanReadableId,
+      "seqId" -> o.seqId,
+      "_tenant" -> o.tenant.asJson,
+      "_deleted" -> o.deleted,
+      "title" -> o.title,
+      "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
+      "tags" -> o.tags.map(ApiTagFormat.writes),
+      "open" -> o.open,
+      "createdAt" -> DateTimeFormat.writes(o.createdAt),
+      "by" -> o.by.asJson,
+      "comments" -> o.comments.map(ApiIssueCommentFormat.writes)
+    )
   }
   val ApiDocumentationFormat = new Format[ApiDocumentation] {
     override def reads(json: JsValue): JsResult[ApiDocumentation] =
@@ -1790,6 +1807,9 @@ object json {
             issues = (json \ "issues")
               .asOpt(SeqIssueIdFormat)
               .getOrElse(Seq.empty),
+            issuesTags = (json \ "issuesTags")
+              .asOpt[Seq[String]]
+              .getOrElse(Seq.empty),
             stars = (json \ "stars").asOpt[Int].getOrElse(0)
           )
         )
@@ -1828,6 +1848,7 @@ object json {
       "authorizedTeams" -> JsArray(o.authorizedTeams.map(TeamIdFormat.writes)),
       "posts" -> SeqPostIdFormat.writes(o.posts),
       "issues" -> SeqIssueIdFormat.writes(o.issues),
+      "issuesTags" -> o.issuesTags,
       "stars" -> o.stars
     )
   }
@@ -2090,9 +2111,56 @@ object json {
           NewPostPublishedFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "NewPostPublished"
           )
-
+        case p: NewIssueOpen =>
+          NewIssueOpenFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "NewIssueOpen"
+          )
+        case p: NewCommentOnIssue =>
+          NewCommentOnIssueFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "NewCommentOnIssue"
+          )
       }
     }
+
+  val NewCommentOnIssueFormat = new Format[NewCommentOnIssue] {
+    override def reads(json: JsValue): JsResult[NewCommentOnIssue] =
+      Try {
+        JsSuccess(
+          NewCommentOnIssue(
+            apiName = (json \ "apiName").asOpt[String].getOrElse(""),
+            teamId = (json \ "teamId").as(TeamIdFormat).value,
+            seqId = (json \ "seqId").asOpt[String].getOrElse("")
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: NewCommentOnIssue): JsValue = Json.obj(
+      "apiName" -> o.apiName,
+      "teamId" -> o.teamId,
+      "seqId" -> o.seqId
+    )
+  }
+
+  val NewIssueOpenFormat = new Format[NewIssueOpen] {
+    override def reads(json: JsValue): JsResult[NewIssueOpen] =
+      Try {
+        JsSuccess(
+          NewIssueOpen(
+            apiName = (json \ "apiName").asOpt[String].getOrElse(""),
+            teamId = (json \ "teamId").as(TeamIdFormat).value
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: NewIssueOpen): JsValue = Json.obj(
+      "apiName" -> o.apiName,
+      "teamId" -> o.teamId
+    )
+  }
 
   val NewPostPublishedFormat = new Format[NewPostPublished] {
     override def reads(json: JsValue): JsResult[NewPostPublished] =

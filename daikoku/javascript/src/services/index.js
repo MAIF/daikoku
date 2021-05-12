@@ -1696,6 +1696,16 @@ export function getAPIIssues(apiId) {
   }).then((r) => r.json());
 }
 
+export function getAPIIssue(apiId, issueId) {
+  return fetch(`/api/apis/${apiId}/issues/${issueId}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
 export function createNewIssue(apiId, teamId, issue) {
   return fetch(`/api/teams/${teamId}/apis/${apiId}/issues`, {
     ...POST_HEADERS,
@@ -1703,11 +1713,19 @@ export function createNewIssue(apiId, teamId, issue) {
   });
 }
 
-export function removeIssue(apiId, teamId, issueId) {
+export function updateIssue(apiId, teamId, issueId, issue) {
   return fetch(`/api/teams/${teamId}/apis/${apiId}/issues/${issueId}`, {
     ...POST_HEADERS,
-    method: 'DELETE',
-  });
+    method: 'PUT',
+    body: JSON.stringify({
+      ...issue,
+      by: issue.by._id,
+      comments: issue.comments.map(comment => ({
+        ...comment,
+        by: comment.by._id
+      }))
+    })
+  })
 }
 
 export function saveIssue(apiId, teamId, issueId, content) {

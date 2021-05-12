@@ -2,58 +2,27 @@ import moment from 'moment';
 import React, { useState, useEffect } from 'react';
 import { Switch, useParams, Route, useLocation } from 'react-router-dom';
 import { t } from '../../../../locales';
-import * as Services from '../../../../services/index';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
 import { NewIssue } from './NewIssue';
 
 export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
-  const [filter, setFilter] = useState("open");
+  const [filter, setFilter] = useState("all");
 
-  // const { issuesTags, issues } = api;
-  console.log(api)
-  const issuesTags = ["ux", "ui", "bug", "enhancement", "hotfix"]
+  const { issuesTags } = api;
 
   const { issueId } = useParams()
-
   const basePath = `/${ownerTeam._humanReadableId}/${api._humanReadableId}`
 
-  console.log(basePath)
-
-  const issues = [
-    {
-      seqId: 0,
-      title: "Subscriptions must be cross API dut to otoroshi service groups usages",
-      tags: ["bug", "enhancement", "global", "otoroshi"],
-      status: "open",
-      openedBy: { "_humanReadableId": "quentinfoobar" },
-      createdDate: Date.now()
-    },
-    {
-      seqId: 1,
-      title: "Support mTLS for PG connection",
-      tags: ["datastore", "enhancement", "security"],
-      status: "open",
-      openedBy: { "_humanReadableId": "mathieuancelin" },
-      createdDate: Date.now()
-    },
-    {
-      seqId: 10,
-      title: "Tenant title so ugly",
-      tags: ["bug", "priority"],
-      status: "closed",
-      openedBy: { "_humanReadableId": "mathieuancelin" },
-      createdDate: moment(Date.now()).subtract('1', 'day'),
-      closedDate: Date.now()
-    },
-  ]
+  console.log(api)
 
   return (
     <div className="container-fluid">
       <Switch>
         <Route exact path={`${basePath}/issues/new`} component={() =>
           <NewIssue
+            api={api}
             user={props.connectedUser}
             currentLanguage={currentLanguage}
             basePath={basePath}
@@ -64,7 +33,10 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
           team={ownerTeam}
           api={api}
           currentLanguage={currentLanguage}
-          connectedUser={props.connectedUser} />} />
+          connectedUser={props.connectedUser}
+          basePath={basePath}
+          history={props.history} />}
+        />
         <Route exact path={`${basePath}/issues/`} render={() => <>
           <ApiFilter
             pathname={basePath}
@@ -74,8 +46,8 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
           />
           <ApiIssues
             currentLanguage={currentLanguage}
-            issues={issues || []}
             filter={filter}
+            api={api}
           />
         </>} />
       </Switch>

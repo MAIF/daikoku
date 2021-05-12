@@ -119,8 +119,9 @@ GET     /api/apis/:apiId/posts                          fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/apis/:apiId/issues                         fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssues(apiId)
 ### NoDocs ###
-GET     /api/apis/:apiId/issues/:issueId/comments                   fr.maif.otoroshi.daikoku.ctrls.ApiController.getComments(apiId, issueId)
-
+GET     /api/apis/:apiId/issues/:issueId/comments       fr.maif.otoroshi.daikoku.ctrls.ApiController.getComments(apiId, issueId)
+### NoDocs ###
+GET     /api/apis/:apiId/issues/:issueId                fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssue(apiId, issueId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscription/:id/informations         fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionInformations(teamId, id)
@@ -165,10 +166,6 @@ POST        /api/teams/:teamId/apis/:apiId/issues                    fr.maif.oto
 PUT         /api/teams/:teamId/apis/:apiId/issues/:issueId           fr.maif.otoroshi.daikoku.ctrls.ApiController.updateIssue(teamId, apiId, issueId)
 ### NoDocs ###
 POST        /api/teams/:teamId/apis/:apiId/issues/:issueId/comments                   fr.maif.otoroshi.daikoku.ctrls.ApiController.createComment(teamId, apiId, issueId)
-### NoDocs ###
-PUT         /api/teams/:teamId/apis/:apiId/issues/:issueId/comments/:commentId        fr.maif.otoroshi.daikoku.ctrls.ApiController.updateComment(teamId, apiId, issueId, commentId)
-### NoDocs ###
-DELETE      /api/teams/:teamId/apis/:apiId/issues/:issueId/comments/:commentId        fr.maif.otoroshi.daikoku.ctrls.ApiController.removeComment(teamId, apiId, issueId, commentId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)
