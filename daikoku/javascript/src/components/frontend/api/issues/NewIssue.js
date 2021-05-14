@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toastr } from 'react-redux-toastr';
-import CreatableSelect from 'react-select/creatable';
+import Select from 'react-select';
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 import * as Services from '../../../../services';
 
@@ -27,14 +27,14 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
         by: user._id
     })
 
-    console.log(api)
-    console.log(issuesTags, _id, team)
-
     function createIssue() {
         if (issue.title.length === 0 || issue.comments[0].content.length === 0)
             toastr.error("Title or content are too short");
         else {
-            Services.createNewIssue(_id, team, issue)
+            Services.createNewIssue(_id, team, {
+                ...issue,
+                tags: issue.tags.map(tag => tag.value.id)
+            })
                 .then(res => {
                     if (res.status === 200) {
                         toastr.success("Issue created")
@@ -72,17 +72,14 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
                     </div>
                     <div className="py-2">
                         <label htmlFor="tags">Tags</label>
-                        <CreatableSelect
+                        <Select
                             id="tags"
                             isMulti
-                            onChange={values => {
-                                console.log(values)
-                                setIssue({
-                                    ...issue,
-                                    issuesTags: [...values]
-                                })
-                            }}
-                            options={issuesTags}
+                            onChange={values => setIssue({
+                                ...issue,
+                                tags: [...values]
+                            })}
+                            options={issuesTags.map(iss => ({ value: iss, label: iss.name }))}
                             value={issue.tags}
                             className="input-select reactSelect"
                             classNamePrefix="reactSelect"
@@ -100,10 +97,12 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
                             height='300px'
                             value={issue.comments[0].content}
                             fixedWitdh="0px"
-                            onChange={content => setIssue({ ...issue, comments: [{
-                                ...issue.comments[0],
-                                content 
-                            }] })}
+                            onChange={content => setIssue({
+                                ...issue, comments: [{
+                                    ...issue.comments[0],
+                                    content
+                                }]
+                            })}
                         />
                     </React.Suspense>
                     <div className="d-flex mt-3 justify-content-end">

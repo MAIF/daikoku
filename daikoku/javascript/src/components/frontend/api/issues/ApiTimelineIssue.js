@@ -6,6 +6,7 @@ import { t } from "../../../../locales";
 import { converter } from '../../../../services/showdown';
 import * as Services from '../../../../services';
 import { toastr } from 'react-redux-toastr';
+import Select from 'react-select';
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 
 const styles = {
@@ -34,12 +35,16 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
     const [issue, setIssue] = useState({ comments: [] })
     const [editionMode, handleEdition] = useState(false)
     const [newComment, setNewComment] = useState("")
+    const [showTag, onTagEdit] = useState(false)
 
     const id = issueId || useParams().issueId;
 
     useEffect(() => {
         Services.getAPIIssue(api._id, id)
-            .then(res => setIssue(res));
+            .then(res => setIssue({
+                ...res,
+                tags: res.tags.map(tag => ({ value: tag, label: tag.name }))
+            }));
     }, [id])
 
     useEffect(() => {
@@ -54,7 +59,11 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
             toastr.error("Title is empty");
         else {
             handleEdition(false);
-            Services.updateIssue(api._id, team._id, id, issue)
+            onTagEdit(false);
+            Services.updateIssue(api._id, team._id, id, {
+                ...issue,
+                tags: issue.tags.map(tag => tag.value.id)
+            })
         }
     }
 
@@ -128,6 +137,22 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
             .then(() => setIssue({ ...issue, open: value }))
     }
 
+    function closeIssue() {
+        const newIssue = {
+            ...issue,
+            open: false,
+            comments: newComment.length > 0 ? [
+                ...issue.comments,
+                {
+                    by: connectedUser,
+                    content: newComment
+                }
+            ] : issue.comments
+        }
+        Services.updateIssue(api._id, team._id, id, newIssue)
+            .then(() => setIssue(newIssue))
+    }
+
     return (
         <div className="container">
             <div className="d-flex align-items-center justify-content-between mb-2">
@@ -168,7 +193,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
             </div>
 
             <div className="row">
-                <div className="col-md-10">
+                <div className="col-md-9">
                     {issue.comments.map((comment, i) => (
                         <Comment
                             {...comment}
@@ -186,17 +211,42 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                         open={issue.open}
                         handleContent={setNewComment}
                         createComment={createComment}
-                        closeIssue={() => setIssueStatus(false)}
+                        closeIssue={closeIssue}
                         openIssue={() => setIssueStatus(true)} />
                 </div>
-                <div className="col-md-2">
+                <div className="col-md-3">
                     <div>
-                        <label htmlFor="tags">Tags</label>
+                        <div className="d-flex">
+                            <label htmlFor="tags">Tags</label>
+                            <i className="fas fa-cog ml-auto" onClick={onTagEdit}></i>
+                        </div>
                         <div id="tags">
-                            {(issue.tags || []).map(tag => (
-                                <span className="badge badge-primary mr-1" key={tag}>{tag}</span>
-                            ))}
-                            {(issue.tags && issue.tags.length <= 0) && <p>No tags</p>}
+                            {showTag ?
+                                <>
+                                    <Select
+                                        id="tags"
+                                        isMulti
+                                        onChange={values => setIssue({
+                                            ...issue,
+                                            tags: values ? [...values] : []
+                                        })}
+                                        options={api.issuesTags.map(iss => ({ value: iss, label: iss.name }))}
+                                        value={issue.tags}
+                                        className="input-select reactSelect"
+                                        classNamePrefix="reactSelect"
+                                    />
+                                    <button className="btn btn-outline-success my-3" onClick={updateIssue}>Save</button>
+                                </>
+                                :
+                                <>
+                                    {(issue.tags || []).map(tag => (
+                                        <span className="badge badge-primary mr-1"
+                                            style={{ backgroundColor: tag.value.color }}
+                                            key={tag.value.id}>{tag.value.name}</span>
+                                    ))}
+                                    {(issue.tags && issue.tags.length <= 0) && <p>No tags</p>}
+                                </>
+                            }
                         </div>
                     </div>
                     <hr className="hr-apidescription" />

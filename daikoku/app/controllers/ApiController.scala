@@ -1363,10 +1363,10 @@ class ApiController(DaikokuAction: DaikokuAction,
                 case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api Plan not found")))
                 case Some(plan) =>
                   val apiToSave = oldApi.copy(possibleUsagePlans = Seq(plan))
-                  env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-                    .save(apiToSave)
-                    .map(_ => Ok(apiToSave.asJson))
-
+                  updateTagsOfIssues(ctx.tenant.id, apiToSave)
+                    .flatMap { _ =>
+                      FastFuture.successful(Ok(apiToSave.asJson))
+                    }
               }
             case JsSuccess(api, _) =>
               val flippedPlans = api.possibleUsagePlans.filter(pp => oldApi.possibleUsagePlans.exists(oldPp => pp.id == oldPp.id && oldPp.visibility != pp.visibility))
@@ -1383,6 +1383,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                 apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
                 _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
                 _ <- otoroshiSynchronisator.verify(Json.obj("api" -> apiId)) //launch synhro to maybe update customeMetadata & authorizedEntities
+                _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
               } yield {
                 ctx.setCtxValue("api.name", api.name)
                 ctx.setCtxValue("api.id", api.id)
@@ -1391,6 +1392,18 @@ class ApiController(DaikokuAction: DaikokuAction,
           }
       }
     }
+  }
+
+  private def updateTagsOfIssues(tenantId: TenantId, api: Api) = {
+    env.dataStore.apiIssueRepo.forTenant(tenantId)
+      .findAll()
+      .flatMap { issues =>
+        Future.sequence(issues.map(issue => {
+          env.dataStore.apiIssueRepo
+            .forTenant(tenantId)
+            .save(issue.copy(tags = issue.tags.filter(tag => api.issuesTags.exists(t => t.id == tag))))
+        }))
+      }
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1790,11 +1803,16 @@ class ApiController(DaikokuAction: DaikokuAction,
           for {
             creators      <- Future.sequence(issue.comments.map(comment => env.dataStore.userRepo.findById(comment.by.value)))
             issueCreator  <- env.dataStore.userRepo.findById(issue.by.value)
+            api           <- env.dataStore.apiRepo.forAllTenant().findById(apiId)
           } yield {
             issueCreator
               .map { creator =>
+                val issuesTags = api.map(_.issuesTags).getOrElse(Set.empty)
                 Ok(
-                  (issue.asJson.as[JsObject] + ("comments" -> JsArray(issue.comments.zipWithIndex.map { case (comment, i) =>
+                  (issue.asJson.as[JsObject] +
+                    ("tags" -> Json.toJson(issue.tags
+                      .map(tagId => issuesTags.find(_.id == tagId).map(tag => ApiTagFormat.writes(tag)).getOrElse(Json.obj())))) +
+                    ("comments" -> JsArray(issue.comments.zipWithIndex.map { case (comment, i) =>
                     ApiIssueCommentFormat.writes(comment) + ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj()))
                   })))
                     +
@@ -1812,19 +1830,25 @@ class ApiController(DaikokuAction: DaikokuAction,
 
       env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
         case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Api not found")))
-        case Some(_) =>
+        case Some(api) =>
           env.dataStore.apiIssueRepo
             .forTenant(ctx.tenant.id)
             .findAllNotDeleted()
             .flatMap(issues =>
               for {
-                creators <- Future.sequence(issues.map(issue => env.dataStore.userRepo.findById(issue.by.value)))
+                creators  <- Future.sequence(issues.map(issue => env.dataStore.userRepo.findById(issue.by.value))),
               } yield {
                 Ok(
                   JsArray(
                   issues
                     .zipWithIndex
-                    .map { case (issue, i) => issue.asJson.as[JsObject] + ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj())) }
+                    .map {
+                      case (issue, i) =>
+                        issue.asJson.as[JsObject] +
+                          ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj())) +
+                          ("tags" -> Json.toJson(issue.tags
+                              .map(tagId => api.issuesTags.find(_.id == tagId).map(tag => ApiTagFormat.writes(tag)).getOrElse(Json.obj()))))
+                    }
                   )
                 )
               }

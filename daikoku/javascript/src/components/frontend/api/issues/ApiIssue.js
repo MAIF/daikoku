@@ -39,6 +39,8 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
         />
         <Route exact path={`${basePath}/issues/`} render={() => <>
           <ApiFilter
+            teamPath={`/${ownerTeam._humanReadableId}`}
+            api={api}
             pathname={basePath}
             tags={issuesTags || []}
             handleFilter={value => setFilter(value)}

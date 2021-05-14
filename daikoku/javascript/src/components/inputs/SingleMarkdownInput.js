@@ -212,6 +212,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
       <div
         style={{
           marginBottom: 10,
+          flexWrap: "wrap"
         }}
         className="d-flex flex-sm-row flex-column align-items-center">
         <div>

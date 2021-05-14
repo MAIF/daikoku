@@ -330,7 +330,10 @@ object json {
     override def reads(json: JsValue) =
       Try {
         JsSuccess(ApiIssueTag(
-          id = (json \ "id").as[String],
+          id = (json \ "id")
+            .asOpt[ApiIssueTagId](ApiIssueTagIdFormat.reads)
+            .getOrElse(ApiIssueTagId(BSONObjectID.generate().stringify)),
+          name = (json \ "name").as[String],
           color = (json \ "color").as[String]
         ))
       } recover {
@@ -338,7 +341,8 @@ object json {
       } get
 
     override def writes(o: ApiIssueTag) = Json.obj(
-      "id" -> o.id,
+      "id" -> ApiIssueTagIdFormat.writes(o.id),
+      "name" -> o.name,
       "color" -> o.color
     )
   }
@@ -1304,8 +1308,8 @@ object json {
             lastModificationAt = (json \ "lastModificationAt")
               .asOpt[DateTime](DateTimeFormat.reads)
             .getOrElse(DateTime.now()),
-            tags = (json \ "tags").asOpt[Set[ApiIssueTag]](
-              Reads.set(ApiTagFormat.reads))
+            tags = (json \ "tags").asOpt[Set[ApiIssueTagId]](
+              Reads.set(ApiIssueTagIdFormat.reads))
               .getOrElse(Set.empty),
             open = (json \ "open").asOpt[Boolean].getOrElse(true),
             createdAt = (json \ "createdAt")
@@ -1314,7 +1318,9 @@ object json {
             by = (json \ "by").as(UserIdFormat),
             comments = (json \ "comments")
               .asOpt[Seq[ApiIssueComment]](Reads.seq(ApiIssueCommentFormat.reads))
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            closedAt = (json \ "closedAt")
+              .asOpt[DateTime](DateTimeFormat.reads),
           )
         )
       } recover {
@@ -1329,12 +1335,23 @@ object json {
       "_deleted" -> o.deleted,
       "title" -> o.title,
       "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
-      "tags" -> o.tags.map(ApiTagFormat.writes),
+      "tags" -> o.tags.map(ApiIssueTagIdFormat.writes),
       "open" -> o.open,
       "createdAt" -> DateTimeFormat.writes(o.createdAt),
+      "closedAt" -> o.closedAt.map(DateTimeFormat.writes).getOrElse(JsNull).as[JsValue],
       "by" -> o.by.asJson,
       "comments" -> o.comments.map(ApiIssueCommentFormat.writes)
     )
+  }
+  val ApiIssueTagIdFormat = new Format[ApiIssueTagId] {
+    override def reads(json: JsValue): JsResult[ApiIssueTagId] =
+      Try {
+        JsSuccess(ApiIssueTagId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiIssueTagId): JsValue = JsString(o.value)
   }
   val ApiDocumentationFormat = new Format[ApiDocumentation] {
     override def reads(json: JsValue): JsResult[ApiDocumentation] =
@@ -1808,8 +1825,8 @@ object json {
               .asOpt(SeqIssueIdFormat)
               .getOrElse(Seq.empty),
             issuesTags = (json \ "issuesTags")
-              .asOpt[Seq[String]]
-              .getOrElse(Seq.empty),
+              .asOpt(SetApiTagFormat)
+              .getOrElse(Set.empty),
             stars = (json \ "stars").asOpt[Int].getOrElse(0)
           )
         )
@@ -1848,7 +1865,7 @@ object json {
       "authorizedTeams" -> JsArray(o.authorizedTeams.map(TeamIdFormat.writes)),
       "posts" -> SeqPostIdFormat.writes(o.posts),
       "issues" -> SeqIssueIdFormat.writes(o.issues),
-      "issuesTags" -> o.issuesTags,
+      "issuesTags" -> SetApiTagFormat.writes(o.issuesTags),
       "stars" -> o.stars
     )
   }
@@ -2979,6 +2996,8 @@ object json {
     Format(Reads.seq(ApiFormat), Writes.seq(ApiFormat))
   val SetApiIdFormat =
     Format(Reads.set(ApiIdFormat), Writes.set(ApiIdFormat))
+  val SetApiTagFormat =
+      Format(Reads.set(ApiTagFormat), Writes.set(ApiTagFormat))
   val SetUserWithPermissionFormat =
     Format(Reads.set(UserWithPermissionFormat),
            Writes.set(UserWithPermissionFormat))

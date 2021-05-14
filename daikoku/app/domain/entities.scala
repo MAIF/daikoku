@@ -507,6 +507,9 @@ case class ApiPostId(value: String) extends ValueType with CanJson[ApiPostId] {
 case class ApiIssueId(value: String) extends ValueType with CanJson[ApiIssueId] {
   def asJson: JsValue = JsString(value)
 }
+case class ApiIssueTagId(value: String) extends ValueType with CanJson[ApiIssueTagId] {
+  def asJson: JsValue = JsString(value)
+}
 
 trait BillingTimeUnit extends CanJson[BillingTimeUnit] {
   def name: String
@@ -986,7 +989,7 @@ case class ApiPost(id: ApiPostId,
   override def asJson: JsValue = json.ApiPostFormat.writes(this)
 }
 
-case class ApiIssueTag(id: String, color: String)
+case class ApiIssueTag(id: ApiIssueTagId, name: String, color: String)
 
 case class ApiIssueComment(by: UserId,
                            createdAt: DateTime,
@@ -998,9 +1001,10 @@ case class ApiIssue(id: ApiIssueId,
                     tenant: TenantId,
                     deleted: Boolean = false,
                     title: String,
-                    tags: Set[ApiIssueTag],
+                    tags: Set[ApiIssueTagId],
                     open: Boolean,
                     createdAt: DateTime,
+                    closedAt: Option[DateTime],
                     by: UserId,
                     comments: Seq[ApiIssueComment],
                     lastModificationAt: DateTime)
@@ -1265,7 +1269,7 @@ case class Api(
     authorizedTeams: Seq[TeamId] = Seq.empty,
     posts: Seq[ApiPostId] = Seq.empty,
     issues: Seq[ApiIssueId] = Seq.empty,
-    issuesTags: Seq[String] = Seq.empty,
+    issuesTags: Set[ApiIssueTag] = Set.empty,
     stars: Int = 0
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
@@ -1288,7 +1292,7 @@ case class Api(
     "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
     "posts" -> SeqPostIdFormat.writes(posts),
     "issues" -> SeqIssueIdFormat.writes(issues),
-    "issuesTags" -> issuesTags,
+    "issuesTags" -> SetApiTagFormat.writes(issuesTags),
     "stars" -> stars
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {

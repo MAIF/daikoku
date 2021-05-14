@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-export function ApiFilter({ tags, handleFilter, filter, pathname }) {
+export function ApiFilter({ api, teamPath, tags, handleFilter, filter, pathname }) {
 
     return (
         <div className="d-flex flex-row justify-content-between">
@@ -19,7 +19,7 @@ export function ApiFilter({ tags, handleFilter, filter, pathname }) {
                     onClick={() => handleFilter("closed")}>Closed</button>
             </div>
             <div>
-                <Link to={`${pathname}/labels`} className="btn btn-outline-primary">
+                <Link to={`${teamPath}/settings/apis/${api._humanReadableId}`} className="btn btn-outline-primary">
                     <i className="fa fa-tag mr-1" />
                     Labels
                     <span className="badge badge-secondary ml-2">{tags.length || 0}</span>
