@@ -13,7 +13,7 @@ export function ApiIssues({ filter, currentLanguage, api }) {
     }, [api._id]);
 
     const filteredIssues = issues
-        .filter(issue => filter === "all" || (issue.open && filter === "open"))
+        .filter(issue => filter === "all" || (issue.open && filter === "open") || (!issue.open && filter === "closed"))
 
     console.log(issues)
 

@@ -45,6 +45,7 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
             tags={issuesTags || []}
             handleFilter={value => setFilter(value)}
             filter={filter}
+            connectedUser={props.connectedUser}
           />
           <ApiIssues
             currentLanguage={currentLanguage}
