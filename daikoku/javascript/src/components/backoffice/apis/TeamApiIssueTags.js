@@ -3,15 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import { toastr } from 'react-redux-toastr';
 import { t } from '../../../locales';
-import * as Services from '../../../services/index';
 
-export function TeamApiIssueTags({ value, onChange }) {
+export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
   const [showTagForm, showNewTagForm] = useState(false);
   const [issuesTags, setIssueTags] = useState([])
 
   useEffect(() => {
     setIssueTags(value.issuesTags)
-    console.log(value.issuesTags)
   }, [value.issuesTags])
 
   function deleteTag(id) {
@@ -25,6 +23,7 @@ export function TeamApiIssueTags({ value, onChange }) {
     <div style={{ paddingBottom: '250px' }}>
       {showTagForm ? <NewTag
         issuesTags={issuesTags}
+        currentLanguage={currentLanguage}
         handleCreate={newTag => {
           onChange({ ...value, issuesTags: [...issuesTags, newTag] })
           showNewTagForm(false)
@@ -34,12 +33,12 @@ export function TeamApiIssueTags({ value, onChange }) {
           <label className="col-xs-12 col-sm-2 col-form-label">Actions</label>
           <div className="col-sm-10">
             <button className="btn btn-success"
-              onClick={() => showNewTagForm(true)}>New label</button>
+              onClick={() => showNewTagForm(true)}>{t('issues.new_tag', currentLanguage)}</button>
           </div>
         </div>
       }
       <div className="form-group row pt-3">
-        <label className="col-xs-12 col-sm-2 col-form-label">Tags</label>
+        <label className="col-xs-12 col-sm-2 col-form-label">{t('issues.tags', currentLanguage)}</label>
         <div className="col-sm-10">
           {issuesTags.map((issueTag, i) => (
             <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
@@ -68,18 +67,18 @@ export function TeamApiIssueTags({ value, onChange }) {
                 })}
                 presetColors={[]} />
               <div className="ml-auto">
-                <button className="btn btn-sm btn-outline-danger" type="button" onClick={() => deleteTag(issueTag.id)}>Delete</button>
+                <button className="btn btn-sm btn-outline-danger" type="button" onClick={() => deleteTag(issueTag.id)}>{t('Delete', currentLanguage)}</button>
               </div>
             </div>
           ))}
-          {issuesTags.length === 0 && <p>No tags</p>}
+          {issuesTags.length === 0 && <p>{t('issues.no_tags', currentLanguage)}</p>}
         </div>
       </div>
     </div >
   )
 }
 
-function NewTag({ issuesTags, handleCreate, onCancel }) {
+function NewTag({ issuesTags, handleCreate, onCancel, currentLanguage }) {
   const [tag, setTag] = useState({ name: '', color: '#2980b9' });
 
   function confirmTag() {
@@ -95,26 +94,26 @@ function NewTag({ issuesTags, handleCreate, onCancel }) {
 
   return (
     <div className="form-group row">
-      <label className="col-xs-12 col-sm-2 col-form-label">New tag</label>
+      <label className="col-xs-12 col-sm-2 col-form-label">{t('issues.new_tag', currentLanguage)}</label>
       <div className="col-sm-10">
         <div className="d-flex align-items-end">
           <div className="pr-3" style={{ flex: .5 }}>
-            <label htmlFor="tag">Tag name</label>
+            <label htmlFor="tag">{t('issues.tag_name', currentLanguage)}</label>
             <input
               className="form-control"
               type="text" id="tag" value={tag.name}
-              onChange={e => setTag({ ...tag, name: e.target.value })} placeholder="Tag name" />
+              onChange={e => setTag({ ...tag, name: e.target.value })} placeholder={t('issues.tag_name', currentLanguage)} />
           </div>
           <div className="px-3">
-            <label htmlFor="color">Tag color</label>
+            <label htmlFor="color">{t('issues.tag_color', currentLanguage)}</label>
             <ColorTag
               initialColor={'#2980b9'}
               handleColorChange={color => setTag({ ...tag, color })}
               presetColors={[]} />
           </div>
           <div className="ml-auto">
-            <button className="btn btn-outline-danger mr-2" type="button" onClick={onCancel}>Cancel</button>
-            <button className="btn btn-outline-success" type="button" onClick={confirmTag}>Create label</button>
+            <button className="btn btn-outline-danger mr-2" type="button" onClick={onCancel}>{t('Cancel', currentLanguage)}</button>
+            <button className="btn btn-outline-success" type="button" onClick={confirmTag}>{t('issues.create_tag', currentLanguage)}</button>
           </div>
         </div>
       </div>

@@ -8,7 +8,7 @@ import * as Services from '../../../../services';
 import { toastr } from 'react-redux-toastr';
 import Select from 'react-select';
 import { api as API, manage } from '../../..';
-import { Can, CanIDoAction } from '../../../utils';
+import { Can } from '../../../utils';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 
@@ -59,7 +59,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
 
     function updateIssue() {
         if (issue.title.length <= 0)
-            toastr.error("Title is empty");
+            toastr.error(t('issues.timeline.title.error', currentLanguage));
         else {
             handleEdition(false);
             onTagEdit(false);
@@ -76,7 +76,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
 
     function updateComment(i) {
         if (issue.comments[i].content.length <= 0)
-            toastr.error("Missing content of comment")
+            toastr.error(t('issues.timeline.comment_content.error', currentLanguage))
         else {
             setIssue({
                 ...issue,
@@ -92,7 +92,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
 
     function deleteIssue() {
         window
-            .confirm('Are you sure to delete this issue')
+            .confirm(t('issues.confirm_delete', currentLanguage))
             .then((ok) => {
                 if (ok)
                     Services.updateIssue(api._id, team._id, id, {
@@ -104,7 +104,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                             if (res.status < 400)
                                 history.push(`${basePath}/issues`)
                             else
-                                toastr.error("An error occured");
+                                toastr.error(t('issues.on_error', currentLanguage));
                         })
             });
     }
@@ -133,7 +133,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
 
     function createComment() {
         if (newComment.length <= 0)
-            toastr.error("A content is mandatory to publish a new comment")
+            toastr.error(t('issues.on_missing_comment_content', currentLanguage))
         else {
             setIssue({
                 ...issue,
@@ -176,8 +176,6 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
             .then(() => setIssue(newIssue))
     }
 
-    console.log(connectedUser)
-
     return (
         <div className="container">
             <div className="d-flex align-items-center justify-content-between mb-2">
@@ -194,12 +192,12 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                     </h1>}
                 {(connectedUser && !connectedUser.isGuest) && <div className="d-flex">
                     {editionMode ? <div className="d-flex ml-3">
-                        <button className="btn btn-success mr-1" onClick={updateIssue}>Save</button>
-                        <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>Cancel</button>
+                        <button className="btn btn-success mr-1" onClick={updateIssue}>{t('Save', currentLanguage)}</button>
+                        <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>{t('Cancel', currentLanguage)}</button>
                     </div> : <>
-                        <button className="btn btn-outline-secondary mr-1" onClick={() => handleEdition(true)}>Edit</button>
+                        <button className="btn btn-outline-secondary mr-1" onClick={() => handleEdition(true)}>{t('Edit', currentLanguage)}</button>
                         <Link to={`/${team._humanReadableId}/${api._humanReadableId}/issues/new`} style={{ whiteSpace: "nowrap" }}>
-                            <button className="btn btn-success">New issue</button>
+                            <button className="btn btn-success">{t('issues.new_issue', currentLanguage)}</button>
                         </Link>
                     </>
                     }
@@ -208,13 +206,13 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
             <div className="d-flex align-items-center pb-3 mb-3">
                 <div style={styles.getStatus(issue.open)} className="d-flex justify-content-center align-items-center mr-3">
                     <i className="fa fa-exclamation-circle mr-2" style={{ color: "#fff" }} />
-                    {issue.open ? "Open" : 'Closed'}
+                    {issue.open ? t('issues.open', currentLanguage) : t('issues.closed', currentLanguage)}
                 </div>
                 <div>
-                    <span className="pr-1" style={styles.bold}>{issue.openedBy ? issue.openedBy._humanReadableId : ''}</span>
-                         opened this issue on {moment(issue.createdDate)
-                        .format(t('moment.date.format.without.hours', currentLanguage))} · {issue.comments ? issue.comments.length : 0} comments
-                        </div>
+                    <span className="pr-1" style={styles.bold}>{issue.by ? issue.by._humanReadableId : ''}</span>
+                    {t('issues.opened_message', currentLanguage)} {moment(issue.createdDate)
+                        .format(t('moment.date.format.without.hours', currentLanguage))} · {issue.comments ? issue.comments.length : 0} {t('issues.comments', currentLanguage)}
+                </div>
             </div>
 
             <div className="row">
@@ -244,7 +242,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                 <div className="col-md-3">
                     <div>
                         <div className="d-flex">
-                            <label htmlFor="tags">Tags</label>
+                            <label htmlFor="tags">{t('issues.tags', currentLanguage)}</label>
                             {(!showTag && connectedUser && !connectedUser.isGuest) &&
                                 <Can I={manage} a={API} team={team}>
                                     <i className="fas fa-cog ml-auto" onClick={onTagEdit}></i>
@@ -266,8 +264,8 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                                         className="input-select reactSelect"
                                         classNamePrefix="reactSelect"
                                     />
-                                    <button className="btn btn-outline-danger my-3 mr-1" onClick={() => onTagEdit(false)}>Cancel</button>
-                                    <button className="btn btn-outline-success my-3" onClick={updateIssue}>Save</button>
+                                    <button className="btn btn-outline-danger my-3 mr-1" onClick={() => onTagEdit(false)}>{t('Cancel', currentLanguage)}</button>
+                                    <button className="btn btn-outline-success my-3" onClick={updateIssue}>{t('Save', currentLanguage)}</button>
                                 </>
                                 :
                                 <>
@@ -278,7 +276,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                                             }}
                                             key={tag.value}>{tag.label}</span>
                                     ))}
-                                    {(issue.tags && issue.tags.length <= 0) && <p>No tags</p>}
+                                    {(issue.tags && issue.tags.length <= 0) && <p>{t('issues.no_tags', currentLanguage)}</p>}
                                 </>
                             }
                         </div>
@@ -288,12 +286,12 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                         <Can I={manage} a={API} team={team}>
                             <hr className="hr-apidescription" />
                             <div>
-                                <label htmlFor="actions">Actions</label>
+                                <label htmlFor="actions">{t('issues.actions', currentLanguage)}</label>
                                 <div id="actions">
                                     <i className="fa fa-trash"></i>
                                     <button style={{ ...styles.bold, border: 0, background: 'transparent', outline: 'none' }}
                                         onClick={deleteIssue}
-                                    >Delete this issue</button>
+                                    >{t('issues.delete_issue', currentLanguage)}</button>
                                 </div>
                             </div>
                         </Can>
@@ -321,7 +319,7 @@ function Comment({
             <div className="container">
                 <div className="d-flex px-3 py-2" style={styles.commentHeader}>
                     <span className="pr-1" style={styles.bold}>{by._humanReadableId}</span>
-                    <span className="pr-1">commented on</span>
+                    <span className="pr-1">{t('issues.commented_on', currentLanguage)}</span>
                     {moment(createdDate).format(t('moment.date.format.without.hours', currentLanguage))}
                     {(by._id === connectedUser._id && !editing) && <button className="btn btn-xs btn-outline-secondary ml-auto" onClick={editComment}>
                         <i className="fas fa-edit align-self-center" />
@@ -329,7 +327,7 @@ function Comment({
                 </div>
                 {editing ?
                     <div className="p-3" style={styles.commentBody}>
-                        <React.Suspense fallback={<div>loading ...</div>}>
+                        <React.Suspense fallback={<div>{t('loading', currentLanguage)}</div>}>
                             <LazySingleMarkdownInput
                                 currentLanguage={currentLanguage}
                                 height='300px'
@@ -340,9 +338,9 @@ function Comment({
                         </React.Suspense>
                         <div className="d-flex mt-3 justify-content-end">
                             <button className="btn btn-outline-danger mr-1" onClick={editComment}>
-                                Cancel
+                                {t('Cancel', currentLanguage)}
                             </button>
-                            <button className="btn btn-success" onClick={updateComment}>Update Comment</button>
+                            <button className="btn btn-success" onClick={updateComment}>{t('issues.update', currentLanguage)}</button>
                         </div>
                     </div>
                     : <div className="p-3" style={styles.commentBody}
@@ -369,7 +367,7 @@ function NewComment({
             </div>
             <div className="container">
                 <div className="d-flex px-3 py-2" style={styles.commentHeader}>
-                    New comment
+                    {t('issues.new_comment', currentLanguage)}
                 </div>
                 <div
                     className="p-3" style={{
@@ -377,7 +375,7 @@ function NewComment({
                         backgroundColor: "#fff"
                     }}
                 >
-                    <React.Suspense fallback={<div>loading ...</div>}>
+                    <React.Suspense fallback={<div>{t('loading', currentLanguage)}</div>}>
                         <LazySingleMarkdownInput
                             currentLanguage={currentLanguage}
                             height='300px'
@@ -390,13 +388,13 @@ function NewComment({
                         <Can I={manage} a={API} team={team}>
                             {open ? <button className="btn btn-outline-danger mr-1" onClick={closeIssue}>
                                 <i className="fa fa-exclamation-circle mr-2" />
-                            Close issue</button> :
+                            {t('issues.actions.close', currentLanguage)}</button> :
                                 <button className="btn btn-outline-success mr-1" onClick={openIssue}>
                                     <i className="fa fa-exclamation-circle mr-2" />
-                            Re-open issue</button>
+                                    {t('issues.actions.reopen', currentLanguage)}</button>
                             }
                         </Can>
-                        <button className="btn btn-success" onClick={createComment}>Comment</button>
+                        <button className="btn btn-success" onClick={createComment}>{t('issues.actions.comment', currentLanguage)}</button>
                     </div>
                 </div>
             </div>

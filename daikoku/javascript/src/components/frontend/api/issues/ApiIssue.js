@@ -1,7 +1,5 @@
-import moment from 'moment';
-import React, { useState, useEffect } from 'react';
-import { Switch, useParams, Route, useLocation } from 'react-router-dom';
-import { t } from '../../../../locales';
+import React, { useState } from 'react';
+import { Switch, useParams, Route } from 'react-router-dom';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
@@ -14,8 +12,6 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
 
   const { issueId } = useParams()
   const basePath = `/${ownerTeam._humanReadableId}/${api._humanReadableId}`
-
-  console.log(api)
 
   return (
     <div className="container-fluid">
@@ -46,6 +42,7 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
             handleFilter={value => setFilter(value)}
             filter={filter}
             connectedUser={props.connectedUser}
+            currentLanguage={currentLanguage}
           />
           <ApiIssues
             currentLanguage={currentLanguage}

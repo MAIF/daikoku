@@ -1955,7 +1955,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                   FastFuture.successful(Unauthorized("You're not allowed to edit a comment that does not belong to you"))
                 else if (existingIssue.open != issue.open && isTeamMember.isEmpty && !isDaikokuAdmin)
                   FastFuture.successful(Unauthorized("You're not authorized to close or re-open an issue"))
-                else if (existingIssue.title != issue.title && (isTeamMember.isEmpty || issue.by != ctx.user.id))
+                else if (existingIssue.title != issue.title && (isTeamMember.isEmpty || issue.by != ctx.user.id) && !isDaikokuAdmin)
                     FastFuture.successful(Unauthorized("You're not authorized to edit issue"))
                 else
                   env.dataStore.apiIssueRepo

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 import Select from 'react-select';
+import { t } from '../../../../locales';
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 import * as Services from '../../../../services';
 
@@ -60,18 +61,18 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
             <div>
                 <div className="px-3 py-2" style={styles.commentHeader}>
                     <div>
-                        <label htmlFor="title">Title</label>
+                        <label htmlFor="title">{t('Title', currentLanguage)}</label>
                         <input
                             id="title"
                             type='text'
                             className="form-control"
-                            placeholder="Title"
+                            placeholder={t('Title', currentLanguage)}
                             value={issue.title}
                             onChange={e => setIssue({ ...issue, title: e.target.value })}
                         />
                     </div>
                     <div className="py-2">
-                        <label htmlFor="tags">Tags</label>
+                        <label htmlFor="tags">{t('issues.tags', currentLanguage)}</label>
                         <Select
                             id="tags"
                             isMulti
@@ -91,7 +92,7 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
                         border: "1px solid #eee", borderBottomLeftRadius: "8px", borderBottomRightRadius: '8px',
                         backgroundColor: "#fff"
                     }}>
-                    <React.Suspense fallback={<div>loading ...</div>}>
+                    <React.Suspense fallback={<div>{t('loading', currentLanguage)}</div>}>
                         <LazySingleMarkdownInput
                             currentLanguage={currentLanguage}
                             height='300px'
@@ -106,7 +107,7 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
                         />
                     </React.Suspense>
                     <div className="d-flex mt-3 justify-content-end">
-                        <button className="btn btn-success" onClick={createIssue}>Submit new issue</button>
+                        <button className="btn btn-success" onClick={createIssue}>{t('issues.submit_new_issue', currentLanguage)}</button>
                     </div>
                 </div>
             </div>

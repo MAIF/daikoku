@@ -319,7 +319,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/issues`}>
-                  <Translation i18nkey="Issues" language={currentLanguage}>
+                  <Translation i18nkey="issues" language={currentLanguage}>
                     Issues
                     </Translation>
                 </Link>

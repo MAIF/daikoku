@@ -15,8 +15,6 @@ export function ApiIssues({ filter, currentLanguage, api }) {
     const filteredIssues = issues
         .filter(issue => filter === "all" || (issue.open && filter === "open") || (!issue.open && filter === "closed"))
 
-    console.log(issues)
-
     return (
         <div className="d-flex flex-column pt-3">
             {filteredIssues

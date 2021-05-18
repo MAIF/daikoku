@@ -178,7 +178,7 @@ export class TeamApiInfo extends Component {
     issuesTags: {
       type: () => <TeamApiIssueTags {...this.props} />,
       props: {
-        label: 'Issues tags'
+        label: t('issues.tags_of_api', this.props.currentLanguage)
       },
     }
   };
@@ -201,7 +201,7 @@ export class TeamApiInfo extends Component {
     'visibility',
     `>>> ${t('Authorizations', this.props.currentLanguage)}`,
     'authorizedTeams',
-    `>>> ${t('Issues', this.props.currentLanguage)}`,
+    `>>> ${t('issues.tags_of_api', this.props.currentLanguage)}`,
     'issuesTags'
   ];
 
