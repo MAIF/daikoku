@@ -14,6 +14,7 @@ export function ApiIssues({ filter, currentLanguage, api }) {
 
     const filteredIssues = issues
         .filter(issue => filter === "all" || (issue.open && filter === "open") || (!issue.open && filter === "closed"))
+        .sort((a, b) => a.seqId < b.seqId ? 1 : -1)
 
     return (
         <div className="d-flex flex-column pt-3">
@@ -27,27 +28,27 @@ export function ApiIssues({ filter, currentLanguage, api }) {
                                     {title}
                                 </Link>
                                 {tags
-                                    .sort((a,b) => a.name < b.name ? -1 : 1)
+                                    .sort((a, b) => a.name < b.name ? -1 : 1)
                                     .map((tag, i) => (
-                                    <span className="badge badge-primary mr-1"
-                                        style={{ backgroundColor: tag.color }}
-                                        key={`issue-${seqId}-tag${i}`}>{tag.name}</span>
-                                ))}
+                                        <span className="badge badge-primary mr-1"
+                                            style={{ backgroundColor: tag.color }}
+                                            key={`issue-${seqId}-tag${i}`}>{tag.name}</span>
+                                    ))}
                             </div>
                             {open ?
                                 <span>
-                                    #{seqId} opened on {moment(createdDate).format(
+                                    #{seqId} {t('issues.opened_on', currentLanguage)} {moment(createdDate).format(
                                     t('moment.date.format.without.hours', currentLanguage)
-                                )} by {by._humanReadableId}</span> :
+                                )} {t('issues.by', currentLanguage)} {by._humanReadableId}</span> :
                                 <span>
-                                    #{seqId} by {by._humanReadableId} was closed on {moment(closedDate).format(
+                                    #{seqId} {t('issues.by', currentLanguage)} {by._humanReadableId} {t('was closed on', currentLanguage)} {moment(closedDate).format(
                                     t('moment.date.format.without.hours', currentLanguage)
                                 )} </span>
                             }
                         </div>
                     </div>
                 ))}
-            {filteredIssues.length <= 0 && <p>No issues matching filter</p>}
+            {filteredIssues.length <= 0 && <p>{t('issues.nothing_matching_filter', currentLanguage)}</p>}
         </div>
     )
 }

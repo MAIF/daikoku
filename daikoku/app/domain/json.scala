@@ -2090,6 +2090,8 @@ object json {
         case "TeamInvitation"      => TeamInvitationFormat.reads(json)
         case "ApiKeyRefresh"       => ApiKeyRefreshFormat.reads(json)
         case "NewPostPublished"    => NewPostPublishedFormat.reads(json)
+        case "NewIssueOpen"        => NewIssueOpenFormat.reads(json)
+        case "NewCommentOnIssue"   => NewCommentOnIssueFormat.reads(json)
         case str                   => JsError(s"Bad notification value: $str")
       }
 
@@ -2146,7 +2148,7 @@ object json {
           NewCommentOnIssue(
             apiName = (json \ "apiName").asOpt[String].getOrElse(""),
             teamId = (json \ "teamId").as(TeamIdFormat).value,
-            seqId = (json \ "seqId").asOpt[String].getOrElse("")
+            linkTo = (json \ "linkTo").asOpt[String].getOrElse("")
           )
         )
       } recover {
@@ -2156,7 +2158,7 @@ object json {
     override def writes(o: NewCommentOnIssue): JsValue = Json.obj(
       "apiName" -> o.apiName,
       "teamId" -> o.teamId,
-      "seqId" -> o.seqId
+      "linkTo" -> o.linkTo
     )
   }
 
@@ -2166,7 +2168,8 @@ object json {
         JsSuccess(
           NewIssueOpen(
             apiName = (json \ "apiName").asOpt[String].getOrElse(""),
-            teamId = (json \ "teamId").as(TeamIdFormat).value
+            teamId = (json \ "teamId").as(TeamIdFormat).value,
+            linkTo = (json \ "linkTo").asOpt[String].getOrElse("")
           )
         )
       } recover {
@@ -2175,7 +2178,8 @@ object json {
 
     override def writes(o: NewIssueOpen): JsValue = Json.obj(
       "apiName" -> o.apiName,
-      "teamId" -> o.teamId
+      "teamId" -> o.teamId,
+      "linkTo" -> o.linkTo
     )
   }
 

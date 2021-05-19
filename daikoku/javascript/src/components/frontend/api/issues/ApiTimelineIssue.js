@@ -63,6 +63,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
         else {
             handleEdition(false);
             onTagEdit(false);
+            console.log("Update issue")
             Services.updateIssue(api._id, team._id, id, {
                 ...issue,
                 tags: issue.tags.map(tag => tag.value)
@@ -119,6 +120,28 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
             })
         })
     }
+
+    function removeComment(i) {
+        window
+            .confirm(t('issues.comments.confirm_delete', currentLanguage))
+            .then((ok) => {
+                if (ok) {
+                    const updatedIssue = {
+                        ...issue,
+                        comments: issue.comments.filter((_, j) => i !== j)
+                    };
+                    setIssue(updatedIssue)
+                    Services.updateIssue(api._id, team._id, id, updatedIssue)
+                        .then(res => {
+                            if (res.status > 300)
+                                res.text().then(error => toastr.error(error))
+                            else
+                                toastr.success(t('Api saved', currentLanguage))
+                        })
+                }
+            })
+    }
+
 
     function handleEditCommentContent(newValue, i) {
         setIssue({
@@ -221,8 +244,10 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                         <Comment
                             {...comment}
                             key={`comment${i}`}
+                            i={i}
                             currentLanguage={currentLanguage}
                             editComment={() => editComment(i)}
+                            removeComment={() => removeComment(i)}
                             handleEditCommentContent={e => handleEditCommentContent(e, i)}
                             updateComment={() => updateComment(i)}
                             connectedUser={connectedUser}
@@ -303,8 +328,11 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
 }
 
 function Comment({
-    by, createdDate, content, currentLanguage, editing, editComment, handleEditCommentContent, updateComment, connectedUser
+    by, createdDate, content, currentLanguage, editing, editComment, removeComment,
+    handleEditCommentContent, updateComment, connectedUser, i
 }) {
+    const [showActions, toggleActions] = useState(false);
+
     return (
         <div className="d-flex pb-4">
             <div className="dropdown pr-2">
@@ -321,9 +349,23 @@ function Comment({
                     <span className="pr-1" style={styles.bold}>{by._humanReadableId}</span>
                     <span className="pr-1">{t('issues.commented_on', currentLanguage)}</span>
                     {moment(createdDate).format(t('moment.date.format.without.hours', currentLanguage))}
-                    {(by._id === connectedUser._id && !editing) && <button className="btn btn-xs btn-outline-secondary ml-auto" onClick={editComment}>
-                        <i className="fas fa-edit align-self-center" />
-                    </button>}
+                    {(by._id === connectedUser._id && editing !== true) &&
+                        <>
+                            {showActions ?
+                                <div className="ml-auto">
+                                    <button className="btn btn-xs btn-outline-secondary mr-1" onClick={editComment}>
+                                        <i className="fas fa-edit align-self-center" />
+                                    </button>
+                                    {i !== 0 && <button className="btn btn-xs btn-outline-danger" onClick={removeComment}>
+                                        <i className="fas fa-trash align-self-center" />
+                                    </button>}
+                                </div> :
+                                <i className="fas fa-ellipsis-h align-self-center ml-auto"
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => toggleActions(true)} />
+                            }
+                        </>
+                    }
                 </div>
                 {editing ?
                     <div className="p-3" style={styles.commentBody}>
@@ -388,7 +430,7 @@ function NewComment({
                         <Can I={manage} a={API} team={team}>
                             {open ? <button className="btn btn-outline-danger mr-1" onClick={closeIssue}>
                                 <i className="fa fa-exclamation-circle mr-2" />
-                            {t('issues.actions.close', currentLanguage)}</button> :
+                                {t('issues.actions.close', currentLanguage)}</button> :
                                 <button className="btn btn-outline-success mr-1" onClick={openIssue}>
                                     <i className="fa fa-exclamation-circle mr-2" />
                                     {t('issues.actions.reopen', currentLanguage)}</button>

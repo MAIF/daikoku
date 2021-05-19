@@ -4,18 +4,31 @@ import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
 import { NewIssue } from './NewIssue';
+import { TeamApiIssueTags } from './TeamApiIssueTags';
+import * as Services from '../../../../services';
+import { toastr } from 'react-redux-toastr';
+import { t } from '../../../../locales';
 
 export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("open");
 
-  const { issuesTags } = api;
+  function onChange(editedApi) {
+    Services.saveTeamApi(ownerTeam._id, editedApi)
+      .then(() => props.onChange(editedApi))
+      .then(() => toastr.success(t("Api saved", currentLanguage)))
+  }
 
   const { issueId } = useParams()
-  const basePath = `/${ownerTeam._humanReadableId}/${api._humanReadableId}`
+  const basePath = `/${ownerTeam._humanReadableId}/${(api ? api._humanReadableId : "")}`
 
   return (
     <div className="container-fluid">
-      <Switch>
+      {api ? <Switch>
+        <Route exact path={`${basePath}/labels`} component={() => <TeamApiIssueTags
+          value={api}
+          onChange={onChange}
+          currentLanguage={currentLanguage} />}
+        />
         <Route exact path={`${basePath}/issues/new`} component={() =>
           <NewIssue
             api={api}
@@ -35,10 +48,8 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
         />
         <Route exact path={`${basePath}/issues/`} render={() => <>
           <ApiFilter
-            teamPath={`/${ownerTeam._humanReadableId}`}
-            api={api}
             pathname={basePath}
-            tags={issuesTags || []}
+            tags={api.issuesTags}
             handleFilter={value => setFilter(value)}
             filter={filter}
             connectedUser={props.connectedUser}
@@ -50,7 +61,7 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
             api={api}
           />
         </>} />
-      </Switch>
+      </Switch> : null}
     </div>
   );
 }

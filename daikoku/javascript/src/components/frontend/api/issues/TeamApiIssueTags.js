@@ -2,35 +2,31 @@
 import React, { useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import { toastr } from 'react-redux-toastr';
-import { t } from '../../../locales';
+import { t } from '../../../../locales';
 
 export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
   const [showTagForm, showNewTagForm] = useState(false);
-  const [issuesTags, setIssueTags] = useState([])
-
-  useEffect(() => {
-    setIssueTags(value.issuesTags)
-  }, [value.issuesTags])
+  const [issue, setIssue] = useState(value);
 
   function deleteTag(id) {
-    onChange({
-      ...value,
-      issuesTags: [...issuesTags.filter(iss => iss.id !== id)]
+    setIssue({
+      ...issue,
+      issuesTags: [...issue.issuesTags.filter(iss => iss.id !== id)]
     })
   }
 
   return (
     <div style={{ paddingBottom: '250px' }}>
       {showTagForm ? <NewTag
-        issuesTags={issuesTags}
+        issuesTags={issue.issuesTags}
         currentLanguage={currentLanguage}
         handleCreate={newTag => {
-          onChange({ ...value, issuesTags: [...issuesTags, newTag] })
+          setIssue({ ...issue, issuesTags: [...issue.issuesTags, newTag] })
           showNewTagForm(false)
         }}
         onCancel={() => showNewTagForm(false)} /> :
         <div className="form-group row">
-          <label className="col-xs-12 col-sm-2 col-form-label">Actions</label>
+          <label className="col-xs-12 col-sm-2">Actions</label>
           <div className="col-sm-10">
             <button className="btn btn-success"
               onClick={() => showNewTagForm(true)}>{t('issues.new_tag', currentLanguage)}</button>
@@ -38,9 +34,9 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
         </div>
       }
       <div className="form-group row pt-3">
-        <label className="col-xs-12 col-sm-2 col-form-label">{t('issues.tags', currentLanguage)}</label>
+        <label className="col-xs-12 col-sm-2">{t('issues.tags', currentLanguage)}</label>
         <div className="col-sm-10">
-          {issuesTags.map((issueTag, i) => (
+          {issue.issuesTags.map((issueTag, i) => (
             <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
               <span className="badge badge-primary d-flex align-items-center justify-content-center px-3 py-2"
                 style={{
@@ -48,8 +44,8 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
                   color: "#fff",
                   borderRadius: "12px"
                 }}>{issueTag.name}</span>
-              <input type="text" className="form-control mx-3" value={issueTag.name} onChange={e => onChange({
-                ...value, issuesTags: issuesTags.map((issue, j) => {
+              <input type="text" className="form-control mx-3" value={issueTag.name} onChange={e => setIssue({
+                ...issue, issuesTags: issue.issuesTags.map((issue, j) => {
                   if (i === j)
                     issue.name = e.target.value
                   return issue;
@@ -58,8 +54,8 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
               <ColorTag
                 className="pr-3"
                 initialColor={issueTag.color}
-                handleColorChange={color => onChange({
-                  ...value, issuesTags: issuesTags.map((issue, j) => {
+                handleColorChange={color => setIssue({
+                  ...issue, issuesTags: issue.issuesTags.map((issue, j) => {
                     if (i === j)
                       issue.color = color
                     return issue;
@@ -71,10 +67,16 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
               </div>
             </div>
           ))}
-          {issuesTags.length === 0 && <p>{t('issues.no_tags', currentLanguage)}</p>}
+          {issue.issuesTags.length === 0 && <p>{t('issues.no_tags', currentLanguage)}</p>}
         </div>
       </div>
-    </div >
+      <div className="form-group row">
+        <label className="col-xs-12 col-sm-2" />
+        <div className="col-sm-10 d-flex">
+          <button className="btn btn-success ml-auto" onClick={() => onChange(issue)}>{t('Save', currentLanguage)}</button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -94,7 +96,7 @@ function NewTag({ issuesTags, handleCreate, onCancel, currentLanguage }) {
 
   return (
     <div className="form-group row">
-      <label className="col-xs-12 col-sm-2 col-form-label">{t('issues.new_tag', currentLanguage)}</label>
+      <label className="col-xs-12 col-sm-2">{t('issues.new_tag', currentLanguage)}</label>
       <div className="col-sm-10">
         <div className="d-flex align-items-end">
           <div className="pr-3" style={{ flex: .5 }}>
@@ -107,7 +109,7 @@ function NewTag({ issuesTags, handleCreate, onCancel, currentLanguage }) {
           <div className="px-3">
             <label htmlFor="color">{t('issues.tag_color', currentLanguage)}</label>
             <ColorTag
-              initialColor={'#2980b9'}
+              initialColor={tag.color || '#2980b9'}
               handleColorChange={color => setTag({ ...tag, color })}
               presetColors={[]} />
           </div>
@@ -130,7 +132,7 @@ function ColorTag({ initialColor, handleColorChange, presetColors, className }) 
     }
   };
 
-  const [color, setColor] = useState(initialColor);
+  const [color, setColor] = useState(sketchColorToReadableColor(initialColor));
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
   const [pickerValue, setPickerValue] = useState(null);
 
@@ -166,19 +168,13 @@ function ColorTag({ initialColor, handleColorChange, presetColors, className }) 
     if (pickerValue) {
       if (pickerValue.rgb.a === 1) {
         setColor(pickerValue.hex);
+        handleColorChange(pickerValue.hex)
       } else {
         setColor(pickerValue.rgb);
+        handleColorChange(pickerValue.rgb)
       }
     }
   }, [pickerValue]);
-
-  useEffect(() => {
-    handleColorChange(sketchColorToReadableColor(color));
-  }, [color]);
-
-  useEffect(() => {
-    setColor(initialColor);
-  }, [initialColor]);
 
   return (
     <div className={className}>

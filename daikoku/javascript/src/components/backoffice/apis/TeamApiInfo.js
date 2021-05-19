@@ -4,7 +4,6 @@ import { Spinner } from '../../utils';
 import * as Services from '../../../services';
 import { t, Translation } from '../../../locales';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
-import { TeamApiIssueTags } from './TeamApiIssueTags';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -174,12 +173,6 @@ export class TeamApiInfo extends Component {
         selectClassName: 'full-width-select',
         transformer: (t) => ({ label: t.name, value: t._id }),
       },
-    },
-    issuesTags: {
-      type: () => <TeamApiIssueTags {...this.props} />,
-      props: {
-        label: t('issues.tags_of_api', this.props.currentLanguage)
-      },
     }
   };
 
@@ -200,9 +193,7 @@ export class TeamApiInfo extends Component {
     `>>> ${t('Visibility', this.props.currentLanguage)}`,
     'visibility',
     `>>> ${t('Authorizations', this.props.currentLanguage)}`,
-    'authorizedTeams',
-    `>>> ${t('issues.tags_of_api', this.props.currentLanguage)}`,
-    'issuesTags'
+    'authorizedTeams'
   ];
 
   adminFormFlow = ['_id', 'name', 'smallDescription'];

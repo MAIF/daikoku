@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { t } from "../../../../locales";
 
-export function ApiFilter({ api, teamPath, tags, handleFilter, filter, pathname, connectedUser, currentLanguage }) {
+export function ApiFilter({ tags, handleFilter, filter, pathname, connectedUser, currentLanguage }) {
 
     return (
         <div className="d-flex flex-row justify-content-between">
@@ -22,7 +22,7 @@ export function ApiFilter({ api, teamPath, tags, handleFilter, filter, pathname,
 
             {(connectedUser && !connectedUser.isGuest) &&
                 <div>
-                    <Link to={`${teamPath}/settings/apis/${api._humanReadableId}`} className="btn btn-outline-primary">
+                    <Link to={`${pathname}/labels`} className="btn btn-outline-primary">
                         <i className="fa fa-tag mr-1" />
                         {t('issues.tags', currentLanguage)}
                         <span className="badge badge-secondary ml-2">{tags.length || 0}</span>

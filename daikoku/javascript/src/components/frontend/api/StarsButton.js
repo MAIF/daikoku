@@ -1,6 +1,7 @@
 import React from 'react';
+import { t } from '../../../locales';
 
-const StarsButton = ({ stars, toggleStar, starred }) => (
+const StarsButton = ({ stars, toggleStar, starred, currentLanguage }) => (
   <div
     className="d-flex flex-row"
     style={{
@@ -17,7 +18,7 @@ const StarsButton = ({ stars, toggleStar, starred }) => (
       style={{ color: 'var(--btn-bg-color, "#000")', padding: '0' }}
       onClick={toggleStar}>
       <i className={`${starred ? 'fas' : 'far'} fa-star pl-2`} />
-      <span className="px-2">{starred ? 'Unstar' : 'Star'}</span>
+      <span className="px-2">{starred ? t('unstar', currentLanguage) : t('star', currentLanguage)}</span>
     </button>
     <div className="px-2 d-flex align-items-center" style={{ backgroundColor: '#fff' }}>
       <span>{stars}</span>

@@ -804,6 +804,8 @@
     "Deleted API": "Deleted API",
     "Personal": "Personal",
     "team.invitation": "%s, as admin of %s, invit you in his team.",
+    "issues.notification": "An issue has been open on %s",
+    "issues.comment.notification": "An issue has been commented on %s",
     "issues": "Issues",
     "issues.tags": "Tags",
     "issues.no_tags": "No tags",
@@ -818,6 +820,7 @@
     "issues.timeline.title.error": "Title is empty",
     "issues.timeline.comment_content.error": "Missing content of comment",
     "issues.confirm_delete": "Are you sure to delete this issue ?",
+    "issues.comments.confirm_delete": "Are you sure to delete this comment ?",
     "issues.on_error": "An error occured",
     "issues.on_missing_comment_content": "A content is mandatory to publish a new comment",
     "issues.opened_message": "opened this issue on",
@@ -831,5 +834,11 @@
     "issues.actions.reopen": "Re-open issue",
     "issues.actions.comment": "Comment",
     "issues.tags_of_api": "Tags for issues",
+    "issues.opened_on": "opened on",
+    "issues.by": "by",
+    "issues.closed_on": "was closed on",
+    "issues.nothing_matching_filter": "No issues matching filter",
+    "star": "Star",
+    "unstar": "Unstar",
     "Edit": "Edit"
 }

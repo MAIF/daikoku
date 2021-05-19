@@ -42,7 +42,7 @@ const ApiDescription = ({ api }) => {
   );
 };
 
-const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar }) => {
+const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar, currentLanguage }) => {
   const handleBtnEditClick = () => history.push(editUrl);
 
   useEffect(() => {
@@ -92,6 +92,7 @@ const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
                 toggleStar={toggleStar}
+                currentLanguage={currentLanguage}
               />
             </div>
           </h1>
@@ -235,6 +236,7 @@ const ApiHomeComponent = ({
         history={history}
         connectedUser={connectedUser}
         toggleStar={toggleStar}
+        currentLanguage={currentLanguage}
       />
       <div className="container">
         <div className="row">
@@ -417,6 +419,7 @@ const ApiHomeComponent = ({
             {tab === 'issues' && (
               <ApiIssue
                 api={api}
+                onChange={editedApi => setApi(editedApi)}
                 history={history}
                 ownerTeam={ownerTeam}
                 connectedUser={connectedUser}

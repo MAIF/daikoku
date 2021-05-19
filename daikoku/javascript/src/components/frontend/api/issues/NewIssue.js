@@ -4,6 +4,7 @@ import Select from 'react-select';
 import { t } from '../../../../locales';
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 import * as Services from '../../../../services';
+import { Can, manage, API } from '../../../utils';
 
 const styles = {
     commentHeader: {
@@ -71,21 +72,26 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
                             onChange={e => setIssue({ ...issue, title: e.target.value })}
                         />
                     </div>
-                    <div className="py-2">
-                        <label htmlFor="tags">{t('issues.tags', currentLanguage)}</label>
-                        <Select
-                            id="tags"
-                            isMulti
-                            onChange={values => setIssue({
-                                ...issue,
-                                tags: [...values]
-                            })}
-                            options={issuesTags.map(iss => ({ value: iss, label: iss.name }))}
-                            value={issue.tags}
-                            className="input-select reactSelect"
-                            classNamePrefix="reactSelect"
-                        />
-                    </div>
+                    <Can I={manage} a={API} team={team}>
+                        <div className="py-2">
+                            <label htmlFor="tags">{t('issues.tags', currentLanguage)}</label>
+                            <Select
+                                id="tags"
+                                isMulti
+                                onChange={values => setIssue({
+                                    ...issue,
+                                    tags: [...values]
+                                })}
+                                options={issuesTags.map(iss => ({ value: iss, label: iss.name }))}
+                                value={issue.tags}
+                                className="input-select reactSelect"
+                                classNamePrefix="reactSelect"
+                                styles={{
+                                    menu: provided => ({ ...provided, zIndex: 9999 })
+                                }}
+                            />
+                        </div>
+                    </Can>
                 </div>
                 <div
                     className="p-3" style={{

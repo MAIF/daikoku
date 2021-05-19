@@ -1466,10 +1466,10 @@ object NotificationAction {
   case class NewPostPublished(teamId: String, apiName: String)
       extends NotificationAction
 
-  case class NewIssueOpen(teamId: String, apiName: String)
+  case class NewIssueOpen(teamId: String, apiName: String, linkTo: String)
     extends NotificationAction
 
-  case class NewCommentOnIssue(teamId: String, apiName: String, seqId: String)
+  case class NewCommentOnIssue(teamId: String, apiName: String, linkTo: String)
     extends NotificationAction
 }
 
