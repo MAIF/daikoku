@@ -604,6 +604,55 @@ class MockController(DaikokuAction: DaikokuAction,
     val (user5, userTeam5) =
       createUserAndTeam("fifou", "fifou@foo.bar", tenantId, false)
 
+    val issuesTags = Seq(
+      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify), "bug", "#2980b9"),
+      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify), "backoffice", "#c0392b"),
+      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify), "security", "#8e44ad"),
+      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify), "subscription", "#16a085"),
+    )
+    val issues: Seq[ApiIssue] = Seq(
+      ApiIssue(
+        id = ApiIssueId(BSONObjectID.generate().stringify),
+        seqId = 0,
+        tenant = tenantId,
+        title = "Daikoku Init on postgres can be broken",
+        tags = Set(issuesTags.head.id),
+        open = true,
+        createdAt = DateTime.now(),
+        lastModificationAt = DateTime.now(),
+        closedAt = None,
+        by = user1.id,
+        comments = Seq(
+          ApiIssueComment(
+            by = user1.id,
+            createdAt = DateTime.now(),
+            lastModificationAt = DateTime.now(),
+            content = "Describe the bug\nIf schema has some table, DK init can't be proceed & DK is broken\n\nExpected behavior\nInit detection & tables creation"
+          )
+        )
+      ),
+      ApiIssue(
+        id = ApiIssueId(BSONObjectID.generate().stringify),
+        seqId = 1,
+        tenant = tenantId,
+        title = "2FA compatibility",
+        tags = issuesTags.slice(1, issuesTags.size).map(_.id).toSet,
+        open = false,
+        createdAt = DateTime.now(),
+        lastModificationAt = DateTime.now(),
+        closedAt = None,
+        by = user2.id,
+        comments = Seq(
+          ApiIssueComment(
+            by = user2.id,
+            createdAt = DateTime.now(),
+            lastModificationAt = DateTime.now(),
+            content = "Add a way to add 2FA for user account\n\nIt coud be great to use Authy, 1Password, or LastPass Authenticator."
+          )
+        )
+      )
+    )
+
     val defaultAdminTeam = Team(
       id = TeamId(IdGenerator.token),
       tenant = Tenant.Default,
@@ -660,7 +709,9 @@ class MockController(DaikokuAction: DaikokuAction,
       tags = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
       defaultUsagePlan = UsagePlanId("1"),
-      authorizedTeams = Seq.empty
+      authorizedTeams = Seq.empty,
+      issuesTags = issuesTags.toSet,
+      issues = issues.map(_.id)
     )
     val adminApiTenant2 = adminApiDefaultTenant.copy(
       id = ApiId(s"admin-api-tenant-${tenant2Id.value}"),
@@ -697,6 +748,8 @@ class MockController(DaikokuAction: DaikokuAction,
       _ <- env.dataStore.apiDocumentationPageRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.notificationRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.consumptionRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.apiPostRepo.forAllTenant().deleteAll()
+      _ <- env.dataStore.apiIssueRepo.forAllTenant().deleteAll()
       _ <- env.dataStore.tenantRepo.save(
         Tenant(
           id = Tenant.Default,
@@ -1270,6 +1323,7 @@ class MockController(DaikokuAction: DaikokuAction,
             integrationToken = "token-pay-per-use"
           ))
         ))
+      _ <- Future.sequence(issues.map(issue => env.dataStore.apiIssueRepo.forTenant(tenantId).save(issue)))
     } yield {
       Ok(Json.obj("done" -> true))
     }

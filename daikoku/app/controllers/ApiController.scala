@@ -1862,7 +1862,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   def createIssue(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed issues for @{api.id}"))(ctx) {
       ApiIssueFormat.reads(ctx.request.body) match {
-        case JsError(errors) => FastFuture.successful(BadRequest("Body can't be parse to issue"))
+        case JsError(_) => FastFuture.successful(BadRequest("Body can't be parse to issue"))
         case JsSuccess(issue, _) =>
           (for {
             issues    <- env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).count()
@@ -1934,6 +1934,17 @@ class ApiController(DaikokuAction: DaikokuAction,
         b.filterNot { comment => a.exists(c => c.content == comment.content) }
           .exists(comment => comment.by != ctx.user.id)
 
+      def notifyTeam(apiName: String, linkTo: String, team: TeamId) = env.dataStore.notificationRepo
+        .forTenant(ctx.tenant.id)
+        .save(Notification(
+          id = NotificationId(BSONObjectID.generate().stringify),
+          tenant = ctx.tenant.id,
+          sender = ctx.user,
+          action = NotificationAction.NewCommentOnIssue(teamId, apiName, linkTo),
+          notificationType = NotificationType.AcceptOnly,
+          team = Some(team)
+        ))
+
       ApiIssueFormat.reads(ctx.request.body) match {
         case JsError(_) => FastFuture.successful(BadRequest("Body can't be parse to issue"))
         case JsSuccess(issue, _) =>
@@ -1971,20 +1982,10 @@ class ApiController(DaikokuAction: DaikokuAction,
                             api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId)
                             _ <- {
                               Future.sequence(subs.distinctBy(_.team)
-                                .map(sub =>
-                                  env.dataStore.notificationRepo
-                                    .forTenant(ctx.tenant.id)
-                                    .save(Notification(
-                                      id = NotificationId(BSONObjectID.generate().stringify),
-                                      tenant = ctx.tenant.id,
-                                      sender = ctx.user,
-                                      action = NotificationAction.NewCommentOnIssue(teamId,
-                                        api.map(_.name).getOrElse(""),
-                                        s"${team.humanReadableId}/${api.map(_.humanReadableId).getOrElse("")}/issues/${issue.humanReadableId}"
-                                      ),
-                                      notificationType = NotificationType.AcceptOnly,
-                                      team = Some(sub.team)
-                                    ))
+                                .map(sub => notifyTeam(
+                                  api.map(_.name).getOrElse(""),
+                                  s"${team.humanReadableId}/${api.map(_.humanReadableId).getOrElse("")}/issues/${issue.humanReadableId}",
+                                  sub.team)
                                 ))
                             }
                           } yield Ok("Issue saved")
