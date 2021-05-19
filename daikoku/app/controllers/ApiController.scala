@@ -1904,7 +1904,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                                   ))
                             }
                           } yield {
-                            Ok(Json.obj("created" -> true))
+                            Created(Json.obj("created" -> true))
                           }
                         case false => FastFuture.successful(BadRequest("Failed to create issue"))
                       }
