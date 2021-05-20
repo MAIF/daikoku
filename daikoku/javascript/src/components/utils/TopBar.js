@@ -433,10 +433,13 @@ const TopBarComponent = (props) => {
                     <a className="dropdown-item" href="/logout">
                       <i className="fas fa-sign-out-alt" /> {t('Logout', props.currentLanguage)}
                     </a>
-                    <div className="dropdown-divider" />
-                    {daikokuVersion && <div className="dropdown-item">
+
+                    {daikokuVersion && <>
+                      <div className="dropdown-divider" />
+                      <div className="dropdown-item">
                         <span>Version used : {daikokuVersion}</span>
-                    </div>}
+                      </div>
+                    </>}
                   </div>
                 </div>
               </div>
