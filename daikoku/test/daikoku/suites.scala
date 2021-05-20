@@ -131,7 +131,8 @@ object utils {
         resets: Seq[PasswordReset] = Seq.empty,
         creations: Seq[AccountCreation] = Seq.empty,
         messages: Seq[Message] = Seq.empty,
-        issues: Seq[ApiIssue] = Seq.empty
+        issues: Seq[ApiIssue] = Seq.empty,
+        posts: Seq[ApiPost] = Seq.empty
     ): Unit = {
       setupEnv(
         tenants,
@@ -146,7 +147,8 @@ object utils {
         resets,
         creations,
         messages,
-        issues
+        issues,
+        posts
       ).futureValue
 //      await(0.1.seconds)
     }
@@ -164,7 +166,8 @@ object utils {
         resets: Seq[PasswordReset] = Seq.empty,
         creations: Seq[AccountCreation] = Seq.empty,
         messages: Seq[Message] = Seq.empty,
-        issues: Seq[ApiIssue] = Seq.empty
+        issues: Seq[ApiIssue] = Seq.empty,
+        posts: Seq[ApiPost] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -251,6 +254,14 @@ object utils {
           .mapAsync(1)(
             i =>
               daikokuComponents.env.dataStore.apiIssueRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(posts.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.apiPostRepo
                 .forAllTenant()
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)

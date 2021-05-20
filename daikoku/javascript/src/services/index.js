@@ -1727,11 +1727,3 @@ export function updateIssue(apiId, teamId, issueId, issue) {
     })
   })
 }
-
-export function saveIssue(apiId, teamId, issueId, content) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/issues/${issueId}`, {
-    ...POST_HEADERS,
-    method: 'PUT',
-    body: JSON.stringify(content),
-  });
-}
