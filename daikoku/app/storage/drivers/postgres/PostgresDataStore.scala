@@ -418,18 +418,16 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         row.optString("schema_name")
       }
       .flatMap {
-        case Some(_) => checkTables()
+        case Some(_) =>  createDatabase()
         case _ =>
           logger.info(s"Create missing schema : $getSchema")
           for {
             _ <- reactivePg.rawQuery(
               s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
-            res <- checkTables()
+            res <-  createDatabase()
           } yield res
       }
   }
-
-  private def checkTables(): Future[Any] = createDatabase()
 
   def createDatabase(): Future[immutable.Iterable[RowSet[Row]]] = {
     logger.info("create missing tables")
