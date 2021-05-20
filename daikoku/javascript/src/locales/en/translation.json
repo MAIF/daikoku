@@ -802,5 +802,6 @@
     "deleted": "deleted",
     "Deleted API": "Deleted API",
     "Personal": "Personal",
-    "team.invitation": "%s, as admin of %s, invit you in his team."
+    "team.invitation": "%s, as admin of %s, invit you in his team.",
+    "Version used": "Version used"
 }

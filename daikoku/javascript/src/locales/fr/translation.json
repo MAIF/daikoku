@@ -802,5 +802,6 @@
   "deleted": "dupprimé",
   "Deleted API": "API supprimée",
   "Personal": "Personel",
-  "team.invitation": "%s, administrateur de %s, vous a invité a rejoindre son équipe."
+  "team.invitation": "%s, administrateur de %s, vous a invité a rejoindre son équipe.",
+  "Version used": "Version utilisé"
 }

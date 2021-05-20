@@ -437,7 +437,7 @@ const TopBarComponent = (props) => {
                     {daikokuVersion && <>
                       <div className="dropdown-divider" />
                       <div className="dropdown-item">
-                        <span>Version used : {daikokuVersion}</span>
+                        <span>{t('Version used', props.currentLanguage)} : {daikokuVersion}</span>
                       </div>
                     </>}
                   </div>
