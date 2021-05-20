@@ -706,7 +706,7 @@ class NotificationControllerSpec()
       eventualApiSubs.isSuccess mustBe true
       eventualApiSubs.get.size mustBe 0
     }
-    "create issue and generate notification" in {
+    "create issue that notify subscribers of api" in {
       val issues = Seq(ApiIssue(
         id = ApiIssueId(BSONObjectID.generate().stringify),
         seqId = 0,
