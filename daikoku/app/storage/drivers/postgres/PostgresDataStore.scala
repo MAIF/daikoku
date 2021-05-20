@@ -429,22 +429,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       }
   }
 
-  private def checkTables(): Future[Any] = {
-    reactivePg
-      .queryOne("SELECT COUNT(*) as count " +
-                  "FROM information_schema.tables " +
-                  "WHERE table_schema = $1",
-                Seq(getSchema)) { row =>
-        row.optLong("count")
-      }
-      .map(_.getOrElse(0L))
-      .map(s => {
-        if (s == 0)
-          createDatabase()
-        else
-          s
-      })
-  }
+  private def checkTables(): Future[Any] = createDatabase()
 
   def createDatabase(): Future[immutable.Iterable[RowSet[Row]]] = {
     logger.info("create missing tables")
