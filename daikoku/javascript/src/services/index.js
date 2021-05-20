@@ -1685,3 +1685,13 @@ export function savePost(apiId, teamId, postId, content) {
     body: JSON.stringify(content),
   });
 }
+
+export function getDaikokuVersion() {
+  return fetch('/api/versions/_daikoku', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}

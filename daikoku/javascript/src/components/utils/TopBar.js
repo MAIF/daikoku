@@ -170,6 +170,7 @@ const DarkModeActivator = ({ initialDark }) => {
 
 const TopBarComponent = (props) => {
   const [teams, setTeams] = useState([]);
+  const [daikokuVersion, setVersion] = useState(null);
   const isMaintenanceMode = props.tenant.tenantMode && props.tenant.tenantMode !== 'Default';
 
   useEffect(() => {
@@ -198,6 +199,11 @@ const TopBarComponent = (props) => {
         break;
     }
   };
+
+  function getDaikokuVersion() {
+    Services.getDaikokuVersion()
+      .then(res => setVersion(res.version));
+  }
 
   const toggleMaintenanceMode = () => {
     const toggleApi = isMaintenanceMode
@@ -357,7 +363,7 @@ const TopBarComponent = (props) => {
                     connectedUser={props.connectedUser}
                   />
                 )}
-                <div className="dropdown">
+                <div className="dropdown" onClick={getDaikokuVersion}>
                   <img
                     style={{ width: 38, marginLeft: '5px', ...impersonatorStyle }}
                     src={props.connectedUser.picture}
@@ -366,9 +372,9 @@ const TopBarComponent = (props) => {
                     title={
                       impersonator
                         ? `${props.connectedUser.name} (${props.connectedUser.email}) ${t(
-                            'Impersonated by',
-                            props.currentLanguage
-                          )} ${impersonator.name} (${impersonator.email})`
+                          'Impersonated by',
+                          props.currentLanguage
+                        )} ${impersonator.name} (${impersonator.email})`
                         : props.connectedUser.name
                     }
                     alt="user menu"
@@ -427,6 +433,10 @@ const TopBarComponent = (props) => {
                     <a className="dropdown-item" href="/logout">
                       <i className="fas fa-sign-out-alt" /> {t('Logout', props.currentLanguage)}
                     </a>
+                    <div className="dropdown-divider" />
+                    {daikokuVersion && <div className="dropdown-item">
+                        <span>Version used : {daikokuVersion}</span>
+                    </div>}
                   </div>
                 </div>
               </div>

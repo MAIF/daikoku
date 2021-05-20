@@ -13,8 +13,12 @@ val reactiveMongoVersion = "0.20.10"
 val wiremockVersion = "2.26.3"
 
 lazy val root = (project in file("."))
-  .enablePlugins(PlayScala, DockerPlugin)
+  .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin)
   .disablePlugins(PlayFilters)
+  .settings (
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "daikoku"
+  )
 
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 
@@ -41,7 +45,7 @@ libraryDependencies ++= Seq(
   ws,
   filters,
   "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test,
-  "com.themillhousegroup" %% "scoup" % "0.4.7" % Test,
+  "com.themillhousegroup" %% "scoup" % "0.5.0" % Test,
   "com.github.tomakehurst" % "wiremock" % wiremockVersion % Test,
   "com.github.tomakehurst" % "wiremock-jre8" % wiremockVersion % Test,
   "org.apache.commons" % "commons-lang3" % "3.10",
