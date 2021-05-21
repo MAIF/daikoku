@@ -70,7 +70,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
             })
                 .then(res => {
                     if (res.status > 300)
-                        res.text().then(error => toastr.error(error))
+                        res.json().then(r => toastr.error(r.error))
                 })
         }
     }
@@ -134,7 +134,7 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                     Services.updateIssue(api._id, team._id, id, updatedIssue)
                         .then(res => {
                             if (res.status > 300)
-                                res.text().then(error => toastr.error(error))
+                                res.json().then(r => toastr.error(r.error))
                             else
                                 toastr.success(t('Api saved', currentLanguage))
                         })

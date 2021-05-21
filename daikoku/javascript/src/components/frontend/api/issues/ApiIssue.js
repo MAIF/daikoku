@@ -14,7 +14,7 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
 
   function onChange(editedApi) {
     Services.saveTeamApi(ownerTeam._id, editedApi)
-      .then(() => props.onChange(editedApi))
+      .then(res => props.onChange(res))
       .then(() => toastr.success(t("Api saved", currentLanguage)))
   }
 

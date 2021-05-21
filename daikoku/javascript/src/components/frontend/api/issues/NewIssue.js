@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 import Select from 'react-select';
 import { t } from '../../../../locales';
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 import * as Services from '../../../../services';
-import { Can, manage, API } from '../../../utils';
+import { Can, manage } from '../../../utils';
+import { api as API } from '../../../utils/permissions'
 
 const styles = {
     commentHeader: {
@@ -17,17 +18,23 @@ const styles = {
 
 export function NewIssue({ currentLanguage, user, api, ...props }) {
     const { issuesTags, _id, team, _tenant } = api;
+    const [issue, setIssue] = useState(null)
+    // {
+    //     _tenant: _tenant,
+    //     title: '',
+    //     tags: [],
+    //     comments: [{
+    //         by: user._id,
+    //         content: ''
+    //     }],
+    //     by: user._id
+    // }
 
-    const [issue, setIssue] = useState({
-        _tenant: _tenant,
-        title: '',
-        tags: [],
-        comments: [{
-            by: user._id,
-            content: ''
-        }],
-        by: user._id
-    })
+    useEffect(() => {
+        Services.fetchNewIssue()
+            .then(template => setIssue(template));
+    }, []);
+
 
     function createIssue() {
         if (issue.title.length === 0 || issue.comments[0].content.length === 0)
@@ -38,18 +45,18 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
                 tags: issue.tags.map(tag => tag.value.id)
             })
                 .then(res => {
-                    if (res.status === 200) {
+                    if (res.status === 201) {
                         toastr.success("Issue created")
                         props.history.push(`${props.basePath}/issues`)
                     } else
-                        res.text()
-                            .then(error => toastr.error(error));
+                        res.json()
+                            .then(r => toastr.error(r.error)); s
                 });
         }
     }
 
     return (
-        <div className="d-flex">
+        issue ? <div className="d-flex">
             <div className="dropdown pr-2">
                 <img
                     style={{ width: 42 }}
@@ -72,7 +79,7 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
                             onChange={e => setIssue({ ...issue, title: e.target.value })}
                         />
                     </div>
-                    <Can I={manage} a={API} team={team}>
+                    <Can I={manage} a={API} team={props.currentTeam}>
                         <div className="py-2">
                             <label htmlFor="tags">{t('issues.tags', currentLanguage)}</label>
                             <Select
@@ -117,6 +124,6 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
                     </div>
                 </div>
             </div>
-        </div>
+        </div> : <p>{t('loading', currentLanguage)}</p>
     )
 }

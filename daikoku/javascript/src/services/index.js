@@ -898,6 +898,7 @@ export const fetchNewTeam = () => fetchEntity('/api/entities/team');
 export const fetchNewApi = () => fetchEntity('/api/entities/api');
 export const fetchNewUser = () => fetchEntity('/api/entities/user');
 export const fetchNewOtoroshi = () => fetchEntity('/api/entities/otoroshi');
+export const fetchNewIssue = () => fetchEntity('/api/entities/issue');
 
 export function checkIfApiNameIsUnique(name, id) {
   return fetch('/api/apis/_names', {
