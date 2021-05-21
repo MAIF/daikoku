@@ -365,6 +365,8 @@ POST    /api/admin/users                                fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/admin/users                                fr.maif.otoroshi.daikoku.ctrls.UsersController.allTenantUsers()
 ### NoDocs ###
+GET     /api/admin/users/:id/_2fa                       fr.maif.otoroshi.daikoku.ctrls.UsersController.get2faQrCode(id)
+### NoDocs ###
 GET     /api/admin/auditTrail                           fr.maif.otoroshi.daikoku.ctrls.AuditTrailController.auditTrail()
 
 ### NoDocs ###

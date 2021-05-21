@@ -1685,3 +1685,14 @@ export function savePost(apiId, teamId, postId, content) {
     body: JSON.stringify(content),
   });
 }
+
+export function getQRCode(userId) {
+  return fetch(`/api/admin/users/${userId}/_2fa`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}

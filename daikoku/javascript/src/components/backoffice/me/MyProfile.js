@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useState } from 'react';
 import * as Services from '../../../services';
 import faker from 'faker';
 import bcrypt from 'bcryptjs';
@@ -14,6 +14,29 @@ import { updateUser } from '../../../core';
 import { udpateLanguage } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
+
+function DoubleFA({ connectedUser }) {
+  const [qrCode, setQRCode] = useState(null);
+
+  const getQRCode = () => {
+    Services.getQRCode(connectedUser._id)
+      .then(res => setQRCode(res.qrcode));
+  }
+
+  return (
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label" />
+      <div className="col-sm-10">
+        <button onClick={getQRCode} className="btn btn-outline-success" type="button">
+          Enable 2FA
+        </button>
+        {
+          qrCode && <img src={`data:image/svg+xml;utf8,${encodeURIComponent(qrCode)}`} />
+        }
+      </div>
+    </div >
+  )
+}
 
 class SetPassword extends Component {
   genAndSetPassword = () => {
@@ -291,6 +314,13 @@ class MyProfileComponent extends Component {
         })),
       },
     },
+    enable2FA: {
+      type: DoubleFA,
+      props: {
+        connectedUser: this.props.connectedUser,
+        currentLanguage: this.props.currentLanguage
+      }
+    }
   };
 
   formFlow = [
@@ -303,6 +333,7 @@ class MyProfileComponent extends Component {
     'personalToken',
     'refreshToken',
     'defaultLanguage',
+    'enable2FA'
   ];
 
   setFiles = (files) => {
@@ -400,9 +431,8 @@ class MyProfileComponent extends Component {
                   marginBottom: 20,
                 }}>
                 <img
-                  src={`${this.state.user.picture}${
-                    this.state.user.picture.startsWith('http') ? '' : `?${Date.now()}`
-                  }`}
+                  src={`${this.state.user.picture}${this.state.user.picture.startsWith('http') ? '' : `?${Date.now()}`
+                    }`}
                   style={{
                     width: 200,
                     borderRadius: '50%',

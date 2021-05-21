@@ -8,13 +8,16 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig, LdapSupport}
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import io.nayuki.qrcodegen.QrCode
+import org.apache.commons.codec.binary.Base32
 import org.joda.time.DateTime
-import play.api.libs.json.{JsArray, JsError, JsObject, JsSuccess, Json}
+import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
 import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
+import java.security.SecureRandom
+import javax.crypto.KeyGenerator
 import scala.concurrent.duration.FiniteDuration
 
 class UsersController(DaikokuAction: DaikokuAction,
@@ -265,6 +268,26 @@ class UsersController(DaikokuAction: DaikokuAction,
               case None => FastFuture.successful(Redirect("/logout"))
             }
       }
+    }
+  }
+
+  def get2faQrCode(userId: String) = DaikokuAction.async { ctx =>
+    DaikokuAdminOrSelf(
+      AuditTrailEvent("@{user.name} try to enable 2fa of @{u.email} account"))(UserId(userId), ctx) {
+
+      val kgen = KeyGenerator.getInstance("HmacSHA1")
+      val rng = SecureRandom.getInstanceStrong
+      kgen.init(160, rng)
+
+      val secret = kgen.generateKey()
+      val base32SecretEncoded = new Base32().encodeAsString(secret.getEncoded)
+      val label = "Daikoku"
+
+      FastFuture.successful(Ok(Json.obj(
+        "qrcode" -> QrCode
+          .encodeText(s"otpauth://totp/$label?secret=$base32SecretEncoded", QrCode.Ecc.HIGH)
+          .toSvgString(10)
+      )))
     }
   }
 }
