@@ -309,8 +309,8 @@ const ApiHomeComponent = ({
               {!!api.posts.length && (
                 <li className="nav-item">
                   <Link
-                    className={`nav-link ${tab === 'posts' ? 'active' : ''}`}
-                    to={`/${match.params.teamId}/${apiId}/posts`}>
+                    className={`nav-link ${tab === 'news' ? 'active' : ''}`}
+                    to={`/${match.params.teamId}/${apiId}/news`}>
                     <Translation i18nkey="News" language={currentLanguage}>
                       News
                     </Translation>
@@ -408,7 +408,7 @@ const ApiHomeComponent = ({
                 updateSubscriptions={updateSubscriptions}
               />
             )}
-            {tab === 'posts' && (
+            {tab === 'news' && (
               <ApiPost
                 api={api}
                 ownerTeam={ownerTeam}

@@ -19,16 +19,6 @@ const styles = {
 export function NewIssue({ currentLanguage, user, api, ...props }) {
     const { issuesTags, _id, team, _tenant } = api;
     const [issue, setIssue] = useState(null)
-    // {
-    //     _tenant: _tenant,
-    //     title: '',
-    //     tags: [],
-    //     comments: [{
-    //         by: user._id,
-    //         content: ''
-    //     }],
-    //     by: user._id
-    // }
 
     useEffect(() => {
         Services.fetchNewIssue()

@@ -262,7 +262,6 @@ export class SimpleNotification extends Component {
 
     moment.locale(this.props.currentLanguage);
 
-    console.log(notification)
     return (
       <div style={style}>
         <div className="alert section" role="alert">

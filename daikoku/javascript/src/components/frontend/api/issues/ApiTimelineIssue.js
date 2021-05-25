@@ -40,14 +40,17 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
     const [newComment, setNewComment] = useState("")
     const [showTag, onTagEdit] = useState(false)
 
+    const [tags, setTags] = useState([]);
+
     const id = issueId || useParams().issueId;
 
     useEffect(() => {
         Services.getAPIIssue(api._id, id)
-            .then(res => setIssue({
-                ...res,
-                tags: res.tags.map(tag => ({ value: tag.id, label: tag.name }))
-            }));
+            .then(res => {
+                const entryTags = res.tags.map(tag => ({ value: tag.id, label: tag.name }));
+                setIssue({ ...res, tags: entryTags });
+                setTags(entryTags);
+            })
     }, [id])
 
     useEffect(() => {
@@ -63,14 +66,18 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
         else {
             handleEdition(false);
             onTagEdit(false);
-            console.log("Update issue")
             Services.updateIssue(api._id, team._id, id, {
                 ...issue,
-                tags: issue.tags.map(tag => tag.value)
+                tags: tags.map(tag => tag.value)
             })
                 .then(res => {
                     if (res.status > 300)
                         res.json().then(r => toastr.error(r.error))
+                    else
+                        setIssue({
+                            ...issue,
+                            tags: (tags.length > 0 ? tags : issue.tags)
+                        })
                 })
         }
     }
@@ -215,8 +222,10 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                     </h1>}
                 {(connectedUser && !connectedUser.isGuest) && <div className="d-flex">
                     {editionMode ? <div className="d-flex ml-3">
-                        <button className="btn btn-success mr-1" onClick={updateIssue}>{t('Save', currentLanguage)}</button>
-                        <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>{t('Cancel', currentLanguage)}</button>
+                        <button className="btn btn-success mr-1"
+                            onClick={updateIssue}>{t('Save', currentLanguage)}</button>
+                        <button className="btn btn-outline-secondary"
+                            onClick={() => handleEdition(false)}>{t('Cancel', currentLanguage)}</button>
                     </div> : <>
                         <button className="btn btn-outline-secondary mr-1" onClick={() => handleEdition(true)}>{t('Edit', currentLanguage)}</button>
                         <Link to={`/${team._humanReadableId}/${api._humanReadableId}/issues/new`} style={{ whiteSpace: "nowrap" }}>
@@ -270,7 +279,10 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                             <label htmlFor="tags">{t('issues.tags', currentLanguage)}</label>
                             {(!showTag && connectedUser && !connectedUser.isGuest) &&
                                 <Can I={manage} a={API} team={team}>
-                                    <i className="fas fa-cog ml-auto" onClick={onTagEdit}></i>
+                                    <i className="fas fa-cog ml-auto" onClick={() => {
+                                        setTags(issue.tags);
+                                        onTagEdit(true)
+                                    }}></i>
                                 </Can>
                             }
                         </div>
@@ -280,28 +292,28 @@ export function ApiTimelineIssue({ issueId, currentLanguage, connectedUser, team
                                     <Select
                                         id="tags"
                                         isMulti
-                                        onChange={values => setIssue({
-                                            ...issue,
-                                            tags: values ? [...values] : []
-                                        })}
+                                        onChange={values => setTags(values ? [...values] : [])}
                                         options={api.issuesTags.map(iss => ({ value: iss.id, label: iss.name }))}
-                                        value={issue.tags}
+                                        value={tags}
                                         className="input-select reactSelect"
                                         classNamePrefix="reactSelect"
                                     />
-                                    <button className="btn btn-outline-danger my-3 mr-1" onClick={() => onTagEdit(false)}>{t('Cancel', currentLanguage)}</button>
+                                    <button className="btn btn-outline-danger my-3 mr-1" onClick={() => {
+                                        setTags([])
+                                        onTagEdit(false)
+                                    }}>{t('Cancel', currentLanguage)}</button>
                                     <button className="btn btn-outline-success my-3" onClick={updateIssue}>{t('Save', currentLanguage)}</button>
                                 </>
                                 :
                                 <>
-                                    {(issue.tags || []).map(tag => (
+                                    {(tags || []).map(tag => (
                                         <span className="badge badge-primary mr-1"
                                             style={{
                                                 backgroundColor: api.issuesTags.find(t => t.id === tag.value).color
                                             }}
                                             key={tag.value}>{tag.label}</span>
                                     ))}
-                                    {(issue.tags && issue.tags.length <= 0) && <p>{t('issues.no_tags', currentLanguage)}</p>}
+                                    {(tags && tags.length <= 0) && <p>{t('issues.no_tags', currentLanguage)}</p>}
                                 </>
                             }
                         </div>

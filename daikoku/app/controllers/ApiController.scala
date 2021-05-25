@@ -1747,7 +1747,10 @@ class ApiController(DaikokuAction: DaikokuAction,
           case Some(post) =>
             env.dataStore.apiPostRepo
               .forTenant(ctx.tenant.id)
-              .save(post.copy(content = (ctx.request.body \ "content").as[String]))
+              .save(post.copy(
+                content = (ctx.request.body \ "content").as[String],
+                title = (ctx.request.body \ "title").as[String]
+              ))
               .flatMap {
                 case true => FastFuture.successful(Ok(Json.obj("message" -> "Post saved")))
                 case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Something went wrong")))

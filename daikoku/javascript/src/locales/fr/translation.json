@@ -794,7 +794,6 @@
   "team_api_post.new": "Nouvelle publication",
   "team_api_post.empty_posts_list": "Aucune publication",
   "team_api_post.load_old_posts": "Charger plus de publications",
-  "team_api_post.save": "Enregister",
   "team_api_post.publish": "Publier la publication",
   "team_api_post.title": "Titre de la publication",
   "team_api_post.content": "Contenu",
