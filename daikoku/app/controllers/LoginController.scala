@@ -3,11 +3,10 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.UberPublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -16,16 +15,22 @@ import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator}
+import org.apache.commons.codec.binary.Base32
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
 import reactivemongo.bson.BSONObjectID
 
+import java.time.Instant
+import java.util.Base64
+import javax.crypto.KeyGenerator
+import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 
 class LoginController(DaikokuAction: DaikokuAction,
+                      DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                       DaikokuTenantAction: DaikokuTenantAction,
                       env: Env,
                       cc: ControllerComponents)
@@ -86,27 +91,45 @@ class LoginController(DaikokuAction: DaikokuAction,
     f.flatMap {
       case None => FastFuture.successful(BadRequest(Json.obj("error" -> true)))
       case Some(user) =>
-        val session = UserSession(
-          id = DatastoreId(BSONObjectID.generate().stringify),
-          userId = user.id,
-          userName = user.name,
-          userEmail = user.email,
-          impersonatorId = None,
-          impersonatorName = None,
-          impersonatorEmail = None,
-          impersonatorSessionId = None,
-          sessionId = UserSessionId(IdGenerator.token),
-          created = DateTime.now(),
-          expires = DateTime.now().plusSeconds(sessionMaxAge),
-          ttl = FiniteDuration(sessionMaxAge, TimeUnit.SECONDS)
-        )
-        env.dataStore.userSessionRepo.save(session).map { _ =>
-          Redirect(request.session.get("redirect").getOrElse("/"))
-            .withSession(
-              "sessionId" -> session.sessionId.value
-            )
-            .removingFromSession("redirect")(request)
+        user.twoFactorAuthentication match {
+          case Some(auth) if auth.enabled =>
+            val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
+            keyGenerator.init(160)
+            val token = new Base32().encodeAsString(keyGenerator.generateKey.getEncoded)
+
+            env.dataStore.userRepo.save(user.copy(
+              twoFactorAuthentication = Some(auth.copy(token = token))
+            ))
+              .flatMap {
+                case true => FastFuture.successful(Redirect(s"/2fa?token=$token"))
+                case false => FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+              }
+          case None => createSession(sessionMaxAge, user, request)
         }
+    }
+  }
+
+  private def createSession(sessionMaxAge: Int, user: User, request: RequestHeader) = {
+    val session = UserSession(
+      id = DatastoreId(BSONObjectID.generate().stringify),
+      userId = user.id,
+      userName = user.name,
+      userEmail = user.email,
+      impersonatorId = None,
+      impersonatorName = None,
+      impersonatorEmail = None,
+      impersonatorSessionId = None,
+      sessionId = UserSessionId(IdGenerator.token),
+      created = DateTime.now(),
+      expires = DateTime.now().plusSeconds(sessionMaxAge),
+      ttl = FiniteDuration(sessionMaxAge, TimeUnit.SECONDS)
+    )
+    env.dataStore.userSessionRepo.save(session).map { _ =>
+      Redirect(request.session.get("redirect").getOrElse("/"))
+        .withSession(
+          "sessionId" -> session.sessionId.value
+        )
+        .removingFromSession("redirect")(request)
     }
   }
 
@@ -556,6 +579,43 @@ class LoginController(DaikokuAction: DaikokuAction,
             case (works, error) =>
               Ok(Json.obj("works" -> works, "error" -> error))
           }
+      }
+    }
+  }
+
+  def verifyCode(token: Option[String], code: Option[String]) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent("@{user.name} try to verify code"))(ctx) {
+      (token, code) match {
+        case (Some(token), Some(code)) =>
+          env.dataStore.userRepo.findOne(Json.obj(
+            "twoFactorAuthentication" -> Json.obj("$regex" -> s".*$token.*", "$options" -> "-i")
+          )).flatMap {
+            case Some(user) if user.twoFactorAuthentication.isDefined =>
+              val totp = new TimeBasedOneTimePasswordGenerator()
+              val now = Instant.now()
+              val later = now.plus(totp.getTimeStep)
+              val expired = now.minus(totp.getTimeStep)
+
+              val decodedKey = Base64.getDecoder.decode(user.twoFactorAuthentication.get.secret)
+              val key = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES")
+
+              println(s"Received : $code")
+              println(totp.generateOneTimePassword(key, now).toString)
+
+              if (code == totp.generateOneTimePassword(key, now).toString ||
+                code == totp.generateOneTimePassword(key, later).toString)
+                createSession(
+                    LocalLoginConfig.fromJsons(ctx.tenant.authProviderSettings).sessionMaxAge,
+                    user,
+                    ctx.request
+                  )
+              else if(code == totp.generateOneTimePassword(key, expired).toString)
+                FastFuture.successful(BadRequest(Json.obj("error" -> "Expired code")))
+              else
+                FastFuture.successful(BadRequest(Json.obj("error" -> "Invalid code")))
+            case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Invalid token")))
+          }
+        case (_, _) => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing parameters")))
       }
     }
   }

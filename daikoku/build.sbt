@@ -60,6 +60,7 @@ libraryDependencies ++= Seq(
 
   "io.vertx" % "vertx-pg-client" % "4.0.0",
   "io.nayuki" % "qrcodegen" % "1.6.0",
+  "com.eatthepath" % "java-otp" % "0.2.0",
 
   "org.reactivemongo" %% "play2-reactivemongo" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",

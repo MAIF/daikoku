@@ -1591,9 +1591,9 @@ export function checkConnection(config, user) {
     ...POST_HEADERS,
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   }).then((r) => r.json());
 }
@@ -1695,4 +1695,15 @@ export function getQRCode(userId) {
       'Content-Type': 'application/json',
     },
   }).then((r) => r.json());
+}
+
+export function verify2faCode(token, code) {
+  return fetch(`/api/2fa?token=${token}&code=${code}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  })
 }

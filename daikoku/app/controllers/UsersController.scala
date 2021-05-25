@@ -2,6 +2,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
+import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
@@ -17,6 +18,7 @@ import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
 import java.security.SecureRandom
+import java.util.Base64
 import javax.crypto.KeyGenerator
 import scala.concurrent.duration.FiniteDuration
 
@@ -275,19 +277,37 @@ class UsersController(DaikokuAction: DaikokuAction,
     DaikokuAdminOrSelf(
       AuditTrailEvent("@{user.name} try to enable 2fa of @{u.email} account"))(UserId(userId), ctx) {
 
-      val kgen = KeyGenerator.getInstance("HmacSHA1")
-      val rng = SecureRandom.getInstanceStrong
-      kgen.init(160, rng)
+      import javax.crypto.KeyGenerator
 
-      val secret = kgen.generateKey()
+      val totp = new TimeBasedOneTimePasswordGenerator()
+      val keyGenerator = KeyGenerator.getInstance(totp.getAlgorithm)
+      keyGenerator.init(160)
+
+      val secret = keyGenerator.generateKey()
+
       val base32SecretEncoded = new Base32().encodeAsString(secret.getEncoded)
       val label = "Daikoku"
 
-      FastFuture.successful(Ok(Json.obj(
-        "qrcode" -> QrCode
-          .encodeText(s"otpauth://totp/$label?secret=$base32SecretEncoded", QrCode.Ecc.HIGH)
-          .toSvgString(10)
-      )))
+      env.dataStore.userRepo
+        .findByIdNotDeleted(userId)
+        .flatMap {
+          case None => FastFuture.successful(NotFound("User not found"))
+          case Some(user) =>
+            env.dataStore.userRepo.save(
+              user.copy(twoFactorAuthentication = Some(TwoFactorAuthentication(
+                enabled = true,
+                secret = Base64.getEncoder.encodeToString(secret.getEncoded),
+                token = ""
+              )))
+            ).flatMap {
+              case true => FastFuture.successful(Ok(Json.obj(
+                "qrcode" -> QrCode
+                  .encodeText(s"otpauth://totp/$label?secret=$base32SecretEncoded", QrCode.Ecc.HIGH)
+                  .toSvgString(10)
+              )))
+              case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Can't updated user")))
+            }
+        }
     }
   }
 }

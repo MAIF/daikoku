@@ -1,15 +1,16 @@
-import React, { Component } from 'react';
+import React, { Component, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import md5 from 'js-md5';
 import queryString from 'query-string';
 
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Route, useParams } from 'react-router-dom';
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
 
 import { t, Translation } from '../locales/Translation';
 import { udpateLanguage } from '../core/context/actions';
 import { Spinner } from '../components/utils/Spinner';
 import { validatePassword, ValidateEmail } from '../components/utils/validation';
+import * as Services from '../services';
 
 const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 
@@ -369,6 +370,60 @@ export class ResetPasswordComponent extends Component {
       </div>
     );
   }
+}
+
+export function TwoFactorAuthentication({ title, currentLanguage }) {
+  const [code, setCode] = useState("");
+  const [token, setToken] = useState("");
+  const [error, setError] = useState();
+
+  function verify() {
+    if (!code || code.length !== 6) {
+      setError(t('2fa.code_error', currentLanguage));
+      setCode("");
+    }
+    else {
+      Services.verify2faCode(token, code)
+        .then(res => {
+          if (res.status >= 400) {
+            setError(t('2fa.wrong_code', currentLanguage));
+            setCode("");
+          }
+        })
+    }
+  }
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (!params.get('token'))
+      window.location.replace("/")
+    else
+      setToken(params.get("token"));
+  }, [])
+
+  useEffect(() => {
+    if (error)
+      setError(t('2fa.code_error', currentLanguage));
+  }, [currentLanguage])
+
+  return (
+    <div className="d-flex flex-column mx-auto my-3" style={{ maxWidth: '350px' }}>
+      <h3>{title}</h3>
+      <span className="mb-3">{t('2fa.message', currentLanguage)}</span>
+      {error && <div className="alert alert-danger" role="alert">
+        {error}
+      </div>}
+      <input type="number" value={code} placeholder={t('Insert code', currentLanguage)}
+        onChange={e => {
+          if (e.target.value.length < 7) {
+            setError(null)
+            setCode(e.target.value)
+          }
+        }} className="form-control" />
+
+      <button className="btn btn-outline-success mt-3" type="button" onClick={verify}>Verify code</button>
+    </div>
+  )
 }
 
 export class DaikokuHomeApp extends Component {

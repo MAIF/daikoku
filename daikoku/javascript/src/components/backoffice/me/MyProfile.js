@@ -15,7 +15,7 @@ import { udpateLanguage } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-function DoubleFA({ connectedUser }) {
+function TwoFactorAuthentication({ connectedUser }) {
   const [qrCode, setQRCode] = useState(null);
 
   const getQRCode = () => {
@@ -315,7 +315,7 @@ class MyProfileComponent extends Component {
       },
     },
     enable2FA: {
-      type: DoubleFA,
+      type: TwoFactorAuthentication,
       props: {
         connectedUser: this.props.connectedUser,
         currentLanguage: this.props.currentLanguage

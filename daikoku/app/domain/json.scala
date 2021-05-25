@@ -1554,7 +1554,8 @@ object json {
               .getOrElse(Map.empty),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
             starredApis =
-              (json \ "starredApis").asOpt(SetApiIdFormat).getOrElse(Set.empty)
+              (json \ "starredApis").asOpt(SetApiIdFormat).getOrElse(Set.empty),
+            twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(TwoFactorAuthenticationFormat)
           )
         )
       } recover {
@@ -1583,7 +1584,11 @@ object json {
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "isGuest" -> o.isGuest,
-      "starredApis" -> SetApiIdFormat.writes(o.starredApis)
+      "starredApis" -> SetApiIdFormat.writes(o.starredApis),
+      "twoFactorAuthentication" -> o.twoFactorAuthentication
+        .map(TwoFactorAuthenticationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
 
@@ -2778,6 +2783,27 @@ object json {
           )
       }
     }
+
+  val TwoFactorAuthenticationFormat = new Format[TwoFactorAuthentication] {
+    override def reads(json: JsValue): JsResult[TwoFactorAuthentication] =
+      Try {
+        JsSuccess(
+          TwoFactorAuthentication(
+            enabled = (json \ "enabled").as[Boolean],
+            secret = (json \ "secret").as[String],
+            token = (json \ "token").as[String]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: TwoFactorAuthentication): JsValue = Json.obj(
+      "enabled" -> o.enabled,
+      "secret" -> o.secret,
+      "token" -> o.token
+    )
+  }
 
   val SeqOtoroshiSettingsFormat = Format(Reads.seq(OtoroshiSettingsFormat),
                                          Writes.seq(OtoroshiSettingsFormat))

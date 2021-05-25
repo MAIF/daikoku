@@ -802,5 +802,9 @@
     "deleted": "deleted",
     "Deleted API": "Deleted API",
     "Personal": "Personal",
-    "team.invitation": "%s, as admin of %s, invit you in his team."
+    "team.invitation": "%s, as admin of %s, invit you in his team.",
+    "Verification code": "Verification code",
+    "2fa.message": "Two Factor Authentification is enabled. Connect to your 2FA App and retrieve the verification code",
+    "2fa.code_error": "Your code must have 6 digits",
+    "2fa.wrong_code": "Invalid verification code"
 }

@@ -31,6 +31,8 @@ GET     /consumptions/*path                             fr.maif.otoroshi.daikoku
 GET     /logout                                         fr.maif.otoroshi.daikoku.ctrls.LoginController.logout()
 ### NoDocs ###
 GET     /health                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.health()
+### NoDocs ###
+GET     /api/2fa                                        fr.maif.otoroshi.daikoku.ctrls.LoginController.verifyCode(token: Option[String] ?= None, code: Option[String] ?= None)
 
 ### NoDocs ###
 POST    /account/reset                                  fr.maif.otoroshi.daikoku.ctrls.LoginController.askForPasswordReset()
