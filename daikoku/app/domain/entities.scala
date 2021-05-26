@@ -983,7 +983,7 @@ case class ApiPost(id: ApiPostId,
   override def asJson: JsValue = json.ApiPostFormat.writes(this)
 }
 
-case class TwoFactorAuthentication(enabled: Boolean = false, secret: String, token: String)
+case class TwoFactorAuthentication(enabled: Boolean = false, secret: String, token: String, backupCodes: String)
   extends CanJson[TwoFactorAuthentication] {
   override def asJson: JsValue = json.TwoFactorAuthenticationFormat.writes(this)
 }

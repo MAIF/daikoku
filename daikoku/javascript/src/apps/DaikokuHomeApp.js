@@ -11,6 +11,7 @@ import { udpateLanguage } from '../core/context/actions';
 import { Spinner } from '../components/utils/Spinner';
 import { validatePassword, ValidateEmail } from '../components/utils/validation';
 import * as Services from '../services';
+import { toastr } from 'react-redux-toastr';
 
 const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 
@@ -377,6 +378,9 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
   const [token, setToken] = useState("");
   const [error, setError] = useState();
 
+  const [showBackupCodes, toggleBackupCodesInput] = useState(false);
+  const [backupCode, setBackupCode] = useState("");
+
   function verify() {
     if (!code || code.length !== 6) {
       setError(t('2fa.code_error', currentLanguage));
@@ -389,11 +393,27 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
             setError(t('2fa.wrong_code', currentLanguage));
             setCode("");
           }
+          // else if (res.redirected)
+          //   window.location.href = res.url;
         })
     }
   }
 
-  React.useEffect(() => {
+  function reset2faAccess() {
+    Services.reset2faAccess(backupCode)
+      .then(res => {
+        if (res.status >= 400)
+          res.json().then(r => toastr.error(r.error))
+        else {
+          res.json().then(r => {
+            toastr.success(r.message);
+            window.location.replace("/");
+          })
+        }
+      })
+  }
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (!params.get('token'))
       window.location.replace("/")
@@ -409,19 +429,31 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
   return (
     <div className="d-flex flex-column mx-auto my-3" style={{ maxWidth: '350px' }}>
       <h3>{title}</h3>
-      <span className="mb-3">{t('2fa.message', currentLanguage)}</span>
-      {error && <div className="alert alert-danger" role="alert">
-        {error}
-      </div>}
-      <input type="number" value={code} placeholder={t('Insert code', currentLanguage)}
-        onChange={e => {
-          if (e.target.value.length < 7) {
-            setError(null)
-            setCode(e.target.value)
-          }
-        }} className="form-control" />
+      {showBackupCodes ?
+        <>
+          <input type="text" value={backupCode} placeholder={t('Insert your backup codes', currentLanguage)}
+            onChange={e => setBackupCode(e.target.value)} className="form-control" />
+          <button className="btn btn-outline-success mt-3" type="button" onClick={reset2faAccess}>Reset access</button>
+          <a href="#" onClick={() => toggleBackupCodesInput(false)} className="text-center mt-3">
+            I found my device and my app. Use the code again.
+            </a>
+        </>
+        : <>
+          <span className="mb-3">{t('2fa.message', currentLanguage)}</span>
+          {error && <div className="alert alert-danger" role="alert">
+            {error}
+          </div>}
+          <input type="number" value={code} placeholder={t('Insert code', currentLanguage)}
+            onChange={e => {
+              if (e.target.value.length < 7) {
+                setError(null)
+                setCode(e.target.value)
+              }
+            }} className="form-control" />
 
-      <button className="btn btn-outline-success mt-3" type="button" onClick={verify}>Verify code</button>
+          <button className="btn btn-outline-success mt-3" type="button" onClick={verify}>Verify code</button>
+          <a href="#" onClick={toggleBackupCodesInput} className="text-center mt-3">Lost Device or access to 2fa App ? Click here to use your backup codes.</a>
+        </>}
     </div>
   )
 }
@@ -456,6 +488,11 @@ export class DaikokuHomeApp extends Component {
             render={(p) => <Signup tenant={tenant} match={p.match} history={p.history} />}
           />
           <Route exact path="/reset" render={() => <ResetPassword />} />
+          <Route exact path="/2fa" render={(p) => <TwoFactorAuthentication
+            match={p.match}
+            history={p.history}
+            currentLanguage={'En'}
+            title={`${tenant.name} - ${t('Verification code', 'En')}`} />} />
         </div>
       </Router>
     );

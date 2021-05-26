@@ -804,7 +804,7 @@
   "Personal": "Personel",
   "team.invitation": "%s, administrateur de %s, vous a invité a rejoindre son équipe.",
   "Verification code": "Code de vérification",
-  "2fa.message": "La double authentification est activé. Connectez-vous à votre application 2FA et récupérer le code de vérification.",
+  "2fa.message": "La double authentification est activé. Entrez un code provnenant de votre application 2FA pour s'assurer que tout fonctionne.",
   "2fa.code_error": "Votre code doit avoir exactement 6 chiffres",
   "2fa.wrong_code": "Le code de vérification est invalide"
 }

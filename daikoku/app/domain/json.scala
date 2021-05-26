@@ -2791,7 +2791,8 @@ object json {
           TwoFactorAuthentication(
             enabled = (json \ "enabled").as[Boolean],
             secret = (json \ "secret").as[String],
-            token = (json \ "token").as[String]
+            token = (json \ "token").as[String],
+            backupCodes = (json \ "backupCodes").as[String]
           )
         )
       } recover {
@@ -2801,7 +2802,8 @@ object json {
     override def writes(o: TwoFactorAuthentication): JsValue = Json.obj(
       "enabled" -> o.enabled,
       "secret" -> o.secret,
-      "token" -> o.token
+      "token" -> o.token,
+      "backupCodes" -> o.backupCodes
     )
   }
 

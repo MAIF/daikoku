@@ -78,6 +78,14 @@ GET     /api/me/subscriptions/:apiId                    fr.maif.otoroshi.daikoku
 GET     /api/me                                         fr.maif.otoroshi.daikoku.ctrls.ApiController.me()
 ### NoDocs ###
 DELETE  /api/me                                         fr.maif.otoroshi.daikoku.ctrls.UsersController.deleteSelfUser()
+### NoDocs ###
+GET     /api/me/_2fa                                    fr.maif.otoroshi.daikoku.ctrls.UsersController.get2faQrCode()
+### NoDocs ###
+GET     /api/me/_2fa/enable                             fr.maif.otoroshi.daikoku.ctrls.UsersController.enable2fa(code: Option[String] ?= None)
+### NoDocs ###
+DELETE  /api/me/_2fa                                    fr.maif.otoroshi.daikoku.ctrls.UsersController.disable2fa()
+### NoDocs ###
+PUT     /api/me/_2fa                                    fr.maif.otoroshi.daikoku.ctrls.UsersController.reset2fa()
 
 ### NoDocs ###
 POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
@@ -366,8 +374,6 @@ DELETE  /api/admin/users/:id                            fr.maif.otoroshi.daikoku
 POST    /api/admin/users                                fr.maif.otoroshi.daikoku.ctrls.UsersController.createUser()
 ### NoDocs ###
 GET     /api/admin/users                                fr.maif.otoroshi.daikoku.ctrls.UsersController.allTenantUsers()
-### NoDocs ###
-GET     /api/admin/users/:id/_2fa                       fr.maif.otoroshi.daikoku.ctrls.UsersController.get2faQrCode(id)
 ### NoDocs ###
 GET     /api/admin/auditTrail                           fr.maif.otoroshi.daikoku.ctrls.AuditTrailController.auditTrail()
 

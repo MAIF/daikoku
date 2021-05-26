@@ -804,7 +804,7 @@
     "Personal": "Personal",
     "team.invitation": "%s, as admin of %s, invit you in his team.",
     "Verification code": "Verification code",
-    "2fa.message": "Two Factor Authentification is enabled. Connect to your 2FA App and retrieve the verification code",
+    "2fa.message": "Two Factor Authentification is enabled. Enter a code from your 2FA App to make sure everything works.",
     "2fa.code_error": "Your code must have 6 digits",
     "2fa.wrong_code": "Invalid verification code"
 }

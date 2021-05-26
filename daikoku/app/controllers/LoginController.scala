@@ -588,19 +588,15 @@ class LoginController(DaikokuAction: DaikokuAction,
       (token, code) match {
         case (Some(token), Some(code)) =>
           env.dataStore.userRepo.findOne(Json.obj(
-            "twoFactorAuthentication" -> Json.obj("$regex" -> s".*$token.*", "$options" -> "-i")
+            "twoFactorAuthentication.token" -> token
           )).flatMap {
             case Some(user) if user.twoFactorAuthentication.isDefined =>
               val totp = new TimeBasedOneTimePasswordGenerator()
               val now = Instant.now()
               val later = now.plus(totp.getTimeStep)
-              val expired = now.minus(totp.getTimeStep)
 
               val decodedKey = Base64.getDecoder.decode(user.twoFactorAuthentication.get.secret)
               val key = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES")
-
-              println(s"Received : $code")
-              println(totp.generateOneTimePassword(key, now).toString)
 
               if (code == totp.generateOneTimePassword(key, now).toString ||
                 code == totp.generateOneTimePassword(key, later).toString)
@@ -609,8 +605,6 @@ class LoginController(DaikokuAction: DaikokuAction,
                     user,
                     ctx.request
                   )
-              else if(code == totp.generateOneTimePassword(key, expired).toString)
-                FastFuture.successful(BadRequest(Json.obj("error" -> "Expired code")))
               else
                 FastFuture.successful(BadRequest(Json.obj("error" -> "Invalid code")))
             case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Invalid token")))

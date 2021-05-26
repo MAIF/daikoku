@@ -1686,8 +1686,8 @@ export function savePost(apiId, teamId, postId, content) {
   });
 }
 
-export function getQRCode(userId) {
-  return fetch(`/api/admin/users/${userId}/_2fa`, {
+export function getQRCode() {
+  return fetch(`/api/me/_2fa`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -1706,4 +1706,34 @@ export function verify2faCode(token, code) {
       'Content-Type': 'application/json',
     },
   })
+}
+
+export function disable2FA() {
+  return fetch('/api/me/_2fa', {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+export function reset2faAccess(backupCodes) {
+  return fetch('/api/me/_2fa', {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify({ backupCodes })
+  });
+}
+
+export function selfVerify2faCode(code) {
+  return fetch(`/api/me/_2fa/enable?code=${code}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  });
 }

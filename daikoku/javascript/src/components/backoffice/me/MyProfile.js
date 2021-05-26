@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react';
+import React, { Component, useEffect, useState } from 'react';
 import * as Services from '../../../services';
 import faker from 'faker';
 import bcrypt from 'bcryptjs';
@@ -15,26 +15,165 @@ import { udpateLanguage } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-function TwoFactorAuthentication({ connectedUser }) {
+function TwoFactorAuthentication({ currentLanguage, rawValue, changeValue }) {
   const [qrCode, setQRCode] = useState(null);
+  const [modal, setModal] = useState(false);
+  const [error, setError] = useState();
+  const [backupCodes, setBackupCodes] = useState("")
+
+  useEffect(() => {
+    if (rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled)
+      Services.getQRCode()
+        .then(res => setQRCode(res.qrcode));
+  }, [])
 
   const getQRCode = () => {
-    Services.getQRCode(connectedUser._id)
-      .then(res => setQRCode(res.qrcode));
+    Services.getQRCode()
+      .then(res => setModal({
+        ...res,
+        code: ""
+      }));
+  }
+
+  const disable2FA = () => {
+    window.confirm('Are you sure you want to disable 2FA on your profile ?')
+      .then(ok => {
+        if (ok) {
+          Services.disable2FA()
+            .then(() => {
+              toastr.success("Two Factor Authentication disabled");
+              window.location.reload()
+            })
+        }
+      });
+  }
+
+  function copyToClipboard() {
+    navigator.clipboard.writeText(rawValue.twoFactorAuthentication.backupCodes)
+    toastr.success("Copied");
+  }
+
+  function verify() {
+    if (!modal.code || modal.code.length !== 6) {
+      setError(t('2fa.code_error', currentLanguage));
+      setModal({ ...modal, code: "" });
+    }
+    else {
+      Services.selfVerify2faCode(modal.code)
+        .then(res => {
+          if (res.status >= 400) {
+            setError(t('2fa.wrong_code', currentLanguage));
+            setModal({ ...modal, code: "" });
+          }
+          else
+            res.json()
+              .then(r => {
+                toastr.success(r.message);
+                setBackupCodes(r.backupCodes);
+              })
+        })
+    }
   }
 
   return (
-    <div className="form-group row">
-      <label className="col-xs-12 col-sm-2 col-form-label" />
-      <div className="col-sm-10">
-        <button onClick={getQRCode} className="btn btn-outline-success" type="button">
-          Enable 2FA
-        </button>
-        {
-          qrCode && <img src={`data:image/svg+xml;utf8,${encodeURIComponent(qrCode)}`} />
-        }
+    modal ?
+      <div style={{
+        position: 'absolute',
+        top: 0, left: 0,
+        width: '100%', height: '100%',
+        backgroundColor: '#f6f7f7'
+      }}>
+        {backupCodes ?
+          <div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
+            <span className="my-3">With 2FA enabled for your account, you'll need these backup codes if you ever lose your device. Without your device or a backup code, you'll have to contact a Daikoku Admin to recover your account.</span>
+            <div className="d-flex w-100 mb-3">
+              <input type="text" disabled={true} value={backupCodes} className="form-control" />
+              <button className="btn btn-outline-success ml-1" type="button" onClick={() => {
+                navigator.clipboard.writeText(backupCodes)
+                toastr.success("Copied");
+              }}>
+                <i className="fas fa-copy" />
+              </button>
+            </div>
+            <button className="btn btn-outline-success" type="button" onClick={() => window.location.reload()}>Confirm</button>
+          </div>
+          :
+          <div className="d-flex flex-column justify-content-center align-items-center p-3">
+            <div className="d-flex justify-content-center align-items-center p-3">
+              <div className="d-flex flex-column justify-content-center align-items-center">
+                <span className="my-3 text-center w-75 mx-auto">Open your Two Factor Authentication App (like Authy) and scan this QR code.</span>
+                <img src={`data:image/svg+xml;utf8,${encodeURIComponent(modal.qrcode)}`} style={{
+                  maxWidth: "250px",
+                  height: "250px"
+                }} />
+              </div>
+              <div className="w-75">
+                <span className="my-3 text-center">... Or enter following code manually (without entering spaces).</span>
+                <textarea type="text"
+                  style={{ resize: 'none', background: 'none', fontWeight: 'bold', border: 0, color: "black", letterSpacing: '3px' }}
+                  disabled={true} value={modal.rawSecret.match(/.{1,4}/g).join(" ")} className="form-control" />
+              </div>
+            </div>
+            <div className="w-75 mx-auto">
+              <span className="mt-3">Once code is registered, you'll start seeing 6-digit verification codes in the app.</span>
+              <span className="mb-3">Enter a code from your 2FA App to make sure everything works.</span>
+              {error && <div className="alert alert-danger" role="alert">
+                {error}
+              </div>}
+              <input type="number"
+                value={modal.code}
+                placeholder={t('Insert code', currentLanguage)}
+                onChange={e => {
+                  if (e.target.value.length < 7) {
+                    setError(null)
+                    setModal({ ...modal, code: e.target.value })
+                  }
+                }} className="form-control my-3" />
+
+              <button className="btn btn-outline-success" type="button" onClick={verify}>Complete registration</button>
+            </div>
+          </div>}
       </div>
-    </div >
+      :
+      <>
+        <div className="form-group row">
+          <label className="col-xs-12 col-sm-2 col-form-label">Two factor Authentication</label>
+          <div className="col-sm-10">
+            {
+              rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled ?
+                <button onClick={disable2FA} className="btn btn-outline-danger" type="button">
+                  Disable 2FA
+                </button> :
+                <button onClick={getQRCode} className="btn btn-outline-success" type="button">
+                  Enable 2FA
+              </button>
+            }
+          </div>
+        </div>
+        {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled && <div className="form-group row">
+          <label className="col-xs-12 col-sm-2 col-form-label">Backup codes</label>
+          <div className="col-sm-10">
+            <div className="d-flex">
+              <input type="text" disabled={true} value={rawValue.twoFactorAuthentication.backupCodes} className="form-control" />
+              <button className="btn btn-outline-success ml-1" type="button" onClick={copyToClipboard}>
+                <i className="fas fa-copy" />
+              </button>
+            </div>
+          </div>
+        </div>}
+        {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled && qrCode &&
+          <div className="form-group row">
+            <label className="col-xs-12 col-sm-2 col-form-label">Generated QRCode</label>
+            <div className="col-sm-10">
+              <div className="d-flex flex-column">
+                <img src={`data:image/svg+xml;utf8,${encodeURIComponent(qrCode)}`} style={{
+                  maxWidth: "250px",
+                  height: "250px"
+                }} />
+              </div>
+            </div>
+          </div>}
+      </>
   )
 }
 
@@ -317,8 +456,7 @@ class MyProfileComponent extends Component {
     enable2FA: {
       type: TwoFactorAuthentication,
       props: {
-        connectedUser: this.props.connectedUser,
-        currentLanguage: this.props.currentLanguage
+        ...this.props
       }
     }
   };
