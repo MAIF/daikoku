@@ -393,8 +393,8 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
             setError(t('2fa.wrong_code', currentLanguage));
             setCode("");
           }
-          // else if (res.redirected)
-          //   window.location.href = res.url;
+          else if (res.redirected)
+            window.location.href = res.url;
         })
     }
   }
@@ -405,10 +405,8 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
         if (res.status >= 400)
           res.json().then(r => toastr.error(r.error))
         else {
-          res.json().then(r => {
-            toastr.success(r.message);
+            toastr.success("2FA successfully disabled - You can now login");
             window.location.replace("/");
-          })
         }
       })
   }

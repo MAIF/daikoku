@@ -366,31 +366,4 @@ class UsersController(DaikokuAction: DaikokuAction,
         }
     }
   }
-
-  def reset2fa() = DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
-    UberPublicUserAccess(AuditTrailEvent("@{user.name} try to reset 2fa with backup codes"))(ctx) {
-      (ctx.request.body \ "backupCodes").asOpt[String] match {
-        case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing body fields")))
-        case Some(backupCodes) =>
-          env.dataStore.userRepo.findOne(Json.obj(
-            "twoFactorAuthentication.backupCodes" -> backupCodes
-          )).flatMap {
-            case Some(user) =>
-              user.twoFactorAuthentication match {
-                case None => FastFuture.successful(BadRequest(Json.obj("error" -> "2FA not enabled on this account")))
-                case Some(auth) =>
-                  if (auth.backupCodes != backupCodes)
-                    FastFuture.successful(BadRequest(Json.obj("error" -> "Wrong backup codes")))
-                  else
-                    env.dataStore.userRepo.save(user.copy(twoFactorAuthentication = None))
-                    .flatMap {
-                      case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Something happens when updating user")))
-                      case true => FastFuture.successful(Ok(Json.obj("message" -> "2FA successfully disabled - You can now login")))
-                    }
-              }
-            case _ => FastFuture.successful(NotFound(Json.obj("error" -> "User not found")))
-        }
-      }
-    }
-  }
 }

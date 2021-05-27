@@ -1720,7 +1720,7 @@ export function disable2FA() {
 }
 
 export function reset2faAccess(backupCodes) {
-  return fetch('/api/me/_2fa', {
+  return fetch('/api/2fa', {
     ...POST_HEADERS,
     method: 'PUT',
     body: JSON.stringify({ backupCodes })

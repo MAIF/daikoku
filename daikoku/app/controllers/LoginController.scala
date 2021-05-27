@@ -104,7 +104,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                 case true => FastFuture.successful(Redirect(s"/2fa?token=$token"))
                 case false => FastFuture.successful(BadRequest(Json.obj("error" -> true)))
               }
-          case None => createSession(sessionMaxAge, user, request)
+          case _ => createSession(sessionMaxAge, user, request)
         }
     }
   }
@@ -583,8 +583,7 @@ class LoginController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def verifyCode(token: Option[String], code: Option[String]) = DaikokuActionMaybeWithGuest.async { ctx =>
-    UberPublicUserAccess(AuditTrailEvent("@{user.name} try to verify code"))(ctx) {
+  def verifyCode(token: Option[String], code: Option[String]) =  DaikokuTenantAction.async { ctx =>
       (token, code) match {
         case (Some(token), Some(code)) =>
           env.dataStore.userRepo.findOne(Json.obj(
@@ -612,5 +611,29 @@ class LoginController(DaikokuAction: DaikokuAction,
         case (_, _) => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing parameters")))
       }
     }
-  }
+
+  def reset2fa() = DaikokuTenantAction.async(parse.json) { ctx =>
+      (ctx.request.body \ "backupCodes").asOpt[String] match {
+        case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing body fields")))
+        case Some(backupCodes) =>
+          env.dataStore.userRepo.findOne(Json.obj(
+            "twoFactorAuthentication.backupCodes" -> backupCodes
+          )).flatMap {
+            case Some(user) =>
+              user.twoFactorAuthentication match {
+                case None => FastFuture.successful(BadRequest(Json.obj("error" -> "2FA not enabled on this account")))
+                case Some(auth) =>
+                  if (auth.backupCodes != backupCodes)
+                    FastFuture.successful(BadRequest(Json.obj("error" -> "Wrong backup codes")))
+                  else
+                    env.dataStore.userRepo.save(user.copy(twoFactorAuthentication = None))
+                      .flatMap {
+                        case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Something happens when updating user")))
+                        case true => FastFuture.successful(Ok(Json.obj("message" -> "2FA successfully disabled - You can now login")))
+                      }
+              }
+            case _ => FastFuture.successful(NotFound(Json.obj("error" -> "User not found")))
+          }
+      }
+    }
 }

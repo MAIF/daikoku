@@ -33,6 +33,8 @@ GET     /logout                                         fr.maif.otoroshi.daikoku
 GET     /health                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.health()
 ### NoDocs ###
 GET     /api/2fa                                        fr.maif.otoroshi.daikoku.ctrls.LoginController.verifyCode(token: Option[String] ?= None, code: Option[String] ?= None)
+### NoDocs ###
+PUT     /api/2fa                                        fr.maif.otoroshi.daikoku.ctrls.LoginController.reset2fa()
 
 ### NoDocs ###
 POST    /account/reset                                  fr.maif.otoroshi.daikoku.ctrls.LoginController.askForPasswordReset()
@@ -84,8 +86,6 @@ GET     /api/me/_2fa                                    fr.maif.otoroshi.daikoku
 GET     /api/me/_2fa/enable                             fr.maif.otoroshi.daikoku.ctrls.UsersController.enable2fa(code: Option[String] ?= None)
 ### NoDocs ###
 DELETE  /api/me/_2fa                                    fr.maif.otoroshi.daikoku.ctrls.UsersController.disable2fa()
-### NoDocs ###
-PUT     /api/me/_2fa                                    fr.maif.otoroshi.daikoku.ctrls.UsersController.reset2fa()
 
 ### NoDocs ###
 POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
