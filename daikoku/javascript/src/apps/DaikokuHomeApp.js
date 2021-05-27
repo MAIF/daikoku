@@ -405,8 +405,8 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
         if (res.status >= 400)
           res.json().then(r => toastr.error(r.error))
         else {
-            toastr.success("2FA successfully disabled - You can now login");
-            window.location.replace("/");
+          toastr.success(t('2fa.successfully_disabled', currentLanguage));
+          window.location.replace("/");
         }
       })
   }
@@ -429,19 +429,21 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
       <h3>{title}</h3>
       {showBackupCodes ?
         <>
-          <input type="text" value={backupCode} placeholder={t('Insert your backup codes', currentLanguage)}
+          <input type="text" value={backupCode}
+            placeholder={t('2fa.insert_backup_codes', currentLanguage)}
             onChange={e => setBackupCode(e.target.value)} className="form-control" />
-          <button className="btn btn-outline-success mt-3" type="button" onClick={reset2faAccess}>Reset access</button>
+          <button className="btn btn-outline-success mt-3" type="button"
+            onClick={reset2faAccess}>{t('2fa.reset_access', currentLanguage)}</button>
           <a href="#" onClick={() => toggleBackupCodesInput(false)} className="text-center mt-3">
-            I found my device and my app. Use the code again.
-            </a>
+            {t('2fa.using_code', currentLanguage)}
+          </a>
         </>
         : <>
           <span className="mb-3">{t('2fa.message', currentLanguage)}</span>
           {error && <div className="alert alert-danger" role="alert">
             {error}
           </div>}
-          <input type="number" value={code} placeholder={t('Insert code', currentLanguage)}
+          <input type="number" value={code} placeholder={t('2fa.insert_code', currentLanguage)}
             onChange={e => {
               if (e.target.value.length < 7) {
                 setError(null)
@@ -449,8 +451,12 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
               }
             }} className="form-control" />
 
-          <button className="btn btn-outline-success mt-3" type="button" onClick={verify}>Verify code</button>
-          <a href="#" onClick={toggleBackupCodesInput} className="text-center mt-3">Lost Device or access to 2fa App ? Click here to use your backup codes.</a>
+          <button className="btn btn-outline-success mt-3" type="button" onClick={verify}>
+            {t('2fa.verify_code', currentLanguage)}
+          </button>
+          <a href="#" onClick={toggleBackupCodesInput} className="text-center mt-3">
+            {t('2fa.lost_device_message', currentLanguage)}  
+          </a>
         </>}
     </div>
   )
