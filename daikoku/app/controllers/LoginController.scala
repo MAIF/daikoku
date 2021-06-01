@@ -5,8 +5,8 @@ import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction, DaikokuTenantActionContext}
-import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.UberPublicUserAccess
+import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -26,6 +26,7 @@ import java.time.Instant
 import java.util.Base64
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 
@@ -125,6 +126,8 @@ class LoginController(DaikokuAction: DaikokuAction,
       ttl = FiniteDuration(sessionMaxAge, TimeUnit.SECONDS)
     )
     env.dataStore.userSessionRepo.save(session).map { _ =>
+      AuditTrailEvent(s"${user.name} has connected to ${tenant.name} with ${user.email} address")
+        .logTenantAuditEvent(tenant, user, session, request, TrieMap[String, String](), AuthorizationLevel.AuthorizedSelf)
       Redirect(request.session.get("redirect").getOrElse("/"))
         .withSession(
           "sessionId" -> session.sessionId.value
@@ -186,6 +189,8 @@ class LoginController(DaikokuAction: DaikokuAction,
               case (Some(username), Some(password)) =>
                 p match {
                   case AuthProvider.Local =>
+                    AuditTrailEvent(s"unauthenticated user with $username has tried to login [local provider]")
+                      .logUnauthenticatedUserEvent(ctx.tenant)
                     val localConfig = LocalLoginConfig.fromJsons(
                       ctx.tenant.authProviderSettings)
                     bindUser(localConfig.sessionMaxAge,
@@ -197,6 +202,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                                                         env))
                   case AuthProvider.Otoroshi =>
                     // as otoroshi already done the job, nothing to do here
+                    AuditTrailEvent(s"unauthenticated user with $username has tried to login [Otoroshi provider]")
+                      .logUnauthenticatedUserEvent(ctx.tenant)
                     FastFuture.successful(
                       Redirect(
                         ctx.request.session.get("redirect").getOrElse("/"))
@@ -205,6 +212,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                         )(ctx.request)
                     )
                   case AuthProvider.LDAP =>
+                    AuditTrailEvent(s"unauthenticated user with $username has tried to login [LDAP provider]")
+                      .logUnauthenticatedUserEvent(ctx.tenant)
                     val ldapConfig =
                       LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
 
@@ -270,11 +279,15 @@ class LoginController(DaikokuAction: DaikokuAction,
       case Some(AuthProvider.Otoroshi) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+          AuditTrailEvent(s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Otoroshi provider]")
+            .logTenantAuditEvent(ctx.tenant, ctx.user, session, ctx.request, ctx.ctx, AuthorizationLevel.AuthorizedSelf)
           Redirect(s"/.well-known/otoroshi/logout?redirect=$redirect")
         }
       case Some(AuthProvider.OAuth2) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+          AuditTrailEvent(s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [OAuth2 provider]")
+            .logTenantAuditEvent(ctx.tenant, ctx.user, session, ctx.request, ctx.ctx, AuthorizationLevel.AuthorizedSelf)
           Redirect(OAuth2Config
             .fromJson(ctx.tenant.authProviderSettings) match {
             case Left(_) => redirect
@@ -286,6 +299,8 @@ class LoginController(DaikokuAction: DaikokuAction,
       case _ =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
+          AuditTrailEvent(s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Local/Other provider]")
+            .logTenantAuditEvent(ctx.tenant, ctx.user, session, ctx.request, ctx.ctx, AuthorizationLevel.AuthorizedSelf)
           Redirect(redirect).removingFromSession("sessionId")(ctx.request)
         }
     }
@@ -454,6 +469,10 @@ class LoginController(DaikokuAction: DaikokuAction,
     val email = (body \ "email").as[String]
     val password1 = (body \ "password1").as[String]
     val password2 = (body \ "password2").as[String]
+
+    AuditTrailEvent(s"unauthenticated user with $email ask to reset password")
+      .logUnauthenticatedUserEvent(ctx.tenant)
+
     env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
       case Some(user) =>
         validateUserCreationForm("daikoku", email, password1, password2) match {

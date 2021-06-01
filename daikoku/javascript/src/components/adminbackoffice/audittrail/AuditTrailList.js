@@ -19,7 +19,7 @@ export class AuditTrailList extends Component {
     {
       Header: 'Date',
       id: 'date',
-      accessor: (item) => item['@timestamp']['$long'], //todo: try to remove this $long prop from reactivemongo
+      accessor: (item) => item['@timestamp']['$long'] ? item['@timestamp']['$long'] : item['@timestamp'], //todo: try to remove this $long prop from reactivemongo
       style: { textAlign: 'left' },
       Cell: ({ value }) => {
         return moment(value).format('YYYY-MM-DD HH:mm:ss.SSS');

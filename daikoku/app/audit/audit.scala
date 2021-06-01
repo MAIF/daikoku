@@ -120,6 +120,29 @@ sealed trait AuditEvent {
                                       AuthorizationLevel.AuthorizedJob,
                                       details)
   }
+
+  def logUnauthenticatedUserEvent(tenant: Tenant, details: JsObject = Json.obj())(
+    implicit ec: ExecutionContext,
+    env: Env): Unit = {
+    env.auditActor ! TenantAuditEvent(this,
+      tenant,
+      User(
+        UserId("Unauthenticated user"),
+        tenants = Set.empty,
+        origins = Set.empty,
+        name = "Unauthenticated user",
+        email = "unauthenticated@foo.bar",
+        personalToken = None,
+        lastTenant = None,
+        defaultLanguage = None
+      ),
+      None,
+      None,
+      None,
+      new TrieMap[String, String](),
+      AuthorizationLevel.AuthorizedUberPublic,
+      details)
+  }
 }
 case class AuditTrailEvent(message: String) extends AuditEvent
 case class JobEvent(message: String) extends AuditEvent
@@ -360,11 +383,11 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi) extends Actor {
           context.stop(myself)
         case Success(QueueOfferResult.Failure(t)) =>
           logger.error(
-            "SEND_TO_ANALYTICS_ERROR: Enqueue Failre AnalyticEvent :(",
+            "SEND_TO_ANALYTICS_ERROR: Enqueue Failure AnalyticEvent :(",
             t)
           context.stop(myself)
-        case e =>
-          logger.error(s"SEND_TO_ANALYTICS_ERROR: analytics actor error : ${e}")
+        case Failure(e) =>
+          logger.error(s"SEND_TO_ANALYTICS_ERROR: analytics actor error : $e", e)
           context.stop(myself)
       }
     }
