@@ -898,6 +898,7 @@ export const fetchNewTeam = () => fetchEntity('/api/entities/team');
 export const fetchNewApi = () => fetchEntity('/api/entities/api');
 export const fetchNewUser = () => fetchEntity('/api/entities/user');
 export const fetchNewOtoroshi = () => fetchEntity('/api/entities/otoroshi');
+export const fetchNewIssue = () => fetchEntity('/api/entities/issue');
 
 export function checkIfApiNameIsUnique(name, id) {
   return fetch('/api/apis/_names', {
@@ -1684,4 +1685,46 @@ export function savePost(apiId, teamId, postId, content) {
     method: 'PUT',
     body: JSON.stringify(content),
   });
+}
+
+export function getAPIIssues(apiId) {
+  return fetch(`/api/apis/${apiId}/issues`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function getAPIIssue(apiId, issueId) {
+  return fetch(`/api/apis/${apiId}/issues/${issueId}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function createNewIssue(apiId, teamId, issue) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/issues`, {
+    ...POST_HEADERS,
+    body: JSON.stringify(issue),
+  });
+}
+
+export function updateIssue(apiId, teamId, issueId, issue) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/issues/${issueId}`, {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify({
+      ...issue,
+      by: issue.by._id,
+      comments: issue.comments.map(comment => ({
+        ...comment,
+        by: comment.by._id
+      }))
+    })
+  })
 }

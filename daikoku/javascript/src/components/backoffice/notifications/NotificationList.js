@@ -232,6 +232,7 @@ class NotificationListComponent extends Component {
                             getApi={(id) => this.state.apis.find((a) => a._id === id)}
                             currentLanguage={this.props.currentLanguage}
                             openSubMetadataModal={this.props.openSubMetadataModal}
+                            history={this.props.history}
                           />
                         ))}
                     </div>

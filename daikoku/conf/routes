@@ -116,6 +116,12 @@ PUT     /api/apis/:apiId/stars                          fr.maif.otoroshi.daikoku
 POST    /api/apis/_names                                fr.maif.otoroshi.daikoku.ctrls.ApiController.verifyNameUniqueness()
 ### NoDocs ###
 GET     /api/apis/:apiId/posts                          fr.maif.otoroshi.daikoku.ctrls.ApiController.getPosts(apiId)
+### NoDocs ###
+GET     /api/apis/:apiId/issues                         fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssues(apiId)
+### NoDocs ###
+GET     /api/apis/:apiId/issues/:issueId/comments       fr.maif.otoroshi.daikoku.ctrls.ApiController.getComments(apiId, issueId)
+### NoDocs ###
+GET     /api/apis/:apiId/issues/:issueId                fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssue(apiId, issueId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscription/:id/informations         fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionInformations(teamId, id)
@@ -154,6 +160,10 @@ POST        /api/teams/:teamId/apis/:apiId/posts                     fr.maif.oto
 PUT         /api/teams/:teamId/apis/:apiId/posts/:postId             fr.maif.otoroshi.daikoku.ctrls.ApiController.updatePost(teamId, apiId, postId)
 ### NoDocs ###
 DELETE      /api/teams/:teamId/apis/:apiId/posts/:postId             fr.maif.otoroshi.daikoku.ctrls.ApiController.removePost(teamId, apiId, postId)
+### NoDocs ###
+POST        /api/teams/:teamId/apis/:apiId/issues                    fr.maif.otoroshi.daikoku.ctrls.ApiController.createIssue(teamId, apiId)
+### NoDocs ###
+PUT         /api/teams/:teamId/apis/:apiId/issues/:issueId           fr.maif.otoroshi.daikoku.ctrls.ApiController.updateIssue(teamId, apiId, issueId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)
@@ -386,6 +396,8 @@ GET     /api/entities/api                               fr.maif.otoroshi.daikoku
 GET     /api/entities/user                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newUser()
 ### NoDocs ###
 GET     /api/entities/otoroshi                          fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newOtoroshi()
+### NoDocs ###
+GET     /api/entities/issue                             fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newIssue()
 
 ### NoDocs ###
 POST    /api/jobs/otoroshi/_sync                        fr.maif.otoroshi.daikoku.ctrls.JobsController.otoroshiSyncJob()
@@ -558,6 +570,20 @@ PUT     /admin-api/message/:id                          fr.maif.otoroshi.daikoku
 GET     /admin-api/message/:id                          fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.findById(id)
 POST    /admin-api/message                              fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.createEntity()
 GET     /admin-api/message                              fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.findAll()
+
+DELETE  /admin-api/posts/:id                            fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.deleteEntity(id)
+PATCH   /admin-api/posts/:id                            fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.patchEntity(id)
+PUT     /admin-api/posts/:id                            fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.updateEntity(id)
+GET     /admin-api/posts/:id                            fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.findById(id)
+POST    /admin-api/posts                                fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.createEntity()
+GET     /admin-api/posts                                fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.findAll()
+
+DELETE  /admin-api/issues/:id                           fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.deleteEntity(id)
+PATCH   /admin-api/issues/:id                           fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.patchEntity(id)
+PUT     /admin-api/issues/:id                           fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.updateEntity(id)
+GET     /admin-api/issues/:id                           fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.findById(id)
+POST    /admin-api/issues                               fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.createEntity()
+GET     /admin-api/issues                               fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.findAll()
 
 ###
 #  summary: get apikey from integration token

@@ -95,53 +95,70 @@ export class SimpleNotification extends Component {
             title={t('New Published Post', this.props.currentLanguage)}
           />
         );
+      case 'NewIssueOpen':
+        return (
+          <i
+            className="fas fa-exclamation-circle"
+            style={{ marginRight: 5 }}
+            title={t('New issues open', this.props.currentLanguage)}
+          />
+        );
+      case 'NewCommentOnIssue':
+        return (
+          <i
+            className="fas fa-comment-circle"
+            style={{ marginRight: 5 }}
+            title={t('New comment on issue', this.props.currentLanguage)}
+          />
+        );
     }
   };
 
-  actionFormatter({ status, date }, notificationType) {
-    switch (status) {
-      case 'Pending':
-        switch (this.props.notification.action.type) {
-          case 'ApiSubscription':
-            return (
-              <div>
-                <a
-                  className="btn btn-outline-success btn-sm mr-1"
-                  href="#"
-                  title={t('Accept')}
-                  onClick={() =>
-                    this.props.openSubMetadataModal({
-                      save: this.props.accept,
-                      api: this.props.notification.action.api,
-                      plan: this.props.notification.action.plan,
-                      team: this.props.getTeam(this.props.notification.action.team),
-                      notification: this.props.notification,
-                      creationMode: true,
-                      currentLanguage: this.props.currentLanguage,
-                    })
-                  }>
-                  <i className="fas fa-check" />
-                </a>
-                <a
-                  className="btn btn-outline-danger btn-sm"
-                  href="#"
-                  title={t('Reject')}
-                  onClick={() => this.props.reject()}>
-                  <i className="fas fa-times" />
-                </a>
-              </div>
-            );
-          default:
-            return (
-              <div>
-                <a
-                  className="btn btn-outline-success btn-sm mr-1"
-                  href="#"
-                  title={t('Accept')}
-                  onClick={() => this.props.accept()}>
-                  <i className="fas fa-check" />
-                </a>
-                {notificationType === 'AcceptOrReject' && (
+  actionFormatter(notification) {
+    const { status, date } = notification.status
+    const { notificationType } = notification;
+
+    if (status === "Pending" && (notification.action.type === "NewIssueOpen" ||
+      notification.action.type === "NewCommentOnIssue")) {
+      return (
+        <div>
+          <button type="button" className="btn btn-outline-success btn-sm mr-1"
+            onClick={() => this.props.accept()}>
+            <i className="fas fa-check" />
+          </button>
+          <button type="button" className="btn btn-sm btn-outline-success" onClick={() => {
+            this.props.accept()
+            this.props.history.push(notification.action.linkTo)
+          }}>
+            <i className="fas fa-eye" />
+          </button>
+        </div>
+      )
+    }
+    else {
+      switch (status) {
+        case 'Pending':
+          switch (this.props.notification.action.type) {
+            case 'ApiSubscription':
+              return (
+                <div>
+                  <a
+                    className="btn btn-outline-success btn-sm mr-1"
+                    href="#"
+                    title={t('Accept')}
+                    onClick={() =>
+                      this.props.openSubMetadataModal({
+                        save: this.props.accept,
+                        api: this.props.notification.action.api,
+                        plan: this.props.notification.action.plan,
+                        team: this.props.getTeam(this.props.notification.action.team),
+                        notification: this.props.notification,
+                        creationMode: true,
+                        currentLanguage: this.props.currentLanguage,
+                      })
+                    }>
+                    <i className="fas fa-check" />
+                  </a>
                   <a
                     className="btn btn-outline-danger btn-sm"
                     href="#"
@@ -149,32 +166,53 @@ export class SimpleNotification extends Component {
                     onClick={() => this.props.reject()}>
                     <i className="fas fa-times" />
                   </a>
-                )}
-              </div>
-            );
-        }
-      case 'Accepted':
-        return (
-          <a
-            className="btn disabled"
-            title={moment(date).format(
-              t('moment.date.format', this.props.currentLanguage, 'DD MMM. YYYY à HH:mm z')
-            )}
-            disabled>
-            <i className="fas fa-check" />
-          </a>
-        );
-      case 'Rejected':
-        return (
-          <a
-            className="btn disabled"
-            title={moment(date).format(
-              t('moment.date.format', this.props.currentLanguage, 'DD MMM. YYYY à HH:mm z')
-            )}
-            disabled>
-            <i className="fas fa-times" />
-          </a>
-        );
+                </div>
+              );
+            default:
+              return (
+                <div>
+                  <a
+                    className="btn btn-outline-success btn-sm mr-1"
+                    href="#"
+                    title={t('Accept')}
+                    onClick={() => this.props.accept()}>
+                    <i className="fas fa-check" />
+                  </a>
+                  {notificationType === 'AcceptOrReject' && (
+                    <a
+                      className="btn btn-outline-danger btn-sm"
+                      href="#"
+                      title={t('Reject')}
+                      onClick={() => this.props.reject()}>
+                      <i className="fas fa-times" />
+                    </a>
+                  )}
+                </div>
+              );
+          }
+        case 'Accepted':
+          return (
+            <a
+              className="btn disabled"
+              title={moment(date).format(
+                t('moment.date.format', this.props.currentLanguage, 'DD MMM. YYYY à HH:mm z')
+              )}
+              disabled>
+              <i className="fas fa-check" />
+            </a>
+          );
+        case 'Rejected':
+          return (
+            <a
+              className="btn disabled"
+              title={moment(date).format(
+                t('moment.date.format', this.props.currentLanguage, 'DD MMM. YYYY à HH:mm z')
+              )}
+              disabled>
+              <i className="fas fa-times" />
+            </a>
+          );
+      }
     }
   }
 
@@ -184,6 +222,8 @@ export class SimpleNotification extends Component {
         return `${sender.name}/${this.props.getTeam(action.team).name}`;
       case 'TeamAccess':
       case 'NewPostPublished':
+      case 'NewIssueOpen':
+      case 'NewCommentOnIssue':
         return sender.name;
       case 'TeamInvitation':
         return this.props.getTeam(action.team).name;
@@ -221,6 +261,7 @@ export class SimpleNotification extends Component {
     }
 
     moment.locale(this.props.currentLanguage);
+
     return (
       <div style={style}>
         <div className="alert section" role="alert">
@@ -352,10 +393,30 @@ export class SimpleNotification extends Component {
                     </Translation>
                   </div>
                 )}
+                {notification.action.type === 'NewIssueOpen' && (
+                  <div>
+                    <Translation
+                      i18nkey="issues.notification"
+                      language={this.props.currentLanguage}
+                      replacements={[notification.action.apiName]}>
+                      {notification.sender.name} has published a new issue on {notification.action.apiName}.
+                    </Translation>
+                  </div>
+                )}
+                {notification.action.type === 'NewCommentOnIssue' && (
+                  <div>
+                    <Translation
+                      i18nkey="issues.comment.notification"
+                      language={this.props.currentLanguage}
+                      replacements={[notification.action.apiName]}>
+                      {notification.sender.name} has published a new comment on issue of {notification.action.apiName}.
+                    </Translation>
+                  </div>
+                )}
               </h5>
             </div>
             <div className="d-flex mt-1 justify-content-end">
-              {this.actionFormatter(notification.status, notification.notificationType)}
+              {this.actionFormatter(notification)}
             </div>
           </div>
           <hr />
