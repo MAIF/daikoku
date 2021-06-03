@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
-import { Option } from '../';
+import { Option } from '..';
 import { setError } from '../../../core';
 import { doNothing, read, manage } from './actions';
 import { daikoku, api, apikey, asset, stat, team, backoffice, tenant } from './subjects';
