@@ -1,10 +1,11 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuActionMaybeWithoutUserContext
+}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import play.api.libs.json.Json
 import play.api.mvc._
 
 class HomeController(
@@ -30,6 +31,8 @@ class HomeController(
       case None if ctx.request.uri.startsWith("/signup") =>
         Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
       case None if ctx.request.uri.startsWith("/reset") =>
+        Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
+      case None if ctx.request.uri.startsWith("/2fa") =>
         Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
       case None if ctx.request.uri == "/" =>
         Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))

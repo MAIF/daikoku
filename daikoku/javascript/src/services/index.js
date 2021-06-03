@@ -1592,9 +1592,9 @@ export function checkConnection(config, user) {
     ...POST_HEADERS,
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   }).then((r) => r.json());
 }
@@ -1727,4 +1727,56 @@ export function updateIssue(apiId, teamId, issueId, issue) {
       }))
     })
   })
+}
+
+export function getQRCode() {
+  return fetch(`/api/me/_2fa`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function verify2faCode(token, code) {
+  return fetch(`/api/2fa?token=${token}&code=${code}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export function disable2FA() {
+  return fetch('/api/me/_2fa', {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+export function reset2faAccess(backupCodes) {
+  return fetch('/api/2fa', {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify({ backupCodes })
+  });
+}
+
+export function selfVerify2faCode(code) {
+  return fetch(`/api/me/_2fa/enable?code=${code}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  });
 }

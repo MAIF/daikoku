@@ -1,15 +1,17 @@
-import React, { Component } from 'react';
+import React, { Component, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import md5 from 'js-md5';
 import queryString from 'query-string';
 
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Route, useParams } from 'react-router-dom';
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
 
 import { t, Translation } from '../locales/Translation';
 import { udpateLanguage } from '../core/context/actions';
 import { Spinner } from '../components/utils/Spinner';
 import { validatePassword, ValidateEmail } from '../components/utils/validation';
+import * as Services from '../services';
+import { toastr } from 'react-redux-toastr';
 
 const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 
@@ -371,6 +373,95 @@ export class ResetPasswordComponent extends Component {
   }
 }
 
+export function TwoFactorAuthentication({ title, currentLanguage }) {
+  const [code, setCode] = useState("");
+  const [token, setToken] = useState("");
+  const [error, setError] = useState();
+
+  const [showBackupCodes, toggleBackupCodesInput] = useState(false);
+  const [backupCode, setBackupCode] = useState("");
+
+  function verify() {
+    if (!code || code.length !== 6) {
+      setError(t('2fa.code_error', currentLanguage));
+      setCode("");
+    }
+    else {
+      Services.verify2faCode(token, code)
+        .then(res => {
+          if (res.status >= 400) {
+            setError(t('2fa.wrong_code', currentLanguage));
+            setCode("");
+          }
+          else if (res.redirected)
+            window.location.href = res.url;
+        })
+    }
+  }
+
+  function reset2faAccess() {
+    Services.reset2faAccess(backupCode)
+      .then(res => {
+        if (res.status >= 400)
+          res.json().then(r => toastr.error(r.error))
+        else {
+          toastr.success(t('2fa.successfully_disabled', currentLanguage));
+          window.location.replace("/");
+        }
+      })
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (!params.get('token'))
+      window.location.replace("/")
+    else
+      setToken(params.get("token"));
+  }, [])
+
+  useEffect(() => {
+    if (error)
+      setError(t('2fa.code_error', currentLanguage));
+  }, [currentLanguage])
+
+  return (
+    <div className="d-flex flex-column mx-auto my-3" style={{ maxWidth: '350px' }}>
+      <h3>{title}</h3>
+      {showBackupCodes ?
+        <>
+          <input type="text" value={backupCode}
+            placeholder={t('2fa.insert_backup_codes', currentLanguage)}
+            onChange={e => setBackupCode(e.target.value)} className="form-control" />
+          <button className="btn btn-outline-success mt-3" type="button"
+            onClick={reset2faAccess}>{t('2fa.reset_access', currentLanguage)}</button>
+          <a href="#" onClick={() => toggleBackupCodesInput(false)} className="text-center mt-3">
+            {t('2fa.using_code', currentLanguage)}
+          </a>
+        </>
+        : <>
+          <span className="mb-3">{t('2fa.message', currentLanguage)}</span>
+          {error && <div className="alert alert-danger" role="alert">
+            {error}
+          </div>}
+          <input type="number" value={code} placeholder={t('2fa.insert_code', currentLanguage)}
+            onChange={e => {
+              if (e.target.value.length < 7) {
+                setError(null)
+                setCode(e.target.value)
+              }
+            }} className="form-control" />
+
+          <button className="btn btn-outline-success mt-3" type="button" onClick={verify}>
+            {t('2fa.verify_code', currentLanguage)}
+          </button>
+          <a href="#" onClick={toggleBackupCodesInput} className="text-center mt-3">
+            {t('2fa.lost_device_message', currentLanguage)}  
+          </a>
+        </>}
+    </div>
+  )
+}
+
 export class DaikokuHomeApp extends Component {
   render() {
     const tenant = this.props.tenant;
@@ -401,6 +492,11 @@ export class DaikokuHomeApp extends Component {
             render={(p) => <Signup tenant={tenant} match={p.match} history={p.history} />}
           />
           <Route exact path="/reset" render={() => <ResetPassword />} />
+          <Route exact path="/2fa" render={(p) => <TwoFactorAuthentication
+            match={p.match}
+            history={p.history}
+            currentLanguage={'En'}
+            title={`${tenant.name} - ${t('Verification code', 'En')}`} />} />
         </div>
       </Router>
     );
