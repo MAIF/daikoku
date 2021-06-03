@@ -105,12 +105,12 @@ class LoginController(DaikokuAction: DaikokuAction,
                 case true => FastFuture.successful(Redirect(s"/2fa?token=$token"))
                 case false => FastFuture.successful(BadRequest(Json.obj("error" -> true)))
               }
-          case _ => createSession(sessionMaxAge, user, request)
+          case _ => createSession(sessionMaxAge, user, request, tenant)
         }
     }
   }
 
-  private def createSession(sessionMaxAge: Int, user: User, request: RequestHeader) = {
+  private def createSession(sessionMaxAge: Int, user: User, request: RequestHeader, tenant: Tenant) = {
     val session = UserSession(
       id = DatastoreId(BSONObjectID.generate().stringify),
       userId = user.id,
@@ -621,7 +621,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                 createSession(
                     LocalLoginConfig.fromJsons(ctx.tenant.authProviderSettings).sessionMaxAge,
                     user,
-                    ctx.request
+                    ctx.request,
+                    ctx.tenant
                   )
               else
                 FastFuture.successful(BadRequest(Json.obj("error" -> "Invalid code")))
