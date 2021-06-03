@@ -13,6 +13,7 @@ import {
   ApiSwagger,
   ApiRedoc,
   ApiPost,
+  ApiIssue
 } from '.';
 import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, Option } from '../../utils';
@@ -41,7 +42,7 @@ const ApiDescription = ({ api }) => {
   );
 };
 
-const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar }) => {
+const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar, currentLanguage }) => {
   const handleBtnEditClick = () => history.push(editUrl);
 
   useEffect(() => {
@@ -91,6 +92,7 @@ const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
                 toggleStar={toggleStar}
+                currentLanguage={currentLanguage}
               />
             </div>
           </h1>
@@ -234,6 +236,7 @@ const ApiHomeComponent = ({
         history={history}
         connectedUser={connectedUser}
         toggleStar={toggleStar}
+        currentLanguage={currentLanguage}
       />
       <div className="container">
         <div className="row">
@@ -259,9 +262,8 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${
-                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                  }`}
+                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                    }`}
                   to={`/${match.params.teamId}/${apiId}/documentation`}>
                   <Translation i18nkey="Documentation" language={currentLanguage}>
                     Documentation
@@ -307,14 +309,23 @@ const ApiHomeComponent = ({
               {!!api.posts.length && (
                 <li className="nav-item">
                   <Link
-                    className={`nav-link ${tab === 'posts' ? 'active' : ''}`}
-                    to={`/${match.params.teamId}/${apiId}/posts`}>
+                    className={`nav-link ${tab === 'news' ? 'active' : ''}`}
+                    to={`/${match.params.teamId}/${apiId}/news`}>
                     <Translation i18nkey="News" language={currentLanguage}>
                       News
                     </Translation>
                   </Link>
                 </li>
               )}
+              <li className="nav-item">
+                <Link
+                  className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
+                  to={`/${match.params.teamId}/${apiId}/issues`}>
+                  <Translation i18nkey="issues" language={currentLanguage}>
+                    Issues
+                    </Translation>
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -397,10 +408,21 @@ const ApiHomeComponent = ({
                 updateSubscriptions={updateSubscriptions}
               />
             )}
-            {tab === 'posts' && (
+            {tab === 'news' && (
               <ApiPost
                 api={api}
                 ownerTeam={ownerTeam}
+                match={match}
+                currentLanguage={currentLanguage}
+              />
+            )}
+            {tab === 'issues' && (
+              <ApiIssue
+                api={api}
+                onChange={editedApi => setApi(editedApi)}
+                history={history}
+                ownerTeam={ownerTeam}
+                connectedUser={connectedUser}
                 match={match}
                 currentLanguage={currentLanguage}
               />
