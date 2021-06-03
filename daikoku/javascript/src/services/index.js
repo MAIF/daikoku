@@ -1697,6 +1697,16 @@ export function getDaikokuVersion() {
   }).then((r) => r.json());
 }
 
+export function getAPIIssues(apiId) {
+  return fetch(`/api/apis/${apiId}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
 export function getAPIIssue(apiId, issueId) {
   return fetch(`/api/apis/${apiId}/issues/${issueId}`, {
     method: 'GET',
@@ -1726,11 +1736,11 @@ export function updateIssue(apiId, teamId, issueId, issue) {
         by: comment.by._id
       }))
     })
-  })
+  });
 }
 
 export function getQRCode() {
-  return fetch(`/api/me/_2fa`, {
+  return fetch('/api/me/_2fa', {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -1748,7 +1758,7 @@ export function verify2faCode(token, code) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-  })
+  });
 }
 
 export function disable2FA() {

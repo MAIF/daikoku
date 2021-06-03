@@ -829,7 +829,7 @@
     "2fa.backup_codes": "Backup codes",
     "2fa.qrcode": "Generated QRCode",
     "2fa.confirm": "Confirm",
-    "Version used": "Version used"
+    "Version used": "Version used",
     "issues.notification": "An issue has been open on %s",
     "issues.comment.notification": "An issue has been commented on %s",
     "issues": "Issues",
