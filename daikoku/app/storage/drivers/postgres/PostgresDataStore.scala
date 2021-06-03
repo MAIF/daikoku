@@ -439,32 +439,15 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         row.optString("schema_name")
       }
       .flatMap {
-        case Some(_) => checkTables()
+        case Some(_) =>  createDatabase()
         case _ =>
           logger.info(s"Create missing schema : $getSchema")
           for {
             _ <- reactivePg.rawQuery(
               s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
-            res <- checkTables()
+            res <-  createDatabase()
           } yield res
       }
-  }
-
-  private def checkTables(): Future[Any] = {
-    reactivePg
-      .queryOne("SELECT COUNT(*) as count " +
-                  "FROM information_schema.tables " +
-                  "WHERE table_schema = $1",
-                Seq(getSchema)) { row =>
-        row.optLong("count")
-      }
-      .map(_.getOrElse(0L))
-      .map(s => {
-        if (s == 0)
-          createDatabase()
-        else
-          s
-      })
   }
 
   def createDatabase(): Future[immutable.Iterable[RowSet[Row]]] = {
