@@ -89,8 +89,7 @@ case class DaikokuStyle(
 }
 
 case class AuditTrailConfig(
-    elasticConfigs: Seq[ElasticAnalyticsConfig] =
-      Seq.empty[ElasticAnalyticsConfig],
+    elasticConfigs: Option[ElasticAnalyticsConfig] = None,
     auditWebhooks: Seq[Webhook] = Seq.empty[Webhook],
     alertsEmails: Seq[String] = Seq.empty[String],
     kafkaConfig: Option[KafkaConfig] = None,

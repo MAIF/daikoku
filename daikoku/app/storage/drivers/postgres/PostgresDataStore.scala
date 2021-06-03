@@ -1311,24 +1311,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.insertMany()")
 
-    val payloads =
-      values.map(v => format.writes(v).as[JsObject] ++ addToPayload)
-
-    var orParams = Seq[AnyRef]()
-    var query: List[(String)] = List()
-
-    for (payload <- payloads) {
-      query = query :+ s"($${orParams.size}, $${orParams.size+1})"
-      orParams = orParams ++ Seq((payload \ "_id").as[String],
-                                 new JsonObject(Json.stringify(payload)))
-    }
-
-    reactivePg
-      .query(
-        s"INSERT INTO $tableName(_id, content) VALUES ${query.mkString(",")}  RETURNING _id",
-        orParams
-      )
-      .map(_.size())
+    Future.sequence(values
+        .map(v => save(Json.obj(), format.writes(v).as[JsObject] ++ addToPayload)))
+        .map(_ => 1L)
   }
 
   override def insertMany(values: Seq[Of])(

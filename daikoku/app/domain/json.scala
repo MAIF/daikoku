@@ -1575,10 +1575,7 @@ object json {
       Try {
         JsSuccess(
           AuditTrailConfig(
-            elasticConfigs = (json \ "elasticConfigs")
-              .asOpt[Seq[ElasticAnalyticsConfig]](
-                Reads.seq(ElasticAnalyticsConfig.format))
-              .getOrElse(Seq.empty[ElasticAnalyticsConfig]),
+            elasticConfigs = (json \ "elasticConfigs").asOpt[ElasticAnalyticsConfig](ElasticAnalyticsConfig.format),
             auditWebhooks = (json \ "auditWebhooks")
               .asOpt[Seq[Webhook]](Reads.seq(Webhook.format))
               .getOrElse(Seq.empty[Webhook]),
@@ -1615,7 +1612,7 @@ object json {
       } get
 
     override def writes(o: AuditTrailConfig): JsValue = Json.obj(
-      "elasticConfigs" -> JsArray(o.elasticConfigs.map(_.toJson)),
+      "elasticConfigs" -> o.elasticConfigs.map(_.toJson),
       "auditWebhooks" -> JsArray(o.auditWebhooks.map(_.toJson)),
       "alertsEmails" -> JsArray(o.alertsEmails.map(JsString.apply)),
       "kafkaConfig" -> o.kafkaConfig,
