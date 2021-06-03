@@ -803,6 +803,7 @@
   "Deleted API": "API supprimée",
   "Personal": "Personel",
   "team.invitation": "%s, administrateur de %s, vous a invité a rejoindre son équipe.",
+  "Version used": "Version utilisée"
   "issues.notification": "Une issue a été ouverte sur %s",
   "issues.comment.notification": "An issue has been commented on %s",
   "issues": "Problèmes",

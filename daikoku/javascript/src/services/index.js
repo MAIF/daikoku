@@ -1687,8 +1687,8 @@ export function savePost(apiId, teamId, postId, content) {
   });
 }
 
-export function getAPIIssues(apiId) {
-  return fetch(`/api/apis/${apiId}/issues`, {
+export function getDaikokuVersion() {
+  return fetch('/api/versions/_daikoku', {
     method: 'GET',
     credentials: 'include',
     headers: {

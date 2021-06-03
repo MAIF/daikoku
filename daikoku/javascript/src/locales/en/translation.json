@@ -803,6 +803,7 @@
     "Deleted API": "Deleted API",
     "Personal": "Personal",
     "team.invitation": "%s, as admin of %s, invit you in his team.",
+    "Version used": "Version used"
     "issues.notification": "An issue has been open on %s",
     "issues.comment.notification": "An issue has been commented on %s",
     "issues": "Issues",
