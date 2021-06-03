@@ -57,4 +57,8 @@ class HomeController(
       case None => BadRequest
     }
   }
+
+  def getDaikokuVersion() = DaikokuActionMaybeWithoutUser { ctx =>
+    Ok(Json.obj("version" -> BuildInfo.version))
+  }
 }

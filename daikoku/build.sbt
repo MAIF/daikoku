@@ -13,8 +13,12 @@ val reactiveMongoVersion = "0.20.10"
 val wiremockVersion = "2.26.3"
 
 lazy val root = (project in file("."))
-  .enablePlugins(PlayScala, DockerPlugin)
+  .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin)
   .disablePlugins(PlayFilters)
+  .settings (
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "daikoku"
+  )
 
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 

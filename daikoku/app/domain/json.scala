@@ -6,11 +6,7 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.TenantMode
@@ -23,6 +19,7 @@ import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
 import play.api.libs.json._
+import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
@@ -86,6 +83,7 @@ object json {
 
     override def writes(o: DateTime) = JsNumber(o.toDate.getTime)
   }
+
   val OtoroshiSettingsFormat = new Format[OtoroshiSettings] {
     override def reads(json: JsValue): JsResult[OtoroshiSettings] =
       Try {
@@ -318,6 +316,60 @@ object json {
 
     override def writes(o: ApiPostId): JsValue = JsString(o.value)
   }
+  val ApiIssueIdFormat = new Format[ApiIssueId] {
+    override def reads(json: JsValue): JsResult[ApiIssueId] =
+      Try {
+        JsSuccess(ApiIssueId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiIssueId): JsValue = JsString(o.value)
+  }
+  val ApiTagFormat = new Format[ApiIssueTag] {
+    override def reads(json: JsValue) =
+      Try {
+        JsSuccess(ApiIssueTag(
+          id = (json \ "id")
+            .asOpt[ApiIssueTagId](ApiIssueTagIdFormat.reads)
+            .getOrElse(ApiIssueTagId(BSONObjectID.generate().stringify)),
+          name = (json \ "name").as[String],
+          color = (json \ "color").as[String]
+        ))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiIssueTag) = Json.obj(
+      "id" -> ApiIssueTagIdFormat.writes(o.id),
+      "name" -> o.name,
+      "color" -> o.color
+    )
+  }
+  val ApiIssueCommentFormat = new Format[ApiIssueComment] {
+    override def reads(json: JsValue) =
+      Try {
+        JsSuccess(ApiIssueComment(
+          by = (json \ "by").as(UserIdFormat),
+          createdAt = (json \ "createdAt")
+            .asOpt[DateTime](DateTimeFormat.reads)
+            .getOrElse(DateTime.now()),
+          lastModificationAt = (json \ "lastModificationAt")
+            .asOpt[DateTime](DateTimeFormat.reads)
+            .getOrElse(DateTime.now()),
+          content = (json \ "content").as[String]
+        ))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiIssueComment) = Json.obj(
+      "by" -> UserIdFormat.writes(o.by),
+      "createdAt" -> DateTimeFormat.writes(o.createdAt),
+      "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
+      "content" -> o.content
+    )
+  }
   val TenantIdFormat = new Format[TenantId] {
     override def reads(json: JsValue): JsResult[TenantId] =
       Try {
@@ -337,6 +389,16 @@ object json {
       } get
 
     override def writes(o: ApiPostId): JsValue = JsString(o.value)
+  }
+  val IssueIdFormat = new Format[ApiIssueId] {
+    override def reads(json: JsValue): JsResult[ApiIssueId] =
+      Try {
+        JsSuccess(ApiIssueId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiIssueId): JsValue = JsString(o.value)
   }
   val OtoroshiGroupFormat = new Format[OtoroshiGroup] {
     override def reads(json: JsValue): JsResult[OtoroshiGroup] =
@@ -1207,7 +1269,9 @@ object json {
       Try {
         JsSuccess(
           ApiPost(
-            id = (json \ "_id").as(ApiPostIdFormat),
+            id = (json \ "_id")
+              .asOpt[ApiPostId](ApiPostIdFormat.reads)
+              .getOrElse(ApiPostId(BSONObjectID.generate().stringify)),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
@@ -1229,6 +1293,65 @@ object json {
       "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
       "content" -> o.content
     )
+  }
+  val ApiIssueFormat = new Format[ApiIssue] {
+    override def reads(json: JsValue): JsResult[ApiIssue] =
+      Try {
+        JsSuccess(
+          ApiIssue(
+            id = (json \ "_id").asOpt(ApiIssueIdFormat)
+              .getOrElse(ApiIssueId(BSONObjectID.generate().stringify)),
+            seqId = (json \ "seqId").asOpt[Int].getOrElse(0),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
+            title = (json \ "title").as[String],
+            lastModificationAt = (json \ "lastModificationAt")
+              .asOpt[DateTime](DateTimeFormat.reads)
+            .getOrElse(DateTime.now()),
+            tags = (json \ "tags").asOpt[Set[ApiIssueTagId]](
+              Reads.set(ApiIssueTagIdFormat.reads))
+              .getOrElse(Set.empty),
+            open = (json \ "open").asOpt[Boolean].getOrElse(true),
+            createdAt = (json \ "createdAt")
+              .asOpt[DateTime](DateTimeFormat.reads)
+              .getOrElse(DateTime.now()),
+            by = (json \ "by").as(UserIdFormat),
+            comments = (json \ "comments")
+              .asOpt[Seq[ApiIssueComment]](Reads.seq(ApiIssueCommentFormat.reads))
+              .getOrElse(Seq.empty),
+            closedAt = (json \ "closedAt")
+              .asOpt[DateTime](DateTimeFormat.reads),
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiIssue): JsValue = Json.obj(
+      "_id" -> o.id.asJson,
+      "_humanReadableId" -> o.humanReadableId,
+      "seqId" -> o.seqId,
+      "_tenant" -> o.tenant.asJson,
+      "_deleted" -> o.deleted,
+      "title" -> o.title,
+      "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
+      "tags" -> o.tags.map(ApiIssueTagIdFormat.writes),
+      "open" -> o.open,
+      "createdAt" -> DateTimeFormat.writes(o.createdAt),
+      "closedAt" -> o.closedAt.map(DateTimeFormat.writes).getOrElse(JsNull).as[JsValue],
+      "by" -> o.by.asJson,
+      "comments" -> o.comments.map(ApiIssueCommentFormat.writes)
+    )
+  }
+  val ApiIssueTagIdFormat = new Format[ApiIssueTagId] {
+    override def reads(json: JsValue): JsResult[ApiIssueTagId] =
+      Try {
+        JsSuccess(ApiIssueTagId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiIssueTagId): JsValue = JsString(o.value)
   }
   val ApiDocumentationFormat = new Format[ApiDocumentation] {
     override def reads(json: JsValue): JsResult[ApiDocumentation] =
@@ -1703,6 +1826,12 @@ object json {
             posts = (json \ "posts")
               .asOpt(SeqPostIdFormat)
               .getOrElse(Seq.empty),
+            issues = (json \ "issues")
+              .asOpt(SeqIssueIdFormat)
+              .getOrElse(Seq.empty),
+            issuesTags = (json \ "issuesTags")
+              .asOpt(SetApiTagFormat)
+              .getOrElse(Set.empty),
             stars = (json \ "stars").asOpt[Int].getOrElse(0)
           )
         )
@@ -1740,6 +1869,8 @@ object json {
       "defaultUsagePlan" -> UsagePlanIdFormat.writes(o.defaultUsagePlan),
       "authorizedTeams" -> JsArray(o.authorizedTeams.map(TeamIdFormat.writes)),
       "posts" -> SeqPostIdFormat.writes(o.posts),
+      "issues" -> SeqIssueIdFormat.writes(o.issues),
+      "issuesTags" -> SetApiTagFormat.writes(o.issuesTags),
       "stars" -> o.stars
     )
   }
@@ -1964,6 +2095,8 @@ object json {
         case "TeamInvitation"      => TeamInvitationFormat.reads(json)
         case "ApiKeyRefresh"       => ApiKeyRefreshFormat.reads(json)
         case "NewPostPublished"    => NewPostPublishedFormat.reads(json)
+        case "NewIssueOpen"        => NewIssueOpenFormat.reads(json)
+        case "NewCommentOnIssue"   => NewCommentOnIssueFormat.reads(json)
         case str                   => JsError(s"Bad notification value: $str")
       }
 
@@ -2002,9 +2135,58 @@ object json {
           NewPostPublishedFormat.writes(p).as[JsObject] ++ Json.obj(
             "type" -> "NewPostPublished"
           )
-
+        case p: NewIssueOpen =>
+          NewIssueOpenFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "NewIssueOpen"
+          )
+        case p: NewCommentOnIssue =>
+          NewCommentOnIssueFormat.writes(p).as[JsObject] ++ Json.obj(
+            "type" -> "NewCommentOnIssue"
+          )
       }
     }
+
+  val NewCommentOnIssueFormat = new Format[NewCommentOnIssue] {
+    override def reads(json: JsValue): JsResult[NewCommentOnIssue] =
+      Try {
+        JsSuccess(
+          NewCommentOnIssue(
+            apiName = (json \ "apiName").asOpt[String].getOrElse(""),
+            teamId = (json \ "teamId").as(TeamIdFormat).value,
+            linkTo = (json \ "linkTo").asOpt[String].getOrElse("")
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: NewCommentOnIssue): JsValue = Json.obj(
+      "apiName" -> o.apiName,
+      "teamId" -> o.teamId,
+      "linkTo" -> o.linkTo
+    )
+  }
+
+  val NewIssueOpenFormat = new Format[NewIssueOpen] {
+    override def reads(json: JsValue): JsResult[NewIssueOpen] =
+      Try {
+        JsSuccess(
+          NewIssueOpen(
+            apiName = (json \ "apiName").asOpt[String].getOrElse(""),
+            teamId = (json \ "teamId").as(TeamIdFormat).value,
+            linkTo = (json \ "linkTo").asOpt[String].getOrElse("")
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: NewIssueOpen): JsValue = Json.obj(
+      "apiName" -> o.apiName,
+      "teamId" -> o.teamId,
+      "linkTo" -> o.linkTo
+    )
+  }
 
   val NewPostPublishedFormat = new Format[NewPostPublished] {
     override def reads(json: JsValue): JsResult[NewPostPublished] =
@@ -2815,6 +2997,8 @@ object json {
     Format(Reads.seq(TeamIdFormat), Writes.seq(TeamIdFormat))
   val SeqPostIdFormat =
     Format(Reads.seq(PostIdFormat), Writes.seq(PostIdFormat))
+  val SeqIssueIdFormat =
+    Format(Reads.seq(IssueIdFormat), Writes.seq(IssueIdFormat))
   val SeqOtoroshiGroupFormat =
     Format(Reads.seq(OtoroshiGroupFormat), Writes.seq(OtoroshiGroupFormat))
   val SeqTenantIdFormat =
@@ -2844,6 +3028,8 @@ object json {
     Format(Reads.seq(ApiFormat), Writes.seq(ApiFormat))
   val SetApiIdFormat =
     Format(Reads.set(ApiIdFormat), Writes.set(ApiIdFormat))
+  val SetApiTagFormat =
+      Format(Reads.set(ApiTagFormat), Writes.set(ApiTagFormat))
   val SetUserWithPermissionFormat =
     Format(Reads.set(UserWithPermissionFormat),
            Writes.set(UserWithPermissionFormat))
