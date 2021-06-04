@@ -89,7 +89,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def saveOtoroshiSettings(tenantId: String, otoroshiId: String) =
+  def saveOtoroshiSettings(tenantId: String, otoroshiId: String, skipValidation: Boolean = false) =
     DaikokuAction.async(parse.json) { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
@@ -107,25 +107,26 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                   BadRequest(
                     Json.obj("error" -> "Error while parsing payload")))
               case JsSuccess(settings, _) =>
+                def saveSettings() =
+                  env.dataStore.tenantRepo
+                    .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings
+                      .filterNot(_.id == settings.id) + settings))
+                    .map { _ =>
+                      Ok(settings.asJson)
+                    }
+                if (skipValidation)
+                  saveSettings()
+                else
                   otoroshiClient
                   .getServices()(settings)
-                  .flatMap { _ =>
-                    env.dataStore.tenantRepo
-                      .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings
-                        .filterNot(_.id == settings.id) + settings))
-                      .map { _ =>
-                        Ok(settings.asJson)
-                      }
-                  }
-                  .recover {
-                    case _ => BadRequest(Json.obj("error" -> "Failed to join otoroshi instances"))
-                  }
+                  .flatMap { _ => saveSettings()}
+                  .recover { _ => BadRequest(Json.obj("error" -> "Failed to join otoroshi instances")) }
             }
         }
       }
     }
 
-  def createOtoroshiSettings(tenantId: String) =
+  def createOtoroshiSettings(tenantId: String, skipValidation: Boolean = false) =
     DaikokuAction.async(parse.json) { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
@@ -136,17 +137,18 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
           case JsError(_) =>
             FastFuture.successful(BadRequest(Json.obj("error" -> "Error while parsing payload")))
           case JsSuccess(settings, _) =>
-            otoroshiClient
+            def createOtoroshi() = {
+              ctx.setCtxValue("otoroshi.id", settings.id)
+              env.dataStore.tenantRepo
+                .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings + settings))
+                .map { _ => Created(settings.asJson) }
+            }
+            if (skipValidation)
+              createOtoroshi()
+            else otoroshiClient
               .getServices()(settings)
-              .flatMap { values =>
-                ctx.setCtxValue("otoroshi.id", settings.id)
-                env.dataStore.tenantRepo
-                  .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings + settings))
-                  .map { _ => Created(settings.asJson) }
-              }
-              .recover {
-                case _ => BadRequest(Json.obj("error" -> "Failed to join otoroshi instances"))
-              }
+              .flatMap { _ => createOtoroshi() }
+              .recover { _ => BadRequest(Json.obj("error" -> "Failed to join otoroshi instances")) }
         }
       }
     }
