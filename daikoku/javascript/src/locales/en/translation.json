@@ -802,5 +802,15 @@
     "deleted": "deleted",
     "Deleted API": "Deleted API",
     "Personal": "Personal",
-    "team.invitation": "%s, as admin of %s, invit you in his team."
+    "team.invitation": "%s, as admin of %s, invit you in his team.",
+    "initialize_from_otoroshi.confirm": "Are you sure to remove your workspace ?",
+    "initialize_from_otoroshi.api_keys_imported": "These api keys will be import",
+    "initialize_from_otoroshi.api_keys_of": "Otoroshi Api keys of",
+    "initialize_from_otoroshi.select_group": "Select an Otoroshi service group",
+    "initialize_from_otoroshi.otoroshi_api_key": "Otoroshi Api key",
+    "initialize_from_otoroshi.plan": "Plan",
+    "initialize_from_otoroshi.team": "Team",
+    "initialize_from_otoroshi.actions": "Actions",
+    "initialize_from_otoroshi.add": "Add",
+    "initialize_from_otoroshi.remove": "Remove"
 }

@@ -802,5 +802,15 @@
   "deleted": "dupprimé",
   "Deleted API": "API supprimée",
   "Personal": "Personel",
-  "team.invitation": "%s, administrateur de %s, vous a invité a rejoindre son équipe."
+  "team.invitation": "%s, administrateur de %s, vous a invité a rejoindre son équipe.",
+  "initialize_from_otoroshi.confirm": "Êtes-vous sûr de vouloir supprimer votre espace de travail ?",
+  "initialize_from_otoroshi.api_keys_imported": "Ces clés d'apis seront importées",
+  "initialize_from_otoroshi.api_keys_of": "Clé d'apis du groupe Otoroshi",
+  "initialize_from_otoroshi.select_group": "Sélectionner un groupe de service Otoroshi",
+  "initialize_from_otoroshi.otoroshi_api_key": "Clé d'api Otoroshi",
+  "initialize_from_otoroshi.plan": "Plan",
+  "initialize_from_otoroshi.team": "Équipe",
+  "initialize_from_otoroshi.actions": "Actions",
+  "initialize_from_otoroshi.add": "Ajouter",
+  "initialize_from_otoroshi.remove": "Supprimer"
 }
