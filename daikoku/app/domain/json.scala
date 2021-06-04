@@ -1589,19 +1589,23 @@ object json {
                   (config \ "keyPass").asOpt[String],
                   (config \ "keystore").asOpt[String],
                   (config \ "truststore").asOpt[String],
-                  (config \ "auditTopic").asOpt[String].filter(_.nonEmpty)
+                  (config \ "auditTopic").asOpt[String].filter(_.nonEmpty),
+                  (config \ "hostValidation").asOpt[Boolean]
                 ) match {
                   case (Some(servers),
                         keyPass,
                         keystore,
                         truststore,
-                        Some(auditTopic)) =>
+                        Some(auditTopic),
+                        hostValidation
+                    ) =>
                     Some(
                       KafkaConfig(servers,
                                   keyPass,
                                   keystore,
                                   truststore,
-                                  auditTopic))
+                                  auditTopic,
+                                  hostValidation))
                   case e => None
                 }
               }

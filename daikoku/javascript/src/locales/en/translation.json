@@ -866,5 +866,7 @@
     "issues.nothing_matching_filter": "No issues matching filter",
     "star": "Star",
     "unstar": "Unstar",
-    "Edit": "Edit"
+    "Edit": "Edit",
+    "Kafka host validation": "Kafka hostname validation",
+    "kafka.audit.hostValidation.help": "Disable server hostname validation using server certificate by Kafka"
 }

@@ -282,6 +282,7 @@ export class TenantEditComponent extends Component {
     'auditTrailConfig.kafkaConfig.keystore',
     'auditTrailConfig.kafkaConfig.truststore',
     'auditTrailConfig.kafkaConfig.auditTopic',
+    'auditTrailConfig.kafkaConfig.hostValidation',
     `>>> ${t('Alerting', this.props.currentLanguage)}`,
     'auditTrailConfig.alertsEmails',
     `>>> ${t('Mailer', this.props.currentLanguage)}`,
@@ -709,6 +710,17 @@ export class TenantEditComponent extends Component {
           'kafka.audit.topic.help',
           this.props.currentLanguage,
           'The topic on which Otoroshi audits will be sent'
+        ),
+      },
+    },
+    'auditTrailConfig.kafkaConfig.hostValidation': {
+      type: 'bool',
+      props: {
+        label: t('Kafka host validation', this.props.currentLanguage),
+        help: t(
+          'kafka.audit.hostValidation.help',
+          this.props.currentLanguage,
+          'Disable kafka to validate server hostname using server certificate.'
         ),
       },
     },
