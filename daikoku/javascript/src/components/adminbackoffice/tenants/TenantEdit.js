@@ -586,7 +586,7 @@ export class TenantEditComponent extends Component {
           'appi.reference.visibility.help',
           this.props.currentLanguage,
           false,
-          "if enabled, guest user can't see api reference on public api"
+          'if enabled, guest user can\'t see api reference on public api'
         ),
       },
     },
