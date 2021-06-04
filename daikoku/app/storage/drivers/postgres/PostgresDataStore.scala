@@ -10,8 +10,10 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import io.vertx.core.Vertx
+import io.vertx.core.buffer.Buffer
 import io.vertx.core.json.JsonObject
-import io.vertx.pgclient.{PgConnectOptions, PgPool}
+import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
+import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
 import io.vertx.sqlclient.{PoolOptions, Row, RowSet}
 import play.api.{Configuration, Logger}
 import play.api.libs.json._
@@ -119,6 +121,19 @@ case class PostgresTenantCapableApiPostRepo(
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[ApiPost, ApiPostId] =
+    _repo()
+}
+
+case class PostgresTenantCapableApiIssueRepo(
+                                             _repo: () => PostgresRepo[ApiIssue, ApiIssueId],
+                                             _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiIssue, ApiIssueId]
+                                           ) extends PostgresTenantCapableRepo[ApiIssue, ApiIssueId]
+  with ApiIssueRepo {
+  override def tenantRepo(
+                           tenant: TenantId): PostgresTenantAwareRepo[ApiIssue, ApiIssueId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[ApiIssue, ApiIssueId] =
     _repo()
 }
 
@@ -262,35 +277,100 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
   private val TABLES = Map(
-    "tenants" -> true,
-    "password_reset" -> true,
-    "account_creation" -> true,
-    "teams" -> true,
-    "apis" -> true,
-    "translations" -> true,
-    "messages" -> false,
-    "api_subscriptions" -> true,
+    "tenants"                 -> true,
+    "password_reset"          -> true,
+    "account_creation"        -> true,
+    "teams"                   -> true,
+    "apis"                    -> true,
+    "translations"            -> true,
+    "messages"                -> false,
+    "api_subscriptions"       -> true,
     "api_documentation_pages" -> true,
-    "notifications" -> true,
-    "consumptions" -> true,
-    "audit_events" -> false,
-    "users" -> true,
-    "user_sessions" -> false,
-    "api_posts" -> true
+    "notifications"           -> true,
+    "consumptions"            -> true,
+    "audit_events"            -> false,
+    "users"                   -> true,
+    "user_sessions"           -> false,
+    "api_posts"               -> true,
+    "api_issues"              -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
     .setMaxSize(configuration.get[Int]("daikoku.postgres.poolSize"))
 
-  private lazy val options: PgConnectOptions = new PgConnectOptions()
-    .setPort(configuration.get[Int]("daikoku.postgres.port"))
-    .setHost(configuration.get[String]("daikoku.postgres.host"))
-    .setDatabase(configuration.get[String]("daikoku.postgres.database"))
-    .setUser(configuration.get[String]("daikoku.postgres.username"))
-    .setPassword(configuration.get[String]("daikoku.postgres.password"))
-    .setProperties(Map(
-      "search_path" -> getSchema
-    ).asJava)
+  private lazy val options: PgConnectOptions = {
+    val options = new PgConnectOptions()
+      .setPort(configuration.get[Int]("daikoku.postgres.port"))
+      .setHost(configuration.get[String]("daikoku.postgres.host"))
+      .setDatabase(configuration.get[String]("daikoku.postgres.database"))
+      .setUser(configuration.get[String]("daikoku.postgres.username"))
+      .setPassword(configuration.get[String]("daikoku.postgres.password"))
+      .setProperties(Map(
+        "search_path" -> getSchema
+      ).asJava)
+
+    val ssl        = configuration.getOptional[Configuration]("daikoku.postgres.ssl").getOrElse(Configuration.empty)
+    val sslEnabled = ssl.getOptional[Boolean]("enabled").getOrElse(false)
+
+    if (sslEnabled) {
+      val pemTrustOptions   = new PemTrustOptions()
+      val pemKeyCertOptions = new PemKeyCertOptions()
+
+      options.setSslMode(SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca")))
+      ssl.getOptional[Int]("ssl-handshake-timeout").map(options.setSslHandshakeTimeout(_))
+
+      ssl.getOptional[Seq[String]]("trusted-certs-path").map { pathes =>
+        pathes.map(p => pemTrustOptions.addCertPath(p))
+        options.setPemTrustOptions(pemTrustOptions)
+      }
+      ssl.getOptional[String]("trusted-cert-path").map { path =>
+        pemTrustOptions.addCertPath(path)
+        options.setPemTrustOptions(pemTrustOptions)
+      }
+      ssl.getOptional[Seq[String]]("trusted-certs").map { certs =>
+        certs.map(p => pemTrustOptions.addCertValue(Buffer.buffer(p)))
+        options.setPemTrustOptions(pemTrustOptions)
+      }
+      ssl.getOptional[String]("trusted-cert").map { path =>
+        pemTrustOptions.addCertValue(Buffer.buffer(path))
+        options.setPemTrustOptions(pemTrustOptions)
+      }
+      ssl.getOptional[Seq[String]]("client-certs-path").map { paths =>
+        paths.map(p => pemKeyCertOptions.addCertPath(p))
+        options.setPemKeyCertOptions(pemKeyCertOptions)
+      }
+      ssl.getOptional[Seq[String]]("client-certs").map { certs =>
+        certs.map(p => pemKeyCertOptions.addCertValue(Buffer.buffer(p)))
+        options.setPemKeyCertOptions(pemKeyCertOptions)
+      }
+      ssl.getOptional[String]("client-cert-path").map { path =>
+        pemKeyCertOptions.addCertPath(path)
+        options.setPemKeyCertOptions(pemKeyCertOptions)
+      }
+      ssl.getOptional[String]("client-cert").map { path =>
+        pemKeyCertOptions.addCertValue(Buffer.buffer(path))
+        options.setPemKeyCertOptions(pemKeyCertOptions)
+      }
+      ssl.getOptional[Seq[String]]("client-keys-path").map { pathes =>
+        pathes.map(p => pemKeyCertOptions.addKeyPath(p))
+        options.setPemKeyCertOptions(pemKeyCertOptions)
+      }
+      ssl.getOptional[Seq[String]]("client-keys").map { certs =>
+        certs.map(p => pemKeyCertOptions.addKeyValue(Buffer.buffer(p)))
+        options.setPemKeyCertOptions(pemKeyCertOptions)
+      }
+      ssl.getOptional[String]("client-key-path").map { path =>
+        pemKeyCertOptions.addKeyPath(path)
+        options.setPemKeyCertOptions(pemKeyCertOptions)
+      }
+      ssl.getOptional[String]("client-key").map { path =>
+        pemKeyCertOptions.addKeyValue(Buffer.buffer(path))
+        options.setPemKeyCertOptions(pemKeyCertOptions)
+      }
+      ssl.getOptional[Boolean]("trust-all").map(options.setTrustAll)
+    }
+    options
+  }
 
   logger.info(s"used : ${options.getDatabase}")
 
@@ -322,6 +402,11 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     PostgresTenantCapableApiPostRepo(
       () => new PostgresApiPostRepo(env, reactivePg),
       t => new PostgresTenantApiPostRepo(env, reactivePg, t)
+    )
+  private val _apiIssueRepo: ApiIssueRepo =
+    PostgresTenantCapableApiIssueRepo(
+      () => new PostgresApiIssueRepo(env, reactivePg),
+      t => new PostgresTenantApiIssueRepo(env, reactivePg, t)
     )
   private val _notificationRepo: NotificationRepo =
     PostgresTenantCapableNotificationRepo(
@@ -369,6 +454,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     _apiDocumentationPageRepo
 
   override def apiPostRepo: ApiPostRepo = _apiPostRepo
+
+  override def apiIssueRepo: ApiIssueRepo = _apiIssueRepo
 
   override def notificationRepo: NotificationRepo = _notificationRepo
 
@@ -418,32 +505,15 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         row.optString("schema_name")
       }
       .flatMap {
-        case Some(_) => checkTables()
+        case Some(_) =>  createDatabase()
         case _ =>
           logger.info(s"Create missing schema : $getSchema")
           for {
             _ <- reactivePg.rawQuery(
               s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
-            res <- checkTables()
+            res <-  createDatabase()
           } yield res
       }
-  }
-
-  private def checkTables(): Future[Any] = {
-    reactivePg
-      .queryOne("SELECT COUNT(*) as count " +
-                  "FROM information_schema.tables " +
-                  "WHERE table_schema = $1",
-                Seq(getSchema)) { row =>
-        row.optLong("count")
-      }
-      .map(_.getOrElse(0L))
-      .map(s => {
-        if (s == 0)
-          createDatabase()
-        else
-          s
-      })
   }
 
   def createDatabase(): Future[immutable.Iterable[RowSet[Row]]] = {
@@ -487,6 +557,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       apiSubscriptionRepo.forAllTenant(),
       apiDocumentationPageRepo.forAllTenant(),
       apiPostRepo.forAllTenant(),
+      apiIssueRepo.forAllTenant(),
       notificationRepo.forAllTenant(),
       auditTrailRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
@@ -550,6 +621,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
               apiPostRepo
                 .forAllTenant()
                 .save(ApiPostFormat.reads(payload).get)
+            case ("ApiIssues", payload) =>
+              apiIssueRepo
+                .forAllTenant()
+                .save(ApiIssueFormat.reads(payload).get)
             case ("Notifications", payload) =>
               notificationRepo
                 .forAllTenant()
@@ -692,6 +767,17 @@ class PostgresTenantApiPostRepo(env: Env,
   override def extractId(value: ApiPost): String = value.id.value
 }
 
+class PostgresTenantApiIssueRepo(env: Env,
+                                 reactivePg: ReactivePg,
+                                 tenant: TenantId)
+  extends PostgresTenantAwareRepo[ApiIssue, ApiIssueId](env, reactivePg, tenant) {
+  override def tableName: String = "api_issues"
+
+  override def format: Format[ApiIssue] = json.ApiIssueFormat
+
+  override def extractId(value: ApiIssue): String = value.id.value
+}
+
 class PostgresTenantNotificationRepo(env: Env,
                                      reactivePg: ReactivePg,
                                      tenant: TenantId)
@@ -814,6 +900,15 @@ class PostgresApiPostRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[ApiPost] = json.ApiPostFormat
 
   override def extractId(value: ApiPost): String = value.id.value
+}
+
+class PostgresApiIssueRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[ApiIssue, ApiIssueId](env, reactivePg) {
+  override def tableName: String = "api_issues"
+
+  override def format: Format[ApiIssue] = json.ApiIssueFormat
+
+  override def extractId(value: ApiIssue): String = value.id.value
 }
 
 class PostgresNotificationRepo(env: Env, reactivePg: ReactivePg)
@@ -1216,24 +1311,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.insertMany()")
 
-    val payloads =
-      values.map(v => format.writes(v).as[JsObject] ++ addToPayload)
-
-    var orParams = Seq[AnyRef]()
-    var query: List[(String)] = List()
-
-    for (payload <- payloads) {
-      query = query :+ s"($${orParams.size}, $${orParams.size+1})"
-      orParams = orParams ++ Seq((payload \ "_id").as[String],
-                                 new JsonObject(Json.stringify(payload)))
-    }
-
-    reactivePg
-      .query(
-        s"INSERT INTO $tableName(_id, content) VALUES ${query.mkString(",")}  RETURNING _id",
-        orParams
-      )
-      .map(_.size())
+    Future.sequence(values
+        .map(v => save(Json.obj(), format.writes(v).as[JsObject] ++ addToPayload)))
+        .map(_ => 1L)
   }
 
   override def insertMany(values: Seq[Of])(

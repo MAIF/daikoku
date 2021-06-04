@@ -279,7 +279,7 @@ const Help = ({ language }) => {
         <h4>
           <Translation i18nkey="Keyboard shortcuts" language={language}>
             Keyboard shortcut
-            </Translation>
+          </Translation>
         </h4>
         <ul>
           <li>

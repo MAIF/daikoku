@@ -284,6 +284,12 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", r"/reset") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
+                  case (_, path) if path.startsWith("/api/2fa") =>
+                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
+                  case ("get", r"/2fa") =>
+                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
+                  case ("get", path) if path.startsWith("/2fa") =>
+                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", path) if path.startsWith("/reset") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", path) if path.startsWith("/signup") =>

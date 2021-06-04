@@ -65,7 +65,7 @@ import {
   AdminMessages,
 } from '../components/adminbackoffice';
 
-import { ResetPassword, Signup } from './DaikokuHomeApp';
+import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { MessagesEvents } from '../services/messages';
 
 const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, currentLanguage }) => {
@@ -155,6 +155,17 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
           />
           <Switch>
             <UnauthenticatedRoute
+              title={`${tenant.name} - ${t('Verification code', currentLanguage)}`}
+              exact
+              path="/2fa"
+              tenant={tenant}
+              render={(p) => <TwoFactorAuthentication
+                match={p.match}
+                history={p.history}
+                currentLanguage={currentLanguage}
+                title={`${tenant.name} - ${t('Verification code', currentLanguage)}`} />}
+            />
+            <UnauthenticatedRoute
               title={`${tenant.name} - ${t('Reset password', currentLanguage)}`}
               exact
               path="/reset"
@@ -176,7 +187,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
                 <NotificationList match={p.match} history={p.history} location={p.location} />
               )}
             />
-
             <FrontOfficeRoute
               title={`${tenant.name} - ${t('Apis', currentLanguage)}`}
               exact
@@ -515,10 +525,13 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
             />
             <FrontOfficeRoute
               exact
-              path="/:teamId/:apiId/posts"
-              render={(p) => <ApiHome match={p.match} history={p.history} tab="posts" />}
+              path="/:teamId/:apiId/news"
+              render={(p) => <ApiHome match={p.match} history={p.history} tab="news" />}
             />
-
+            <FrontOfficeRoute
+              path={["/:teamId/:apiId/issues", "/:teamId/:apiId/labels"]}
+              render={(p) => <ApiHome match={p.match} history={p.history} tab="issues" />}
+            />
             <FrontOfficeRoute
               exact
               path="/:teamId"

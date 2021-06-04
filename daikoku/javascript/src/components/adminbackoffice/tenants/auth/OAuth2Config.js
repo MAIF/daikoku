@@ -29,11 +29,8 @@ export class AlgoSettings extends Component {
       if (path === '') {
         this.props.onChange(value);
       } else {
-        console.log(path);
         const newValue = { ...this.props.value };
-        console.log(newValue);
         set(newValue, name, value);
-        console.log(newValue);
         this.props.onChange(newValue);
       }
     };

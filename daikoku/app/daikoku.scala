@@ -111,6 +111,8 @@ package object modules {
     lazy val credentialsAdminApiController = wire[CredentialsAdminApiController]
     lazy val messageController = wire[MessageController]
     lazy val messagesAdminApiController = wire[MessagesAdminApiController]
+    lazy val postsAdminApiController = wire[PostsAdminApiController]
+    lazy val issuesAdminApiController = wire[IssuesAdminApiController]
 
     override lazy val assets: Assets = wire[Assets]
     lazy val router: Router = {

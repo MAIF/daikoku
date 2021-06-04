@@ -14,9 +14,11 @@ export class UnauthenticatedHomeComponent extends Component {
 
   render() {
     const content = this.props.tenant.unloggedHome || '';
+    const displayInformation = (this.props.location ? this.props.location.pathname : "") !== "/2fa";
+    
     return (
       <main role="main" className="row">
-        <section className="organisation__header col-12 mb-4 p-3">
+        {displayInformation && <section className="organisation__header col-12 mb-4 p-3">
           <div className="container">
             <div className="row text-center">
               <div className="col-sm-4">
@@ -97,7 +99,7 @@ export class UnauthenticatedHomeComponent extends Component {
               </div>
             </div>
           </div>
-        </section>
+        </section>}
         {!!this.props.children && (
           <section className="container">
             <div className="row">{this.props.children}</div>

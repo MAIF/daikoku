@@ -1,13 +1,9 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuActionMaybeWithoutUserContext
-}
+import daikoku.BuildInfo
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
+import play.api.libs.json.Json
 import play.api.mvc._
 
 class HomeController(
@@ -34,6 +30,8 @@ class HomeController(
         Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
       case None if ctx.request.uri.startsWith("/reset") =>
         Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
+      case None if ctx.request.uri.startsWith("/2fa") =>
+        Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
       case None if ctx.request.uri == "/" =>
         Ok(views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env))
       case _ => Redirect("/")
@@ -56,5 +54,9 @@ class HomeController(
           "Otoroshi-Health-Check-Logic-Test-Result" -> (value.toLong + 42L).toString)
       case None => BadRequest
     }
+  }
+
+  def getDaikokuVersion() = DaikokuActionMaybeWithoutUser { ctx =>
+    Ok(Json.obj("version" -> BuildInfo.version))
   }
 }

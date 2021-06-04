@@ -89,8 +89,7 @@ case class DaikokuStyle(
 }
 
 case class AuditTrailConfig(
-    elasticConfigs: Seq[ElasticAnalyticsConfig] =
-      Seq.empty[ElasticAnalyticsConfig],
+    elasticConfigs: Option[ElasticAnalyticsConfig] = None,
     auditWebhooks: Seq[Webhook] = Seq.empty[Webhook],
     alertsEmails: Seq[String] = Seq.empty[String],
     kafkaConfig: Option[KafkaConfig] = None,
@@ -502,6 +501,12 @@ case class ChatId(value: String) extends ValueType with CanJson[ChatId] {
   def asJson: JsValue = JsString(value)
 }
 case class ApiPostId(value: String) extends ValueType with CanJson[ApiPostId] {
+  def asJson: JsValue = JsString(value)
+}
+case class ApiIssueId(value: String) extends ValueType with CanJson[ApiIssueId] {
+  def asJson: JsValue = JsString(value)
+}
+case class ApiIssueTagId(value: String) extends ValueType with CanJson[ApiIssueTagId] {
   def asJson: JsValue = JsString(value)
 }
 
@@ -983,6 +988,35 @@ case class ApiPost(id: ApiPostId,
   override def asJson: JsValue = json.ApiPostFormat.writes(this)
 }
 
+case class TwoFactorAuthentication(enabled: Boolean = false, secret: String, token: String, backupCodes: String)
+  extends CanJson[TwoFactorAuthentication] {
+  override def asJson: JsValue = json.TwoFactorAuthenticationFormat.writes(this)
+}
+    
+case class ApiIssueTag(id: ApiIssueTagId, name: String, color: String)
+
+case class ApiIssueComment(by: UserId,
+                           createdAt: DateTime,
+                           lastModificationAt: DateTime,
+                           content: String)
+
+case class ApiIssue(id: ApiIssueId,
+                    seqId: Int,
+                    tenant: TenantId,
+                    deleted: Boolean = false,
+                    title: String,
+                    tags: Set[ApiIssueTagId],
+                    open: Boolean,
+                    createdAt: DateTime,
+                    closedAt: Option[DateTime],
+                    by: UserId,
+                    comments: Seq[ApiIssueComment],
+                    lastModificationAt: DateTime)
+  extends CanJson[ApiIssue] {
+  def humanReadableId: String = seqId.toString
+  override def asJson: JsValue = json.ApiIssueFormat.writes(this)
+}
+
 object User {
   val DEFAULT_IMAGE = "/assets/images/anonymous.jpg"
 }
@@ -1004,7 +1038,8 @@ case class User(
     metadata: Map[String, String] = Map.empty,
     defaultLanguage: Option[String],
     isGuest: Boolean = false,
-    starredApis: Set[ApiId] = Set.empty[ApiId]
+    starredApis: Set[ApiId] = Set.empty[ApiId],
+    twoFactorAuthentication: Option[TwoFactorAuthentication] = None
 ) extends CanJson[User] {
   override def asJson: JsValue = json.UserFormat.writes(this)
   def humanReadableId = email.urlPathSegmentSanitized
@@ -1016,7 +1051,10 @@ case class User(
       "email" -> email,
       "picture" -> picture,
       "isDaikokuAdmin" -> isDaikokuAdmin,
-      "starredApis" -> starredApis.map(_.value)
+      "starredApis" -> starredApis.map(_.value),
+      "twoFactorAuthentication" -> twoFactorAuthentication.map(_.asJson)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   def toUiPayload(): JsValue = {
@@ -1030,7 +1068,10 @@ case class User(
       "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "isGuest" -> isGuest,
-      "starredApis" -> starredApis.map(_.value)
+      "starredApis" -> starredApis.map(_.value),
+      "twoFactorAuthentication" -> twoFactorAuthentication.map(_.asJson)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
 }
@@ -1238,6 +1279,8 @@ case class Api(
     defaultUsagePlan: UsagePlanId,
     authorizedTeams: Seq[TeamId] = Seq.empty,
     posts: Seq[ApiPostId] = Seq.empty,
+    issues: Seq[ApiIssueId] = Seq.empty,
+    issuesTags: Set[ApiIssueTag] = Set.empty,
     stars: Int = 0
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
@@ -1259,6 +1302,8 @@ case class Api(
     "visibility" -> visibility.name,
     "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
     "posts" -> SeqPostIdFormat.writes(posts),
+    "issues" -> SeqIssueIdFormat.writes(issues),
+    "issuesTags" -> SetApiTagFormat.writes(issuesTags),
     "stars" -> stars
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
@@ -1431,6 +1476,12 @@ object NotificationAction {
 
   case class NewPostPublished(teamId: String, apiName: String)
       extends NotificationAction
+
+  case class NewIssueOpen(teamId: String, apiName: String, linkTo: String)
+    extends NotificationAction
+
+  case class NewCommentOnIssue(teamId: String, apiName: String, linkTo: String)
+    extends NotificationAction
 }
 
 sealed trait NotificationType {

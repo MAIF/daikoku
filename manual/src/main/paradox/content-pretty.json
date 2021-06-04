@@ -102,7 +102,7 @@
     "id": "/firstrun/datastore.md",
     "url": "/firstrun/datastore.html",
     "title": "Choose your audit trail datastore",
-    "content": "# Choose your audit trail datastore\n\nDaikoku needs to store its audit trail in a datastore. Daikoku supports multiple datastores. \n\nAvailable datastores for audit trail are the following :\n\n* mongoDB (by default)\n* elastic\n* kafka\n* webhook\n\nYou can manage it in the tenant settings page.\n"
+    "content": "# Choose your audit trail datastore\n\nDaikoku needs to store its audit trail in a datastore. Daikoku supports multiple datastores. \nIt store its in the main database by default but you can add another one besides\n\nAvailable datastores for audit trail are the following :\n\n* elastic\n* kafka\n* webhook\n\nYou can manage it in the tenant settings page.\n"
   },
   {
     "name": "env.md",

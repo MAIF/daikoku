@@ -2,7 +2,6 @@ package fr.maif.otoroshi.daikoku.audit
 
 import java.util.Base64
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
-
 import akka.actor.{Actor, ActorSystem, PoisonPill, Props, Terminated}
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
@@ -13,6 +12,7 @@ import akka.{Done, NotUsed}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, Producer, ProducerRecord, RecordMetadata}
@@ -119,6 +119,29 @@ sealed trait AuditEvent {
                                       new TrieMap[String, String](),
                                       AuthorizationLevel.AuthorizedJob,
                                       details)
+  }
+
+  def logUnauthenticatedUserEvent(tenant: Tenant, details: JsObject = Json.obj())(
+    implicit ec: ExecutionContext,
+    env: Env): Unit = {
+    env.auditActor ! TenantAuditEvent(this,
+      tenant,
+      User(
+        UserId("Unauthenticated user"),
+        tenants = Set.empty,
+        origins = Set.empty,
+        name = "Unauthenticated user",
+        email = "unauthenticated@foo.bar",
+        personalToken = None,
+        lastTenant = None,
+        defaultLanguage = None
+      ),
+      None,
+      None,
+      None,
+      new TrieMap[String, String](),
+      AuthorizationLevel.AuthorizedUberPublic,
+      details)
   }
 }
 case class AuditTrailEvent(message: String) extends AuditEvent
@@ -360,11 +383,11 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi) extends Actor {
           context.stop(myself)
         case Success(QueueOfferResult.Failure(t)) =>
           logger.error(
-            "SEND_TO_ANALYTICS_ERROR: Enqueue Failre AnalyticEvent :(",
+            "SEND_TO_ANALYTICS_ERROR: Enqueue Failure AnalyticEvent :(",
             t)
           context.stop(myself)
-        case e =>
-          logger.error(s"SEND_TO_ANALYTICS_ERROR: analytics actor error : ${e}")
+        case Failure(e) =>
+          logger.error(s"SEND_TO_ANALYTICS_ERROR: analytics actor error : $e", e)
           context.stop(myself)
       }
     }
@@ -403,7 +426,9 @@ case class KafkaConfig(servers: Seq[String],
                        keyPass: Option[String] = None,
                        keystore: Option[String] = None,
                        truststore: Option[String] = None,
-                       auditTopic: String = "daikoku-audit")
+                       auditTopic: String = "daikoku-audit",
+                       hostValidation: Option[Boolean] = Some(true)
+                      )
 
 object KafkaConfig {
   implicit val format = Json.format[KafkaConfig]
@@ -425,7 +450,7 @@ object KafkaSettings {
       ts <- config.truststore
       kp <- config.keyPass
     } yield {
-      settings
+      val kafkaSettings = settings
         .withProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL")
         .withProperty(BrokerSecurityConfigs.SSL_CLIENT_AUTH_CONFIG, "required")
         .withProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG, kp)
@@ -433,6 +458,13 @@ object KafkaSettings {
         .withProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, kp)
         .withProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, ts)
         .withProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, kp)
+
+      if (config.hostValidation.contains(true)) {
+        kafkaSettings
+      } else {
+        kafkaSettings
+          .withProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "")
+      }
     }
 
     s.getOrElse(settings)

@@ -2,22 +2,30 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.actions.DaikokuAction
+import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig, LdapSupport}
+import fr.maif.otoroshi.daikoku.login.LocalLoginConfig
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import io.nayuki.qrcodegen.QrCode
+import org.apache.commons.codec.binary.Base32
 import org.joda.time.DateTime
-import play.api.libs.json.{JsArray, JsError, JsObject, JsSuccess, Json}
+import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
 import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
+import java.time.Instant
+import java.util.Base64
+import javax.crypto.KeyGenerator
+import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.duration.FiniteDuration
 
 class UsersController(DaikokuAction: DaikokuAction,
+                      DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                       env: Env,
                       cc: ControllerComponents)
     extends AbstractController(cc) {
@@ -265,6 +273,97 @@ class UsersController(DaikokuAction: DaikokuAction,
               case None => FastFuture.successful(Redirect("/logout"))
             }
       }
+    }
+  }
+
+  def get2faQrCode() = DaikokuAction.async { ctx =>
+    PublicUserAccess(
+      AuditTrailEvent("@{user.name} clicked on enable 2fa account"))(ctx) {
+      val label = "Daikoku"
+
+      ctx.user.twoFactorAuthentication match {
+        case value if value.isEmpty || !value.get.enabled =>
+          import javax.crypto.KeyGenerator
+
+          val totp = new TimeBasedOneTimePasswordGenerator()
+          val keyGenerator = KeyGenerator.getInstance(totp.getAlgorithm)
+          keyGenerator.init(160)
+
+          val secret = keyGenerator.generateKey()
+
+          val base32SecretEncoded = new Base32().encodeAsString(secret.getEncoded)
+
+          env.dataStore.userRepo.save(
+            ctx.user.copy(twoFactorAuthentication = Some(TwoFactorAuthentication(
+              enabled = false,
+              secret = Base64.getEncoder.encodeToString(secret.getEncoded),
+              token = "",
+              backupCodes = ""
+            )))
+          ).flatMap {
+            case true => FastFuture.successful(Ok(Json.obj(
+              "rawSecret" -> base32SecretEncoded,
+              "qrcode" -> QrCode
+                .encodeText(s"otpauth://totp/$label?secret=$base32SecretEncoded", QrCode.Ecc.HIGH)
+                .toSvgString(10)
+            )))
+            case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Can't updated user")))
+          }
+        case Some(auth) =>
+          val decodedKey = Base64.getDecoder.decode(auth.secret)
+
+          FastFuture.successful(Ok(Json.obj(
+            "backupCodes" -> auth.backupCodes,
+            "qrcode" -> QrCode
+              .encodeText(s"otpauth://totp/$label?secret=${new Base32().encodeAsString(decodedKey)}", QrCode.Ecc.HIGH)
+              .toSvgString(10)
+          )))
+      }
+    }
+  }
+
+  def enable2fa(code: Option[String]) = DaikokuAction.async { ctx =>
+    PublicUserAccess(
+      AuditTrailEvent("@{user.name} try to enable two factor authentication"))(ctx) {
+      code match {
+        case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing code parameter")))
+        case Some(code) =>
+          val totp = new TimeBasedOneTimePasswordGenerator()
+          val now = Instant.now()
+
+          val decodedKey = Base64.getDecoder.decode(ctx.user.twoFactorAuthentication.get.secret)
+          val key = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES")
+
+          if (code == totp.generateOneTimePassword(key, now).toString) {
+            val keyGenerator = KeyGenerator.getInstance(totp.getAlgorithm)
+            keyGenerator.init(160)
+
+            val backupCodes = new Base32().encodeAsString(keyGenerator.generateKey().getEncoded)
+            env.dataStore.userRepo.save(ctx.user.copy(twoFactorAuthentication =
+              Some(ctx.user.twoFactorAuthentication.get.copy(
+                enabled = true,
+                backupCodes = backupCodes
+              ))
+            )).flatMap {
+              case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Something happens when updating user")))
+              case true => FastFuture.successful(Ok(Json.obj(
+                "message" -> "2fa successfully enabled",
+                "backupCodes" -> backupCodes
+              )))
+            }
+          } else
+            FastFuture.successful(BadRequest(Json.obj("error" -> "No matching code")))
+      }
+    }
+  }
+
+  def disable2fa() = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent("@{user.name} has disabled 2fa on your account"))(ctx) {
+      env.dataStore.userRepo.save(ctx.user.copy(twoFactorAuthentication = None))
+        .map {
+          case true => NoContent
+          case false => BadRequest(Json.obj("error" -> "Something happens when updating user"))
+        }
     }
   }
 }

@@ -94,6 +94,8 @@ object utils {
         _ <- daikokuComponents.env.dataStore.userRepo.deleteAll()
         _ <- daikokuComponents.env.dataStore.teamRepo.forAllTenant().deleteAll()
         _ <- daikokuComponents.env.dataStore.apiRepo.forAllTenant().deleteAll()
+        _ <- daikokuComponents.env.dataStore.apiIssueRepo.forAllTenant().deleteAll()
+        _ <- daikokuComponents.env.dataStore.apiPostRepo.forAllTenant().deleteAll()
         _ <- daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forAllTenant()
           .deleteAll()
@@ -128,7 +130,9 @@ object utils {
         sessions: Seq[UserSession] = Seq.empty,
         resets: Seq[PasswordReset] = Seq.empty,
         creations: Seq[AccountCreation] = Seq.empty,
-        messages: Seq[Message] = Seq.empty
+        messages: Seq[Message] = Seq.empty,
+        issues: Seq[ApiIssue] = Seq.empty,
+        posts: Seq[ApiPost] = Seq.empty
     ): Unit = {
       setupEnv(
         tenants,
@@ -142,7 +146,9 @@ object utils {
         sessions,
         resets,
         creations,
-        messages
+        messages,
+        issues,
+        posts
       ).futureValue
 //      await(0.1.seconds)
     }
@@ -159,7 +165,9 @@ object utils {
         sessions: Seq[UserSession] = Seq.empty,
         resets: Seq[PasswordReset] = Seq.empty,
         creations: Seq[AccountCreation] = Seq.empty,
-        messages: Seq[Message] = Seq.empty
+        messages: Seq[Message] = Seq.empty,
+        issues: Seq[ApiIssue] = Seq.empty,
+        posts: Seq[ApiPost] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -238,6 +246,22 @@ object utils {
           .mapAsync(1)(
             i =>
               daikokuComponents.env.dataStore.messageRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(issues.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.apiIssueRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(posts.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.apiPostRepo
                 .forAllTenant()
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)

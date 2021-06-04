@@ -472,6 +472,7 @@ class DaikokuEnv(ws: WSClient,
   }
 
   override def onShutdown(): Unit = {
+    AppLogger.debug("onShutdown called")
     implicit val ec: ExecutionContext = defaultExecutionContext
     dataStore.stop()
     auditActor ! PoisonPill

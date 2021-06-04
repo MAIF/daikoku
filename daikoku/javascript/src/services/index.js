@@ -898,6 +898,7 @@ export const fetchNewTeam = () => fetchEntity('/api/entities/team');
 export const fetchNewApi = () => fetchEntity('/api/entities/api');
 export const fetchNewUser = () => fetchEntity('/api/entities/user');
 export const fetchNewOtoroshi = () => fetchEntity('/api/entities/otoroshi');
+export const fetchNewIssue = () => fetchEntity('/api/entities/issue');
 
 export function checkIfApiNameIsUnique(name, id) {
   return fetch('/api/apis/_names', {
@@ -1591,9 +1592,9 @@ export function checkConnection(config, user) {
     ...POST_HEADERS,
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   }).then((r) => r.json());
 }
@@ -1683,5 +1684,109 @@ export function savePost(apiId, teamId, postId, content) {
     ...POST_HEADERS,
     method: 'PUT',
     body: JSON.stringify(content),
+  });
+}
+
+export function getDaikokuVersion() {
+  return fetch('/api/versions/_daikoku', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function getAPIIssues(apiId) {
+  return fetch(`/api/apis/${apiId}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function getAPIIssue(apiId, issueId) {
+  return fetch(`/api/apis/${apiId}/issues/${issueId}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function createNewIssue(apiId, teamId, issue) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/issues`, {
+    ...POST_HEADERS,
+    body: JSON.stringify(issue),
+  });
+}
+
+export function updateIssue(apiId, teamId, issueId, issue) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/issues/${issueId}`, {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify({
+      ...issue,
+      by: issue.by._id,
+      comments: issue.comments.map(comment => ({
+        ...comment,
+        by: comment.by._id
+      }))
+    })
+  });
+}
+
+export function getQRCode() {
+  return fetch('/api/me/_2fa', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  }).then((r) => r.json());
+}
+
+export function verify2faCode(token, code) {
+  return fetch(`/api/2fa?token=${token}&code=${code}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+export function disable2FA() {
+  return fetch('/api/me/_2fa', {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+export function reset2faAccess(backupCodes) {
+  return fetch('/api/2fa', {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify({ backupCodes })
+  });
+}
+
+export function selfVerify2faCode(code) {
+  return fetch(`/api/me/_2fa/enable?code=${code}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
   });
 }
