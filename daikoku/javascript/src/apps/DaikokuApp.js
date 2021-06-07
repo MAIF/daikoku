@@ -197,7 +197,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
               title={`${tenant.name} - ${t('Home', currentLanguage)}`}
               exact
               path="/"
-              render={(p) => <MaybeHomePage match={p.match} history={p.history} />}
+              render={(p) => <MaybeHomePage match={p.match} history={p.history} connectedUser={p.connectedUser} />}
             />
             <RouteWithTitle
               title={`${tenant.name} - ${t('Message', currentLanguage, true)}`}

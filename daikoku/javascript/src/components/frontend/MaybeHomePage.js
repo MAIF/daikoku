@@ -3,8 +3,8 @@ import { connect } from 'react-redux';
 import { Redirect } from 'react-router';
 import { converter } from '../../services/showdown';
 
-const MaybeHomePageComponent = ({ tenant }) => {
-  if (!tenant.homePageVisible) {
+const MaybeHomePageComponent = ({ tenant, connectedUser }) => {
+  if (!tenant.homePageVisible || connectedUser._humanReadableId) {
     return <Redirect to="/apis" />;
   }
   return (
