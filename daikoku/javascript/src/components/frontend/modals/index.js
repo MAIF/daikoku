@@ -7,3 +7,4 @@ export * from './TeamCreationModal';
 export * from './ContactModal';
 export * from './SubscriptionMetadataModal';
 export * from './TestingApiKeyModal';
+export * from './TeamInvitationModal';

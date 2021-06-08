@@ -868,5 +868,6 @@
   "star": "Étoiler",
   "unstar": "Supprimer l'étoile",
   "Kafka host validation": "Validation de l'hôte Kafka",
-  "kafka.audit.hostValidation.help": "Désactiver la validation nom d'hôte du serveur à l'aide du certificat du serveur par Kafka"
+  "kafka.audit.hostValidation.help": "Désactiver la validation nom d'hôte du serveur à l'aide du certificat du serveur par Kafka",
+  "team_member.no_pending_members": "Vous n'avez pas encore invité de collaborateurs"
 }

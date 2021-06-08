@@ -70,6 +70,12 @@ export const openTestingApiKeyModal = (modalProps) => (dispatch) => {
   });
 };
 
+export const openInvitationTeamModal = modalProps => dispatch => dispatch({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'teamInvitation'
+});
+
 export const closeModal = () => (dispatch) => {
   return dispatch({
     type: CLOSE_MODAL,

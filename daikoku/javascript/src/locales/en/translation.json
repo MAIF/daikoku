@@ -868,5 +868,6 @@
     "unstar": "Unstar",
     "Edit": "Edit",
     "Kafka host validation": "Kafka hostname validation",
-    "kafka.audit.hostValidation.help": "Disable server hostname validation using server certificate by Kafka"
+    "kafka.audit.hostValidation.help": "Disable server hostname validation using server certificate by Kafka",
+    "team_member.no_pending_members": "You haven't invited any collaborators yet"
 }

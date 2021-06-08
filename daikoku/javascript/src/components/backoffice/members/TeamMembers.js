@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { Redirect } from 'react-router-dom';
-import Select from 'react-select';
 import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
@@ -9,6 +8,7 @@ import classnames from 'classnames';
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
 import { updateTeamPromise } from '../../../core/context';
+import { openInvitationTeamModal } from '../../../core';
 import {
   Option,
   PaginatedComponent,
@@ -18,7 +18,7 @@ import {
   team,
   administrator,
   apiEditor,
-  user,
+  user
 } from '../../utils';
 import { t, Translation } from '../../../locales';
 
@@ -28,6 +28,29 @@ const TABS = {
   members: 'MEMBERS',
   pending: 'PENDING',
 };
+
+{/* <span className="col-1 text-center px-0">{t('or', currentLanguage)}</span>
+  <div className="col-6 d-flex px-0">
+    <input
+      placeholder={t('Find LDAP member by email ...', currentLanguage)}
+      className="form-control mr-2"
+      onChange={(e) => this.handleLdapMember(e.target.value)}
+      value={this.state.ldap.searchMember}
+    />
+    <button onClick={this.searchLdapMember} className="btn btn-success">
+      {t('Search', currentLanguage)}
+    </button>
+  </div>
+  </div>
+  {/* {this.state.ldap.foundMember && (
+    <div className="col-12 d-flex justify-content-between section p-3 align-items-center">
+      <span>{t('LDAP user found', currentLanguage)}</span>
+      <span>{this.state.ldap.foundMember}</span>
+      <button className="btn btn-success" onClick={this.addLdapUserToTeam}>
+        {t('Add user to team')}
+      </button>
+    </div>
+  )} */}
 
 export class TeamMembersSimpleComponent extends Component {
   state = {
@@ -39,7 +62,7 @@ export class TeamMembersSimpleComponent extends Component {
     ldap: {
       searchMember: null,
       foundMember: null,
-    },
+    }
   };
 
   componentDidMount() {
@@ -127,15 +150,15 @@ export class TeamMembersSimpleComponent extends Component {
             Services.removeMemberFromTeam(teamId, member._id).then(({ done, team }) => {
               done
                 ? toastr.success(
-                    'Success',
-                    t(
-                      'remove.member.success',
-                      this.props.currentLanguage,
-                      false,
-                      `${member.name} is no longer member of your team`,
-                      member.name
-                    )
+                  'Success',
+                  t(
+                    'remove.member.success',
+                    this.props.currentLanguage,
+                    false,
+                    `${member.name} is no longer member of your team`,
+                    member.name
                   )
+                )
                 : toastr.error('Failure');
               this.props.updateTeam(team).then(() => this.updateMembers(this.props.currentTeam));
             });
@@ -151,15 +174,15 @@ export class TeamMembersSimpleComponent extends Component {
         this.setState({ selectedMember: null }, () => {
           done
             ? toastr.success(
-                'Success',
-                t(
-                  'member.now.invited',
-                  this.props.currentLanguage,
-                  false,
-                  `${member.name} has been invited as new member of your team`,
-                  member.name
-                )
+              'Success',
+              t(
+                'member.now.invited',
+                this.props.currentLanguage,
+                false,
+                `${member.name} has been invited as new member of your team`,
+                member.name
               )
+            )
             : toastr.error('Failure');
         });
       })
@@ -217,16 +240,16 @@ export class TeamMembersSimpleComponent extends Component {
           ({ done, team }) => {
             done
               ? toastr.success(
-                  'Success',
-                  t(
-                    'member.new.permission.success',
-                    this.props.currentLanguage,
-                    false,
-                    `${member.name} is now ${newPermission}`,
-                    member.name,
-                    newPermission
-                  )
+                'Success',
+                t(
+                  'member.new.permission.success',
+                  this.props.currentLanguage,
+                  false,
+                  `${member.name} is now ${newPermission}`,
+                  member.name,
+                  newPermission
                 )
+              )
               : toastr.error('Failure');
             this.props.updateTeam(team).then(() => this.updateMembers(this.props.currentTeam));
           }
@@ -301,7 +324,10 @@ export class TeamMembersSimpleComponent extends Component {
       });
   };
 
+
   render() {
+    console.log(this.props)
+    
     if (this.props.currentTeam.type === 'Personal') {
       return <Redirect to="/settings/me" />;
     }
@@ -312,14 +338,14 @@ export class TeamMembersSimpleComponent extends Component {
 
     const filteredMembers = this.state.search
       ? this.state.members.filter(({ name, email }) =>
-          [name, email].some((value) => value.toLowerCase().includes(this.state.search))
-        )
+        [name, email].some((value) => value.toLowerCase().includes(this.state.search))
+      )
       : this.state.members;
 
     const filteredPending = this.state.search
       ? this.state.pendingUsers.filter(({ name, email }) =>
-          [name, email].some((value) => value.toLowerCase().includes(this.state.search))
-        )
+        [name, email].some((value) => value.toLowerCase().includes(this.state.search))
+      )
       : this.state.pendingUsers;
     return (
       <>
@@ -335,64 +361,22 @@ export class TeamMembersSimpleComponent extends Component {
             </h1>
           </div>
         </div>
-        <div className="row">
-          <div className="col-12 mb-3 justify-content-start">
-            <div className="col-12 mb-3 d-flex align-items-center">
-              <Select
-                placeholder={t('Add new member to the team ...', this.props.currentLanguage)}
-                className="add-member-select"
-                options={_.sortBy(this.state.addableMembers, ['value.name', 'value.email'])}
-                onChange={this.addMember}
-                value={this.state.selectedMember}
-                filterOption={({ value: { email, name } }, search) =>
-                  email.includes(search) || name.includes(search)
-                }
-                classNamePrefix="col-5"
-              />
-              <span className="col-1 text-center px-0">{t('or', this.props.currentLanguage)}</span>
-              <div className="col-6 d-flex px-0">
-                <input
-                  placeholder={t('Find LDAP member by email ...', this.props.currentLanguage)}
-                  className="form-control mr-2"
-                  onChange={(e) => this.handleLdapMember(e.target.value)}
-                  value={this.state.ldap.searchMember}
-                />
-                <button onClick={this.searchLdapMember} className="btn btn-success">
-                  {t('Search', this.props.currentLanguage)}
-                </button>
-              </div>
-            </div>
-            {this.state.ldap.foundMember && (
-              <div className="col-12 d-flex justify-content-between section p-3 align-items-center">
-                <span>{t('LDAP user found', this.props.currentLanguage)}</span>
-                <span>{this.state.ldap.foundMember}</span>
-                <button className="btn btn-success" onClick={this.addLdapUserToTeam}>
-                  {t('Add user to team')}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
         <div className="container-fluid" style={{ position: 'relative' }}>
-          <div
-            className="col-5"
-            style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 2 }}>
-            <input
-              placeholder={t('Find a member', this.props.currentLanguage)}
-              className="form-control"
-              onChange={(e) => {
-                this.setState({ search: e.target.value });
-              }}
-            />
-          </div>
+          <button className="btn btn-success" type="button"
+            onClick={() => this.props.openInvitationModal({
+              currentLanguage: this.props.currentLanguage,
+              history: this.props.history,
+              team: this.props.currentTeam
+            })}>
+            {t("Invit a collaborator", this.props.currentLanguage)}
+          </button>
           <div className="row">
             <div className="col mt-3 onglets">
               <ul className="nav nav-tabs flex-column flex-sm-row">
                 <li className="nav-item">
                   <span
-                    className={`nav-link cursor-pointer ${
-                      this.state.tab === TABS.members ? 'active' : ''
-                    }`}
+                    className={`nav-link cursor-pointer ${this.state.tab === TABS.members ? 'active' : ''
+                      }`}
                     onClick={() => this.setState({ tab: TABS.members })}>
                     <Translation
                       i18nkey="Member"
@@ -406,10 +390,10 @@ export class TeamMembersSimpleComponent extends Component {
                   <span
                     className={classnames('nav-link cursor-pointer', {
                       active: this.state.tab === TABS.pending,
-                      disabled: filteredPending.length === 0,
+                      // disabled: filteredPending.length === 0,
                     })}
-                    onClick={() =>
-                      this.state.pendingUsers.length > 0 && this.setState({ tab: TABS.pending })
+                    onClick={() => this.setState({ tab: TABS.pending })
+                      // this.state.pendingUsers.length > 0 && 
                     }>
                     <Translation
                       i18nkey="pending members"
@@ -499,25 +483,21 @@ export class TeamMembersSimpleComponent extends Component {
                       action: [
                         {
                           action: () => this.togglePermission(member, administrator),
-                          iconClass: `fas fa-shield-alt ${
-                            isAdmin ? 'admin-active' : 'admin-inactive'
-                          }`,
-                          tooltip: `${
-                            isAdmin
-                              ? t('Remove administrator status', this.props.currentLanguage)
-                              : t('Add administrator status', this.props.currentLanguage)
-                          }`,
+                          iconClass: `fas fa-shield-alt ${isAdmin ? 'admin-active' : 'admin-inactive'
+                            }`,
+                          tooltip: `${isAdmin
+                            ? t('Remove administrator status', this.props.currentLanguage)
+                            : t('Add administrator status', this.props.currentLanguage)
+                            }`,
                         },
                         {
                           action: () => this.togglePermission(member, apiEditor),
-                          iconClass: `fas fa-pencil-alt ${
-                            isApiEditor ? 'admin-active' : 'admin-inactive'
-                          }`,
-                          tooltip: `${
-                            isApiEditor
-                              ? t('Remove api editor status', this.props.currentLanguage)
-                              : t('Add api editor status', this.props.currentLanguage)
-                          }`,
+                          iconClass: `fas fa-pencil-alt ${isApiEditor ? 'admin-active' : 'admin-inactive'
+                            }`,
+                          tooltip: `${isApiEditor
+                            ? t('Remove api editor status', this.props.currentLanguage)
+                            : t('Add api editor status', this.props.currentLanguage)
+                            }`,
                         },
                       ],
                       iconClass: 'fas fa-user-cog',
@@ -530,21 +510,25 @@ export class TeamMembersSimpleComponent extends Component {
           />
         )}
         {this.state.tab === TABS.pending && (
-          <PaginatedComponent
-            currentLanguage={this.props.currentLanguage}
-            items={_.sortBy(filteredPending, [(member) => member.name.toLowerCase()])}
-            count={15}
-            formatter={(member) => {
-              return (
-                <AvatarWithAction
-                  key={member._id}
-                  avatar={member.picture}
-                  infos={<span className="team-member__name">{member.name}</span>}
-                  actions={[]}
-                />
-              );
-            }}
-          />
+          filteredPending.length > 0 ?
+            <PaginatedComponent
+              currentLanguage={this.props.currentLanguage}
+              items={_.sortBy(filteredPending, [(member) => member.name.toLowerCase()])}
+              count={15}
+              formatter={(member) => {
+                return (
+                  <AvatarWithAction
+                    key={member._id}
+                    avatar={member.picture}
+                    infos={<span className="team-member__name">{member.name}</span>}
+                    actions={[]}
+                  />
+                );
+              }}
+            /> :
+            <div className="p-3">
+              <Translation i18nkey="team_member.no_pending_members" language={this.props.currentLanguage} />
+            </div>
         )}
       </>
     );
@@ -570,6 +554,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   updateTeam: (team) => updateTeamPromise(team),
+  openInvitationModal: modalProps => openInvitationTeamModal(modalProps)
 };
 
 export const TeamMembers = connect(mapStateToProps, mapDispatchToProps)(TeamMembersComponent);
