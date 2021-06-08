@@ -133,8 +133,6 @@ const InitializeFromOtoroshiComponent = (props) => {
     }
   };
 
-  console.log(state)
-
   return (
     <UserBackOffice tab="Initialization">
       <Can I={manage} a={TENANT} dispatchError>
