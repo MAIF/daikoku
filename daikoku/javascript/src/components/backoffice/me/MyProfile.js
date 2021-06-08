@@ -1,4 +1,4 @@
-import React, { Component, useEffect, useState } from 'react';
+import React, { Component, useState } from 'react';
 import * as Services from '../../../services';
 import faker from 'faker';
 import bcrypt from 'bcryptjs';
@@ -15,17 +15,10 @@ import { udpateLanguage } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-function TwoFactorAuthentication({ currentLanguage, rawValue, changeValue }) {
-  const [qrCode, setQRCode] = useState(null);
+function TwoFactorAuthentication({ currentLanguage, rawValue }) {
   const [modal, setModal] = useState(false);
   const [error, setError] = useState();
   const [backupCodes, setBackupCodes] = useState("")
-
-  useEffect(() => {
-    if (rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled)
-      Services.getQRCode()
-        .then(res => setQRCode(res.qrcode));
-  }, [])
 
   const getQRCode = () => {
     Services.getQRCode()
@@ -165,18 +158,6 @@ function TwoFactorAuthentication({ currentLanguage, rawValue, changeValue }) {
             </div>
           </div>
         </div>}
-        {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled && qrCode &&
-          <div className="form-group row">
-            <label className="col-xs-12 col-sm-2 col-form-label">{t('2fa.qrcode', currentLanguage)}</label>
-            <div className="col-sm-10">
-              <div className="d-flex flex-column">
-                <img src={`data:image/svg+xml;utf8,${encodeURIComponent(qrCode)}`} style={{
-                  maxWidth: "250px",
-                  height: "250px"
-                }} />
-              </div>
-            </div>
-          </div>}
       </>
   )
 }

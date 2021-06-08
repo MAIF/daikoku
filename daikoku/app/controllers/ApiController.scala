@@ -51,7 +51,11 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def me() = DaikokuAction.async { ctx =>
     authorizations.sync.PublicUserAccess(AuditTrailEvent("@{user.name} has accessed his own profile"))(ctx) {
-      Ok(ctx.user.asJson)
+        ctx.user.asJson
+          .transform((JsPath \ "twoFactorAuthentication" \ "secret").json.prune) match {
+          case JsSuccess(user, _) => Ok(user)
+          case JsError(_) => Ok(ctx.user.asJson)
+        }
     }
   }
 

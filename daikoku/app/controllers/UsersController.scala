@@ -309,15 +309,7 @@ class UsersController(DaikokuAction: DaikokuAction,
             )))
             case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Can't updated user")))
           }
-        case Some(auth) =>
-          val decodedKey = Base64.getDecoder.decode(auth.secret)
-
-          FastFuture.successful(Ok(Json.obj(
-            "backupCodes" -> auth.backupCodes,
-            "qrcode" -> QrCode
-              .encodeText(s"otpauth://totp/$label?secret=${new Base32().encodeAsString(decodedKey)}", QrCode.Ecc.HIGH)
-              .toSvgString(10)
-          )))
+        case Some(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "Unable to retrieve generated qrcode when 2fa enabled")))
       }
     }
   }
