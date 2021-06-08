@@ -276,7 +276,7 @@ const TopBarComponent = (props) => {
           <div className="d-flex flex-column flex-md-row">
             <div className="pl-1 pr-2">
               <Link
-                to="/"
+                to="/apis"
                 className="navbar-brand d-flex align-items-center mr-4"
                 title="Daikoku home"
                 style={{
