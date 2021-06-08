@@ -266,9 +266,9 @@ GET     /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku
 ### NoDocs ###
 DELETE  /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.deleteOtoroshiSettings(tenantId, id)
 ### NoDocs ###
-PUT     /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.saveOtoroshiSettings(tenantId, id)
+PUT     /api/tenants/:tenantId/otoroshis/:id            fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.saveOtoroshiSettings(tenantId, id, skipValidation: Boolean ?= false)
 ### NoDocs ###
-POST    /api/tenants/:tenantId/otoroshis                fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createOtoroshiSettings(tenantId)
+POST    /api/tenants/:tenantId/otoroshis                fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createOtoroshiSettings(tenantId, skipValidation: Boolean ?= false)
 ### NoDocs ###
 POST    /api/teams/:teamId/testing/apikeys              fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.createTestingApiKey(teamId)
 ### NoDocs ###

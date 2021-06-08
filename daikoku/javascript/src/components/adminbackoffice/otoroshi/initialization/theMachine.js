@@ -54,7 +54,7 @@ export const theMachine = Machine({
                 Services.getOtoroshiGroups(tenant, otoroshi),
                 Services.getOtoroshiApiKeys(tenant, otoroshi),
               ]).then(([groups, apikeys]) => {
-                callBack({ type: 'DONE_SERVICES', tenant, otoroshi, groups, apikeys });
+                callBack({ type: 'DONE_APIKEYS', tenant, otoroshi, groups, apikeys });
               });
             } else {
               callBack({ type: 'DONE' });
@@ -90,7 +90,12 @@ export const theMachine = Machine({
         src: (_context, { otoroshi, tenant }) => {
           return (callBack, _onEvent) => {
             Services.getOtoroshiGroups(tenant, otoroshi)
-              .then((groups) => callBack({ type: 'DONE_COMPLETE', groups, tenant, otoroshi }))
+              .then((groups) => {
+                if (groups.error)
+                  callBack({ type: 'FAILURE', error: { ...groups } })
+                else
+                  callBack({ type: 'DONE_COMPLETE', groups, tenant, otoroshi })
+              })
               .catch((error) => callBack({ type: 'FAILURE', error }));
           };
         },
@@ -135,7 +140,12 @@ export const theMachine = Machine({
         src: (context, _event) => {
           return (callBack, _event) =>
             Services.getOtoroshiServices(context.tenant, context.otoroshi)
-              .then((newServices) => callBack({ type: 'DONE_COMPLETE', newServices }))
+              .then((newServices) => {
+                if (newServices.error)
+                  callBack({ type: 'FAILURE', error: { ...newServices } })
+                else
+                  callBack({ type: 'DONE_COMPLETE', newServices })
+              })
               .catch((error) => callBack({ type: 'FAILURE', error }));
         },
       },
@@ -234,13 +244,18 @@ export const theMachine = Machine({
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
           return (callBack, _onEvent) => {
+            console.log(context)
             Services.getOtoroshiApiKeys(context.tenant, context.otoroshi)
               .then((newApikeys) => {
-                const hasMore = newApikeys.length === context.perPage;
-                if (hasMore) {
-                  callBack({ type: 'DONE_MORE', newApikeys, nextPage: context.page + 1 });
-                } else {
-                  callBack({ type: 'DONE_COMPLETE', newApikeys });
+                if (newApikeys.error)
+                  callBack({ type: 'FAILURE', error: { ...newApikeys } })
+                else {
+                  const hasMore = newApikeys.length === context.perPage;
+                  if (hasMore) {
+                    callBack({ type: 'DONE_MORE', newApikeys, nextPage: context.page + 1 });
+                  } else {
+                    callBack({ type: 'DONE_COMPLETE', newApikeys });
+                  }
                 }
               })
               .catch((error) => callBack({ type: 'FAILURE', error }));

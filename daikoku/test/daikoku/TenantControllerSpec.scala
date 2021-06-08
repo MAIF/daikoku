@@ -916,12 +916,13 @@ class TenantControllerSpec()
       otos.get.size mustBe 2 //wiremock && fakotoroshi
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/tenants/${tenant.id.value}/otoroshis",
+        path = s"/api/tenants/${tenant.id.value}/otoroshis?skipValidation=true",
         method = "POST",
         body = Some(otoroshiSettings.asJson)
       )(tenant, session)
 
       resp.status mustBe 201
+
 
       respGet = httpJsonCallBlocking(
         s"/api/tenants/${tenant.id.value}/otoroshis")(tenant, session)
@@ -962,7 +963,7 @@ class TenantControllerSpec()
       val session = loginWithBlocking(tenantAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/tenants/${tenant.id.value}/otoroshis/${otoroshiSettings.id.value}",
+          s"/api/tenants/${tenant.id.value}/otoroshis/${otoroshiSettings.id.value}?skipValidation=true",
         method = "PUT",
         body = Some(otoroshiSettings.copy(url = "new-url").asJson)
       )(tenant, session)

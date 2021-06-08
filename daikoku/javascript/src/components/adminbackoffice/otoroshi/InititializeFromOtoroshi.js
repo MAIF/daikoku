@@ -96,43 +96,10 @@ const InitializeFromOtoroshiComponent = (props) => {
   ));
 
   const orderedApikeys = _.orderBy(state.context.apikeys, ['authorizedGroup', 'clientName']);
-  const filterApikeys = (inputValue) =>
-    Promise.resolve(
-      orderedApikeys
-        .map(({ clientName }, index) => ({ label: clientName, value: index + 1 }))
-        .filter((s) => s.label.toLowerCase().includes(inputValue.toLowerCase()))
-    );
-  const subsSteps = orderedApikeys.map((apikey, idx) => (
-    <ApiKeyStep
-      key={`sub-${idx}`}
-      otoroshi={state.context.otoroshi}
-      apikey={apikey}
-      teams={teams}
-      apis={apis}
-      groups={state.context.groups}
-      addNewTeam={(t) => setTeams([...teams, t])}
-      addSub={(apikey, team, api, plan) =>
-        setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])
-      }
-      infos={{ index: idx, total: state.context.apikeys.length }}
-      updateApi={(api) => updateApi(api)}
-      recap={() => send('RECAP')}
-      maybeCreatedSub={Option(createdSubs.find((s) => apikey.clientId === s.clientId))}
-      updateSub={(apikey, team, api, plan) =>
-        setCreatedSubs([
-          ...createdSubs.filter((s) => s.clientId !== apikey.clientId),
-          { ...apikey, team, api, plan },
-        ])
-      }
-      resetSub={() =>
-        setCreatedApis([...createdSubs.filter((s) => s.clientId !== apikey.clientId)])
-      }
-      getFilteredApikeys={filterApikeys}
-      currentLanguage={props.currentLanguage}
-      tenant={props.tenant}
-      cancel={() => send('CANCEL')}
-    />
-  ));
+
+  const filterApikeys = group =>
+    orderedApikeys
+      .filter(apikey => (apikey.authorizedGroup || "").includes(group.value))
 
   const afterCreation = () => {
     Services.myVisibleApis().then((apis) => {
@@ -175,11 +142,9 @@ const InitializeFromOtoroshiComponent = (props) => {
               Daikoku initialization
             </Translation>
           </h1>
-          {(state.matches('completeServices') || state.matches('completeApikeys')) && (
-            <Help language={props.currentLanguage} />
-          )}
+          {state.matches('completeServices') && <Help language={props.currentLanguage} />}
         </div>
-        <div className="section p-3">
+        <div className="section py-3 px-2">
           {state.value === 'otoroshiSelection' && (
             <SelectOtoStep
               tenant={props.tenant}
@@ -224,12 +189,51 @@ const InitializeFromOtoroshiComponent = (props) => {
             />
           )}
           {state.matches('completeApikeys') && (
-            <StepWizard
-              isLazyMount={true}
-              transitions={{}}
-              onStepChange={(x) => setStep(x.activeStep)}>
-              {subsSteps}
-            </StepWizard>
+            <>
+              <ApiKeyStep
+                otoroshi={state.context.otoroshi}
+                teams={teams}
+                apis={apis}
+                groups={state.context.groups}
+                addNewTeam={(t) => setTeams([...teams, t])}
+                addSub={(apikey, team, api, plan) =>
+                  setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])
+                }
+                infos={idx => ({ index: idx, total: state.context.apikeys.length })}
+                updateApi={(api) => updateApi(api)}
+                recap={() => send('RECAP')}
+                maybeCreatedSub={apikey => Option(createdSubs.find(s => apikey.clientId === s.clientId))}
+                updateSub={(apikey, team, api, plan) =>
+                  setCreatedSubs([
+                    ...createdSubs.filter((s) => s.clientId !== apikey.clientId),
+                    { ...apikey, team, api, plan },
+                  ])
+                }
+                resetSub={apikey =>
+                  setCreatedSubs([...createdSubs.filter((s) => s.clientId !== apikey.clientId)])
+                }
+                getFilteredApikeys={filterApikeys}
+                currentLanguage={props.currentLanguage}
+                tenant={props.tenant}
+                cancel={() => send('CANCEL')}
+                createdSubs={createdSubs}
+              />
+              {createdSubs.length > 0 &&
+                <RecapSubsStep
+                  createdSubs={createdSubs}
+                  cancel={() => {
+                    setCreatedSubs([])
+                    send('CANCEL')
+                  }}
+                  apis={apis}
+                  teams={teams}
+                  goBackToServices={() => send('CANCEL')}
+                  create={() =>
+                    send('CREATE_APIKEYS', { createdSubs, callBackCreation: () => afterSubCreation() })
+                  }
+                  currentLanguage={props.currentLanguage}
+                />}
+            </>
           )}
           {state.matches('recapSubs') && (
             <RecapSubsStep
@@ -268,32 +272,31 @@ export const InitializeFromOtoroshi = connect(mapStateToProps)(InitializeFromOto
 const Help = ({ language }) => {
   return (
     <BeautifulTitle
-      placement="bottom"
-      title={
-        <div className="d-flex flex-column">
-          <h4>
-            <Translation i18nkey="Keyboard shortcuts" language={language}>
-              Keyboard shortcut
-            </Translation>
-          </h4>
-          <ul>
-            <li>
-              <Translation i18nkey="keyboard.shortcuts.arrow.left" language={language}>
-                arrow-left: previous step
+      place="bottom"
+      title={<div className="d-flex flex-column">
+        <h4>
+          <Translation i18nkey="Keyboard shortcuts" language={language}>
+            Keyboard shortcut
+          </Translation>
+        </h4>
+        <ul>
+          <li>
+            <Translation i18nkey="keyboard.shortcuts.arrow.left" language={language}>
+              arrow-left: previous step
               </Translation>
-            </li>
-            <li>
-              <Translation i18nkey="keyboard.shortcuts.arrow.right" language={language}>
-                arrow-right: next step or import
+          </li>
+          <li>
+            <Translation i18nkey="keyboard.shortcuts.arrow.right" language={language}>
+              arrow-right: next step or import
               </Translation>
-            </li>
-            <li>
-              <Translation i18nkey="keyboard.shortcuts.tab" language={language}>
-                tab: focus on api name
+          </li>
+          <li>
+            <Translation i18nkey="keyboard.shortcuts.tab" language={language}>
+              tab: focus on api name
               </Translation>
-            </li>
-          </ul>
-        </div>
+          </li>
+        </ul>
+      </div>
       }>
       <i className="ml-4 far fa-question-circle" />
     </BeautifulTitle>
