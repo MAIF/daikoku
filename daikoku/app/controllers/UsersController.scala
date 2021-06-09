@@ -13,7 +13,7 @@ import fr.maif.otoroshi.daikoku.login.LocalLoginConfig
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import io.nayuki.qrcodegen.QrCode
 import org.apache.commons.codec.binary.Base32
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, Hours}
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
 import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
@@ -356,6 +356,33 @@ class UsersController(DaikokuAction: DaikokuAction,
           case true => NoContent
           case false => BadRequest(Json.obj("error" -> "Something happens when updating user"))
         }
+    }
+  }
+
+  def checkTokenInvitation() = DaikokuAction.async(parse.json) { ctx =>
+    PublicUserAccess(AuditTrailEvent("@{user.name} has tried to validate an invitation token"))(ctx) {
+      val body = ctx.request.body
+      (body \ "token").asOpt[String] match {
+        case Some(token) =>
+          env.dataStore.userRepo.findOneNotDeleted(Json.obj(
+            "invitation.token" -> token,
+            "email" -> ctx.user.email
+          ))
+            .map {
+              case Some(user)
+                if Hours.hoursBetween(user.invitation.get.createdAt, DateTime.now()).isLessThan(Hours.ONE) =>
+                user.invitation.map { invitation =>
+                  Ok(Json.obj(
+                    "team" -> invitation.team,
+                    "notificationId" -> invitation.notificationId
+                  ))
+                }.getOrElse(
+                  BadRequest(Json.obj("error" -> "Missing invitation information"))
+                )
+              case None => BadRequest(Json.obj("error" -> "You're token is invalid or expired"))
+            }
+        case _ => FastFuture.successful(BadRequest(Json.obj("error" -> "Can't validate token")))
+      }
     }
   }
 }

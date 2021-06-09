@@ -32,5 +32,12 @@ object RequestImplicits {
         }
         .getOrElse("http")
     }
+
+    def theHost: String = {
+      requestHeader.headers
+        .get("Otoroshi-Proxied-Host")
+        .orElse(requestHeader.headers.get("X-Forwarded-Host"))
+        .getOrElse(requestHeader.host)
+    }
   }
 }

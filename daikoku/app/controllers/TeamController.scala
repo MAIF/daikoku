@@ -3,26 +3,19 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.login.{LdapConfig, LdapSupport}
-import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
+import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig, LdapSupport}
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
+import org.mindrot.jbcrypt.BCrypt
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Result}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -311,13 +304,11 @@ class TeamController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def addableUsersForTeam(teamId: String) = DaikokuAction.async { ctx =>
+  def pendingMembersOfTeam(teamId: String) = DaikokuAction.async { ctx =>
     TeamAdminOrTenantAdminOnly(AuditTrailEvent(
       s"@{user.name} has accessed list of addable members to team @{team.name} - @{team.id}"))(
       teamId,
-      ctx) { team =>
-      val teamUserId = team.users.map(_.userId).toSeq
-
+      ctx) { _ =>
       for {
         pendingNotif <- env.dataStore.notificationRepo
           .forTenant(ctx.tenant)
@@ -334,14 +325,9 @@ class TeamController(DaikokuAction: DaikokuAction,
         pendingUsers <- env.dataStore.userRepo.findNotDeleted(
           Json.obj(
             "_id" -> Json.obj("$in" -> JsArray(pendingUsersId.map(_.asJson)))))
-        addableUsers <- env.dataStore.userRepo.findNotDeleted(
-          Json.obj(
-            "_id" -> Json.obj("$nin" -> JsArray(teamUserId.map(_.asJson)))))
       } yield {
         Ok(
           Json.obj(
-            "addableUsers" -> JsArray(
-              addableUsers.diff(pendingUsers).map(_.asSimpleJson)),
             "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
           ))
       }
@@ -380,64 +366,142 @@ class TeamController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def addMembersToTeam(teamId: String) = DaikokuAction.async(parse.json) {
+  def addMembersToTeam(teamId: String) = DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOrTenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has added members to team @{team.name} - @{team.id}"))(teamId, ctx) {
+        team =>
+          team.`type` match {
+            case TeamType.Personal =>
+              FastFuture.successful(Conflict(Json.obj("error" -> "Team type doesn't accept to add members")))
+            case TeamType.Admin =>
+              FastFuture.successful(
+                Forbidden(Json.obj("error" -> "Team type doesn't accept to add members from this way")))
+            case TeamType.Organization =>
+              val members = (ctx.request.body \ "members").as[JsArray]
+              Source(members.value.toList)
+                .mapAsync(5)(member => addMemberToTeam(team, member.as[String], ctx))
+                .runWith(Sink.seq[UserId])
+                .map(users =>
+                  Ok(Json.obj("done" -> true,
+                    "team" -> team.asJson,
+                    "pendingUsers" -> JsArray(users.map(_.asJson)))))
+          }
+      }
+  }
+
+  def addMemberToTeam(team: Team, member: String, ctx: DaikokuActionContext[JsValue]): Future[UserId] = {
     import cats.implicits._
 
+    val userId = UserId(member)
+
+    val notification = Notification(
+      id = NotificationId(BSONObjectID.generate().stringify),
+      tenant = ctx.tenant.id,
+      team = None,
+      sender = ctx.user,
+      action = NotificationAction.TeamInvitation(team.id, userId)
+    )
+
+    for {
+      maybeUser <- env.dataStore.userRepo.findByIdNotDeleted(userId)
+      _ <- env.dataStore.notificationRepo
+        .forTenant(ctx.tenant)
+        .save(notification)
+      _ <- maybeUser.traverse(user => {
+        implicit val lang: Lang = Lang(
+          user.defaultLanguage
+            .orElse(ctx.tenant.defaultLanguage)
+            .getOrElse("en"))
+        ctx.tenant.mailer.send(
+          messagesApi("mail.team.invitation.title"),
+          Seq(user.email),
+          messagesApi("mail.team.invitation.body",
+            ctx.user.name,
+            team.name,
+            s"${ctx.tenant.domain}/notifications")
+        )
+      })
+    } yield userId
+  }
+
+  def addUncheckedMembersToTeam(teamId: String)  = DaikokuAction.async(parse.json) {
     ctx =>
-      val members = (ctx.request.body \ "members").as[JsArray]
       TeamAdminOrTenantAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has added members to team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { team =>
-        team.`type` match {
-          case TeamType.Personal =>
-            FastFuture.successful(
-              Conflict(
-                Json.obj("error" -> "Team type doesn't accept to add members")))
-          case TeamType.Admin =>
-            FastFuture.successful(Forbidden(Json.obj(
-              "error" -> "Team type doesn't accept to add members from this way")))
-          case TeamType.Organization =>
-            Source(members.value.toList)
-              .mapAsync(5)(member => {
-                val userId = UserId(member.as[String])
+        AuditTrailEvent(s"@{user.name} has invited new members to team @{team.name} - @{team.id}"))(teamId, ctx) {
+        team =>
+          team.`type` match {
+            case TeamType.Personal =>
+              FastFuture.successful(Conflict(Json.obj("error" -> "Team type doesn't accept to add members")))
+            case TeamType.Admin =>
+              FastFuture.successful(
+                Forbidden(Json.obj("error" -> "Team type doesn't accept to add members from this way")))
+            case TeamType.Organization =>
+              val email = (ctx.request.body \ "email").as[String]
+              sendInvitationToUser(team, email, ctx)
+          }
+      }
+  }
 
-                val notification = Notification(
-                  id = NotificationId(BSONObjectID.generate().stringify),
-                  tenant = ctx.tenant.id,
-                  team = None,
-                  sender = ctx.user,
-                  action = NotificationAction.TeamInvitation(team.id, userId)
-                )
+  def sendInvitationToUser(team: Team, email: String, ctx: DaikokuActionContext[JsValue]): Future[Result] = {
+    import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 
-                for {
-                  maybeUser <- env.dataStore.userRepo.findByIdNotDeleted(userId)
-                  _ <- env.dataStore.notificationRepo
+    def createInvitedUser(team: String, notificationId: String) = User(
+      id = UserId(BSONObjectID.generate().stringify),
+      tenants = Set(ctx.tenant.id),
+      origins = Set(ctx.tenant.authProvider),
+      name = "invited user",
+      email = email,
+      password = Some(BCrypt.hashpw("invited-user-password", BCrypt.gensalt())),
+      lastTenant = Some(ctx.tenant.id),
+      personalToken = Some(IdGenerator.token(32)),
+      defaultLanguage = None,
+      invitation = Some(UserInvitation(team = team, notificationId = notificationId))
+    )
+
+    env.dataStore.userRepo
+      .findOne(Json.obj("email" -> email))
+      .flatMap {
+          case Some(user) => addMemberToTeam(team, user.id.value, ctx).flatMap { _ =>
+            FastFuture.successful(Ok(Json.obj("done" -> true)))
+          }
+          case None =>
+            val notificationId = NotificationId(BSONObjectID.generate().stringify)
+            val invitedUser = createInvitedUser(team.name, notificationId.value)
+            env.dataStore.userRepo.save(invitedUser)
+              .flatMap {
+                case true   =>
+                  implicit val lang: Lang = Lang("en")
+                  val tenant = ctx.tenant
+
+                  env.dataStore.notificationRepo
                     .forTenant(ctx.tenant)
-                    .save(notification)
-                  _ <- maybeUser.traverse(user => {
-                    implicit val lang: Lang = Lang(
-                      user.defaultLanguage
-                        .orElse(ctx.tenant.defaultLanguage)
-                        .getOrElse("en"))
-                    ctx.tenant.mailer.send(
-                      messagesApi("mail.team.invitation.title"),
-                      Seq(user.email),
-                      messagesApi("mail.team.invitation.body",
-                                  ctx.user.name,
-                                  team.name,
-                                  s"${ctx.tenant.domain}/notifications")
-                    )
-                  })
-                } yield (userId)
-              })
-              .runWith(Sink.seq[UserId])
-              .map(users =>
-                Ok(Json.obj("done" -> true,
-                            "team" -> team.asJson,
-                            "pendingUsers" -> JsArray(users.map(_.asJson)))))
-        }
+                    .save(Notification(
+                      id = notificationId,
+                      tenant = ctx.tenant.id,
+                      team = None,
+                      sender = ctx.user,
+                      action = NotificationAction.TeamInvitation(team.id, invitedUser.id)
+                    ))
+                    .flatMap {
+                      case true =>
+                        tenant.mailer.send(
+                          s"Join ${team.name}",
+                          Seq(email),
+                          s"""
+                             | ${ctx.user.name} asked you to join ${team.name}
+                             |
+                             |Please click on the following link to join this team.
+                             |
+                             |${ctx.request.theProtocol}://${ctx.request.theHost}/join?token=${invitedUser.invitation.get.token}
+                             |
+                          """.stripMargin
+                        ).flatMap { _ =>
+                          FastFuture.successful(Created(Json.obj("done" -> true)))
+                        }
+                      case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to send invitation")))
+                    }
+                case false  => FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to invit user")))
+              }
       }
   }
 
@@ -629,6 +693,38 @@ class TeamController(DaikokuAction: DaikokuAction,
                 )
             }
       }
+    }
+  }
+
+  def removeInvitation(teamId: String, userId: String) = DaikokuAction.async { ctx =>
+    TeamAdminOrTenantAdminOnly(
+      AuditTrailEvent(s"@{user.name} has removed invitation to ${userId} of team @{team.name} - @{team.id}"))(teamId, ctx) {
+      team =>
+        team.`type` match {
+          case TeamType.Organization =>
+            env.dataStore.userRepo.findById(userId)
+              .flatMap {
+                case Some(user) if user.invitation.isDefined => env.dataStore.userRepo.deleteById(userId).flatMap {
+                  case true =>
+                    env.dataStore.notificationRepo
+                      .forTenant(ctx.tenant.id)
+                      .delete(Json.obj(
+                        "status.status" -> NotificationStatus.Pending.toString,
+                        "action.team" -> team.id.value,
+                        "action.user" -> userId,
+                        "action.type" -> "TeamInvitation"
+                      )).flatMap { _ =>
+                        FastFuture.successful(Ok(Json.obj("deleted" -> true)))
+                      }
+                  case false => FastFuture.successful(BadRequest(
+                    Json.obj("error" -> "An error occurred while deleting the user"))
+                  )
+                }
+                case Some(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "User isn't invited")))
+                case None => FastFuture.successful(NotFound(Json.obj("error" -> "User not found")))
+              }
+          case _ => FastFuture.successful(BadRequest(Json.obj("error" -> "Operation not authorized on this team")))
+        }
     }
   }
 }

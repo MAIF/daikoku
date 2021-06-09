@@ -1303,7 +1303,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
             s"set content = $$2",
           Seq((value \ "_id").as[String], new JsonObject(Json.stringify(value)))
         )
-    ).map(_ => true)
+    )
+      .map(_ => true)
       .recover(_ => false)
   }
 

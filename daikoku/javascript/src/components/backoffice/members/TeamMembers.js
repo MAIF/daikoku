@@ -54,7 +54,6 @@ const TABS = {
 
 export class TeamMembersSimpleComponent extends Component {
   state = {
-    addableMembers: [],
     pendingUsers: [],
     selectedMember: null,
     loading: true,
@@ -70,29 +69,14 @@ export class TeamMembersSimpleComponent extends Component {
   }
 
   updateMembers = (team) => {
-    Promise.all([Services.members(team._id), Services.addableUsersForTeam(team._id)]).then(
-      ([members, users]) => {
+    Promise.all([Services.members(team._id), Services.pendingMembers(team._id)])
+      .then(([members, res]) => {
         this.setState({
-          pendingUsers: users.pendingUsers,
-          addableMembers: users.addableUsers.map((m) => ({
-            label: (
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {m.name} ({m.email}){' '}
-                <img
-                  style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
-                  src={m.picture}
-                  alt="avatar"
-                />
-              </div>
-            ),
-            value: m,
-          })),
           members,
+          pendingUsers: res.pendingUsers,
           loading: false,
         });
-      }
-    );
+      });
   };
 
   isAdmin = (user) => {
@@ -290,14 +274,14 @@ export class TeamMembersSimpleComponent extends Component {
           });
         } else {
           const teamId = this.props.currentTeam._id;
-          Promise.all([Services.members(teamId), Services.addableUsersForTeam(teamId)]).then(
-            ([members, users]) => {
+          Promise.all([Services.members(teamId), Services.pendingUsers(teamId)]).then(
+            ([members, res]) => {
               let successfull = true;
 
               if (members.find((f) => f.email === email)) {
                 toastr.info(t('User already in team', this.props.currentLanguage));
                 successfull = false;
-              } else if (users.pendingUsers.find((f) => f.email === email)) {
+              } else if (res.pendingUsers.find((f) => f.email === email)) {
                 toastr.info(t('User already invited', this.props.currentLanguage));
                 successfull = false;
               }
@@ -324,10 +308,7 @@ export class TeamMembersSimpleComponent extends Component {
       });
   };
 
-
   render() {
-    console.log(this.props)
-    
     if (this.props.currentTeam.type === 'Personal') {
       return <Redirect to="/settings/me" />;
     }
@@ -366,9 +347,16 @@ export class TeamMembersSimpleComponent extends Component {
             onClick={() => this.props.openInvitationModal({
               currentLanguage: this.props.currentLanguage,
               history: this.props.history,
-              team: this.props.currentTeam
+              team: this.props.currentTeam,
+              members: filteredMembers,
+              invitUser: email => {
+                const team = this.props.currentTeam;
+                Services.addUncheckedMembersToTeam(team._id, email)
+                  .then(() => this.updateMembers(team));
+              },
+              pendingUsers: filteredPending
             })}>
-            {t("Invit a collaborator", this.props.currentLanguage)}
+            {t("team_member.invit_user", this.props.currentLanguage)}
           </button>
           <div className="row">
             <div className="col mt-3 onglets">
@@ -388,13 +376,8 @@ export class TeamMembersSimpleComponent extends Component {
                 </li>
                 <li className="nav-item">
                   <span
-                    className={classnames('nav-link cursor-pointer', {
-                      active: this.state.tab === TABS.pending,
-                      // disabled: filteredPending.length === 0,
-                    })}
-                    onClick={() => this.setState({ tab: TABS.pending })
-                      // this.state.pendingUsers.length > 0 && 
-                    }>
+                    className={classnames('nav-link cursor-pointer', { active: this.state.tab === TABS.pending })}
+                    onClick={() => this.setState({ tab: TABS.pending })}>
                     <Translation
                       i18nkey="pending members"
                       language={this.props.currentLanguage}
@@ -516,12 +499,26 @@ export class TeamMembersSimpleComponent extends Component {
               items={_.sortBy(filteredPending, [(member) => member.name.toLowerCase()])}
               count={15}
               formatter={(member) => {
+                const invitedUser = member.name === "invited user";
                 return (
                   <AvatarWithAction
                     key={member._id}
                     avatar={member.picture}
-                    infos={<span className="team-member__name">{member.name}</span>}
-                    actions={[]}
+                    infos={<span className="team-member__name">{invitedUser ? member.email : member.name}</span>}
+                    actions={invitedUser ? [
+                      {
+                        action: () => {
+                          window.confirm(t('team_member.confirm_remove_invitation', this.props.currentLanguage))
+                            .then(ok => {
+                              if (ok)
+                                Services.removeInvitation(this.props.currentTeam._id, member._id)
+                                  .then(() => this.updateMembers(this.props.currentTeam))
+                            });
+                        },
+                        iconClass: 'fas fa-trash delete-icon',
+                        tooltip: t('Remove invitation', this.props.currentLanguage),
+                      }
+                    ] : []}
                   />
                 );
               }}

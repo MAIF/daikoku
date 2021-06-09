@@ -76,6 +76,12 @@ export const openInvitationTeamModal = modalProps => dispatch => dispatch({
   modalType: 'teamInvitation'
 });
 
+export const openJoinTeamModal = modalProps => dispatch => dispatch({
+  type: OPEN_MODAL,
+  modalProps,
+  modalType: 'joinTeamInvitation'
+});
+
 export const closeModal = () => (dispatch) => {
   return dispatch({
     type: CLOSE_MODAL,

@@ -1679,7 +1679,8 @@ object json {
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
             starredApis =
               (json \ "starredApis").asOpt(SetApiIdFormat).getOrElse(Set.empty),
-            twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(TwoFactorAuthenticationFormat)
+            twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(TwoFactorAuthenticationFormat),
+            invitation = (json \ "invitation").asOpt(UserInvitationFormat)
           )
         )
       } recover {
@@ -1711,6 +1712,10 @@ object json {
       "starredApis" -> SetApiIdFormat.writes(o.starredApis),
       "twoFactorAuthentication" -> o.twoFactorAuthentication
         .map(TwoFactorAuthenticationFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "invitation" -> o.invitation
+        .map(UserInvitationFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -2987,6 +2992,31 @@ object json {
       "secret" -> o.secret,
       "token" -> o.token,
       "backupCodes" -> o.backupCodes
+    )
+  }
+
+  val UserInvitationFormat = new Format[UserInvitation] {
+    override def reads(json: JsValue): JsResult[UserInvitation] =
+      Try {
+        JsSuccess(
+          UserInvitation(
+            token = (json \ "token").as[String],
+            createdAt = (json \ "createdAt")
+              .asOpt[DateTime](DateTimeFormat.reads)
+              .getOrElse(DateTime.now()),
+            team = (json \ "team").asOpt[String].getOrElse("team"),
+            notificationId = (json \ "notificationId").asOpt[String].getOrElse("")
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: UserInvitation): JsValue = Json.obj(
+      "token" -> o.token,
+      "createdAt" -> DateTimeFormat.writes(o.createdAt),
+      "team" -> o.team,
+      "notificationId" -> o.notificationId
     )
   }
 

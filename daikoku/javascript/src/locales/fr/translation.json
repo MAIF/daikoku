@@ -869,5 +869,14 @@
   "unstar": "Supprimer l'étoile",
   "Kafka host validation": "Validation de l'hôte Kafka",
   "kafka.audit.hostValidation.help": "Désactiver la validation nom d'hôte du serveur à l'aide du certificat du serveur par Kafka",
-  "team_member.no_pending_members": "Vous n'avez pas encore invité de collaborateurs"
+  "team_member.no_pending_members": "Vous n'avez pas encore invité de collaborateurs",
+  "team_member.confirm_remove_invitation": "Êtes-vous sûr de vouloir supprimer cette invitation ?",
+  "team_member.invit_user": "Inviter un collaborateur",
+  "team_member.invite_user_to": "Inviter un collaborateur dans",
+  "team_member.send_email": "Envoyer l'invitation",
+  "team_member.invitation": "Rejoindre %s",
+  "team_member.accept_invitation": "Accepter",
+  "team_member.refuse_invitation": "Refuser",
+  "team_member.has_joined": "Vous avez rejoint l'équipe",
+  "team_member.missing_token": "Jeton manquant"
 }

@@ -15,7 +15,8 @@ export const MODAL_TYPES = {
   contactModal: Modals.ContactModal,
   subscriptionMetadataModal: Modals.SubscriptionMetadataModal,
   testingApiKey: Modals.TestingApiKeyModal,
-  teamInvitation: Modals.TeamInvitationModal
+  teamInvitation: Modals.TeamInvitationModal,
+  joinTeamInvitation: Modals.JoinTeamInvitationModal
 };
 
 const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
