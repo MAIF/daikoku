@@ -260,9 +260,9 @@ const Avatar = ({ currentLanguage, value, rawValue, changeValue, label, ...props
     <div className="form-group row">
       <label className="col-xs-12 col-sm-2 col-form-label">{label}</label>
       <div className="col-sm-10">
-        <input type="text" value={value} onChange={(e) => changePicture(e.target.value)} />
+        <input type="text" className="form-control" value={value} onChange={(e) => changePicture(e.target.value)} />
       </div>
-      <div className="col-sm-10 offset-sm-2 d-flex">
+      <div className="col-sm-10 offset-sm-2 d-flex mt-1">
         <button type="button" className="btn btn-outline-primary mr-1" onClick={setGravatarLink}>
           <i className="fas fa-user-circle mr-1" />
           <Translation i18nkey="Set avatar from Gravatar" language={currentLanguage}>
