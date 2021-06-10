@@ -9,15 +9,8 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.{
-  ActualOtoroshiApiKey,
-  ApiKeyRestrictions,
-  TestingAuth
-}
-import fr.maif.otoroshi.daikoku.domain.json.{
-  OtoroshiSettingsFormat,
-  OtoroshiSettingsIdFormat
-}
+import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, ApiKeyRestrictions, TestingAuth}
+import fr.maif.otoroshi.daikoku.domain.json.{OtoroshiSettingsFormat, OtoroshiSettingsIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import org.apache.commons.codec.binary.Base64
@@ -26,12 +19,9 @@ import play.api.http.HttpEntity
 import play.api.libs.json.JsError.toJson
 import play.api.libs.json.{JsArray, JsError, JsObject, JsSuccess, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{
-  AbstractController,
-  BodyParser,
-  ControllerComponents,
-  Request
-}
+import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request}
+
+import scala.util.Try
 
 class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                                  env: Env,
@@ -99,7 +89,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def saveOtoroshiSettings(tenantId: String, otoroshiId: String) =
+  def saveOtoroshiSettings(tenantId: String, otoroshiId: String, skipValidation: Boolean = false) =
     DaikokuAction.async(parse.json) { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
@@ -117,18 +107,26 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                   BadRequest(
                     Json.obj("error" -> "Error while parsing payload")))
               case JsSuccess(settings, _) =>
-                env.dataStore.tenantRepo
-                  .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings
-                    .filterNot(_.id == settings.id) + settings))
-                  .map { _ =>
-                    Ok(settings.asJson)
-                  }
+                def saveSettings() =
+                  env.dataStore.tenantRepo
+                    .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings
+                      .filterNot(_.id == settings.id) + settings))
+                    .map { _ =>
+                      Ok(settings.asJson)
+                    }
+                if (skipValidation)
+                  saveSettings()
+                else
+                  otoroshiClient
+                  .getServices()(settings)
+                  .flatMap { _ => saveSettings()}
+                  .recover { _ => BadRequest(Json.obj("error" -> "Failed to join otoroshi instances")) }
             }
         }
       }
     }
 
-  def createOtoroshiSettings(tenantId: String) =
+  def createOtoroshiSettings(tenantId: String, skipValidation: Boolean = false) =
     DaikokuAction.async(parse.json) { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
@@ -137,16 +135,20 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         ctx) { (tenant, _) =>
         OtoroshiSettingsFormat.reads(ctx.request.body) match {
           case JsError(_) =>
-            FastFuture.successful(
-              BadRequest(Json.obj("error" -> "Error while parsing payload")))
+            FastFuture.successful(BadRequest(Json.obj("error" -> "Error while parsing payload")))
           case JsSuccess(settings, _) =>
-            ctx.setCtxValue("otoroshi.id", settings.id)
-            env.dataStore.tenantRepo
-              .save(tenant.copy(
-                otoroshiSettings = tenant.otoroshiSettings + settings))
-              .map { _ =>
-                Created(settings.asJson)
-              }
+            def createOtoroshi() = {
+              ctx.setCtxValue("otoroshi.id", settings.id)
+              env.dataStore.tenantRepo
+                .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings + settings))
+                .map { _ => Created(settings.asJson) }
+            }
+            if (skipValidation)
+              createOtoroshi()
+            else otoroshiClient
+              .getServices()(settings)
+              .flatMap { _ => createOtoroshi() }
+              .recover { _ => BadRequest(Json.obj("error" -> "Failed to join otoroshi instances")) }
         }
       }
     }
@@ -156,16 +158,20 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       TeamApiEditorOnly(AuditTrailEvent(
         s"@{user.name} has accessed groups of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(
         teamId,
-        ctx) { team =>
-        ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found")))
-          case Some(settings) =>
-            otoroshiClient.getServiceGroups()(settings).map { groups =>
-              Ok(groups)
-            }
-        }
+        ctx) { _ =>
+          ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+            case None =>
+              FastFuture.successful(
+                NotFound(Json.obj("error" -> s"Settings $oto not found")))
+            case Some(settings) =>
+                otoroshiClient.getServiceGroups()(settings)
+                  .map { groups =>
+                    Ok(groups)
+                  }
+                  .recover {
+                    case error => BadRequest(Json.obj("error" -> error.getMessage))
+                  }
+          }
       }
   }
 
@@ -176,15 +182,18 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
           s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(
         tenantId,
         ctx) { (tenant, _) =>
-        tenant.otoroshiSettings.find(s => s.id.value == oto) match {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found")))
-          case Some(settings) =>
-            otoroshiClient
-              .getServiceGroups()(settings)
-              .map(Ok(_))
-        }
+          tenant.otoroshiSettings.find(s => s.id.value == oto) match {
+            case None =>
+              FastFuture.successful(
+                NotFound(Json.obj("error" -> s"Settings $oto not found")))
+            case Some(settings) =>
+              otoroshiClient
+                .getServiceGroups()(settings)
+                .map(Ok(_))
+                .recover {
+                  case error => BadRequest(Json.obj("error" -> error.getMessage))
+                }
+          }
       }
     }
 
@@ -203,6 +212,9 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
             otoroshiClient
               .getServices()(settings)
               .map(Ok(_))
+              .recover {
+                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              }
         }
       }
     }
@@ -222,6 +234,9 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
             otoroshiClient
               .getApiKeys()(settings)
               .map(Ok(_))
+              .recover {
+                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              }
         }
       }
     }
