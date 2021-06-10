@@ -783,8 +783,6 @@
   "Disable maintenance": "Désactive la maintenance",
   "login.failed": "Utilisateur inconnu ou mot de passe invalide",
   "or": "ou",
-  "Find LDAP member by email ...": "Trouver un utilisateur LDAP via email",
-  "LDAP user found": "Utilisateur LDAP trouvé",
   "User already in team": "Utilisateur déjà dans l'équipe",
   "User already invited": "Déjà dans l'attente de l'utilisateur",
   "Connect timeout": "Timeout de connexion",

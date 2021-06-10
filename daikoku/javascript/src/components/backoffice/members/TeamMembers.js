@@ -29,39 +29,12 @@ const TABS = {
   pending: 'PENDING',
 };
 
-{/* <span className="col-1 text-center px-0">{t('or', currentLanguage)}</span>
-  <div className="col-6 d-flex px-0">
-    <input
-      placeholder={t('Find LDAP member by email ...', currentLanguage)}
-      className="form-control mr-2"
-      onChange={(e) => this.handleLdapMember(e.target.value)}
-      value={this.state.ldap.searchMember}
-    />
-    <button onClick={this.searchLdapMember} className="btn btn-success">
-      {t('Search', currentLanguage)}
-    </button>
-  </div>
-  </div>
-  {/* {this.state.ldap.foundMember && (
-    <div className="col-12 d-flex justify-content-between section p-3 align-items-center">
-      <span>{t('LDAP user found', currentLanguage)}</span>
-      <span>{this.state.ldap.foundMember}</span>
-      <button className="btn btn-success" onClick={this.addLdapUserToTeam}>
-        {t('Add user to team')}
-      </button>
-    </div>
-  )} */}
-
 export class TeamMembersSimpleComponent extends Component {
   state = {
     pendingUsers: [],
     selectedMember: null,
     loading: true,
-    tab: TABS.members,
-    ldap: {
-      searchMember: null,
-      foundMember: null,
-    }
+    tab: TABS.members
   };
 
   componentDidMount() {
@@ -173,18 +146,7 @@ export class TeamMembersSimpleComponent extends Component {
       .then(() => this.updateMembers(this.props.currentTeam));
   };
 
-  addMember = (slug) => {
-    const member = slug.value;
-    this.setState({ selectedMember: member }, () => {
-      this._addMember(member);
-    });
-  };
-
-  // riemann@ldap.forumsys.com
-
-  addLdapUserToTeam = () => {
-    const email = this.state.ldap.foundMember;
-
+  addLdapUserToTeam = email => {
     Services.findUserByEmail(this.props.currentTeam._id, email).then((optUser) => {
       if (optUser.error) {
         Services.createUserFromLDAP(this.props.currentTeam._id, email).then((createdUser) =>
@@ -194,13 +156,6 @@ export class TeamMembersSimpleComponent extends Component {
         const user = optUser;
         this._addMember(user);
       }
-    });
-
-    this.setState({
-      ldap: {
-        searchMember: '',
-        foundMember: null,
-      },
     });
   };
 
@@ -250,63 +205,26 @@ export class TeamMembersSimpleComponent extends Component {
     }
   };
 
-  handleLdapMember = (searchMember) => {
-    this.setState({
-      ldap: {
-        ...this.state.ldap,
-        searchMember,
-      },
-    });
+  searchLdapMember = email => {
+    return new Promise(resolve => {
+      Services.searchLdapMember(this.props.currentTeam._id, email)
+        .then((hasMember) => {
+          if (hasMember.error)
+            resolve({ error: hasMember.error });
+          else
+            resolve({ done: true })
+        })
+        .catch((error) => resolve(error));
+    })
   };
 
-  searchLdapMember = () => {
-    const email = this.state.ldap.searchMember;
-
-    Services.searchLdapMember(this.props.currentTeam._id, email)
-      .then((hasMember) => {
-        if (hasMember.error) {
-          toastr.error(hasMember.error);
-          this.setState({
-            ldap: {
-              ...this.state.ldap,
-              foundMember: null,
-            },
-          });
-        } else {
-          const teamId = this.props.currentTeam._id;
-          Promise.all([Services.members(teamId), Services.pendingUsers(teamId)]).then(
-            ([members, res]) => {
-              let successfull = true;
-
-              if (members.find((f) => f.email === email)) {
-                toastr.info(t('User already in team', this.props.currentLanguage));
-                successfull = false;
-              } else if (res.pendingUsers.find((f) => f.email === email)) {
-                toastr.info(t('User already invited', this.props.currentLanguage));
-                successfull = false;
-              }
-
-              this.setState({
-                ldap: {
-                  ...this.state.ldap,
-                  foundMember: successfull ? email : null,
-                  searchMember: '',
-                },
-              });
-            }
-          );
-        }
-      })
-      .catch((error) => {
-        toastr.error(error);
-        this.setState({
-          ldap: {
-            ...this.state.ldap,
-            foundMember: null,
-          },
-        });
-      });
-  };
+  invitUser = email => {
+    if (this.props.tenant.authProvider === "LDAP")
+      this.addLdapUserToTeam(email)
+    else
+      Services.addUncheckedMembersToTeam(currentTeam._id, email)
+        .then(() => this.updateMembers(currentTeam));
+  }
 
   render() {
     if (this.props.currentTeam.type === 'Personal') {
@@ -344,18 +262,20 @@ export class TeamMembersSimpleComponent extends Component {
         </div>
         <div className="container-fluid" style={{ position: 'relative' }}>
           <button className="btn btn-success" type="button"
-            onClick={() => this.props.openInvitationModal({
-              currentLanguage: this.props.currentLanguage,
-              history: this.props.history,
-              team: this.props.currentTeam,
-              members: filteredMembers,
-              invitUser: email => {
-                const team = this.props.currentTeam;
-                Services.addUncheckedMembersToTeam(team._id, email)
-                  .then(() => this.updateMembers(team));
-              },
-              pendingUsers: filteredPending
-            })}>
+            onClick={() => {
+              const { currentLanguage, history, currentTeam, tenant, openInvitationModal } = this.props;
+
+              openInvitationModal({
+                currentLanguage,
+                history,
+                team: currentTeam,
+                tenant,
+                searchLdapMember: this.searchLdapMember,
+                members: filteredMembers,
+                invitUser: this.invitUser,
+                pendingUsers: filteredPending
+              })
+            }}>
             {t("team_member.invit_user", this.props.currentLanguage)}
           </button>
           <div className="row">

@@ -395,7 +395,9 @@ object LdapSupport {
         case _: ServiceUnavailableException | _: CommunicationException |
             _: TimeoutException =>
           _bindUser(urls.tail, username, password, ldapConfig, tenant, _env)
-        case e => Left(s"bind failed ${e.getMessage}")
+        case e =>
+          throw e
+          Left(s"bind failed - check your fields")
       } get
     }
   }
