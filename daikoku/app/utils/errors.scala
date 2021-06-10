@@ -55,7 +55,8 @@ object Errors {
               req.domain,
               _env = env,
               tenant = tenant,
-              loginLink = s"/auth/${tenant.authProvider}/login"
+              loginLink = s"/auth/${tenant.authProvider}/login",
+              req.path
             )
           )
           .withHeaders(

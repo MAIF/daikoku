@@ -393,9 +393,9 @@ class LoginController(DaikokuAction: DaikokuAction,
 
   def createUserValidation() = DaikokuTenantAction.async { ctx =>
     ctx.request.getQueryString("id") match {
-      case None =>
-        FastFuture.successful(BadRequest(Json.obj("error" -> "Id not found")))
-      case Some(id) => {
+      case None => Errors.craftResponseResult("The user creation has failed.", Results.BadRequest,
+        ctx.request, env = env)
+      case Some(id) =>
         env.dataStore.accountCreationRepo
           .findOneNotDeleted(Json.obj("randomId" -> id))
           .flatMap {
@@ -413,7 +413,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                 .findOne(Json.obj("email" -> accountCreation.email))
                 .flatMap {
                   case Some(user) if user.invitation.isEmpty || user.invitation.get.registered =>
-                    FastFuture.successful(BadRequest(Json.obj("error" -> "Email address already exists")))
+                    Errors.craftResponseResult("This account is already enabled.", Results.BadRequest,
+                      ctx.request, env = env)
                   case optUser =>
                     val userId = optUser.map(_.id).getOrElse(UserId(BSONObjectID.generate().stringify))
                     val team = Team(
@@ -459,10 +460,9 @@ class LoginController(DaikokuAction: DaikokuAction,
                 }
             }
             case _ =>
-              FastFuture.successful(
-                BadRequest(Json.obj("error" -> "Bad creation id")))
+              Errors.craftResponseResult("Your link is invalid", Results.BadRequest,
+                ctx.request, env = env)
           }
-      }
     }
   }
 

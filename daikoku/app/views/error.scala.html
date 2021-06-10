@@ -1,6 +1,6 @@
 @import fr.maif.otoroshi.daikoku.env.DaikokuMode
 
-@(message: String, host: String, _env: fr.maif.otoroshi.daikoku.env.Env, tenant: fr.maif.otoroshi.daikoku.domain.Tenant, loginLink: String)
+@(message: String, host: String, _env: fr.maif.otoroshi.daikoku.env.Env, tenant: fr.maif.otoroshi.daikoku.domain.Tenant, loginLink: String, path: String)
 
 @customStyle = {
   @(tenant.colorTheme())
@@ -41,7 +41,8 @@
           <img src="/assets/images/daikoku.svg" alt="logo Daikoku" class="img-fluid" />
         </div>
         @if(tenant.tenantMode.toString == "Some(Maintenance)" ||
-        tenant.tenantMode.toString == "Some(Construction)") {
+        tenant.tenantMode.toString == "Some(Construction)" ||
+        path.contains("/account")) {
             <a href=@loginLink class="mt-5 btn btn-sm btn-access-negative" style="border: 1px solid #000">
               Retourner à la page d'accueil
             </a>
