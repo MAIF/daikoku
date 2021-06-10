@@ -7,21 +7,15 @@ export class LoginPage extends Component {
   state = {
     username: '',
     password: '',
-    error: null,
     message: null,
-    loginError: null,
+    loginError: null
   };
 
   onChange = (e) => {
-    this.setState({ [e.target.name]: e.target.value });
-  };
-
-  handleError = (mess) => {
-    return (err) => {
-      console.log(err && err.message ? err.message : err);
-      this.setState({ error: mess });
-      throw err;
-    };
+    this.setState({
+      [e.target.name]: e.target.value,
+      loginError: null
+    });
   };
 
   submit = (e) => {
@@ -62,25 +56,31 @@ export class LoginPage extends Component {
           </div>
 
           <form
-            className="form-horizontal text-left"
+            className="form-horizontal text-left mx-auto"
             method={this.props.method}
-            onSubmit={this.submit}>
+            onSubmit={this.submit}
+            style={{ maxWidth: "448px" }}>
             <input type="hidden" name="token" className="form-control" value={this.props.token} />
+            {loginError &&
+              <span className="alert alert-danger d-flex justify-content-center">
+                <Translation language={this.props.tenant.defaultLanguage} i18nkey="login.failed">
+                  User not found or invalid credentials
+                </Translation>
+              </span>
+            }
             <div className="form-group">
               <label className="control-label">
                 <Translation language={this.props.tenant.defaultLanguage} i18nkey="Email address">
                   Email address
                 </Translation>
               </label>
-              <div className="col-sm-10">
-                <input
-                  type="text"
-                  name="username"
-                  className="form-control"
-                  value={this.props.username}
-                  onChange={this.onChange}
-                />
-              </div>
+              <input
+                type="text"
+                name="username"
+                className="form-control"
+                value={this.props.username}
+                onChange={this.onChange}
+              />
             </div>
             <div className="form-group">
               <label className="control-label">
@@ -88,48 +88,40 @@ export class LoginPage extends Component {
                   Password
                 </Translation>
               </label>
-              <div className="col-sm-10">
-                <input
-                  type="password"
-                  name="password"
-                  className="form-control"
-                  value={this.props.password}
-                  onChange={this.onChange}
-                />
-              </div>
+              <input
+                type="password"
+                name="password"
+                className="form-control"
+                value={this.props.password}
+                onChange={this.onChange}
+              />
             </div>
-            {loginError && (
-              <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
-                <Translation language={this.props.tenant.defaultLanguage} i18nkey="login.failed">
-                  User not found or invalid credentials
+            <div className="form-group">
+              <button type="submit" className="btn btn-success btn-block">
+                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Login">
+                  Login
                 </Translation>
-              </p>
-            )}
-            <div className="form-group">
-              <label className="col-sm-2 control-label" />
-              <div className="col-sm-10">
-                <button type="submit" className="btn btn-access-negative" style={{ marginLeft: 0 }}>
-                  <Translation language={this.props.tenant.defaultLanguage} i18nkey="Login">
-                    Login
-                  </Translation>
-                </button>
-              </div>
+              </button>
             </div>
+            {this.props.provider == "Local" && <div className="form-group p-3 text-center" style={{
+              border: "1px solid var(--form-border-color, #586069)",
+              borderRadius: "6px"
+            }}>
+              <Translation language={this.props.tenant.defaultLanguage}
+                i18nkey="login_page.register_message"
+                replacements={[this.props.tenant.name]} />
+              <a href="/signup">
+                {' '}Create an account.
+              </a>
+            </div>}
             <div className="form-group">
-              <label className="col-sm-2 control-label" />
-              <div className="col-sm-10">
-                <a href="/reset">
-                  <Translation
-                    language={this.props.tenant.defaultLanguage}
-                    i18nkey="Forgot your password ?">
-                    Forgot your password ?
+              <a href="/reset">
+                <Translation
+                  language={this.props.tenant.defaultLanguage}
+                  i18nkey="Forgot your password ?">
+                  Forgot your password ?
                   </Translation>
-                </a>
-                <p>{!this.state.error && this.state.message}</p>
-                <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
-                  {!!this.state.error && this.state.error}
-                </p>
-              </div>
+              </a>
             </div>
           </form>
         </div>

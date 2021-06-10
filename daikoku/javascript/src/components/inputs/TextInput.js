@@ -8,15 +8,17 @@ export class TextInput extends Component {
   };
 
   render() {
+    const isColmunFormat = this.props.isColmunFormat;
+
     if (this.props.hide) {
       return null;
     }
     return (
-      <div className="form-group row">
-        <label htmlFor={`input-${this.props.label}`} className="col-xs-12 col-sm-2 col-form-label">
+      <div className={`form-group ${isColmunFormat ? '' : 'row'}`}>
+        <label htmlFor={`input-${this.props.label}`} className={isColmunFormat ? "" : "col-xs-12 col-sm-2 col-form-label"}>
           <Help text={this.props.help} label={this.props.label} />
         </label>
-        <div className="col-sm-10">
+        <div className={isColmunFormat ? "" : "col-sm-10"}>
           {(this.props.prefix || this.props.suffix) && (
             <div className="input-group">
               {this.props.prefix && <div className="input-group-addon">{this.props.prefix}</div>}

@@ -888,5 +888,6 @@
   "team_member.accept_invitation": "Accepter",
   "team_member.refuse_invitation": "Refuser",
   "team_member.has_joined": "Vous avez rejoint l'équipe",
-  "team_member.missing_token": "Jeton manquant"
+  "team_member.missing_token": "Jeton manquant",
+  "login_page.register_message": "Nouveau sur %s ?"
 }
