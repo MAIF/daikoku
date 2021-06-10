@@ -3005,7 +3005,8 @@ object json {
               .asOpt[DateTime](DateTimeFormat.reads)
               .getOrElse(DateTime.now()),
             team = (json \ "team").asOpt[String].getOrElse("team"),
-            notificationId = (json \ "notificationId").asOpt[String].getOrElse("")
+            notificationId = (json \ "notificationId").asOpt[String].getOrElse(""),
+            registered = (json \ "registered").asOpt[Boolean].getOrElse(false)
           )
         )
       } recover {
@@ -3016,7 +3017,8 @@ object json {
       "token" -> o.token,
       "createdAt" -> DateTimeFormat.writes(o.createdAt),
       "team" -> o.team,
-      "notificationId" -> o.notificationId
+      "notificationId" -> o.notificationId,
+      "registered" -> o.registered
     )
   }
 

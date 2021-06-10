@@ -1811,3 +1811,10 @@ export function validateInvitationToken(token) {
     body: JSON.stringify({ token })
   }).then(r => r.json())
 }
+
+export function removeTeamInvitation(token) {
+  return fetch(`/api/me/invitation`, {
+    ...POST_HEADERS,
+    method: 'DELETE'
+  })
+}

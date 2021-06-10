@@ -12,6 +12,7 @@ import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig, LdapSupport}
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
+import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
@@ -455,7 +456,12 @@ class TeamController(DaikokuAction: DaikokuAction,
       lastTenant = Some(ctx.tenant.id),
       personalToken = Some(IdGenerator.token(32)),
       defaultLanguage = None,
-      invitation = Some(UserInvitation(team = team, notificationId = notificationId))
+      invitation = Some(UserInvitation(
+        registered = false,
+        createdAt = DateTime.now(),
+        token = IdGenerator.token(128),
+        team = team,
+        notificationId = notificationId))
     )
 
     env.dataStore.userRepo

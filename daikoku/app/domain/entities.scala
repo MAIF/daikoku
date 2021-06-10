@@ -1017,10 +1017,11 @@ case class ApiIssue(id: ApiIssueId,
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)
 }
 
-case class UserInvitation(token: String = IdGenerator.token(128),
-                          createdAt: DateTime = DateTime.now(),
-                          team: String = "",
-                          notificationId: String = "")
+case class UserInvitation(registered: Boolean,
+                          token: String,
+                          createdAt: DateTime,
+                          team: String,
+                          notificationId: String)
   extends CanJson[UserInvitation] {
   override def asJson: JsValue = json.UserInvitationFormat.writes(this)
 }

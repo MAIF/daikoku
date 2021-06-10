@@ -29,6 +29,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
   function accept() {
     Services.acceptNotificationOfTeam(notificationId)
       .then(() => {
+        Services.removeTeamInvitation()
         toastr.success(t("team_member.has_joined", props.currentLanguage))
         goToHome();
       });
@@ -36,7 +37,10 @@ export const JoinTeamInvitationModal = withRouter((props) => {
 
   function refuse() {
     Services.rejectNotificationOfTeam(notificationId)
-      .then(goToHome);
+      .then(() => {
+        Services.removeTeamInvitation()
+        goToHome()
+      });
   }
 
   function goToHome() {

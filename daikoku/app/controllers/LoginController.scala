@@ -343,7 +343,7 @@ class LoginController(DaikokuAction: DaikokuAction,
     val password1 = (body \ "password1").as[String]
     val password2 = (body \ "password2").as[String]
     env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
-      case Some(user) if user.invitation.isEmpty =>
+      case Some(user) if user.invitation.isEmpty || user.invitation.get.registered =>
         FastFuture.successful(
           BadRequest(Json.obj("error" -> "Email address already exists")))
       case _ =>
@@ -412,7 +412,7 @@ class LoginController(DaikokuAction: DaikokuAction,
               env.dataStore.userRepo
                 .findOne(Json.obj("email" -> accountCreation.email))
                 .flatMap {
-                  case Some(user) if user.invitation.isEmpty =>
+                  case Some(user) if user.invitation.isEmpty || user.invitation.get.registered =>
                     FastFuture.successful(BadRequest(Json.obj("error" -> "Email address already exists")))
                   case optUser =>
                     val userId = optUser.map(_.id).getOrElse(UserId(BSONObjectID.generate().stringify))
@@ -441,7 +441,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                     )
 
                     val user = optUser.map { u =>
-                      getUser().copy(invitation = u.invitation)
+                      getUser().copy(invitation = u.invitation.map(_.copy(registered = true)))
                     }.getOrElse(getUser())
 
                     val userCreation = for {

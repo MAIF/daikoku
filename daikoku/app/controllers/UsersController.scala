@@ -15,7 +15,7 @@ import io.nayuki.qrcodegen.QrCode
 import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{AbstractController, ControllerComponents}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
 import java.time.Instant
@@ -379,10 +379,20 @@ class UsersController(DaikokuAction: DaikokuAction,
                 }.getOrElse(
                   BadRequest(Json.obj("error" -> "Missing invitation information"))
                 )
-              case None => BadRequest(Json.obj("error" -> "You're token is invalid or expired"))
+              case None => BadRequest(Json.obj("error" -> "You're token is invalid, expired or you are already in the team"))
             }
         case _ => FastFuture.successful(BadRequest(Json.obj("error" -> "Can't validate token")))
       }
+    }
+  }
+
+  def removeInvitation(): Action[AnyContent] = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent("@{user.name} has closed team invitation"))(ctx) {
+      env.dataStore.userRepo.save(ctx.user.copy(invitation = None))
+        .map {
+          case true => Ok(Json.obj("done" -> true))
+          case false => BadRequest(Json.obj("error" -> "Unable to remove data invitation"))
+        }
     }
   }
 }
