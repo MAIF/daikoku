@@ -222,8 +222,8 @@ export class TeamMembersSimpleComponent extends Component {
     if (this.props.tenant.authProvider === "LDAP")
       this.addLdapUserToTeam(email)
     else
-      Services.addUncheckedMembersToTeam(currentTeam._id, email)
-        .then(() => this.updateMembers(currentTeam));
+      Services.addUncheckedMembersToTeam(this.props.currentTeam._id, email)
+        .then(() => this.updateMembers(this.props.currentTeam));
   }
 
   render() {
