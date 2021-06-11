@@ -431,16 +431,13 @@ class TeamControllerSpec()
 
       var respGet =
         httpJsonCallBlocking(
-          path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant,
+          path = s"/api/teams/${teamOwnerId.value}/pending-members")(tenant,
                                                                      session)
       respGet.status mustBe 200
-      var addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
-        .reads((respGet.json \ "addableUsers").as[JsArray])
       var pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "pendingUsers").as[JsArray])
 
       pendingUsers.get.size mustBe 0
-      addableUsers.get.size mustBe 2
 
       var respInvit =
         httpJsonCallBlocking(
@@ -452,16 +449,13 @@ class TeamControllerSpec()
       respInvit.status mustBe 200
 
       respGet = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant,
+        path = s"/api/teams/${teamOwnerId.value}/pending-members")(tenant,
                                                                    session)
       respGet.status mustBe 200
-      addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
-        .reads((respGet.json \ "addableUsers").as[JsArray])
       pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "pendingUsers").as[JsArray])
 //
       pendingUsers.get.size mustBe 1
-      addableUsers.get.size mustBe 1
 
       respInvit = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/members",
@@ -472,17 +466,13 @@ class TeamControllerSpec()
       respInvit.status mustBe 200
 
       respGet = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/addable-members")(tenant,
+        path = s"/api/teams/${teamOwnerId.value}/pending-members")(tenant,
                                                                    session)
       respGet.status mustBe 200
-      addableUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
-        .reads((respGet.json \ "addableUsers").as[JsArray])
       pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
         .reads((respGet.json \ "pendingUsers").as[JsArray])
 
       pendingUsers.get.size mustBe 2
-      addableUsers.get.size mustBe 0
-
     }
 
     "not update team api creation permission" in {
