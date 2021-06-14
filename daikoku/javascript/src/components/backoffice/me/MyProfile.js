@@ -561,7 +561,7 @@ class MyProfileComponent extends Component {
               )}
               {user ? <div className="mt-3">
                 <h1 className="my-0">{user.name}</h1>
-                <span>{user.email}</span>
+                <span id="my_profile_email">{user.email}</span>
               </div> : <h1>Me</h1>}
             </div>
             {this.state.user && (
