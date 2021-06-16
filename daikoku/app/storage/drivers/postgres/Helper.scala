@@ -52,13 +52,22 @@ object Helper {
         out = s"(content->>${getParam(n)} is null)"
         outParams ++= Seq(key)
       } else {
-        out =
-          s"(content->>$$${n + 1} = $$${n + 2} OR content->$$${n + 1} @> $$${n + 3})"
-        outParams ++= Seq(
-          key,
-          value,
-          value
-        )
+        jsValue match {
+          case JsNumber(t) =>
+            out = s"(content->>$$${n + 1} = '$t' OR content->$$${n + 1} @> '$t')"
+            outParams ++= Seq(
+              key,
+              value
+            )
+          case _ =>
+            out =
+              s"(content->>$$${n + 1} = $$${n + 2} OR content->$$${n + 1} @> $$${n + 3}::jsonb)"
+            outParams ++= Seq(
+              key,
+              value,
+              s"$quotes$value$quotes"
+            )
+        }
       }
     }
 
@@ -73,119 +82,119 @@ object Helper {
 
     if (field._1 == "$push") {
       val entry = field._2.as[JsObject].fields.head
-      return (
-        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(
-          params.size)} || ${getParam(params.size + 1)})",
+      (
+        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(params.size)} || ${getParam(params.size + 1)})",
         params ++ Seq(entry._1, entry._2)
       )
-    }
+    } else {
 
-    field._2 match {
-      case value: JsObject =>
-        value.fields.headOption match {
-          case Some((key: String, _: JsValue)) if key == "$in" =>
-            val (a, b) = _convertTuple(value.fields.head, params)
-            (s"content->>${getParam(b.size)} IN $a", b ++ Seq(field._1))
+      field._2 match {
+        case value: JsObject =>
+          value.fields.headOption match {
+            case Some((key: String, _: JsValue)) if key == "$in" =>
+              val (a, b) = _convertTuple(value.fields.head, params)
+              (s"content->>${getParam(b.size)} IN $a", b ++ Seq(field._1))
 
-          case Some((key: String, _: JsValue)) if key == "$nin" =>
-            val (a, b) = _convertTuple(value.fields.head, params)
-            (s"content->>${getParam(b.size)} NOT IN $a", b ++ Seq(field._1))
+            case Some((key: String, _: JsValue)) if key == "$nin" =>
+              val (a, b) = _convertTuple(value.fields.head, params)
+              (s"content->>${getParam(b.size)} NOT IN $a", b ++ Seq(field._1))
 
-          case Some((key: String, _: JsValue)) if key == "$regex" =>
-            (
-              s"content->>${getParam(params.size)} ~ ${getParam(params.size + 1)}",
-              params ++ Seq(field._1, value.fields.head._2.as[String])
-            )
+            case Some((key: String, _: JsValue)) if key == "$regex" =>
+              (
+                s"content->>${getParam(params.size)} ~ ${getParam(params.size + 1)}",
+                params ++ Seq(field._1, value.fields.head._2.as[String])
+              )
 
-          case Some((key: String, _: JsValue)) if key == "$options" =>
-            ("1 = 1", params)
+            case Some((key: String, _: JsValue)) if key == "$options" =>
+              ("1 = 1", params)
 
-          case Some((key: String, _: JsValue)) if key == "$gte" =>
-            val (a, b) = _convertTuple(value.fields.head, params)
-            (
-              s"(content->>${getParam(b.size)})::bigint >= $a",
-              b ++ Seq(field._1)
-            )
+            case Some((key: String, _: JsValue)) if key == "$gte" =>
+              val (a, b) = _convertTuple(value.fields.head, params)
+              (
+                s"(content->>${getParam(b.size)})::bigint >= $a",
+                b ++ Seq(field._1)
+              )
 
-          case Some((key: String, _: JsValue)) if key == "$lte" =>
-            val (a, b) = _convertTuple(value.fields.head, params)
-            (
-              s"(content->>${getParam(b.size)})::bigint <= $a",
-              b ++ Seq(field._1)
-            )
+            case Some((key: String, _: JsValue)) if key == "$lte" =>
+              val (a, b) = _convertTuple(value.fields.head, params)
+              (
+                s"(content->>${getParam(b.size)})::bigint <= $a",
+                b ++ Seq(field._1)
+              )
 
-          case Some((key: String, _: JsValue)) if key == "$lt" =>
-            val (a, b) = _convertTuple(value.fields.head, params)
-            (
-              s"(content->>${getParam(b.size)})::bigint < $a",
-              b ++ Seq(field._1)
-            )
+            case Some((key: String, _: JsValue)) if key == "$lt" =>
+              val (a, b) = _convertTuple(value.fields.head, params)
+              (
+                s"(content->>${getParam(b.size)})::bigint < $a",
+                b ++ Seq(field._1)
+              )
 
-          case Some((key: String, _: JsValue)) if key == "$gt" =>
-            val (a, b) = _convertTuple(value.fields.head, params)
-            (
-              s"(content->>${getParam(b.size)})::bigint > $a",
-              b ++ Seq(field._1)
-            )
+            case Some((key: String, _: JsValue)) if key == "$gt" =>
+              val (a, b) = _convertTuple(value.fields.head, params)
+              (
+                s"(content->>${getParam(b.size)})::bigint > $a",
+                b ++ Seq(field._1)
+              )
 
-          case Some((key: String, _: JsValue)) if key == "$and" =>
-            _convertTuple(value.fields.head, params)
+            case Some((key: String, _: JsValue)) if key == "$and" =>
+              _convertTuple(value.fields.head, params)
 
-          case Some((key: String, _: JsValue)) if key == "$ne" =>
-            val (a, b) = _convertTuple(value.fields.head, params)
-            (
-              s"NOT (content->${getParam(b.size)} @> $a)",
-              b ++ Seq(quotes + field._1 + quotes)
-            )
+            case Some((key: String, _: JsValue)) if key == "$ne" =>
+              val (a, b) = _convertTuple(value.fields.head, params)
+              (
+                s"NOT (content->${getParam(b.size)} @> $a)",
+                b ++ Seq(field._1)
+              )
 
-          case e =>
-            logger.error(s"NOT IMPLEMENTED - $e")
-            ("1 = 1", params)
-        }
-      case value: JsArray if field._1 == "$or" =>
-        var orParams = params
-        var l: List[(String)] = List()
+            case e =>
+              logger.error(s"NOT IMPLEMENTED - $e")
+              ("1 = 1", params)
+          }
+        case value: JsArray if field._1 == "$or" =>
+          var orParams = params
+          var l: List[(String)] = List()
 
-        for (q <- value.as[List[JsObject]]) {
-          val res = convertQuery(q, orParams)
-          l = l :+ res._1
-          orParams = res._2
-        }
+          for (q <- value.as[List[JsObject]]) {
+            val res = convertQuery(q, orParams)
+            l = l :+ res._1
+            orParams = res._2
+          }
 
-        ("(" + l.mkString(" OR ") + ")", orParams)
+          ("(" + l.mkString(" OR ") + ")", orParams)
 
-      case value: JsArray if field._1 == "$in" =>
-        try {
+        case value: JsArray if field._1 == "$in" =>
+          try {
+            _inOperatorToString(value.as[List[String]], params)
+          } catch {
+            case _: Throwable => ("('DEFAULT VALUE TO AVOID EMPTY LIST')", params)
+          }
+
+        case value: JsArray if field._1 == "$nin" =>
           _inOperatorToString(value.as[List[String]], params)
-        } catch {
-          case _: Throwable => ("('DEFAULT VALUE TO AVOID EMPTY LIST')", params)
-        }
+        case value: JsValue if field._1 == "$lte" =>
+          (getParam(params.size), params ++ Seq(BigInt(value.toString)))
+        case value: JsValue if field._1 == "$gte" =>
+          (getParam(params.size), params ++ Seq(BigInt(value.toString)))
+        case value: JsValue if field._1 == "$gt" =>
+          (getParam(params.size), params ++ Seq(BigInt(value.toString)))
+        case value: JsValue if field._1 == "$lt" =>
+          (getParam(params.size), params ++ Seq(BigInt(value.toString)))
+        case value: JsValue if field._1 == "$ne" =>
+          (getParam(params.size), params ++ Seq(value.toString))
+        case value: JsArray if field._1 == "$and" =>
+          var orParams = params
+          var l: List[(String)] = List()
 
-      case value: JsArray if field._1 == "$nin" =>
-        _inOperatorToString(value.as[List[String]], params)
-      case value: JsValue if field._1 == "$lte" =>
-        (getParam(params.size), params ++ Seq(BigInt(value.toString)))
-      case value: JsValue if field._1 == "$gte" =>
-        (getParam(params.size), params ++ Seq(BigInt(value.toString)))
-      case value: JsValue if field._1 == "$gt" =>
-        (getParam(params.size), params ++ Seq(BigInt(value.toString)))
-      case value: JsValue if field._1 == "$lt" =>
-        (getParam(params.size), params ++ Seq(BigInt(value.toString)))
-      case value: JsValue if field._1 == "$ne" =>
-        (getParam(params.size), params ++ Seq(value.toString))
-      case value: JsArray if field._1 == "$and" =>
-        var orParams = params
-        var l: List[(String)] = List()
+          for (q <- value.as[List[JsObject]]) {
+            val res = convertQuery(q, orParams)
+            l = l :+ res._1
+            orParams = res._2
+          }
 
-        for (q <- value.as[List[JsObject]]) {
-          val res = convertQuery(q, orParams)
-          l = l :+ res._1
-          orParams = res._2
-        }
+          (l.mkString(" AND "), orParams)
 
-        (l.mkString(" AND "), orParams)
-
-      case value: Any => _manageProperty(field._1, value, params)
+        case value: Any => _manageProperty(field._1, value, params)
+      }
     }
   }
 

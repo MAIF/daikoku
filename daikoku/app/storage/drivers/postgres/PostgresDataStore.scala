@@ -577,11 +577,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   }
 
   override def importFromStream(source: Source[ByteString, _]): Future[Unit] = {
-    logger.error("importFromStream")
+    logger.debug("importFromStream")
 
     cleanDatabase()
       .map { value =>
-        println(value)
         source
           .via(Framing.delimiter(ByteString("\n"),
                                  1000000000,
@@ -1127,9 +1126,13 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           reactivePg.querySeq(s"SELECT * FROM $tableName") {
             rowToJson(_, format)
           } else {
-          val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value))
-          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql", params) {
+          val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
+
+          var out: String = s"SELECT * FROM $tableName WHERE $sql"
+          params.zipWithIndex.reverse.foreach { case (param, i) =>
+              out = out.replace("$"+(i+1), s"'$param'")
+          }
+          reactivePg.querySeq(out) {
             rowToJson(_, format)
           }
         }
@@ -1235,8 +1238,15 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
   override def exists(query: JsObject)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val (sql, params) = convertQuery(query)
+
+    var out: String = s"SELECT 1 FROM $tableName WHERE $sql"
+    params.zipWithIndex.reverse.foreach {
+      case (param, i) =>
+        out = out.replace("$"+(i+1), s"'$param'")
+    }
+
     reactivePg
-      .query(s"SELECT 1 FROM $tableName WHERE $sql", params)
+      .rawQuery(out)
       .map(_.size() > 0)
   }
 
@@ -1338,11 +1348,16 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)})")
 
     val (sql1, params1) = convertQuery(queryUpdate)
-    val (sql2, params2) = convertQuery(query)
-    reactivePg
-      .query(s"UPDATE $tableName SET $sql1 WHERE $sql2 RETURNING _id",
-             params1 ++ params2)
-      .map(_.size())
+    val (sql2, params2) = convertQuery(query, params1)
+
+    var out: String = s"UPDATE $tableName SET $sql1 WHERE $sql2 RETURNING _id"
+    params2.zipWithIndex.reverse.foreach {
+      case (param, i) =>
+        out = out.replace("$"+(i+1), s"'$param'")
+    }
+
+    reactivePg.rawQuery(out)
+      .map(_ => 1L)
   }
 
   override def findMaxByQuery(query: JsObject, field: String)(

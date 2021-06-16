@@ -61,8 +61,7 @@ class MessagesControllerSpec()
   }
 
   "a user" can {
-    // TODO - try to understand why this test is running on local and sometimes on github action
-    /*"get his message to admin team" in {
+    "get his message to admin team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
@@ -80,7 +79,7 @@ class MessagesControllerSpec()
       messages.isSuccess mustBe true
       messages.get.length mustBe 1
       messages.get.head.message mustBe "1"
-    }*/
+    }
 
     "get his previous messages" in {
       val closedDate = DateTime.now().minusHours(1)
@@ -92,19 +91,16 @@ class MessagesControllerSpec()
 
       val session = loginWithBlocking(user, tenant)
 
-      val respGetClosedDate = httpJsonCallBlocking(
-        s"/api/messages/${user.id.value}/last-date")(tenant, session)
+      val respGetClosedDate = httpJsonCallBlocking(s"/api/messages/${user.id.value}/last-date")(tenant, session)
       respGetClosedDate.status mustBe 200
       val lastClosedDate = (respGetClosedDate.json).as[Long]
       lastClosedDate mustBe closedDate.toDate.getTime
 
-      val respGet = httpJsonCallBlocking(
-        s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant,
-                                                                        session)
+      val respGet = httpJsonCallBlocking(s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant, session)
       respGet.status mustBe 200
-      val messages =
-        json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
+      val messages = json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
       messages.isSuccess mustBe true
+
       messages.get.length mustBe 1
       messages.get.head.message mustBe "1"
     }
@@ -135,9 +131,9 @@ class MessagesControllerSpec()
       respVerif.status mustBe 200
       val messagesVerif =
         (respVerif.json \ "messages").as(json.SeqMessagesFormat)
+
       messagesVerif.length mustBe 1
       messagesVerif.count(_.readBy.contains(tenantAdminId)) mustBe 1
-
     }
 
     "send a message to admin team" in {

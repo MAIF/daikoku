@@ -135,8 +135,8 @@ class ReactivePg(pool: Pool, configuration: Configuration)(
     pool.query(sql).executeAsync()
 
   def query(sql: String, params: Seq[AnyRef] = Seq.empty) =
-    pool
-      .preparedQuery(sql)
-      .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
-      .scala
+      pool
+        .preparedQuery(sql)
+        .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+        .scala
 }

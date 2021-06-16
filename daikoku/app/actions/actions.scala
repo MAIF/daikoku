@@ -26,16 +26,20 @@ object tenantSecurity {
           _ =>
             env.dataStore.teamRepo
               .forTenant(tenant)
-              .exists(Json.obj(
-                "apisCreationPermission" -> true,
-                "users" -> Json.obj("$elemMatch" -> Json.obj(
-                  "userId" -> user.id.asJson,
-                  "$or" -> Json.arr(
-                    Json.obj("teamPermission" -> JsString(Administrator.name)),
-                    Json.obj("teamPermission" -> JsString(ApiEditor.name))
-                  )
-                ))
-              )))
+              .find(Json.obj("apisCreationPermission" -> true))
+              .map { teams =>
+                if (teams.isEmpty)
+                  false
+                else
+                  teams.exists { team =>
+                    team.users.exists { u: UserWithPermission =>
+                      user.id == u.userId ||
+                        u.teamPermission.name == Administrator.name ||
+                        u.teamPermission.name == ApiEditor.name
+                    }
+                  }
+              }
+        )
         .getOrElse(FastFuture.successful(true))
     }
   }
