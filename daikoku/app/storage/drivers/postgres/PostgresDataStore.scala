@@ -1130,8 +1130,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql"
           params.zipWithIndex.reverse.foreach { case (param, i) =>
-              out = out.replace("$"+(i+1), s"'$param'")
+            out = out.replace("$"+(i+1), s"'$param'")
           }
+
           reactivePg.querySeq(out) {
             rowToJson(_, format)
           }
@@ -1239,14 +1240,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       implicit ec: ExecutionContext): Future[Boolean] = {
     val (sql, params) = convertQuery(query)
 
-    var out: String = s"SELECT 1 FROM $tableName WHERE $sql"
-    params.zipWithIndex.reverse.foreach {
-      case (param, i) =>
-        out = out.replace("$"+(i+1), s"'$param'")
-    }
-
     reactivePg
-      .rawQuery(out)
+      .query(s"SELECT 1 FROM $tableName WHERE $sql", params)
       .map(_.size() > 0)
   }
 

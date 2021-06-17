@@ -87,7 +87,6 @@ object Helper {
         params ++ Seq(entry._1, entry._2)
       )
     } else {
-
       field._2 match {
         case value: JsObject =>
           value.fields.headOption match {
@@ -142,10 +141,9 @@ object Helper {
             case Some((key: String, _: JsValue)) if key == "$ne" =>
               val (a, b) = _convertTuple(value.fields.head, params)
               (
-                s"NOT (content->${getParam(b.size)} @> $a)",
-                b ++ Seq(field._1)
+                s"(content->>${getParam(b.size)} <> ${getParam(b.size +1)})",
+                b ++ Seq(_removeQuotes(field._1), _removeQuotes(value.fields.head._2))
               )
-
             case e =>
               logger.error(s"NOT IMPLEMENTED - $e")
               ("1 = 1", params)
