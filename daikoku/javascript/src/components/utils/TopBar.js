@@ -35,76 +35,80 @@ const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) =>
   switch (loginProvider) {
     case 'Local':
       return (
-        <div className="d-flex justify-content-end mt-1 mt-lg-0">
-          <div className="dropdown">
-            <img
-              style={{ width: 38, marginLeft: '5px' }}
-              src={user.picture}
-              className="dropdown-toggle logo-anonymous user-logo"
-              data-toggle="dropdown"
-              alt="user menu"
-            />
-            <div className="dropdown-menu dropdown-menu-right" style={{ width: '300px' }}>
-              <form className="form-horizontal text-left mx-1" onSubmit={submit} method="POST">
-                <div className="form-group">
-                  <label htmlFor="username">
-                    <Translation i18nkey="Email address" language={currentLanguage}>
-                      Email address
-                    </Translation>
-                  </label>
-                  <input
-                    id="username"
-                    type="text"
-                    name="username"
-                    className="form-control"
-                    value={login}
-                    onChange={(e) => setLogin(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="password">
-                    <Translation i18nkey="Password" language={currentLanguage}>
-                      Password
-                    </Translation>
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    name="password"
-                    className="form-control"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <small className="form-text text-muted">
-                    <a href="/reset">
-                      <Translation i18nkey="Forgot your password ?" language={currentLanguage}>
-                        Forgot your password ?
-                      </Translation>
-                    </a>
-                  </small>
-                </div>
-                {loginError && (
-                  <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
-                    <Translation language={currentLanguage} i18nkey="login.failed">
-                      User not found or invalid credentials
-                    </Translation>
-                  </p>
-                )}
-                <button type="submit" className="btn btn-access-negative" style={{ marginLeft: 0 }}>
-                  <Translation i18nkey="Connect to your account" language={currentLanguage}>
-                    Connect to your account
-                  </Translation>
-                </button>
-              </form>
-              <div className="dropdown-divider" />
-              <a className="dropdown-item" href="/signup">
-                <Translation i18nkey="Create account" language={currentLanguage}>
-                  Create account
-                </Translation>
-              </a>
-            </div>
-          </div>
-        </div>
+        <>
+          <button type="button" className="btn btn-secondary mx-1">{t('Login', currentLanguage)}</button>
+          <button type="button" className="btn btn-primary">{t('Register', currentLanguage)}</button>
+        </>
+        // <div className="d-flex justify-content-end mt-1 mt-lg-0">
+        //   <div className="dropdown">
+        //     <img
+        //       style={{ width: 38, marginLeft: '5px' }}
+        //       src={user.picture}
+        //       className="dropdown-toggle logo-anonymous user-logo"
+        //       data-toggle="dropdown"
+        //       alt="user menu"
+        //     />
+        //     <div className="dropdown-menu dropdown-menu-right" style={{ width: '300px' }}>
+        //       <form className="form-horizontal text-left mx-1" onSubmit={submit} method="POST">
+        //         <div className="form-group">
+        //           <label htmlFor="username">
+        //             <Translation i18nkey="Email address" language={currentLanguage}>
+        //               Email address
+        //             </Translation>
+        //           </label>
+        //           <input
+        //             id="username"
+        //             type="text"
+        //             name="username"
+        //             className="form-control"
+        //             value={login}
+        //             onChange={(e) => setLogin(e.target.value)}
+        //           />
+        //         </div>
+        //         <div className="form-group">
+        //           <label htmlFor="password">
+        //             <Translation i18nkey="Password" language={currentLanguage}>
+        //               Password
+        //             </Translation>
+        //           </label>
+        //           <input
+        //             id="password"
+        //             type="password"
+        //             name="password"
+        //             className="form-control"
+        //             value={password}
+        //             onChange={(e) => setPassword(e.target.value)}
+        //           />
+        //           <small className="form-text text-muted">
+        //             <a href="/reset">
+        //               <Translation i18nkey="Forgot your password ?" language={currentLanguage}>
+        //                 Forgot your password ?
+        //               </Translation>
+        //             </a>
+        //           </small>
+        //         </div>
+        //         {loginError && (
+        //           <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
+        //             <Translation language={currentLanguage} i18nkey="login.failed">
+        //               User not found or invalid credentials
+        //             </Translation>
+        //           </p>
+        //         )}
+        //         <button type="submit" className="btn btn-access-negative" style={{ marginLeft: 0 }}>
+        //           <Translation i18nkey="Connect to your account" language={currentLanguage}>
+        //             Connect to your account
+        //           </Translation>
+        //         </button>
+        //       </form>
+        //       <div className="dropdown-divider" />
+        //       <a className="dropdown-item" href="/signup">
+        //         <Translation i18nkey="Create account" language={currentLanguage}>
+        //           Create account
+        //         </Translation>
+        //       </a>
+        //     </div>
+        //   </div>
+        // </div>
       );
     case 'OAuth2':
     case 'LDAP':
@@ -270,9 +274,9 @@ const TopBarComponent = (props) => {
   const isDefaultLogo = props.tenant.logo === '/assets/images/daikoku.svg';
   return (
     <header className={impersonator ? 'impersonator-topbar-mb' : ''}>
-      {}
+      { }
       <div className="navbar shadow-sm fixed-top">
-        <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end">
+        <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
             <div className="pl-1 pr-2">
               <Link
