@@ -35,7 +35,7 @@ describe('Profile page', () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/settings/me')
-      .get('#my_profile_email').should('have.text', 'User - user@foo.bar');
+      .get('#my_profile_email').should('have.text', 'user@foo.bar');
   });
 });
 
