@@ -3,6 +3,7 @@ import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import 'swagger-ui-dist/swagger-ui.css';
 import { LoginOrRegisterModal } from '../..';
+import { t } from '../../../locales';
 
 export class ApiSwagger extends Component {
 
@@ -16,7 +17,7 @@ export class ApiSwagger extends Component {
       fetch(`/api/teams/${this.props.teamId}/apis/${this.props.api._id}/swagger.json`)
         .then(res => {
           if (res.status > 300)
-            this.setState({ error: "Can't retrieve api reference" });
+            this.setState({ error: t('api_swagger.failed_to_retrieve_swagger', this.props.currentLanguage) });
           else
             this.drawSwaggerUi();
           setTimeout(() => {
@@ -28,7 +29,7 @@ export class ApiSwagger extends Component {
           }, 500);
         })
     else
-      this.setState({ info: "Try it is not enabled on this api." })
+      this.setState({ info: t("api_swagger.try_it_error", this.props.currentLanguage) })
   }
 
   drawSwaggerUi = () => {
@@ -102,7 +103,7 @@ export class ApiSwagger extends Component {
     if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
       return <LoginOrRegisterModal {...this.props}
         showOnlyMessage={true}
-        message={"Try it is only available for registered users."} />
+        message={t('api_swagger.guest_user', this.props.currentLanguage)} />
 
     const api = this.props.api;
     if (!api)

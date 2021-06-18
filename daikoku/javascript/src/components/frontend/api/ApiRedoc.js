@@ -15,7 +15,7 @@ export class ApiRedoc extends Component {
 
       fetch(url).then(res => {
         if (res.status > 300)
-          this.setState({ error: "An error occurred while retrieving the API reference" });
+          this.setState({ error: t('api_redoc.failed_to_retrieve_doc', this.props.currentLanguage) });
         else {
           // eslint-disable-next-line no-undef
           Redoc.init(
@@ -30,16 +30,16 @@ export class ApiRedoc extends Component {
         }
       })
     } else
-      this.setState({ error: "You're not registered. You can't see API reference." })
+      this.setState({ error: t('api_redoc.guest_user', this.props.currentLanguage) })
   }
 
   render() {
     const { tenant, connectedUser } = this.props;
-    
+
     if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
       return <LoginOrRegisterModal {...this.props}
         showOnlyMessage={true}
-        message={"The api reference is only available for registered users."} />
+        message={t('api_redoc.guest_user', this.props.currentLanguage)} />
 
     if (this.state.error)
       return <div className="d-flex justify-content-center w-100">
