@@ -773,6 +773,7 @@
   "Custom header": "Entête personnalisé",
   "api.custom.header.help": "Utiliser {{title}} pour inserer le nom de l'API, {{ description }} pour la petite description. Ajouter la classe \"btn-edit\" pour créer un lien vers la page d'edition de l'API",
   "get.apikey.requires.login": "Obtenir une clé d'API nécessite que vous soyez connecté",
+  "consume.apikey": "Consommer une API",
   "Mongo migration": "Migration de MongoDB vers Postgres",
   "migration in progress ...": "migration en cours ...",
   "migrate database": "migrer la base",
@@ -887,5 +888,12 @@
   "team_member.refuse_invitation": "Refuser",
   "team_member.has_joined": "Vous avez rejoint l'équipe",
   "team_member.missing_token": "Jeton manquant",
-  "login_page.register_message": "Nouveau sur %s ?"
+  "login_page.register_message": "Nouveau sur %s ?",
+  "Register": "S'inscrire",
+  "api_data.missing": "%s est manquant(es) pour cette api.",
+  "api_redoc.guest_user": "L'api reference est uniquement disponible pour les utilisateurs connectés.",
+  "api_redoc.failed_to_retrieve_doc": "Une erreur est survenue lors la récupération de l'api référence.",
+  "api_swagger.failed_to_retrieve_swagger": "Can't retrieve api reference",
+  "api_swagger.try_it_error": "Le Try it n'est pas activé sur cette api.",
+  "api_swagger.guest_user": "Le Try it est uniquement disponible pour les utilisateurs connectés."
 }

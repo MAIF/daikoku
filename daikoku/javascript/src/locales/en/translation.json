@@ -773,6 +773,7 @@
     "Custom header": "Custom header",
     "api.custom.header.help": "Use {{title}} to insert API title, {{ description }} to insert API small description. Add \"btn-edit\" class to link to admin API edition admin page",
     "get.apikey.requires.login": "Get an API key requires you to be logged in",
+    "consume.apikey": "Consume an API",
     "Mongo migration": "MongoDB to Postgres migration",
     "migration in progress ...": "migration in progress ...",
     "migrate database": "migrate database",
@@ -887,5 +888,12 @@
     "team_member.refuse_invitation": "Refuse",
     "team_member.has_joined": "You're now in the team",
     "team_member.missing_token": "Missing token",
-    "login_page.register_message" : "New to %s ?"
+    "login_page.register_message" : "New to %s ?",
+    "Register": "Register",
+    "api_data.missing": "%s is missing for this api.",
+    "api_redoc.guest_user": "The api reference is only available for registered users.",
+    "api_redoc.failed_to_retrieve_doc": "An error occurred while retrieving the API reference",
+    "api_swagger.failed_to_retrieve_swagger": "Can't retrieve api reference",
+    "api_swagger.try_it_error": "Try it is not enabled on this api.",
+    "api_swagger.guest_user": "Try it is only available for registered users."
 }

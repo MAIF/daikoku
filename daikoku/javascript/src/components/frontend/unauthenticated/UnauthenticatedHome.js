@@ -14,7 +14,8 @@ export class UnauthenticatedHomeComponent extends Component {
 
   render() {
     const content = this.props.tenant.unloggedHome || '';
-    const displayInformation = (this.props.location ? this.props.location.pathname : "") !== "/2fa";
+    const location = this.props.location ? this.props.location.pathname : ""
+    const displayInformation =  location !== "/2fa" && location !== "/signup";
     
     return (
       <main role="main" className="row">

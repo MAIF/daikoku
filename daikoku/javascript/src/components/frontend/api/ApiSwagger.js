@@ -2,8 +2,36 @@ import React, { Component } from 'react';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import 'swagger-ui-dist/swagger-ui.css';
+import { LoginOrRegisterModal } from '../..';
+import { t } from '../../../locales';
 
 export class ApiSwagger extends Component {
+
+  state = {
+    error: undefined,
+    info: undefined
+  }
+
+  componentDidMount() {
+    if (this.props.api.testing.enabled)
+      fetch(`/api/teams/${this.props.teamId}/apis/${this.props.api._id}/swagger.json`)
+        .then(res => {
+          if (res.status > 300)
+            this.setState({ error: t('api_swagger.failed_to_retrieve_swagger', this.props.currentLanguage) });
+          else
+            this.drawSwaggerUi();
+          setTimeout(() => {
+            [...document.querySelectorAll('.scheme-container')].map((i) => (i.style.display = 'none'));
+            [...document.querySelectorAll('.information-container')].map(
+              (i) => (i.style.display = 'none')
+            );
+            this.handleAuthorize(false);
+          }, 500);
+        })
+    else
+      this.setState({ info: t("api_swagger.try_it_error", this.props.currentLanguage) })
+  }
+
   drawSwaggerUi = () => {
     if (this.props.api.swagger) {
       window.ui = SwaggerUIBundle({
@@ -38,17 +66,6 @@ export class ApiSwagger extends Component {
     }
   };
 
-  componentDidMount() {
-    this.drawSwaggerUi();
-    setTimeout(() => {
-      [...document.querySelectorAll('.scheme-container')].map((i) => (i.style.display = 'none'));
-      [...document.querySelectorAll('.information-container')].map(
-        (i) => (i.style.display = 'none')
-      );
-      this.handleAuthorize(false);
-    }, 500);
-  }
-
   handleAuthorize = (canCreate) => {
     // TODO: at start, try to see if user has test key for it and use it
     //if (canCreate && this.props.testing.auth === "ApiKey") {
@@ -81,15 +98,31 @@ export class ApiSwagger extends Component {
   };
 
   render() {
+    const { tenant, connectedUser } = this.props;
+
+    if (connectedUser.isGuest && tenant.apiReferenceHideForGuest)
+      return <LoginOrRegisterModal {...this.props}
+        showOnlyMessage={true}
+        message={t('api_swagger.guest_user', this.props.currentLanguage)} />
+
     const api = this.props.api;
-    if (!api) {
-      return null;
-    }
-    return (
-      <div style={{ width: '100%' }}>
-        {/*<button type="button" className="btn btn-success" onClick={e => this.handleAuthorize(true)}>Use apikey (soon)</button>*/}
-        <div id="swagger-ui" style={{ width: '100%' }} />
+    if (!api)
+      return <div>
+        {t('api_data.missing', this.props.currentLanguage, false, undefined, ["Swagger"])}
+      </div>;
+
+    if (this.state.error || this.state.info)
+      return <div className="d-flex justify-content-center w-100">
+        <span className={`alert alert-${this.state.error ? 'danger' : 'info'} text-center`}>
+          {this.state.error ? this.state.error : this.state.info}
+        </span>
       </div>
-    );
+    else
+      return (
+        <div style={{ width: '100%' }}>
+          {/*<button type="button" className="btn btn-success" onClick={e => this.handleAuthorize(true)}>Use apikey (soon)</button>*/}
+          <div id="swagger-ui" style={{ width: '100%' }} />
+        </div>
+      );
   }
 }

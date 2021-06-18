@@ -326,6 +326,7 @@ const ApiListComponent = (props) => {
                 }
                 currentLanguage={props.currentLanguage}
                 view={view}
+                connectedUser={props.connectedUser}
               />
             ))}
           </div>
@@ -346,7 +347,7 @@ const ApiListComponent = (props) => {
             />
           </div>
         </div>
-        <div className="d-flex col-3 col-sm-3 text-muted flex-column p-3">
+        <div className="d-flex col-3 col-sm-3 text-muted flex-column px-3">
           {!props.team && !props.connectedUser.isGuest && (
             <YourTeams
               teams={props.myTeams}

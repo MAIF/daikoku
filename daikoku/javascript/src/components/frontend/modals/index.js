@@ -9,3 +9,4 @@ export * from './SubscriptionMetadataModal';
 export * from './TestingApiKeyModal';
 export * from './TeamInvitationModal';
 export * from './JoinTeamInvitationModal';
+export * from './LoginOrRegisterModal';

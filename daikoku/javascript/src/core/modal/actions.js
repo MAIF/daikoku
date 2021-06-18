@@ -40,6 +40,14 @@ export const openSaveOrCancelModal = (modalProps) => (dispatch) => {
   });
 };
 
+export const openLoginOrRegisterModal = (modalProps) => (dispatch) => {
+  return dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'loginOrRegisterModal',
+  });
+};
+
 export const openSubMetadataModal = (modalProps) => (dispatch) => {
   return dispatch({
     type: OPEN_MODAL,
