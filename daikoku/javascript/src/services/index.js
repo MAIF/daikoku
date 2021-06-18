@@ -467,8 +467,8 @@ export function deleteTeam(teamId) {
   }).then((r) => r.json());
 }
 
-export function addableUsersForTeam(teamId) {
-  return fetch(`/api/teams/${teamId}/addable-members`, {
+export function pendingMembers(teamId) {
+  return fetch(`/api/teams/${teamId}/pending-members`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -630,6 +630,20 @@ export function addMembersToTeam(teamId, members) {
     },
     body: JSON.stringify({ members }),
   }).then((r) => r.json());
+}
+
+export function addUncheckedMembersToTeam(teamId, email) {
+  return fetch(`/api/teams/${teamId}/unchecked-members`, {
+    ...POST_HEADERS,
+    body: JSON.stringify({ email }),
+  }).then((r) => r.json());
+}
+
+export function removeInvitation(teamId, userId) {
+  return fetch(`/api/teams/${teamId}/members/${userId}/invitations`, {
+    ...POST_HEADERS,
+    method: 'DELETE'
+  })
 }
 
 export function updateTeamMemberPermission(teamId, members, permission) {
@@ -1789,4 +1803,18 @@ export function selfVerify2faCode(code) {
       'Content-Type': 'application/json',
     },
   });
+}
+
+export function validateInvitationToken(token) {
+  return fetch(`/api/me/invitation/_check`, {
+    ...POST_HEADERS,
+    body: JSON.stringify({ token })
+  }).then(r => r.json())
+}
+
+export function removeTeamInvitation(token) {
+  return fetch(`/api/me/invitation`, {
+    ...POST_HEADERS,
+    method: 'DELETE'
+  })
 }

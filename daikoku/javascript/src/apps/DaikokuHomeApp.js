@@ -17,25 +17,34 @@ const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 
 class Gravatar extends Component {
   setGravatarLink = () => {
-    const email = this.props.rawValue.email.toLowerCase().trim();
+    const email = (this.props.rawValue.email || Date.now().toString()).toLowerCase().trim();
     const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
-    this.props.changeValue('picture', url);
+    this.props.changeValue('avatar', url);
   };
 
+  gravatarButton = () => (
+    <button type="button" className={"btn btn-access " + (this.props.fullWidth ? "btn-block" : "")} onClick={this.setGravatarLink}>
+      <i className="fas fa-user-circle mr-1" />
+      <Translation i18nkey="Set avatar from Gravatar" language={this.props.currentLanguage}>
+        Set avatar from Gravatar
+      </Translation>
+    </button>
+  )
+
   render() {
-    return (
-      <div className="form-group row">
-        <label className="col-xs-12 col-sm-2 col-form-label" />
-        <div className="col-sm-10">
-          <button type="button" className="btn btn-access" onClick={this.setGravatarLink}>
-            <i className="fas fa-user-circle mr-1" />
-            <Translation i18nkey="Set avatar from Gravatar" language={this.props.currentLanguage}>
-              Set avatar from Gravatar
-            </Translation>
-          </button>
+    const { fullWidth } = this.props;
+
+    if (fullWidth)
+      return this.gravatarButton()
+    else
+      return (
+        <div className="form-group row">
+          <label className="col-xs-12 col-sm-2 col-form-label" />
+          <div className="col-sm-10">
+            {this.gravatarButton()}
+          </div>
         </div>
-      </div>
-    );
+      );
   }
 }
 
@@ -51,6 +60,7 @@ export class SignupComponent extends Component {
       type: 'string',
       props: {
         label: t('Name', currentLanguage),
+        isColmunFormat: true
       },
     },
     email: {
@@ -58,12 +68,14 @@ export class SignupComponent extends Component {
       props: {
         type: 'email',
         label: t('Email address', currentLanguage),
+        isColmunFormat: true
       },
     },
     avatar: {
       type: 'string',
       props: {
         label: t('Avatar', currentLanguage),
+        isColmunFormat: true
       },
     },
     password1: {
@@ -71,6 +83,7 @@ export class SignupComponent extends Component {
       props: {
         type: 'password',
         label: t('Password', currentLanguage),
+        isColmunFormat: true
       },
     },
     password2: {
@@ -78,27 +91,26 @@ export class SignupComponent extends Component {
       props: {
         type: 'password',
         label: t('Confirm password', currentLanguage),
+        isColmunFormat: true
       },
     },
     gravatar: {
       type: Gravatar,
       props: {
         currentLanguage: currentLanguage,
+        fullWidth: true
       },
     },
     createAccount: {
       type: () => (
-        <div className="d-flex justify-content-end">
+        <div className="my-3">
           <button
             type="button"
-            className="btn btn-access-negative m-2"
+            className="btn btn-success btn-block"
             onClick={this.createAccount}>
-            <span>
-              <i className="fas fa-save mr-1" />
-              <Translation i18nkey="Create account" language={currentLanguage}>
-                Create account
+            <Translation i18nkey="Create account" language={currentLanguage}>
+              Create account
               </Translation>
-            </span>
           </button>
         </div>
       ),
@@ -189,19 +201,14 @@ export class SignupComponent extends Component {
     }
 
     return (
-      <div className="col">
+      <div className="section mx-auto mt-3 p-3" style={{ maxWidth: "448px" }}>
         <h1 className="h1-rwd-reduce text-center">
           <Translation i18nkey="Create account" language={this.props.currentLanguage}>
             Create account
           </Translation>
         </h1>
-        {this.state.state === 'error' && (
-          <div className="alert alert-danger" role="alert">
-            {this.state.error}
-          </div>
-        )}
         {this.state.user && (
-          <div className="d-flex justify-content-end align-items-center my-4">
+          <div className="d-flex justify-content-center align-items-center my-4">
             <img
               src={this.state.user.avatar}
               style={{ width: 60, borderRadius: '50%', backgroundColor: 'white' }}
@@ -209,6 +216,11 @@ export class SignupComponent extends Component {
             />
           </div>
         )}
+        {this.state.error &&
+          <div className="alert alert-danger text-center" role="alert">
+            {this.state.error}
+          </div>
+        }
         {this.state.user && (
           <React.Suspense fallback={<Spinner />}>
             <LazyForm
@@ -216,7 +228,7 @@ export class SignupComponent extends Component {
               schema={this.formSchema(this.props.currentLanguage)}
               value={this.state.user}
               onChange={(user) => {
-                this.setState({ user });
+                this.setState({ user, error: undefined });
               }}
             />
           </React.Suspense>
@@ -455,7 +467,7 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
             {t('2fa.verify_code', currentLanguage)}
           </button>
           <a href="#" onClick={toggleBackupCodesInput} className="text-center mt-3">
-            {t('2fa.lost_device_message', currentLanguage)}  
+            {t('2fa.lost_device_message', currentLanguage)}
           </a>
         </>}
     </div>

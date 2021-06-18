@@ -49,7 +49,7 @@ class ConsoleMailer() extends Mailer {
         "html" -> Seq(body)
       )
     )
-    logger.info(s"Sent email: ${email}")
+    logger.info(s"Sent email: $email")
     FastFuture.successful(())
   }
 }

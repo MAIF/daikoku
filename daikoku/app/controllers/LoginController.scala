@@ -343,10 +343,10 @@ class LoginController(DaikokuAction: DaikokuAction,
     val password1 = (body \ "password1").as[String]
     val password2 = (body \ "password2").as[String]
     env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
-      case Some(_) =>
+      case Some(user) if user.invitation.isEmpty || user.invitation.get.registered =>
         FastFuture.successful(
           BadRequest(Json.obj("error" -> "Email address already exists")))
-      case None => {
+      case _ =>
         validateUserCreationForm(name, email, password1, password2) match {
           case Left(msg) =>
             FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
@@ -388,15 +388,14 @@ class LoginController(DaikokuAction: DaikokuAction,
               }
           }
         }
-      }
     }
   }
 
   def createUserValidation() = DaikokuTenantAction.async { ctx =>
     ctx.request.getQueryString("id") match {
-      case None =>
-        FastFuture.successful(BadRequest(Json.obj("error" -> "Id not found")))
-      case Some(id) => {
+      case None => Errors.craftResponseResult("The user creation has failed.", Results.BadRequest,
+        ctx.request, env = env)
+      case Some(id) =>
         env.dataStore.accountCreationRepo
           .findOneNotDeleted(Json.obj("randomId" -> id))
           .flatMap {
@@ -413,11 +412,11 @@ class LoginController(DaikokuAction: DaikokuAction,
               env.dataStore.userRepo
                 .findOne(Json.obj("email" -> accountCreation.email))
                 .flatMap {
-                  case Some(_) =>
-                    FastFuture.successful(BadRequest(
-                      Json.obj("error" -> "Email address already exists")))
-                  case None => {
-                    val userId = UserId(BSONObjectID.generate().stringify)
+                  case Some(user) if user.invitation.isEmpty || user.invitation.get.registered =>
+                    Errors.craftResponseResult("This account is already enabled.", Results.BadRequest,
+                      ctx.request, env = env)
+                  case optUser =>
+                    val userId = optUser.map(_.id).getOrElse(UserId(BSONObjectID.generate().stringify))
                     val team = Team(
                       id = TeamId(BSONObjectID.generate().stringify),
                       tenant = ctx.tenant.id,
@@ -428,7 +427,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                       subscriptions = Seq.empty,
                       authorizedOtoroshiGroups = Set.empty
                     )
-                    val user = User(
+                    def getUser() = User(
                       id = userId,
                       tenants = Set(ctx.tenant.id),
                       origins = Set(AuthProvider.Otoroshi),
@@ -441,6 +440,11 @@ class LoginController(DaikokuAction: DaikokuAction,
                       personalToken = Some(IdGenerator.token(32)),
                       defaultLanguage = None
                     )
+
+                    val user = optUser.map { u =>
+                      getUser().copy(invitation = u.invitation.map(_.copy(registered = true)))
+                    }.getOrElse(getUser())
+
                     val userCreation = for {
                       _ <- env.dataStore.teamRepo
                         .forTenant(ctx.tenant.id)
@@ -453,14 +457,12 @@ class LoginController(DaikokuAction: DaikokuAction,
                       Status(302)(Json.obj("Location" -> "/"))
                         .withHeaders("Location" -> "/")
                     }
-                  }
                 }
             }
             case _ =>
-              FastFuture.successful(
-                BadRequest(Json.obj("error" -> "Bad creation id")))
+              Errors.craftResponseResult("Your link is invalid", Results.BadRequest,
+                ctx.request, env = env)
           }
-      }
     }
   }
 

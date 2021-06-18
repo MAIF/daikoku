@@ -783,8 +783,6 @@
     "Disable maintenance": "Disable maintenance",
     "login.failed": "User not found or invalid credentials",
     "or": "or",
-    "Find LDAP member by email ...": "Find LDAP member by email ...",
-    "LDAP user found": "Utilisateur LDAP trouvé",
     "User already in team": "User already in team",
     "User already invited": "User already invited",
     "Connect timeout": "Connect timeout",
@@ -878,5 +876,16 @@
     "unstar": "Unstar",
     "Edit": "Edit",
     "Kafka host validation": "Kafka hostname validation",
-    "kafka.audit.hostValidation.help": "Disable server hostname validation using server certificate by Kafka"
+    "kafka.audit.hostValidation.help": "Disable server hostname validation using server certificate by Kafka",
+    "team_member.no_pending_members": "You haven't invited any collaborators yet",
+    "team_member.confirm_remove_invitation": "Are you sure to remove this invitation ?",
+    "team_member.invit_user": "Invit a collaborator",
+    "team_member.invite_user_to": "Invite a collaborator to ",
+    "team_member.send_email": "Send invitation",
+    "team_member.invitation": "Join %s",
+    "team_member.accept_invitation": "Accept",
+    "team_member.refuse_invitation": "Refuse",
+    "team_member.has_joined": "You're now in the team",
+    "team_member.missing_token": "Missing token",
+    "login_page.register_message" : "New to %s ?"
 }

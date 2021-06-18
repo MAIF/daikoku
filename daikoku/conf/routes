@@ -88,6 +88,10 @@ GET     /api/me/_2fa                                    fr.maif.otoroshi.daikoku
 GET     /api/me/_2fa/enable                             fr.maif.otoroshi.daikoku.ctrls.UsersController.enable2fa(code: Option[String] ?= None)
 ### NoDocs ###
 DELETE  /api/me/_2fa                                    fr.maif.otoroshi.daikoku.ctrls.UsersController.disable2fa()
+### NoDocs ###
+POST    /api/me/invitation/_check                       fr.maif.otoroshi.daikoku.ctrls.UsersController.checkTokenInvitation()
+### NoDocs ###
+DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation()
 
 ### NoDocs ###
 POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
@@ -100,7 +104,7 @@ GET     /api/apis/:apiId/pages/:id                      fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/teams/:teamId/subscriptions/:id/name       fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiSubscriptionCustomName(teamId, id)
 ### NoDocs ###
-PUT		  /api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
+PUT		/api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
 
 
 ### NoDocs ###
@@ -304,6 +308,8 @@ GET     /api/teams/:teamId                              fr.maif.otoroshi.daikoku
 GET     /api/teams/:teamId/_full                        fr.maif.otoroshi.daikoku.ctrls.TeamController.teamFull(teamId)
 ### NoDocs ###
 POST    /api/teams/:teamId/join                         fr.maif.otoroshi.daikoku.ctrls.TeamController.askForJoinTeam(teamId)
+### NoDoc ###
+DELETE  /api/teams/:teamId/members/:userId/invitations  fr.maif.otoroshi.daikoku.ctrls.TeamController.removeInvitation(teamId, userId)
 ### NoDocs ###
 POST    /api/teams/:teamId/members/_permission          fr.maif.otoroshi.daikoku.ctrls.TeamController.updateTeamMembersPermission(teamId)
 ### NoDocs ###
@@ -315,7 +321,9 @@ POST    /api/teams/:teamId/members                      fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/teams/:teamId/members                      fr.maif.otoroshi.daikoku.ctrls.TeamController.membersOfTeam(teamId)
 ### NoDocs ###
-GET     /api/teams/:teamId/addable-members              fr.maif.otoroshi.daikoku.ctrls.TeamController.addableUsersForTeam(teamId)
+POST    /api/teams/:teamId/unchecked-members            fr.maif.otoroshi.daikoku.ctrls.TeamController.addUncheckedMembersToTeam(teamId)
+### NoDocs ###
+GET     /api/teams/:teamId/pending-members              fr.maif.otoroshi.daikoku.ctrls.TeamController.pendingMembersOfTeam(teamId)
 ### NoDocs ###
 GET     /api/teams/:teamId/home                         fr.maif.otoroshi.daikoku.ctrls.TeamController.teamHome(teamId)
 

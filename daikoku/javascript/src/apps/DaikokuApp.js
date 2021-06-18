@@ -23,6 +23,7 @@ import {
   UnauthenticatedTopBar,
   UnauthenticatedFooter,
   FrontOffice,
+  JoinTeam,
 } from '../components/frontend';
 
 import {
@@ -186,6 +187,12 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
               render={(p) => (
                 <NotificationList match={p.match} history={p.history} location={p.location} />
               )}
+            />
+            <FrontOfficeRoute
+              exact
+              path="/join"
+              title={`${tenant.name} - ${t('Join team', currentLanguage)}`}
+              render={(p) => <JoinTeam connectedUser={p.connectedUser} />}
             />
             <FrontOfficeRoute
               title={`${tenant.name} - ${t('Apis', currentLanguage)}`}

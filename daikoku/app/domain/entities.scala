@@ -1017,6 +1017,15 @@ case class ApiIssue(id: ApiIssueId,
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)
 }
 
+case class UserInvitation(registered: Boolean,
+                          token: String,
+                          createdAt: DateTime,
+                          team: String,
+                          notificationId: String)
+  extends CanJson[UserInvitation] {
+  override def asJson: JsValue = json.UserInvitationFormat.writes(this)
+}
+
 object User {
   val DEFAULT_IMAGE = "/assets/images/anonymous.jpg"
 }
@@ -1039,7 +1048,8 @@ case class User(
     defaultLanguage: Option[String],
     isGuest: Boolean = false,
     starredApis: Set[ApiId] = Set.empty[ApiId],
-    twoFactorAuthentication: Option[TwoFactorAuthentication] = None
+    twoFactorAuthentication: Option[TwoFactorAuthentication] = None,
+    invitation: Option[UserInvitation] = None
 ) extends CanJson[User] {
   override def asJson: JsValue = json.UserFormat.writes(this)
   def humanReadableId = email.urlPathSegmentSanitized

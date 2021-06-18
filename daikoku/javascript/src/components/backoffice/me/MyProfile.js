@@ -90,7 +90,7 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
             </div>
             <button className="btn btn-outline-success" type="button" onClick={() => window.location.reload()}>
               {t('2fa.confirm', currentLanguage)}
-              </button>
+            </button>
           </div>
           :
           <div className="d-flex flex-column justify-content-center align-items-center p-3">
@@ -260,9 +260,9 @@ const Avatar = ({ currentLanguage, value, rawValue, changeValue, label, ...props
     <div className="form-group row">
       <label className="col-xs-12 col-sm-2 col-form-label">{label}</label>
       <div className="col-sm-10">
-        <input type="text" value={value} onChange={(e) => changePicture(e.target.value)} />
+        <input type="text" className="form-control" value={value} onChange={(e) => changePicture(e.target.value)} />
       </div>
-      <div className="col-sm-10 offset-sm-2 d-flex">
+      <div className="col-sm-10 offset-sm-2 d-flex mt-1">
         <button type="button" className="btn btn-outline-primary mr-1" onClick={setGravatarLink}>
           <i className="fas fa-user-circle mr-1" />
           <Translation i18nkey="Set avatar from Gravatar" language={currentLanguage}>
@@ -341,7 +341,7 @@ class PictureUpload extends Component {
           className="btn btn-outline-secondary"
           disabled={this.state.uploading}
           onClick={this.trigger}
-          style={{ width: 200, height: 200 }}>
+          style={{ width: 200, height: 200, borderRadius: '50%' }}>
           {this.state.uploading && <i className="fas fa-spinner" />}
           {!this.state.uploading && (
             <div className="text-white">
@@ -447,8 +447,6 @@ class MyProfileComponent extends Component {
   };
 
   formFlow = [
-    'tenants',
-    'origins',
     'name',
     'email',
     'setPassword',
@@ -456,7 +454,9 @@ class MyProfileComponent extends Component {
     'personalToken',
     'refreshToken',
     'defaultLanguage',
-    'enable2FA'
+    'enable2FA',
+    'tenants',
+    'origins'
   ];
 
   setFiles = (files) => {
@@ -533,43 +533,37 @@ class MyProfileComponent extends Component {
   };
 
   render() {
+    const user = this.state.user
     return (
       <UserBackOffice tab="Me">
         <div className="row">
           <div className="col">
-            {!this.state.user && <h1>Me</h1>}
-            {this.state.user && (
-              <h1 className="h1-rwd-reduce">
-                {this.state.user.name} - {this.state.user.email}
-              </h1>
-            )}
-            {this.state.user && (
-              <div
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
-                  marginTop: 20,
-                  marginBottom: 20,
-                }}>
-                <img
-                  src={`${this.state.user.picture}${this.state.user.picture.startsWith('http') ? '' : `?${Date.now()}`
-                    }`}
-                  style={{
-                    width: 200,
-                    borderRadius: '50%',
-                    backgroundColor: 'white',
-                    position: 'relative',
-                  }}
-                  alt="avatar"
-                />
-                <PictureUpload
-                  setFiles={this.setFiles}
-                  currentLanguage={this.props.currentLanguage}
-                />
-              </div>
-            )}
+            <div className="d-flex mb-3">
+              {user && (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <img
+                    src={`${user.picture}${user.picture.startsWith('http') ? '' : `?${Date.now()}`
+                      }`}
+                    style={{
+                      width: 200,
+                      borderRadius: '50%',
+                      backgroundColor: 'white',
+                      position: 'relative',
+                    }}
+                    alt="avatar"
+                    className="mr-3"
+                  />
+                  <PictureUpload
+                    setFiles={this.setFiles}
+                    currentLanguage={this.props.currentLanguage}
+                  />
+                </div>
+              )}
+              {user ? <div className="mt-3">
+                <h1 className="my-0">{user.name}</h1>
+                <span id="my_profile_email">{user.email}</span>
+              </div> : <h1>Me</h1>}
+            </div>
             {this.state.user && (
               <React.Suspense fallback={<Spinner />}>
                 <LazyForm
