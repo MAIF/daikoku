@@ -129,6 +129,7 @@ export const ApiCard = (props) => {
               starred={props.user.starredApis.includes(api._id)}
               toggleStar={props.toggleStar}
               currentLanguage={props.currentLanguage}
+              connectedUser={props.connectedUser}
             />
           </div>
         </div>

@@ -11,9 +11,10 @@ import {
   access,
   apikey,
   getCurrencySymbol,
-  formatCurrency,
-  BeautifulTitle,
+  formatCurrency
 } from '../../utils';
+import { openLoginOrRegisterModal } from '../../../core';
+import { connect } from 'react-redux';
 
 const Curreny = ({ plan }) => {
   const cur = _.find(currencies, (c) => c.code === plan.currency.code);
@@ -30,7 +31,8 @@ const currency = (plan) => {
   return `${cur.name}(${cur.symbol})`;
 };
 
-export class ApiPricingCard extends Component {
+
+class ApiPricingCardComponent extends Component {
   renderFreeWithoutQuotas = () => (
     <span>
       <Translation i18nkey="free.without.quotas.desc" language={this.props.currentLanguage}>
@@ -225,72 +227,74 @@ export class ApiPricingCard extends Component {
                 )}>
                 {(this.props.api.visibility === 'AdminOnly' ||
                   (plan.otoroshiTarget && !isAccepted && !isPending)) && (
-                  <ActionWithTeamSelector
-                    title={t('team.selection.title', this.props.currentLanguage, 'Select teams')}
-                    description={t(
-                      plan.subscriptionProcess === 'Automatic'
-                        ? 'team.selection.desc.get'
-                        : 'team.selection.desc.request',
-                      this.props.currentLanguage,
-                      'You are going to get or request API keys. On which team do you want them for?'
-                    )}
-                    currentLanguage={this.props.currentLanguage}
-                    teams={authorizedTeams
-                      .filter((t) => t.type !== 'Admin')
-                      .filter(
-                        (team) =>
-                          plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-                      )
-                      .filter(
-                        (t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization'
+                    <ActionWithTeamSelector
+                      title={t('team.selection.title', this.props.currentLanguage, 'Select teams')}
+                      description={t(
+                        plan.subscriptionProcess === 'Automatic'
+                          ? 'team.selection.desc.get'
+                          : 'team.selection.desc.request',
+                        this.props.currentLanguage,
+                        'You are going to get or request API keys. On which team do you want them for?'
                       )}
-                    pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
-                    authorizedTeams={this.props.subscriptions.map((subs) => subs.team)}
-                    allowMultipleDemand={plan.allowMultipleKeys}
-                    action={(teams) => this.props.askForApikeys(teams)}
-                    withAllTeamSelector={true}>
-                    <button type="button" className="btn btn-sm btn-access-negative col-12">
-                      <Translation
-                        i18nkey={
-                          plan.subscriptionProcess === 'Automatic'
+                      currentLanguage={this.props.currentLanguage}
+                      teams={authorizedTeams
+                        .filter((t) => t.type !== 'Admin')
+                        .filter(
+                          (team) =>
+                            plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                        )
+                        .filter(
+                          (t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization'
+                        )}
+                      pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
+                      authorizedTeams={this.props.subscriptions.map((subs) => subs.team)}
+                      allowMultipleDemand={plan.allowMultipleKeys}
+                      action={(teams) => this.props.askForApikeys(teams)}
+                      withAllTeamSelector={true}>
+                      <button type="button" className="btn btn-sm btn-access-negative col-12">
+                        <Translation
+                          i18nkey={
+                            plan.subscriptionProcess === 'Automatic'
+                              ? 'Get API key'
+                              : 'Request API key'
+                          }
+                          language={this.props.currentLanguage}>
+                          {plan.subscriptionProcess === 'Automatic'
                             ? 'Get API key'
-                            : 'Request API key'
-                        }
-                        language={this.props.currentLanguage}>
-                        {plan.subscriptionProcess === 'Automatic'
-                          ? 'Get API key'
-                          : 'Request API key'}
-                      </Translation>
-                    </button>
-                  </ActionWithTeamSelector>
-                )}
+                            : 'Request API key'}
+                        </Translation>
+                      </button>
+                    </ActionWithTeamSelector>
+                  )}
               </Can>
             )}
-            {this.props.connectedUser.isGuest && (
-              <BeautifulTitle
-                title={t(
-                  'get.apikey.requires.login',
-                  this.props.currentLanguage,
-                  false,
-                  'Get an API key requires you to be logged in'
-                )}
-                className="col-12">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-access-negative col-12"
-                  disabled="disabled">
-                  <Translation i18nkey="Get API key" language={this.props.currentLanguage}>
-                    Get API key
-                  </Translation>
-                </button>
-              </BeautifulTitle>
-            )}
+            {
+              this.props.connectedUser.isGuest &&
+              <button
+                type="button"
+                className="btn btn-sm btn-access-negative mx-auto mt-3"
+                onClick={() => this.props.openLoginOrRegisterModal({ ...this.props })}>
+                <Translation i18nkey="Get API key" language={this.props.currentLanguage}>
+                  Get API key
+                </Translation>
+              </button>
+            }
           </div>
         </div>
       </div>
     );
   }
 }
+
+const mapStateToProps = (state) => ({
+  ...state.context,
+});
+
+const mapDispatchToProps = {
+  openLoginOrRegisterModal: (modalProps) => openLoginOrRegisterModal(modalProps)
+};
+
+export const ApiPricingCard = connect(mapStateToProps, mapDispatchToProps)(ApiPricingCardComponent);
 
 ApiPricingCard.propTypes = {
   api: PropTypes.object.isRequired,

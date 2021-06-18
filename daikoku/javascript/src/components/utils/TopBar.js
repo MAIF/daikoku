@@ -14,138 +14,20 @@ import {
   udpateLanguage,
   updateTenant,
 } from '../../core/context/actions';
-import { t, Translation, languages } from '../../locales';
+import { t, languages } from '../../locales';
 import { Can, manage, daikoku, tenant } from '../utils';
 import { MessagesTopBarTools } from '../backoffice/messages';
 
-const GuestUserMenu = ({ loginProvider, loginAction, user, currentLanguage }) => {
-  const [login, setLogin] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState(false);
-
-  function submit(e) {
-    e.preventDefault();
-
-    Services.login(login, password, loginAction).then((res) => {
-      if (res.status === 400) setLoginError(true);
-      else if (res.redirected) window.location.href = res.url;
-    });
-  }
-
-  switch (loginProvider) {
-    case 'Local':
-      return (
-        <>
-          <button type="button" className="btn btn-secondary mx-1">{t('Login', currentLanguage)}</button>
-          <button type="button" className="btn btn-primary">{t('Register', currentLanguage)}</button>
-        </>
-        // <div className="d-flex justify-content-end mt-1 mt-lg-0">
-        //   <div className="dropdown">
-        //     <img
-        //       style={{ width: 38, marginLeft: '5px' }}
-        //       src={user.picture}
-        //       className="dropdown-toggle logo-anonymous user-logo"
-        //       data-toggle="dropdown"
-        //       alt="user menu"
-        //     />
-        //     <div className="dropdown-menu dropdown-menu-right" style={{ width: '300px' }}>
-        //       <form className="form-horizontal text-left mx-1" onSubmit={submit} method="POST">
-        //         <div className="form-group">
-        //           <label htmlFor="username">
-        //             <Translation i18nkey="Email address" language={currentLanguage}>
-        //               Email address
-        //             </Translation>
-        //           </label>
-        //           <input
-        //             id="username"
-        //             type="text"
-        //             name="username"
-        //             className="form-control"
-        //             value={login}
-        //             onChange={(e) => setLogin(e.target.value)}
-        //           />
-        //         </div>
-        //         <div className="form-group">
-        //           <label htmlFor="password">
-        //             <Translation i18nkey="Password" language={currentLanguage}>
-        //               Password
-        //             </Translation>
-        //           </label>
-        //           <input
-        //             id="password"
-        //             type="password"
-        //             name="password"
-        //             className="form-control"
-        //             value={password}
-        //             onChange={(e) => setPassword(e.target.value)}
-        //           />
-        //           <small className="form-text text-muted">
-        //             <a href="/reset">
-        //               <Translation i18nkey="Forgot your password ?" language={currentLanguage}>
-        //                 Forgot your password ?
-        //               </Translation>
-        //             </a>
-        //           </small>
-        //         </div>
-        //         {loginError && (
-        //           <p style={{ color: 'red', width: '100%', textAlign: 'left' }}>
-        //             <Translation language={currentLanguage} i18nkey="login.failed">
-        //               User not found or invalid credentials
-        //             </Translation>
-        //           </p>
-        //         )}
-        //         <button type="submit" className="btn btn-access-negative" style={{ marginLeft: 0 }}>
-        //           <Translation i18nkey="Connect to your account" language={currentLanguage}>
-        //             Connect to your account
-        //           </Translation>
-        //         </button>
-        //       </form>
-        //       <div className="dropdown-divider" />
-        //       <a className="dropdown-item" href="/signup">
-        //         <Translation i18nkey="Create account" language={currentLanguage}>
-        //           Create account
-        //         </Translation>
-        //       </a>
-        //     </div>
-        //   </div>
-        // </div>
-      );
-    case 'OAuth2':
-    case 'LDAP':
-    default:
-      return (
-        <div className="d-flex justify-content-end mt-1 mt-lg-0">
-          <div className="dropdown">
-            <img
-              style={{ width: 38, marginLeft: '5px' }}
-              src={user.picture}
-              className="dropdown-toggle logo-anonymous user-logo"
-              data-toggle="dropdown"
-              alt="user menu"
-            />
-            <div className="dropdown-menu dropdown-menu-right" style={{ width: '320px' }}>
-              <a className="btn btn-access-negative my-2 ml-2" href={'/auth/Local/login'}>
-                <i className="fas fa-user mr-1" />
-                <Translation i18nkey="Connect to your account" language={currentLanguage}>
-                  Connect to your account
-                </Translation>
-              </a>
-              <a
-                className="btn btn-access-negative my-2 ml-2"
-                href={`/auth/${loginProvider}/login`}>
-                <i className="fas fa-user mr-1" />
-                <Translation
-                  i18nkey="Connect to your thrid party account"
-                  language={currentLanguage}>
-                  Connect to your thrid party account
-                </Translation>
-              </a>
-            </div>
-          </div>
-        </div>
-      );
-  }
-};
+const GuestUserMenu = ({ loginProvider, currentLanguage }) => (
+  <>
+    <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1 login-button">
+      {t('Login', currentLanguage)}
+    </a>
+    <a href={`${loginProvider === "Local" ? '/signup' : `/auth/${loginProvider}/login`}`} className="btn btn-success register-button">
+      {t('Register', currentLanguage)}
+    </a>
+  </>
+);
 
 const DarkModeActivator = ({ initialDark }) => {
   const DARK = 'DARK';
@@ -336,14 +218,12 @@ const TopBarComponent = (props) => {
                 classNamePrefix="reactSelect"
               />
             )}
-            {props.connectedUser.isGuest && (
+            {props.connectedUser.isGuest &&
               <GuestUserMenu
-                user={props.connectedUser}
-                loginAction={props.loginAction}
                 loginProvider={props.loginProvider}
                 currentLanguage={props.currentLanguage}
               />
-            )}
+            }
             {!props.connectedUser.isGuest && (
               <div className="d-flex justify-content-end align-items-center mt-1 mt-lg-0">
                 {isMaintenanceMode && (

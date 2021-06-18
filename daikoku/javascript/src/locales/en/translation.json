@@ -773,6 +773,7 @@
     "Custom header": "Custom header",
     "api.custom.header.help": "Use {{title}} to insert API title, {{ description }} to insert API small description. Add \"btn-edit\" class to link to admin API edition admin page",
     "get.apikey.requires.login": "Get an API key requires you to be logged in",
+    "consume.apikey": "Consume an API",
     "Mongo migration": "MongoDB to Postgres migration",
     "migration in progress ...": "migration in progress ...",
     "migrate database": "migrate database",
@@ -887,5 +888,7 @@
     "team_member.refuse_invitation": "Refuse",
     "team_member.has_joined": "You're now in the team",
     "team_member.missing_token": "Missing token",
-    "login_page.register_message" : "New to %s ?"
+    "login_page.register_message" : "New to %s ?",
+    "Register": "Register",
+    "api_data.missing": "%s is missing for this api."
 }

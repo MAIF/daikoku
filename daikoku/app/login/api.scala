@@ -401,7 +401,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                         )
                     )
                   case (_, _) =>
-                    AppLogger.info("No session id found")
+                    AppLogger.debug("No session id found")
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                 }
               case Some(sessionId) =>

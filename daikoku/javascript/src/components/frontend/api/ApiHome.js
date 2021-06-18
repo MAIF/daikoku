@@ -270,42 +270,24 @@ const ApiHomeComponent = ({
                   </Translation>
                 </Link>
               </li>
-              {!(tenant.apiReferenceHideForGuest && connectedUser.isGuest) && (
-                <li className="nav-item">
-                  {api.swagger && (
-                    <Link
-                      className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
-                      to={`/${match.params.teamId}/${apiId}/redoc`}>
-                      <Translation i18nkey="Api Reference" language={currentLanguage}>
-                        Api Reference
-                      </Translation>
-                    </Link>
-                  )}
-                  {!api.swagger && (
-                    <span className={'nav-link disabled'}>
-                      <Translation i18nkey="Api Reference" language={currentLanguage}>
-                        Api Reference
-                      </Translation>
-                    </span>
-                  )}
-                </li>
-              )}
-              {!connectedUser.isGuest && (
-                <li className="nav-item">
-                  {api.swagger && api.testing.enabled && (
-                    <Link
-                      className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
-                      to={`/${match.params.teamId}/${apiId}/swagger`}>
-                      <Translation i18nkey="Try it !" language={currentLanguage}>
-                        Try it !
-                      </Translation>
-                    </Link>
-                  )}
-                  {!(api.swagger && api.testing.enabled) && (
-                    <span className={'nav-link disabled'}>Try it !</span>
-                  )}
-                </li>
-              )}
+              <li className="nav-item">
+                <Link
+                  className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
+                  to={`/${match.params.teamId}/${apiId}/redoc`}>
+                  <Translation i18nkey="Api Reference" language={currentLanguage}>
+                    Api Reference
+                  </Translation>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link
+                  className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
+                  to={`/${match.params.teamId}/${apiId}/swagger`}>
+                  <Translation i18nkey="Try it !" language={currentLanguage}>
+                    Try it !
+                  </Translation>
+                </Link>
+              </li>
               {!!api.posts.length && (
                 <li className="nav-item">
                   <Link
@@ -323,7 +305,7 @@ const ApiHomeComponent = ({
                   to={`/${match.params.teamId}/${apiId}/issues`}>
                   <Translation i18nkey="issues" language={currentLanguage}>
                     Issues
-                    </Translation>
+                  </Translation>
                 </Link>
               </li>
             </ul>
@@ -386,18 +368,25 @@ const ApiHomeComponent = ({
                 currentLanguage={currentLanguage}
               />
             )}
-            {api.swagger && api.testing.enabled && tab === 'swagger' && (
+            {tab === 'swagger' && (
               <ApiSwagger
                 api={api}
                 teamId={teamId}
                 ownerTeam={ownerTeam}
                 match={match}
                 testing={api.testing}
+                tenant={tenant}
+                connectedUser={connectedUser}
+                currentLanguage={currentLanguage}
               />
             )}
-            {tab === 'redoc' && !(tenant.apiReferenceHideForGuest && connectedUser.isGuest) && (
-              <ApiRedoc api={api} teamId={teamId} ownerTeam={ownerTeam} match={match} />
-            )}
+            {tab === 'redoc' &&
+              <ApiRedoc api={api} teamId={teamId} ownerTeam={ownerTeam}
+                match={match}
+                tenant={tenant}
+                connectedUser={connectedUser}
+                currentLanguage={currentLanguage} />
+            }
             {tab === 'console' && (
               <ApiConsole
                 api={api}

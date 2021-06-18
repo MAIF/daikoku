@@ -31,7 +31,7 @@ import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
 import scala.util.hashing.MurmurHash3
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class ApiController(DaikokuAction: DaikokuAction,
                     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
@@ -67,9 +67,13 @@ class ApiController(DaikokuAction: DaikokuAction,
           case Some(SwaggerAccess(_, Some(content), _)) => FastFuture.successful(Ok(content).as("application/json"))
           case Some(SwaggerAccess(url, None, headers)) => {
             val finalUrl = if (url.startsWith("/")) s"http://127.0.0.1:${env.config.port}${url}" else url
-            env.wsClient.url(finalUrl).withHttpHeaders(headers.toSeq: _*).get().map { resp =>
-              Ok(resp.body).as(resp.header("Content-Type").getOrElse("application/json"))
-            }
+            Try {
+              env.wsClient.url(finalUrl).withHttpHeaders(headers.toSeq: _*).get().map { resp =>
+                Ok(resp.body).as(resp.header("Content-Type").getOrElse("application/json"))
+              }
+            }.recover {
+              case _: Exception => FastFuture.successful(BadRequest(Json.obj("error" -> "Can't retrieve swagger")))
+            }.get
           }
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "swagger access not found")))
         }
