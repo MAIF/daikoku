@@ -219,7 +219,7 @@ export class TeamMembersSimpleComponent extends Component {
   };
 
   invitUser = email => {
-    if (this.props.tenant.authProvider === "LDAP")
+    if (this.props.tenant && this.props.tenant.authProvider === "LDAP")
       this.addLdapUserToTeam(email)
     else
       Services.addUncheckedMembersToTeam(this.props.currentTeam._id, email)

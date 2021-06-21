@@ -8,7 +8,7 @@ import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSClient}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object HtmlSanitizer {
 
@@ -134,5 +134,52 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
         case Failure(e)   => logger.error("Error while sending alert email", e)
       }
       .map(_ => ())
+  }
+}
+
+class SimpleSMTPSender(settings: SimpleSMTPSettings)
+  extends Mailer {
+
+  import javax.mail._
+  import javax.mail.internet._
+  import java.util.Date
+  import java.util.Properties
+
+  lazy val logger = Logger("daikoku-mailer")
+
+  def send(title: String, to: Seq[String], body: String)(
+    implicit ec: ExecutionContext): Future[Unit] = {
+
+    val templatedBody = settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
+
+    val properties = new Properties()
+    properties.put("mail.smtp.host", settings.host)
+    properties.put("mail.smtp.port", Integer.valueOf(settings.port))
+
+    Future.sequence(
+      to.map(InternetAddress.parse)
+        .map { address =>
+
+        val message: Message = new MimeMessage(Session.getDefaultInstance(properties, null))
+        message.setFrom(new InternetAddress(settings.fromEmail))
+        message.setRecipients(Message.RecipientType.TO, address.asInstanceOf[Array[Address]])
+
+        message.setSentDate(new Date())
+        message.setSubject(title)
+        message.setText(templatedBody)
+
+        Try {
+          Transport.send(message)
+          logger.info(s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}")
+        } recover {
+          case e: Exception => logger.error("Error while sending alert email", e)
+        } get
+
+        FastFuture.successful(())
+      }
+    )
+      .flatMap { _ =>
+        FastFuture.successful(())
+      }
   }
 }

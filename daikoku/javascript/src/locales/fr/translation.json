@@ -895,5 +895,7 @@
   "api_redoc.failed_to_retrieve_doc": "Une erreur est survenue lors la récupération de l'api référence.",
   "api_swagger.failed_to_retrieve_swagger": "Can't retrieve api reference",
   "api_swagger.try_it_error": "Le Try it n'est pas activé sur cette api.",
-  "api_swagger.guest_user": "Le Try it est uniquement disponible pour les utilisateurs connectés."
+  "api_swagger.guest_user": "Le Try it est uniquement disponible pour les utilisateurs connectés.",
+  "smtp_client.host": "Le serveur SMTP",
+  "smtp_client.port": "Le port du serveur SMTP"
 }

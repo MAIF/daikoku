@@ -16,7 +16,7 @@ export const TeamInvitationModal = (props) => {
         setError(t('User already in team', props.currentLanguage))
       else if (pendingUsers.find((f) => f.email === email))
         setError(t('User already invited', props.currentLanguage))
-      else if (props.tenant.authProvider == "LDAP") {
+      else if (props.tenant && props.tenant.authProvider == "LDAP") {
         props.searchLdapMember(email)
           .then(res => {
             if (res.error)
@@ -37,7 +37,7 @@ export const TeamInvitationModal = (props) => {
     props.invitUser(email)
   }
 
-  const isLDAPProvider = props.tenant.authProvider === "LDAP"
+  const isLDAPProvider = props.tenant && props.tenant.authProvider === "LDAP"
 
   return (
     <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
