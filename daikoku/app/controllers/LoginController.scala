@@ -111,29 +111,34 @@ class LoginController(DaikokuAction: DaikokuAction,
   }
 
   private def createSession(sessionMaxAge: Int, user: User, request: RequestHeader, tenant: Tenant) = {
-    val session = UserSession(
-      id = DatastoreId(BSONObjectID.generate().stringify),
-      userId = user.id,
-      userName = user.name,
-      userEmail = user.email,
-      impersonatorId = None,
-      impersonatorName = None,
-      impersonatorEmail = None,
-      impersonatorSessionId = None,
-      sessionId = UserSessionId(IdGenerator.token),
-      created = DateTime.now(),
-      expires = DateTime.now().plusSeconds(sessionMaxAge),
-      ttl = FiniteDuration(sessionMaxAge, TimeUnit.SECONDS)
-    )
-    env.dataStore.userSessionRepo.save(session).map { _ =>
-      AuditTrailEvent(s"${user.name} has connected to ${tenant.name} with ${user.email} address")
-        .logTenantAuditEvent(tenant, user, session, request, TrieMap[String, String](), AuthorizationLevel.AuthorizedSelf)
-      Redirect(request.session.get("redirect").getOrElse("/"))
-        .withSession(
-          "sessionId" -> session.sessionId.value
+    env.dataStore.userSessionRepo
+      .findOne(Json.obj("userEmail" -> user.email))
+      .map {
+        case Some(session) => session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
+        case None => UserSession(
+          id = DatastoreId(BSONObjectID.generate().stringify),
+          userId = user.id,
+          userName = user.name,
+          userEmail = user.email,
+          impersonatorId = None,
+          impersonatorName = None,
+          impersonatorEmail = None,
+          impersonatorSessionId = None,
+          sessionId = UserSessionId(IdGenerator.token),
+          created = DateTime.now(),
+          expires = DateTime.now().plusSeconds(sessionMaxAge),
+          ttl = FiniteDuration(sessionMaxAge, TimeUnit.SECONDS)
         )
-        .removingFromSession("redirect")(request)
-    }
+      }
+      .flatMap { session =>
+        env.dataStore.userSessionRepo.save(session).map { _ =>
+          AuditTrailEvent(s"${user.name} has connected to ${tenant.name} with ${user.email} address")
+            .logTenantAuditEvent(tenant, user, session, request, TrieMap[String, String](), AuthorizationLevel.AuthorizedSelf)
+          Redirect(request.session.get("redirect").getOrElse("/"))
+            .withSession("sessionId" -> session.sessionId.value)
+            .removingFromSession("redirect")(request)
+        }
+      }
   }
 
   def actualLogin(

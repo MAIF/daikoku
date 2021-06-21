@@ -221,7 +221,7 @@ class UsersController(DaikokuAction: DaikokuAction,
         "@{user.name} has impersonated user profile of @{u.email} (@{u.id})"))(
       ctx) {
       env.dataStore.userRepo.findByIdNotDeleted(userId).flatMap {
-        case Some(user) => {
+        case Some(user) =>
           val session = UserSession(
             id = DatastoreId(BSONObjectID.generate().stringify),
             userId = user.id,
@@ -243,7 +243,6 @@ class UsersController(DaikokuAction: DaikokuAction,
                 "sessionId" -> session.sessionId.value
               )
           }
-        }
         case None =>
           FastFuture.successful(
             BadRequest(Json.obj("error" -> "User not found")))
@@ -261,15 +260,17 @@ class UsersController(DaikokuAction: DaikokuAction,
           env.dataStore.userSessionRepo
             .findOne(Json.obj("sessionId" -> sessionId.value))
             .flatMap {
-              case Some(session) if session.expires.isAfter(DateTime.now()) => {
+              case Some(session) =>
                 env.dataStore.userSessionRepo
                   .delete(Json.obj("impersonatorSessionId" -> sessionId.value))
                   .map { _ =>
-                    Redirect(ctx.request.session.get("redirect").getOrElse("/"))
-                      .removingFromSession("sessionId", "redirect")(ctx.request)
-                      .withSession(("sessionId", sessionId.value))
+                    if (session.expires.isBefore(DateTime.now()))
+                      Redirect("/logout")
+                    else
+                      Redirect(ctx.request.session.get("redirect").getOrElse("/"))
+                        .removingFromSession("sessionId", "redirect")(ctx.request)
+                        .withSession(("sessionId", sessionId.value))
                   }
-              }
               case None => FastFuture.successful(Redirect("/logout"))
             }
       }

@@ -55,26 +55,11 @@ class SessionController(DaikokuAction: DaikokuAction,
       val sessionMaxAge = (ctx.tenant.authProviderSettings \ "sessionMaxAge")
         .asOpt[Int]
         .getOrElse(86400)
-      val session = UserSession(
-        id = DatastoreId(BSONObjectID.generate().stringify),
-        userId = ctx.user.id,
-        userName = ctx.user.name,
-        userEmail = ctx.user.email,
-        impersonatorId = ctx.impersonator.map(_.id),
-        impersonatorName = ctx.impersonator.map(_.name),
-        impersonatorEmail = ctx.impersonator.map(_.email),
-        impersonatorSessionId = ctx.session.impersonatorSessionId,
-        sessionId = UserSessionId(IdGenerator.token),
-        created = DateTime.now(),
-        expires = DateTime.now().plusSeconds(sessionMaxAge),
-        ttl = FiniteDuration(sessionMaxAge, TimeUnit.SECONDS)
-      )
-      ctx.session.invalidate().flatMap { _ =>
-        env.dataStore.userSessionRepo.save(session).map { _ =>
-          Ok(
-            session.asSimpleJson
-          ).withSession("sessionId" -> session.sessionId.value)
-        }
+      val session = ctx.session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
+      env.dataStore.userSessionRepo.save(session).map { _ =>
+        Ok(
+          session.asSimpleJson
+        ).withSession("sessionId" -> session.sessionId.value)
       }
     }
   }
