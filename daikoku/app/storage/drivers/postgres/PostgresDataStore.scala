@@ -23,6 +23,7 @@ import storage.drivers.postgres.Helper._
 import storage.drivers.postgres.pgimplicits.EnhancedRow
 
 import scala.collection.immutable
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.MapHasAsJava
 
@@ -541,17 +542,19 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         s"content JSONB)")
   }
 
-  override def exportAsStream(pretty: Boolean)(
+  override def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,
       mat: Materializer,
       env: Env): Source[ByteString, _] = {
-    val collections: List[Repo[_, _]] = List(
+    val collections = ListBuffer[Repo[_, _]]()
+    collections ++= List(
       tenantRepo,
       userRepo,
       passwordResetRepo,
       accountCreationRepo,
       userSessionRepo
-    ) ++ List(
+    )
+    collections ++= List(
       teamRepo.forAllTenant(),
       apiRepo.forAllTenant(),
       apiSubscriptionRepo.forAllTenant(),
@@ -559,11 +562,15 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       apiPostRepo.forAllTenant(),
       apiIssueRepo.forAllTenant(),
       notificationRepo.forAllTenant(),
-      auditTrailRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
-      translationRepo.forAllTenant()
+      translationRepo.forAllTenant(),
+      messageRepo.forAllTenant()
     )
-    Source(collections).flatMapConcat { collection =>
+
+    if (exportAuditTrail) {
+      collections += auditTrailRepo.forAllTenant()
+    }
+    Source(collections.toList).flatMapConcat { collection =>
       collection.streamAllRaw().map { doc =>
         if (pretty) {
           ByteString(Json.prettyPrint(

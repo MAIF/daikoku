@@ -319,7 +319,7 @@ trait DataStore {
 
   def messageRepo: MessageRepo
 
-  def exportAsStream(pretty: Boolean)(implicit ec: ExecutionContext,
+  def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(implicit ec: ExecutionContext,
                                       mat: Materializer,
                                       env: Env): Source[ByteString, _]
 

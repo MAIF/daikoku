@@ -12,20 +12,12 @@ import play.api.ApplicationLoader.Context
 import play.api.Logger
 import play.api.libs.json._
 import play.api.routing.Router
-import play.modules.reactivemongo.{
-  ReactiveMongoApi,
-  ReactiveMongoApiFromContext
-}
-import reactivemongo.api.{
-  Cursor,
-  CursorOptions,
-  ReadConcern,
-  ReadPreference,
-  WriteConcern
-}
+import play.modules.reactivemongo.{ReactiveMongoApi, ReactiveMongoApiFromContext}
+import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
 trait RepositoryMongo[Of, Id <: ValueType] extends Repo[Of, Id] {
@@ -382,17 +374,20 @@ class MongoDataStore(context: Context, env: Env)
     }
   }
 
-  override def exportAsStream(pretty: Boolean)(
+  override def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,
       mat: Materializer,
       env: Env): Source[ByteString, _] = {
-    val collections: List[Repo[_, _]] = List(
+
+    val collections = ListBuffer[Repo[_, _]]()
+    collections ++= List(
       tenantRepo,
       userRepo,
       passwordResetRepo,
       accountCreationRepo,
       userSessionRepo
-    ) ++ List(
+    )
+    collections ++= List(
       teamRepo.forAllTenant(),
       apiRepo.forAllTenant(),
       apiSubscriptionRepo.forAllTenant(),
@@ -400,12 +395,16 @@ class MongoDataStore(context: Context, env: Env)
       apiPostRepo.forAllTenant(),
       apiIssueRepo.forAllTenant(),
       notificationRepo.forAllTenant(),
-      auditTrailRepo.forAllTenant(),
       consumptionRepo.forAllTenant(),
       translationRepo.forAllTenant(),
       messageRepo.forAllTenant()
     )
-    Source(collections).flatMapConcat { collection =>
+
+    if (exportAuditTrail) {
+      collections += auditTrailRepo.forAllTenant()
+    }
+
+    Source(collections.toList).flatMapConcat { collection =>
       collection.streamAllRaw()(ec).map { doc =>
         if (pretty) {
           ByteString(

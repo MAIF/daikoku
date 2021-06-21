@@ -34,10 +34,10 @@ class StateController(DaikokuAction: DaikokuAction,
 
   def exportState() = DaikokuAction.async { ctx =>
     DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has exported state"))(ctx) {
-      val source = env.dataStore.exportAsStream(false) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
+      val source = env.dataStore.exportAsStream(pretty = false, exportAuditTrail = ctx.request.getQueryString("export-audit-trail").contains("true")) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
       val disposition = ("Content-Disposition" -> s"""attachment; filename="daikoku-export-${System.currentTimeMillis}.ndjson"""")
       val future =
-        if (ctx.request.getQueryString("download").exists(_ == "true")) {
+        if (ctx.request.getQueryString("download").contains("true")) {
           Ok.sendEntity(HttpEntity.Streamed(source, None, Some("")))
             .withHeaders(disposition)
             .as("application/x-ndjson")
@@ -179,10 +179,10 @@ class StateAdminApiController(
   }
 
   def exportState() = DaikokuApiAction.async { ctx =>
-    val source = env.dataStore.exportAsStream(false) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
+    val source = env.dataStore.exportAsStream(pretty = false, exportAuditTrail = ctx.request.getQueryString("export-audit-trail").contains("true")) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
     val disposition = ("Content-Disposition" -> s"""attachment; filename="daikoku-export-${System.currentTimeMillis}.ndjson"""")
     val future =
-      if (ctx.request.getQueryString("download").exists(_ == "true")) {
+      if (ctx.request.getQueryString("download").contains("true")) {
         Ok.sendEntity(HttpEntity.Streamed(source, None, Some("")))
           .withHeaders(disposition)
           .as("application/x-ndjson")
