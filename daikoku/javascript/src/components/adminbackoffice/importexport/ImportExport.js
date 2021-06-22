@@ -1,12 +1,15 @@
+/* eslint-disable react/jsx-no-target-blank */
 import React, { Component } from 'react';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { connect } from 'react-redux';
 import { Can, manage, daikoku } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { SwitchButton } from '../../inputs';
 
 export class ImportExportComponent extends Component {
   state = {
+    exportAuditTrail: true,
     uploading: false,
     migration: {
       processing: false,
@@ -56,7 +59,6 @@ export class ImportExportComponent extends Component {
 
   render() {
     const { processing, error, onSuccessMessage } = this.state.migration;
-
     return (
       <UserBackOffice tab="Import / Export">
         <Can I={manage} a={daikoku} dispatchError>
@@ -68,8 +70,9 @@ export class ImportExportComponent extends Component {
                 </Translation>
               </h1>
               <div className="section p-3">
+                
                 <a
-                  href="/api/state/export?download=true"
+                  href={`/api/state/export?download=true&export-audit-trail=${!!this.state.exportAuditTrail}`}
                   target="_blank"
                   className="btn btn-outline-primary">
                   <i className="fas fa-download mr-1" />
@@ -87,6 +90,13 @@ export class ImportExportComponent extends Component {
                     ? t('importing ...', this.props.currentLanguage)
                     : t('import state', this.props.currentLanguage)}
                 </button>
+                <div className="d-flex justify-content-start">
+                  <SwitchButton
+                    onSwitch={(enabled) => this.setState({ exportAuditTrail: enabled })}
+                    checked={this.state.exportAuditTrail}
+                    label={t('audittrail.export.label', this.props.currentLanguage)}
+                  />
+                </div>
                 <input
                   type="file"
                   className="hide"

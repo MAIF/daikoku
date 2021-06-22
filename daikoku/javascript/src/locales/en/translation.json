@@ -899,5 +899,6 @@
     "smtp_client.host": "The SMTP server to connect to",
     "smtp_client.port": "The SMTP server port to connect to",
     "send_grid.api_key": "Api Key",
-    "send_grid.from_email": "Sender email"
+    "send_grid.from_email": "Sender email",
+    "audittrail.export.label": "Export audit trail"
 }
