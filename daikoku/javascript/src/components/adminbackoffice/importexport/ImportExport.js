@@ -70,9 +70,9 @@ export class ImportExportComponent extends Component {
                 </Translation>
               </h1>
               <div className="section p-3">
-                
                 <a
-                  href={`/api/state/export?download=true&export-audit-trail=${!!this.state.exportAuditTrail}`}
+                  href={`/api/state/export?download=true&export-audit-trail=${!!this.state
+                    .exportAuditTrail}`}
                   target="_blank"
                   className="btn btn-outline-primary">
                   <i className="fas fa-download mr-1" />

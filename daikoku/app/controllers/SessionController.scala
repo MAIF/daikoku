@@ -55,7 +55,8 @@ class SessionController(DaikokuAction: DaikokuAction,
       val sessionMaxAge = (ctx.tenant.authProviderSettings \ "sessionMaxAge")
         .asOpt[Int]
         .getOrElse(86400)
-      val session = ctx.session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
+      val session =
+        ctx.session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
       env.dataStore.userSessionRepo.save(session).map { _ =>
         Ok(
           session.asSimpleJson

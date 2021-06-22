@@ -115,27 +115,34 @@ export class SimpleNotification extends Component {
   };
 
   actionFormatter(notification) {
-    const { status, date } = notification.status
+    const { status, date } = notification.status;
     const { notificationType } = notification;
 
-    if (status === "Pending" && (notification.action.type === "NewIssueOpen" ||
-      notification.action.type === "NewCommentOnIssue")) {
+    if (
+      status === 'Pending' &&
+      (notification.action.type === 'NewIssueOpen' ||
+        notification.action.type === 'NewCommentOnIssue')
+    ) {
       return (
         <div>
-          <button type="button" className="btn btn-outline-success btn-sm mr-1"
+          <button
+            type="button"
+            className="btn btn-outline-success btn-sm mr-1"
             onClick={() => this.props.accept()}>
             <i className="fas fa-check" />
           </button>
-          <button type="button" className="btn btn-sm btn-outline-success" onClick={() => {
-            this.props.accept()
-            this.props.history.push(notification.action.linkTo)
-          }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-success"
+            onClick={() => {
+              this.props.accept();
+              this.props.history.push(notification.action.linkTo);
+            }}>
             <i className="fas fa-eye" />
           </button>
         </div>
-      )
-    }
-    else {
+      );
+    } else {
       switch (status) {
         case 'Pending':
           switch (this.props.notification.action.type) {
@@ -399,7 +406,8 @@ export class SimpleNotification extends Component {
                       i18nkey="issues.notification"
                       language={this.props.currentLanguage}
                       replacements={[notification.action.apiName]}>
-                      {notification.sender.name} has published a new issue on {notification.action.apiName}.
+                      {notification.sender.name} has published a new issue on{' '}
+                      {notification.action.apiName}.
                     </Translation>
                   </div>
                 )}
@@ -409,7 +417,8 @@ export class SimpleNotification extends Component {
                       i18nkey="issues.comment.notification"
                       language={this.props.currentLanguage}
                       replacements={[notification.action.apiName]}>
-                      {notification.sender.name} has published a new comment on issue of {notification.action.apiName}.
+                      {notification.sender.name} has published a new comment on issue of{' '}
+                      {notification.action.apiName}.
                     </Translation>
                   </div>
                 )}

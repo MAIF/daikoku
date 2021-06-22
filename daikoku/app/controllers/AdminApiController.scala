@@ -34,7 +34,11 @@ class StateController(DaikokuAction: DaikokuAction,
 
   def exportState() = DaikokuAction.async { ctx =>
     DaikokuAdminOnly(AuditTrailEvent(s"@{user.name} has exported state"))(ctx) {
-      val source = env.dataStore.exportAsStream(pretty = false, exportAuditTrail = ctx.request.getQueryString("export-audit-trail").contains("true")) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
+      val source = env.dataStore.exportAsStream(
+        pretty = false,
+        exportAuditTrail = ctx.request
+          .getQueryString("export-audit-trail")
+          .contains("true")) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
       val disposition = ("Content-Disposition" -> s"""attachment; filename="daikoku-export-${System.currentTimeMillis}.ndjson"""")
       val future =
         if (ctx.request.getQueryString("download").contains("true")) {
@@ -179,7 +183,11 @@ class StateAdminApiController(
   }
 
   def exportState() = DaikokuApiAction.async { ctx =>
-    val source = env.dataStore.exportAsStream(pretty = false, exportAuditTrail = ctx.request.getQueryString("export-audit-trail").contains("true")) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
+    val source = env.dataStore.exportAsStream(
+      pretty = false,
+      exportAuditTrail = ctx.request
+        .getQueryString("export-audit-trail")
+        .contains("true")) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
     val disposition = ("Content-Disposition" -> s"""attachment; filename="daikoku-export-${System.currentTimeMillis}.ndjson"""")
     val future =
       if (ctx.request.getQueryString("download").contains("true")) {
@@ -420,13 +428,15 @@ class MessagesAdminApiController(daa: DaikokuApiAction,
 }
 
 class IssuesAdminApiController(daa: DaikokuApiAction,
-                                     env: Env,
-                                     cc: ControllerComponents)
-  extends AdminApiController[ApiIssue, ApiIssueId](daa, env, cc) {
+                               env: Env,
+                               cc: ControllerComponents)
+    extends AdminApiController[ApiIssue, ApiIssueId](daa, env, cc) {
   override def entityClass = classOf[ApiIssue]
   override def entityName: String = "issue"
   override def pathRoot: String = s"/admin-api/${entityName}s"
-  override def entityStore(tenant: Tenant, ds: DataStore): Repo[ApiIssue, ApiIssueId] = ds.apiIssueRepo.forTenant(tenant)
+  override def entityStore(tenant: Tenant,
+                           ds: DataStore): Repo[ApiIssue, ApiIssueId] =
+    ds.apiIssueRepo.forTenant(tenant)
   override def toJson(entity: ApiIssue): JsValue = entity.asJson
   override def fromJson(entity: JsValue): Either[String, ApiIssue] =
     ApiIssueFormat
@@ -438,11 +448,13 @@ class IssuesAdminApiController(daa: DaikokuApiAction,
 class PostsAdminApiController(daa: DaikokuApiAction,
                               env: Env,
                               cc: ControllerComponents)
-  extends AdminApiController[ApiPost, ApiPostId](daa, env, cc) {
+    extends AdminApiController[ApiPost, ApiPostId](daa, env, cc) {
   override def entityClass = classOf[ApiPost]
   override def entityName: String = "post"
   override def pathRoot: String = s"/admin-api/${entityName}s"
-  override def entityStore(tenant: Tenant, ds: DataStore): Repo[ApiPost, ApiPostId] = ds.apiPostRepo.forTenant(tenant)
+  override def entityStore(tenant: Tenant,
+                           ds: DataStore): Repo[ApiPost, ApiPostId] =
+    ds.apiPostRepo.forTenant(tenant)
   override def toJson(entity: ApiPost): JsValue = entity.asJson
   override def fromJson(entity: JsValue): Either[String, ApiPost] =
     ApiPostFormat

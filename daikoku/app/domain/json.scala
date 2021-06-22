@@ -6,7 +6,11 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
+  Accepted,
+  Pending,
+  Rejected
+}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.TenantMode
@@ -329,13 +333,14 @@ object json {
   val ApiTagFormat = new Format[ApiIssueTag] {
     override def reads(json: JsValue) =
       Try {
-        JsSuccess(ApiIssueTag(
-          id = (json \ "id")
-            .asOpt[ApiIssueTagId](ApiIssueTagIdFormat.reads)
-            .getOrElse(ApiIssueTagId(BSONObjectID.generate().stringify)),
-          name = (json \ "name").as[String],
-          color = (json \ "color").as[String]
-        ))
+        JsSuccess(
+          ApiIssueTag(
+            id = (json \ "id")
+              .asOpt[ApiIssueTagId](ApiIssueTagIdFormat.reads)
+              .getOrElse(ApiIssueTagId(BSONObjectID.generate().stringify)),
+            name = (json \ "name").as[String],
+            color = (json \ "color").as[String]
+          ))
       } recover {
         case e => JsError(e.getMessage)
       } get
@@ -349,16 +354,17 @@ object json {
   val ApiIssueCommentFormat = new Format[ApiIssueComment] {
     override def reads(json: JsValue) =
       Try {
-        JsSuccess(ApiIssueComment(
-          by = (json \ "by").as(UserIdFormat),
-          createdAt = (json \ "createdAt")
-            .asOpt[DateTime](DateTimeFormat.reads)
-            .getOrElse(DateTime.now()),
-          lastModificationAt = (json \ "lastModificationAt")
-            .asOpt[DateTime](DateTimeFormat.reads)
-            .getOrElse(DateTime.now()),
-          content = (json \ "content").as[String]
-        ))
+        JsSuccess(
+          ApiIssueComment(
+            by = (json \ "by").as(UserIdFormat),
+            createdAt = (json \ "createdAt")
+              .asOpt[DateTime](DateTimeFormat.reads)
+              .getOrElse(DateTime.now()),
+            lastModificationAt = (json \ "lastModificationAt")
+              .asOpt[DateTime](DateTimeFormat.reads)
+              .getOrElse(DateTime.now()),
+            content = (json \ "content").as[String]
+          ))
       } recover {
         case e => JsError(e.getMessage)
       } get
@@ -1351,7 +1357,8 @@ object json {
       Try {
         JsSuccess(
           ApiIssue(
-            id = (json \ "_id").asOpt(ApiIssueIdFormat)
+            id = (json \ "_id")
+              .asOpt(ApiIssueIdFormat)
               .getOrElse(ApiIssueId(BSONObjectID.generate().stringify)),
             seqId = (json \ "seqId").asOpt[Int].getOrElse(0),
             tenant = (json \ "_tenant").as(TenantIdFormat),
@@ -1359,9 +1366,9 @@ object json {
             title = (json \ "title").as[String],
             lastModificationAt = (json \ "lastModificationAt")
               .asOpt[DateTime](DateTimeFormat.reads)
-            .getOrElse(DateTime.now()),
-            tags = (json \ "tags").asOpt[Set[ApiIssueTagId]](
-              Reads.set(ApiIssueTagIdFormat.reads))
+              .getOrElse(DateTime.now()),
+            tags = (json \ "tags")
+              .asOpt[Set[ApiIssueTagId]](Reads.set(ApiIssueTagIdFormat.reads))
               .getOrElse(Set.empty),
             open = (json \ "open").asOpt[Boolean].getOrElse(true),
             createdAt = (json \ "createdAt")
@@ -1369,7 +1376,8 @@ object json {
               .getOrElse(DateTime.now()),
             by = (json \ "by").as(UserIdFormat),
             comments = (json \ "comments")
-              .asOpt[Seq[ApiIssueComment]](Reads.seq(ApiIssueCommentFormat.reads))
+              .asOpt[Seq[ApiIssueComment]](
+                Reads.seq(ApiIssueCommentFormat.reads))
               .getOrElse(Seq.empty),
             closedAt = (json \ "closedAt")
               .asOpt[DateTime](DateTimeFormat.reads),
@@ -1390,7 +1398,10 @@ object json {
       "tags" -> o.tags.map(ApiIssueTagIdFormat.writes),
       "open" -> o.open,
       "createdAt" -> DateTimeFormat.writes(o.createdAt),
-      "closedAt" -> o.closedAt.map(DateTimeFormat.writes).getOrElse(JsNull).as[JsValue],
+      "closedAt" -> o.closedAt
+        .map(DateTimeFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
       "by" -> o.by.asJson,
       "comments" -> o.comments.map(ApiIssueCommentFormat.writes)
     )
@@ -1509,11 +1520,13 @@ object json {
             mailerSettings =
               (json \ "mailerSettings").asOpt[JsObject].flatMap { settings =>
                 (settings \ "type").as[String] match {
-                  case "mailgun"    => MailgunSettingsFormat.reads(settings).asOpt
-                  case "mailjet"    => MailjetSettingsFormat.reads(settings).asOpt
-                  case "sendgrid"   => SendGridSettingsFormat.reads(settings).asOpt
-                  case "smtpClient" => SimpleSMTPClientSettingsFormat.reads(settings).asOpt
-                  case _         => Some(ConsoleMailerSettings())
+                  case "mailgun" => MailgunSettingsFormat.reads(settings).asOpt
+                  case "mailjet" => MailjetSettingsFormat.reads(settings).asOpt
+                  case "sendgrid" =>
+                    SendGridSettingsFormat.reads(settings).asOpt
+                  case "smtpClient" =>
+                    SimpleSMTPClientSettingsFormat.reads(settings).asOpt
+                  case _ => Some(ConsoleMailerSettings())
                 }
               },
             bucketSettings =
@@ -1629,7 +1642,8 @@ object json {
       Try {
         JsSuccess(
           AuditTrailConfig(
-            elasticConfigs = (json \ "elasticConfigs").asOpt[ElasticAnalyticsConfig](ElasticAnalyticsConfig.format),
+            elasticConfigs = (json \ "elasticConfigs")
+              .asOpt[ElasticAnalyticsConfig](ElasticAnalyticsConfig.format),
             auditWebhooks = (json \ "auditWebhooks")
               .asOpt[Seq[Webhook]](Reads.seq(Webhook.format))
               .getOrElse(Seq.empty[Webhook]),
@@ -1651,8 +1665,7 @@ object json {
                         keystore,
                         truststore,
                         Some(auditTopic),
-                        hostValidation
-                    ) =>
+                        hostValidation) =>
                     Some(
                       KafkaConfig(servers,
                                   keyPass,
@@ -1733,7 +1746,8 @@ object json {
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
             starredApis =
               (json \ "starredApis").asOpt(SetApiIdFormat).getOrElse(Set.empty),
-            twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(TwoFactorAuthenticationFormat),
+            twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(
+              TwoFactorAuthenticationFormat),
             invitation = (json \ "invitation").asOpt(UserInvitationFormat)
           )
         )
@@ -3059,7 +3073,8 @@ object json {
               .asOpt[DateTime](DateTimeFormat.reads)
               .getOrElse(DateTime.now()),
             team = (json \ "team").asOpt[String].getOrElse("team"),
-            notificationId = (json \ "notificationId").asOpt[String].getOrElse(""),
+            notificationId =
+              (json \ "notificationId").asOpt[String].getOrElse(""),
             registered = (json \ "registered").asOpt[Boolean].getOrElse(false)
           )
         )
@@ -3116,7 +3131,7 @@ object json {
   val SetApiIdFormat =
     Format(Reads.set(ApiIdFormat), Writes.set(ApiIdFormat))
   val SetApiTagFormat =
-      Format(Reads.set(ApiTagFormat), Writes.set(ApiTagFormat))
+    Format(Reads.set(ApiTagFormat), Writes.set(ApiTagFormat))
   val SetUserWithPermissionFormat =
     Format(Reads.set(UserWithPermissionFormat),
            Writes.set(UserWithPermissionFormat))

@@ -97,9 +97,8 @@ const InitializeFromOtoroshiComponent = (props) => {
 
   const orderedApikeys = _.orderBy(state.context.apikeys, ['authorizedGroup', 'clientName']);
 
-  const filterApikeys = group =>
-    orderedApikeys
-      .filter(apikey => (apikey.authorizedGroup || "").includes(group.value))
+  const filterApikeys = (group) =>
+    orderedApikeys.filter((apikey) => (apikey.authorizedGroup || '').includes(group.value));
 
   const afterCreation = () => {
     Services.myVisibleApis().then((apis) => {
@@ -199,17 +198,19 @@ const InitializeFromOtoroshiComponent = (props) => {
                 addSub={(apikey, team, api, plan) =>
                   setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])
                 }
-                infos={idx => ({ index: idx, total: state.context.apikeys.length })}
+                infos={(idx) => ({ index: idx, total: state.context.apikeys.length })}
                 updateApi={(api) => updateApi(api)}
                 recap={() => send('RECAP')}
-                maybeCreatedSub={apikey => Option(createdSubs.find(s => apikey.clientId === s.clientId))}
+                maybeCreatedSub={(apikey) =>
+                  Option(createdSubs.find((s) => apikey.clientId === s.clientId))
+                }
                 updateSub={(apikey, team, api, plan) =>
                   setCreatedSubs([
                     ...createdSubs.filter((s) => s.clientId !== apikey.clientId),
                     { ...apikey, team, api, plan },
                   ])
                 }
-                resetSub={apikey =>
+                resetSub={(apikey) =>
                   setCreatedSubs([...createdSubs.filter((s) => s.clientId !== apikey.clientId)])
                 }
                 getFilteredApikeys={filterApikeys}
@@ -218,21 +219,25 @@ const InitializeFromOtoroshiComponent = (props) => {
                 cancel={() => send('CANCEL')}
                 createdSubs={createdSubs}
               />
-              {createdSubs.length > 0 &&
+              {createdSubs.length > 0 && (
                 <RecapSubsStep
                   createdSubs={createdSubs}
                   cancel={() => {
-                    setCreatedSubs([])
-                    send('CANCEL')
+                    setCreatedSubs([]);
+                    send('CANCEL');
                   }}
                   apis={apis}
                   teams={teams}
                   goBackToServices={() => send('CANCEL')}
                   create={() =>
-                    send('CREATE_APIKEYS', { createdSubs, callBackCreation: () => afterSubCreation() })
+                    send('CREATE_APIKEYS', {
+                      createdSubs,
+                      callBackCreation: () => afterSubCreation(),
+                    })
                   }
                   currentLanguage={props.currentLanguage}
-                />}
+                />
+              )}
             </>
           )}
           {state.matches('recapSubs') && (
@@ -273,30 +278,31 @@ const Help = ({ language }) => {
   return (
     <BeautifulTitle
       place="bottom"
-      title={<div className="d-flex flex-column">
-        <h4>
-          <Translation i18nkey="Keyboard shortcuts" language={language}>
-            Keyboard shortcut
-          </Translation>
-        </h4>
-        <ul>
-          <li>
-            <Translation i18nkey="keyboard.shortcuts.arrow.left" language={language}>
-              arrow-left: previous step
+      title={
+        <div className="d-flex flex-column">
+          <h4>
+            <Translation i18nkey="Keyboard shortcuts" language={language}>
+              Keyboard shortcut
+            </Translation>
+          </h4>
+          <ul>
+            <li>
+              <Translation i18nkey="keyboard.shortcuts.arrow.left" language={language}>
+                arrow-left: previous step
               </Translation>
-          </li>
-          <li>
-            <Translation i18nkey="keyboard.shortcuts.arrow.right" language={language}>
-              arrow-right: next step or import
+            </li>
+            <li>
+              <Translation i18nkey="keyboard.shortcuts.arrow.right" language={language}>
+                arrow-right: next step or import
               </Translation>
-          </li>
-          <li>
-            <Translation i18nkey="keyboard.shortcuts.tab" language={language}>
-              tab: focus on api name
+            </li>
+            <li>
+              <Translation i18nkey="keyboard.shortcuts.tab" language={language}>
+                tab: focus on api name
               </Translation>
-          </li>
-        </ul>
-      </div>
+            </li>
+          </ul>
+        </div>
       }>
       <i className="ml-4 far fa-question-circle" />
     </BeautifulTitle>

@@ -4,7 +4,12 @@ import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.UberPublicUserAccess
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -96,44 +101,60 @@ class LoginController(DaikokuAction: DaikokuAction,
           case Some(auth) if auth.enabled =>
             val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
             keyGenerator.init(160)
-            val token = new Base32().encodeAsString(keyGenerator.generateKey.getEncoded)
+            val token =
+              new Base32().encodeAsString(keyGenerator.generateKey.getEncoded)
 
-            env.dataStore.userRepo.save(user.copy(
-              twoFactorAuthentication = Some(auth.copy(token = token))
-            ))
+            env.dataStore.userRepo
+              .save(
+                user.copy(
+                  twoFactorAuthentication = Some(auth.copy(token = token))
+                ))
               .flatMap {
-                case true => FastFuture.successful(Redirect(s"/2fa?token=$token"))
-                case false => FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+                case true =>
+                  FastFuture.successful(Redirect(s"/2fa?token=$token"))
+                case false =>
+                  FastFuture.successful(BadRequest(Json.obj("error" -> true)))
               }
           case _ => createSession(sessionMaxAge, user, request, tenant)
         }
     }
   }
 
-  private def createSession(sessionMaxAge: Int, user: User, request: RequestHeader, tenant: Tenant) = {
+  private def createSession(sessionMaxAge: Int,
+                            user: User,
+                            request: RequestHeader,
+                            tenant: Tenant) = {
     env.dataStore.userSessionRepo
       .findOne(Json.obj("userEmail" -> user.email))
       .map {
-        case Some(session) => session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
-        case None => UserSession(
-          id = DatastoreId(BSONObjectID.generate().stringify),
-          userId = user.id,
-          userName = user.name,
-          userEmail = user.email,
-          impersonatorId = None,
-          impersonatorName = None,
-          impersonatorEmail = None,
-          impersonatorSessionId = None,
-          sessionId = UserSessionId(IdGenerator.token),
-          created = DateTime.now(),
-          expires = DateTime.now().plusSeconds(sessionMaxAge),
-          ttl = FiniteDuration(sessionMaxAge, TimeUnit.SECONDS)
-        )
+        case Some(session) =>
+          session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
+        case None =>
+          UserSession(
+            id = DatastoreId(BSONObjectID.generate().stringify),
+            userId = user.id,
+            userName = user.name,
+            userEmail = user.email,
+            impersonatorId = None,
+            impersonatorName = None,
+            impersonatorEmail = None,
+            impersonatorSessionId = None,
+            sessionId = UserSessionId(IdGenerator.token),
+            created = DateTime.now(),
+            expires = DateTime.now().plusSeconds(sessionMaxAge),
+            ttl = FiniteDuration(sessionMaxAge, TimeUnit.SECONDS)
+          )
       }
       .flatMap { session =>
         env.dataStore.userSessionRepo.save(session).map { _ =>
-          AuditTrailEvent(s"${user.name} has connected to ${tenant.name} with ${user.email} address")
-            .logTenantAuditEvent(tenant, user, session, request, TrieMap[String, String](), AuthorizationLevel.AuthorizedSelf)
+          AuditTrailEvent(
+            s"${user.name} has connected to ${tenant.name} with ${user.email} address")
+            .logTenantAuditEvent(tenant,
+                                 user,
+                                 session,
+                                 request,
+                                 TrieMap[String, String](),
+                                 AuthorizationLevel.AuthorizedSelf)
           Redirect(request.session.get("redirect").getOrElse("/"))
             .withSession("sessionId" -> session.sessionId.value)
             .removingFromSession("redirect")(request)
@@ -194,7 +215,8 @@ class LoginController(DaikokuAction: DaikokuAction,
               case (Some(username), Some(password)) =>
                 p match {
                   case AuthProvider.Local =>
-                    AuditTrailEvent(s"unauthenticated user with $username has tried to login [local provider]")
+                    AuditTrailEvent(
+                      s"unauthenticated user with $username has tried to login [local provider]")
                       .logUnauthenticatedUserEvent(ctx.tenant)
                     val localConfig = LocalLoginConfig.fromJsons(
                       ctx.tenant.authProviderSettings)
@@ -207,7 +229,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                                                         env))
                   case AuthProvider.Otoroshi =>
                     // as otoroshi already done the job, nothing to do here
-                    AuditTrailEvent(s"unauthenticated user with $username has tried to login [Otoroshi provider]")
+                    AuditTrailEvent(
+                      s"unauthenticated user with $username has tried to login [Otoroshi provider]")
                       .logUnauthenticatedUserEvent(ctx.tenant)
                     FastFuture.successful(
                       Redirect(
@@ -217,7 +240,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                         )(ctx.request)
                     )
                   case AuthProvider.LDAP =>
-                    AuditTrailEvent(s"unauthenticated user with $username has tried to login [LDAP provider]")
+                    AuditTrailEvent(
+                      s"unauthenticated user with $username has tried to login [LDAP provider]")
                       .logUnauthenticatedUserEvent(ctx.tenant)
                     val ldapConfig =
                       LdapConfig.fromJsons(ctx.tenant.authProviderSettings)
@@ -284,15 +308,27 @@ class LoginController(DaikokuAction: DaikokuAction,
       case Some(AuthProvider.Otoroshi) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
-          AuditTrailEvent(s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Otoroshi provider]")
-            .logTenantAuditEvent(ctx.tenant, ctx.user, session, ctx.request, ctx.ctx, AuthorizationLevel.AuthorizedSelf)
+          AuditTrailEvent(
+            s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Otoroshi provider]")
+            .logTenantAuditEvent(ctx.tenant,
+                                 ctx.user,
+                                 session,
+                                 ctx.request,
+                                 ctx.ctx,
+                                 AuthorizationLevel.AuthorizedSelf)
           Redirect(s"/.well-known/otoroshi/logout?redirect=$redirect")
         }
       case Some(AuthProvider.OAuth2) =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
-          AuditTrailEvent(s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [OAuth2 provider]")
-            .logTenantAuditEvent(ctx.tenant, ctx.user, session, ctx.request, ctx.ctx, AuthorizationLevel.AuthorizedSelf)
+          AuditTrailEvent(
+            s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [OAuth2 provider]")
+            .logTenantAuditEvent(ctx.tenant,
+                                 ctx.user,
+                                 session,
+                                 ctx.request,
+                                 ctx.ctx,
+                                 AuthorizationLevel.AuthorizedSelf)
           Redirect(OAuth2Config
             .fromJson(ctx.tenant.authProviderSettings) match {
             case Left(_) => redirect
@@ -304,8 +340,14 @@ class LoginController(DaikokuAction: DaikokuAction,
       case _ =>
         val session = ctx.request.attrs(IdentityAttrs.SessionKey)
         env.dataStore.userSessionRepo.deleteById(session.id).map { _ =>
-          AuditTrailEvent(s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Local/Other provider]")
-            .logTenantAuditEvent(ctx.tenant, ctx.user, session, ctx.request, ctx.ctx, AuthorizationLevel.AuthorizedSelf)
+          AuditTrailEvent(
+            s"${session.userEmail} disconnect his account from ${ctx.tenant.name} [Local/Other provider]")
+            .logTenantAuditEvent(ctx.tenant,
+                                 ctx.user,
+                                 session,
+                                 ctx.request,
+                                 ctx.ctx,
+                                 AuthorizationLevel.AuthorizedSelf)
           Redirect(redirect).removingFromSession("sessionId")(ctx.request)
         }
     }
@@ -348,7 +390,8 @@ class LoginController(DaikokuAction: DaikokuAction,
     val password1 = (body \ "password1").as[String]
     val password2 = (body \ "password2").as[String]
     env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
-      case Some(user) if user.invitation.isEmpty || user.invitation.get.registered =>
+      case Some(user)
+          if user.invitation.isEmpty || user.invitation.get.registered =>
         FastFuture.successful(
           BadRequest(Json.obj("error" -> "Email address already exists")))
       case _ =>
@@ -398,8 +441,11 @@ class LoginController(DaikokuAction: DaikokuAction,
 
   def createUserValidation() = DaikokuTenantAction.async { ctx =>
     ctx.request.getQueryString("id") match {
-      case None => Errors.craftResponseResult("The user creation has failed.", Results.BadRequest,
-        ctx.request, env = env)
+      case None =>
+        Errors.craftResponseResult("The user creation has failed.",
+                                   Results.BadRequest,
+                                   ctx.request,
+                                   env = env)
       case Some(id) =>
         env.dataStore.accountCreationRepo
           .findOneNotDeleted(Json.obj("randomId" -> id))
@@ -417,11 +463,17 @@ class LoginController(DaikokuAction: DaikokuAction,
               env.dataStore.userRepo
                 .findOne(Json.obj("email" -> accountCreation.email))
                 .flatMap {
-                  case Some(user) if user.invitation.isEmpty || user.invitation.get.registered =>
-                    Errors.craftResponseResult("This account is already enabled.", Results.BadRequest,
-                      ctx.request, env = env)
+                  case Some(user)
+                      if user.invitation.isEmpty || user.invitation.get.registered =>
+                    Errors.craftResponseResult(
+                      "This account is already enabled.",
+                      Results.BadRequest,
+                      ctx.request,
+                      env = env)
                   case optUser =>
-                    val userId = optUser.map(_.id).getOrElse(UserId(BSONObjectID.generate().stringify))
+                    val userId = optUser
+                      .map(_.id)
+                      .getOrElse(UserId(BSONObjectID.generate().stringify))
                     val team = Team(
                       id = TeamId(BSONObjectID.generate().stringify),
                       tenant = ctx.tenant.id,
@@ -446,9 +498,12 @@ class LoginController(DaikokuAction: DaikokuAction,
                       defaultLanguage = None
                     )
 
-                    val user = optUser.map { u =>
-                      getUser().copy(invitation = u.invitation.map(_.copy(registered = true)))
-                    }.getOrElse(getUser())
+                    val user = optUser
+                      .map { u =>
+                        getUser().copy(invitation =
+                          u.invitation.map(_.copy(registered = true)))
+                      }
+                      .getOrElse(getUser())
 
                     val userCreation = for {
                       _ <- env.dataStore.teamRepo
@@ -465,8 +520,10 @@ class LoginController(DaikokuAction: DaikokuAction,
                 }
             }
             case _ =>
-              Errors.craftResponseResult("Your link is invalid", Results.BadRequest,
-                ctx.request, env = env)
+              Errors.craftResponseResult("Your link is invalid",
+                                         Results.BadRequest,
+                                         ctx.request,
+                                         env = env)
           }
     }
   }
@@ -609,58 +666,87 @@ class LoginController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def verifyCode(token: Option[String], code: Option[String]) =  DaikokuTenantAction.async { ctx =>
+  def verifyCode(token: Option[String], code: Option[String]) =
+    DaikokuTenantAction.async { ctx =>
       (token, code) match {
         case (Some(token), Some(code)) =>
-          env.dataStore.userRepo.findOne(Json.obj(
-            "twoFactorAuthentication.token" -> token
-          )).flatMap {
-            case Some(user) if user.twoFactorAuthentication.isDefined =>
-              val totp = new TimeBasedOneTimePasswordGenerator()
-              val now = Instant.now()
-              val later = now.plus(totp.getTimeStep)
+          env.dataStore.userRepo
+            .findOne(
+              Json.obj(
+                "twoFactorAuthentication.token" -> token
+              ))
+            .flatMap {
+              case Some(user) if user.twoFactorAuthentication.isDefined =>
+                val totp = new TimeBasedOneTimePasswordGenerator()
+                val now = Instant.now()
+                val later = now.plus(totp.getTimeStep)
 
-              val decodedKey = Base64.getDecoder.decode(user.twoFactorAuthentication.get.secret)
-              val key = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES")
+                val decodedKey = Base64.getDecoder.decode(
+                  user.twoFactorAuthentication.get.secret)
+                val key =
+                  new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES")
 
-              if (code == totp.generateOneTimePassword(key, now).toString ||
-                code == totp.generateOneTimePassword(key, later).toString)
-                createSession(
-                    LocalLoginConfig.fromJsons(ctx.tenant.authProviderSettings).sessionMaxAge,
+                if (code == totp.generateOneTimePassword(key, now).toString ||
+                    code == totp.generateOneTimePassword(key, later).toString)
+                  createSession(
+                    LocalLoginConfig
+                      .fromJsons(ctx.tenant.authProviderSettings)
+                      .sessionMaxAge,
                     user,
                     ctx.request,
                     ctx.tenant
                   )
-              else
-                FastFuture.successful(BadRequest(Json.obj("error" -> "Invalid code")))
-            case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Invalid token")))
-          }
-        case (_, _) => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing parameters")))
+                else
+                  FastFuture.successful(
+                    BadRequest(Json.obj("error" -> "Invalid code")))
+              case None =>
+                FastFuture.successful(
+                  BadRequest(Json.obj("error" -> "Invalid token")))
+            }
+        case (_, _) =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "Missing parameters")))
       }
     }
 
   def reset2fa() = DaikokuTenantAction.async(parse.json) { ctx =>
-      (ctx.request.body \ "backupCodes").asOpt[String] match {
-        case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing body fields")))
-        case Some(backupCodes) =>
-          env.dataStore.userRepo.findOne(Json.obj(
-            "twoFactorAuthentication.backupCodes" -> backupCodes
-          )).flatMap {
+    (ctx.request.body \ "backupCodes").asOpt[String] match {
+      case None =>
+        FastFuture.successful(
+          BadRequest(Json.obj("error" -> "Missing body fields")))
+      case Some(backupCodes) =>
+        env.dataStore.userRepo
+          .findOne(
+            Json.obj(
+              "twoFactorAuthentication.backupCodes" -> backupCodes
+            ))
+          .flatMap {
             case Some(user) =>
               user.twoFactorAuthentication match {
-                case None => FastFuture.successful(BadRequest(Json.obj("error" -> "2FA not enabled on this account")))
+                case None =>
+                  FastFuture.successful(
+                    BadRequest(
+                      Json.obj("error" -> "2FA not enabled on this account")))
                 case Some(auth) =>
                   if (auth.backupCodes != backupCodes)
-                    FastFuture.successful(BadRequest(Json.obj("error" -> "Wrong backup codes")))
+                    FastFuture.successful(
+                      BadRequest(Json.obj("error" -> "Wrong backup codes")))
                   else
-                    env.dataStore.userRepo.save(user.copy(twoFactorAuthentication = None))
+                    env.dataStore.userRepo
+                      .save(user.copy(twoFactorAuthentication = None))
                       .flatMap {
-                        case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Something happens when updating user")))
-                        case true => FastFuture.successful(Ok(Json.obj("message" -> "2FA successfully disabled - You can now login")))
+                        case false =>
+                          FastFuture.successful(BadRequest(Json.obj(
+                            "error" -> "Something happens when updating user")))
+                        case true =>
+                          FastFuture.successful(Ok(Json.obj(
+                            "message" -> "2FA successfully disabled - You can now login")))
                       }
               }
-            case _ => FastFuture.successful(NotFound(Json.obj("error" -> "User not found")))
+            case _ =>
+              FastFuture.successful(
+                NotFound(Json.obj("error" -> "User not found")))
           }
-      }
     }
+  }
 }

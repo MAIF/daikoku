@@ -160,11 +160,14 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
               exact
               path="/2fa"
               tenant={tenant}
-              render={(p) => <TwoFactorAuthentication
-                match={p.match}
-                history={p.history}
-                currentLanguage={currentLanguage}
-                title={`${tenant.name} - ${t('Verification code', currentLanguage)}`} />}
+              render={(p) => (
+                <TwoFactorAuthentication
+                  match={p.match}
+                  history={p.history}
+                  currentLanguage={currentLanguage}
+                  title={`${tenant.name} - ${t('Verification code', currentLanguage)}`}
+                />
+              )}
             />
             <UnauthenticatedRoute
               title={`${tenant.name} - ${t('Reset password', currentLanguage)}`}
@@ -204,7 +207,13 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
               title={`${tenant.name} - ${t('Home', currentLanguage)}`}
               exact
               path="/"
-              render={(p) => <MaybeHomePage match={p.match} history={p.history} connectedUser={p.connectedUser} />}
+              render={(p) => (
+                <MaybeHomePage
+                  match={p.match}
+                  history={p.history}
+                  connectedUser={p.connectedUser}
+                />
+              )}
             />
             <RouteWithTitle
               title={`${tenant.name} - ${t('Message', currentLanguage, true)}`}
@@ -536,7 +545,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
               render={(p) => <ApiHome match={p.match} history={p.history} tab="news" />}
             />
             <FrontOfficeRoute
-              path={["/:teamId/:apiId/issues", "/:teamId/:apiId/labels"]}
+              path={['/:teamId/:apiId/issues', '/:teamId/:apiId/labels']}
               render={(p) => <ApiHome match={p.match} history={p.history} tab="issues" />}
             />
             <FrontOfficeRoute

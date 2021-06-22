@@ -3,7 +3,10 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -15,7 +18,12 @@ import io.nayuki.qrcodegen.QrCode
 import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents
+}
 import reactivemongo.bson.BSONObjectID
 
 import java.time.Instant
@@ -267,8 +275,10 @@ class UsersController(DaikokuAction: DaikokuAction,
                     if (session.expires.isBefore(DateTime.now()))
                       Redirect("/logout")
                     else
-                      Redirect(ctx.request.session.get("redirect").getOrElse("/"))
-                        .removingFromSession("sessionId", "redirect")(ctx.request)
+                      Redirect(
+                        ctx.request.session.get("redirect").getOrElse("/"))
+                        .removingFromSession("sessionId", "redirect")(
+                          ctx.request)
                         .withSession(("sessionId", sessionId.value))
                   }
               case None => FastFuture.successful(Redirect("/logout"))
@@ -292,107 +302,158 @@ class UsersController(DaikokuAction: DaikokuAction,
 
           val secret = keyGenerator.generateKey()
 
-          val base32SecretEncoded = new Base32().encodeAsString(secret.getEncoded)
+          val base32SecretEncoded =
+            new Base32().encodeAsString(secret.getEncoded)
 
-          env.dataStore.userRepo.save(
-            ctx.user.copy(twoFactorAuthentication = Some(TwoFactorAuthentication(
-              enabled = false,
-              secret = Base64.getEncoder.encodeToString(secret.getEncoded),
-              token = "",
-              backupCodes = ""
-            )))
-          ).flatMap {
-            case true => FastFuture.successful(Ok(Json.obj(
-              "rawSecret" -> base32SecretEncoded,
-              "qrcode" -> QrCode
-                .encodeText(s"otpauth://totp/$label?secret=$base32SecretEncoded", QrCode.Ecc.HIGH)
-                .toSvgString(10)
-            )))
-            case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Can't updated user")))
-          }
-        case Some(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "Unable to retrieve generated qrcode when 2fa enabled")))
+          env.dataStore.userRepo
+            .save(
+              ctx.user.copy(
+                twoFactorAuthentication =
+                  Some(
+                    TwoFactorAuthentication(
+                      enabled = false,
+                      secret =
+                        Base64.getEncoder.encodeToString(secret.getEncoded),
+                      token = "",
+                      backupCodes = ""
+                    )))
+            )
+            .flatMap {
+              case true =>
+                FastFuture.successful(
+                  Ok(
+                    Json.obj(
+                      "rawSecret" -> base32SecretEncoded,
+                      "qrcode" -> QrCode
+                        .encodeText(
+                          s"otpauth://totp/$label?secret=$base32SecretEncoded",
+                          QrCode.Ecc.HIGH)
+                        .toSvgString(10)
+                    )))
+              case false =>
+                FastFuture.successful(
+                  BadRequest(Json.obj("error" -> "Can't updated user")))
+            }
+        case Some(_) =>
+          FastFuture.successful(BadRequest(Json.obj(
+            "error" -> "Unable to retrieve generated qrcode when 2fa enabled")))
       }
     }
   }
 
   def enable2fa(code: Option[String]) = DaikokuAction.async { ctx =>
     PublicUserAccess(
-      AuditTrailEvent("@{user.name} try to enable two factor authentication"))(ctx) {
+      AuditTrailEvent("@{user.name} try to enable two factor authentication"))(
+      ctx) {
       code match {
-        case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing code parameter")))
+        case None =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "Missing code parameter")))
         case Some(code) =>
           val totp = new TimeBasedOneTimePasswordGenerator()
           val now = Instant.now()
 
-          val decodedKey = Base64.getDecoder.decode(ctx.user.twoFactorAuthentication.get.secret)
+          val decodedKey = Base64.getDecoder.decode(
+            ctx.user.twoFactorAuthentication.get.secret)
           val key = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES")
 
           if (code == totp.generateOneTimePassword(key, now).toString) {
             val keyGenerator = KeyGenerator.getInstance(totp.getAlgorithm)
             keyGenerator.init(160)
 
-            val backupCodes = new Base32().encodeAsString(keyGenerator.generateKey().getEncoded)
-            env.dataStore.userRepo.save(ctx.user.copy(twoFactorAuthentication =
-              Some(ctx.user.twoFactorAuthentication.get.copy(
-                enabled = true,
-                backupCodes = backupCodes
-              ))
-            )).flatMap {
-              case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Something happens when updating user")))
-              case true => FastFuture.successful(Ok(Json.obj(
-                "message" -> "2fa successfully enabled",
-                "backupCodes" -> backupCodes
-              )))
-            }
+            val backupCodes =
+              new Base32().encodeAsString(keyGenerator.generateKey().getEncoded)
+            env.dataStore.userRepo
+              .save(
+                ctx.user.copy(
+                  twoFactorAuthentication = Some(
+                    ctx.user.twoFactorAuthentication.get.copy(
+                      enabled = true,
+                      backupCodes = backupCodes
+                    ))))
+              .flatMap {
+                case false =>
+                  FastFuture.successful(BadRequest(Json.obj(
+                    "error" -> "Something happens when updating user")))
+                case true =>
+                  FastFuture.successful(
+                    Ok(
+                      Json.obj(
+                        "message" -> "2fa successfully enabled",
+                        "backupCodes" -> backupCodes
+                      )))
+              }
           } else
-            FastFuture.successful(BadRequest(Json.obj("error" -> "No matching code")))
+            FastFuture.successful(
+              BadRequest(Json.obj("error" -> "No matching code")))
       }
     }
   }
 
   def disable2fa() = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent("@{user.name} has disabled 2fa on your account"))(ctx) {
-      env.dataStore.userRepo.save(ctx.user.copy(twoFactorAuthentication = None))
+    PublicUserAccess(
+      AuditTrailEvent("@{user.name} has disabled 2fa on your account"))(ctx) {
+      env.dataStore.userRepo
+        .save(ctx.user.copy(twoFactorAuthentication = None))
         .map {
           case true => NoContent
-          case false => BadRequest(Json.obj("error" -> "Something happens when updating user"))
+          case false =>
+            BadRequest(
+              Json.obj("error" -> "Something happens when updating user"))
         }
     }
   }
 
   def checkTokenInvitation() = DaikokuAction.async(parse.json) { ctx =>
-    PublicUserAccess(AuditTrailEvent("@{user.name} has tried to validate an invitation token"))(ctx) {
+    PublicUserAccess(
+      AuditTrailEvent(
+        "@{user.name} has tried to validate an invitation token"))(ctx) {
       val body = ctx.request.body
       (body \ "token").asOpt[String] match {
         case Some(token) =>
-          env.dataStore.userRepo.findOneNotDeleted(Json.obj(
-            "invitation.token" -> token,
-            "email" -> ctx.user.email
-          ))
+          env.dataStore.userRepo
+            .findOneNotDeleted(
+              Json.obj(
+                "invitation.token" -> token,
+                "email" -> ctx.user.email
+              ))
             .map {
               case Some(user)
-                if Hours.hoursBetween(user.invitation.get.createdAt, DateTime.now()).isLessThan(Hours.ONE) =>
-                user.invitation.map { invitation =>
-                  Ok(Json.obj(
-                    "team" -> invitation.team,
-                    "notificationId" -> invitation.notificationId
-                  ))
-                }.getOrElse(
-                  BadRequest(Json.obj("error" -> "Missing invitation information"))
-                )
-              case None => BadRequest(Json.obj("error" -> "You're token is invalid, expired or you are already in the team"))
+                  if Hours
+                    .hoursBetween(user.invitation.get.createdAt, DateTime.now())
+                    .isLessThan(Hours.ONE) =>
+                user.invitation
+                  .map { invitation =>
+                    Ok(
+                      Json.obj(
+                        "team" -> invitation.team,
+                        "notificationId" -> invitation.notificationId
+                      ))
+                  }
+                  .getOrElse(
+                    BadRequest(
+                      Json.obj("error" -> "Missing invitation information"))
+                  )
+              case None =>
+                BadRequest(Json.obj(
+                  "error" -> "You're token is invalid, expired or you are already in the team"))
             }
-        case _ => FastFuture.successful(BadRequest(Json.obj("error" -> "Can't validate token")))
+        case _ =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "Can't validate token")))
       }
     }
   }
 
   def removeInvitation(): Action[AnyContent] = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent("@{user.name} has closed team invitation"))(ctx) {
-      env.dataStore.userRepo.save(ctx.user.copy(invitation = None))
+    PublicUserAccess(
+      AuditTrailEvent("@{user.name} has closed team invitation"))(ctx) {
+      env.dataStore.userRepo
+        .save(ctx.user.copy(invitation = None))
         .map {
           case true => Ok(Json.obj("done" -> true))
-          case false => BadRequest(Json.obj("error" -> "Unable to remove data invitation"))
+          case false =>
+            BadRequest(Json.obj("error" -> "Unable to remove data invitation"))
         }
     }
   }

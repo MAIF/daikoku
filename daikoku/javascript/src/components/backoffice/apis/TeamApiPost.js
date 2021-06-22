@@ -1,4 +1,3 @@
-
 import React, { Suspense } from 'react';
 import { toastr } from 'react-redux-toastr';
 import { Spinner } from '../..';
@@ -73,9 +72,9 @@ export class TeamApiPost extends React.Component {
       posts: this.state.posts.map((post, j) => {
         if (j === i) post.content = code;
         return post;
-      })
-    })
-  }
+      }),
+    });
+  };
 
   handleTitle = (i, title) => {
     this.setState({
@@ -83,8 +82,8 @@ export class TeamApiPost extends React.Component {
         if (j === i) post.title = title;
         return post;
       }),
-    })
-  }
+    });
+  };
 
   toggleNewPost = () => {
     this.setState({ newPostOpen: !this.state.newPostOpen });
@@ -105,7 +104,7 @@ export class TeamApiPost extends React.Component {
     Services.savePost(api._id, team._id, post._id, post).then((res) => {
       if (res.status === 200) toastr.success(t('team_api_post.saved', currentLanguage));
       else toastr.error(t('team_api_post.failed', currentLanguage));
-      window.location.reload()
+      window.location.reload();
     });
   };
 
@@ -118,7 +117,7 @@ export class TeamApiPost extends React.Component {
       if (res.status === 200) {
         toastr.success(t('team_api_post.saved', currentLanguage));
         this.toggleNewPost();
-        window.location.reload()
+        window.location.reload();
       } else toastr.error(t('team_api_post.failed', currentLanguage));
     });
   };
@@ -130,7 +129,7 @@ export class TeamApiPost extends React.Component {
         Services.removePost(api._id, team._id, postId).then((res) => {
           if (res.status === 200) {
             toastr.success(t('team_api_post.saved', currentLanguage));
-            window.location.reload()
+            window.location.reload();
           } else toastr.error(t('team_api_post.failed', currentLanguage));
         });
     });
@@ -175,17 +174,25 @@ export class TeamApiPost extends React.Component {
               {posts.map((post, i) => (
                 <div key={i}>
                   <div className="d-flex justify-content-between align-items-center pb-1">
-                    {post.isOpen ?
-                      <input type="text" value={post.title} onChange={e => this.handleTitle(i, e.target.value)}
-                        className="form-control mr-1" style={{ flex: 1 }} /> :
+                    {post.isOpen ? (
+                      <input
+                        type="text"
+                        value={post.title}
+                        onChange={(e) => this.handleTitle(i, e.target.value)}
+                        className="form-control mr-1"
+                        style={{ flex: 1 }}
+                      />
+                    ) : (
                       <p>{post.title}</p>
-                    }
+                    )}
                     <div>
-                      {post.isOpen && <button
-                        className="btn btn-outline-success mr-1"
-                        onClick={() => this.savePost(i)}>
-                        <i className="fas fa-save" />
-                      </button>}
+                      {post.isOpen && (
+                        <button
+                          className="btn btn-outline-success mr-1"
+                          onClick={() => this.savePost(i)}>
+                          <i className="fas fa-save" />
+                        </button>
+                      )}
                       <button
                         className="btn btn-outline-danger mr-1"
                         onClick={() => this.removePost(post._id, i)}>
@@ -196,7 +203,7 @@ export class TeamApiPost extends React.Component {
                       </button>
                     </div>
                   </div>
-                  {post.isOpen &&
+                  {post.isOpen && (
                     <React.Suspense fallback={<div>loading ...</div>}>
                       <LazySingleMarkdownInput
                         currentLanguage={this.props.currentLanguage}
@@ -205,7 +212,8 @@ export class TeamApiPost extends React.Component {
                         value={post.content}
                         onChange={(code) => this.handleContent(i, code)}
                       />
-                    </React.Suspense>}
+                    </React.Suspense>
+                  )}
                 </div>
               ))}
             </div>

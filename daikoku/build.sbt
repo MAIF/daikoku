@@ -15,7 +15,7 @@ val wiremockVersion = "2.26.3"
 lazy val root = (project in file("."))
   .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin)
   .disablePlugins(PlayFilters)
-  .settings (
+  .settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage := "daikoku"
   )
@@ -61,12 +61,10 @@ libraryDependencies ++= Seq(
   "javax.xml.bind" % "jaxb-api" % "2.3.1",
   "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1",
   "com.sun.xml.bind" % "jaxb-impl" % "2.3.0.1",
-
   "io.vertx" % "vertx-pg-client" % "4.0.0",
   "io.nayuki" % "qrcodegen" % "1.6.0",
   "com.eatthepath" % "java-otp" % "0.2.0",
   "com.sun.mail" % "javax.mail" % "1.6.2",
-
   "org.reactivemongo" %% "play2-reactivemongo" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",

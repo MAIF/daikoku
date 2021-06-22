@@ -150,20 +150,24 @@ class EntitiesController(DaikokuAction: DaikokuAction,
   }
 
   def newIssue(): Action[AnyContent] = DaikokuAction.async { ctx =>
-    PublicUserAccess(AuditTrailEvent(s"@{user.name} has asked for a template entity of type Issue"))(ctx) {
-      Ok(ApiIssue(
+    PublicUserAccess(
+      AuditTrailEvent(
+        s"@{user.name} has asked for a template entity of type Issue"))(ctx) {
+      Ok(
+        ApiIssue(
           id = ApiIssueId(BSONObjectID.generate().stringify),
           tenant = ctx.tenant.id,
           title = "",
           tags = Set.empty,
           seqId = 0,
           open = true,
-          comments = Seq(ApiIssueComment(
-            by = ctx.user.id,
-            createdAt = DateTime.now(),
-            lastModificationAt = DateTime.now(),
-            content = ""
-          )),
+          comments = Seq(
+            ApiIssueComment(
+              by = ctx.user.id,
+              createdAt = DateTime.now(),
+              lastModificationAt = DateTime.now(),
+              content = ""
+            )),
           by = ctx.user.id,
           createdAt = DateTime.now(),
           lastModificationAt = DateTime.now(),

@@ -923,7 +923,6 @@ class TenantControllerSpec()
 
       resp.status mustBe 201
 
-
       respGet = httpJsonCallBlocking(
         s"/api/tenants/${tenant.id.value}/otoroshis")(tenant, session)
       respGet.status mustBe 200

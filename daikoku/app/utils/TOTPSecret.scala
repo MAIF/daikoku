@@ -10,7 +10,8 @@ class TOTPSecret(private val underlying: BigInt) {
 
   private val B32 = ('A' to 'Z') ++ ('2' to '7')
 
-  def toBase32: String = new String(underlying.toString(32).toCharArray.map(_.asDigit).map(B32(_)))
+  def toBase32: String =
+    new String(underlying.toString(32).toCharArray.map(_.asDigit).map(B32(_)))
 
   def toByteArray: Array[Byte] = {
     val b = underlying.toByteArray
@@ -21,15 +22,21 @@ class TOTPSecret(private val underlying: BigInt) {
 object TOTPSecret {
   def apply(b32Digits: Int): TOTPSecret = {
     val r = new Random(new SecureRandom)
-    new TOTPSecret((2 to b32Digits).foldLeft(BigInt(r.nextInt(31)) + 1: BigInt)((a, _) => a * 32 + r.nextInt(32)))
+    new TOTPSecret(
+      (2 to b32Digits).foldLeft(BigInt(r.nextInt(31)) + 1: BigInt)((a, _) =>
+        a * 32 + r.nextInt(32)))
   }
 }
 
 object Authenticator {
 
-  def totp(secret: TOTPSecret, time: Long, returnDigits: Int, crypto: String): String = {
+  def totp(secret: TOTPSecret,
+           time: Long,
+           returnDigits: Int,
+           crypto: String): String = {
 
-    val msg: Array[Byte] = BigInt(time).toByteArray.reverse.padTo(8, 0.toByte).reverse
+    val msg: Array[Byte] =
+      BigInt(time).toByteArray.reverse.padTo(8, 0.toByte).reverse
     val hash = hmac_sha(crypto, secret.toByteArray, msg)
     val offset: Int = hash(hash.length - 1) & 0xf
     val binary: Long = ((hash(offset) & 0x7f) << 24) |
@@ -47,20 +54,26 @@ object Authenticator {
               returnDigits: Int = 6,
               crypto: String = "HmacSha1",
               windowSize: Int = 3): Seq[String] =
-    (-windowSize to windowSize).foldLeft(Nil: Seq[String])((a, b) => totp(secret, time + b, returnDigits, crypto) +: a).reverse
+    (-windowSize to windowSize)
+      .foldLeft(Nil: Seq[String])((a, b) =>
+        totp(secret, time + b, returnDigits, crypto) +: a)
+      .reverse
 
-  def pinMatchesSecret(pin:String, secret:TOTPSecret): Boolean =
+  def pinMatchesSecret(pin: String, secret: TOTPSecret): Boolean =
     totpSeq(secret = secret).contains(pin.trim)
 
-  def pinMatchesSecret(pin:Option[String], secret:Option[TOTPSecret]): Boolean =
-    (pin,secret) match {
-      case (None,None) => true
-      case (None,Some(_:TOTPSecret)) => false
-      case (Some(_:String), None) => false
-      case (Some(p:String), Some(s:TOTPSecret))=> pinMatchesSecret(p,s)
+  def pinMatchesSecret(pin: Option[String],
+                       secret: Option[TOTPSecret]): Boolean =
+    (pin, secret) match {
+      case (None, None)                           => true
+      case (None, Some(_: TOTPSecret))            => false
+      case (Some(_: String), None)                => false
+      case (Some(p: String), Some(s: TOTPSecret)) => pinMatchesSecret(p, s)
     }
 
-  private  def hmac_sha(crypto: String, keyBytes: Array[Byte], text: Array[Byte]): Array[Byte] = {
+  private def hmac_sha(crypto: String,
+                       keyBytes: Array[Byte],
+                       text: Array[Byte]): Array[Byte] = {
     val hmac: Mac = Mac.getInstance(crypto)
     val macKey = new SecretKeySpec(keyBytes, "RAW")
     hmac.init(macKey)

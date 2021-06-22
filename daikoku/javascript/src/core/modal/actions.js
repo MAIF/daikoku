@@ -78,17 +78,19 @@ export const openTestingApiKeyModal = (modalProps) => (dispatch) => {
   });
 };
 
-export const openInvitationTeamModal = modalProps => dispatch => dispatch({
-  type: OPEN_MODAL,
-  modalProps,
-  modalType: 'teamInvitation'
-});
+export const openInvitationTeamModal = (modalProps) => (dispatch) =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'teamInvitation',
+  });
 
-export const openJoinTeamModal = modalProps => dispatch => dispatch({
-  type: OPEN_MODAL,
-  modalProps,
-  modalType: 'joinTeamInvitation'
-});
+export const openJoinTeamModal = (modalProps) => (dispatch) =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'joinTeamInvitation',
+  });
 
 export const closeModal = () => (dispatch) => {
   return dispatch({

@@ -94,8 +94,12 @@ object utils {
         _ <- daikokuComponents.env.dataStore.userRepo.deleteAll()
         _ <- daikokuComponents.env.dataStore.teamRepo.forAllTenant().deleteAll()
         _ <- daikokuComponents.env.dataStore.apiRepo.forAllTenant().deleteAll()
-        _ <- daikokuComponents.env.dataStore.apiIssueRepo.forAllTenant().deleteAll()
-        _ <- daikokuComponents.env.dataStore.apiPostRepo.forAllTenant().deleteAll()
+        _ <- daikokuComponents.env.dataStore.apiIssueRepo
+          .forAllTenant()
+          .deleteAll()
+        _ <- daikokuComponents.env.dataStore.apiPostRepo
+          .forAllTenant()
+          .deleteAll()
         _ <- daikokuComponents.env.dataStore.apiSubscriptionRepo
           .forAllTenant()
           .deleteAll()

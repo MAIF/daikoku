@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import { toastr } from 'react-redux-toastr';
@@ -11,59 +10,81 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
   function deleteTag(id) {
     setIssue({
       ...issue,
-      issuesTags: [...issue.issuesTags.filter(iss => iss.id !== id)]
-    })
+      issuesTags: [...issue.issuesTags.filter((iss) => iss.id !== id)],
+    });
   }
 
   return (
     <div style={{ paddingBottom: '250px' }}>
-      {showTagForm ? <NewTag
-        issuesTags={issue.issuesTags}
-        currentLanguage={currentLanguage}
-        handleCreate={newTag => {
-          setIssue({ ...issue, issuesTags: [...issue.issuesTags, newTag] })
-          showNewTagForm(false)
-        }}
-        onCancel={() => showNewTagForm(false)} /> :
+      {showTagForm ? (
+        <NewTag
+          issuesTags={issue.issuesTags}
+          currentLanguage={currentLanguage}
+          handleCreate={(newTag) => {
+            setIssue({ ...issue, issuesTags: [...issue.issuesTags, newTag] });
+            showNewTagForm(false);
+          }}
+          onCancel={() => showNewTagForm(false)}
+        />
+      ) : (
         <div className="form-group row">
           <label className="col-xs-12 col-sm-2">Actions</label>
           <div className="col-sm-10">
-            <button className="btn btn-success"
-              onClick={() => showNewTagForm(true)}>{t('issues.new_tag', currentLanguage)}</button>
+            <button className="btn btn-success" onClick={() => showNewTagForm(true)}>
+              {t('issues.new_tag', currentLanguage)}
+            </button>
           </div>
         </div>
-      }
+      )}
       <div className="form-group row pt-3">
         <label className="col-xs-12 col-sm-2">{t('issues.tags', currentLanguage)}</label>
         <div className="col-sm-10">
           {issue.issuesTags.map((issueTag, i) => (
             <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
-              <span className="badge badge-primary d-flex align-items-center justify-content-center px-3 py-2"
+              <span
+                className="badge badge-primary d-flex align-items-center justify-content-center px-3 py-2"
                 style={{
                   backgroundColor: issueTag.color,
-                  color: "#fff",
-                  borderRadius: "12px"
-                }}>{issueTag.name}</span>
-              <input type="text" className="form-control mx-3" value={issueTag.name} onChange={e => setIssue({
-                ...issue, issuesTags: issue.issuesTags.map((issue, j) => {
-                  if (i === j)
-                    issue.name = e.target.value
-                  return issue;
-                })
-              })} />
+                  color: '#fff',
+                  borderRadius: '12px',
+                }}>
+                {issueTag.name}
+              </span>
+              <input
+                type="text"
+                className="form-control mx-3"
+                value={issueTag.name}
+                onChange={(e) =>
+                  setIssue({
+                    ...issue,
+                    issuesTags: issue.issuesTags.map((issue, j) => {
+                      if (i === j) issue.name = e.target.value;
+                      return issue;
+                    }),
+                  })
+                }
+              />
               <ColorTag
                 className="pr-3"
                 initialColor={issueTag.color}
-                handleColorChange={color => setIssue({
-                  ...issue, issuesTags: issue.issuesTags.map((issue, j) => {
-                    if (i === j)
-                      issue.color = color
-                    return issue;
+                handleColorChange={(color) =>
+                  setIssue({
+                    ...issue,
+                    issuesTags: issue.issuesTags.map((issue, j) => {
+                      if (i === j) issue.color = color;
+                      return issue;
+                    }),
                   })
-                })}
-                presetColors={[]} />
+                }
+                presetColors={[]}
+              />
               <div className="ml-auto">
-                <button className="btn btn-sm btn-outline-danger" type="button" onClick={() => deleteTag(issueTag.id)}>{t('Delete', currentLanguage)}</button>
+                <button
+                  className="btn btn-sm btn-outline-danger"
+                  type="button"
+                  onClick={() => deleteTag(issueTag.id)}>
+                  {t('Delete', currentLanguage)}
+                </button>
               </div>
             </div>
           ))}
@@ -73,21 +94,21 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2" />
         <div className="col-sm-10 d-flex">
-          <button className="btn btn-success ml-auto" onClick={() => onChange(issue)}>{t('Save', currentLanguage)}</button>
+          <button className="btn btn-success ml-auto" onClick={() => onChange(issue)}>
+            {t('Save', currentLanguage)}
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function NewTag({ issuesTags, handleCreate, onCancel, currentLanguage }) {
   const [tag, setTag] = useState({ name: '', color: '#2980b9' });
 
   function confirmTag() {
-    if (tag.name.length <= 0)
-      toastr.error("Tag name must be filled");
-    else if (issuesTags.find(t => t.name === tag.name))
-      toastr.error("Tag name already existing");
+    if (tag.name.length <= 0) toastr.error('Tag name must be filled');
+    else if (issuesTags.find((t) => t.name === tag.name)) toastr.error('Tag name already existing');
     else {
       handleCreate(tag);
       setTag({ name: '', color: '#2980b9' });
@@ -99,28 +120,37 @@ function NewTag({ issuesTags, handleCreate, onCancel, currentLanguage }) {
       <label className="col-xs-12 col-sm-2">{t('issues.new_tag', currentLanguage)}</label>
       <div className="col-sm-10">
         <div className="d-flex align-items-end">
-          <div className="pr-3" style={{ flex: .5 }}>
+          <div className="pr-3" style={{ flex: 0.5 }}>
             <label htmlFor="tag">{t('issues.tag_name', currentLanguage)}</label>
             <input
               className="form-control"
-              type="text" id="tag" value={tag.name}
-              onChange={e => setTag({ ...tag, name: e.target.value })} placeholder={t('issues.tag_name', currentLanguage)} />
+              type="text"
+              id="tag"
+              value={tag.name}
+              onChange={(e) => setTag({ ...tag, name: e.target.value })}
+              placeholder={t('issues.tag_name', currentLanguage)}
+            />
           </div>
           <div className="px-3">
             <label htmlFor="color">{t('issues.tag_color', currentLanguage)}</label>
             <ColorTag
               initialColor={tag.color || '#2980b9'}
-              handleColorChange={color => setTag({ ...tag, color })}
-              presetColors={[]} />
+              handleColorChange={(color) => setTag({ ...tag, color })}
+              presetColors={[]}
+            />
           </div>
           <div className="ml-auto">
-            <button className="btn btn-outline-danger mr-2" type="button" onClick={onCancel}>{t('Cancel', currentLanguage)}</button>
-            <button className="btn btn-outline-success" type="button" onClick={confirmTag}>{t('issues.create_tag', currentLanguage)}</button>
+            <button className="btn btn-outline-danger mr-2" type="button" onClick={onCancel}>
+              {t('Cancel', currentLanguage)}
+            </button>
+            <button className="btn btn-outline-success" type="button" onClick={confirmTag}>
+              {t('issues.create_tag', currentLanguage)}
+            </button>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function ColorTag({ initialColor, handleColorChange, presetColors, className }) {
@@ -168,10 +198,10 @@ function ColorTag({ initialColor, handleColorChange, presetColors, className }) 
     if (pickerValue) {
       if (pickerValue.rgb.a === 1) {
         setColor(pickerValue.hex);
-        handleColorChange(pickerValue.hex)
+        handleColorChange(pickerValue.hex);
       } else {
         setColor(pickerValue.rgb);
-        handleColorChange(pickerValue.rgb)
+        handleColorChange(pickerValue.rgb);
       }
     }
   }, [pickerValue]);

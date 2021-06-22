@@ -605,10 +605,18 @@ class MockController(DaikokuAction: DaikokuAction,
       createUserAndTeam("fifou", "fifou@foo.bar", tenantId, false)
 
     val issuesTags = Seq(
-      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify), "bug", "#2980b9"),
-      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify), "backoffice", "#c0392b"),
-      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify), "security", "#8e44ad"),
-      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify), "subscription", "#16a085"),
+      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
+                  "bug",
+                  "#2980b9"),
+      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
+                  "backoffice",
+                  "#c0392b"),
+      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
+                  "security",
+                  "#8e44ad"),
+      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
+                  "subscription",
+                  "#16a085"),
     )
     val issues: Seq[ApiIssue] = Seq(
       ApiIssue(
@@ -627,7 +635,8 @@ class MockController(DaikokuAction: DaikokuAction,
             by = user1.id,
             createdAt = DateTime.now(),
             lastModificationAt = DateTime.now(),
-            content = "Describe the bug\nIf schema has some table, DK init can't be proceed & DK is broken\n\nExpected behavior\nInit detection & tables creation"
+            content =
+              "Describe the bug\nIf schema has some table, DK init can't be proceed & DK is broken\n\nExpected behavior\nInit detection & tables creation"
           )
         )
       ),
@@ -647,7 +656,8 @@ class MockController(DaikokuAction: DaikokuAction,
             by = user2.id,
             createdAt = DateTime.now(),
             lastModificationAt = DateTime.now(),
-            content = "Add a way to add 2FA for user account\n\nIt coud be great to use Authy, 1Password, or LastPass Authenticator."
+            content =
+              "Add a way to add 2FA for user account\n\nIt coud be great to use Authy, 1Password, or LastPass Authenticator."
           )
         )
       )
@@ -1323,7 +1333,8 @@ class MockController(DaikokuAction: DaikokuAction,
             integrationToken = "token-pay-per-use"
           ))
         ))
-      _ <- Future.sequence(issues.map(issue => env.dataStore.apiIssueRepo.forTenant(tenantId).save(issue)))
+      _ <- Future.sequence(issues.map(issue =>
+        env.dataStore.apiIssueRepo.forTenant(tenantId).save(issue)))
     } yield {
       Ok(Json.obj("done" -> true))
     }

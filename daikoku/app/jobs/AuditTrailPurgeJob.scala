@@ -2,10 +2,18 @@ package jobs
 
 import akka.actor.Cancellable
 import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{OtoroshiSyncApiError, OtoroshiSyncSubscriptionError}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  OtoroshiSyncApiError,
+  OtoroshiSyncSubscriptionError
+}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{ConsoleMailer, IdGenerator, Mailer, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.{
+  ConsoleMailer,
+  IdGenerator,
+  Mailer,
+  OtoroshiClient
+}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
@@ -27,12 +35,14 @@ class AuditTrailPurgeJob(env: Env) {
 
   def start(): Unit = {
     logger.info("Start audit trail purge job")
-    logger.info(s"audit by cron ==> ${env.config.auditTrailPurgeByCron} every ${env.config.auditTrailPurgeInterval}")
+    logger.info(
+      s"audit by cron ==> ${env.config.auditTrailPurgeByCron} every ${env.config.auditTrailPurgeInterval}")
     if (env.config.auditTrailPurgeByCron && ref.get() == null) {
       ref.set(
         env.defaultActorSystem.scheduler
           .scheduleAtFixedRate(10.seconds, env.config.auditTrailPurgeInterval) {
-            () => purge()
+            () =>
+              purge()
           })
     }
   }
@@ -42,8 +52,16 @@ class AuditTrailPurgeJob(env: Env) {
   }
 
   def purge() = {
-    logger.info(s"Run audit trail purge for last ${env.config.auditTrailPurgeMaxDate}")
-    env.dataStore.auditTrailRepo.forAllTenant()
-      .delete(Json.obj("@timestamp" -> Json.obj("$lt" -> DateTime.now().minus(env.config.auditTrailPurgeMaxDate.toMillis).getMillis)))
+    logger.info(
+      s"Run audit trail purge for last ${env.config.auditTrailPurgeMaxDate}")
+    env.dataStore.auditTrailRepo
+      .forAllTenant()
+      .delete(
+        Json.obj(
+          "@timestamp" -> Json.obj(
+            "$lt" -> DateTime
+              .now()
+              .minus(env.config.auditTrailPurgeMaxDate.toMillis)
+              .getMillis)))
   }
 }

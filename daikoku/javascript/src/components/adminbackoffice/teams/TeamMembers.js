@@ -49,7 +49,10 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = {
-  openInvitationModal: modalProps => openInvitationTeamModal(modalProps)
+  openInvitationModal: (modalProps) => openInvitationTeamModal(modalProps),
 };
 
-export const TeamMembersForAdmin = connect(mapStateToProps, mapDispatchToProps)(TeamMembersComponent);
+export const TeamMembersForAdmin = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(TeamMembersComponent);

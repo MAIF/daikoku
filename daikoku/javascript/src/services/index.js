@@ -642,8 +642,8 @@ export function addUncheckedMembersToTeam(teamId, email) {
 export function removeInvitation(teamId, userId) {
   return fetch(`/api/teams/${teamId}/members/${userId}/invitations`, {
     ...POST_HEADERS,
-    method: 'DELETE'
-  })
+    method: 'DELETE',
+  });
 }
 
 export function updateTeamMemberPermission(teamId, members, permission) {
@@ -1606,9 +1606,9 @@ export function checkConnection(config, user) {
     ...POST_HEADERS,
     body: user
       ? JSON.stringify({
-        config,
-        user,
-      })
+          config,
+          user,
+        })
       : JSON.stringify(config),
   }).then((r) => r.json());
 }
@@ -1745,11 +1745,11 @@ export function updateIssue(apiId, teamId, issueId, issue) {
     body: JSON.stringify({
       ...issue,
       by: issue.by._id,
-      comments: issue.comments.map(comment => ({
+      comments: issue.comments.map((comment) => ({
         ...comment,
-        by: comment.by._id
-      }))
-    })
+        by: comment.by._id,
+      })),
+    }),
   });
 }
 
@@ -1790,7 +1790,7 @@ export function reset2faAccess(backupCodes) {
   return fetch('/api/2fa', {
     ...POST_HEADERS,
     method: 'PUT',
-    body: JSON.stringify({ backupCodes })
+    body: JSON.stringify({ backupCodes }),
   });
 }
 
@@ -1808,13 +1808,13 @@ export function selfVerify2faCode(code) {
 export function validateInvitationToken(token) {
   return fetch(`/api/me/invitation/_check`, {
     ...POST_HEADERS,
-    body: JSON.stringify({ token })
-  }).then(r => r.json())
+    body: JSON.stringify({ token }),
+  }).then((r) => r.json());
 }
 
 export function removeTeamInvitation(token) {
   return fetch(`/api/me/invitation`, {
     ...POST_HEADERS,
-    method: 'DELETE'
-  })
+    method: 'DELETE',
+  });
 }

@@ -8,13 +8,13 @@ export class LoginPage extends Component {
     username: '',
     password: '',
     message: null,
-    loginError: null
+    loginError: null,
   };
 
   onChange = (e) => {
     this.setState({
       [e.target.name]: e.target.value,
-      loginError: null
+      loginError: null,
     });
   };
 
@@ -59,15 +59,15 @@ export class LoginPage extends Component {
             className="form-horizontal text-left mx-auto"
             method={this.props.method}
             onSubmit={this.submit}
-            style={{ maxWidth: "448px" }}>
+            style={{ maxWidth: '448px' }}>
             <input type="hidden" name="token" className="form-control" value={this.props.token} />
-            {loginError &&
+            {loginError && (
               <span className="alert alert-danger d-flex justify-content-center">
                 <Translation language={this.props.tenant.defaultLanguage} i18nkey="login.failed">
                   User not found or invalid credentials
                 </Translation>
               </span>
-            }
+            )}
             <div className="form-group">
               <label className="control-label">
                 <Translation language={this.props.tenant.defaultLanguage} i18nkey="Email address">
@@ -103,24 +103,28 @@ export class LoginPage extends Component {
                 </Translation>
               </button>
             </div>
-            {this.props.provider == "Local" && <div className="form-group p-3 text-center" style={{
-              border: "1px solid var(--form-border-color, #586069)",
-              borderRadius: "6px"
-            }}>
-              <Translation language={this.props.tenant.defaultLanguage}
-                i18nkey="login_page.register_message"
-                replacements={[this.props.tenant.name]} />
-              <a href="/signup">
-                {' '}Create an account.
-              </a>
-            </div>}
+            {this.props.provider == 'Local' && (
+              <div
+                className="form-group p-3 text-center"
+                style={{
+                  border: '1px solid var(--form-border-color, #586069)',
+                  borderRadius: '6px',
+                }}>
+                <Translation
+                  language={this.props.tenant.defaultLanguage}
+                  i18nkey="login_page.register_message"
+                  replacements={[this.props.tenant.name]}
+                />
+                <a href="/signup">{' '}Create an account.</a>
+              </div>
+            )}
             <div className="form-group">
               <a href="/reset">
                 <Translation
                   language={this.props.tenant.defaultLanguage}
                   i18nkey="Forgot your password ?">
                   Forgot your password ?
-                  </Translation>
+                </Translation>
               </a>
             </div>
           </form>

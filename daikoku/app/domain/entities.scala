@@ -316,8 +316,8 @@ case class SimpleSMTPSettings(host: String,
                               fromTitle: String,
                               fromEmail: String,
                               template: Option[String])
-  extends MailerSettings
-  with CanJson[SimpleSMTPSettings] {
+    extends MailerSettings
+    with CanJson[SimpleSMTPSettings] {
   def mailerType: String = "smtpClient"
   def asJson: JsValue = json.SimpleSMTPClientSettingsFormat.writes(this)
   def mailer(implicit env: Env): Mailer = {
@@ -328,7 +328,7 @@ case class SimpleSMTPSettings(host: String,
 case class SendgridSettings(apikey: String,
                             fromEmail: String,
                             template: Option[String])
-  extends MailerSettings
+    extends MailerSettings
     with CanJson[SendgridSettings] {
   def mailerType: String = "sendgrid"
   def asJson: JsValue = json.SendGridSettingsFormat.writes(this)
@@ -529,10 +529,14 @@ case class ChatId(value: String) extends ValueType with CanJson[ChatId] {
 case class ApiPostId(value: String) extends ValueType with CanJson[ApiPostId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiIssueId(value: String) extends ValueType with CanJson[ApiIssueId] {
+case class ApiIssueId(value: String)
+    extends ValueType
+    with CanJson[ApiIssueId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiIssueTagId(value: String) extends ValueType with CanJson[ApiIssueTagId] {
+case class ApiIssueTagId(value: String)
+    extends ValueType
+    with CanJson[ApiIssueTagId] {
   def asJson: JsValue = JsString(value)
 }
 
@@ -1014,11 +1018,14 @@ case class ApiPost(id: ApiPostId,
   override def asJson: JsValue = json.ApiPostFormat.writes(this)
 }
 
-case class TwoFactorAuthentication(enabled: Boolean = false, secret: String, token: String, backupCodes: String)
-  extends CanJson[TwoFactorAuthentication] {
+case class TwoFactorAuthentication(enabled: Boolean = false,
+                                   secret: String,
+                                   token: String,
+                                   backupCodes: String)
+    extends CanJson[TwoFactorAuthentication] {
   override def asJson: JsValue = json.TwoFactorAuthenticationFormat.writes(this)
 }
-    
+
 case class ApiIssueTag(id: ApiIssueTagId, name: String, color: String)
 
 case class ApiIssueComment(by: UserId,
@@ -1038,7 +1045,7 @@ case class ApiIssue(id: ApiIssueId,
                     by: UserId,
                     comments: Seq[ApiIssueComment],
                     lastModificationAt: DateTime)
-  extends CanJson[ApiIssue] {
+    extends CanJson[ApiIssue] {
   def humanReadableId: String = seqId.toString
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)
 }
@@ -1048,7 +1055,7 @@ case class UserInvitation(registered: Boolean,
                           createdAt: DateTime,
                           team: String,
                           notificationId: String)
-  extends CanJson[UserInvitation] {
+    extends CanJson[UserInvitation] {
   override def asJson: JsValue = json.UserInvitationFormat.writes(this)
 }
 
@@ -1088,7 +1095,8 @@ case class User(
       "picture" -> picture,
       "isDaikokuAdmin" -> isDaikokuAdmin,
       "starredApis" -> starredApis.map(_.value),
-      "twoFactorAuthentication" -> twoFactorAuthentication.map(_.asJson)
+      "twoFactorAuthentication" -> twoFactorAuthentication
+        .map(_.asJson)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -1105,7 +1113,8 @@ case class User(
         JsString.apply),
       "isGuest" -> isGuest,
       "starredApis" -> starredApis.map(_.value),
-      "twoFactorAuthentication" -> twoFactorAuthentication.map(_.asJson)
+      "twoFactorAuthentication" -> twoFactorAuthentication
+        .map(_.asJson)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -1514,10 +1523,10 @@ object NotificationAction {
       extends NotificationAction
 
   case class NewIssueOpen(teamId: String, apiName: String, linkTo: String)
-    extends NotificationAction
+      extends NotificationAction
 
   case class NewCommentOnIssue(teamId: String, apiName: String, linkTo: String)
-    extends NotificationAction
+      extends NotificationAction
 }
 
 sealed trait NotificationType {

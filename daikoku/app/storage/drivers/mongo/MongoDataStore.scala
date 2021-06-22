@@ -12,8 +12,17 @@ import play.api.ApplicationLoader.Context
 import play.api.Logger
 import play.api.libs.json._
 import play.api.routing.Router
-import play.modules.reactivemongo.{ReactiveMongoApi, ReactiveMongoApiFromContext}
-import reactivemongo.api.{Cursor, CursorOptions, ReadConcern, ReadPreference, WriteConcern}
+import play.modules.reactivemongo.{
+  ReactiveMongoApi,
+  ReactiveMongoApiFromContext
+}
+import reactivemongo.api.{
+  Cursor,
+  CursorOptions,
+  ReadConcern,
+  ReadPreference,
+  WriteConcern
+}
 import reactivemongo.play.json.collection.JSONCollection
 import storage._
 
@@ -105,12 +114,12 @@ case class MongoTenantCapableApiPostRepo(
 }
 
 case class MongoTenantCapableApiIssueRepo(
-                                          _repo: () => MongoRepo[ApiIssue, ApiIssueId],
-                                          _tenantRepo: TenantId => MongoTenantAwareRepo[ApiIssue, ApiIssueId]
-                                        ) extends MongoTenantCapableRepo[ApiIssue, ApiIssueId]
-  with ApiIssueRepo {
+    _repo: () => MongoRepo[ApiIssue, ApiIssueId],
+    _tenantRepo: TenantId => MongoTenantAwareRepo[ApiIssue, ApiIssueId]
+) extends MongoTenantCapableRepo[ApiIssue, ApiIssueId]
+    with ApiIssueRepo {
   override def tenantRepo(
-                           tenant: TenantId): MongoTenantAwareRepo[ApiIssue, ApiIssueId] =
+      tenant: TenantId): MongoTenantAwareRepo[ApiIssue, ApiIssueId] =
     _tenantRepo(tenant)
 
   override def repo(): MongoRepo[ApiIssue, ApiIssueId] =
@@ -374,7 +383,8 @@ class MongoDataStore(context: Context, env: Env)
     }
   }
 
-  override def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
+  override def exportAsStream(pretty: Boolean,
+                              exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,
       mat: Materializer,
       env: Env): Source[ByteString, _] = {
@@ -444,7 +454,8 @@ class MongoDataStore(context: Context, env: Env)
         .map(Json.parse)
         .map(json => json.as[JsObject])
         .map(json =>
-          ((json \ "type").as[String].toLowerCase.replace("_", ""), (json \ "payload").as[JsValue]))
+          ((json \ "type").as[String].toLowerCase.replace("_", ""),
+           (json \ "payload").as[JsValue]))
         .mapAsync(1) {
           case ("tenants", payload) =>
             tenantRepo.save(TenantFormat.reads(payload).get)
@@ -632,11 +643,11 @@ class MongoTenantApiPostRepo(env: Env,
 }
 
 class MongoTenantApiIssueRepo(env: Env,
-                             reactiveMongoApi: ReactiveMongoApi,
-                             tenant: TenantId)
-  extends MongoTenantAwareRepo[ApiIssue, ApiIssueId](env,
-    reactiveMongoApi,
-    tenant) {
+                              reactiveMongoApi: ReactiveMongoApi,
+                              tenant: TenantId)
+    extends MongoTenantAwareRepo[ApiIssue, ApiIssueId](env,
+                                                       reactiveMongoApi,
+                                                       tenant) {
   override def collectionName: String = "ApiIssues"
 
   override def format: Format[ApiIssue] = json.ApiIssueFormat
@@ -765,7 +776,7 @@ class MongoApiPostRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoApiIssueRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-  extends MongoRepo[ApiIssue, ApiIssueId](env, reactiveMongoApi) {
+    extends MongoRepo[ApiIssue, ApiIssueId](env, reactiveMongoApi) {
   override def collectionName: String = "ApiIssues"
 
   override def format: Format[ApiIssue] = json.ApiIssueFormat

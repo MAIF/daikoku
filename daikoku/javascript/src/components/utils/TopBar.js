@@ -23,7 +23,9 @@ const GuestUserMenu = ({ loginProvider, currentLanguage }) => (
     <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1 login-button">
       {t('Login', currentLanguage)}
     </a>
-    <a href={`${loginProvider === "Local" ? '/signup' : `/auth/${loginProvider}/login`}`} className="btn btn-success register-button">
+    <a
+      href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
+      className="btn btn-success register-button">
       {t('Register', currentLanguage)}
     </a>
   </>
@@ -87,8 +89,7 @@ const TopBarComponent = (props) => {
   };
 
   function getDaikokuVersion() {
-    Services.getDaikokuVersion()
-      .then(res => setVersion(res.version));
+    Services.getDaikokuVersion().then((res) => setVersion(res.version));
   }
 
   const toggleMaintenanceMode = () => {
@@ -156,7 +157,7 @@ const TopBarComponent = (props) => {
   const isDefaultLogo = props.tenant.logo === '/assets/images/daikoku.svg';
   return (
     <header className={impersonator ? 'impersonator-topbar-mb' : ''}>
-      { }
+      {}
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
@@ -218,12 +219,12 @@ const TopBarComponent = (props) => {
                 classNamePrefix="reactSelect"
               />
             )}
-            {props.connectedUser.isGuest &&
+            {props.connectedUser.isGuest && (
               <GuestUserMenu
                 loginProvider={props.loginProvider}
                 currentLanguage={props.currentLanguage}
               />
-            }
+            )}
             {!props.connectedUser.isGuest && (
               <div className="d-flex justify-content-end align-items-center mt-1 mt-lg-0">
                 {isMaintenanceMode && (
@@ -256,9 +257,9 @@ const TopBarComponent = (props) => {
                     title={
                       impersonator
                         ? `${props.connectedUser.name} (${props.connectedUser.email}) ${t(
-                          'Impersonated by',
-                          props.currentLanguage
-                        )} ${impersonator.name} (${impersonator.email})`
+                            'Impersonated by',
+                            props.currentLanguage
+                          )} ${impersonator.name} (${impersonator.email})`
                         : props.connectedUser.name
                     }
                     alt="user menu"
@@ -318,12 +319,16 @@ const TopBarComponent = (props) => {
                       <i className="fas fa-sign-out-alt" /> {t('Logout', props.currentLanguage)}
                     </a>
 
-                    {daikokuVersion && <>
-                      <div className="dropdown-divider" />
-                      <div className="dropdown-item">
-                        <span>{t('Version used', props.currentLanguage)} : {daikokuVersion}</span>
-                      </div>
-                    </>}
+                    {daikokuVersion && (
+                      <>
+                        <div className="dropdown-divider" />
+                        <div className="dropdown-item">
+                          <span>
+                            {t('Version used', props.currentLanguage)} : {daikokuVersion}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

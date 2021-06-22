@@ -54,7 +54,8 @@ object Helper {
       } else {
         jsValue match {
           case JsNumber(t) =>
-            out = s"(content->>$$${n + 1} = '$t' OR content->$$${n + 1} @> '$t')"
+            out =
+              s"(content->>$$${n + 1} = '$t' OR content->$$${n + 1} @> '$t')"
             outParams ++= Seq(
               key,
               value
@@ -83,7 +84,8 @@ object Helper {
     if (field._1 == "$push") {
       val entry = field._2.as[JsObject].fields.head
       (
-        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(params.size)} || ${getParam(params.size + 1)})",
+        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(
+          params.size)} || ${getParam(params.size + 1)})",
         params ++ Seq(entry._1, entry._2)
       )
     } else {
@@ -141,8 +143,9 @@ object Helper {
             case Some((key: String, _: JsValue)) if key == "$ne" =>
               val (a, b) = _convertTuple(value.fields.head, params)
               (
-                s"(content->>${getParam(b.size)} <> ${getParam(b.size +1)})",
-                b ++ Seq(_removeQuotes(field._1), _removeQuotes(value.fields.head._2))
+                s"(content->>${getParam(b.size)} <> ${getParam(b.size + 1)})",
+                b ++ Seq(_removeQuotes(field._1),
+                         _removeQuotes(value.fields.head._2))
               )
             case e =>
               logger.error(s"NOT IMPLEMENTED - $e")
@@ -164,7 +167,8 @@ object Helper {
           try {
             _inOperatorToString(value.as[List[String]], params)
           } catch {
-            case _: Throwable => ("('DEFAULT VALUE TO AVOID EMPTY LIST')", params)
+            case _: Throwable =>
+              ("('DEFAULT VALUE TO AVOID EMPTY LIST')", params)
           }
 
         case value: JsArray if field._1 == "$nin" =>

@@ -13,7 +13,7 @@ import {
   ApiSwagger,
   ApiRedoc,
   ApiPost,
-  ApiIssue
+  ApiIssue,
 } from '.';
 import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, Option } from '../../utils';
@@ -42,7 +42,15 @@ const ApiDescription = ({ api }) => {
   );
 };
 
-const ApiHeader = ({ api, ownerTeam, editUrl, history, connectedUser, toggleStar, currentLanguage }) => {
+const ApiHeader = ({
+  api,
+  ownerTeam,
+  editUrl,
+  history,
+  connectedUser,
+  toggleStar,
+  currentLanguage,
+}) => {
   const handleBtnEditClick = () => history.push(editUrl);
 
   useEffect(() => {
@@ -262,8 +270,9 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                    }`}
+                  className={`nav-link ${
+                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                  }`}
                   to={`/${match.params.teamId}/${apiId}/documentation`}>
                   <Translation i18nkey="Documentation" language={currentLanguage}>
                     Documentation
@@ -380,13 +389,17 @@ const ApiHomeComponent = ({
                 currentLanguage={currentLanguage}
               />
             )}
-            {tab === 'redoc' &&
-              <ApiRedoc api={api} teamId={teamId} ownerTeam={ownerTeam}
+            {tab === 'redoc' && (
+              <ApiRedoc
+                api={api}
+                teamId={teamId}
+                ownerTeam={ownerTeam}
                 match={match}
                 tenant={tenant}
                 connectedUser={connectedUser}
-                currentLanguage={currentLanguage} />
-            }
+                currentLanguage={currentLanguage}
+              />
+            )}
             {tab === 'console' && (
               <ApiConsole
                 api={api}
@@ -408,7 +421,7 @@ const ApiHomeComponent = ({
             {tab === 'issues' && (
               <ApiIssue
                 api={api}
-                onChange={editedApi => setApi(editedApi)}
+                onChange={(editedApi) => setApi(editedApi)}
                 history={history}
                 ownerTeam={ownerTeam}
                 connectedUser={connectedUser}

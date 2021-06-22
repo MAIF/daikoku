@@ -15,10 +15,12 @@ export class TextInput extends Component {
     }
     return (
       <div className={`form-group ${isColmunFormat ? '' : 'row'}`}>
-        <label htmlFor={`input-${this.props.label}`} className={isColmunFormat ? "" : "col-xs-12 col-sm-2 col-form-label"}>
+        <label
+          htmlFor={`input-${this.props.label}`}
+          className={isColmunFormat ? '' : 'col-xs-12 col-sm-2 col-form-label'}>
           <Help text={this.props.help} label={this.props.label} />
         </label>
-        <div className={isColmunFormat ? "" : "col-sm-10"}>
+        <div className={isColmunFormat ? '' : 'col-sm-10'}>
           {(this.props.prefix || this.props.suffix) && (
             <div className="input-group">
               {this.props.prefix && <div className="input-group-addon">{this.props.prefix}</div>}

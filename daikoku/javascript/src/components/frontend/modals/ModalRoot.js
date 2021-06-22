@@ -17,7 +17,7 @@ export const MODAL_TYPES = {
   testingApiKey: Modals.TestingApiKeyModal,
   teamInvitation: Modals.TeamInvitationModal,
   joinTeamInvitation: Modals.JoinTeamInvitationModal,
-  loginOrRegisterModal: Modals.LoginOrRegisterModal
+  loginOrRegisterModal: Modals.LoginOrRegisterModal,
 };
 
 const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {

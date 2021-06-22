@@ -15,7 +15,7 @@ import {
   TeamApiPricing,
   TeamApiSwagger,
   TeamApiTesting,
-  TeamApiPost
+  TeamApiPost,
 } from '.';
 
 import { setError, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
@@ -230,8 +230,9 @@ class TeamApiComponent extends Component {
       <TeamBackOffice
         tab="Apis"
         isLoading={!editedApi}
-        title={`${this.props.currentTeam.name} - ${this.state.api ? this.state.api.name : t('API', this.props.currentLanguage)
-          }`}>
+        title={`${this.props.currentTeam.name} - ${
+          this.state.api ? this.state.api.name : t('API', this.props.currentLanguage)
+        }`}>
         <Can I={manage} a={API} team={this.props.currentTeam} dispatchError>
           {!editedApi && (
             <h3>
@@ -357,7 +358,6 @@ class TeamApiComponent extends Component {
                       </Translation>
                     </Link>
                   </li>
-
                 </ul>
               </div>
               <div className="row">
@@ -458,41 +458,43 @@ class TeamApiComponent extends Component {
                   </div>
                 </div>
               </div>
-              {!this.props.location.pathname.includes("/news") && <div className="row form-back-fixedBtns">
-                {!this.state.create && (
+              {!this.props.location.pathname.includes('/news') && (
+                <div className="row form-back-fixedBtns">
+                  {!this.state.create && (
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger ml-1"
+                      onClick={this.delete}>
+                      <i className="fas fa-trash mr-1" />
+                      <Translation i18nkey="Delete" language={this.props.currentLanguage}>
+                        Delete
+                      </Translation>
+                    </button>
+                  )}
                   <button
                     type="button"
-                    className="btn btn-outline-danger ml-1"
-                    onClick={this.delete}>
-                    <i className="fas fa-trash mr-1" />
-                    <Translation i18nkey="Delete" language={this.props.currentLanguage}>
-                      Delete
-                    </Translation>
+                    className="btn btn-outline-success ml-1"
+                    {...disabled}
+                    onClick={this.save}>
+                    {!this.state.create && (
+                      <span>
+                        <i className="fas fa-save mr-1" />
+                        <Translation i18nkey="Save" language={this.props.currentLanguage}>
+                          Save
+                        </Translation>
+                      </span>
+                    )}
+                    {this.state.create && (
+                      <span>
+                        <i className="fas fa-save mr-1" />
+                        <Translation i18nkey="Create" language={this.props.currentLanguage}>
+                          Create
+                        </Translation>
+                      </span>
+                    )}
                   </button>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-outline-success ml-1"
-                  {...disabled}
-                  onClick={this.save}>
-                  {!this.state.create && (
-                    <span>
-                      <i className="fas fa-save mr-1" />
-                      <Translation i18nkey="Save" language={this.props.currentLanguage}>
-                        Save
-                      </Translation>
-                    </span>
-                  )}
-                  {this.state.create && (
-                    <span>
-                      <i className="fas fa-save mr-1" />
-                      <Translation i18nkey="Create" language={this.props.currentLanguage}>
-                        Create
-                      </Translation>
-                    </span>
-                  )}
-                </button>
-              </div>}
+                </div>
+              )}
             </>
           )}
         </Can>

@@ -141,8 +141,7 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
   }
 }
 
-class SimpleSMTPSender(settings: SimpleSMTPSettings)
-  extends Mailer {
+class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
   import javax.mail._
   import javax.mail.internet._
@@ -152,36 +151,41 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings)
   lazy val logger = Logger("daikoku-mailer")
 
   def send(title: String, to: Seq[String], body: String)(
-    implicit ec: ExecutionContext): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
 
-    val templatedBody = settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
+    val templatedBody =
+      settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
 
     val properties = new Properties()
     properties.put("mail.smtp.host", settings.host)
     properties.put("mail.smtp.port", Integer.valueOf(settings.port))
 
-    Future.sequence(
-      to.map(InternetAddress.parse)
-        .map { address =>
+    Future
+      .sequence(
+        to.map(InternetAddress.parse)
+          .map { address =>
+            val message: Message =
+              new MimeMessage(Session.getDefaultInstance(properties, null))
+            message.setFrom(new InternetAddress(settings.fromEmail))
+            message.setRecipients(Message.RecipientType.TO,
+                                  address.asInstanceOf[Array[Address]])
 
-        val message: Message = new MimeMessage(Session.getDefaultInstance(properties, null))
-        message.setFrom(new InternetAddress(settings.fromEmail))
-        message.setRecipients(Message.RecipientType.TO, address.asInstanceOf[Array[Address]])
+            message.setSentDate(new Date())
+            message.setSubject(title)
+            message.setText(templatedBody)
 
-        message.setSentDate(new Date())
-        message.setSubject(title)
-        message.setText(templatedBody)
+            Try {
+              Transport.send(message)
+              logger.info(
+                s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}")
+            } recover {
+              case e: Exception =>
+                logger.error("Error while sending alert email", e)
+            } get
 
-        Try {
-          Transport.send(message)
-          logger.info(s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}")
-        } recover {
-          case e: Exception => logger.error("Error while sending alert email", e)
-        } get
-
-        FastFuture.successful(())
-      }
-    )
+            FastFuture.successful(())
+          }
+      )
       .flatMap { _ =>
         FastFuture.successful(())
       }
@@ -192,33 +196,31 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
   lazy val logger = Logger("daikoku-mailer")
 
   def send(title: String, to: Seq[String], body: String)(
-    implicit ec: ExecutionContext): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
 
-    val templatedBody = settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
+    val templatedBody =
+      settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
 
-    ws
-      .url(s"https://api.sendgrid.com/v3/mail/send")
+    ws.url(s"https://api.sendgrid.com/v3/mail/send")
       .withHttpHeaders(
         "Authorization" -> s"Bearer ${settings.apikey}",
-        "Content-Type"  -> "application/json"
+        "Content-Type" -> "application/json"
       )
       .post(
         Json.obj(
           "personalizations" -> Json.arr(
             Json.obj(
               "subject" -> title,
-              "to"      -> to.map(c =>
-                Json.obj("email" -> c, "name"  -> c)
-              )
+              "to" -> to.map(c => Json.obj("email" -> c, "name" -> c))
             )
           ),
-          "from"             -> Json.obj(
+          "from" -> Json.obj(
             "email" -> settings.fromEmail,
-            "name"  -> settings.fromEmail
+            "name" -> settings.fromEmail
           ),
-          "content"          -> Json.arr(
+          "content" -> Json.arr(
             Json.obj(
-              "type"  -> "text/html",
+              "type" -> "text/html",
               "value" -> templatedBody
             )
           )
@@ -226,8 +228,9 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
       )
       .andThen {
         case Success(_) => logger.info(s"Alert email sent : ${to}")
-        case Failure(e)   => logger.error("Error while sending alert email", e)
-      }.fast
-        .map(_ => ())
+        case Failure(e) => logger.error("Error while sending alert email", e)
+      }
+      .fast
+      .map(_ => ())
   }
 }

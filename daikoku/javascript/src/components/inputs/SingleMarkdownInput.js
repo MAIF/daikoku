@@ -140,8 +140,11 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
     },
     {
       name: t('Test asset'),
-      component: idx => (
-        <BeautifulTitle placement="bottom" title={t('image url from asset', props.currentLanguage)} key={`toolbar-btn-${idx}`}>
+      component: (idx) => (
+        <BeautifulTitle
+          placement="bottom"
+          title={t('image url from asset', props.currentLanguage)}
+          key={`toolbar-btn-${idx}`}>
           <AssetChooserByModal
             typeFilter={MimeTypeFilter.image}
             onlyPreview
@@ -212,7 +215,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
       <div
         style={{
           marginBottom: 10,
-          flexWrap: "wrap"
+          flexWrap: 'wrap',
         }}
         className="d-flex flex-sm-row flex-column align-items-center">
         <div>
@@ -238,7 +241,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
           </div>
         </div>
         <div className="d-flex flex-row">{injectButtons()}</div>
-        <div style={{ width: (props.fixedWitdh || 250) }}>
+        <div style={{ width: props.fixedWitdh || 250 }}>
           {props.assertChooserActive && (
             <AssetChooserByModal
               currentLanguage={props.currentLanguage}

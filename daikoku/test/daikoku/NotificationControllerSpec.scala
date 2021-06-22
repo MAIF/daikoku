@@ -1,19 +1,43 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, NewIssueOpen, TeamAccess, TeamInvitation}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand,
+  NewIssueOpen,
+  TeamAccess,
+  TeamInvitation
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.QuotasWithLimits
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, nocolor}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{Format, JsArray, JsBoolean, JsError, JsNull, JsNumber, JsObject, JsResult, JsString, JsSuccess, JsValue, Json, Reads, Writes}
+import play.api.libs.json.{
+  Format,
+  JsArray,
+  JsBoolean,
+  JsError,
+  JsNull,
+  JsNumber,
+  JsObject,
+  JsResult,
+  JsString,
+  JsSuccess,
+  JsValue,
+  Json,
+  Reads,
+  Writes
+}
 import reactivemongo.bson.BSONObjectID
 
 import scala.util.Try
@@ -707,26 +731,28 @@ class NotificationControllerSpec()
       eventualApiSubs.get.size mustBe 0
     }
     "create issue that notify subscribers of api" in {
-      val issues = Seq(ApiIssue(
-        id = ApiIssueId(BSONObjectID.generate().stringify),
-        seqId = 0,
-        tenant = tenant.id,
-        title = "Daikoku Init on postgres can be broken",
-        tags = Set(),
-        open = true,
-        createdAt = DateTime.now(),
-        lastModificationAt = DateTime.now(),
-        closedAt = None,
-        by = daikokuAdmin.id,
-        comments = Seq(
-          ApiIssueComment(
-            by = daikokuAdmin.id,
-            createdAt = DateTime.now(),
-            lastModificationAt = DateTime.now(),
-            content = "Describe the bug\nIf schema has some table, DK init can't be proceed & DK is broken\n\nExpected behavior\nInit detection & tables creation"
+      val issues = Seq(
+        ApiIssue(
+          id = ApiIssueId(BSONObjectID.generate().stringify),
+          seqId = 0,
+          tenant = tenant.id,
+          title = "Daikoku Init on postgres can be broken",
+          tags = Set(),
+          open = true,
+          createdAt = DateTime.now(),
+          lastModificationAt = DateTime.now(),
+          closedAt = None,
+          by = daikokuAdmin.id,
+          comments = Seq(
+            ApiIssueComment(
+              by = daikokuAdmin.id,
+              createdAt = DateTime.now(),
+              lastModificationAt = DateTime.now(),
+              content =
+                "Describe the bug\nIf schema has some table, DK init can't be proceed & DK is broken\n\nExpected behavior\nInit detection & tables creation"
+            )
           )
-        )
-      ))
+        ))
       val planSubId = UsagePlanId("1")
       val sub = ApiSubscription(
         id = ApiSubscriptionId("test"),
@@ -752,21 +778,26 @@ class NotificationControllerSpec()
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/apis/${defaultApi.id.value}/issues",
+        path =
+          s"/api/teams/${teamConsumer.id.value}/apis/${defaultApi.id.value}/issues",
         method = "POST",
         body = Some(issues.head.asJson))(
-        tenant, session
+        tenant,
+        session
       )
       resp.status mustBe 201
 
-      val notificationsResp = httpJsonCallBlocking(s"/api/teams/${teamConsumer.id.value}/notifications/all")(
-        tenant, session
+      val notificationsResp = httpJsonCallBlocking(
+        s"/api/teams/${teamConsumer.id.value}/notifications/all")(
+        tenant,
+        session
       )
       notificationsResp.status mustBe 200
       (notificationsResp.json \ "count").as[Long] mustBe 1
 
       val notifications = (notificationsResp.json \ "notifications").as[JsArray]
-      (notifications.head \ "action" \ "type").asOpt[String] mustBe Some("NewIssueOpen")
+      (notifications.head \ "action" \ "type").asOpt[String] mustBe Some(
+        "NewIssueOpen")
     }
   }
 

@@ -173,7 +173,7 @@ export class TeamApiInfo extends Component {
         selectClassName: 'full-width-select',
         transformer: (t) => ({ label: t.name, value: t._id }),
       },
-    }
+    },
   };
 
   formFlow = [
@@ -193,7 +193,7 @@ export class TeamApiInfo extends Component {
     `>>> ${t('Visibility', this.props.currentLanguage)}`,
     'visibility',
     `>>> ${t('Authorizations', this.props.currentLanguage)}`,
-    'authorizedTeams'
+    'authorizedTeams',
   ];
 
   adminFormFlow = ['_id', 'name', 'smallDescription'];

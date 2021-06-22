@@ -126,12 +126,12 @@ case class PostgresTenantCapableApiPostRepo(
 }
 
 case class PostgresTenantCapableApiIssueRepo(
-                                             _repo: () => PostgresRepo[ApiIssue, ApiIssueId],
-                                             _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiIssue, ApiIssueId]
-                                           ) extends PostgresTenantCapableRepo[ApiIssue, ApiIssueId]
-  with ApiIssueRepo {
+    _repo: () => PostgresRepo[ApiIssue, ApiIssueId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiIssue, ApiIssueId]
+) extends PostgresTenantCapableRepo[ApiIssue, ApiIssueId]
+    with ApiIssueRepo {
   override def tenantRepo(
-                           tenant: TenantId): PostgresTenantAwareRepo[ApiIssue, ApiIssueId] =
+      tenant: TenantId): PostgresTenantAwareRepo[ApiIssue, ApiIssueId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[ApiIssue, ApiIssueId] =
@@ -278,22 +278,22 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
   private val TABLES = Map(
-    "tenants"                 -> true,
-    "password_reset"          -> true,
-    "account_creation"        -> true,
-    "teams"                   -> true,
-    "apis"                    -> true,
-    "translations"            -> true,
-    "messages"                -> false,
-    "api_subscriptions"       -> true,
+    "tenants" -> true,
+    "password_reset" -> true,
+    "account_creation" -> true,
+    "teams" -> true,
+    "apis" -> true,
+    "translations" -> true,
+    "messages" -> false,
+    "api_subscriptions" -> true,
     "api_documentation_pages" -> true,
-    "notifications"           -> true,
-    "consumptions"            -> true,
-    "audit_events"            -> false,
-    "users"                   -> true,
-    "user_sessions"           -> false,
-    "api_posts"               -> true,
-    "api_issues"              -> true
+    "notifications" -> true,
+    "consumptions" -> true,
+    "audit_events" -> false,
+    "users" -> true,
+    "user_sessions" -> false,
+    "api_posts" -> true,
+    "api_issues" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -310,15 +310,20 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         "search_path" -> getSchema
       ).asJava)
 
-    val ssl        = configuration.getOptional[Configuration]("daikoku.postgres.ssl").getOrElse(Configuration.empty)
+    val ssl = configuration
+      .getOptional[Configuration]("daikoku.postgres.ssl")
+      .getOrElse(Configuration.empty)
     val sslEnabled = ssl.getOptional[Boolean]("enabled").getOrElse(false)
 
     if (sslEnabled) {
-      val pemTrustOptions   = new PemTrustOptions()
+      val pemTrustOptions = new PemTrustOptions()
       val pemKeyCertOptions = new PemKeyCertOptions()
 
-      options.setSslMode(SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca")))
-      ssl.getOptional[Int]("ssl-handshake-timeout").map(options.setSslHandshakeTimeout(_))
+      options.setSslMode(
+        SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca")))
+      ssl
+        .getOptional[Int]("ssl-handshake-timeout")
+        .map(options.setSslHandshakeTimeout(_))
 
       ssl.getOptional[Seq[String]]("trusted-certs-path").map { pathes =>
         pathes.map(p => pemTrustOptions.addCertPath(p))
@@ -506,13 +511,13 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         row.optString("schema_name")
       }
       .flatMap {
-        case Some(_) =>  createDatabase()
+        case Some(_) => createDatabase()
         case _ =>
           logger.info(s"Create missing schema : $getSchema")
           for {
             _ <- reactivePg.rawQuery(
               s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
-            res <-  createDatabase()
+            res <- createDatabase()
           } yield res
       }
   }
@@ -542,7 +547,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         s"content JSONB)")
   }
 
-  override def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
+  override def exportAsStream(pretty: Boolean,
+                              exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,
       mat: Materializer,
       env: Env): Source[ByteString, _] = {
@@ -596,7 +602,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
           .map(Json.parse)
           .map(json => json.as[JsObject])
           .map(json => {
-            ((json \ "type").as[String].toLowerCase.replace("_", ""), (json \ "payload").as[JsValue])
+            ((json \ "type").as[String].toLowerCase.replace("_", ""),
+             (json \ "payload").as[JsValue])
           })
           .mapAsync(1) {
             case ("tenants", payload) =>
@@ -776,7 +783,9 @@ class PostgresTenantApiPostRepo(env: Env,
 class PostgresTenantApiIssueRepo(env: Env,
                                  reactivePg: ReactivePg,
                                  tenant: TenantId)
-  extends PostgresTenantAwareRepo[ApiIssue, ApiIssueId](env, reactivePg, tenant) {
+    extends PostgresTenantAwareRepo[ApiIssue, ApiIssueId](env,
+                                                          reactivePg,
+                                                          tenant) {
   override def tableName: String = "api_issues"
 
   override def format: Format[ApiIssue] = json.ApiIssueFormat
@@ -909,7 +918,7 @@ class PostgresApiPostRepo(env: Env, reactivePg: ReactivePg)
 }
 
 class PostgresApiIssueRepo(env: Env, reactivePg: ReactivePg)
-  extends PostgresRepo[ApiIssue, ApiIssueId](env, reactivePg) {
+    extends PostgresRepo[ApiIssue, ApiIssueId](env, reactivePg) {
   override def tableName: String = "api_issues"
 
   override def format: Format[ApiIssue] = json.ApiIssueFormat
@@ -1133,11 +1142,13 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           reactivePg.querySeq(s"SELECT * FROM $tableName") {
             rowToJson(_, format)
           } else {
-          val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
+          val (sql, params) = convertQuery(
+            query ++ Json.obj("_tenant" -> tenant.value))
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql"
-          params.zipWithIndex.reverse.foreach { case (param, i) =>
-            out = out.replace("$"+(i+1), s"'$param'")
+          params.zipWithIndex.reverse.foreach {
+            case (param, i) =>
+              out = out.replace("$" + (i + 1), s"'$param'")
           }
 
           reactivePg.querySeq(out) {
@@ -1315,8 +1326,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
             s"set content = $$2",
           Seq((value \ "_id").as[String], new JsonObject(Json.stringify(value)))
         )
-    )
-      .map(_ => true)
+    ).map(_ => true)
       .recover(_ => false)
   }
 
@@ -1324,9 +1334,12 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.insertMany()")
 
-    Future.sequence(values
-        .map(v => save(Json.obj(), format.writes(v).as[JsObject] ++ addToPayload)))
-        .map(_ => 1L)
+    Future
+      .sequence(
+        values
+          .map(v =>
+            save(Json.obj(), format.writes(v).as[JsObject] ++ addToPayload)))
+      .map(_ => 1L)
   }
 
   override def insertMany(values: Seq[Of])(
@@ -1355,10 +1368,11 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     var out: String = s"UPDATE $tableName SET $sql1 WHERE $sql2 RETURNING _id"
     params2.zipWithIndex.reverse.foreach {
       case (param, i) =>
-        out = out.replace("$"+(i+1), s"'$param'")
+        out = out.replace("$" + (i + 1), s"'$param'")
     }
 
-    reactivePg.rawQuery(out)
+    reactivePg
+      .rawQuery(out)
       .map(_ => 1L)
   }
 

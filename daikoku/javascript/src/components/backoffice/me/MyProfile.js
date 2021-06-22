@@ -18,148 +18,187 @@ const LazyForm = React.lazy(() => import('../../inputs/Form'));
 function TwoFactorAuthentication({ currentLanguage, rawValue }) {
   const [modal, setModal] = useState(false);
   const [error, setError] = useState();
-  const [backupCodes, setBackupCodes] = useState("")
+  const [backupCodes, setBackupCodes] = useState('');
 
   const getQRCode = () => {
-    Services.getQRCode()
-      .then(res => setModal({
+    Services.getQRCode().then((res) =>
+      setModal({
         ...res,
-        code: ""
-      }));
-  }
+        code: '',
+      })
+    );
+  };
 
   const disable2FA = () => {
-    window.confirm(t('2fa.disable_confirm_message', currentLanguage))
-      .then(ok => {
-        if (ok) {
-          Services.disable2FA()
-            .then(() => {
-              toastr.success(t('2fa.successfully_disabled_from_pr', currentLanguage));
-              window.location.reload()
-            })
-        }
-      });
-  }
+    window.confirm(t('2fa.disable_confirm_message', currentLanguage)).then((ok) => {
+      if (ok) {
+        Services.disable2FA().then(() => {
+          toastr.success(t('2fa.successfully_disabled_from_pr', currentLanguage));
+          window.location.reload();
+        });
+      }
+    });
+  };
 
   function copyToClipboard() {
-    navigator.clipboard.writeText(rawValue.twoFactorAuthentication.backupCodes)
+    navigator.clipboard.writeText(rawValue.twoFactorAuthentication.backupCodes);
     toastr.success(t('2fa.copied', currentLanguage));
   }
 
   function verify() {
     if (!modal.code || modal.code.length !== 6) {
       setError(t('2fa.code_error', currentLanguage));
-      setModal({ ...modal, code: "" });
-    }
-    else {
-      Services.selfVerify2faCode(modal.code)
-        .then(res => {
-          if (res.status >= 400) {
-            setError(t('2fa.wrong_code', currentLanguage));
-            setModal({ ...modal, code: "" });
-          }
-          else
-            res.json()
-              .then(r => {
-                toastr.success(r.message);
-                setBackupCodes(r.backupCodes);
-              })
-        })
+      setModal({ ...modal, code: '' });
+    } else {
+      Services.selfVerify2faCode(modal.code).then((res) => {
+        if (res.status >= 400) {
+          setError(t('2fa.wrong_code', currentLanguage));
+          setModal({ ...modal, code: '' });
+        } else
+          res.json().then((r) => {
+            toastr.success(r.message);
+            setBackupCodes(r.backupCodes);
+          });
+      });
     }
   }
 
-  return (
-    modal ?
-      <div style={{
+  return modal ? (
+    <div
+      style={{
         position: 'absolute',
-        top: 0, left: 0,
-        width: '100%', height: '100%',
-        backgroundColor: '#f6f7f7'
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#f6f7f7',
       }}>
-        {backupCodes ?
-          <div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
-            <span className="my-3">{t('2fa.backup_codes_message', currentLanguage)}</span>
-            <div className="d-flex w-100 mb-3">
-              <input type="text" disabled={true} value={backupCodes} className="form-control" />
-              <button className="btn btn-outline-success ml-1" type="button" onClick={() => {
-                navigator.clipboard.writeText(backupCodes)
-                toastr.success("Copied");
+      {backupCodes ? (
+        <div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
+          <span className="my-3">{t('2fa.backup_codes_message', currentLanguage)}</span>
+          <div className="d-flex w-100 mb-3">
+            <input type="text" disabled={true} value={backupCodes} className="form-control" />
+            <button
+              className="btn btn-outline-success ml-1"
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(backupCodes);
+                toastr.success('Copied');
               }}>
-                <i className="fas fa-copy" />
-              </button>
-            </div>
-            <button className="btn btn-outline-success" type="button" onClick={() => window.location.reload()}>
-              {t('2fa.confirm', currentLanguage)}
+              <i className="fas fa-copy" />
             </button>
           </div>
-          :
-          <div className="d-flex flex-column justify-content-center align-items-center p-3">
-            <div className="d-flex justify-content-center align-items-center p-3">
-              <div className="d-flex flex-column justify-content-center align-items-center">
-                <span className="my-3 text-center w-75 mx-auto">{t('2fa.advice_scan', currentLanguage)}</span>
-                <img src={`data:image/svg+xml;utf8,${encodeURIComponent(modal.qrcode)}`} style={{
-                  maxWidth: "250px",
-                  height: "250px"
-                }} />
-              </div>
-              <div className="w-75">
-                <span className="my-3 text-center">{t('2fa.advice_enter_manually', currentLanguage)}</span>
-                <textarea type="text"
-                  style={{ resize: 'none', background: 'none', fontWeight: 'bold', border: 0, color: "black", letterSpacing: '3px' }}
-                  disabled={true} value={modal.rawSecret.match(/.{1,4}/g).join(" ")} className="form-control" />
-              </div>
+          <button
+            className="btn btn-outline-success"
+            type="button"
+            onClick={() => window.location.reload()}>
+            {t('2fa.confirm', currentLanguage)}
+          </button>
+        </div>
+      ) : (
+        <div className="d-flex flex-column justify-content-center align-items-center p-3">
+          <div className="d-flex justify-content-center align-items-center p-3">
+            <div className="d-flex flex-column justify-content-center align-items-center">
+              <span className="my-3 text-center w-75 mx-auto">
+                {t('2fa.advice_scan', currentLanguage)}
+              </span>
+              <img
+                src={`data:image/svg+xml;utf8,${encodeURIComponent(modal.qrcode)}`}
+                style={{
+                  maxWidth: '250px',
+                  height: '250px',
+                }}
+              />
             </div>
-            <div className="w-75 mx-auto">
-              <span className="mt-3">{t('2fa.enter_6_digits', currentLanguage)}</span>
-              <span className="mb-3">{t('2fa.enter_a_code', currentLanguage)}</span>
-              {error && <div className="alert alert-danger" role="alert">
+            <div className="w-75">
+              <span className="my-3 text-center">
+                {t('2fa.advice_enter_manually', currentLanguage)}
+              </span>
+              <textarea
+                type="text"
+                style={{
+                  resize: 'none',
+                  background: 'none',
+                  fontWeight: 'bold',
+                  border: 0,
+                  color: 'black',
+                  letterSpacing: '3px',
+                }}
+                disabled={true}
+                value={modal.rawSecret.match(/.{1,4}/g).join(' ')}
+                className="form-control"
+              />
+            </div>
+          </div>
+          <div className="w-75 mx-auto">
+            <span className="mt-3">{t('2fa.enter_6_digits', currentLanguage)}</span>
+            <span className="mb-3">{t('2fa.enter_a_code', currentLanguage)}</span>
+            {error && (
+              <div className="alert alert-danger" role="alert">
                 {error}
-              </div>}
-              <input type="number"
-                value={modal.code}
-                placeholder={t('2fa.insert_code', currentLanguage)}
-                onChange={e => {
-                  if (e.target.value.length < 7) {
-                    setError(null)
-                    setModal({ ...modal, code: e.target.value })
-                  }
-                }} className="form-control my-3" />
+              </div>
+            )}
+            <input
+              type="number"
+              value={modal.code}
+              placeholder={t('2fa.insert_code', currentLanguage)}
+              onChange={(e) => {
+                if (e.target.value.length < 7) {
+                  setError(null);
+                  setModal({ ...modal, code: e.target.value });
+                }
+              }}
+              className="form-control my-3"
+            />
 
-              <button className="btn btn-outline-success" type="button" onClick={verify}>
-                {t('2fa.complete_registration', currentLanguage)}
-              </button>
-            </div>
-          </div>}
-      </div>
-      :
-      <>
-        <div className="form-group row">
-          <label className="col-xs-12 col-sm-2 col-form-label">{t('2fa', currentLanguage)}</label>
-          <div className="col-sm-10">
-            {
-              rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled ?
-                <button onClick={disable2FA} className="btn btn-outline-danger" type="button">
-                  {t('2fa.disable_action', currentLanguage)}
-                </button> :
-                <button onClick={getQRCode} className="btn btn-outline-success" type="button">
-                  {t('2fa.enable_action', currentLanguage)}
-                </button>
-            }
+            <button className="btn btn-outline-success" type="button" onClick={verify}>
+              {t('2fa.complete_registration', currentLanguage)}
+            </button>
           </div>
         </div>
-        {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled && <div className="form-group row">
-          <label className="col-xs-12 col-sm-2 col-form-label">{t('2fa.backup_codes', currentLanguage)}</label>
+      )}
+    </div>
+  ) : (
+    <>
+      <div className="form-group row">
+        <label className="col-xs-12 col-sm-2 col-form-label">{t('2fa', currentLanguage)}</label>
+        <div className="col-sm-10">
+          {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled ? (
+            <button onClick={disable2FA} className="btn btn-outline-danger" type="button">
+              {t('2fa.disable_action', currentLanguage)}
+            </button>
+          ) : (
+            <button onClick={getQRCode} className="btn btn-outline-success" type="button">
+              {t('2fa.enable_action', currentLanguage)}
+            </button>
+          )}
+        </div>
+      </div>
+      {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled && (
+        <div className="form-group row">
+          <label className="col-xs-12 col-sm-2 col-form-label">
+            {t('2fa.backup_codes', currentLanguage)}
+          </label>
           <div className="col-sm-10">
             <div className="d-flex">
-              <input type="text" disabled={true} value={rawValue.twoFactorAuthentication.backupCodes} className="form-control" />
-              <button className="btn btn-outline-success ml-1" type="button" onClick={copyToClipboard}>
+              <input
+                type="text"
+                disabled={true}
+                value={rawValue.twoFactorAuthentication.backupCodes}
+                className="form-control"
+              />
+              <button
+                className="btn btn-outline-success ml-1"
+                type="button"
+                onClick={copyToClipboard}>
                 <i className="fas fa-copy" />
               </button>
             </div>
           </div>
-        </div>}
-      </>
-  )
+        </div>
+      )}
+    </>
+  );
 }
 
 class SetPassword extends Component {
@@ -260,7 +299,12 @@ const Avatar = ({ currentLanguage, value, rawValue, changeValue, label, ...props
     <div className="form-group row">
       <label className="col-xs-12 col-sm-2 col-form-label">{label}</label>
       <div className="col-sm-10">
-        <input type="text" className="form-control" value={value} onChange={(e) => changePicture(e.target.value)} />
+        <input
+          type="text"
+          className="form-control"
+          value={value}
+          onChange={(e) => changePicture(e.target.value)}
+        />
       </div>
       <div className="col-sm-10 offset-sm-2 d-flex mt-1">
         <button type="button" className="btn btn-outline-primary mr-1" onClick={setGravatarLink}>
@@ -441,9 +485,9 @@ class MyProfileComponent extends Component {
     enable2FA: {
       type: TwoFactorAuthentication,
       props: {
-        ...this.props
-      }
-    }
+        ...this.props,
+      },
+    },
   };
 
   formFlow = [
@@ -456,7 +500,7 @@ class MyProfileComponent extends Component {
     'defaultLanguage',
     'enable2FA',
     'tenants',
-    'origins'
+    'origins',
   ];
 
   setFiles = (files) => {
@@ -533,7 +577,7 @@ class MyProfileComponent extends Component {
   };
 
   render() {
-    const user = this.state.user
+    const user = this.state.user;
     return (
       <UserBackOffice tab="Me">
         <div className="row">
@@ -542,8 +586,9 @@ class MyProfileComponent extends Component {
               {user && (
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <img
-                    src={`${user.picture}${user.picture.startsWith('http') ? '' : `?${Date.now()}`
-                      }`}
+                    src={`${user.picture}${
+                      user.picture.startsWith('http') ? '' : `?${Date.now()}`
+                    }`}
                     style={{
                       width: 200,
                       borderRadius: '50%',
@@ -559,10 +604,14 @@ class MyProfileComponent extends Component {
                   />
                 </div>
               )}
-              {user ? <div className="mt-3">
-                <h1 className="my-0">{user.name}</h1>
-                <span id="my_profile_email">{user.email}</span>
-              </div> : <h1>Me</h1>}
+              {user ? (
+                <div className="mt-3">
+                  <h1 className="my-0">{user.name}</h1>
+                  <span id="my_profile_email">{user.email}</span>
+                </div>
+              ) : (
+                <h1>Me</h1>
+              )}
             </div>
             {this.state.user && (
               <React.Suspense fallback={<Spinner />}>

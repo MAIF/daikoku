@@ -91,14 +91,18 @@ class MessagesControllerSpec()
 
       val session = loginWithBlocking(user, tenant)
 
-      val respGetClosedDate = httpJsonCallBlocking(s"/api/messages/${user.id.value}/last-date")(tenant, session)
+      val respGetClosedDate = httpJsonCallBlocking(
+        s"/api/messages/${user.id.value}/last-date")(tenant, session)
       respGetClosedDate.status mustBe 200
       val lastClosedDate = (respGetClosedDate.json).as[Long]
       lastClosedDate mustBe closedDate.toDate.getTime
 
-      val respGet = httpJsonCallBlocking(s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant, session)
+      val respGet = httpJsonCallBlocking(
+        s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant,
+                                                                        session)
       respGet.status mustBe 200
-      val messages = json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
+      val messages =
+        json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
       messages.isSuccess mustBe true
 
       messages.get.length mustBe 1

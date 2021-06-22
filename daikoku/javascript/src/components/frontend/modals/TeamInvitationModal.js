@@ -4,40 +4,33 @@ import { ValidateEmail } from '../../utils/validation';
 import { t } from '../../../locales';
 
 export const TeamInvitationModal = (props) => {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [error, setError] = useState(undefined);
 
   function invitUser() {
     const { members, pendingUsers } = props;
 
-    const validator = ValidateEmail(email, props.currentLanguage)
+    const validator = ValidateEmail(email, props.currentLanguage);
     if (validator.ok) {
       if (members.find((f) => f.email === email))
-        setError(t('User already in team', props.currentLanguage))
+        setError(t('User already in team', props.currentLanguage));
       else if (pendingUsers.find((f) => f.email === email))
-        setError(t('User already invited', props.currentLanguage))
-      else if (props.tenant && props.tenant.authProvider == "LDAP") {
-        props.searchLdapMember(email)
-          .then(res => {
-            if (res.error)
-              setError(res.error);
-            else
-              confirmInvitation();
-          });
-      }
-      else
-        confirmInvitation();
-    }
-    else
-      setError(validator.error);
+        setError(t('User already invited', props.currentLanguage));
+      else if (props.tenant && props.tenant.authProvider == 'LDAP') {
+        props.searchLdapMember(email).then((res) => {
+          if (res.error) setError(res.error);
+          else confirmInvitation();
+        });
+      } else confirmInvitation();
+    } else setError(validator.error);
   }
 
   function confirmInvitation() {
-    props.closeModal()
-    props.invitUser(email)
+    props.closeModal();
+    props.invitUser(email);
   }
 
-  const isLDAPProvider = props.tenant && props.tenant.authProvider === "LDAP"
+  const isLDAPProvider = props.tenant && props.tenant.authProvider === 'LDAP';
 
   return (
     <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
@@ -52,27 +45,37 @@ export const TeamInvitationModal = (props) => {
         </h5>
       </div>
       <div className="modal-body">
-        {error &&
+        {error && (
           <div className="alert alert-danger" role="alert">
             {t(error, props.currentLanguage)}
           </div>
-        }
+        )}
         <input
-          type="text" className="form-control"
+          type="text"
+          className="form-control"
           value={email}
           placeholder={t('Email', props.currentLanguage)}
-          onChange={e => {
-            setError("")
-            setEmail(e.target.value)
-          }} />
+          onChange={(e) => {
+            setError('');
+            setEmail(e.target.value);
+          }}
+        />
 
-        {isLDAPProvider ?
-          <button onClick={invitUser} className="btn btn-success mt-3 btn-block btn-lg" type="button">
+        {isLDAPProvider ? (
+          <button
+            onClick={invitUser}
+            className="btn btn-success mt-3 btn-block btn-lg"
+            type="button">
             {t('Search', props.currentLanguage)}
-          </button> :
-          <button className="btn btn-success mt-3 btn-block btn-lg" type="button" onClick={invitUser}>
+          </button>
+        ) : (
+          <button
+            className="btn btn-success mt-3 btn-block btn-lg"
+            type="button"
+            onClick={invitUser}>
             {t('team_member.send_email', props.currentLanguage)}
-          </button>}
+          </button>
+        )}
       </div>
     </div>
   );
