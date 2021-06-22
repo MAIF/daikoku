@@ -3,12 +3,13 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
-import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
+import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, OtoroshiVerifierJob}
 import play.api.libs.json.Json
 import play.api.mvc.{AbstractController, ControllerComponents}
 
 class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
                      apiKeyStatsJob: ApiKeyStatsJob,
+                     auditTrailPurgeJob: AuditTrailPurgeJob,
                      env: Env,
                      cc: ControllerComponents,
                      otoroshiClient: OtoroshiClient)
@@ -35,6 +36,14 @@ class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
   def apikeysStatsSyncJob() = Action.async { req =>
     if (env.config.apikeysStatsByCron) {
       apiKeyStatsJob.getStats.map(_ => Ok(Json.obj("done" -> true)))
+    } else {
+      FastFuture.successful(NotFound(Json.obj("error" -> "API not found")))
+    }
+  }
+
+  def auditTrailPurgeRunJob() = Action.async { req =>
+    if (env.config.apikeysStatsByCron) {
+      auditTrailPurgeJob.purge().map(_ => Ok(Json.obj("done" -> true)))
     } else {
       FastFuture.successful(NotFound(Json.obj("error" -> "API not found")))
     }

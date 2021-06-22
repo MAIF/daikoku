@@ -423,6 +423,8 @@ GET     /api/entities/issue                             fr.maif.otoroshi.daikoku
 POST    /api/jobs/otoroshi/_sync                        fr.maif.otoroshi.daikoku.ctrls.JobsController.otoroshiSyncJob()
 ### NoDocs ###
 POST    /api/jobs/stats/_sync                           fr.maif.otoroshi.daikoku.ctrls.JobsController.apikeysStatsSyncJob()
+### NoDocs ###
+POST    /api/jobs/purge/_sync                           fr.maif.otoroshi.daikoku.ctrls.JobsController.auditTrailPurgeRunJob()
 
 ### NoDocs ###
 POST    /api/_search                                    fr.maif.otoroshi.daikoku.ctrls.ApiController.search()

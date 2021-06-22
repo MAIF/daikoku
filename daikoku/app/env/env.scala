@@ -201,6 +201,16 @@ class Config(val underlying: Configuration) {
     .map(v => v.millis)
     .getOrElse(10.minutes)
 
+  lazy val auditTrailPurgeByCron: Boolean = underlying
+    .getOptional[Boolean]("daikoku.audit.purge.cron")
+    .getOrElse(false)
+  lazy val auditTrailPurgeInterval: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.audit.purge.interval")
+    .getOrElse(1 hour)
+  lazy val auditTrailPurgeMaxDate: FiniteDuration = underlying
+    .getOptional[FiniteDuration]("daikoku.audit.purge.max.date")
+    .getOrElse(60 day)
+
   lazy val init: InitConfig = InitConfig(underlying)
 
   lazy val adminApiConfig: AdminApiConfig = AdminApiConfig(underlying)

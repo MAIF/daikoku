@@ -18,7 +18,7 @@ import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
 import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, OtoroshiClient}
-import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
+import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob, AuditTrailPurgeJob}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
@@ -51,6 +51,7 @@ package object modules {
 
     lazy val verifier = wire[OtoroshiVerifierJob]
     lazy val statsJob = wire[ApiKeyStatsJob]
+    lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
 
     lazy val otoroshiClient = wire[OtoroshiClient]
 
@@ -122,12 +123,14 @@ package object modules {
 
 //    statsJob.start()
     verifier.start()
+    auditTrailPurgeJob.start()
 
     env.onStartup()
 
     applicationLifecycle.addStopHook { () =>
       verifier.stop()
       statsJob.stop()
+      auditTrailPurgeJob.stop()
       env.onShutdown()
       FastFuture.successful(())
     }
