@@ -177,3 +177,29 @@ We'd like to thank all the contributors who worked on this release!
 - Api to get notification seems to List all notif without tenant context [#244](https://github.com/MAIF/daikoku/issues/244)
 - Api page is crashing for guest users [#216](https://github.com/MAIF/daikoku/issues/216)
 
+## [v1.1.2] - 2021-06-22
+
+## :star: New Features
+
+- Configure audit trail purge [#280](https://github.com/MAIF/daikoku/issues/280)
+- Choose to export audit trail or not with database export [#277](https://github.com/MAIF/daikoku/issues/277)
+- Navbar brand always link to /apis [#267](https://github.com/MAIF/daikoku/issues/267)
+- Support new mailers [#265](https://github.com/MAIF/daikoku/issues/265)
+- 2FA - Hide QRCode on profile [#264](https://github.com/MAIF/daikoku/issues/264)
+- Use clever-cloud environment variables for postgres [#252](https://github.com/MAIF/daikoku/issues/252)
+- Filter otoroshi api keys initialization by groups [#113](https://github.com/MAIF/daikoku/issues/113)
+
+## :beetle: Bug Fixes
+
+- Closed user session seem to be not deleted [#278](https://github.com/MAIF/daikoku/issues/278)
+- KAFKA :: The server host name verification failed during ssl handshake [#261](https://github.com/MAIF/daikoku/issues/261)
+- Daikoku Init on postgres can be broken [#251](https://github.com/MAIF/daikoku/issues/251)
+- Can't login [#248](https://github.com/MAIF/daikoku/issues/248)
+- Tenant title so ugly [#143](https://github.com/MAIF/daikoku/issues/143)
+
+## :heart: Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@Zwiterrion](https://github.com/Zwiterrion)
+
