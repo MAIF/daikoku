@@ -325,6 +325,18 @@ case class SimpleSMTPSettings(host: String,
   }
 }
 
+case class SendgridSettings(apikey: String,
+                            fromEmail: String,
+                            template: Option[String])
+  extends MailerSettings
+    with CanJson[SendgridSettings] {
+  def mailerType: String = "sendgrid"
+  def asJson: JsValue = json.SendGridSettingsFormat.writes(this)
+  def mailer(implicit env: Env): Mailer = {
+    new SendgridSender(env.wsClient, this)
+  }
+}
+
 // case class IdentitySettings(
 //   identityThroughOtoroshi: Boolean,
 //   stateHeaderName: String = "Otoroshi-State",

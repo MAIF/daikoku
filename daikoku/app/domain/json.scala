@@ -615,6 +615,30 @@ object json {
         .as[JsValue]
     )
   }
+  val SendGridSettingsFormat = new Format[SendgridSettings] {
+    override def reads(json: JsValue): JsResult[SendgridSettings] =
+      Try {
+        JsSuccess(
+          SendgridSettings(
+            apikey = (json \ "apikey").as[String],
+            fromEmail = (json \ "fromEmail").as[String],
+            template = (json \ "template").asOpt[String]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: SendgridSettings): JsValue = Json.obj(
+      "type" -> "sendgrid",
+      "apikey" -> o.apikey,
+      "fromEmail" -> o.fromEmail,
+      "template" -> o.template
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
+  }
   val AdminFormat = new Format[Admin] {
     override def reads(json: JsValue): JsResult[Admin] =
       Try {
@@ -1487,6 +1511,7 @@ object json {
                 (settings \ "type").as[String] match {
                   case "mailgun"    => MailgunSettingsFormat.reads(settings).asOpt
                   case "mailjet"    => MailjetSettingsFormat.reads(settings).asOpt
+                  case "sendgrid"   => SendGridSettingsFormat.reads(settings).asOpt
                   case "smtpClient" => SimpleSMTPClientSettingsFormat.reads(settings).asOpt
                   case _         => Some(ConsoleMailerSettings())
                 }

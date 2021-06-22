@@ -897,5 +897,7 @@
   "api_swagger.try_it_error": "Le Try it n'est pas activé sur cette api.",
   "api_swagger.guest_user": "Le Try it est uniquement disponible pour les utilisateurs connectés.",
   "smtp_client.host": "Le serveur SMTP",
-  "smtp_client.port": "Le port du serveur SMTP"
+  "smtp_client.port": "Le port du serveur SMTP",
+  "send_grid.api_key": "Api Key",
+  "send_grid.from_email": "Email de l'expéditeur"
 }
