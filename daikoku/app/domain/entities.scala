@@ -311,6 +311,32 @@ case class MailjetSettings(apiKeyPublic: String,
   }
 }
 
+case class SimpleSMTPSettings(host: String,
+                              port: String = "25",
+                              fromTitle: String,
+                              fromEmail: String,
+                              template: Option[String])
+  extends MailerSettings
+  with CanJson[SimpleSMTPSettings] {
+  def mailerType: String = "smtpClient"
+  def asJson: JsValue = json.SimpleSMTPClientSettingsFormat.writes(this)
+  def mailer(implicit env: Env): Mailer = {
+    new SimpleSMTPSender(this)
+  }
+}
+
+case class SendgridSettings(apikey: String,
+                            fromEmail: String,
+                            template: Option[String])
+  extends MailerSettings
+    with CanJson[SendgridSettings] {
+  def mailerType: String = "sendgrid"
+  def asJson: JsValue = json.SendGridSettingsFormat.writes(this)
+  def mailer(implicit env: Env): Mailer = {
+    new SendgridSender(env.wsClient, this)
+  }
+}
+
 // case class IdentitySettings(
 //   identityThroughOtoroshi: Boolean,
 //   stateHeaderName: String = "Otoroshi-State",

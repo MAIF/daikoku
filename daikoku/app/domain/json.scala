@@ -587,6 +587,58 @@ object json {
         .as[JsValue]
     )
   }
+  val SimpleSMTPClientSettingsFormat = new Format[SimpleSMTPSettings] {
+    override def reads(json: JsValue): JsResult[SimpleSMTPSettings] =
+      Try {
+        JsSuccess(
+          SimpleSMTPSettings(
+            host = (json \ "host").as[String],
+            port = (json \ "port").as[String],
+            fromTitle = (json \ "fromTitle").as[String],
+            fromEmail = (json \ "fromEmail").as[String],
+            template = (json \ "template").asOpt[String]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: SimpleSMTPSettings): JsValue = Json.obj(
+      "type" -> "smtpClient",
+      "host" -> o.host,
+      "port" -> o.port,
+      "fromTitle" -> o.fromTitle,
+      "fromEmail" -> o.fromEmail,
+      "template" -> o.template
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
+  }
+  val SendGridSettingsFormat = new Format[SendgridSettings] {
+    override def reads(json: JsValue): JsResult[SendgridSettings] =
+      Try {
+        JsSuccess(
+          SendgridSettings(
+            apikey = (json \ "apikey").as[String],
+            fromEmail = (json \ "fromEmail").as[String],
+            template = (json \ "template").asOpt[String]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: SendgridSettings): JsValue = Json.obj(
+      "type" -> "sendgrid",
+      "apikey" -> o.apikey,
+      "fromEmail" -> o.fromEmail,
+      "template" -> o.template
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
+  }
   val AdminFormat = new Format[Admin] {
     override def reads(json: JsValue): JsResult[Admin] =
       Try {
@@ -1457,8 +1509,10 @@ object json {
             mailerSettings =
               (json \ "mailerSettings").asOpt[JsObject].flatMap { settings =>
                 (settings \ "type").as[String] match {
-                  case "mailgun" => MailgunSettingsFormat.reads(settings).asOpt
-                  case "mailjet" => MailjetSettingsFormat.reads(settings).asOpt
+                  case "mailgun"    => MailgunSettingsFormat.reads(settings).asOpt
+                  case "mailjet"    => MailjetSettingsFormat.reads(settings).asOpt
+                  case "sendgrid"   => SendGridSettingsFormat.reads(settings).asOpt
+                  case "smtpClient" => SimpleSMTPClientSettingsFormat.reads(settings).asOpt
                   case _         => Some(ConsoleMailerSettings())
                 }
               },

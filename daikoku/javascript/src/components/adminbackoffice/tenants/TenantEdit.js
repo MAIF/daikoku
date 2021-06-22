@@ -8,7 +8,7 @@ import { UserBackOffice } from '../../backoffice';
 import * as Services from '../../../services';
 
 import { LDAPConfig, LocalConfig, OAuth2Config, OtoroshiConfig } from './auth';
-import { ConsoleConfig, MailgunConfig, MailjetConfig } from './mailer';
+import { ConsoleConfig, MailgunConfig, MailjetConfig, SmtpClientConfig, SendGridConfig } from './mailer';
 import { Can, manage, tenant, Spinner } from '../../utils';
 import { t, Translation, configuration } from '../../../locales';
 import { BooleanInput } from '../../inputs/BooleanInput';
@@ -51,24 +51,24 @@ class AuthConfig extends Component {
 
 class MailerConfig extends Component {
   render() {
-    if (
-      this.props.rawValue.mailerSettings &&
-      this.props.rawValue.mailerSettings.type === 'console'
-    ) {
-      return <ConsoleConfig {...this.props} />;
-    } else if (
-      this.props.rawValue.mailerSettings &&
-      this.props.rawValue.mailerSettings.type === 'mailgun'
-    ) {
-      return <MailgunConfig {...this.props} />;
-    } else if (
-      this.props.rawValue.mailerSettings &&
-      this.props.rawValue.mailerSettings.type === 'mailjet'
-    ) {
-      return <MailjetConfig {...this.props} />;
-    } else {
+    const { rawValue } = this.props;
+    const mailerSettings = rawValue.mailerSettings;
+
+    if (!mailerSettings)
       return null;
-    }
+
+    if (mailerSettings.type === 'console')
+      return <ConsoleConfig {...this.props} />
+    else if (mailerSettings.type === 'mailgun')
+      return <MailgunConfig {...this.props} />
+    else if (mailerSettings.type === 'mailjet')
+      return <MailjetConfig {...this.props} />
+    else if (mailerSettings.type === 'smtpClient')
+      return <SmtpClientConfig {...this.props} />
+    else if (mailerSettings.type === "sendgrid")
+      return <SendGridConfig {...this.props} />
+    else
+      return null;
   }
 }
 
@@ -608,8 +608,11 @@ export class TenantEditComponent extends Component {
       props: {
         label: t('Mailer type', this.props.currentLanguage),
         possibleValues: [
+          { label: 'Console', value: 'console' },
+          { label: 'SMTP Client', value: 'smtpClient' },
           { label: 'Mailgun', value: 'mailgun' },
           { label: 'Mailjet', value: 'mailjet' },
+          { label: 'Sendgrid', value: 'sendgrid' }
         ],
       },
     },
