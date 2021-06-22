@@ -35,7 +35,11 @@ assemblyMergeStrategy in assembly := {
     MergeStrategy.first //???
   case PathList(ps @ _*) if ps.contains("native-image") =>
     MergeStrategy.first //???
+<<<<<<< HEAD
   case "META-INF/mailcap"           => MergeStrategy.last
+=======
+  case "META-INF/mailcap.default" => MergeStrategy.last
+>>>>>>> e7d6cdd (Fuck)
   case "META-INF/mimetypes.default" => MergeStrategy.last
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
