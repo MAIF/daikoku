@@ -444,59 +444,59 @@ class MongoDataStore(context: Context, env: Env)
         .map(Json.parse)
         .map(json => json.as[JsObject])
         .map(json =>
-          ((json \ "type").as[String], (json \ "payload").as[JsValue]))
+          ((json \ "type").as[String].toLowerCase.replace("_", ""), (json \ "payload").as[JsValue]))
         .mapAsync(1) {
-          case ("Tenants", payload) =>
+          case ("tenants", payload) =>
             tenantRepo.save(TenantFormat.reads(payload).get)
-          case ("PasswordReset", payload) =>
+          case ("passwordreset", payload) =>
             passwordResetRepo.save(PasswordResetFormat.reads(payload).get)
-          case ("AccountCreation", payload) =>
+          case ("accountcreation", payload) =>
             accountCreationRepo.save(AccountCreationFormat.reads(payload).get)
-          case ("Users", payload) =>
+          case ("users", payload) =>
             userRepo.save(UserFormat.reads(payload).get)
-          case ("Teams", payload) =>
+          case ("teams", payload) =>
             teamRepo
               .forAllTenant()
               .save(TeamFormat.reads(payload).get)
-          case ("Apis", payload) =>
+          case ("apis", payload) =>
             apiRepo
               .forAllTenant()
               .save(ApiFormat.reads(payload).get)
-          case ("ApiSubscriptions", payload) =>
+          case ("apisubscriptions", payload) =>
             apiSubscriptionRepo
               .forAllTenant()
               .save(ApiSubscriptionFormat.reads(payload).get)
-          case ("ApiDocumentationPages", payload) =>
+          case ("apidocumentationpages", payload) =>
             apiDocumentationPageRepo
               .forAllTenant()
               .save(ApiDocumentationPageFormat.reads(payload).get)
-          case ("ApiPosts", payload) =>
+          case ("apiposts", payload) =>
             apiPostRepo
               .forAllTenant()
               .save(ApiPostFormat.reads(payload).get)
-          case ("ApiIssues", payload) =>
+          case ("apiissues", payload) =>
             apiIssueRepo
               .forAllTenant()
               .save(ApiIssueFormat.reads(payload).get)
-          case ("Notifications", payload) =>
+          case ("notifications", payload) =>
             notificationRepo
               .forAllTenant()
               .save(NotificationFormat.reads(payload).get)
-          case ("Consumptions", payload) =>
+          case ("consumptions", payload) =>
             consumptionRepo
               .forAllTenant()
               .save(ConsumptionFormat.reads(payload).get)
-          case ("Translations", payload) =>
+          case ("translations", payload) =>
             translationRepo
               .forAllTenant()
               .save(TranslationFormat.reads(payload).get)
-          case ("AuditEvents", payload) =>
+          case ("auditevents", payload) =>
             auditTrailRepo
               .forAllTenant()
               .save(payload.as[JsObject])
-          case ("UserSessions", payload) =>
+          case ("usersessions", payload) =>
             userSessionRepo.save(UserSessionFormat.reads(payload).get)
-          case ("Messages", payload) =>
+          case ("messages", payload) =>
             messageRepo
               .forAllTenant()
               .save(MessageFormat.reads(payload).get)
