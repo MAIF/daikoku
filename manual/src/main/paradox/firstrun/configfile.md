@@ -86,6 +86,14 @@ or
 |`daikoku.postgres.password` | string | "postgres" | the password used to connect to database |
 |`daikoku.postgres.schema` | string | "public" | the current schema |
 
+> Audit trail purge configuration
+
+| name | type | default value  | description |
+| ---- |:----:| -------------- | ----- |
+|`daikoku.audit.purge.cron` | boolean | false | enable the automatic purge of audit trail in database  |
+|`daikoku.audit.purge.interval` | string | "1hour" | The interval of purge run |
+|`daikoku.audit.purge.max.date` | string | "60days" | retention date for the audit trail |
+
 ## Play specific configuration
 
 As Daikoku is a [Play app](https://www.playframework.com/), you should take a look at [Play configuration documentation](https://www.playframework.com/documentation/2.6.x/Configuration) to tune its internal configuration
@@ -179,6 +187,14 @@ daikoku {
     }
     call {
       interval = 600000
+    }
+  }
+
+  audit {
+    purge {
+      cron = false
+      interval = 1hour
+      max.date = 60days
     }
   }
 }
