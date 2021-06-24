@@ -203,3 +203,9 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@Zwiterrion](https://github.com/Zwiterrion)
 
+## [v1.1.3] - 2021-06-24
+
+## :beetle: Bug Fixes
+
+- [Postgres] : Fix consumption sync process [#284](https://github.com/MAIF/daikoku/issues/284)
+
