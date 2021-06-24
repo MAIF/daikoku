@@ -207,7 +207,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p>Now it&rsquo;s time to deploy Daikoku in production, in this chapter we will see what kind of things you can do.</p>
 <h2><a href="#deploy-with-docker" name="deploy-with-docker" class="anchor"><span class="anchor-link"></span></a>Deploy with Docker</h2>
 <p>Daikoku is available as a Docker image on DockerHub so you can just use it in any Docker compatible environment</p>
-<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; maif/daikoku:1.1.2
+<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; maif/daikoku:1.1.3
 </code></pre>
 <p>You can also pass useful args like :</p>
 <pre><code>docker run -p &quot;8080:8080&quot; daikoku -Dconfig.file=/usr/app/daikoku/conf/daikoku.conf -Dlogger.file=/usr/app/daikoku/conf/daikoku.xml
@@ -216,10 +216,10 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p>You can also provide some ENV variable using the <code>--env</code> flag to customize your Daikoku instance.</p>
 <p>The list of possible env variables is available <a href="../firstrun/env.html">here</a>.</p>
 <p>You can use a volume to provide configuration like :</p>
-<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; -v &quot;$(pwd):/usr/app/daikoku/conf&quot; maif/daikoku:1.1.2
+<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; -v &quot;$(pwd):/usr/app/daikoku/conf&quot; maif/daikoku:1.1.3
 </code></pre>
 <p>You can also use a volume if you choose to use exports files :</p>
-<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; -v &quot;$(pwd):/usr/app/daikoku/imports&quot; maif/daikoku :1.1.2 -Ddaikoku.init.data.from=/usr/app/daikoku/imports/export.ndjson
+<pre class="prettyprint"><code class="language-sh">docker run -p &quot;8080:8080&quot; -v &quot;$(pwd):/usr/app/daikoku/imports&quot; maif/daikoku :1.1.3 -Ddaikoku.init.data.from=/usr/app/daikoku/imports/export.ndjson
 </code></pre>
 <h2><a href="#deploy-manually" name="deploy-manually" class="anchor"><span class="anchor-link"></span></a>Deploy manually</h2>
 <p>As Daikoku is a PlayFramwork application, you can follow the <a href="https://www.playframework.com/documentation/2.6.x/Production">PlayFramework documentation</a> to deploy your application.</p>

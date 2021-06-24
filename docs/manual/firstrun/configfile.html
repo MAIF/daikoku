@@ -508,6 +508,39 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     </tr>
   </tbody>
 </table>
+<blockquote>
+  <p>Audit trail purge configuration</p>
+</blockquote>
+<table>
+  <thead>
+    <tr>
+      <th>name </th>
+      <th align="center">type </th>
+      <th>default value </th>
+      <th>description </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>daikoku.audit.purge.cron</code> </td>
+      <td align="center">boolean </td>
+      <td>false </td>
+      <td>enable the automatic purge of audit trail in database </td>
+    </tr>
+    <tr>
+      <td><code>daikoku.audit.purge.interval</code> </td>
+      <td align="center">string </td>
+      <td>&ldquo;1hour&rdquo; </td>
+      <td>The interval of purge run </td>
+    </tr>
+    <tr>
+      <td><code>daikoku.audit.purge.max.date</code> </td>
+      <td align="center">string </td>
+      <td>&ldquo;60days&rdquo; </td>
+      <td>retention date for the audit trail </td>
+    </tr>
+  </tbody>
+</table>
 <h2><a href="#play-specific-configuration" name="play-specific-configuration" class="anchor"><span class="anchor-link"></span></a>Play specific configuration</h2>
 <p>As Daikoku is a <a href="https://www.playframework.com/">Play app</a>, you should take a look at <a href="https://www.playframework.com/documentation/2.6.x/Configuration">Play configuration documentation</a> to tune its internal configuration</p>
 <table>
@@ -661,6 +694,14 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     }
     call {
       interval = 600000
+    }
+  }
+
+  audit {
+    purge {
+      cron = false
+      interval = 1hour
+      max.date = 60days
     }
   }
 }
