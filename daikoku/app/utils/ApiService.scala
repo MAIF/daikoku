@@ -294,16 +294,12 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                    plan: UsagePlan,
                    api: Api,
                    team: Team): Future[Either[AppError, JsObject]] = {
-    def deleteKey(api: Api, team: Team, group: JsObject)(
-      implicit otoroshiSettings: OtoroshiSettings
-    ): Future[Either[AppError, JsObject]] = {
+    def deleteKey()(implicit otoroshiSettings: OtoroshiSettings): Future[Either[AppError, JsObject]] = {
       import cats.implicits._
-
-      val groupId = (group \ "id").as[String]
 
       val r: EitherT[Future, AppError, JsObject] = for {
         _ <- EitherT.liftF(
-          otoroshiClient.deleteApiKey(groupId, subscription.apiKey.clientId))
+          otoroshiClient.deleteApiKey(subscription.apiKey.clientId))
         _ <- EitherT.liftF(
           env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)
@@ -331,7 +327,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         plan.otoroshiTarget.map(_.authorizedEntities) match {
           case None => Future.successful(Left(ApiNotLinked))
           case Some(authorizedEntities) if authorizedEntities.isEmpty => Future.successful(Left(ApiNotLinked))
-          case Some(authorizedEntities) => ??? //FIXME: [#119]
+          case Some(_) => deleteKey()
         }
     }
   }

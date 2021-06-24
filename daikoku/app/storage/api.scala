@@ -227,7 +227,7 @@ trait TenantRepo extends Repo[Tenant, TenantId]
 
 trait UserRepo extends Repo[User, UserId]
 
-trait EvolutionRepo extends Repo[Evolution, MongoId]
+trait EvolutionRepo extends Repo[Evolution, DatastoreId]
 
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
   def myTeams(tenant: Tenant, user: User)(

@@ -609,6 +609,8 @@ class MockController(DaikokuAction: DaikokuAction,
       createUserAndTeam("philippe", "philippe@foo.bar", tenantId)
     val (user5, userTeam5) =
       createUserAndTeam("fifou", "fifou@foo.bar", tenantId, false)
+    val (user6, userTeam6) =
+      createUserAndTeam("Etienne", "etienne@foo.bar", tenantId)
 
     val issuesTags = Seq(
       ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
@@ -1109,11 +1111,13 @@ class MockController(DaikokuAction: DaikokuAction,
       _ <- env.dataStore.userRepo.save(user3)
       _ <- env.dataStore.userRepo.save(user4)
       _ <- env.dataStore.userRepo.save(user5)
+      _ <- env.dataStore.userRepo.save(user6)
       _ <- teamRepo1.save(userTeam1)
       _ <- teamRepo1.save(userTeam2)
       _ <- teamRepo1.save(userTeam3)
       _ <- teamRepo1.save(userTeam4)
       _ <- teamRepo1.save(userTeam5)
+      _ <- teamRepo1.save(userTeam6)
       _ <- teamRepo1.save(defaultAdminTeam)
       _ <- teamRepo1.save(tenant2adminTeam)
       ids <- saveApiDocPages(tenantId)

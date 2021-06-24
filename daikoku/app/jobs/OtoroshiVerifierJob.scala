@@ -598,7 +598,6 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                               if !apk.rotation.exists(r =>
                                                 r.enabled) =>
                                             client.updateApiKey(
-                                              target.serviceGroup.value,
                                               apk.copy(rotation = Some(
                                                 ApiKeyRotation())))(settings)
                                           case Success(Right(apk)) =>

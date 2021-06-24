@@ -3,7 +3,7 @@ package fr.maif.otoroshi.daikoku.env
 import akka.Done
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.domain.{Evolution, MongoId}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Evolution}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json.{JsArray, JsObject, JsString, Json}
 import reactivemongo.api.bson.BSONObjectID
@@ -14,15 +14,15 @@ import scala.util.Success
 
 sealed trait EvolutionScript {
   def version: String
-  def script: (Option[MongoId], DataStore, Materializer, ExecutionContext) => Unit
-  def run(maybeId: Option[MongoId], dataStore: DataStore)(implicit mat: Materializer, ec: ExecutionContext): Unit =
+  def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext) => Unit
+  def run(maybeId: Option[DatastoreId], dataStore: DataStore)(implicit mat: Materializer, ec: ExecutionContext): Unit =
     script(maybeId, dataStore, mat, ec)
 }
 
 object evolution_102 extends EvolutionScript {
   override def version: String = "1.0.2"
 
-  override def script: (Option[MongoId], DataStore, Materializer, ExecutionContext) => Unit = (maybeId: Option[MongoId], dataStore: DataStore, mat: Materializer, ec: ExecutionContext) => {
+  override def script: (Option[DatastoreId], DataStore, Materializer, ExecutionContext) => Unit = (maybeId: Option[DatastoreId], dataStore: DataStore, mat: Materializer, ec: ExecutionContext) => {
     AppLogger.info("Begin evolution 1.0.2")
     dataStore.apiRepo.forAllTenant().streamAllRaw()(ec)
       .filter(value => (value \ "possibleUsagePlans").as[JsArray].value.exists(plan => (plan \ "otoroshiTarget" \ "serviceGroup").asOpt[String].isDefined))
@@ -51,7 +51,7 @@ object evolution_102 extends EvolutionScript {
       .onComplete {
         case Success(done) =>
           dataStore.evolutionRepo.save(Evolution(
-          id = maybeId.getOrElse(MongoId(BSONObjectID.generate().stringify)),
+          id = maybeId.getOrElse(DatastoreId(BSONObjectID.generate().stringify)),
           version = "1.0.2",
           applied = true
         ))(ec).map(_ => AppLogger.info(s"Evolution 1.0.2 done"))(ec)

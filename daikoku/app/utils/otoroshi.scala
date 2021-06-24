@@ -209,10 +209,9 @@ class OtoroshiClient(env: Env) {
       }
   }
 
-  def deleteApiKey(groupId: String, clientId: String)(
+  def deleteApiKey(clientId: String)(
       implicit otoroshiSettings: OtoroshiSettings): Future[Unit] = {
-    validateGroupNameFromId(groupId) {
-      client(s"/api/groups/$groupId/apikeys/$clientId").delete().flatMap {
+      client(s"/api/apikeys/$clientId").delete().flatMap {
         resp =>
           if (resp.status == 200) {
             Future.successful(())
@@ -221,7 +220,6 @@ class OtoroshiClient(env: Env) {
               s"Error while deleting otoroshi apikey: ${resp.status} - ${resp.body}"))
           }
       }
-    }
   }
 
   def getServiceConsumption(service: String, from: String, to: String)(

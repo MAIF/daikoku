@@ -3148,7 +3148,7 @@ object json {
         Try {
           JsSuccess(
             Evolution(
-              id = (json \ "id").as(MongoIdFormat),
+              id = (json \ "_id").as(DatastoreIdFormat),
               version = (json \ "version").as[String],
               applied = (json \ "applied").as[Boolean],
               date = (json \ "date").as(DateTimeFormat)
@@ -3159,7 +3159,7 @@ object json {
         } get
 
       override def writes(o: Evolution): JsValue = Json.obj(
-        "id" -> MongoIdFormat.writes(o.id),
+        "_id" -> DatastoreIdFormat.writes(o.id),
         "version" -> o.version,
         "applied" -> o.applied,
         "date" -> DateTimeFormat.writes(o.date)

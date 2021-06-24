@@ -712,7 +712,7 @@ class MongoUserRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
 }
 
 class MongoEvolutionRepo(env: Env, reactiveMongoApi: ReactiveMongoApi)
-    extends MongoRepo[Evolution, MongoId](env, reactiveMongoApi)
+    extends MongoRepo[Evolution, DatastoreId](env, reactiveMongoApi)
     with EvolutionRepo {
   override def collectionName: String = "evolutions"
 

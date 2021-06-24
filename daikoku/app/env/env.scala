@@ -11,7 +11,7 @@ import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamApiKeyVisibility
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
-import fr.maif.otoroshi.daikoku.domain.{Evolution, MongoId}
+import fr.maif.otoroshi.daikoku.domain.{Evolution, DatastoreId}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
@@ -488,7 +488,13 @@ class DaikokuEnv(ws: WSClient,
                 AppLogger.warn("")
             }
           }
-        case false =>  evolutions.run(dataStore)
+        case false =>
+          (dataStore match {
+            case store: PostgresDataStore => store.checkDatabase()
+            case _                        => FastFuture.successful(None)
+          }).flatMap { _ =>
+            evolutions.run(dataStore)
+          }
       }
     }
 

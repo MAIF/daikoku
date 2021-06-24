@@ -1694,7 +1694,7 @@ case class Translation(id: DatastoreId,
   }
 }
 
-case class Evolution(id: MongoId,
+case class Evolution(id: DatastoreId,
                      version: String,
                      applied: Boolean,
                      date: DateTime = new DateTime())

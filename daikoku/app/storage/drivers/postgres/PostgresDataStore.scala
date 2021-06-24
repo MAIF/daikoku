@@ -9,6 +9,7 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.json.JsonObject
@@ -293,7 +294,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     "users" -> true,
     "user_sessions" -> false,
     "api_posts" -> true,
-    "api_issues" -> true
+    "api_issues" -> true,
+    "evolutions" -> false
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -445,6 +447,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       () => new PostgresMessageRepo(env, reactivePg),
       t => new PostgresTenantMessageRepo(env, reactivePg, t)
     )
+  private val _evolutionRepo: EvolutionRepo =
+    new PostgresEvolutionRepo(env, reactivePg)
 
   override def tenantRepo: TenantRepo = _tenantRepo
 
@@ -478,6 +482,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   override def translationRepo: TranslationRepo = _translationRepo
 
   override def messageRepo: MessageRepo = _messageRepo
+
+  override def evolutionRepo: EvolutionRepo = _evolutionRepo
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -520,9 +526,14 @@ class PostgresDataStore(configuration: Configuration, env: Env)
             res <- createDatabase()
           } yield res
       }
+      .recover {
+        case e : Exception =>
+          AppLogger.error(e.getMessage)
+          FastFuture.successful(())
+      }
   }
 
-  def createDatabase(): Future[immutable.Iterable[RowSet[Row]]] = {
+  def createDatabase(): Future[Any] = {
     logger.info("create missing tables")
     Future.sequence(TABLES.map { case (key, value) => createTable(key, value) })
   }
@@ -534,17 +545,26 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     })
   }
 
-  def createTable(table: String, allFields: Boolean): Future[RowSet[Row]] = {
+  def createTable(table: String, allFields: Boolean): Future[Any] = {
     logger.debug(
       s"CREATE TABLE $getSchema.$table (" +
         s"_id character varying PRIMARY KEY," +
         s"${if (allFields) "_deleted BOOLEAN," else ""}" +
         s"content JSONB)")
-    reactivePg.rawQuery(
-      s"CREATE TABLE $getSchema.$table (" +
-        s"_id character varying PRIMARY KEY," +
-        s"${if (allFields) "_deleted BOOLEAN," else ""}" +
-        s"content JSONB)")
+
+    reactivePg.queryOne("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)",
+      Seq(getSchema, table)) { row =>
+      row.optBoolean("exists").map {
+        case false =>
+          AppLogger.info(s"Create missing table : $table")
+          reactivePg.rawQuery(
+            s"CREATE TABLE $getSchema.$table (" +
+              s"_id character varying PRIMARY KEY," +
+              s"${if (allFields) "_deleted BOOLEAN," else ""}" +
+              s"content JSONB)")
+        case true => FastFuture.successful(())
+      }
+    }
   }
 
   override def exportAsStream(pretty: Boolean,
@@ -558,7 +578,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       userRepo,
       passwordResetRepo,
       accountCreationRepo,
-      userSessionRepo
+      userSessionRepo,
+      evolutionRepo
     )
     collections ++= List(
       teamRepo.forAllTenant(),
@@ -610,6 +631,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
               tenantRepo.save(TenantFormat.reads(payload).get)
             case ("passwordreset", payload) =>
               passwordResetRepo.save(PasswordResetFormat.reads(payload).get)
+            case ("evolutions", payload) =>
+              evolutionRepo.save(EvolutionFormat.reads(payload).get)
             case ("accountcreation", payload) =>
               accountCreationRepo.save(AccountCreationFormat.reads(payload).get)
             case ("users", payload) =>
@@ -858,6 +881,16 @@ class PostgresTeamRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[Team] = json.TeamFormat
 
   override def extractId(value: Team): String = value.id.value
+}
+
+class PostgresEvolutionRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[Evolution, DatastoreId](env, reactivePg)
+    with EvolutionRepo {
+  override def tableName: String = "evolutions"
+
+  override def format: Format[Evolution] = json.EvolutionFormat
+
+  override def extractId(value: Evolution): String = value.id.value
 }
 
 class PostgresTranslationRepo(env: Env, reactivePg: ReactivePg)
