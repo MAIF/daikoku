@@ -4,7 +4,6 @@ import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
   ApiAccess,
   ApiSubscriptionDemand,
-  NewIssueOpen,
   TeamAccess,
   TeamInvitation
 }
@@ -19,7 +18,7 @@ import fr.maif.otoroshi.daikoku.tests.utils.{
   OneServerPerSuiteWithMyComponents
 }
 import org.joda.time.DateTime
-import org.scalatest.{BeforeAndAfterEach, nocolor}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{
@@ -370,7 +369,7 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -423,7 +422,7 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                             Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -644,7 +643,7 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                             Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -664,6 +663,7 @@ class NotificationControllerSpec()
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
+      println(resp.body)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
 
@@ -697,7 +697,7 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                             Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,

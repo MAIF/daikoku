@@ -446,19 +446,19 @@ GET    /api/state/lock                                  fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /fakeotoroshi/api/stats                                      fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiStats(from: String, to: String, apikey: String)
 ### NoDocs ###
-GET     /fakeotoroshi/api/groups/:groupId/apikeys/:clientId/quotas   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiQuotas(groupId, clientId)
+GET     /fakeotoroshi/api/apikeys/:clientId/quotas   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiQuotas(clientId)
 ### NoDocs ###
-GET     /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKey(groupId, clientId)
+GET     /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKey(clientId)
 ### NoDocs ###
-PUT     /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(groupId, clientId)
+PUT     /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(clientId)
 ### NoDocs ###
-DELETE  /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.deleteFakeOtoroshiApiKey(groupId, clientId)
+DELETE  /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.deleteFakeOtoroshiApiKey(clientId)
 ### NoDocs ###
-PUT		  /fakeotoroshi/api/groups/:groupId/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(groupId, clientId)
+PUT		  /fakeotoroshi/api/apikeys/:clientId          fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(clientId)
 ### NoDocs ###
-POST    /fakeotoroshi/api/groups/:groupId/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.createFakeOtoroshiApiKey(groupId)
+POST    /fakeotoroshi/api/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.createFakeOtoroshiApiKey()
 ### NoDocs ###
-GET     /fakeotoroshi/api/groups/:groupId/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKeys(groupId)
+GET     /fakeotoroshi/api/apikeys                    fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKeys()
 ### NoDocs ###
 GET     /fakeotoroshi/api/groups/:groupId                            fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroup(groupId)
 ### NoDocs ###

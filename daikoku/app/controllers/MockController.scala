@@ -5,6 +5,7 @@ import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.AuthorizedEntitiesOtoroshiFormat
 import fr.maif.otoroshi.daikoku.env.{DaikokuMode, Env}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -1417,18 +1418,17 @@ class MockController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def fakeOtoroshiApiKeys(groupId: String) = Action {
-    Ok(JsArray(apikeys.filter(ak =>
-      (ak \ "authorizedGroup").as[String] == groupId)))
+  def fakeOtoroshiApiKeys() = Action {
+    Ok(JsArray(apikeys))
   }
 
-  def fakeOtoroshiApiKey(groupId: String, clientId: String) = Action {
+  def fakeOtoroshiApiKey(clientId: String) = Action {
     Ok(
       ActualOtoroshiApiKey(
         clientId = clientId,
         clientSecret = "",
         clientName = "",
-        authorizedEntities = AuthorizedEntities(groups = Set(OtoroshiServiceGroupId(groupId))),
+        authorizedEntities = AuthorizedEntities(),
         throttlingQuota = 10,
         dailyQuota = 10000,
         monthlyQuota = 300000,
@@ -1440,12 +1440,12 @@ class MockController(DaikokuAction: DaikokuAction,
       ).asJson)
   }
 
-  def createFakeOtoroshiApiKey(groupId: String) = Action(parse.json) { req =>
+  def createFakeOtoroshiApiKey() = Action(parse.json) { req =>
     apikeys = apikeys :+ req.body.as[JsObject]
     Ok(req.body.as[JsObject])
   }
 
-  def updateFakeOtoroshiApiKey(groupId: String, clientId: String) =
+  def updateFakeOtoroshiApiKey(clientId: String) =
     Action(parse.json) { req =>
       json.ActualOtoroshiApiKeyFormat.reads(req.body).asOpt match {
         case Some(apiKey) => Ok(apiKey.asJson)
@@ -1453,7 +1453,7 @@ class MockController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def deleteFakeOtoroshiApiKey(groupId: String, clientId: String) =
+  def deleteFakeOtoroshiApiKey(clientId: String) =
     Action(parse.json) {
       Ok(Json.obj("deleted" -> true))
     }
@@ -1481,7 +1481,7 @@ class MockController(DaikokuAction: DaikokuAction,
         }
     }
 
-  def fakeOtoroshiQuotas(groupId: String, clientId: String) = Action.async {
+  def fakeOtoroshiQuotas(clientId: String) = Action.async {
     val r = scala.util.Random
 
     env.dataStore.apiSubscriptionRepo

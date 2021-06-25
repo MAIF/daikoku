@@ -4,25 +4,14 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
-  Admin,
-  FreeWithoutQuotas,
-  PayPerUse,
-  QuotasWithLimits
-}
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithoutQuotas, PayPerUse, QuotasWithLimits}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -622,8 +611,8 @@ class ApiControllerSpec()
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-                           OtoroshiServiceGroupId("12345"))
-          ),
+              Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345"))))
+          )),
           allowMultipleKeys = Some(false),
           subscriptionProcess = SubscriptionProcess.Automatic,
           integrationProcess = IntegrationProcess.ApiKey,
@@ -788,7 +777,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Automatic,
@@ -846,7 +835,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Automatic,
@@ -863,7 +852,7 @@ class ApiControllerSpec()
         clientId = sub.apiKey.clientId,
         clientSecret = sub.apiKey.clientSecret,
         clientName = sub.apiKey.clientName,
-        authorizedGroup = otoroshiTarget.get.serviceGroup.value,
+        authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
         throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
         dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
         monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
@@ -875,10 +864,9 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userAdmin, tenant)
       wireMockServer.isRunning mustBe true
-      val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
-                                          sub.apiKey.clientId)
+      val path = otoroshiUpdateApikeyPath(sub.apiKey.clientId)
 
-      val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
+      val groupPath = otoroshiPathGroup(otoroshiTarget.get.authorizedEntities.value.groups.head.value)
       stubFor(
         get(urlMatching(s"$groupPath.*"))
           .willReturn(
@@ -886,8 +874,8 @@ class ApiControllerSpec()
               .withBody(
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
-                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                             "name" -> otoroshiTarget.get.serviceGroup.value)
+                    Json.obj("id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
+                             "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value)
                 )
               )
               .withStatus(200)
@@ -965,7 +953,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Automatic,
@@ -982,7 +970,7 @@ class ApiControllerSpec()
         clientId = sub.apiKey.clientId,
         clientSecret = sub.apiKey.clientSecret,
         clientName = sub.apiKey.clientName,
-        authorizedGroup = otoroshiTarget.get.serviceGroup.value,
+        authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
         throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
         dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
         monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
@@ -994,10 +982,9 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userAdmin, tenant)
       wireMockServer.isRunning mustBe true
-      val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
-                                          sub.apiKey.clientId)
+      val path = otoroshiUpdateApikeyPath(sub.apiKey.clientId)
 
-      val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
+      val groupPath = otoroshiPathGroup(otoroshiTarget.get.authorizedEntities.value.groups.head.value)
       stubFor(
         get(urlMatching(s"$groupPath.*"))
           .willReturn(
@@ -1005,8 +992,8 @@ class ApiControllerSpec()
               .withBody(
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
-                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                             "name" -> otoroshiTarget.get.serviceGroup.value)
+                    Json.obj("id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
+                             "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value)
                 )
               )
               .withStatus(200)
@@ -1063,7 +1050,7 @@ class ApiControllerSpec()
             otoroshiTarget = Some(
               OtoroshiTarget(
                 OtoroshiSettingsId("default"),
-                OtoroshiServiceGroupId("12345"),
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))),
                 ApikeyCustomization(
                   customMetadata = Seq(
                     CustomMetadata("meta1", Set.empty)
@@ -1689,7 +1676,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -2025,7 +2012,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             visibility = Private,
@@ -2075,7 +2062,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             visibility = Private,
@@ -2127,7 +2114,7 @@ class ApiControllerSpec()
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(OtoroshiSettingsId("default"),
-                           OtoroshiServiceGroupId("12345"))
+              Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
           ),
           allowMultipleKeys = Some(false),
           visibility = Public,
@@ -2200,7 +2187,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             visibility = Private,
@@ -2277,7 +2264,7 @@ class ApiControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             visibility = Private,
@@ -2385,6 +2372,8 @@ class ApiControllerSpec()
     }
 
     "cannot be updated except otoroshi target of admin plan" in {
+      import org.scalatest.Matchers.convertToAnyShouldWrapper
+
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin),
@@ -2406,7 +2395,7 @@ class ApiControllerSpec()
               otoroshiTarget = Some(
                 OtoroshiTarget(
                   otoroshiSettings = OtoroshiSettingsId("default"),
-                  serviceGroup = OtoroshiServiceGroupId("nice-group")
+                  authorizedEntities = Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("nice-group"))))
                 ))
             ),
           Admin(
@@ -2416,7 +2405,7 @@ class ApiControllerSpec()
             otoroshiTarget = Some(
               OtoroshiTarget(
                 otoroshiSettings = OtoroshiSettingsId("default"),
-                serviceGroup = OtoroshiServiceGroupId("nice-group")
+                authorizedEntities = Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("nice-group"))))
               ))
           )
         )
@@ -2447,8 +2436,7 @@ class ApiControllerSpec()
       adminPlan.otoroshiTarget.isDefined mustBe true
       adminPlan.otoroshiTarget.get.otoroshiSettings mustBe OtoroshiSettingsId(
         "default")
-      adminPlan.otoroshiTarget.get.serviceGroup mustBe OtoroshiServiceGroupId(
-        "nice-group")
+      adminPlan.otoroshiTarget.get.authorizedEntities.value.groups should contain (OtoroshiServiceGroupId("nice-group"))
     }
   }
 
@@ -2625,7 +2613,7 @@ class ApiControllerSpec()
         clientId = sub.apiKey.clientId,
         clientSecret = sub.apiKey.clientSecret,
         clientName = sub.apiKey.clientName,
-        authorizedGroup = otoroshiTarget.get.serviceGroup.value,
+        authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
         throttlingQuota = callPerSec,
         dailyQuota = callPerDay,
         monthlyQuota = callPerMonth,
@@ -2637,19 +2625,18 @@ class ApiControllerSpec()
       )
 
       wireMockServer.isRunning mustBe true
-      val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
-                                          sub.apiKey.clientId)
+      val path = otoroshiUpdateApikeyPath(sub.apiKey.clientId)
 
-      val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
+      val apiKeyPath = otoroshiGetApikeyPath(otoApiKey.clientId)
       stubFor(
-        get(urlMatching(s"$groupPath.*"))
+        get(urlMatching(s"$apiKeyPath.*"))
           .willReturn(
             aResponse()
               .withBody(
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
-                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                             "name" -> otoroshiTarget.get.serviceGroup.value)
+                    Json.obj("id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
+                             "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value)
                 )
               )
               .withStatus(200)
@@ -2823,7 +2810,7 @@ class ApiControllerSpec()
         clientId = sub.apiKey.clientId,
         clientSecret = sub.apiKey.clientSecret,
         clientName = sub.apiKey.clientName,
-        authorizedGroup = otoroshiTarget.get.serviceGroup.value,
+        authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
         throttlingQuota = callPerSec,
         dailyQuota = callPerDay,
         monthlyQuota = callPerMonth,
@@ -2833,8 +2820,7 @@ class ApiControllerSpec()
         metadata = Map(),
         rotation = None
       )
-      val path = otoroshiDeleteApikeyPath(otoroshiTarget.get.serviceGroup.value,
-                                          sub.apiKey.clientId)
+      val path = otoroshiDeleteApikeyPath(sub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoroshiPathStats.*"))
           .willReturn(
@@ -2847,24 +2833,22 @@ class ApiControllerSpec()
               .withStatus(200)
           )
       )
-      val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
+      val apiKeyPath = otoroshiGetApikeyPath(otoApiKey.clientId)
       stubFor(
-        get(urlMatching(s"$groupPath.*"))
+        get(urlMatching(s"$apiKeyPath.*"))
           .willReturn(
             aResponse()
               .withBody(
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
-                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                             "name" -> otoroshiTarget.get.serviceGroup.value)
+                    Json.obj("id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
+                             "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value)
                 )
               )
               .withStatus(200)
           )
       )
-      val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-                                 sub.apiKey.clientId)
+      val otoPathQuotas = otoroshiPathApiKeyQuotas(sub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -2979,7 +2963,7 @@ class ApiControllerSpec()
         clientId = sub.apiKey.clientId,
         clientSecret = sub.apiKey.clientSecret,
         clientName = sub.apiKey.clientName,
-        authorizedGroup = otoroshiTarget.get.serviceGroup.value,
+        authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
         throttlingQuota = callPerSec,
         dailyQuota = callPerDay,
         monthlyQuota = callPerMonth,
@@ -2991,19 +2975,18 @@ class ApiControllerSpec()
       )
 
       wireMockServer.isRunning mustBe true
-      val path = otoroshiUpdateApikeyPath(otoroshiTarget.get.serviceGroup.value,
-                                          sub.apiKey.clientId)
+      val path = otoroshiUpdateApikeyPath(sub.apiKey.clientId)
 
-      val groupPath = otoroshiPathGroup(otoroshiTarget.get.serviceGroup.value)
+      val apiKeyPath = otoroshiGetApikeyPath(otoApiKey.clientId)
       stubFor(
-        get(urlMatching(s"$groupPath.*"))
+        get(urlMatching(s"$apiKeyPath.*"))
           .willReturn(
             aResponse()
               .withBody(
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
-                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                             "name" -> otoroshiTarget.get.serviceGroup.value)
+                    Json.obj("id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
+                             "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value)
                 )
               )
               .withStatus(200)

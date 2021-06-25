@@ -235,7 +235,7 @@ class ConsumptionControllerSpec()
         clientId = payperUserSub.apiKey.clientId,
         clientSecret = payperUserSub.apiKey.clientSecret,
         clientName = payperUserSub.apiKey.clientName,
-        authorizedGroup = otoroshiTarget.get.serviceGroup.value,
+        authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
         throttlingQuota = callPerSec,
         dailyQuota = callPerDay,
         monthlyQuota = callPerMonth,
@@ -267,16 +267,15 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
-                    Json.obj("id" -> otoroshiTarget.get.serviceGroup.value,
-                             "name" -> otoroshiTarget.get.serviceGroup.value)
+                    Json.obj("id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
+                             "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value)
                 )
               )
               .withStatus(200)
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-                                 payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -367,8 +366,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-                                 payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -458,8 +456,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-                                 payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -547,8 +544,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-                                 payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -745,8 +741,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-                                 payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -820,8 +815,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-                                 payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -895,8 +889,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-                                 payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
@@ -969,8 +962,7 @@ class ConsumptionControllerSpec()
           )
       )
       val otoPathQuotas =
-        otoroshiPathApiKeyQuotas(otoroshiTarget.get.serviceGroup.value,
-                                 payperUserSub.apiKey.clientId)
+        otoroshiPathApiKeyQuotas(payperUserSub.apiKey.clientId)
       stubFor(
         get(urlMatching(s"$otoPathQuotas.*"))
           .willReturn(
