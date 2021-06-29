@@ -345,12 +345,13 @@ class DaikokuEnv(ws: WSClient,
                 AppLogger.warn(
                   "Main dataStore seems to be empty, generating initial data ...")
                 val userId = UserId(BSONObjectID.generate().stringify)
+                val administrationTeamId = TeamId("administration")
                 val adminApiDefaultTenantId =
                   ApiId(s"admin-api-tenant-${Tenant.Default.value}")
                 val adminApiDefaultTenant = Api(
                   id = adminApiDefaultTenantId,
                   tenant = Tenant.Default,
-                  team = TeamId("administration"),
+                  team = administrationTeamId,
                   name = s"admin-api-tenant-${Tenant.Default.value}",
                   lastUpdate = DateTime.now(),
                   smallDescription = "admin api",
@@ -403,7 +404,7 @@ class DaikokuEnv(ws: WSClient,
                   adminApi = adminApiDefaultTenantId
                 )
                 val defaultAdminTeam = Team(
-                  id = TeamId(IdGenerator.token),
+                  id = administrationTeamId,
                   tenant = Tenant.Default,
                   `type` = TeamType.Admin,
                   name = s"default-admin-team",
