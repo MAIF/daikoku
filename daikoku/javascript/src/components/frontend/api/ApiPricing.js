@@ -7,7 +7,7 @@ import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
 import { t, Translation } from '../../../locales';
 import { Can, access, apikey, getCurrencySymbol, formatCurrency } from '../../utils';
-import { openLoginOrRegisterModal } from '../../../core';
+import { openLoginOrRegisterModal, openApiKeySelectModal } from '../../../core';
 import { connect } from 'react-redux';
 
 const Curreny = ({ plan }) => {
@@ -118,9 +118,17 @@ class ApiPricingCardComponent extends Component {
     }
   };
 
-  showApiKeySelectModal = teams => {
-    
-    // this.props.askForApikeys(teams)
+  showApiKeySelectModal = team => {
+    const { api, currentLanguage, plan } = this.props;
+
+    this.props.openApiKeySelectModal({
+      currentLanguage: this.props.currentLanguage,
+      team,
+      onSubscribe: () => this.props.askForApikeys(team),
+      onAggregation: () => this.props. 
+      api,
+      plan
+    })
   }
 
   render() {
@@ -288,6 +296,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   openLoginOrRegisterModal: (modalProps) => openLoginOrRegisterModal(modalProps),
+  openApiKeySelectModal: modalProps => openApiKeySelectModal(modalProps)
 };
 
 export const ApiPricingCard = connect(mapStateToProps, mapDispatchToProps)(ApiPricingCardComponent);

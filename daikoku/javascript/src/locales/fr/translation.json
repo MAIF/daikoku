@@ -903,5 +903,6 @@
   "audittrail.export.label": "Exporter la piste d'audit",
   "Authorized entities": "Authorized entities",
   "Authorized.entities.placeholder": "Selectionnez les service groupes de services et/ou les services Otoroshi",
-  "authorized.entities.help": "Selectionnez les service groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera authorizée d'y accéder"
+  "authorized.entities.help": "Selectionnez les service groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera authorizée d'y accéder",
+  "apikey_select_modal.title": "Récupération d'une api key"
 }
