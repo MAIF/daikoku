@@ -63,8 +63,16 @@ const OtoroshiServicesAndGroupSelector = props => {
 
   useEffect(() => {
     if (!!groups && !!services && !!props._found.otoroshiTarget.authorizedEntities) {
-      const value = [...props._found.otoroshiTarget.authorizedEntities.groups.map(authGroup => groups.find(g => g.value === authGroup)),
-      ...props._found.otoroshiTarget.authorizedEntities.services.map(authService => services.find(g => g.value === authService))];
+      console.log("## useEffect ##")
+      console.log(props._found.otoroshiTarget.authorizedEntities)
+      console.log(groups)
+      console.log(services)
+      const value = [
+        ...props._found.otoroshiTarget.authorizedEntities.groups.map(authGroup => groups.find(g => g.value === authGroup)),
+        ...props._found.otoroshiTarget.authorizedEntities.services.map(authService => services.find(g => g.value === authService))
+      ].filter(f => f);
+      console.log(value)
+      console.log("## useEffect end ##")
       setValue(value);
     }
   }, [props._found, groups, services]);
@@ -114,7 +122,7 @@ const OtoroshiServicesAndGroupSelector = props => {
           classNamePrefix="reactSelect"
           className="reactSelect"
         />
-        <div className="col-12 d-flex flex-row">
+        <div className="col-12 d-flex flex-row mt-1">
           <div className="d-flex flex-column flex-grow-1">
             <strong className="font-italic">
               <Translation i18nkey="Authorized Groups" language={props.currentLanguage}>
@@ -125,8 +133,8 @@ const OtoroshiServicesAndGroupSelector = props => {
           </div>
           <div className="d-flex flex-column flex-grow-1">
             <strong className="font-italic">
-              <Translation i18nkey="Authorized Groups" language={props.currentLanguage}>
-                Authorized Groups
+              <Translation i18nkey="Authorized Services" language={props.currentLanguage}>
+                Authorized Services
               </Translation>
             </strong>
             {!!value && value.filter(x => x.type === 'service').map((g, idx) => <span className="font-italic" key={idx}>{g.label}</span>)}
