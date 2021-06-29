@@ -26,6 +26,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                      api: Api,
                      planId: String,
                      team: Team,
+                     apiKeyId: Option[ApiSubscriptionId] = None,
                      customMetadata: Option[JsObject] = None,
                      customMaxPerSecond: Option[Long] = None,
                      customMaxPerDay: Option[Long] = None,

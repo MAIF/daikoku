@@ -94,6 +94,8 @@ POST    /api/me/invitation/_check                       fr.maif.otoroshi.daikoku
 DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation()
 
 ### NoDocs ###
+PUT     /api/apis/:apiId/subscriptions/:apiKeyId        fr.maif.otoroshi.daikoku.ctrls.ApiController.extendApiKey(apiId, apiKeyId)
+### NoDocs ###
 POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
 ### NoDocs ###
 GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId)

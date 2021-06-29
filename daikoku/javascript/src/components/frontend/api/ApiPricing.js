@@ -120,15 +120,13 @@ class ApiPricingCardComponent extends Component {
 
   showApiKeySelectModal = team => {
     const { api, currentLanguage, plan } = this.props;
-
     this.props.openApiKeySelectModal({
-      currentLanguage: this.props.currentLanguage,
+      currentLanguage,
       team,
-      onSubscribe: () => this.props.askForApikeys(team),
-      onAggregation: () => this.props. 
       api,
-      plan
-    })
+      plan,
+      onSubscribe: () => this.props.askForApikeys([team])
+    });
   }
 
   render() {

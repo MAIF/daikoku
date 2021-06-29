@@ -1495,7 +1495,7 @@ object NotificationAction {
   case class TeamInvitation(team: TeamId, user: UserId)
       extends NotificationAction
 
-  case class ApiSubscriptionDemand(api: ApiId, plan: UsagePlanId, team: TeamId)
+  case class ApiSubscriptionDemand(api: ApiId, plan: UsagePlanId, team: TeamId, apiKeyId: Option[ApiSubscriptionId] = None)
       extends NotificationAction
 
   case class OtoroshiSyncSubscriptionError(subscription: ApiSubscription,

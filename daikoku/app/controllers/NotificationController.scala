@@ -237,7 +237,7 @@ class NotificationController(
               case TeamAccess(_) =>
                 EitherT(
                   acceptTeamAccess(ctx.tenant, team.get, notification.sender))
-              case ApiSubscriptionDemand(apiId, planId, requestedteamId) =>
+              case ApiSubscriptionDemand(apiId, planId, requestedteamId, apiKeyId) =>
                 EitherT(
                   acceptApiSubscription(
                     requestedteamId,
@@ -246,6 +246,7 @@ class NotificationController(
                     ctx.tenant,
                     ctx.user,
                     notification.sender,
+                    apiKeyId,
                     ctx.request.body
                       .asOpt[JsObject]
                       .flatMap(o => (o \ "customMetadata").asOpt[JsObject]),
@@ -371,7 +372,7 @@ class NotificationController(
                                     team.name)
                     }
               }
-          case ApiSubscriptionDemand(apiId, _, _) =>
+          case ApiSubscriptionDemand(apiId, _, _, _) =>
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(apiId)
@@ -574,6 +575,7 @@ class NotificationController(
       tenant: Tenant,
       user: User,
       sender: User,
+      apiKeyId: Option[ApiSubscriptionId],
       customMetadata: Option[JsObject],
       customMaxPerSecond: Option[Long],
       customMaxPerDay: Option[Long],
@@ -610,6 +612,7 @@ class NotificationController(
                           api,
                           plan.value,
                           team,
+                          apiKeyId,
                           customMetadata,
                           customMaxPerSecond,
                           customMaxPerDay,

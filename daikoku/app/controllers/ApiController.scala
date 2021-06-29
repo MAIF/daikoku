@@ -580,14 +580,21 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def extendApiKey(apiId: String, apiKeyId: String) = DaikokuAction.async(parse.json) { ctx =>
+    _createOrExtendApiKey(apiId, ctx, Some(ApiSubscriptionId(apiKeyId)))
+  }
+
   def askForApiKey(apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    _createOrExtendApiKey(apiId, ctx)
+  }
+
+  def _createOrExtendApiKey(apiId: String, ctx: DaikokuActionContext[JsValue], apiKeyId: Option[ApiSubscriptionId] = None)= {
     import cats.implicits._
 
     implicit val c = ctx;
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has asked for an apikey for @{api.name} - @{api.id}"))(ctx) {
       val teams: Seq[String] = (ctx.request.body \ "teams").as[Seq[String]]
       val planId: String = (ctx.request.body \ "plan").as[String]
-
 
       val results: EitherT[Future, Result, Result] = for {
         api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId),
@@ -635,7 +642,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                                     ctx.user,
                                     api,
                                     plan.id.value,
-                                    team).leftMap { appError =>
+                                    team,
+                                    apiKeyId).leftMap { appError =>
                                     AppError.toJson(appError)
                                   }.merge
                               }
@@ -659,7 +667,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                                      user: User,
                                      api: Api,
                                      planId: String,
-                                     team: Team)(implicit ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, JsObject] = {
+                                     team: Team,
+                                     apiKeyId: Option[ApiSubscriptionId])(implicit ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, JsObject] = {
     import cats.implicits._
 
     api.possibleUsagePlans.find(_.id.value == planId) match {
@@ -670,7 +679,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id => EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) => plan.subscriptionProcess match {
         case SubscriptionProcess.Manual => EitherT(notifyApiSubscription(tenant, user, api, planId, team))
-        case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team))
+        case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team, apiKeyId))
       }
     }
   }

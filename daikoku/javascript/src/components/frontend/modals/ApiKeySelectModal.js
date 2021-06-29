@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { t } from '../../../locales';
 import * as Services from '../../../services';
 
-export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, action, api, plan }) => {
+export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscribe, api, plan }) => {
     const [showApiKeys, toggleApiKeysView] = useState(false);
     const [showSelectOrCreateApiKey, toggleSelectOrCreateApiKey] = useState(true);
 
     const finalAction = () => {
         closeModal();
-        action(team);
+        onSubscribe();
     };
 
     const extendApiKey = apiKey => {
@@ -58,7 +58,7 @@ export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, action, a
 };
 
 const ApiKeysView = ({ apiId, team, currentLanguage, extendApiKey }) => {
-    const [apiKeysByTeam, setApiKeys] = useState([]);
+    const [apiKeys, setApiKeys] = useState([]);
 
     useEffect(() => {
         Services.getTeamSubscriptions(apiId, team)
@@ -66,25 +66,15 @@ const ApiKeysView = ({ apiId, team, currentLanguage, extendApiKey }) => {
     }, []);
 
     return <div>
-        {Object.values(apiKeysByTeam).map(team => (
-            <div className="" key={team._id}>
-                <h4>{team.name}</h4>
-                <div className="container">
-                    <div className="row">
-                        <span className="col font-weight-bold">{t('Name of api key', currentLanguage)}</span>
-                        <span className="col-3 font-weight-bold text-center">{t('Extends rights', currentLanguage)}</span>
-                    </div>
-                    {team.apiKeys.map(apiKey => (
-                        <div className="row mt-1" key={apiKey._id}>
-                            <span className="col">{`${apiKey.apiName}/${apiKey.customName || apiKey.planType}`}</span>
-                            <span className="col-3 text-center">
-                                <button className="btn btn-sm btn-outline-success" onClick={() => extendApiKey(apiKey)}>
-                                    <i className="fas fa-arrow-right" />
-                                </button>
-                            </span>
-                        </div>
-                    ))}
-                </div>
+        <h1>{t('apikey_select_modal.of_team', currentLanguage)}</h1>
+        {apiKeys.map(apiKey => (
+            <div className="row mt-1" key={apiKey._id}>
+                <span className="col">{`${apiKey.apiName}/${apiKey.customName || apiKey.planType}`}</span>
+                <span className="col-3 text-center">
+                    <button className="btn btn-sm btn-outline-success" onClick={() => extendApiKey(apiKey)}>
+                        <i className="fas fa-arrow-right" />
+                    </button>
+                </span>
             </div>
         ))}
     </div>
