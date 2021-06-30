@@ -38,7 +38,6 @@ class OtoroshiClient(env: Env) {
 
   def client(path: String)(
       implicit otoroshiSettings: OtoroshiSettings): WSRequest = {
-    println(s"${otoroshiSettings.url}${path}")
     ws.url(s"${otoroshiSettings.url}${path}")
       .addHttpHeaders(
         "Host" -> otoroshiSettings.host

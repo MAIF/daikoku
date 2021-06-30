@@ -1410,8 +1410,7 @@ case class ApiSubscription(
     (permission, planIntegration) match {
       case (_, _) if isDaikokuAdmin => json.ApiSubscriptionFormat.writes(this)
       case (Administrator, _)       => json.ApiSubscriptionFormat.writes(this)
-      case (_, IntegrationProcess.ApiKey) =>
-        json.ApiSubscriptionFormat.writes(this)
+      case (_, IntegrationProcess.ApiKey) => json.ApiSubscriptionFormat.writes(this)
       case (_, IntegrationProcess.Automatic) =>
         json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
     }

@@ -854,29 +854,35 @@ class ApiController(DaikokuAction: DaikokuAction,
           env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant.id)
             .findNotDeleted(Json.obj("api" -> api.id.value, "team" -> team.id.value))
-            .map { subscriptions =>
-              val teamPermission = team.users
-                .find(u => u.userId == ctx.user.id)
-                .map(_.teamPermission).getOrElse(TeamPermission.TeamUser)
-              Ok(
-                JsArray(
-                  subscriptions
-                    .filter(s => team.subscriptions.contains(s.id))
-                    .map(sub => {
-                      val planIntegrationProcess = api.possibleUsagePlans
-                        .find(p => p.id == sub.plan)
-                        .map(_.integrationProcess)
-                        .getOrElse(IntegrationProcess.Automatic)
+            .flatMap { subscriptions =>
+                val teamPermission = team.users
+                  .find(u => u.userId == ctx.user.id)
+                  .map(_.teamPermission).getOrElse(TeamPermission.TeamUser)
 
-                      sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
-                        api.possibleUsagePlans
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.tenant.id)
+                  .find(Json.obj("_id" -> Json.obj(
+                    "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
+                  )))
+                  .flatMap { subs =>
+                    FastFuture.successful(Ok(JsArray(
+                    (subscriptions ++ subs)
+                      .filter(s => team.subscriptions.contains(s.id))
+                      .map(sub => {
+                        val planIntegrationProcess = api.possibleUsagePlans
                           .find(p => p.id == sub.plan)
-                          .map { plan => Json.obj("planType" -> plan.typeName)}
-                          .getOrElse(Json.obj("planType" -> "")) ++
-                        Json.obj("apiName" -> api.name)
-                    })
-                )
-              )
+                          .map(_.integrationProcess)
+                          .getOrElse(IntegrationProcess.Automatic)
+
+                        sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
+                          api.possibleUsagePlans
+                            .find(p => p.id == sub.plan)
+                            .map { plan => Json.obj("planType" -> plan.typeName)}
+                            .getOrElse(Json.obj("planType" -> "")) ++
+                          Json.obj("apiName" -> api.name)
+                      })
+                    )))
+                  }
             }
         }
 

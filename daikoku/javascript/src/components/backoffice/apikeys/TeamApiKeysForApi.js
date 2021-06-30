@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
-import _ from 'lodash';
+import _, { filter } from 'lodash';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
@@ -39,9 +39,9 @@ class TeamApiKeysForApiComponent extends Component {
       Services.getTeamVisibleApi(this.props.currentTeam._id, this.props.match.params.apiId),
       Services.getTeamSubscriptions(this.props.match.params.apiId, this.props.currentTeam._id),
     ]).then(([api, subscriptions]) =>
-      Services.team(api.team).then((apiTeam) =>
-        this.setState({ api, apiTeam, subscriptions, loading: false })
-      )
+      Services
+        .team(api.team)
+        .then(apiTeam => this.setState({ api, apiTeam, subscriptions, loading: false }))
     );
   }
 
@@ -138,16 +138,33 @@ class TeamApiKeysForApiComponent extends Component {
     const filteredApiKeys =
       searched === ''
         ? this.state.subscriptions
-        : this.state.subscriptions.filter((subs) => {
-            if (subs.customName && subs.customName.toLowerCase().includes(searched)) {
-              return true;
-            } else if (subs.apiKey.clientId.toLowerCase().includes(searched)) {
-              return true;
-            } else {
-              return formatPlanType(this.currentPlan(subs)).toLowerCase().includes(searched);
-            }
-          });
-    const sortedApiKeys = _.sortBy(filteredApiKeys, ['plan', 'customName']);
+        : this.state.subscriptions.filter(subs => {
+          const plan = this.currentPlan(subs)
+
+          if (plan && plan.customName && plan.customName.toLowerCase().includes(searched)) {
+            return true;
+          } else if (subs.customName && subs.customName.toLowerCase().includes(searched)) {
+            return true;
+          }
+          // else if (subs.apiKey ? subs.apiKey.clientId.toLowerCase().includes(searched) : false) {
+          //   return true;
+          // } 
+          else {
+            return formatPlanType(this.currentPlan(subs)).toLowerCase().includes(searched);
+          }
+        });
+
+    const sorted = _.sortBy(filteredApiKeys, ['plan', 'customName', 'parent'])
+    const sortedApiKeys = sorted
+      .filter(f => f.parent)
+      .reduce((acc, sub) => acc.map(a => {
+        if (a._id === sub.parent)
+          a.children.push(sub)
+        return a
+      }), sorted
+        .filter(f => !f.parent)
+        .map(sub => ({ ...sub, children: [] }))
+      )
 
     return (
       <TeamBackOffice
@@ -553,6 +570,17 @@ const ApiKeyCard = ({
                   </div>
                 </>
               )}
+
+              {subscription.children.length > 0 && <div>
+                <h5 className="modal-title">Aggregate plans</h5>
+                <div>
+                  {subscription.children.map(aggregate => (
+                    <div key={aggregate._id}>
+                      {`${aggregate.apiName}/${aggregate.customName || aggregate.planType}`}
+                    </div>
+                  ))}
+                </div>
+              </div>}
             </div>
           )}
 
