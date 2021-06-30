@@ -2024,7 +2024,8 @@ object json {
             customMaxPerSecond = (json \ "customMaxPerSecond").asOpt(LongFormat),
             customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
-            customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
+            customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
+            parent = (json \ "parent").asOpt(ApiSubscriptionIdFormat)
           )
         )
       } recover {
@@ -2066,6 +2067,9 @@ object json {
         .as[JsValue],
       "customReadOnly" -> o.customReadOnly
         .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "parent" -> o.parent.map(ApiSubscriptionIdFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )

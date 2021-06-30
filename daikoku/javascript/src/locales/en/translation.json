@@ -905,5 +905,5 @@
     "Authorized.entities.placeholder": "Select Otoroshi service groups and/or services",
     "authorized.entities.help": "Select otoroshi service groups and/or services on which the key is authorized",
     "apikey_select_modal.title": "Get an api key",
-    "apikey_select_modal.of_team": "Api key of team"
+    "apikey_select_modal.select_your_api_key": "Select your api key to extend"
 }

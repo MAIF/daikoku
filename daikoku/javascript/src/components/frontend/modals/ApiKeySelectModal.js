@@ -5,6 +5,12 @@ import * as Services from '../../../services';
 export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscribe, api, plan }) => {
     const [showApiKeys, toggleApiKeysView] = useState(false);
     const [showSelectOrCreateApiKey, toggleSelectOrCreateApiKey] = useState(true);
+    const [apiKeys, setApiKeys] = useState([]);
+
+    useEffect(() => {
+        Services.getTeamSubscriptions(api._id, team)
+            .then(setApiKeys)
+    }, []);
 
     const finalAction = () => {
         closeModal();
@@ -12,7 +18,7 @@ export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscri
     };
 
     const extendApiKey = apiKey => {
-        Services.extendApiKey(api._id, apiKey._id, selectedTeams, plan._id)
+        Services.extendApiKey(api._id, apiKey._id, team, plan._id)
             .then(res => {
                 closeModal();
                 console.log(res)
@@ -31,6 +37,7 @@ export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscri
             <div className="modal-body">
                 {showSelectOrCreateApiKey &&
                     <SelectOrCreateApiKey
+                        disableExtendButton={apiKeys.length <= 0}
                         create={o => {
                             if (o)
                                 finalAction()
@@ -42,9 +49,8 @@ export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscri
                 }
                 {showApiKeys &&
                     <ApiKeysView
+                        apiKeys={apiKeys}
                         currentLanguage={currentLanguage}
-                        team={team}
-                        apiId={api._id}
                         extendApiKey={extendApiKey} />
                 }
             </div>
@@ -57,31 +63,25 @@ export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscri
     );
 };
 
-const ApiKeysView = ({ apiId, team, currentLanguage, extendApiKey }) => {
-    const [apiKeys, setApiKeys] = useState([]);
-
-    useEffect(() => {
-        Services.getTeamSubscriptions(apiId, team)
-            .then(apiKeys => setApiKeys(apiKeys))
-    }, []);
-
-    return <div>
-        <h1>{t('apikey_select_modal.of_team', currentLanguage)}</h1>
-        {apiKeys.map(apiKey => (
-            <div className="row mt-1" key={apiKey._id}>
-                <span className="col">{`${apiKey.apiName}/${apiKey.customName || apiKey.planType}`}</span>
-                <span className="col-3 text-center">
-                    <button className="btn btn-sm btn-outline-success" onClick={() => extendApiKey(apiKey)}>
-                        <i className="fas fa-arrow-right" />
-                    </button>
-                </span>
-            </div>
-        ))}
+const ApiKeysView = ({ apiKeys, currentLanguage, extendApiKey }) => (
+    <div>
+        <h5 className="modal-title">{t('apikey_select_modal.select_your_api_key', currentLanguage)}</h5>
+        <div className="team-selection__container">
+            {apiKeys.map(apiKey =>
+                <div
+                    key={apiKey._id}
+                    className="team-selection team-selection__team selectable mt-1"
+                    onClick={() => extendApiKey(apiKey)}>
+                    <span className="ml-2">{`${apiKey.apiName}/${apiKey.customName || apiKey.planType}`}</span>
+                </div>
+            )}
+        </div>
     </div>
-}
+)
 
-const SelectOrCreateApiKey = ({ create }) => {
-    const Button = ({ onClick, message, icon }) => <button type="button" className="btn" style={{ maxWidth: '200px' }} onClick={onClick}>
+const SelectOrCreateApiKey = ({ create, disableExtendButton }) => {
+    const Button = ({ onClick, message, icon, disabled }) => <button type="button" className="btn"
+        style={{ maxWidth: '200px' }} onClick={onClick} disabled={disabled}>
         <div className="d-flex flex-column p-2" style={{
             border: "1px solid rgb(222, 226, 230)",
             minHeight: "196px",
@@ -99,6 +99,9 @@ const SelectOrCreateApiKey = ({ create }) => {
 
     return <div className="d-flex justify-content-center">
         <Button onClick={() => create(true)} message="Subscribe with a new api key" icon="plus" />
-        <Button onClick={() => create(false)} message="Subscribe using an exisiting api key" icon="key" />
+        <Button onClick={() => create(false)}
+            disabled={disableExtendButton}
+            message={disableExtendButton ? "No api keys are present in your team" : "Subscribe using an existing api key"}
+            icon="key" />
     </div>
 }

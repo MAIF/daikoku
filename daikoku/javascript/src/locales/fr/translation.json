@@ -905,5 +905,5 @@
   "Authorized.entities.placeholder": "Selectionnez les service groupes de services et/ou les services Otoroshi",
   "authorized.entities.help": "Selectionnez les service groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera authorizée d'y accéder",
   "apikey_select_modal.title": "Récupération d'une api key",
-  "apikey_select_modal.of_team": "Api key de l'équipe"
+  "apikey_select_modal.select_your_api_key": "Sélectionner l'api key à étendre"
 }

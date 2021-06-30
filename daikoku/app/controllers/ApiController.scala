@@ -863,10 +863,18 @@ class ApiController(DaikokuAction: DaikokuAction,
                   subscriptions
                     .filter(s => team.subscriptions.contains(s.id))
                     .map(sub => {
-                      val planIntegrationProcess = api.possibleUsagePlans.find(p => p.id == sub.plan).map(_.integrationProcess).getOrElse(IntegrationProcess.Automatic)
-                      sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin)
-                    }
-                    )
+                      val planIntegrationProcess = api.possibleUsagePlans
+                        .find(p => p.id == sub.plan)
+                        .map(_.integrationProcess)
+                        .getOrElse(IntegrationProcess.Automatic)
+
+                      sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
+                        api.possibleUsagePlans
+                          .find(p => p.id == sub.plan)
+                          .map { plan => Json.obj("planType" -> plan.typeName)}
+                          .getOrElse(Json.obj("planType" -> "")) ++
+                        Json.obj("apiName" -> api.name)
+                    })
                 )
               )
             }

@@ -54,7 +54,7 @@ const ApiListComponent = (props) => {
 
   const createNewApi = (teamId) => {
     if (props.apiCreationPermitted) {
-      const team = props.myTeams.find((t) => t._id === teamId);
+      const team = props.myTeams.find((t) => teamId.includes(t._id));
 
       Services.fetchNewApi()
         .then((e) => {

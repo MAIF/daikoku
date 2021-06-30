@@ -24,6 +24,7 @@ object AppError {
   case object ApiKeyRotationConflict extends AppError
   case class ApiKeyRotationError(message: JsObject) extends AppError
   case object ApiKeyCustomMetadataNotPrivided extends AppError
+  case object SubscriptionNotFound extends AppError
 
   def render(error: AppError): mvc.Result = error match {
     case ApiNotFound  => NotFound(Json.obj("error" -> "Api not found"))
@@ -57,7 +58,7 @@ object AppError {
       Forbidden(Json.obj("error" -> "You're not authorized to do this action"))
     case ApiKeyCustomMetadataNotPrivided =>
       BadRequest(Json.obj("error" -> "You need to provide custom metadata"))
-
+    case SubscriptionNotFound => NotFound(Json.obj("error" -> "Subscription not found"))
   }
 
   def toJson(error: AppError) = error match {
@@ -89,5 +90,6 @@ object AppError {
       Json.obj("error" -> "You're not authorized to do this action")
     case ApiKeyCustomMetadataNotPrivided =>
       Json.obj("error" -> "You need to provide custom metadata")
+    case SubscriptionNotFound => Json.obj("error" -> "Subscription not found")
   }
 }

@@ -11,7 +11,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
 import play.api.i18n.{Lang, MessagesApi}
-import play.api.libs.json.{JsArray, JsError, JsNull, JsObject, Json}
+import play.api.libs.json.{JsArray, JsNull, JsObject, Json}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
@@ -39,7 +39,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       .orElse(defaultPlanOpt)
       .getOrElse(api.possibleUsagePlans.head)
 
-    def createKey(api: Api, plan: UsagePlan, team: Team, authorizedEntities: AuthorizedEntities)(
+    def createKey(api: Api, plan: UsagePlan, team: Team, authorizedEntities: AuthorizedEntities, apiKeyId: Option[ApiSubscriptionId])(
       implicit otoroshiSettings: OtoroshiSettings
     ): Future[Either[AppError, JsObject]] = {
       import cats.implicits._
@@ -70,7 +70,11 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         customMaxPerSecond = customMaxPerSecond,
         customMaxPerDay = customMaxPerDay,
         customMaxPerMonth = customMaxPerMonth,
-        customReadOnly = customReadOnly
+        customReadOnly = customReadOnly,
+        parent = apiKeyId match {
+          case Some(id) => Some(id)
+          case None => None
+        }
       )
       val ctx = Map(
         "user.id" -> user.id.value,
@@ -146,8 +150,25 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         case _: PayPerUse => apiKey
         case _: Admin => apiKey
       }
+
       val r: EitherT[Future, AppError, JsObject] = for {
-        _ <- EitherT(otoroshiClient.createApiKey(tunedApiKey))
+        optSubscription <- EitherT.liftF(apiKeyId match {
+          case Some(id) => env.dataStore.apiSubscriptionRepo.forTenant(tenant.id).findById(id.value)
+          case None => FastFuture.successful(None)
+        })
+        _ <- optSubscription match {
+            case Some(sub) =>
+                EitherT(otoroshiClient.getApikey(sub.apiKey.clientId))
+                  .map { e =>
+                    otoroshiClient.updateApiKey(
+                      e.copy(authorizedEntities = AuthorizedEntities(
+                        groups = e.authorizedEntities.groups ++ authorizedEntities.groups,
+                        services = e.authorizedEntities.services ++ authorizedEntities.services
+                      ))
+                    )
+                  }
+            case _ => EitherT(otoroshiClient.createApiKey(tunedApiKey))
+          }
         _ <- EitherT.liftF(
           env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)
@@ -169,7 +190,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       r.value
     }
 
-    def createAdminKey(api: Api, plan: UsagePlan): Future[Either[AppError, JsObject]] = {
+    def createAdminKey(api: Api, plan: UsagePlan, apiKeyId: Option[ApiSubscriptionId]): Future[Either[AppError, JsObject]] = {
       import cats.implicits._
       // TODO: verify if group is in authorized groups (if some)
 
@@ -219,7 +240,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
     plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
       tenant.otoroshiSettings.find(_.id == id)
     } match {
-      case None if api.visibility == ApiVisibility.AdminOnly => createAdminKey(api, plan)
+      case None if api.visibility == ApiVisibility.AdminOnly => createAdminKey(api, plan, apiKeyId)
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
@@ -233,7 +254,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                 customMetadata.map(_.values.toSeq).forall(values => !values.contains(JsNull))
 
             if (isCustomMetadataProvided) {
-              createKey(api, plan, team, authorizedEntities)
+              createKey(api, plan, team, authorizedEntities, apiKeyId)
             } else {
               FastFuture.successful(Left(ApiKeyCustomMetadataNotPrivided))
             }
@@ -263,7 +284,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
             val r: EitherT[Future, AppError, JsObject] = for {
               apiKey <- EitherT(
                 otoroshiClient.getApikey(subscription.apiKey.clientId))
-                .leftMap(err => OtoroshiError(JsError.toJson(err)))
+                .leftMap(err => err)
               _ <- EitherT.liftF(
                 otoroshiClient.updateApiKey(
                   apiKey.copy(
@@ -351,7 +372,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         val r: EitherT[Future, AppError, JsObject] = for {
           apiKey <- EitherT(
             otoroshiClient.getApikey(subscription.apiKey.clientId))
-            .leftMap(err => OtoroshiError(JsError.toJson(err)))
+            .leftMap(err => err)
           _ <- EitherT.liftF(
             otoroshiClient.updateApiKey(apiKey.copy(enabled = enabled)))
           _ <- EitherT.liftF(
@@ -409,7 +430,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
           )
           apiKey <- EitherT(
             otoroshiClient.getApikey(subscription.apiKey.clientId))
-            .leftMap(err => OtoroshiError(JsError.toJson(err)))
+            .leftMap(err => err)
           _ <- EitherT.liftF(otoroshiClient.updateApiKey(apiKey.copy(clientSecret = newClientSecret)))
           _ <- EitherT.liftF(
             env.dataStore.apiSubscriptionRepo
@@ -477,7 +498,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
           val r: EitherT[Future, AppError, JsObject] = for {
             apiKey <- EitherT(
               otoroshiClient.getApikey(subscription.apiKey.clientId))
-              .leftMap(err => OtoroshiError(JsError.toJson(err)))
+              .leftMap(err => err)
             _ <- EitherT.liftF(
               otoroshiClient.updateApiKey(apiKey.copy(rotation = apiKey.rotation.map(r => r.copy(enabled = !r.enabled)).orElse(Some(ApiKeyRotation())))))
             _ <- EitherT.liftF(
