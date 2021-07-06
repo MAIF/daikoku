@@ -9,6 +9,7 @@ import { t, Translation } from '../../../locales';
 import { Can, access, apikey, getCurrencySymbol, formatCurrency } from '../../utils';
 import { openLoginOrRegisterModal, openApiKeySelectModal } from '../../../core';
 import { connect } from 'react-redux';
+import * as Services from '../../../services';
 
 const Curreny = ({ plan }) => {
   const cur = _.find(currencies, (c) => c.code === plan.currency.code);
@@ -121,13 +122,19 @@ class ApiPricingCardComponent extends Component {
   showApiKeySelectModal = team => {
     const { api, currentLanguage, plan } = this.props;
 
-    this.props.openApiKeySelectModal({
-      currentLanguage,
-      team,
-      api,
-      plan,
-      onSubscribe: () => this.props.askForApikeys(team)
-    });
+    Services.getAllTeamSubscriptions(team)
+      .then(apiKeys => {
+        if (!plan.aggregationApiKeysSecurity || apiKeys.length <= 0)
+          this.props.askForApikeys(team, plan)
+        else
+          this.props.openApiKeySelectModal({
+            currentLanguage,
+            plan,
+            apiKeys,
+            onSubscribe: () => this.props.askForApikeys(team, plan),
+            extendApiKey: apiKey => this.props.askForApikeys(team, plan, apiKey)
+          });
+      })
   }
 
   render() {

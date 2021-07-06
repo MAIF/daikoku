@@ -1,17 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { toastr } from 'react-redux-toastr';
+import React, { useState } from 'react';
 import { t } from '../../../locales';
-import * as Services from '../../../services';
 
-export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscribe, api, plan }) => {
+export const ApiKeySelectModal = ({ closeModal, currentLanguage, onSubscribe, plan, apiKeys, ...props }) => {
     const [showApiKeys, toggleApiKeysView] = useState(false);
     const [showSelectOrCreateApiKey, toggleSelectOrCreateApiKey] = useState(true);
-    const [apiKeys, setApiKeys] = useState([]);
-
-    useEffect(() => {
-        Services.getAllTeamSubscriptions(team)
-            .then(setApiKeys)
-    }, []);
 
     const finalAction = () => {
         closeModal();
@@ -19,14 +11,8 @@ export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscri
     };
 
     const extendApiKey = apiKey => {
-        Services.extendApiKey(api._id, apiKey._id, team, plan._id)
-            .then(res => {
-                closeModal();
-                if(res.error) 
-                    toastr.error(res.error)
-                // else 
-                //     window.location.reload()
-            })
+        closeModal();
+        props.extendApiKey(apiKey);
     }
 
     return (
