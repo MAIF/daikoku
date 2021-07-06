@@ -232,6 +232,7 @@ class HomePageVisibilitySwitch extends Component {
 export class TenantEditComponent extends Component {
   state = {
     tenant: null,
+    originalTenant: null,
     create: false,
     updated: false,
   };
@@ -269,6 +270,7 @@ export class TenantEditComponent extends Component {
     'isPrivate',
     'creationSecurity',
     'subscriptionSecurity',
+    'aggregationApiKeysSecurity',
     'apiReferenceHideForGuest',
     'hideTeamsPage',
     `>>> ${t('Audit trail (Elastic)', this.props.currentLanguage)}`,
@@ -576,6 +578,17 @@ export class TenantEditComponent extends Component {
         ),
       },
     },
+    aggregationApiKeysSecurity: {
+      type: 'bool',
+      props: {
+        currentLanguage: this.props.currentLanguage,
+        label: t('aggregation api keys security', this.props.currentLanguage),
+        help: t(
+          'aggregation_apikeys.security.help',
+          this.props.currentLanguage
+        )
+      }
+    },
     apiReferenceHideForGuest: {
       type: 'bool',
       props: {
@@ -798,10 +811,14 @@ export class TenantEditComponent extends Component {
           bucketSettings: this.props.location.state.newTenant.bucketSettings || {},
         },
         create: true,
+      }, () => {
+        this.setState({ originalTenant: this.state.tenant })
       });
     } else {
       Services.oneTenant(this.props.match.params.tenantId).then((tenant) => {
-        this.setState({ tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } });
+        this.setState({ tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } }, () => {
+          this.setState({ originalTenant: this.state.tenant })
+        });
       });
     }
   }
@@ -836,9 +853,22 @@ export class TenantEditComponent extends Component {
         );
       });
     } else {
+      const { originalTenant, tenant } = this.state;
+      if (tenant.aggregationApiKeysSecurity && tenant.aggregationApiKeysSecurity !== originalTenant.aggregationApiKeysSecurity)
+        window.alert(
+          t("aggregation.api_key.security.notification", this.props.currentLanguage),
+          undefined,
+          undefined,
+          t('I understood', this.props.currentLanguage),
+          this.props.currentLanguage
+        )
+
       return Services.saveTenant(this.state.tenant)
         .then(({ uiPayload }) => this.props.updateTenant(uiPayload))
-        .then(() => toastr.success(t('Tenant updated successfully', this.props.currentLanguage)));
+        .then(() => toastr.success(t('Tenant updated successfully', this.props.currentLanguage)))
+        .then(() => this.setState({
+          originalTenant: { ...tenant }
+        }))
     }
   };
 

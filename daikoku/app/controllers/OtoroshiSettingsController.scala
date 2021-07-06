@@ -236,7 +236,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def otoroshiApiKeysForTenant(tenantId: String, oto: String) =
+    def otoroshiApiKeysForTenant(tenantId: String, oto: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toastr } from 'react-redux-toastr';
 import { t } from '../../../locales';
 import * as Services from '../../../services';
 
@@ -8,7 +9,7 @@ export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscri
     const [apiKeys, setApiKeys] = useState([]);
 
     useEffect(() => {
-        Services.getTeamSubscriptions(api._id, team)
+        Services.getAllTeamSubscriptions(team)
             .then(setApiKeys)
     }, []);
 
@@ -21,8 +22,10 @@ export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscri
         Services.extendApiKey(api._id, apiKey._id, team, plan._id)
             .then(res => {
                 closeModal();
-                console.log(res)
-                console.log("à voir pour le reste")
+                if(res.error) 
+                    toastr.error(res.error)
+                // else 
+                //     window.location.reload()
             })
     }
 
@@ -45,7 +48,8 @@ export const ApiKeySelectModal = ({ closeModal, currentLanguage, team, onSubscri
                                 toggleSelectOrCreateApiKey(false);
                                 toggleApiKeysView(true);
                             }
-                        }} />
+                        }}
+                        aggregationApiKeysSecurity={plan.aggregationApiKeysSecurity} />
                 }
                 {showApiKeys &&
                     <ApiKeysView
@@ -79,7 +83,7 @@ const ApiKeysView = ({ apiKeys, currentLanguage, extendApiKey }) => (
     </div>
 )
 
-const SelectOrCreateApiKey = ({ create, disableExtendButton }) => {
+const SelectOrCreateApiKey = ({ create, disableExtendButton, aggregationApiKeysSecurity }) => {
     const Button = ({ onClick, message, icon, disabled }) => <button type="button" className="btn"
         style={{ maxWidth: '200px' }} onClick={onClick} disabled={disabled}>
         <div className="d-flex flex-column p-2" style={{
@@ -99,9 +103,9 @@ const SelectOrCreateApiKey = ({ create, disableExtendButton }) => {
 
     return <div className="d-flex justify-content-center">
         <Button onClick={() => create(true)} message="Subscribe with a new api key" icon="plus" />
-        <Button onClick={() => create(false)}
+        {aggregationApiKeysSecurity && <Button onClick={() => create(false)}
             disabled={disableExtendButton}
             message={disableExtendButton ? "No api keys are present in your team" : "Subscribe using an existing api key"}
-            icon="key" />
+            icon="key" />}
     </div>
 }

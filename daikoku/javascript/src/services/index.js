@@ -1826,3 +1826,8 @@ export function extendApiKey(apiId, apiKeyId, teams, plan) {
     body: JSON.stringify({ plan, teams }),
   }).then((r) => r.json());
 }
+
+export function getAllTeamSubscriptions(team) {
+  return fetch(`/api/subscriptions/teams/${team}`)
+    .then(r => r.json());
+}

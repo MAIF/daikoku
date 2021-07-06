@@ -144,7 +144,8 @@ case class Tenant(
     apiReferenceHideForGuest: Option[Boolean] = Some(true),
     hideTeamsPage: Option[Boolean] = None,
     defaultMessage: Option[String] = None,
-    tenantMode: Option[TenantMode] = None
+    tenantMode: Option[TenantMode] = None,
+    aggregationApiKeysSecurity: Option[Boolean] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -206,6 +207,10 @@ case class Tenant(
       "tenantMode" -> tenantMode
         .map(mode => JsString.apply(mode.name))
         .getOrElse(JsNull)
+        .as[JsValue],
+      "aggregationApiKeysSecurity" -> aggregationApiKeysSecurity
+        .map(JsBoolean)
+        .getOrElse(JsBoolean(false))
         .as[JsValue]
     )
   }
@@ -718,6 +723,7 @@ sealed trait UsagePlan {
   def removeAllAuthorizedTeams(): UsagePlan
   def subscriptionProcess: SubscriptionProcess
   def integrationProcess: IntegrationProcess
+  def aggregationApiKeysSecurity: Option[Boolean]
 }
 
 case object UsagePlan {
@@ -726,6 +732,7 @@ case object UsagePlan {
       customName: Option[String] = Some("Administration plan"),
       customDescription: Option[String] = Some("access to admin api"),
       otoroshiTarget: Option[OtoroshiTarget],
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
     override def costPerMonth: BigDecimal = BigDecimal(0)
@@ -765,6 +772,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -798,6 +806,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -833,6 +842,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -867,6 +877,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {
@@ -899,6 +910,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       subscriptionProcess: SubscriptionProcess,
       integrationProcess: IntegrationProcess,
+      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
       override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
       override val authorizedTeams: Seq[TeamId] = Seq.empty
   ) extends UsagePlan {

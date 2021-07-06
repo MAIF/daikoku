@@ -71,10 +71,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         customMaxPerDay = customMaxPerDay,
         customMaxPerMonth = customMaxPerMonth,
         customReadOnly = customReadOnly,
-        parent = apiKeyId match {
-          case Some(id) => Some(id)
-          case None => None
-        }
+        parent = apiKeyId
       )
       val ctx = Map(
         "user.id" -> user.id.value,
@@ -169,10 +166,18 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                   }
             case _ => EitherT(otoroshiClient.createApiKey(tunedApiKey))
           }
-        _ <- EitherT.liftF(
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant.id)
-            .save(apiSubscription))
+        _ <- optSubscription match {
+          case Some(sub) =>
+            EitherT.liftF(
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(tenant.id)
+                .save(apiSubscription.copy(apiKey = sub.apiKey)))
+          case _ =>
+            EitherT.liftF(
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(tenant.id)
+                .save(apiSubscription))
+        }
         upToDateTeam <- EitherT.liftF(env.dataStore.teamRepo
           .forTenant(tenant.id)
           .findById(team.id)
@@ -190,7 +195,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       r.value
     }
 
-    def createAdminKey(api: Api, plan: UsagePlan, apiKeyId: Option[ApiSubscriptionId]): Future[Either[AppError, JsObject]] = {
+    def createAdminKey(api: Api, plan: UsagePlan): Future[Either[AppError, JsObject]] = {
       import cats.implicits._
       // TODO: verify if group is in authorized groups (if some)
 
@@ -240,7 +245,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
     plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
       tenant.otoroshiSettings.find(_.id == id)
     } match {
-      case None if api.visibility == ApiVisibility.AdminOnly => createAdminKey(api, plan, apiKeyId)
+      case None if api.visibility == ApiVisibility.AdminOnly => createAdminKey(api, plan)
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
@@ -373,8 +378,28 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
           apiKey <- EitherT(
             otoroshiClient.getApikey(subscription.apiKey.clientId))
             .leftMap(err => err)
-          _ <- EitherT.liftF(
-            otoroshiClient.updateApiKey(apiKey.copy(enabled = enabled)))
+          _ <- subscription.parent match {
+            case Some(_) =>
+              plan.otoroshiTarget match {
+                case Some(target) if target.authorizedEntities.isDefined =>
+                  if (enabled)
+                    EitherT.liftF(
+                      otoroshiClient.updateApiKey(apiKey.copy(authorizedEntities = apiKey.authorizedEntities.copy(
+                        services = apiKey.authorizedEntities.services ++ target.authorizedEntities.get.services,
+                        groups = apiKey.authorizedEntities.groups ++ target.authorizedEntities.get.groups
+                      ))))
+                  else
+                    EitherT.liftF(
+                      otoroshiClient.updateApiKey(apiKey.copy(authorizedEntities = apiKey.authorizedEntities.copy(
+                        services = apiKey.authorizedEntities.services.filter(s => !target.authorizedEntities.get.services.contains(OtoroshiServiceId(s.value))),
+                        groups = apiKey.authorizedEntities.groups.filter(s => !target.authorizedEntities.get.groups.contains(OtoroshiServiceGroupId(s.value)))
+                      ))))
+                case _ => EitherT.leftT[Future, JsObject](OtoroshiSettingsNotFound)
+              }
+            case None =>
+              EitherT.liftF(
+                otoroshiClient.updateApiKey(apiKey.copy(enabled = enabled)))
+          }
           _ <- EitherT.liftF(
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant.id)

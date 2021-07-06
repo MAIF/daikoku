@@ -164,15 +164,20 @@ class ApiController(DaikokuAction: DaikokuAction,
           )
         )
         .flatMap { subscriptions =>
-          env.dataStore.apiRepo
+          env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant.id)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj("$in" -> JsArray(subscriptions.map(_.api.asJson)))
-              )
-            )
-            .map { apis =>
-              Ok(JsArray(apis.map(_.asJson)))
+            .find(Json.obj("_id" -> Json.obj(
+              "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
+            )))
+            .flatMap { s =>
+                env.dataStore.apiRepo
+                  .forTenant(ctx.tenant.id)
+                  .findNotDeleted(
+                    Json.obj(
+                      "_id" -> Json.obj("$in" -> JsArray((s ++ subscriptions).map(_.api.asJson)))
+                    )
+                  )
+                  .flatMap(apis => FastFuture.successful(Ok(JsArray(apis.map(_.asJson)))))
             }
         }
     }
@@ -674,7 +679,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     api.possibleUsagePlans.find(_.id.value == planId) match {
       case None => EitherT.leftT[Future, JsObject](PlanNotFound)
       case Some(_)
-        if api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id) => EitherT.leftT[Future, JsObject](ApiUnauthorized)
+        if api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id) && !user.isDaikokuAdmin => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(_) if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id => EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) => plan.subscriptionProcess match {
@@ -850,39 +855,70 @@ class ApiController(DaikokuAction: DaikokuAction,
   def getApiSubscriptionsForTeam(apiId: String, teamId: String) = DaikokuAction.async { ctx =>
     TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(teamId, ctx) {
       team =>
+        val teamPermission = team.users
+          .find(u => u.userId == ctx.user.id)
+          .map(_.teamPermission)
+          .getOrElse(TeamPermission.TeamUser)
+
+        val repo = env.dataStore.apiSubscriptionRepo
+          .forTenant(ctx.tenant.id)
+
+        def subscriptionToJson(api: Api, sub: ApiSubscription, parentSub: Option[ApiSubscription]): Future[JsValue] = {
+          val planIntegrationProcess = api.possibleUsagePlans
+            .find(p => p.id == sub.plan)
+            .map(_.integrationProcess)
+            .getOrElse(IntegrationProcess.Automatic)
+
+          val r = sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
+            api.possibleUsagePlans
+              .find(p => p.id == sub.plan)
+              .map { plan => Json.obj("planType" -> plan.typeName) }
+              .getOrElse(Json.obj("planType" -> "")) ++
+            Json.obj("apiName" -> api.name) ++
+            Json.obj("_humanReadableId" -> api.humanReadableId) ++
+            Json.obj("parentUp" -> false)
+
+
+          sub.parent match {
+            case None => FastFuture.successful(r)
+            case Some(parentId) =>
+              parentSub match {
+                case Some(parent) => FastFuture.successful(r ++ Json.obj("parentUp" -> parent.enabled))
+                case None => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
+                  .findById(parentId.value)
+                  .map {
+                    case None => r
+                    case Some(p) => r ++ Json.obj("parentUp" -> p.enabled)
+                  }
+              }
+
+          }
+        }
+
         def findSubscriptions(api: Api, team: Team): Future[Result] = {
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(ctx.tenant.id)
+          repo
             .findNotDeleted(Json.obj("api" -> api.id.value, "team" -> team.id.value))
             .flatMap { subscriptions =>
-                val teamPermission = team.users
-                  .find(u => u.userId == ctx.user.id)
-                  .map(_.teamPermission).getOrElse(TeamPermission.TeamUser)
-
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(ctx.tenant.id)
-                  .find(Json.obj("_id" -> Json.obj(
-                    "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
-                  )))
-                  .flatMap { subs =>
-                    FastFuture.successful(Ok(JsArray(
-                    (subscriptions ++ subs)
-                      .filter(s => team.subscriptions.contains(s.id))
-                      .map(sub => {
-                        val planIntegrationProcess = api.possibleUsagePlans
-                          .find(p => p.id == sub.plan)
-                          .map(_.integrationProcess)
-                          .getOrElse(IntegrationProcess.Automatic)
-
-                        sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
-                          api.possibleUsagePlans
-                            .find(p => p.id == sub.plan)
-                            .map { plan => Json.obj("planType" -> plan.typeName)}
-                            .getOrElse(Json.obj("planType" -> "")) ++
-                          Json.obj("apiName" -> api.name)
+              repo
+                .find(Json.obj(
+                  "parent" -> Json.obj("$in" -> subscriptions.map(s => s.id.value))
+                ))
+                .flatMap { subs =>
+                  Future.sequence((subscriptions ++ subs)
+                    .filter(s => team.subscriptions.contains(s.id))
+                    .map(sub => {
+                      (sub.parent match {
+                        case Some(_) => env.dataStore.apiRepo.forTenant(ctx.tenant.id).findById(sub.api.value)
+                        case None => FastFuture.successful(Some(api))
                       })
-                    )))
-                  }
+                        .flatMap {
+                          case Some(api) => subscriptionToJson(api, sub,
+                            sub.parent.flatMap(p => subscriptions.find(s => s.id == p)))
+                          case None => FastFuture.successful(Json.obj())
+                        }
+                    }))
+                    .map(values => Ok(JsArray(values)))
+                }
             }
         }
 
@@ -894,6 +930,63 @@ class ApiController(DaikokuAction: DaikokuAction,
             findSubscriptions(api, team)
           case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api")))
         }
+    }
+  }
+
+  def getSubscriptionsOfTeam(teamId: String) = DaikokuAction.async { ctx =>
+    TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has accessed subscriptions of team : - $teamId"))(teamId, ctx) {
+      team =>
+        def findSubscriptions(api: Api, team: Team) =
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant.id)
+            .findNotDeleted(Json.obj("api" -> api.id.value, "team" -> team.id.value))
+            .flatMap { subscriptions =>
+              val teamPermission = team.users
+                .find(u => u.userId == ctx.user.id)
+                .map(_.teamPermission).getOrElse(TeamPermission.TeamUser)
+
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.tenant.id)
+                .find(Json.obj(
+                    "parent" -> Json.obj("$in" -> subscriptions.map(s => s.id.value))
+                ))
+                .flatMap { subs =>
+                  FastFuture.successful(
+                    (subscriptions ++ subs)
+                      .filter(s => team.subscriptions.contains(s.id) && s.parent.isEmpty)
+                      .map(sub => {
+                        val planIntegrationProcess = api.possibleUsagePlans
+                          .find(p => p.id == sub.plan)
+                          .map(_.integrationProcess)
+                          .getOrElse(IntegrationProcess.Automatic)
+
+                        sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
+                          api.possibleUsagePlans
+                            .find(p => p.id == sub.plan)
+                            .map { plan => Json.obj("planType" -> plan.typeName) }
+                            .getOrElse(Json.obj("planType" -> "")) ++
+                          Json.obj("apiName" -> api.name)
+                      })
+                  )
+                }
+            }
+
+        env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .findAll()
+          .flatMap { apis =>
+            Future.sequence(apis.map { api =>
+              env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(api.id.value).flatMap {
+                case Some(api) if api.visibility == ApiVisibility.Public => findSubscriptions(api, team)
+                case Some(api) if api.team == team.id => findSubscriptions(api, team)
+                case Some(api) if api.visibility != ApiVisibility.Public && api.authorizedTeams.contains(team.id) =>
+                  findSubscriptions(api, team)
+              case _ => FastFuture.successful(Seq.empty)
+              }
+            })
+          }
+          .map(_.flatten)
+          .map(subs => Ok(JsArray(subs)))
     }
   }
 

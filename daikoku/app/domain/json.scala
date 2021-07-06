@@ -657,6 +657,7 @@ object json {
             id = (json \ "_id").as(UsagePlanIdFormat),
             otoroshiTarget =
               (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
+            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -675,6 +676,10 @@ object json {
         .map(_.asJson)
         .getOrElse(JsNull)
         .as[JsValue],
+      "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+        .map(JsBoolean.apply)
+        .getOrElse(JsBoolean(false))
+        .as[JsValue]
     )
   }
   val FreeWithoutQuotasFormat = new Format[FreeWithoutQuotas] {
@@ -703,6 +708,7 @@ object json {
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
+            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -738,7 +744,11 @@ object json {
       "subscriptionProcess" -> SubscriptionProcessFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
-        o.integrationProcess)
+        o.integrationProcess),
+      "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+        .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val FreeWithQuotasFormat = new Format[FreeWithQuotas] {
@@ -769,7 +779,8 @@ object json {
             subscriptionProcess =
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat)
+              (json \ "integrationProcess").as(IntegrationProcessFormat),
+            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -808,7 +819,11 @@ object json {
       "subscriptionProcess" -> SubscriptionProcessFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
-        o.integrationProcess)
+        o.integrationProcess),
+      "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+        .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val QuotasWithLimitsFormat = new Format[QuotasWithLimits] {
@@ -841,7 +856,8 @@ object json {
             subscriptionProcess =
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat)
+              (json \ "integrationProcess").as(IntegrationProcessFormat),
+            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -885,7 +901,11 @@ object json {
       "subscriptionProcess" -> SubscriptionProcessFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
-        o.integrationProcess)
+        o.integrationProcess),
+      "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+        .map(JsBoolean.apply)
+        .getOrElse(JsBoolean(false))
+        .as[JsValue]
     )
   }
   val QuotasWithoutLimitsFormat = new Format[QuotasWithoutLimits] {
@@ -920,7 +940,8 @@ object json {
             subscriptionProcess =
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat)
+              (json \ "integrationProcess").as(IntegrationProcessFormat),
+            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -965,7 +986,11 @@ object json {
       "subscriptionProcess" -> SubscriptionProcessFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
-        o.integrationProcess)
+        o.integrationProcess),
+      "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+        .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val PayPerUseFormat = new Format[PayPerUse] {
@@ -996,7 +1021,8 @@ object json {
             subscriptionProcess =
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat)
+              (json \ "integrationProcess").as(IntegrationProcessFormat),
+            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -1038,7 +1064,11 @@ object json {
       "subscriptionProcess" -> SubscriptionProcessFormat.writes(
         o.subscriptionProcess),
       "integrationProcess" -> IntegrationProcessFormat.writes(
-        o.integrationProcess)
+        o.integrationProcess),
+      "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+        .map(JsBoolean.apply)
+        .getOrElse(JsBoolean(false))
+        .as[JsValue]
     )
   }
   val OtoroshiApiKeyFormat = new Format[OtoroshiApiKey] {
@@ -1576,7 +1606,9 @@ object json {
               .asOpt[Boolean],
             defaultMessage = (json \ "defaultMessage")
               .asOpt[String],
-            tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat)
+            tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat),
+            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity")
+              .asOpt[Boolean]
           )
         )
       } recover {
@@ -1640,6 +1672,10 @@ object json {
       "tenantMode" -> o.tenantMode
         .map(TenantModeFormat.writes)
         .getOrElse(JsNull)
+        .as[JsValue],
+      "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+        .map(JsBoolean)
+        .getOrElse(JsBoolean(false))
         .as[JsValue]
     )
   }

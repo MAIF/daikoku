@@ -905,5 +905,11 @@
     "Authorized.entities.placeholder": "Select Otoroshi service groups and/or services",
     "authorized.entities.help": "Select otoroshi service groups and/or services on which the key is authorized",
     "apikey_select_modal.title": "Get an api key",
-    "apikey_select_modal.select_your_api_key": "Select your api key to extend"
+    "apikey_select_modal.select_your_api_key": "Select your api key to extend",
+    "team_apikey_for_api.show_aggregate_sub": "Show aggregate subscriptions",
+    "team_apikey_for_api.hide_aggregate_sub": "Hide subscriptions",
+    "aggregation api keys security": "Aggregation api keys security",
+    "aggregation_apikeys.security.help": "Enable the possibility to use an api key on multiple apis",
+    "aggregation.api_key.security.notification": "You're enabled the aggregation of api keys. It's an advanced usage of the api keys.",
+    "I understood": "I understood"
 }

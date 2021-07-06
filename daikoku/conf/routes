@@ -100,6 +100,8 @@ POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId)
 ### NoDocs ###
+GET     /api/subscriptions/teams/:teamId                fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionsOfTeam(teamId)
+### NoDocs ###
 GET     /api/apis/:apiId/pages/:id/content              fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPageRemoteContent(apiId, id)
 ### NoDocs ###
 GET     /api/apis/:apiId/pages/:id                      fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPage(apiId, id)
