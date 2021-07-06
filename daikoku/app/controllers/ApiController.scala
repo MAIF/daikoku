@@ -18,6 +18,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
@@ -1026,6 +1027,52 @@ class ApiController(DaikokuAction: DaikokuAction,
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
         ctx.setCtxValue("subscription", subscription)
         toggleSubscription(plan, subscription, ctx.tenant, enabled.getOrElse(false))
+      })
+    }
+  }
+
+  def makeUniqueSubscription(teamId: String, subscriptionId: String) = DaikokuAction.async { ctx =>
+    TeamApiKeyAction(
+      AuditTrailEvent(s"@{user.name} has made unique aggregate api subscription @{subscription.id} of @{team.name} - @{team.id}")
+    )(teamId, ctx) { team =>
+      apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
+        (plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+          ctx.tenant.otoroshiSettings.find(_.id == id)
+        } match {
+          case None => FastFuture.successful(Left(OtoroshiSettingsNotFound))
+          case Some(o) => FastFuture.successful(Right(o))
+        }).flatMap {
+          case Left(v) => FastFuture.successful(Left(v))
+          case Right(otoroshiSettings) =>
+            implicit val o = otoroshiSettings
+            otoroshiClient.getApikey(subscription.apiKey.clientId)(o)
+            .flatMap {
+              case Left(v) => FastFuture.successful(Left(v))
+              case Right(apiKey) =>
+                otoroshiClient.createApiKey(apiKey.copy(
+                  clientId = IdGenerator.token(32),
+                  clientSecret = IdGenerator.token(64),
+                  clientName = s"daikoku-api-key-${api.humanReadableId}-${
+                    plan.customName
+                      .getOrElse(plan.typeName)
+                      .urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"))(o)
+                  .flatMap {
+                    case Left(v) => FastFuture.successful(Left(v))
+                    case Right(createdApiKey) =>
+                      env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
+                        .save(subscription.copy(
+                          parent = None,
+                          apiKey = subscription.apiKey.copy(
+                          clientId = createdApiKey.clientId,
+                          clientSecret = createdApiKey.clientSecret,
+                          clientName = createdApiKey.clientName)
+                        ))
+                        .flatMap { _ =>
+                          FastFuture.successful(Right(Json.obj("created" -> true)))
+                        }
+                  }
+            }
+        }
       })
     }
   }

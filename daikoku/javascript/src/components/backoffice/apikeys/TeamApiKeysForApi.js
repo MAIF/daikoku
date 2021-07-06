@@ -62,6 +62,16 @@ function TeamApiKeysForApiComponent(props) {
       .then((subscriptions) => setState({ ...state, subscriptions }));
   };
 
+  const makeUniqueApiKey = subscription => {
+    window.confirm(t('team_apikey_for_api.ask_for_make_unique', props.currentLanguage))
+      .then(ok => {
+        if (ok)
+          Services.makeUniqueApiKey(props.currentTeam._id, subscription._id)
+            .then(() => Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id))
+            .then(subscriptions => setState({ ...state, subscriptions }));
+      })
+  }
+
   const toggleApiKeyRotation = (subscription, plan, rotationEvery, gracePeriod) => {
     if (plan.autoRotation) {
       return toastr.error(
@@ -211,6 +221,7 @@ function TeamApiKeysForApiComponent(props) {
                       api={state.api}
                       updateCustomName={(name) => updateCustomName(subscription, name)}
                       archiveApiKey={() => archiveApiKey(subscription)}
+                      makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
                       toggleRotation={(rotationEvery, gracePeriod) =>
                         toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)
                       }
@@ -241,6 +252,7 @@ const ApiKeyCard = ({
   openInfoNotif,
   statsLink,
   archiveApiKey,
+  makeUniqueApiKey,
   currentLanguage,
   toggleRotation,
   regenerateSecret,
@@ -460,6 +472,16 @@ const ApiKeyCard = ({
                       <i className="fas fa-power-off" />
                     </button>
                   </BeautifulTitle>
+                  {subscription.parent &&
+                    <BeautifulTitle
+                      title={t('team_apikey_for_api.make_unique', currentLanguage)}>
+                      <button
+                        type="button"
+                        className="btn btn-sm ml-1 btn-outline-danger"
+                        onClick={makeUniqueApiKey}>
+                        <i className="fas fa-fingerprint" />
+                      </button>
+                    </BeautifulTitle>}
                 </div>
               </div>
               {subscription.apiKey && (

@@ -309,6 +309,14 @@ export function archiveApiKey(teamId, subscriptionId, enable) {
     },
   }).then((r) => r.json());
 }
+
+export function makeUniqueApiKey(teamId, subscriptionId) {
+  return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_makeUnique`, {
+    ...POST_HEADERS
+  })
+    .then((r) => r.json());
+}
+
 export function toggleApiKeyRotation(teamId, subscriptionId, rotationEvery, gracePeriod) {
   return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
     method: 'POST',
