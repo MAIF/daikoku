@@ -96,6 +96,6 @@ object AppError {
       Json.obj("error" -> "You need to provide custom metadata")
     case SubscriptionNotFound => Json.obj("error" -> "Subscription not found")
     case SubscriptionParentExisted => Json.obj("error" -> "The subscription already has a subscription parent - it cannot be extended any further")
-    case SubscriptionAggregationDisabled => Json.obj("error" -> "Aggregation of api keys is disabled on this plan")
+    case SubscriptionAggregationDisabled => Json.obj("error" -> "Aggregation of api keys is disabled on plan or on tenant")
   }
 }

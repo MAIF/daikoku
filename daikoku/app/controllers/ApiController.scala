@@ -1536,6 +1536,8 @@ class ApiController(DaikokuAction: DaikokuAction,
             case JsError(e) =>
               FastFuture
                 .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
+            case JsSuccess(api, _) if ctx.tenant.aggregationApiKeysSecurity.forall(!_) && api.possibleUsagePlans.exists(plan => plan.aggregationApiKeysSecurity.forall(p => p)) =>
+              FastFuture.successful(BadRequest(AppError.toJson(SubscriptionAggregationDisabled)))
             case JsSuccess(api, _) if oldApi.visibility == ApiVisibility.AdminOnly =>
               val oldAdminPlan = oldApi.possibleUsagePlans.head
               val planToSave = api.possibleUsagePlans.find(_.id == oldAdminPlan.id)
