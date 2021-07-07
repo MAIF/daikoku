@@ -25,6 +25,8 @@ object AppError {
   case class ApiKeyRotationError(message: JsObject) extends AppError
   case object ApiKeyCustomMetadataNotPrivided extends AppError
   case object SubscriptionNotFound extends AppError
+  case object SubscriptionParentExisted extends AppError
+  case object SubscriptionAggregationDisabled extends AppError
 
   def render(error: AppError): mvc.Result = error match {
     case ApiNotFound  => NotFound(Json.obj("error" -> "Api not found"))
@@ -58,7 +60,9 @@ object AppError {
       Forbidden(Json.obj("error" -> "You're not authorized to do this action"))
     case ApiKeyCustomMetadataNotPrivided =>
       BadRequest(Json.obj("error" -> "You need to provide custom metadata"))
-    case SubscriptionNotFound => NotFound(Json.obj("error" -> "Subscription not found"))
+    case SubscriptionNotFound => NotFound(toJson(SubscriptionNotFound))
+    case SubscriptionParentExisted => Conflict(toJson(SubscriptionParentExisted))
+    case SubscriptionAggregationDisabled => BadRequest(toJson(SubscriptionAggregationDisabled))
   }
 
   def toJson(error: AppError) = error match {
@@ -91,5 +95,7 @@ object AppError {
     case ApiKeyCustomMetadataNotPrivided =>
       Json.obj("error" -> "You need to provide custom metadata")
     case SubscriptionNotFound => Json.obj("error" -> "Subscription not found")
+    case SubscriptionParentExisted => Json.obj("error" -> "The subscription already has a subscription parent - it cannot be extended any further")
+    case SubscriptionAggregationDisabled => Json.obj("error" -> "Aggregation of api keys is disabled on this plan")
   }
 }

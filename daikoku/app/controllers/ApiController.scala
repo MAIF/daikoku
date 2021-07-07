@@ -641,17 +641,30 @@ class ApiController(DaikokuAction: DaikokuAction,
                                   "plan" -> plan.id.asJson)
                               )
                               .flatMap {
-                                case Some(sub) if !plan.allowMultipleKeys.getOrElse(false) =>
+                                case Some(_) if !plan.allowMultipleKeys.getOrElse(false) =>
                                   Future.successful(AppError.toJson(SubscriptionConflict))
                                 case _ =>
-                                  applyProcessForApiSubscription(ctx.tenant,
-                                    ctx.user,
-                                    api,
-                                    plan.id.value,
-                                    team,
-                                    apiKeyId).leftMap { appError =>
-                                    AppError.toJson(appError)
-                                  }.merge
+                                  def process() = applyProcessForApiSubscription(ctx.tenant,
+                                      ctx.user,
+                                      api,
+                                      plan.id.value,
+                                      team,
+                                      apiKeyId).leftMap(AppError.toJson).merge
+
+                                  apiKeyId match {
+                                    case Some(apiKey) => env.dataStore.apiSubscriptionRepo
+                                      .forTenant(ctx.tenant)
+                                      .findByIdNotDeleted(apiKey.value)
+                                      .flatMap {
+                                        case Some(sub) if sub.parent.isDefined =>
+                                          FastFuture.successful(AppError.toJson(SubscriptionParentExisted))
+                                        case Some(_) if plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity.exists(a => !a) =>
+                                          FastFuture.successful(AppError.toJson(SubscriptionAggregationDisabled))
+                                        case Some(_) => process()
+                                        case None => FastFuture.successful(AppError.toJson(SubscriptionNotFound))
+                                      }
+                                    case _ => process()
+                                  }
                               }
                           case None => Future.successful(Json.obj(teamId -> "team not found"))
                         }

@@ -68,7 +68,7 @@ function TeamApiKeysForApiComponent(props) {
         if (ok)
           Services.makeUniqueApiKey(props.currentTeam._id, subscription._id)
             .then(() => Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id))
-            .then(subscriptions => setState({ ...state, subscriptions }));
+            .then(subscriptions => setState({ ...state, subscriptions }))
       })
   }
 
