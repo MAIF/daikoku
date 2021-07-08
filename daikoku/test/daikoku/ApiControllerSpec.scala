@@ -41,7 +41,7 @@ class ApiControllerSpec()
   override def afterEach(): Unit = {
     wireMockServer.stop()
   }
-/*
+
   "a tenant administrator" can {
     "not initialize apis for a tenant for which he's not admin" in {
       setupEnvBlocking(
@@ -3093,7 +3093,6 @@ class ApiControllerSpec()
       })
     }
   }
- */
 
   "aggregate api keys" can {
     "not be used when the mode is disabled on plan" in {
