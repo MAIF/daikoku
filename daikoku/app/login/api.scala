@@ -13,7 +13,6 @@ import play.api.mvc._
 import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import play.api.Logger
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration.FiniteDuration
@@ -183,6 +182,14 @@ object TenantHelper {
                                          tenant)
             case Some(tenant) => f(tenant)
           }
+        .recoverWith {
+          case _ =>
+            Errors.craftResponseResult("Failed to retrieve tenant # Try to reload your page",
+              Results.NotFound,
+              request,
+              None,
+              env)
+        }
     }
   }
 }
