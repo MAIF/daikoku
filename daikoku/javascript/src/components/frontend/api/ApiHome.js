@@ -158,7 +158,7 @@ const ApiHomeComponent = ({
   const askForApikeys = (teams, plan, apiKey) => {
     const planName = formatPlanType(plan, currentLanguage);
 
-    return (apiKey ? Services.extendApiKey(api._id, apiKey._id, team, plan._id) : Services.askForApiKey(api._id, teams, plan._id))
+    return (apiKey ? Services.extendApiKey(api._id, apiKey._id, teams, plan._id) : Services.askForApiKey(api._id, teams, plan._id))
       .then((results) => {
         if (results.error) {
           return toastr.error(t('Error', currentLanguage), results.error);
@@ -354,7 +354,7 @@ const ApiHomeComponent = ({
                 myTeams={myTeams}
                 ownerTeam={ownerTeam}
                 subscriptions={subscriptions}
-                askForApikeys={(teams, plan, apiKey) => askForApikeys(teams, plan, apiKey)}
+                askForApikeys={askForApikeys}
                 pendingSubscriptions={pendingSubscriptions}
                 updateSubscriptions={updateSubscriptions}
                 currentLanguage={currentLanguage}

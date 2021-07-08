@@ -479,7 +479,7 @@ const ApiKeyCard = ({
                         type="button"
                         className="btn btn-sm ml-1 btn-outline-danger"
                         onClick={makeUniqueApiKey}>
-                        <i className="fas fa-fingerprint" />
+                        <i className="fas fa-share" />
                       </button>
                     </BeautifulTitle>}
                 </div>

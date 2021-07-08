@@ -41,7 +41,7 @@ export class TeamApiKeysComponent extends Component {
         const api = original;
         return (
           this.state.showApiKey && (
-            <div style={{ width: 100 }}>
+            <div style={{ minWidth: 100 }}>
               <Link
                 to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}`}
                 className="btn btn-sm btn-access-negative">

@@ -910,7 +910,7 @@
     "team_apikey_for_api.hide_aggregate_sub": "Hide subscriptions",
     "aggregation api keys security": "Aggregation api keys security",
     "aggregation_apikeys.security.help": "Enable the possibility to use an api key on multiple apis",
-    "aggregation.api_key.security.notification": "You're enabled the aggregation of api keys. It's an advanced usage of the api keys.",
+    "aggregation.api_key.security.notification": "You're enabled the aggregation of api keys. It's an advanced usage of the api keys. Keep in mind that the metadatas and the quotas will be shared between the parent api key and his aggregate api keys. Daikoku will not apply any control when conflict metadata.",
     "I understood": "I understood",
     "team_apikey_for_api.make_unique": "Make unique",
     "team_apikey_for_api.ask_for_make_unique": "Are you sure to make this api key unique and separate from his parent plan ?"

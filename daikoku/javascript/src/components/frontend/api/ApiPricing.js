@@ -352,7 +352,7 @@ export class ApiPricing extends Component {
                     pendingSubscriptions={this.props.pendingSubscriptions.filter(
                       (subs) => subs.action.api === api._id && subs.action.plan === plan._id
                     )}
-                    askForApikeys={(teams) => this.props.askForApikeys(teams, plan)}
+                    askForApikeys={this.props.askForApikeys}
                     updateSubscriptions={this.props.updateSubscriptions}
                     currentLanguage={this.props.currentLanguage}
                     tenant={this.props.tenant}
