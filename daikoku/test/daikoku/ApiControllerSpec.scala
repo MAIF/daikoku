@@ -5,14 +5,14 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{SubscriptionAggregationDisabled, SubscriptionParentExisted}
+import controllers.AppError.{MissingParentSubscription, SubscriptionAggregationDisabled, SubscriptionParentExisted}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithQuotas, FreeWithoutQuotas, PayPerUse, QuotasWithLimits, QuotasWithoutLimits}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ActualOtoroshiApiKeyFormat, ApiFormat, ApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{ActualOtoroshiApiKeyFormat, ApiFormat, ApiSubscriptionFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
@@ -3150,7 +3150,7 @@ class ApiControllerSpec()
         integrationToken = "test"
       )
       val childSub = ApiSubscription(
-        id = ApiSubscriptionId("test"),
+        id = ApiSubscriptionId("test2"),
         tenant = tenant.id,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = UsagePlanId("6"),
@@ -3261,7 +3261,7 @@ class ApiControllerSpec()
 
       ApiSubscriptionFormat.reads((resp.json.as[JsArray].head \ "subscription").get).get.apiKey.clientId mustBe parentApiKeyClientId
     }
-    "can be disabled without change the status of his parent" in {
+    "not be transformed in unique api key when the subscription hasn't parent" in {
       val parentSub = ApiSubscription(
         id = ApiSubscriptionId("test"),
         tenant = tenant.id,
@@ -3276,7 +3276,7 @@ class ApiControllerSpec()
         integrationToken = "test"
       )
       val childSub = ApiSubscription(
-        id = ApiSubscriptionId("test"),
+        id = ApiSubscriptionId("test2"),
         tenant = tenant.id,
         apiKey = OtoroshiApiKey("name", "id", "secret"),
         plan = UsagePlanId("5"),
@@ -3298,22 +3298,79 @@ class ApiControllerSpec()
       )
       wireMockServer.isRunning mustBe true
 
+      val apiKeyPath = otoroshiGetApikeyPath(parentSub.apiKey.clientId)
       stubFor(
-        get(urlMatching(s"$otoroshiPathStats.*"))
+        get(urlMatching(s"$apiKeyPath.*"))
           .willReturn(
             aResponse()
               .withBody(
-                Json.stringify(
-                  Json.obj("hits" -> Json.obj("count" -> 2000))
-                )
+                Json.stringify(ActualOtoroshiApiKey(
+                  clientId = parentSub.apiKey.clientId,
+                  clientSecret = parentSub.apiKey.clientSecret,
+                  clientName = parentSub.apiKey.clientName,
+                  authorizedEntities = AuthorizedEntities(),
+                  throttlingQuota = 10L,
+                  dailyQuota = 10L,
+                  monthlyQuota = 10L,
+                  tags = Seq(),
+                  restrictions = ApiKeyRestrictions(),
+                  metadata = Map(),
+                  rotation = None
+                ).asJson)
               )
               .withStatus(200)
           )
       )
 
-      val apiKeyPath = otoroshiGetApikeyPath(childSub.apiKey.clientId)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumerId.value}/subscriptions/${parentSub.id.value}/_makeUnique",
+        method = "POST"
+      )(tenant, loginWithBlocking(user, tenant))
+
+      resp.status mustBe 404
+
+      val expectedError = (AppError.toJson(MissingParentSubscription) \ "error").as[String]
+      (resp.json \ "error").as[String] mustBe expectedError
+    }
+    "be transform in unique api key" in {
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("test"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = UsagePlanId("4"),
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "test"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("test2"),
+        tenant = tenant.id,
+        apiKey = OtoroshiApiKey("name", "id", "secret"),
+        plan = UsagePlanId("5"),
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = defaultApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "test2",
+        parent = Some(parentSub.id)
+      )
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(user),
+        teams = Seq(teamConsumer.copy(subscriptions = Seq(parentSub.id, childSub.id))),
+        apis = Seq(defaultApi),
+        subscriptions = Seq(parentSub, childSub)
+      )
+      wireMockServer.isRunning mustBe true
+
       stubFor(
-        get(urlMatching(s"$apiKeyPath.*"))
+        get(urlMatching(s"${otoroshiGetApikeyPath(childSub.apiKey.clientId)}.*"))
           .willReturn(
             aResponse()
               .withBody(
@@ -3334,34 +3391,20 @@ class ApiControllerSpec()
               .withStatus(200)
           )
       )
-
-      val otoPathQuotas = otoroshiPathApiKeyQuotas(childSub.apiKey.clientId)
       stubFor(
-        get(urlMatching(s"$otoPathQuotas.*"))
+        get(urlMatching(s"$otoroshiPathStats.*"))
           .willReturn(
             aResponse()
               .withBody(
                 Json.stringify(
-                  ApiKeyQuotas(
-                    authorizedCallsPerSec = 1L,
-                    currentCallsPerSec = 1L,
-                    remainingCallsPerSec = 1L,
-                    authorizedCallsPerDay = 10L,
-                    currentCallsPerDay = 10L,
-                    remainingCallsPerDay = 10L,
-                    authorizedCallsPerMonth = 10L,
-                    currentCallsPerMonth = 10L,
-                    remainingCallsPerMonth = 10L
-                  ).asJson
+                  Json.obj("hits" -> Json.obj("count" -> 2000))
                 )
               )
               .withStatus(200)
           )
       )
-
-      val path = otoroshiUpdateApikeyPath(childSub.apiKey.clientId)
       stubFor(
-        put(urlMatching(s"$path.*"))
+        put(urlMatching(s"${otoroshiUpdateApikeyPath(childSub.apiKey.clientId)}.*"))
           .willReturn(
             aResponse()
               .withBody(
@@ -3382,32 +3425,118 @@ class ApiControllerSpec()
                 )
               )
               .withStatus(201)
-          )
-      )
-
-      val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/subscriptions/${childSub.id.value}/_archive?enabled=false",
-        method = "PUT"
-      )(tenant, loginWithBlocking(user, tenant))
-
-      println(resp.json)
-      resp.status mustBe 200
-    }
-  }
-
-}
-
-/*
-* val path = otoroshiUpdateApikeyPath(sub.apiKey.clientId)
+          ))
       stubFor(
-        put(urlMatching(s"$path.*"))
+        put(urlMatching(s"/api/apikeys/.*"))
           .willReturn(
             aResponse()
               .withBody(
                 Json.stringify(
-                  otoApiKey.copy(enabled = false).asJson
+                  ActualOtoroshiApiKey(
+                    clientId = childSub.apiKey.clientId,
+                    clientSecret = childSub.apiKey.clientSecret,
+                    clientName = childSub.apiKey.clientName,
+                    authorizedEntities = AuthorizedEntities(),
+                    throttlingQuota = 10L,
+                    dailyQuota = 10L,
+                    monthlyQuota = 10L,
+                    tags = Seq(),
+                    restrictions = ApiKeyRestrictions(),
+                    metadata = Map(),
+                    rotation = None
+                  ).asJson
                 )
               )
               .withStatus(201)
+          ))
+      stubFor(
+        post(urlMatching(s"/api/apikeys"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ActualOtoroshiApiKey(
+                    clientId = "newId",
+                    clientSecret = "newSecret",
+                    clientName = "newClientName",
+                    authorizedEntities = AuthorizedEntities(),
+                    throttlingQuota = 10L,
+                    dailyQuota = 10L,
+                    monthlyQuota = 10L,
+                    tags = Seq(),
+                    restrictions = ApiKeyRestrictions(),
+                    metadata = Map(),
+                    rotation = None
+                  ).asJson
+                )
+              )
+              .withStatus(200)
+          ))
+      stubFor(
+        get(urlMatching(s"${otoroshiUpdateApikeyPath("")}.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ActualOtoroshiApiKey(
+                    clientId = "newId",
+                    clientSecret = "newSecret",
+                    clientName = "newClientName",
+                    authorizedEntities = AuthorizedEntities(),
+                    throttlingQuota = 10L,
+                    dailyQuota = 10L,
+                    monthlyQuota = 10L,
+                    tags = Seq(),
+                    restrictions = ApiKeyRestrictions(),
+                    metadata = Map(),
+                    rotation = None
+                  ).asJson
+                )
+              )
+              .withStatus(200)
+          ))
+      stubFor(
+        get(urlMatching(s"${otoroshiPathApiKeyQuotas(childSub.apiKey.clientId)}.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  ApiKeyQuotas(
+                    authorizedCallsPerSec = 10L,
+                    currentCallsPerSec = 10L,
+                    remainingCallsPerSec = 10L,
+                    authorizedCallsPerDay = 10L,
+                    currentCallsPerDay = 10L,
+                    remainingCallsPerDay =10L,
+                    authorizedCallsPerMonth = 10L,
+                    currentCallsPerMonth = 10L,
+                    remainingCallsPerMonth = 10L
+                  ).asJson
+                )
+              )
+              .withStatus(200)
           )
-      )*/
+      )
+
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumerId.value}/subscriptions/${childSub.id.value}/_makeUnique",
+        method = "POST"
+      )(tenant, loginWithBlocking(user, tenant))
+
+      resp.status mustBe 200
+
+      val resp2 = httpJsonCallBlocking(
+        path = s"/api/apis/${defaultApi.id.value}/subscriptions/teams/${teamConsumerId.value}"
+      )(tenant, loginWithBlocking(user, tenant))
+
+      resp2.status mustBe 200
+      val subscriptions = SeqApiSubscriptionFormat.reads(resp2.json)
+
+      subscriptions.get.size mustBe 2
+
+      assert(subscriptions.get.head.apiKey.clientId != subscriptions.get(1).apiKey.clientId)
+      assert(subscriptions.get.head.apiKey.clientSecret != subscriptions.get(1).apiKey.clientSecret)
+    }
+  }
+
+}
