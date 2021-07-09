@@ -309,6 +309,14 @@ export function archiveApiKey(teamId, subscriptionId, enable) {
     },
   }).then((r) => r.json());
 }
+
+export function makeUniqueApiKey(teamId, subscriptionId) {
+  return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_makeUnique`, {
+    ...POST_HEADERS
+  })
+    .then((r) => r.json());
+}
+
 export function toggleApiKeyRotation(teamId, subscriptionId, rotationEvery, gracePeriod) {
   return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
     method: 'POST',
@@ -1824,4 +1832,16 @@ export function createNewApiVersion(apiId, teamId, version) {
     ...POST_HEADERS,
     body: JSON.stringify({ version })
   })
+}
+export function extendApiKey(apiId, apiKeyId, teams, plan) {
+  return fetch(`/api/apis/${apiId}/subscriptions/${apiKeyId}`, {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify({ plan, teams }),
+  }).then((r) => r.json());
+}
+
+export function getAllTeamSubscriptions(team) {
+  return fetch(`/api/subscriptions/teams/${team}`)
+    .then(r => r.json());
 }

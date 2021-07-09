@@ -1,22 +1,14 @@
 package jobs
 
 import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor.Cancellable
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  OtoroshiSyncApiError,
-  OtoroshiSyncSubscriptionError
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{OtoroshiSyncApiError, OtoroshiSyncSubscriptionError}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{
-  ConsoleMailer,
-  IdGenerator,
-  Mailer,
-  OtoroshiClient
-}
+import fr.maif.otoroshi.daikoku.utils.{ConsoleMailer, IdGenerator, Mailer, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
@@ -268,7 +260,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                           .OtoroshiSyncSubscriptionError(
                                             subscription,
                                             s"Unable to fetch apikey from otoroshi: ${Json
-                                              .stringify(JsError.toJson(e))}"),
+                                              .stringify(AppError.toJson(e))}"),
                                         subscription.team,
                                         subscription.tenant,
                                         Some(settings.host)
@@ -589,7 +581,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
                                                 .OtoroshiSyncSubscriptionError(
                                                   subscription,
                                                   s"Unable to fetch apikey from otoroshi: ${Json
-                                                    .stringify(JsError.toJson(e))}"),
+                                                    .stringify(AppError.toJson(e))}"),
                                               subscription.team,
                                               subscription.tenant,
                                               Some(settings.host)

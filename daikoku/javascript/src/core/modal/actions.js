@@ -92,6 +92,13 @@ export const openJoinTeamModal = (modalProps) => (dispatch) =>
     modalType: 'joinTeamInvitation',
   });
 
+export const openApiKeySelectModal = (modalProps) => (dispatch) =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'apiKeySelectModal',
+  });
+
 export const closeModal = () => (dispatch) => {
   return dispatch({
     type: CLOSE_MODAL,

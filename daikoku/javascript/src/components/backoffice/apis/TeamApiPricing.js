@@ -63,9 +63,10 @@ const OtoroshiServicesAndGroupSelector = props => {
 
   useEffect(() => {
     if (!!groups && !!services && !!props._found.otoroshiTarget.authorizedEntities) {
-      const value = [...props._found.otoroshiTarget.authorizedEntities.groups.map(authGroup => groups.find(g => g.value === authGroup)),
-      ...props._found.otoroshiTarget.authorizedEntities.services.map(authService => services.find(g => g.value === authService))];
-      setValue(value);
+      setValue([
+        ...props._found.otoroshiTarget.authorizedEntities.groups.map(authGroup => groups.find(g => g.value === authGroup)),
+        ...props._found.otoroshiTarget.authorizedEntities.services.map(authService => services.find(g => g.value === authService))
+      ].filter(f => f));
     }
   }, [props._found, groups, services]);
 
@@ -114,7 +115,7 @@ const OtoroshiServicesAndGroupSelector = props => {
           classNamePrefix="reactSelect"
           className="reactSelect"
         />
-        <div className="col-12 d-flex flex-row">
+        <div className="col-12 d-flex flex-row mt-1">
           <div className="d-flex flex-column flex-grow-1">
             <strong className="font-italic">
               <Translation i18nkey="Authorized Groups" language={props.currentLanguage}>
@@ -125,8 +126,8 @@ const OtoroshiServicesAndGroupSelector = props => {
           </div>
           <div className="d-flex flex-column flex-grow-1">
             <strong className="font-italic">
-              <Translation i18nkey="Authorized Groups" language={props.currentLanguage}>
-                Authorized Groups
+              <Translation i18nkey="Authorized Services" language={props.currentLanguage}>
+                Authorized Services
               </Translation>
             </strong>
             {!!value && value.filter(x => x.type === 'service').map((g, idx) => <span className="font-italic" key={idx}>{g.label}</span>)}
@@ -504,12 +505,13 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
       `>>> ${t('Billing', this.props.currentLanguage)}`,
       'billingDuration.value',
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
       ...this.securityFlow(found),
-    ];
+    ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
@@ -595,6 +597,16 @@ export class TeamApiPricing extends Component {
           label: t('Allow multiple apiKey demands', this.props.currentLanguage),
         },
       },
+      aggregationApiKeysSecurity: {
+        type: 'bool',
+        props: {
+          label: t('aggregation api keys security', this.props.currentLanguage),
+          help: t(
+            'aggregation_apikeys.security.help',
+            this.props.currentLanguage
+          )
+        },
+      },
       ...this.otoroshiForm(found),
       ...this.securityForm(found),
     };
@@ -625,6 +637,7 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
       `>>> ${t('Quotas', this.props.currentLanguage)}`,
       'maxPerSecond',
       'maxPerDay',
@@ -634,7 +647,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
       ...this.securityFlow(found),
-    ];
+    ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
@@ -704,6 +717,16 @@ export class TeamApiPricing extends Component {
         type: 'bool',
         props: {
           label: t('Allow multiple apiKey demands', this.props.currentLanguage),
+        },
+      },
+      aggregationApiKeysSecurity: {
+        type: 'bool',
+        props: {
+          label: t('aggregation api keys security', this.props.currentLanguage),
+          help: t(
+            'aggregation_apikeys.security.help',
+            this.props.currentLanguage
+          )
         },
       },
       maxPerSecond: {
@@ -771,6 +794,7 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
       `>>> ${t('Quotas', this.props.currentLanguage)}`,
       'maxPerSecond',
       'maxPerDay',
@@ -785,7 +809,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
       ...this.securityFlow(found),
-    ];
+    ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
@@ -855,6 +879,16 @@ export class TeamApiPricing extends Component {
         type: 'bool',
         props: {
           label: t('Allow multiple apiKey demands', this.props.currentLanguage),
+        },
+      },
+      aggregationApiKeysSecurity: {
+        type: 'bool',
+        props: {
+          label: t('aggregation api keys security', this.props.currentLanguage),
+          help: t(
+            'aggregation_apikeys.security.help',
+            this.props.currentLanguage
+          )
         },
       },
       'trialPeriod.value': {
@@ -958,6 +992,7 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
       `>>> ${t('Quotas', this.props.currentLanguage)}`,
       'maxPerSecond',
       'maxPerDay',
@@ -973,7 +1008,7 @@ export class TeamApiPricing extends Component {
       'billingDuration.unit',
       ...this.otoroshiFlow(found),
       ...this.securityFlow(found),
-    ];
+    ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
@@ -1043,6 +1078,16 @@ export class TeamApiPricing extends Component {
         type: 'bool',
         props: {
           label: t('Allow multiple apiKey demands', this.props.currentLanguage),
+        },
+      },
+      aggregationApiKeysSecurity: {
+        type: 'bool',
+        props: {
+          label: t('aggregation api keys security', this.props.currentLanguage),
+          help: t(
+            'aggregation_apikeys.security.help',
+            this.props.currentLanguage
+          )
         },
       },
       'trialPeriod.value': {
@@ -1153,6 +1198,7 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
       `>>> ${t('Billing', this.props.currentLanguage)}`,
       'costPerMonth',
       'costPerRequest',
@@ -1164,7 +1210,7 @@ export class TeamApiPricing extends Component {
       'trialPeriod.unit',
       ...this.otoroshiFlow(found),
       ...this.securityFlow(found),
-    ];
+    ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
@@ -1258,6 +1304,16 @@ export class TeamApiPricing extends Component {
         type: 'bool',
         props: {
           label: t('Allow multiple apiKey demands', this.props.currentLanguage),
+        },
+      },
+      aggregationApiKeysSecurity: {
+        type: 'bool',
+        props: {
+          label: t('aggregation api keys security', this.props.currentLanguage),
+          help: t(
+            'aggregation_apikeys.security.help',
+            this.props.currentLanguage
+          )
         },
       },
       'trialPeriod.value': {

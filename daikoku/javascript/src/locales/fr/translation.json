@@ -904,5 +904,16 @@
   "Authorized entities": "Authorized entities",
   "Authorized.entities.placeholder": "Selectionnez les service groupes de services et/ou les services Otoroshi",
   "authorized.entities.help": "Selectionnez les service groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera authorizée d'y accéder",
-  "teamapi.new_version": "Créer une version"
+  "teamapi.new_version": "Créer une version",
+  "authorized.entities.help": "Selectionnez les service groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera authorizée d'y accéder",
+  "apikey_select_modal.title": "Récupération d'une api key",
+  "apikey_select_modal.select_your_api_key": "Sélectionner l'api key à étendre",
+  "team_apikey_for_api.show_aggregate_sub": "Voir les souscriptions associés",
+  "team_apikey_for_api.hide_aggregate_sub": "Masquer les souscriptions",
+  "aggregation api keys security": "Autoriser l'aggrégation de clés d'apis",
+  "aggregation_apikeys.security.help": "Active la possibilité d'utiliser une même api key sur plusieurs plans.",
+  "aggregation.api_key.security.notification": "L'agrégation des clés API est une utilisation avancée. Gardez à l'esprit que les métadonnées et les quotas seront partagés entre chaque clé d'api parente et ses clés d'api agrégées. Daikoku n'appliquera aucun contrôle en cas de conflit de métadonnées.",
+  "I understood": "J'ai compris",
+  "team_apikey_for_api.make_unique": "Rendre unique",
+  "team_apikey_for_api.ask_for_make_unique": "Êtes-vous sûr de vouloir séparer cette api key de la clé parent et d'en créer une nouvelle ?"
 }

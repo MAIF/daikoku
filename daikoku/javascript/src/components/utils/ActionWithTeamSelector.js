@@ -5,17 +5,20 @@ import { connect } from 'react-redux';
 
 class ActionWithTeamSelectorComponent extends Component {
   openTeamSelectorModal = () => {
-    this.props.openTeamSelectorModal({
-      allTeamSelector: this.props.withAllTeamSelector,
-      title: this.props.title,
-      description: this.props.description,
-      currentLanguage: this.props.currentLanguage,
-      teams: this.props.teams,
-      pendingTeams: this.props.pendingTeams,
-      acceptedTeams: this.props.authorizedTeams,
-      action: (teams) => this.props.action(teams),
-      allowMultipleDemand: this.props.allowMultipleDemand,
-    });
+    if (this.props.teams.length === 1)
+      this.props.action([this.props.teams[0]._id])
+    else
+      this.props.openTeamSelectorModal({
+        allTeamSelector: this.props.withAllTeamSelector,
+        title: this.props.title,
+        description: this.props.description,
+        currentLanguage: this.props.currentLanguage,
+        teams: this.props.teams,
+        pendingTeams: this.props.pendingTeams,
+        acceptedTeams: this.props.authorizedTeams,
+        action: (teams) => this.props.action(teams),
+        allowMultipleDemand: this.props.allowMultipleDemand,
+      });
   };
 
   render() {
