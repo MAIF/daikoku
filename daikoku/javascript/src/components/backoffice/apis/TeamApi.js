@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '../..';
-import { isUserIsTeamAdmin, Can, manage, api as API } from '../../utils';
+import { Can, manage, api as API } from '../../utils';
 import { t, Translation } from '../../../locales';
 import {
   TeamApiDescription,
@@ -19,84 +19,55 @@ import {
 } from '.';
 
 import { setError, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
+import { gt } from 'semver';
 
-class TeamApiComponent extends Component {
-  state = {
+function TeamApiComponent(props) {
+  const location = useLocation()
+  const params = useParams()
+
+  const [state, setState] = useState({
     api: null,
     create: false,
-    tab: this.props.match.params.tab || 'infos',
+    tab: params.tab || 'infos',
     error: null,
     otoroshiSettings: [],
-  };
+  });
 
-  formSchema = {
-    documentation: {
-      _id: '',
-      _tenant: '',
-      pages: [],
-      lastModificationAt: Date.now(),
-    },
-    possibleUsagePlans: [
-      {
-        _id: '1',
-        maxPerMonth: 100,
-        currency: {
-          name: 'Euro',
-          symbol: '€',
-        },
-        customName: null,
-        customDescription: null,
-        otoroshiTarget: null,
-        type: 'FreeWithQuotas',
-      },
-    ],
-    defaultUsagePlan: '1',
-  };
-
-  isTeamAdmin = () => {
-    return (
-      this.props.connectedUser.isDaikokuAdmin ||
-      isUserIsTeamAdmin(this.props.connectedUser, this.props.currentTeam)
-    );
-  };
-
-  componentDidMount() {
-    if (this.props.location && this.props.location.state && this.props.location.state.newApi) {
-      Services.allSimpleOtoroshis(this.props.tenant._id).then((otoroshiSettings) =>
-        this.setState({
+  useEffect(() => {
+    console.log(params)
+    if (location && location.state && location.state.newApi) {
+      Services.allSimpleOtoroshis(props.tenant._id).then((otoroshiSettings) =>
+        setState({
+          ...state,
           otoroshiSettings,
-          api: this.props.location.state.newApi,
-          originalApi: this.props.location.state.newApi,
+          api: location.state.newApi,
+          originalApi: location.state.newApi,
           create: true,
         })
       );
     } else {
       Promise.all([
-        Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId),
-        Services.allSimpleOtoroshis(this.props.tenant._id),
+        Services.teamApi(props.currentTeam._id, params.apiId),
+        Services.allSimpleOtoroshis(props.tenant._id),
       ]).then(([api, otoroshiSettings]) => {
-        this.setState({ api, originalApi: api, otoroshiSettings });
+        setState({ ...state, api, originalApi: api, otoroshiSettings });
       });
     }
-  }
+  }, [location]);
 
-  componentDidCatch(e) {
-    console.log('TeamApiError', e);
-  }
-
-  save = () => {
-    if (this.state.tab === 'documentation' && this.state.savePage) {
-      this.state.savePage();
+  function save() {
+    if (state.tab === 'documentation' && state.savePage) {
+      state.savePage();
     }
-    const editedApi = this.transformPossiblePlansBack(this.state.api);
-    if (this.state.create) {
-      return Services.createTeamApi(this.props.currentTeam._id, editedApi)
+    const editedApi = transformPossiblePlansBack(state.api);
+    if (state.create) {
+      return Services.createTeamApi(props.currentTeam._id, editedApi)
         .then((api) => {
           if (api.name) {
             toastr.success(
               t(
                 'api.created.success',
-                this.props.currentLanguage,
+                props.currentLanguage,
                 false,
                 `Api "${api.name}" created`,
                 api.name
@@ -108,78 +79,41 @@ class TeamApiComponent extends Component {
           }
         })
         .then((api) =>
-          this.setState({ create: false, api }, () =>
-            this.props.history.push(
-              `/${this.props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/infos`
+          setState({ ...state, create: false, api }, () =>
+            props.history.push(
+              `/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/infos`
             )
           )
         )
-        .catch((error) => toastr.error(t(error, this.props.currentLanguage)));
+        .catch((error) => toastr.error(t(error, props.currentLanguage)));
     } else {
-      return Services.saveTeamApi(this.props.currentTeam._id, editedApi)
-        .then(() => toastr.success(t('Api saved', this.props.currentLanguage)))
-        .then(() => this.setState({ originalApi: editedApi }));
+      return Services.saveTeamApi(props.currentTeam._id, editedApi)
+        .then(() => toastr.success(t('Api saved', props.currentLanguage)))
+        .then(() => setState({ ...state, originalApi: editedApi }));
     }
-  };
+  }
 
-  delete = () => {
+  function deleteApi() {
     window
       .confirm(
         t(
           'delete.api.confirm',
-          this.props.currentLanguage,
+          props.currentLanguage,
           'Are you sure you want to delete this api ?'
         )
       )
       .then((ok) => {
         if (ok) {
-          Services.deleteTeamApi(this.props.currentTeam._id, this.state.api._id)
+          Services.deleteTeamApi(props.currentTeam._id, state.api._id)
             .then(() =>
-              this.props.history.push(`/${this.props.currentTeam._humanReadableId}/settings/apis`)
+              props.history.push(`/${props.currentTeam._humanReadableId}/settings/apis`)
             )
-            .then(() => toastr.success(t('deletion successful', this.props.currentLanguage)));
+            .then(() => toastr.success(t('deletion successful', props.currentLanguage)));
         }
       });
-  };
+  }
 
-  transformPossiblePlansBack = (api) => {
-    if (!api) {
-      return api;
-    }
-    const def = {
-      otoroshiTarget: {
-        otoroshiSettings: null,
-        authorizedEntities: {groups: [], services: []},
-        apikeyCustomization: {
-          clientIdOnly: false,
-          constrainedServicesOnly: false,
-          tags: [],
-          metadata: {},
-          customMetadata: [],
-          restrictions: {
-            enabled: false,
-            allowLast: true,
-            allowed: [],
-            forbidden: [],
-            notFound: [],
-          },
-        },
-      },
-    };
-    const possibleUsagePlans = api.possibleUsagePlans || [];
-    api.possibleUsagePlans = possibleUsagePlans.map((plan) => {
-      plan.otoroshiTarget = plan.otoroshiTarget || { ...def.otoroshiTarget };
-      plan.otoroshiTarget.apikeyCustomization = plan.otoroshiTarget.apikeyCustomization || {
-        ...def.otoroshiTarget.apikeyCustomization,
-      };
-      plan.otoroshiTarget.apikeyCustomization.restrictions = plan.otoroshiTarget.apikeyCustomization
-        .restrictions || { ...def.otoroshiTarget.apikeyCustomization.restrictions };
-      return plan;
-    });
-    return api;
-  };
-
-  transformPossiblePlans = (api) => {
+  function transformPossiblePlansBack(api) {
     if (!api) {
       return api;
     }
@@ -216,291 +150,357 @@ class TeamApiComponent extends Component {
     return api;
   };
 
-  render() {
-    const teamId = this.props.currentTeam._id;
-    const disabled = {}; //TODO: deepEqual(this.state.originalApi, this.state.api) ? { disabled: 'disabled' } : {};
-    const tab = this.state.tab;
-    const editedApi = this.transformPossiblePlans(this.state.api);
-
-    if (this.props.tenant.creationSecurity && !this.props.currentTeam.apisCreationPermission) {
-      this.props.setError({ error: { status: 403, message: 'unauthorized' } });
+  function transformPossiblePlans(api) {
+    if (!api) {
+      return api;
     }
+    const def = {
+      otoroshiTarget: {
+        otoroshiSettings: null,
+        authorizedEntities: { groups: [], services: [] },
+        apikeyCustomization: {
+          clientIdOnly: false,
+          constrainedServicesOnly: false,
+          tags: [],
+          metadata: {},
+          customMetadata: [],
+          restrictions: {
+            enabled: false,
+            allowLast: true,
+            allowed: [],
+            forbidden: [],
+            notFound: [],
+          },
+        },
+      },
+    };
+    const possibleUsagePlans = api.possibleUsagePlans || [];
+    api.possibleUsagePlans = possibleUsagePlans.map((plan) => {
+      plan.otoroshiTarget = plan.otoroshiTarget || { ...def.otoroshiTarget };
+      plan.otoroshiTarget.apikeyCustomization = plan.otoroshiTarget.apikeyCustomization || {
+        ...def.otoroshiTarget.apikeyCustomization,
+      };
+      plan.otoroshiTarget.apikeyCustomization.restrictions = plan.otoroshiTarget.apikeyCustomization
+        .restrictions || { ...def.otoroshiTarget.apikeyCustomization.restrictions };
+      return plan;
+    });
+    return api;
+  };
 
-    return (
-      <TeamBackOffice
-        tab="Apis"
-        isLoading={!editedApi}
-        title={`${this.props.currentTeam.name} - ${
-          this.state.api ? this.state.api.name : t('API', this.props.currentLanguage)
+  function promptVersion() {
+    const { api } = state
+    window.prompt("Version number", undefined, false, "Create a new version", `Current version : ${api.currentVersion}`)
+      .then(newVersion => {
+        if (gt(api.currentVersion, newVersion))
+          window.confirm("Are you sure to create a version less greater than the previous ?")
+            .then(ok => {
+              if (ok)
+                createNewVersion(newVersion)
+            })
+        else
+          createNewVersion(newVersion)
+      })
+  }
+
+  function createNewVersion(newVersion) {
+    Services.createNewApiVersion(state.api._id, props.currentTeam._id, newVersion)
+      .then(res => {
+        if (res.status === 201) {
+          toastr.success("New version of api created")
+          props.history.push(`${props.location.pathname}/versions/${newVersion}`)
+        } else
+          res.json()
+            .then(data => toastr.error(data.error))
+      })
+  }
+
+  const teamId = props.currentTeam._id;
+  const disabled = {}; //TODO: deepEqual(state.originalApi, state.api) ? { disabled: 'disabled' } : {};
+  const tab = state.tab;
+  const editedApi = transformPossiblePlans(state.api);
+
+  if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
+    props.setError({ error: { status: 403, message: 'unauthorized' } });
+  }
+
+  return (
+    <TeamBackOffice
+      tab="Apis"
+      isLoading={!editedApi}
+      title={`${props.currentTeam.name} - ${state.api ? state.api.name : t('API', props.currentLanguage)
         }`}>
-        <Can I={manage} a={API} team={this.props.currentTeam} dispatchError>
-          {!editedApi && (
-            <h3>
-              <Translation i18nkey="No API" language={this.props.currentLanguage}>
-                No API
-              </Translation>
-            </h3>
-          )}
-          {editedApi && (
-            <>
-              <div className="row">
-                {!this.state.create && (
+      <Can I={manage} a={API} team={props.currentTeam} dispatchError>
+        {!editedApi && (
+          <h3>
+            <Translation i18nkey="No API" language={props.currentLanguage}>
+              No API
+            </Translation>
+          </h3>
+        )}
+        {editedApi && (
+          <>
+            <div className="row">
+              {
+                state.create ?
                   <h1>
-                    Api - {editedApi.name}{' '}
-                    <Link
-                      to={`/${this.props.currentTeam._humanReadableId}/${editedApi._humanReadableId}`}
-                      className="btn btn-sm btn-access-negative"
-                      title={t('View this Api', this.props.currentLanguage)}>
-                      <i className="fas fa-eye" />
-                    </Link>
-                  </h1>
-                )}
-                {this.state.create && (
-                  <h1>
-                    <Translation i18nkey="New api" language={this.props.currentLanguage}>
+                    <Translation i18nkey="New api" language={props.currentLanguage}>
                       New api
                     </Translation>{' '}
                     - {editedApi.name}
                   </h1>
-                )}
-              </div>
-              <div className="row">
-                <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
-                  <li className="nav-item">
-                    <Link
-                      className={`nav-link ${tab === 'infos' ? 'active' : ''}`}
-                      to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/infos`}
-                      onClick={() => this.setState({ tab: 'infos' })}>
-                      <i className="fas fa-info mr-1" />
-                      <Translation i18nkey="Informations" language={this.props.currentLanguage}>
-                        Informations
-                      </Translation>
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link
-                      className={`nav-link ${tab === 'description' ? 'active' : ''}`}
-                      to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/description`}
-                      onClick={() => this.setState({ tab: 'description' })}>
-                      <i className="fas fa-file-alt mr-1" />
-                      <Translation i18nkey="Description" language={this.props.currentLanguage}>
-                        Description
-                      </Translation>
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link
-                      className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
-                      to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/plans`}
-                      onClick={() => this.setState({ tab: 'pricing' })}>
-                      <i className="fas fa-dollar-sign mr-1" />
-                      <Translation i18nkey="Plan" language={this.props.currentLanguage} isPlural>
-                        Plans
-                      </Translation>
-                    </Link>
-                  </li>
-                  {false && (
-                    <li className="nav-item">
+                  :
+                  <div className="d-flex justify-content-between align-items-center" style={{ flex: 1 }}>
+                    <h1>
+                      Api - {editedApi.name}{' '}
                       <Link
-                        className={`nav-link ${tab === 'otoroshi' ? 'active' : ''}`}
-                        to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/otoroshi`}
-                        onClick={() => this.setState({ tab: 'otoroshi' })}>
-                        <i className="fas fa-pastafarianism mr-1" />
-                        <Translation i18nkey="Otoroshi" language={this.props.currentLanguage}>
-                          Otoroshi
-                        </Translation>
+                        to={`/${props.currentTeam._humanReadableId}/${editedApi._humanReadableId}`}
+                        className="btn btn-sm btn-access-negative"
+                        title={t('View this Api', props.currentLanguage)}>
+                        <i className="fas fa-eye" />
                       </Link>
-                    </li>
-                  )}
-                  <li className="nav-item">
-                    <Link
-                      className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
-                      to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/swagger`}
-                      onClick={() => this.setState({ tab: 'swagger' })}>
-                      <i className="fas fa-file-code mr-1" />
-                      <Translation i18nkey="Swagger" language={this.props.currentLanguage}>
-                        Swagger
-                      </Translation>
-                    </Link>
-                  </li>
-                  {editedApi.visibility !== 'AdminOnly' && (
-                    <li className="nav-item">
-                      <Link
-                        className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
-                        to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/testing`}
-                        onClick={() => this.setState({ tab: 'testing' })}>
-                        <i className="fas fa-vial mr-1" />
-                        <Translation i18nkey="Testing" language={this.props.currentLanguage}>
-                          Testing
-                        </Translation>
-                      </Link>
-                    </li>
-                  )}
-                  <li className="nav-item">
-                    <Link
-                      className={`nav-link ${tab === 'documentation' ? 'active' : ''}`}
-                      to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/documentation`}
-                      onClick={() => this.setState({ tab: 'documentation' })}>
-                      <i className="fas fa-book mr-1" />
-                      <Translation i18nkey="Documentation" language={this.props.currentLanguage}>
-                        Documentation
-                      </Translation>
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link
-                      className={`nav-link ${tab === 'news' ? 'active' : ''}`}
-                      to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/news`}
-                      onClick={() => this.setState({ tab: 'news' })}>
-                      <i className="fas fa-newspaper mr-1" />
-                      <Translation i18nkey="News" language={this.props.currentLanguage}>
-                        News
-                      </Translation>
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div className="row">
-                <div className="section col container-api">
-                  <div className="mt-2">
-                    {editedApi && this.state.tab === 'infos' && (
-                      <TeamApiInfo
-                        tenant={this.props.tenant}
-                        team={this.props.currentTeam}
-                        currentLanguage={this.props.currentLanguage}
-                        creating={
-                          this.props.location &&
-                          this.props.location.state &&
-                          !!this.props.location.state.newApi
-                        }
-                        value={editedApi}
-                        getCategories={this.getApiCategories}
-                        onChange={(api) => this.setState({ api })}
-                      />
-                    )}
-                    {editedApi && this.state.tab === 'description' && (
-                      <TeamApiDescription
-                        currentLanguage={this.props.currentLanguage}
-                        value={editedApi}
-                        team={this.props.currentTeam}
-                        onChange={(api) => this.setState({ api })}
-                      />
-                    )}
-                    {editedApi && this.state.tab === 'swagger' && (
-                      <TeamApiSwagger
-                        currentLanguage={this.props.currentLanguage}
-                        value={editedApi}
-                        onChange={(api) => this.setState({ api })}
-                      />
-                    )}
-                    {editedApi && this.state.tab === 'pricing' && (
-                      <TeamApiPricing
-                        currentLanguage={this.props.currentLanguage}
-                        teamId={teamId}
-                        value={editedApi}
-                        onChange={(api) => this.setState({ api })}
-                        otoroshiSettings={this.state.otoroshiSettings}
-                        {...this.props}
-                      />
-                    )}
-                    {editedApi && this.state.tab === 'plans' && (
-                      <TeamApiPricing
-                        currentLanguage={this.props.currentLanguage}
-                        teamId={teamId}
-                        value={editedApi}
-                        onChange={(api) => this.setState({ api })}
-                        tenant={this.props.tenant}
-                      />
-                    )}
-                    {false && editedApi && this.state.tab === 'otoroshi' && (
-                      <TeamApiOtoroshiPlaceholder
-                        currentLanguage={this.props.currentLanguage}
-                        value={editedApi}
-                        onChange={(api) => this.setState({ api })}
-                      />
-                    )}
-                    {editedApi && this.state.tab === 'documentation' && (
-                      <TeamApiDocumentation
-                        currentLanguage={this.props.currentLanguage}
-                        creationInProgress={this.state.create}
-                        team={this.props.currentTeam}
-                        teamId={teamId}
-                        value={editedApi}
-                        onChange={(api) => this.setState({ api })}
-                        save={this.save}
-                        hookSavePage={(savePage) => this.setState({ savePage })}
-                      />
-                    )}
-                    {editedApi && this.state.tab === 'testing' && (
-                      <TeamApiTesting
-                        currentLanguage={this.props.currentLanguage}
-                        creationInProgress={this.state.create}
-                        team={this.props.currentTeam}
-                        teamId={teamId}
-                        value={editedApi}
-                        onChange={(api) => this.setState({ api })}
-                        save={this.save}
-                        hookSavePage={(savePage) => this.setState({ savePage })}
-                        otoroshiSettings={this.state.otoroshiSettings}
-                        openSubMetadataModal={this.props.openSubMetadataModal}
-                        openTestingApiKeyModal={this.props.openTestingApiKeyModal}
-                      />
-                    )}
-                    {editedApi && this.state.tab === 'news' && (
-                      <TeamApiPost
-                        currentLanguage={this.props.currentLanguage}
-                        value={editedApi}
-                        team={this.props.currentTeam}
-                        api={this.state.api}
-                        onChange={(api) => this.setState({ api })}
-                      />
-                    )}
+                    </h1>
+                    <button type="button" className="btn btn-sm btn-outline-info" onClick={promptVersion}>
+                      <i className="fas fa-plus mr-1" />
+                      {t('teamapi.new_version', props.currentLanguage)}
+                    </button>
                   </div>
+              }
+            </div>
+            <div className="row">
+              <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link ${tab === 'infos' ? 'active' : ''}`}
+                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/infos`}
+                    onClick={() => setState({ ...state, tab: 'infos' })}>
+                    <i className="fas fa-info mr-1" />
+                    <Translation i18nkey="Informations" language={props.currentLanguage}>
+                      Informations
+                    </Translation>
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link ${tab === 'description' ? 'active' : ''}`}
+                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/description`}
+                    onClick={() => setState({ ...state, tab: 'description' })}>
+                    <i className="fas fa-file-alt mr-1" />
+                    <Translation i18nkey="Description" language={props.currentLanguage}>
+                      Description
+                    </Translation>
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
+                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/plans`}
+                    onClick={() => setState({ ...state, tab: 'pricing' })}>
+                    <i className="fas fa-dollar-sign mr-1" />
+                    <Translation i18nkey="Plan" language={props.currentLanguage} isPlural>
+                      Plans
+                    </Translation>
+                  </Link>
+                </li>
+                {false && (
+                  <li className="nav-item">
+                    <Link
+                      className={`nav-link ${tab === 'otoroshi' ? 'active' : ''}`}
+                      to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/otoroshi`}
+                      onClick={() => setState({ ...state, tab: 'otoroshi' })}>
+                      <i className="fas fa-pastafarianism mr-1" />
+                      <Translation i18nkey="Otoroshi" language={props.currentLanguage}>
+                        Otoroshi
+                      </Translation>
+                    </Link>
+                  </li>
+                )}
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
+                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/swagger`}
+                    onClick={() => setState({ ...state, tab: 'swagger' })}>
+                    <i className="fas fa-file-code mr-1" />
+                    <Translation i18nkey="Swagger" language={props.currentLanguage}>
+                      Swagger
+                    </Translation>
+                  </Link>
+                </li>
+                {editedApi.visibility !== 'AdminOnly' && (
+                  <li className="nav-item">
+                    <Link
+                      className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
+                      to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/testing`}
+                      onClick={() => setState({ ...state, tab: 'testing' })}>
+                      <i className="fas fa-vial mr-1" />
+                      <Translation i18nkey="Testing" language={props.currentLanguage}>
+                        Testing
+                      </Translation>
+                    </Link>
+                  </li>
+                )}
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link ${tab === 'documentation' ? 'active' : ''}`}
+                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/documentation`}
+                    onClick={() => setState({ ...state, tab: 'documentation' })}>
+                    <i className="fas fa-book mr-1" />
+                    <Translation i18nkey="Documentation" language={props.currentLanguage}>
+                      Documentation
+                    </Translation>
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link ${tab === 'news' ? 'active' : ''}`}
+                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/news`}
+                    onClick={() => setState({ ...state, tab: 'news' })}>
+                    <i className="fas fa-newspaper mr-1" />
+                    <Translation i18nkey="News" language={props.currentLanguage}>
+                      News
+                    </Translation>
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div className="row">
+              <div className="section col container-api">
+                <div className="mt-2">
+                  {editedApi && state.tab === 'infos' && (
+                    <TeamApiInfo
+                      tenant={props.tenant}
+                      team={props.currentTeam}
+                      currentLanguage={props.currentLanguage}
+                      creating={
+                        props.location &&
+                        props.location.state &&
+                        !!props.location.state.newApi
+                      }
+                      value={editedApi}
+                      onChange={(api) => setState({ ...state, api })}
+                    />
+                  )}
+                  {editedApi && state.tab === 'description' && (
+                    <TeamApiDescription
+                      currentLanguage={props.currentLanguage}
+                      value={editedApi}
+                      team={props.currentTeam}
+                      onChange={(api) => setState({ ...state, api })}
+                    />
+                  )}
+                  {editedApi && state.tab === 'swagger' && (
+                    <TeamApiSwagger
+                      currentLanguage={props.currentLanguage}
+                      value={editedApi}
+                      onChange={(api) => setState({ ...state, api })}
+                    />
+                  )}
+                  {editedApi && state.tab === 'pricing' && (
+                    <TeamApiPricing
+                      currentLanguage={props.currentLanguage}
+                      teamId={teamId}
+                      value={editedApi}
+                      onChange={(api) => setState({ ...state, api })}
+                      otoroshiSettings={state.otoroshiSettings}
+                      {...props}
+                    />
+                  )}
+                  {editedApi && state.tab === 'plans' && (
+                    <TeamApiPricing
+                      currentLanguage={props.currentLanguage}
+                      teamId={teamId}
+                      value={editedApi}
+                      onChange={(api) => setState({ ...state, api })}
+                      tenant={props.tenant}
+                    />
+                  )}
+                  {false && editedApi && state.tab === 'otoroshi' && (
+                    <TeamApiOtoroshiPlaceholder
+                      currentLanguage={props.currentLanguage}
+                      value={editedApi}
+                      onChange={(api) => setState({ ...state, api })}
+                    />
+                  )}
+                  {editedApi && state.tab === 'documentation' && (
+                    <TeamApiDocumentation
+                      currentLanguage={props.currentLanguage}
+                      creationInProgress={state.create}
+                      team={props.currentTeam}
+                      teamId={teamId}
+                      value={editedApi}
+                      onChange={(api) => setState({ ...state, api })}
+                      save={save}
+                      hookSavePage={(savePage) => setState({ ...state, savePage })}
+                    />
+                  )}
+                  {editedApi && state.tab === 'testing' && (
+                    <TeamApiTesting
+                      currentLanguage={props.currentLanguage}
+                      creationInProgress={state.create}
+                      team={props.currentTeam}
+                      teamId={teamId}
+                      value={editedApi}
+                      onChange={(api) => setState({ ...state, api })}
+                      save={save}
+                      hookSavePage={(savePage) => setState({ ...state, savePage })}
+                      otoroshiSettings={state.otoroshiSettings}
+                      openSubMetadataModal={props.openSubMetadataModal}
+                      openTestingApiKeyModal={props.openTestingApiKeyModal}
+                    />
+                  )}
+                  {editedApi && state.tab === 'news' && (
+                    <TeamApiPost
+                      currentLanguage={props.currentLanguage}
+                      value={editedApi}
+                      team={props.currentTeam}
+                      api={state.api}
+                      onChange={(api) => setState({ ...state, api })}
+                    />
+                  )}
                 </div>
               </div>
-              {!this.props.location.pathname.includes('/news') && (
-                <div className="row form-back-fixedBtns">
-                  {!this.state.create && (
-                    <button
-                      type="button"
-                      className="btn btn-outline-danger ml-1"
-                      onClick={this.delete}>
-                      <i className="fas fa-trash mr-1" />
-                      <Translation i18nkey="Delete" language={this.props.currentLanguage}>
-                        Delete
-                      </Translation>
-                    </button>
-                  )}
+            </div>
+            {!props.location.pathname.includes('/news') && (
+              <div className="row form-back-fixedBtns">
+                {!state.create && (
                   <button
                     type="button"
-                    className="btn btn-outline-success ml-1"
-                    {...disabled}
-                    onClick={this.save}>
-                    {!this.state.create && (
-                      <span>
-                        <i className="fas fa-save mr-1" />
-                        <Translation i18nkey="Save" language={this.props.currentLanguage}>
-                          Save
-                        </Translation>
-                      </span>
-                    )}
-                    {this.state.create && (
-                      <span>
-                        <i className="fas fa-save mr-1" />
-                        <Translation i18nkey="Create" language={this.props.currentLanguage}>
-                          Create
-                        </Translation>
-                      </span>
-                    )}
+                    className="btn btn-outline-danger ml-1"
+                    onClick={deleteApi}>
+                    <i className="fas fa-trash mr-1" />
+                    <Translation i18nkey="Delete" language={props.currentLanguage}>
+                      Delete
+                    </Translation>
                   </button>
-                </div>
-              )}
-            </>
-          )}
-        </Can>
-      </TeamBackOffice>
-    );
-  }
+                )}
+                <button
+                  type="button"
+                  className="btn btn-outline-success ml-1"
+                  {...disabled}
+                  onClick={save}>
+                  {!state.create && (
+                    <span>
+                      <i className="fas fa-save mr-1" />
+                      <Translation i18nkey="Save" language={props.currentLanguage}>
+                        Save
+                      </Translation>
+                    </span>
+                  )}
+                  {state.create && (
+                    <span>
+                      <i className="fas fa-save mr-1" />
+                      <Translation i18nkey="Create" language={props.currentLanguage}>
+                        Create
+                      </Translation>
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </Can>
+    </TeamBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

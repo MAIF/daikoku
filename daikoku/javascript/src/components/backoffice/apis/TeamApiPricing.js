@@ -1437,7 +1437,8 @@ export class TeamApiPricing extends Component {
             <button
               onClick={this.addNewPlan}
               type="button"
-              className="btn btn-sm btn-outline-primary float-right">
+              className="btn btn-sm btn-outline-primary float-right"
+              style={{ minWidth: '140px' }}>
               <i className="fas fa-plus mr-1" />
               <Translation i18nkey="add a new plan" language={this.props.currentLanguage}>
                 add a new plan

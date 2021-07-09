@@ -1326,7 +1326,8 @@ case class Api(
     posts: Seq[ApiPostId] = Seq.empty,
     issues: Seq[ApiIssueId] = Seq.empty,
     issuesTags: Set[ApiIssueTag] = Set.empty,
-    stars: Int = 0
+    stars: Int = 0,
+    parent: Option[ApiId] = None
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
@@ -1349,7 +1350,8 @@ case class Api(
     "posts" -> SeqPostIdFormat.writes(posts),
     "issues" -> SeqIssueIdFormat.writes(issues),
     "issuesTags" -> SetApiTagFormat.writes(issuesTags),
-    "stars" -> stars
+    "stars" -> stars,
+    "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized

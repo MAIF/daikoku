@@ -903,5 +903,6 @@
     "audittrail.export.label": "Export audit trail",
     "Authorized entities": "Authorized entities",
     "Authorized.entities.placeholder": "Select Otoroshi service groups and/or services",
-    "authorized.entities.help": "Select otoroshi service groups and/or services on which the key is authorized"
+    "authorized.entities.help": "Select otoroshi service groups and/or services on which the key is authorized",
+    "teamapi.new_version": "Create a new version"
 }

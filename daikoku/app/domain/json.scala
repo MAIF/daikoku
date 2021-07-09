@@ -1912,7 +1912,8 @@ object json {
             issuesTags = (json \ "issuesTags")
               .asOpt(SetApiTagFormat)
               .getOrElse(Set.empty),
-            stars = (json \ "stars").asOpt[Int].getOrElse(0)
+            stars = (json \ "stars").asOpt[Int].getOrElse(0),
+            parent = (json \ "parent").asOpt(ApiIdFormat)
           )
         )
       } recover {
@@ -1951,7 +1952,11 @@ object json {
       "posts" -> SeqPostIdFormat.writes(o.posts),
       "issues" -> SeqIssueIdFormat.writes(o.issues),
       "issuesTags" -> SetApiTagFormat.writes(o.issuesTags),
-      "stars" -> o.stars
+      "stars" -> o.stars,
+      "parent" -> o.parent
+        .map(ApiIdFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
 

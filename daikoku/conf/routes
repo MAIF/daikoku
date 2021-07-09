@@ -180,6 +180,8 @@ DELETE      /api/teams/:teamId/apis/:apiId/posts/:postId             fr.maif.oto
 POST        /api/teams/:teamId/apis/:apiId/issues                    fr.maif.otoroshi.daikoku.ctrls.ApiController.createIssue(teamId, apiId)
 ### NoDocs ###
 PUT         /api/teams/:teamId/apis/:apiId/issues/:issueId           fr.maif.otoroshi.daikoku.ctrls.ApiController.updateIssue(teamId, apiId, issueId)
+### NoDocs ###
+POST        /api/teams/:teamId/apis/:apiId/versions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.createVersion(teamId, apiId)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)

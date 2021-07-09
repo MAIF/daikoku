@@ -7,6 +7,7 @@ import play.api.mvc.Results._
 sealed trait AppError
 
 object AppError {
+  case object ApiVersionConflict extends AppError
   case object ApiNotFound extends AppError
   case object TeamNotFound extends AppError
   case object UserNotFound extends AppError
@@ -26,6 +27,7 @@ object AppError {
   case object ApiKeyCustomMetadataNotPrivided extends AppError
 
   def render(error: AppError): mvc.Result = error match {
+    case ApiVersionConflict => Conflict(toJson(ApiVersionConflict))
     case ApiNotFound  => NotFound(Json.obj("error" -> "Api not found"))
     case TeamNotFound => NotFound(Json.obj("error" -> "Team not found"))
     case UserNotFound => NotFound(Json.obj("error" -> "User not found"))
@@ -61,6 +63,7 @@ object AppError {
   }
 
   def toJson(error: AppError) = error match {
+    case ApiVersionConflict   => Json.obj("error" -> "Conflict with api version")
     case ApiNotFound          => Json.obj("error" -> "Api not found")
     case TeamNotFound         => Json.obj("error" -> "Team not found")
     case UserNotFound         => Json.obj("error" -> "User not found")

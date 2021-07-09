@@ -1606,9 +1606,9 @@ export function checkConnection(config, user) {
     ...POST_HEADERS,
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   }).then((r) => r.json());
 }
@@ -1817,4 +1817,11 @@ export function removeTeamInvitation(token) {
     ...POST_HEADERS,
     method: 'DELETE',
   });
+}
+
+export function createNewApiVersion(apiId, teamId, version) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
+    ...POST_HEADERS,
+    body: JSON.stringify({ version })
+  })
 }

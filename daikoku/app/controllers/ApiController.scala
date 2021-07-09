@@ -2039,6 +2039,55 @@ class ApiController(DaikokuAction: DaikokuAction,
       }
     }
   }
+
+  def createVersion(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(
+      AuditTrailEvent(s"@{user.name} has created new version of api @{api.id} with @{team.name} - @{team.id}")
+    )(teamId, ctx) { team =>
+      val newVersion = (ctx.request.body \ "version").asOpt[String]
+
+      newVersion match {
+        case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing parameters")))
+        case Some(newVersion) if newVersion.isEmpty => FastFuture.successful(BadRequest(Json.obj("error" -> "Version number is too short")))
+        case Some(newVersion) =>
+          val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+          apiRepo
+            .findByIdNotDeleted(apiId)
+            .flatMap {
+              case None => FastFuture.successful(AppError.render(ApiNotFound))
+              case Some(api) if api.currentVersion.value == newVersion => FastFuture.successful(AppError.render(ApiVersionConflict))
+              case Some(api) =>
+                apiRepo.exists(Json.obj("currentVersion" -> newVersion, "_humanReadableId" -> api.humanReadableId))
+                  .flatMap {
+                    case true => FastFuture.successful(AppError.render(ApiVersionConflict))
+                    case false =>
+                      apiRepo.save(api.copy(
+                        id = ApiId(BSONObjectID.generate().stringify),
+                        parent = Some(api.id),
+                        currentVersion = Version(newVersion),
+                        published = false,
+                        testing = Testing(),
+                        documentation = ApiDocumentation(
+                          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+                          tenant = ctx.tenant.id,
+                          lastModificationAt = DateTime.now(),
+                          pages = Seq.empty
+                        ),
+                        swagger = None,
+                        possibleUsagePlans = Seq.empty,
+                        defaultUsagePlan = UsagePlanId(""),
+                        posts = Seq.empty,
+                        issues = Seq.empty
+                      ))
+                        .flatMap {
+                          case true   => FastFuture.successful(Created(Json.obj("created" -> true)))
+                          case false  => FastFuture.successful(BadRequest(Json.obj("error" -> "The creation of api has failed")))
+                        }
+                  }
+            }
+      }
+    }
+  }
 }
 
 
