@@ -269,6 +269,7 @@ export class TenantEditComponent extends Component {
     'isPrivate',
     'creationSecurity',
     'subscriptionSecurity',
+    'aggregationApiKeysSecurity',
     'apiReferenceHideForGuest',
     'hideTeamsPage',
     `>>> ${t('Audit trail (Elastic)', this.props.currentLanguage)}`,
@@ -576,6 +577,33 @@ export class TenantEditComponent extends Component {
         ),
       },
     },
+    aggregationApiKeysSecurity: {
+      type: () => (
+        <BooleanInput
+          key="aggregationApiKeysSecurity"
+          value={this.state.tenant.aggregationApiKeysSecurity}
+          label={t('aggregation api keys security', this.props.currentLanguage)}
+          help={t('aggregation_apikeys.security.help', this.props.currentLanguage)}
+          onChange={e => {
+            if (e)
+              window.alert(
+                t("aggregation.api_key.security.notification", this.props.currentLanguage),
+                undefined,
+                undefined,
+                t('I understood', this.props.currentLanguage),
+                this.props.currentLanguage
+              )
+
+            this.setState({
+              tenant: {
+                ...this.state.tenant,
+                aggregationApiKeysSecurity: e
+              }
+            })
+          }}
+        />
+      )
+    },
     apiReferenceHideForGuest: {
       type: 'bool',
       props: {
@@ -801,7 +829,7 @@ export class TenantEditComponent extends Component {
       });
     } else {
       Services.oneTenant(this.props.match.params.tenantId).then((tenant) => {
-        this.setState({ tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } });
+        this.setState({ tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } })
       });
     }
   }
@@ -838,7 +866,7 @@ export class TenantEditComponent extends Component {
     } else {
       return Services.saveTenant(this.state.tenant)
         .then(({ uiPayload }) => this.props.updateTenant(uiPayload))
-        .then(() => toastr.success(t('Tenant updated successfully', this.props.currentLanguage)));
+        .then(() => toastr.success(t('Tenant updated successfully', this.props.currentLanguage)))
     }
   };
 

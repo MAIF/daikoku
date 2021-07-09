@@ -4,7 +4,8 @@ import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import _ from 'lodash';
 
-import { OPEN_MODAL } from '../../core/modal';
+import { closeModal, OPEN_MODAL } from '../../core/modal';
+import { t } from '../../locales';
 
 class Alert extends Component {
   defaultButton = (e) => {
@@ -53,7 +54,7 @@ class Alert extends Component {
                   type="button"
                   className="btn btn-outline-primary"
                   onClick={this.props.close}>
-                  Close
+                  {this.props.closeMessage ? this.props.closeMessage : t('Close', this.props.currentLanguage, null, 'Close')}
                 </button>
               </div>
             </div>
@@ -206,7 +207,7 @@ export function registerAlert(store) {
     div.setAttribute('id', 'daikoku-alerts-container');
     document.body.appendChild(div);
   }
-  window.alert = (message, title, linkOpt) => {
+  window.alert = (message, title, linkOpt, closeMessage, currentLanguage) => {
     return new Promise((success) => {
       ReactDOM.render(
         <Provider store={store}>
@@ -214,6 +215,8 @@ export function registerAlert(store) {
             message={message}
             title={title}
             linkOpt={linkOpt}
+            closeMessage={closeMessage}
+            currentLanguage={currentLanguage}
             close={() => {
               ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
               success();

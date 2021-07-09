@@ -144,14 +144,12 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         ctx) { (tenant, _) =>
         OtoroshiSettingsFormat.reads(ctx.request.body) match {
           case JsError(_) =>
-            FastFuture.successful(
-              BadRequest(Json.obj("error" -> "Error while parsing payload")))
+            FastFuture.successful(BadRequest(Json.obj("error" -> "Error while parsing payload")))
           case JsSuccess(settings, _) =>
             def createOtoroshi() = {
               ctx.setCtxValue("otoroshi.id", settings.id)
               env.dataStore.tenantRepo
-                .save(tenant.copy(
-                  otoroshiSettings = tenant.otoroshiSettings + settings))
+                .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings + settings))
                 .map { _ =>
                   Created(settings.asJson)
                 }
@@ -164,9 +162,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                 .flatMap { _ =>
                   createOtoroshi()
                 }
-                .recover { _ =>
-                  BadRequest(
-                    Json.obj("error" -> "Failed to join otoroshi instances"))
+                .recover {
+                  case _ => BadRequest(Json.obj("error" -> "Failed to join otoroshi instances"))
                 }
         }
       }
@@ -239,7 +236,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def otoroshiApiKeysForTenant(tenantId: String, oto: String) =
+    def otoroshiApiKeysForTenant(tenantId: String, oto: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
@@ -417,8 +414,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                                   .getApikey(api.testing.username.get)(previousSettings)
                                   .flatMap {
                                     case Left(error) =>
-                                      FastFuture.successful(
-                                        BadRequest(toJson(error)))
+                                      FastFuture.successful(BadRequest(AppError.toJson(error)))
                                     case Right(apiKey) =>
                                       val lastMetadata: Map[String, String] =
                                         api.testing.config
@@ -465,7 +461,10 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                                       } else {
                                         otoroshiClient
                                           .updateApiKey(updatedKey)(previousSettings)
-                                          .map(key => Ok(key.asJson))
+                                          .map {
+                                            case Left(e) => BadRequest(AppError.toJson(e))
+                                            case Right(key) => Ok(key.asJson)
+                                          }
                                       }
                                   }
 

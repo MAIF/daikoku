@@ -94,9 +94,13 @@ POST    /api/me/invitation/_check                       fr.maif.otoroshi.daikoku
 DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation()
 
 ### NoDocs ###
+PUT     /api/apis/:apiId/subscriptions/:apiKeyId        fr.maif.otoroshi.daikoku.ctrls.ApiController.extendApiKey(apiId, apiKeyId)
+### NoDocs ###
 POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
 ### NoDocs ###
 GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId)
+### NoDocs ###
+GET     /api/subscriptions/teams/:teamId                fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionsOfTeam(teamId)
 ### NoDocs ###
 GET     /api/apis/:apiId/pages/:id/content              fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationPageRemoteContent(apiId, id)
 ### NoDocs ###
@@ -105,6 +109,8 @@ GET     /api/apis/:apiId/pages/:id                      fr.maif.otoroshi.daikoku
 POST    /api/teams/:teamId/subscriptions/:id/name       fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiSubscriptionCustomName(teamId, id)
 ### NoDocs ###
 PUT		/api/teams/:teamId/subscriptions/:id/_archive   fr.maif.otoroshi.daikoku.ctrls.ApiController.toggleApiSubscription(teamId, id, enabled: Option[Boolean] ?= Some(false))
+### NoDocs ###
+POST	/api/teams/:teamId/subscriptions/:id/_makeUnique fr.maif.otoroshi.daikoku.ctrls.ApiController.makeUniqueSubscription(teamId, id)
 
 
 ### NoDocs ###

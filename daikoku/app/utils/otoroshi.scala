@@ -158,16 +158,16 @@ class OtoroshiClient(env: Env) {
 
   def getApikey(clientId: String)(
     implicit otoroshiSettings: OtoroshiSettings
-  ): Future[Either[JsError, ActualOtoroshiApiKey]] = {
+  ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     client(s"/api/apikeys/$clientId").get().map { resp =>
       if (resp.status == 200) {
         resp.json.validate(ActualOtoroshiApiKeyFormat) match {
           case JsSuccess(k, _) => Right(k)
-          case e: JsError => Left(e)
+          case e: JsError => Left(OtoroshiError(JsError.toJson(e)))
         }
       } else {
-        Left(JsError(
-          s"Error while fetching otoroshi apikey: ${resp.status} - ${resp.body}"))
+        Left(OtoroshiError(Json.obj(
+          "error" -> s"Error while fetching otoroshi apikey: ${resp.status} - ${resp.body}")))
       }
     }
   }
@@ -190,22 +190,20 @@ class OtoroshiClient(env: Env) {
 
   def updateApiKey(key: ActualOtoroshiApiKey)(
     implicit otoroshiSettings: OtoroshiSettings
-  ): Future[ActualOtoroshiApiKey] = {
+  ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     client(s"/api/apikeys/${key.clientId}")
       .put(key.asJson)
-      .flatMap { resp =>
+      .map { resp =>
         if (resp.status == 200) {
           resp.json.validate(ActualOtoroshiApiKeyFormat) match {
-            case JsSuccess(k, _) => Future.successful(k)
+            case JsSuccess(k, _) => Right(k)
             case JsError(e) =>
-              Future.failed(
-                new RuntimeException(
-                  s"Error while reading otoroshi apikey $e"))
+              Left(OtoroshiError(Json.obj("error" -> s"Error while reading otoroshi apikey $e")))
           }
-        } else {
-          Future.failed(new RuntimeException(
-            s"Error while updating otoroshi apikey: ${resp.status} - ${resp.body}"))
         }
+        else
+          Left(OtoroshiError(Json.obj(
+            "error" -> s"Error while updating otoroshi apikey: ${resp.status} - ${resp.body}")))
       }
   }
 

@@ -11,7 +11,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import org.joda.time.DateTime
 import play.api.i18n.{Lang, MessagesApi}
-import play.api.libs.json.{JsArray, JsError, JsNull, JsObject, Json}
+import play.api.libs.json.{JsArray, JsNull, JsObject, Json}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
@@ -26,6 +26,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                      api: Api,
                      planId: String,
                      team: Team,
+                     parentSubscriptionId: Option[ApiSubscriptionId] = None,
                      customMetadata: Option[JsObject] = None,
                      customMaxPerSecond: Option[Long] = None,
                      customMaxPerDay: Option[Long] = None,
@@ -38,134 +39,172 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       .orElse(defaultPlanOpt)
       .getOrElse(api.possibleUsagePlans.head)
 
-    def createKey(api: Api, plan: UsagePlan, team: Team, authorizedEntities: AuthorizedEntities)(
+    def createKey(api: Api, plan: UsagePlan, team: Team, authorizedEntities: AuthorizedEntities, parentSubscriptionId: Option[ApiSubscriptionId])(
       implicit otoroshiSettings: OtoroshiSettings
     ): Future[Either[AppError, JsObject]] = {
       import cats.implicits._
 
-      val createdAt = DateTime.now().toString()
-      val clientId = IdGenerator.token(32)
-      val clientSecret = IdGenerator.token(64)
-      val clientName =
-        s"daikoku-api-key-${api.humanReadableId}-${
-          plan.customName
-            .getOrElse(plan.typeName)
-            .urlPathSegmentSanitized
-        }-${team.humanReadableId}-${System.currentTimeMillis()}"
-      val integrationToken = IdGenerator.token(64)
-      val apiSubscription = ApiSubscription(
-        id = ApiSubscriptionId(BSONObjectID.generate().stringify),
-        tenant = tenant.id,
-        apiKey = OtoroshiApiKey(clientName, clientId, clientSecret),
-        plan = plan.id,
-        createdAt = DateTime.now(),
-        team = team.id,
-        api = api.id,
-        by = user.id,
-        customName = None,
-        rotation = plan.autoRotation.map(rotation => ApiSubscriptionRotation(enabled = rotation)),
-        integrationToken = integrationToken,
-        customMetadata = customMetadata,
-        customMaxPerSecond = customMaxPerSecond,
-        customMaxPerDay = customMaxPerDay,
-        customMaxPerMonth = customMaxPerMonth,
-        customReadOnly = customReadOnly
-      )
-      val ctx = Map(
-        "user.id" -> user.id.value,
-        "user.name" -> user.name,
-        "user.email" -> user.email,
-        "api.id" -> api.id.value,
-        "api.name" -> api.name,
-        "team.id" -> team.id.value,
-        "team.name" -> team.name,
-        "tenant.id" -> tenant.id.value,
-        "tenant.name" -> tenant.name,
-        "createdAt" -> createdAt,
-        "client.id" -> clientId,
-        "client.name" -> clientName
-      ) ++ team.metadata.map(t => ("team.metadata." + t._1, t._2)) ++ user.metadata
-        .map(
-          t => ("user.metadata." + t._1, t._2)
-        )
-      val apiKey = ActualOtoroshiApiKey(
-        clientId = clientId,
-        clientSecret = clientSecret,
-        clientName = clientName,
-        authorizedEntities = authorizedEntities,
-        throttlingQuota = 1000,
-        dailyQuota = RemainingQuotas.MaxValue,
-        monthlyQuota = RemainingQuotas.MaxValue,
-        allowClientIdOnly =
-          plan.otoroshiTarget.exists(_.apikeyCustomization.clientIdOnly),
-        readOnly = customReadOnly.getOrElse(plan.otoroshiTarget.exists(_.apikeyCustomization.readOnly)),
-        constrainedServicesOnly = plan.otoroshiTarget.exists(
-          _.apikeyCustomization.constrainedServicesOnly),
-        tags = plan.otoroshiTarget
-          .map(_.processedTags(ctx))
-          .getOrElse(Seq.empty[String]),
-        restrictions = plan.otoroshiTarget
-          .map(_.apikeyCustomization.restrictions)
-          .getOrElse(ApiKeyRestrictions()),
-        metadata = Map(
-          "daikoku_created_by" -> user.email,
-          "daikoku_created_from" -> "daikoku",
-          "daikoku_created_at" -> createdAt,
-          "daikoku_created_with_id" -> api.id.value,
-          "daikoku_created_with" -> api.name,
-          "daikoku_created_for_team_id" -> team.id.value,
-          "daikoku_created_for_team" -> team.name,
-          "daikoku_created_on_tenant" -> tenant.id.value,
-          "daikoku_integration_token" -> integrationToken
-        ) ++ plan.otoroshiTarget
-          .map(_.processedMetadata(ctx))
-          .getOrElse(Map.empty[String, String])
-          ++ customMetadata
-          .flatMap(_.asOpt[Map[String, String]])
-          .getOrElse(Map.empty[String, String]),
-        rotation = plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled))
-      )
-      val tunedApiKey = plan match {
-        case _: FreeWithoutQuotas => apiKey
-        case p: FreeWithQuotas =>
-          apiKey.copy(
-            throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
-            dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
-            monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
-        case p: QuotasWithLimits =>
-          apiKey.copy(
-            throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
-            dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
-            monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
-        case p: QuotasWithoutLimits =>
-          apiKey.copy(
-            throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
-            dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
-            monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
-        case _: PayPerUse => apiKey
-        case _: Admin => apiKey
-      }
-      val r: EitherT[Future, AppError, JsObject] = for {
-        _ <- EitherT(otoroshiClient.createApiKey(tunedApiKey))
-        _ <- EitherT.liftF(
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant.id)
-            .save(apiSubscription))
-        upToDateTeam <- EitherT.liftF(env.dataStore.teamRepo
-          .forTenant(tenant.id)
-          .findById(team.id)
-        )
-        _ <- EitherT.liftF(
-          env.dataStore.teamRepo
-            .forTenant(tenant.id)
-            .save(upToDateTeam.getOrElse(team).copy(
-              subscriptions = team.subscriptions :+ apiSubscription.id))
-        )
-      } yield {
-        Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson)
-      }
+      val generatedApiKey = OtoroshiApiKey(clientId = IdGenerator.token(32), clientSecret = IdGenerator.token(64), clientName = "")
 
-      r.value
+      (parentSubscriptionId match {
+        case None => FastFuture.successful(generatedApiKey)
+        case Some(id) => env.dataStore.apiSubscriptionRepo.forTenant(tenant.id).findById(id.value)
+            .flatMap {
+              case Some(sub) => FastFuture.successful(sub.apiKey)
+              case None => FastFuture.successful(generatedApiKey)
+            }
+      })
+        .flatMap { k =>
+          val createdAt = DateTime.now().toString()
+
+          val otoroshiApiKey = k.copy(clientName =
+            s"daikoku-api-key-${api.humanReadableId}-${
+              plan.customName
+                .getOrElse(plan.typeName)
+                .urlPathSegmentSanitized
+            }-${team.humanReadableId}-${System.currentTimeMillis()}")
+          val integrationToken = IdGenerator.token(64)
+          val apiSubscription = ApiSubscription(
+            id = ApiSubscriptionId(BSONObjectID.generate().stringify),
+            tenant = tenant.id,
+            apiKey = OtoroshiApiKey(otoroshiApiKey.clientName, otoroshiApiKey.clientId, otoroshiApiKey.clientSecret),
+            plan = plan.id,
+            createdAt = DateTime.now(),
+            team = team.id,
+            api = api.id,
+            by = user.id,
+            customName = None,
+            rotation = plan.autoRotation.map(rotation => ApiSubscriptionRotation(enabled = rotation)),
+            integrationToken = integrationToken,
+            customMetadata = customMetadata,
+            customMaxPerSecond = customMaxPerSecond,
+            customMaxPerDay = customMaxPerDay,
+            customMaxPerMonth = customMaxPerMonth,
+            customReadOnly = customReadOnly,
+            parent = parentSubscriptionId
+          )
+          val ctx = Map(
+            "user.id" -> user.id.value,
+            "user.name" -> user.name,
+            "user.email" -> user.email,
+            "api.id" -> api.id.value,
+            "api.name" -> api.name,
+            "team.id" -> team.id.value,
+            "team.name" -> team.name,
+            "tenant.id" -> tenant.id.value,
+            "tenant.name" -> tenant.name,
+            "createdAt" -> createdAt,
+            "client.id" -> otoroshiApiKey.clientId,
+            "client.name" -> otoroshiApiKey.clientName
+          ) ++ team.metadata.map(t => ("team.metadata." + t._1, t._2)) ++ user.metadata
+            .map(
+              t => ("user.metadata." + t._1, t._2)
+            )
+          val apiKey = ActualOtoroshiApiKey(
+            clientId = otoroshiApiKey.clientId,
+            clientSecret = otoroshiApiKey.clientSecret,
+            clientName = otoroshiApiKey.clientName,
+            authorizedEntities = authorizedEntities,
+            throttlingQuota = 1000,
+            dailyQuota = RemainingQuotas.MaxValue,
+            monthlyQuota = RemainingQuotas.MaxValue,
+            allowClientIdOnly =
+              plan.otoroshiTarget.exists(_.apikeyCustomization.clientIdOnly),
+            readOnly = customReadOnly.getOrElse(plan.otoroshiTarget.exists(_.apikeyCustomization.readOnly)),
+            constrainedServicesOnly = plan.otoroshiTarget.exists(
+              _.apikeyCustomization.constrainedServicesOnly),
+            tags = plan.otoroshiTarget
+              .map(_.processedTags(ctx))
+              .getOrElse(Seq.empty[String]),
+            restrictions = plan.otoroshiTarget
+              .map(_.apikeyCustomization.restrictions)
+              .getOrElse(ApiKeyRestrictions()),
+            metadata = Map(
+              "daikoku_created_by" -> user.email,
+              "daikoku_created_from" -> "daikoku",
+              "daikoku_created_at" -> createdAt,
+              "daikoku_created_with_id" -> api.id.value,
+              "daikoku_created_with" -> api.name,
+              "daikoku_created_for_team_id" -> team.id.value,
+              "daikoku_created_for_team" -> team.name,
+              "daikoku_created_on_tenant" -> tenant.id.value,
+              "daikoku_integration_token" -> integrationToken
+            ) ++ plan.otoroshiTarget
+              .map(_.processedMetadata(ctx))
+              .getOrElse(Map.empty[String, String])
+              ++ customMetadata
+              .flatMap(_.asOpt[Map[String, String]])
+              .getOrElse(Map.empty[String, String]),
+            rotation = plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled))
+          )
+
+          val tunedApiKey = plan match {
+            case _: FreeWithoutQuotas => apiKey
+            case p: FreeWithQuotas =>
+              apiKey.copy(
+                throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
+                dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
+                monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
+            case p: QuotasWithLimits =>
+              apiKey.copy(
+                throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
+                dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
+                monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
+            case p: QuotasWithoutLimits =>
+              apiKey.copy(
+                throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
+                dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
+                monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth))
+            case _: PayPerUse => apiKey
+            case _: Admin => apiKey
+          }
+
+          val r: EitherT[Future, AppError, JsObject] = for {
+            optSubscription <- EitherT.liftF(parentSubscriptionId match {
+              case Some(id) => env.dataStore.apiSubscriptionRepo.forTenant(tenant.id).findById(id.value)
+              case None => FastFuture.successful(None)
+            })
+            _ <- optSubscription match {
+              case Some(sub) =>
+                EitherT(otoroshiClient.getApikey(sub.apiKey.clientId))
+                  .map { e =>
+                    otoroshiClient.updateApiKey(
+                      e.copy(authorizedEntities = AuthorizedEntities(
+                        groups = e.authorizedEntities.groups ++ authorizedEntities.groups,
+                        services = e.authorizedEntities.services ++ authorizedEntities.services
+                      ))
+                    )
+                  }
+              case _ => EitherT(otoroshiClient.createApiKey(tunedApiKey))
+            }
+            _ <- optSubscription match {
+              case Some(sub) =>
+                EitherT.liftF(
+                  env.dataStore.apiSubscriptionRepo
+                    .forTenant(tenant.id)
+                    .save(apiSubscription.copy(apiKey = sub.apiKey)))
+              case _ =>
+                EitherT.liftF(
+                  env.dataStore.apiSubscriptionRepo
+                    .forTenant(tenant.id)
+                    .save(apiSubscription))
+            }
+            upToDateTeam <- EitherT.liftF(env.dataStore.teamRepo
+              .forTenant(tenant.id)
+              .findById(team.id)
+            )
+            _ <- EitherT.liftF(
+              env.dataStore.teamRepo
+                .forTenant(tenant.id)
+                .save(upToDateTeam.getOrElse(team).copy(
+                  subscriptions = team.subscriptions :+ apiSubscription.id))
+            )
+          } yield {
+            Json.obj("creation" -> "done", "subscription" -> apiSubscription.asJson)
+          }
+
+          r.value
+        }
     }
 
     def createAdminKey(api: Api, plan: UsagePlan): Future[Either[AppError, JsObject]] = {
@@ -232,7 +271,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                 customMetadata.map(_.values.toSeq).forall(values => !values.contains(JsNull))
 
             if (isCustomMetadataProvided) {
-              createKey(api, plan, team, authorizedEntities)
+              createKey(api, plan, team, authorizedEntities, parentSubscriptionId)
             } else {
               FastFuture.successful(Left(ApiKeyCustomMetadataNotPrivided))
             }
@@ -262,7 +301,6 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
             val r: EitherT[Future, AppError, JsObject] = for {
               apiKey <- EitherT(
                 otoroshiClient.getApikey(subscription.apiKey.clientId))
-                .leftMap(err => OtoroshiError(JsError.toJson(err)))
               _ <- EitherT.liftF(
                 otoroshiClient.updateApiKey(
                   apiKey.copy(
@@ -348,11 +386,29 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
 
         val r: EitherT[Future, AppError, JsObject] = for {
-          apiKey <- EitherT(
-            otoroshiClient.getApikey(subscription.apiKey.clientId))
-            .leftMap(err => OtoroshiError(JsError.toJson(err)))
-          _ <- EitherT.liftF(
-            otoroshiClient.updateApiKey(apiKey.copy(enabled = enabled)))
+          apiKey <- EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId))
+          _ <- subscription.parent match {
+            case Some(_) =>
+              plan.otoroshiTarget match {
+                case Some(target) if target.authorizedEntities.isDefined =>
+                  if (enabled)
+                    EitherT.liftF(
+                      otoroshiClient.updateApiKey(apiKey.copy(authorizedEntities = apiKey.authorizedEntities.copy(
+                        services = apiKey.authorizedEntities.services ++ target.authorizedEntities.get.services,
+                        groups = apiKey.authorizedEntities.groups ++ target.authorizedEntities.get.groups
+                      ))))
+                  else
+                    EitherT.liftF(
+                      otoroshiClient.updateApiKey(apiKey.copy(authorizedEntities = apiKey.authorizedEntities.copy(
+                        services = apiKey.authorizedEntities.services.filter(s => !target.authorizedEntities.get.services.contains(OtoroshiServiceId(s.value))),
+                        groups = apiKey.authorizedEntities.groups.filter(s => !target.authorizedEntities.get.groups.contains(OtoroshiServiceGroupId(s.value)))
+                      ))))
+                case _ => EitherT.leftT[Future, JsObject](OtoroshiSettingsNotFound)
+              }
+            case None =>
+              EitherT.liftF(
+                otoroshiClient.updateApiKey(apiKey.copy(enabled = enabled)))
+          }
           _ <- EitherT.liftF(
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant.id)
@@ -406,9 +462,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
                     .toSeq
                   ).getOrElse(Seq.empty)))))
           )
-          apiKey <- EitherT(
-            otoroshiClient.getApikey(subscription.apiKey.clientId))
-            .leftMap(err => OtoroshiError(JsError.toJson(err)))
+          apiKey <- EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId))
           _ <- EitherT.liftF(otoroshiClient.updateApiKey(apiKey.copy(clientSecret = newClientSecret)))
           _ <- EitherT.liftF(
             env.dataStore.apiSubscriptionRepo
@@ -474,9 +528,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
           implicit val otoroshiSettings: OtoroshiSettings = otoSettings
 
           val r: EitherT[Future, AppError, JsObject] = for {
-            apiKey <- EitherT(
-              otoroshiClient.getApikey(subscription.apiKey.clientId))
-              .leftMap(err => OtoroshiError(JsError.toJson(err)))
+            apiKey <- EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId))
             _ <- EitherT.liftF(
               otoroshiClient.updateApiKey(apiKey.copy(rotation = apiKey.rotation.map(r => r.copy(enabled = !r.enabled)).orElse(Some(ApiKeyRotation())))))
             _ <- EitherT.liftF(
