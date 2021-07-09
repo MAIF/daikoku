@@ -232,7 +232,6 @@ class HomePageVisibilitySwitch extends Component {
 export class TenantEditComponent extends Component {
   state = {
     tenant: null,
-    originalTenant: null,
     create: false,
     updated: false,
   };
@@ -579,15 +578,31 @@ export class TenantEditComponent extends Component {
       },
     },
     aggregationApiKeysSecurity: {
-      type: 'bool',
-      props: {
-        currentLanguage: this.props.currentLanguage,
-        label: t('aggregation api keys security', this.props.currentLanguage),
-        help: t(
-          'aggregation_apikeys.security.help',
-          this.props.currentLanguage
-        )
-      }
+      type: () => (
+        <BooleanInput
+          key="aggregationApiKeysSecurity"
+          value={this.state.tenant.aggregationApiKeysSecurity}
+          label={t('aggregation api keys security', this.props.currentLanguage)}
+          help={t('aggregation_apikeys.security.help', this.props.currentLanguage)}
+          onChange={e => {
+            if (e)
+              window.alert(
+                t("aggregation.api_key.security.notification", this.props.currentLanguage),
+                undefined,
+                undefined,
+                t('I understood', this.props.currentLanguage),
+                this.props.currentLanguage
+              )
+
+            this.setState({
+              tenant: {
+                ...this.state.tenant,
+                aggregationApiKeysSecurity: e
+              }
+            })
+          }}
+        />
+      )
     },
     apiReferenceHideForGuest: {
       type: 'bool',
@@ -811,14 +826,10 @@ export class TenantEditComponent extends Component {
           bucketSettings: this.props.location.state.newTenant.bucketSettings || {},
         },
         create: true,
-      }, () => {
-        this.setState({ originalTenant: this.state.tenant })
       });
     } else {
       Services.oneTenant(this.props.match.params.tenantId).then((tenant) => {
-        this.setState({ tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } }, () => {
-          this.setState({ originalTenant: this.state.tenant })
-        });
+        this.setState({ tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} } })
       });
     }
   }
@@ -853,22 +864,9 @@ export class TenantEditComponent extends Component {
         );
       });
     } else {
-      const { originalTenant, tenant } = this.state;
-      if (tenant.aggregationApiKeysSecurity && tenant.aggregationApiKeysSecurity !== originalTenant.aggregationApiKeysSecurity)
-        window.alert(
-          t("aggregation.api_key.security.notification", this.props.currentLanguage),
-          undefined,
-          undefined,
-          t('I understood', this.props.currentLanguage),
-          this.props.currentLanguage
-        )
-
       return Services.saveTenant(this.state.tenant)
         .then(({ uiPayload }) => this.props.updateTenant(uiPayload))
         .then(() => toastr.success(t('Tenant updated successfully', this.props.currentLanguage)))
-        .then(() => this.setState({
-          originalTenant: { ...tenant }
-        }))
     }
   };
 

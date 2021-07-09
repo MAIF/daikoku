@@ -369,7 +369,6 @@ export class ApiPricing extends Component {
 }
 
 ApiPricing.propTypes = {
-  userIsTenantAdmin: PropTypes.bool.isRequired,
   api: PropTypes.object.isRequired,
   myTeams: PropTypes.array.isRequired,
   ownerTeam: PropTypes.object.isRequired,

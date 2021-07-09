@@ -594,7 +594,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     _createOrExtendApiKey(apiId, ctx)
   }
 
-  def _createOrExtendApiKey(apiId: String, ctx: DaikokuActionContext[JsValue], apiKeyId: Option[ApiSubscriptionId] = None)= {
+  def _createOrExtendApiKey(apiId: String, ctx: DaikokuActionContext[JsValue], parentSubscriptionId: Option[ApiSubscriptionId] = None)= {
     import cats.implicits._
 
     implicit val c = ctx;
@@ -649,9 +649,9 @@ class ApiController(DaikokuAction: DaikokuAction,
                                       api,
                                       plan.id.value,
                                       team,
-                                      apiKeyId).leftMap(AppError.toJson).merge
+                                      parentSubscriptionId).leftMap(AppError.toJson).merge
 
-                                  apiKeyId match {
+                                  parentSubscriptionId match {
                                     case Some(apiKey) => env.dataStore.apiSubscriptionRepo
                                       .forTenant(ctx.tenant)
                                       .findByIdNotDeleted(apiKey.value)
@@ -1052,47 +1052,36 @@ class ApiController(DaikokuAction: DaikokuAction,
         if (subscription.parent.isEmpty)
             FastFuture.successful(Left(MissingParentSubscription))
         else
-          (plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+          plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
             ctx.tenant.otoroshiSettings.find(_.id == id)
           } match {
             case None => FastFuture.successful(Left(OtoroshiSettingsNotFound))
-            case Some(o) => FastFuture.successful(Right(o))
-          }).flatMap {
-            case Left(v) => FastFuture.successful(Left(v))
-            case Right(otoroshiSettings) =>
+            case Some(otoroshiSettings) =>
               implicit val o = otoroshiSettings
-              otoroshiClient.getApikey(subscription.apiKey.clientId)(o)
-                .flatMap {
-                  case Left(v) => FastFuture.successful(Left(v))
-                  case Right(apiKey) =>
-                    toggleSubscription(plan, subscription, ctx.tenant, enabled = false)
-                      .flatMap {
-                        case Left(v) => FastFuture.successful(Left(v))
-                        case Right(_) =>
-                          otoroshiClient.createApiKey(apiKey.copy(
-                            clientId = IdGenerator.token(32),
-                            clientSecret = IdGenerator.token(64),
-                            clientName = s"daikoku-api-key-${api.humanReadableId}-${
-                              plan.customName
-                                .getOrElse(plan.typeName)
-                                .urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"))(o)
-                            .flatMap {
-                              case Left(v) => FastFuture.successful(Left(v))
-                              case Right(createdApiKey) =>
-                                env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
-                                  .save(subscription.copy(
-                                    parent = None,
-                                    apiKey = subscription.apiKey.copy(
-                                      clientId = createdApiKey.clientId,
-                                      clientSecret = createdApiKey.clientSecret,
-                                      clientName = createdApiKey.clientName)
-                                  ))
-                                  .flatMap { _ =>
-                                    FastFuture.successful(Right(Json.obj("created" -> true)))
-                                  }
-                            }
-                      }
-                }
+              import cats.implicits._
+
+              (for {
+                apiKey        <- EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId)(o))
+                _             <- EitherT(toggleSubscription(plan, subscription, ctx.tenant, enabled = false))
+                createdApiKey <- EitherT(otoroshiClient.createApiKey(apiKey.copy(
+                  clientId = IdGenerator.token(32),
+                  clientSecret = IdGenerator.token(64),
+                  clientName = s"daikoku-api-key-${api.humanReadableId}-${
+                    plan.customName
+                      .getOrElse(plan.typeName)
+                      .urlPathSegmentSanitized
+                  }-${team.humanReadableId}-${System.currentTimeMillis()}"))(o))
+                _             <- EitherT.right[AppError](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
+                  .save(subscription.copy(
+                    parent = None,
+                    apiKey = subscription.apiKey.copy(
+                      clientId = createdApiKey.clientId,
+                      clientSecret = createdApiKey.clientSecret,
+                      clientName = createdApiKey.clientName)
+                  )))
+              } yield {
+                Json.obj("created" -> true)
+              }).value
           }
       })
     }

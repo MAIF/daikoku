@@ -22,16 +22,10 @@ import { SwitchButton } from '../../inputs';
 import { t, Translation } from '../../../locales';
 
 function TeamApiKeysForApiComponent(props) {
-  const [state, setState] = useState({
-    loading: true,
-    api: { name: '--', possibleUsagePlans: [] },
-    apiTeam: null,
-    subscriptions: [],
-    searched: '',
-    selectedPage: 0,
-    offset: 0,
-    pageNumber: 5,
-  });
+  const [api, setApi] = useState({ name: '--', possibleUsagePlans: [] })
+  const [apiTeam, setApiTeam] = useState();
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [searched, setSearched] = useState('');
 
   const location = useLocation()
 
@@ -39,11 +33,13 @@ function TeamApiKeysForApiComponent(props) {
     Promise.all([
       Services.getTeamVisibleApi(props.currentTeam._id, props.match.params.apiId),
       Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id),
-    ]).then(([api, subscriptions]) =>
+    ]).then(([api, subscriptions]) => {
+      setSubscriptions(subscriptions)
+      setApi(api)
       Services
         .team(api.team)
-        .then(apiTeam => setState({ ...state, api, apiTeam, subscriptions, loading: false }))
-    );
+        .then(apiTeam => setApiTeam(apiTeam))
+    });
   }, [location])
 
   const updateCustomName = (subscription, customName) => {
@@ -59,7 +55,7 @@ function TeamApiKeysForApiComponent(props) {
       .then(() =>
         Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id)
       )
-      .then((subscriptions) => setState({ ...state, subscriptions }));
+      .then(subs => setSubscriptions(subs));
   };
 
   const makeUniqueApiKey = subscription => {
@@ -68,7 +64,7 @@ function TeamApiKeysForApiComponent(props) {
         if (ok)
           Services.makeUniqueApiKey(props.currentTeam._id, subscription._id)
             .then(() => Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id))
-            .then(subscriptions => setState({ ...state, subscriptions }))
+        then(subs => setSubscriptions(subs));
       })
   }
 
@@ -94,7 +90,7 @@ function TeamApiKeysForApiComponent(props) {
       .then(() =>
         Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id)
       )
-      .then((subscriptions) => setState({ ...state, subscriptions }));
+      .then(subs => setSubscriptions(subs));
   };
 
   const regenerateApiKeySecret = (subscription) => {
@@ -116,7 +112,7 @@ function TeamApiKeysForApiComponent(props) {
                 props.currentTeam._id
               )
             )
-            .then((subscriptions) => setState({ ...state, subscriptions }))
+            .then(subs => setSubscriptions(subs))
             .then(() => toastr.success('secret reseted successfully'));
         }
       });
@@ -124,7 +120,7 @@ function TeamApiKeysForApiComponent(props) {
 
   const currentPlan = (subscription) => {
     try {
-      return state.api.possibleUsagePlans.filter((p) => p._id === subscription.plan)[0];
+      return api.possibleUsagePlans.filter((p) => p._id === subscription.plan)[0];
     } catch (e) {
       return '--';
     }
@@ -132,20 +128,20 @@ function TeamApiKeysForApiComponent(props) {
 
   const showApiKey = CanIDoAction(props.connectedUser, read, apikey, props.currentTeam);
 
-  const searched = state.searched.trim().toLowerCase();
+  const search = searched.trim().toLowerCase();
   const filteredApiKeys =
-    searched === ''
-      ? state.subscriptions
-      : state.subscriptions.filter(subs => {
+    search === ''
+      ? subscriptions
+      : subscriptions.filter(subs => {
         const plan = currentPlan(subs)
 
-        if (plan && plan.customName && plan.customName.toLowerCase().includes(searched)) {
+        if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
           return true;
-        } else if (subs.customName && subs.customName.toLowerCase().includes(searched)) {
+        } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
           return true;
         }
         else {
-          return formatPlanType(currentPlan(subs)).toLowerCase().includes(searched);
+          return formatPlanType(currentPlan(subs)).toLowerCase().includes(search);
         }
       });
 
@@ -170,9 +166,9 @@ function TeamApiKeysForApiComponent(props) {
       title={`${props.currentTeam.name} - ApiKeys`}
       tab="ApiKeys"
       apiId={props.match.params.apiId}
-      isLoading={!state.apiTeam}>
+      isLoading={!apiTeam}>
       <Can I={read} a={apikey} team={props.currentTeam} dispatchError>
-        {state.apiTeam && (
+        {api && apiTeam ?
           <div className="row">
             <div className="col-12 d-flex align-items-center">
               <h1>
@@ -181,9 +177,9 @@ function TeamApiKeysForApiComponent(props) {
                 </Translation>
                 &nbsp;
                 <Link
-                  to={`/${state.apiTeam._humanReadableId}/${state.api._humanReadableId}`}
+                  to={`/${apiTeam._humanReadableId}/${api._humanReadableId}`}
                   className="cursor-pointer underline-on-hover a-fake">
-                  {state.api.name}
+                  {api.name}
                 </Link>
               </h1>
             </div>
@@ -193,10 +189,8 @@ function TeamApiKeysForApiComponent(props) {
                 className="form-control col-5"
                 placeholder={t('Search your apiKey...', props.currentLanguage)}
                 aria-label="Search your apikey"
-                value={state.searched}
-                onChange={(e) =>
-                  setState({ ...state, searched: e.target.value, selectedPage: 0, offset: 0 })
-                }
+                value={searched}
+                onChange={e => setSearched(e.target.value)}
               />
             </div>
 
@@ -206,7 +200,7 @@ function TeamApiKeysForApiComponent(props) {
                 items={sortedApiKeys}
                 count={5}
                 formatter={(subscription) => {
-                  const plan = currentPlan(subscription);
+                  const plan = currentPlan(subscription)
 
                   return (
                     <ApiKeyCard
@@ -218,7 +212,7 @@ function TeamApiKeysForApiComponent(props) {
                       subscription={subscription}
                       showApiKey={showApiKey}
                       plan={plan}
-                      api={state.api}
+                      api={api}
                       updateCustomName={(name) => updateCustomName(subscription, name)}
                       archiveApiKey={() => archiveApiKey(subscription)}
                       makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
@@ -226,14 +220,14 @@ function TeamApiKeysForApiComponent(props) {
                         toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)
                       }
                       regenerateSecret={() => regenerateApiKeySecret(subscription)}
-                      disableRotation={state.api.visibility === 'AdminOnly'}
+                      disableRotation={api.visibility === 'AdminOnly'}
                     />
                   );
                 }}
               />
             </div>
           </div>
-        )}
+          : null}
       </Can>
     </TeamBackOffice>
   );
@@ -346,7 +340,7 @@ const ApiKeyCard = ({
   return (
     <div className="col-12 col-sm-6 col-md-4 mb-2">
       <div className="card">
-        <div className="card-header">
+        <div className="card-header" style={{ position: 'relative' }}>
           <div className="d-flex align-items-center justify-content-between">
             {!settingMode &&
               (!editMode ? (
@@ -393,24 +387,23 @@ const ApiKeyCard = ({
                   </div>
                 </div>
               ))}
-            {settingMode && (
+            {settingMode ?
               <h3>
                 <Translation i18nkey="ApiKey rotation" language={currentLanguage}>
                   ApiKey rotation
                 </Translation>
               </h3>
-            )}
+              :
+              <span className="badge badge-secondary" style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}>
+                {Option(plan.customName).getOrElse(formatPlanType(plan))}
+              </span>
+            }
           </div>
         </div>
-        <div className="card-body">
+        <div className="card-body" style={{ margin: 0 }}>
           {!settingMode && (
             <div>
-              <div className="d-flex justify-content-between mb-3">
-                <div className="flex-grow-1 justify-content-around">
-                  <span className="badge badge-secondary">
-                    {Option(plan.customName).getOrElse(formatPlanType(plan))}
-                  </span>
-                </div>
+              <div className="d-flex justify-content-end mb-3">
                 <div className="d-flex justify-content-around">
                   {!subscription.parent && <BeautifulTitle title={t('Reset secret', currentLanguage, false, 'Reset secret')}>
                     <button

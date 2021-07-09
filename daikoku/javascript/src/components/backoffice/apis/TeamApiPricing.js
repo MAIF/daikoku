@@ -1192,7 +1192,6 @@ export class TeamApiPricing extends Component {
         authorizedEntities: [],
       };
     }
-    console.log(this.props)
     const flow = [
       '_id',
       'type',

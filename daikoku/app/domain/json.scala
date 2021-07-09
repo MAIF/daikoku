@@ -2413,7 +2413,8 @@ object json {
           ApiSubscriptionDemand(
             api = (json \ "api").as(ApiIdFormat),
             plan = (json \ "plan").as(UsagePlanIdFormat),
-            team = (json \ "team").as(TeamIdFormat)
+            team = (json \ "team").as(TeamIdFormat),
+            parentSubscriptionId = (json \ "parentSubscriptionId").asOpt(ApiSubscriptionIdFormat)
           )
         )
       } recover {
@@ -2423,7 +2424,10 @@ object json {
     override def writes(o: ApiSubscriptionDemand): JsValue = Json.obj(
       "api" -> ApiIdFormat.writes(o.api),
       "plan" -> UsagePlanIdFormat.writes(o.plan),
-      "team" -> TeamIdFormat.writes(o.team)
+      "team" -> TeamIdFormat.writes(o.team),
+      "parentSubscriptionId" -> o.parentSubscriptionId.map(ApiSubscriptionIdFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val ApiKeyDeletionInformationFormat = new Format[ApiKeyDeletionInformation] {
