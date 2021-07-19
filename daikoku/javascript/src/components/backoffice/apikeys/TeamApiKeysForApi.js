@@ -177,7 +177,7 @@ function TeamApiKeysForApiComponent(props) {
                 </Translation>
                 &nbsp;
                 <Link
-                  to={`/${apiTeam._humanReadableId}/${api._humanReadableId}`}
+                  to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
                   className="cursor-pointer underline-on-hover a-fake">
                   {api.name}
                 </Link>

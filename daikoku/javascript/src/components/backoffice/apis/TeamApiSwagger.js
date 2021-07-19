@@ -8,7 +8,7 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
   let unsubscribe = () => {};
 
   useEffect(() => {
-    if (value.swagger.content) {
+    if (value.swagger && value.swagger.content) {
       initSwaggerEditor(value.swagger.content);
     } else {
       killSwaggerEditor();

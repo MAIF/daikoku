@@ -72,10 +72,16 @@ const StyleLogoAssetButton = (props) => {
 
 export class TeamApiInfo extends Component {
   formSchema = {
-    _id: {
-      type: 'string',
-      disabled: true,
-      props: { label: t('Id', this.props.currentLanguage), placeholder: '---' },
+    // _id: {
+    //   type: 'string',
+    //   disabled: true,
+    //   props: { label: t('Id', this.props.currentLanguage), placeholder: '---' },
+    // },
+    isDefault: {
+      type: 'bool',
+      props: {
+        label: t('team_api_info.isDefault', this.props.currentLanguage)
+      }
     },
     name: {
       type: 'string',
@@ -177,7 +183,8 @@ export class TeamApiInfo extends Component {
   };
 
   formFlow = [
-    '_id',
+    // '_id',
+    'isDefault',
     'published',
     'name',
     'nameAlreadyExists',

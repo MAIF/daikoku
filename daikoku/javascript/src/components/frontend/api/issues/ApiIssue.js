@@ -18,8 +18,8 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
       .then(() => toastr.success(t('Api saved', currentLanguage)));
   }
 
-  const { issueId } = useParams();
-  const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}`;
+  const { issueId, versionId } = useParams();
+  const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;
 
   return (
     <div className="container-fluid">
@@ -73,7 +73,7 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
                   connectedUser={props.connectedUser}
                   currentLanguage={currentLanguage}
                 />
-                <ApiIssues currentLanguage={currentLanguage} filter={filter} api={api} />
+                <ApiIssues currentLanguage={currentLanguage} filter={filter} api={api} versionId={versionId} />
               </>
             )}
           />

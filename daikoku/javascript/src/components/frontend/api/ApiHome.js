@@ -23,6 +23,7 @@ import { setError, openContactModal, updateUser } from '../../../core';
 import 'highlight.js/styles/monokai.css';
 import { Translation, t } from '../../../locales';
 import StarsButton from './StarsButton';
+import Select from 'react-select';
 window.hljs = hljs;
 
 const ApiDescription = ({ api }) => {
@@ -50,8 +51,11 @@ const ApiHeader = ({
   connectedUser,
   toggleStar,
   currentLanguage,
+  params
 }) => {
   const handleBtnEditClick = () => history.push(editUrl);
+
+  const [versions, setApiVersions] = useState([]);
 
   useEffect(() => {
     //fo custom header component
@@ -63,6 +67,9 @@ const ApiHeader = ({
         els.forEach((el) => el.removeEventListener('click', handleBtnEditClick, false));
       };
     }
+
+    Services.getAllApiVersions(ownerTeam._id, params.apiId)
+      .then(versions => setApiVersions(versions.map(v => ({ label: v, value: v }))))
   }, []);
 
   const EditButton = () => (
@@ -95,7 +102,19 @@ const ApiHeader = ({
           <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
             {api.name}
             <EditButton />
-            <div style={{ position: 'absolute', right: 0, bottom: 0 }}>
+            <div style={{ position: 'absolute', right: 0, bottom: 0 }} className="d-flex align-items-center">
+              <div style={{ minWidth: '125px', fontSize: 'initial' }}>
+                <Select
+                  name="versions-selector"
+                  value={{ label: params.versionId, value: params.versionId }}
+                  options={versions}
+                  onChange={e => history.push(`/${params.teamId}/${params.apiId}/${params.versionId}`)}
+                  classNamePrefix="reactSelect"
+                  className="mr-2"
+                  menuPlacement="auto"
+                  menuPosition="fixed"
+                />
+              </div>
               <StarsButton
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
@@ -123,6 +142,7 @@ const ApiHomeComponent = ({
   tenant,
 }) => {
   const [api, setApi] = useState(undefined);
+  const [apiVersion, setApiVersion] = useState(match.params.versionId);
   const [subscriptions, setSubscriptions] = useState([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
   const [ownerTeam, setOwnerTeam] = useState(undefined);
@@ -140,8 +160,8 @@ const ApiHomeComponent = ({
 
   const updateSubscriptions = (apiId) => {
     Promise.all([
-      Services.getVisibleApi(apiId),
-      Services.getMySubscriptions(apiId),
+      Services.getVisibleApi(apiId, apiVersion),
+      Services.getMySubscriptions(apiId, apiVersion),
       Services.myTeams(),
     ]).then(([api, { subscriptions, requests }, teams]) => {
       if (api.error) {
@@ -201,7 +221,7 @@ const ApiHomeComponent = ({
   const editUrl = (api) => {
     return Option(myTeams.find((team) => api.team === team._id)).fold(
       () => '#',
-      (adminTeam) => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`
+      (adminTeam) => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}`
     );
   };
 
@@ -226,6 +246,7 @@ const ApiHomeComponent = ({
     return null;
   }
   const apiId = api._humanReadableId;
+  const versionId = apiVersion;
   const teamId = match.params.teamId;
 
   //for contact modal
@@ -245,6 +266,7 @@ const ApiHomeComponent = ({
         connectedUser={connectedUser}
         toggleStar={toggleStar}
         currentLanguage={currentLanguage}
+        params={match.params}
       />
       <div className="container">
         <div className="row">
@@ -253,7 +275,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'description' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}`}>
                   <Translation i18nkey="Description" language={currentLanguage}>
                     Description
                   </Translation>
@@ -262,7 +284,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/pricing`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/pricing`}>
                   <Translation i18nkey="Plan" language={currentLanguage} isPlural={true}>
                     Plans
                   </Translation>
@@ -270,10 +292,9 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${
-                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                  }`}
-                  to={`/${match.params.teamId}/${apiId}/documentation`}>
+                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                    }`}
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/documentation`}>
                   <Translation i18nkey="Documentation" language={currentLanguage}>
                     Documentation
                   </Translation>
@@ -282,7 +303,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/redoc`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/redoc`}>
                   <Translation i18nkey="Api Reference" language={currentLanguage}>
                     Api Reference
                   </Translation>
@@ -291,7 +312,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/swagger`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/swagger`}>
                   <Translation i18nkey="Try it !" language={currentLanguage}>
                     Try it !
                   </Translation>
@@ -301,7 +322,7 @@ const ApiHomeComponent = ({
                 <li className="nav-item">
                   <Link
                     className={`nav-link ${tab === 'news' ? 'active' : ''}`}
-                    to={`/${match.params.teamId}/${apiId}/news`}>
+                    to={`/${match.params.teamId}/${apiId}/${versionId}/news`}>
                     <Translation i18nkey="News" language={currentLanguage}>
                       News
                     </Translation>
@@ -311,7 +332,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/issues`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/issues`}>
                   <Translation i18nkey="issues" language={currentLanguage}>
                     Issues
                   </Translation>
@@ -339,7 +360,7 @@ const ApiHomeComponent = ({
                 }
                 redirectToApiKeysPage={(team) => {
                   history.push(
-                    `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}`
+                    `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`
                   );
                 }}
               />
@@ -415,6 +436,7 @@ const ApiHomeComponent = ({
                 api={api}
                 ownerTeam={ownerTeam}
                 match={match}
+                versionId={match.params.versionId}
                 currentLanguage={currentLanguage}
               />
             )}

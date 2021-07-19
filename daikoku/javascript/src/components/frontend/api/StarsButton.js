@@ -16,13 +16,10 @@ const StarsButton = ({ stars, toggleStar, starred, currentLanguage, connectedUse
     {connectedUser && !connectedUser.isGuest ? (
       <>
         <button
-          className="btn flex-row align-items-center"
+          className="btn flex-row align-items-center pr-2"
           style={{ color: 'var(--btn-bg-color, "#000")', padding: '0' }}
           onClick={toggleStar}>
           <i className={`${starred ? 'fas' : 'far'} fa-star pl-2`} />
-          <span className="px-2">
-            {starred ? t('unstar', currentLanguage) : t('star', currentLanguage)}
-          </span>
         </button>
         <div className="px-2 d-flex align-items-center" style={{ backgroundColor: '#fff' }}>
           <span>{stars}</span>

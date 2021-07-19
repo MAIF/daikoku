@@ -1323,6 +1323,7 @@ case class Api(
     description: String,
     currentVersion: Version = Version("1.0.0"),
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
+    isDefault: Boolean = false,
     lastUpdate: DateTime,
     published: Boolean = false,
     testing: Testing = Testing(),
@@ -1363,7 +1364,8 @@ case class Api(
     "issues" -> SeqIssueIdFormat.writes(issues),
     "issuesTags" -> SetApiTagFormat.writes(issuesTags),
     "stars" -> stars,
-    "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
+    "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue],
+    "isDefault" -> isDefault
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized

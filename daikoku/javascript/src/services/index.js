@@ -29,8 +29,8 @@ export function oneOfMyTeam(id) {
   }).then((r) => r.json());
 }
 
-export function getVisibleApi(id) {
-  return fetch(`/api/me/visible-apis/${id}`, {
+export function getVisibleApi(id, version) {
+  return fetch(`/api/me/visible-apis/${id}${version ? `?version=${version}` : ''}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -209,8 +209,8 @@ export function getDocPage(api, id) {
   }).then((r) => r.json());
 }
 
-export function getDocDetails(api) {
-  return fetch(`/api/apis/${api}/doc`, {
+export function getDocDetails(api, version) {
+  return fetch(`/api/apis/${api}/doc${version ? `?version=${version}` : ''}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -241,8 +241,8 @@ export function getTeamSubscriptions(api, team) {
   }).then((r) => r.json());
 }
 
-export function getMySubscriptions(apiId) {
-  return fetch(`/api/me/subscriptions/${apiId}`, {
+export function getMySubscriptions(apiId, version) {
+  return fetch(`/api/me/subscriptions/${apiId}${version ? `?version=${version}` : ''}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -380,8 +380,8 @@ export function teamHome(teamId) {
   }).then((r) => r.json());
 }
 
-export function teamApi(teamId, apiId) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}`, {
+export function teamApi(teamId, apiId, version) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}${version ? `?version=${version}` : ''}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -592,8 +592,8 @@ export function deleteTeamApi(teamId, id) {
   }).then((r) => r.json());
 }
 
-export function saveTeamApi(teamId, api) {
-  return fetch(`/api/teams/${teamId}/apis/${api._id}`, {
+export function saveTeamApi(teamId, api, version) {
+  return fetch(`/api/teams/${teamId}/apis/${api._id}${version ? `?version=${version}` : ''}`, {
     method: 'PUT',
     credentials: 'include',
     headers: {
@@ -1677,8 +1677,8 @@ export function createUserFromLDAP(teamId, email) {
   }).then((r) => r.json());
 }
 
-export function getAPIPosts(apiId, offset = 0, limit = 1) {
-  return fetch(`/api/apis/${apiId}/posts?offset=${offset}&limit=${limit}`, {
+export function getAPIPosts(apiId, offset = 0, limit = 1, version) {
+  return fetch(`/api/apis/${apiId}/posts?offset=${offset}&limit=${limit}${version ? `&version=${version}` : ''}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -1719,8 +1719,8 @@ export function getDaikokuVersion() {
   }).then((r) => r.json());
 }
 
-export function getAPIIssues(apiId) {
-  return fetch(`/api/apis/${apiId}`, {
+export function getAPIIssues(apiId, version) {
+  return fetch(`/api/apis/${apiId}/issues${version ? `?version=${version}` : ''}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -1844,4 +1844,17 @@ export function extendApiKey(apiId, apiKeyId, teams, plan) {
 export function getAllTeamSubscriptions(team) {
   return fetch(`/api/subscriptions/teams/${team}`)
     .then(r => r.json());
+}
+
+export function getAllApiVersions(teamId, apiId) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
+    ...POST_HEADERS,
+    method: 'GET'
+  })
+    .then(r => r.json())
+}
+
+export function getDefaultApiVersion(apiId) {
+  return fetch(`/api/apis/${apiId}/default_version`)
+    .then(r => r.json())
 }

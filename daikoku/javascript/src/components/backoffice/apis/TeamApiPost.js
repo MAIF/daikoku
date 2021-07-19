@@ -42,7 +42,7 @@ export class TeamApiPost extends React.Component {
   }
 
   loadPosts = (offset = 0, limit = 1) => {
-    Services.getAPIPosts(this.props.api._id, offset, limit).then((data) => {
+    Services.getAPIPosts(this.props.api._id, offset, limit, this.props.versionId).then((data) => {
       this.setState({
         posts: [
           ...this.state.posts,

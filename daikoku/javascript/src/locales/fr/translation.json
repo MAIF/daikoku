@@ -874,8 +874,6 @@
   "issues.closed_on": "a été fermé le",
   "issues.nothing_matching_filter": "Aucun problème correspondant aux filtres",
   "Edit": "Editer",
-  "star": "Étoiler",
-  "unstar": "Supprimer l'étoile",
   "Kafka host validation": "Validation de l'hôte Kafka",
   "kafka.audit.hostValidation.help": "Désactiver la validation nom d'hôte du serveur à l'aide du certificat du serveur par Kafka",
   "team_member.no_pending_members": "Vous n'avez pas encore invité de collaborateurs",
@@ -903,7 +901,6 @@
   "audittrail.export.label": "Exporter la piste d'audit",
   "Authorized entities": "Authorized entities",
   "Authorized.entities.placeholder": "Selectionnez les service groupes de services et/ou les services Otoroshi",
-  "authorized.entities.help": "Selectionnez les service groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera authorizée d'y accéder",
   "teamapi.new_version": "Créer une version",
   "authorized.entities.help": "Selectionnez les service groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera authorizée d'y accéder",
   "apikey_select_modal.title": "Récupération d'une api key",
@@ -915,5 +912,6 @@
   "aggregation.api_key.security.notification": "L'agrégation des clés API est une utilisation avancée. Gardez à l'esprit que les métadonnées et les quotas seront partagés entre chaque clé d'api parente et ses clés d'api agrégées. Daikoku n'appliquera aucun contrôle en cas de conflit de métadonnées.",
   "I understood": "J'ai compris",
   "team_apikey_for_api.make_unique": "Rendre unique",
-  "team_apikey_for_api.ask_for_make_unique": "Êtes-vous sûr de vouloir séparer cette api key de la clé parent et d'en créer une nouvelle ?"
+  "team_apikey_for_api.ask_for_make_unique": "Êtes-vous sûr de vouloir séparer cette api key de la clé parent et d'en créer une nouvelle ?",
+  "team_api_info.isDefault": "Utiliser comme dernière version"
 }

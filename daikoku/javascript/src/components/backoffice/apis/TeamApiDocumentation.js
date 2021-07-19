@@ -132,7 +132,7 @@ export class TeamApiDocumentation extends Component {
   };
 
   updateDetails = () => {
-    return Services.getDocDetails(this.props.value._id).then((details) => {
+    return Services.getDocDetails(this.props.value._id, this.props.versionId).then((details) => {
       return this.setState({ details });
     });
   };

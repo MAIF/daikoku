@@ -3,7 +3,7 @@ import { t } from '../../../locales';
 import * as Services from '../../../services/index';
 import { converter } from '../../../services/showdown';
 
-export function ApiPost({ api, currentLanguage }) {
+export function ApiPost({ api, currentLanguage, versionId }) {
   const [posts, setPosts] = useState([]);
 
   const [pagination, setPagination] = useState({
@@ -13,7 +13,7 @@ export function ApiPost({ api, currentLanguage }) {
   });
 
   useEffect(() => {
-    Services.getAPIPosts(api._id, pagination.offset, pagination.limit).then((data) => {
+    Services.getAPIPosts(api._id, pagination.offset, pagination.limit, versionId).then((data) => {
       setPosts(
         [...posts, ...data.posts].reduce((acc, post) => {
           if (!acc.find((p) => p._id === post._id)) acc.push(post);

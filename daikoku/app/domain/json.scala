@@ -1949,7 +1949,8 @@ object json {
               .asOpt(SetApiTagFormat)
               .getOrElse(Set.empty),
             stars = (json \ "stars").asOpt[Int].getOrElse(0),
-            parent = (json \ "parent").asOpt(ApiIdFormat)
+            parent = (json \ "parent").asOpt(ApiIdFormat),
+            isDefault = (json \ "isDefault").asOpt[Boolean].getOrElse(false)
           )
         )
       } recover {
@@ -1992,7 +1993,8 @@ object json {
       "parent" -> o.parent
         .map(ApiIdFormat.writes)
         .getOrElse(JsNull)
-        .as[JsValue]
+        .as[JsValue],
+      "isDefault" -> o.isDefault
     )
   }
 

@@ -236,7 +236,7 @@ export function ApiTimelineIssue({
                   {t('Edit', currentLanguage)}
                 </button>
                 <Link
-                  to={`/${team._humanReadableId}/${api._humanReadableId}/issues/new`}
+                  to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/new`}
                   style={{ whiteSpace: 'nowrap' }}>
                   <button className="btn btn-success">
                     {t('issues.new_issue', currentLanguage)}

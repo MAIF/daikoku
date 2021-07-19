@@ -67,7 +67,7 @@ class TeamApisComponent extends Component {
           <div className="btn-group">
             <Link
               rel="noopener"
-              to={`/${this.props.currentTeam._humanReadableId}/${api._humanReadableId}`}
+              to={`/${this.props.currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
               className="btn btn-sm btn-access-negative"
               title="View this Api">
               <i className="fas fa-eye" />
@@ -76,7 +76,7 @@ class TeamApisComponent extends Component {
               <Can I={read} a={stat} team={this.props.currentTeam}>
                 <Link
                   key={`consumption-${api._humanReadableId}`}
-                  to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}`}
+                  to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}/${api.currentVersion}`}
                   className="btn btn-sm btn-access-negative"
                   title={t('View this api consumption', this.props.currentLanguage)}>
                   <i className="fas fa-chart-bar" />
@@ -87,7 +87,7 @@ class TeamApisComponent extends Component {
               <Can I={manage} a={API} team={this.props.currentTeam}>
                 <Link
                   key={`apikeys-${api._humanReadableId}`}
-                  to={`/${this.props.currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}`}
+                  to={`/${this.props.currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}/${api.currentVersion}`}
                   className="btn btn-sm btn-access-negative"
                   title={t('View this api subscriptions', this.props.currentLanguage)}>
                   <i className="fas fa-key" />
@@ -97,7 +97,7 @@ class TeamApisComponent extends Component {
             <Can I={manage} a={API} team={this.props.currentTeam}>
               <Link
                 key={`edit-${api._humanReadableId}`}
-                to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/infos`}
+                to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`}
                 className="btn btn-sm btn-access-negative"
                 title="Edit this Api">
                 <i className="fas fa-edit" />

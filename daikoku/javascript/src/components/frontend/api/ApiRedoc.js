@@ -10,8 +10,9 @@ export class ApiRedoc extends Component {
   componentDidMount() {
     const { tenant, connectedUser } = this.props;
     const showSwagger = !(connectedUser.isGuest && tenant.apiReferenceHideForGuest);
+
     if (showSwagger) {
-      const url = `${window.location.origin}/api/teams/${this.props.teamId}/apis/${this.props.api._id}/swagger.json`;
+      const url = `${window.location.origin}/api/teams/${this.props.teamId}/apis/${this.props.api._id}/swagger.json?version=${this.props.match.params.versionId}`;
 
       fetch(url).then((res) => {
         if (res.status > 300)
