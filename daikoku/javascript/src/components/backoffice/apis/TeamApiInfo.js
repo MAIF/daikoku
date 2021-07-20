@@ -224,27 +224,15 @@ export class TeamApiInfo extends Component {
   };
 
   render() {
-    if (this.props.value.visibility === 'AdminOnly') {
-      return (
-        <React.Suspense fallback={<Spinner />}>
-          <LazyForm
-            flow={this.adminFormFlow}
-            schema={this.adminFormSchema}
-            value={this.props.value}
-            onChange={this.props.onChange}
-          />
-        </React.Suspense>
-      );
-    }
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          flow={this.formFlow}
-          schema={this.formSchema}
-          value={this.props.value}
-          onChange={this.props.onChange}
-        />
-      </React.Suspense>
-    );
+    const isAdminOnly = this.props.value.visibility === 'AdminOnly';
+
+    return <React.Suspense fallback={<Spinner />}>
+      <LazyForm
+        flow={isAdminOnly ? this.adminFormFlow : this.formFlow}
+        schema={isAdminOnly ? this.adminFormSchema : this.formSchema}
+        value={this.props.value}
+        onChange={this.props.onChange}
+      />
+    </React.Suspense>
   }
 }

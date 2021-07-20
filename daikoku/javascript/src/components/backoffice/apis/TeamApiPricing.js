@@ -11,6 +11,8 @@ import { t, Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { Help } from '../../inputs';
 import { toastr } from 'react-redux-toastr';
+import { connect } from 'react-redux';
+import { openApiSelectModal } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -138,7 +140,7 @@ const OtoroshiServicesAndGroupSelector = props => {
   );
 };
 
-export class TeamApiPricing extends Component {
+class TeamApiPricingComponent extends Component {
   state = {
     selected: this.props.value.possibleUsagePlans[0],
     otoroshiSettings: [],
@@ -1379,6 +1381,15 @@ export class TeamApiPricing extends Component {
     this.select(newPlan);
   };
 
+  importPlan = () => {
+    this.props.openApiSelectModal({
+      currentLanguage: this.props.currentLanguage,
+      api: this.props.value,
+      teamId: this.props.teamId,
+      onClose: this.props.reload
+    });
+  }
+
   clonePlan = () => {
     let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
     const clone = {
@@ -1444,6 +1455,8 @@ export class TeamApiPricing extends Component {
   };
 
   planToOption = (plan) => {
+    if (!plan)
+      return undefined
     return {
       label:
         this.props.value.defaultUsagePlan === plan._id ? (
@@ -1466,55 +1479,41 @@ export class TeamApiPricing extends Component {
   render() {
     if (this.props.value === null) return null;
 
-    if (!this.props.value.possibleUsagePlans.length) {
-      return (
-        <button onClick={this.addNewPlan} type="button" className="btn btn-sm btn-outline-primary">
-          <i className="fas fa-plus mr-1" />
-          <Translation i18nkey="add a new plan" language={this.props.currentLanguage}>
-            add a new plan
-          </Translation>
-        </button>
-      );
-    }
-
     return (
       <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 100 }}>
         <div
-          style={{
-            padding: 10,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 10,
-            paddingBottom: 20,
-            borderBottom: '1px solid #DFDFDF',
-          }}>
+          className="d-flex align-items-center justify-space-between py-3 mb-2"
+          style={{ borderBottom: '1px solid #DFDFDF' }}>
           {this.props.value.visibility !== 'AdminOnly' && (
-            <button
-              onClick={this.addNewPlan}
-              type="button"
-              className="btn btn-sm btn-outline-primary float-right"
-              style={{ minWidth: '140px' }}>
-              <i className="fas fa-plus mr-1" />
-              <Translation i18nkey="add a new plan" language={this.props.currentLanguage}>
-                add a new plan
-              </Translation>
-            </button>
+            <>
+              <button
+                onClick={this.addNewPlan}
+                type="button"
+                className="btn btn-outline-primary mr-1"
+                style={{ flex: 1, minWidth: '140px' }}>
+                {t('add a new plan', this.props.currentLanguage)}
+              </button>
+              <button
+                onClick={this.importPlan}
+                type="button"
+                className="btn btn-outline-primary mr-1"
+                style={{ flex: 1, minWidth: '140px', marginTop: 0 }}>
+                {t('import a plan', this.props.currentLanguage)}
+              </button>
+            </>
           )}
-          <div style={{ width: '100%', marginLeft: 10 }}>
-            <Select
-              clearable={false}
-              style={{ width: '100%' }}
-              value={this.planToOption(
-                this.state.selected ? this.state.selected : this.props.value.possibleUsagePlans[0]
-              )}
-              placeholder="Select a plan to edit it"
-              options={this.props.value.possibleUsagePlans.map(this.planToOption)}
-              onChange={(e) => this.select(e.plan)}
-              classNamePrefix="reactSelect"
-              className="reactSelect"
-            />
-          </div>
+          <Select
+            clearable={false}
+            style={{ flex: 2 }}
+            value={this.planToOption(
+              this.state.selected ? this.state.selected : this.props.value.possibleUsagePlans[0]
+            )}
+            placeholder="Select a plan to edit it"
+            options={this.props.value.possibleUsagePlans.map(this.planToOption)}
+            onChange={(e) => this.select(e.plan)}
+            classNamePrefix="reactSelect"
+            className="reactSelect w-100"
+          />
         </div>
         <div className="col-12">
           {!!this.state.selected && (
@@ -1830,3 +1829,15 @@ const OtoroshiPathInput = (props) => {
     </div>
   );
 };
+
+
+const mapStateToProps = (state) => ({
+  ...state.context,
+  error: state.error,
+});
+
+const mapDispatchToProps = {
+  openApiSelectModal: (team) => openApiSelectModal(team),
+};
+
+export const TeamApiPricing = connect(mapStateToProps, mapDispatchToProps)(TeamApiPricingComponent);

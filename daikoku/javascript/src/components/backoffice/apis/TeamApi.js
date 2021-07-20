@@ -73,19 +73,10 @@ function TeamApiComponent(props) {
       return Services.createTeamApi(props.currentTeam._id, editedApi)
         .then((api) => {
           if (api.name) {
-            toastr.success(
-              t(
-                'api.created.success',
-                props.currentLanguage,
-                false,
-                `Api "${api.name}" created`,
-                api.name
-              )
-            );
+            toastr.success(t('api.created.success', props.currentLanguage, false, `Api "${api.name}" created`, api.name));
             return api;
-          } else {
+          } else
             return Promise.reject(api.error);
-          }
         })
         .then((api) =>
           setState({ ...state, create: false, api }, () =>
@@ -96,9 +87,25 @@ function TeamApiComponent(props) {
         )
         .catch((error) => toastr.error(t(error, props.currentLanguage)));
     } else {
-      return Services.saveTeamApi(props.currentTeam._id, editedApi, apiVersion.value)
-        .then(() => toastr.success(t('Api saved', props.currentLanguage)))
-        .then(() => setState({ ...state, originalApi: editedApi }));
+      Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
+        .then(r => {
+          if (!r.exists)
+            return Services.saveTeamApi(props.currentTeam._id, editedApi, apiVersion.value)
+              .then(res => {
+                toastr.success(t('Api saved', props.currentLanguage))
+                return res;
+              })
+              .then(newApi => {
+                if (newApi._humanReadableId !== params.apiId)
+                  history.push(
+                    `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._humanReadableId}/${newApi.currentVersion}/infos`
+                  )
+                else
+                  setState({ ...state, originalApi: newApi })
+              })
+          else
+            toastr.error(`api with name "${editedApi.name}" already exists`)
+        });
     }
   }
 
@@ -215,9 +222,8 @@ function TeamApiComponent(props) {
     Services.createNewApiVersion(state.api._humanReadableId, props.currentTeam._id, newVersion)
       .then(res => {
         if (res.status === 201) {
-          toastr.success("New version of api created")
-          const parts = location.pathname.split("/")
-          history.push(`${parts.splice(0, parts.length - 1).join("/")}/${newVersion}`)
+          toastr.success("New version of api created");
+          history.push(`/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab}`)
         } else
           res.json()
             .then(data => toastr.error(data.error))
@@ -392,7 +398,7 @@ function TeamApiComponent(props) {
                         !!props.location.state.newApi
                       }
                       value={editedApi}
-                      onChange={(api) => setState({ ...state, api })}
+                      onChange={api => setState({ ...state, api })}
                     />
                   )}
                   {editedApi && tab === 'description' && (
@@ -427,6 +433,8 @@ function TeamApiComponent(props) {
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
                       tenant={props.tenant}
+                      reload={() => Services.teamApi(props.currentTeam._id, params.apiId, params.versionId)
+                        .then(api => setState({ ...state, api }))}
                     />
                   )}
                   {false && editedApi && tab === 'otoroshi' && (

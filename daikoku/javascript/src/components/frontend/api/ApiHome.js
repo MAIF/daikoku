@@ -51,7 +51,8 @@ const ApiHeader = ({
   connectedUser,
   toggleStar,
   currentLanguage,
-  params
+  params,
+  tab
 }) => {
   const handleBtnEditClick = () => history.push(editUrl);
 
@@ -103,18 +104,18 @@ const ApiHeader = ({
             {api.name}
             <EditButton />
             <div style={{ position: 'absolute', right: 0, bottom: 0 }} className="d-flex align-items-center">
-              <div style={{ minWidth: '125px', fontSize: 'initial' }}>
+              {versions.length > 1 && <div style={{ minWidth: '125px', fontSize: 'initial' }}>
                 <Select
                   name="versions-selector"
                   value={{ label: params.versionId, value: params.versionId }}
                   options={versions}
-                  onChange={e => history.push(`/${params.teamId}/${params.apiId}/${params.versionId}`)}
+                  onChange={e => history.push(`/${params.teamId}/${params.apiId}/${e.value}/${tab}`)}
                   classNamePrefix="reactSelect"
                   className="mr-2"
                   menuPlacement="auto"
                   menuPosition="fixed"
                 />
-              </div>
+              </div>}
               <StarsButton
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
@@ -142,7 +143,6 @@ const ApiHomeComponent = ({
   tenant,
 }) => {
   const [api, setApi] = useState(undefined);
-  const [apiVersion, setApiVersion] = useState(match.params.versionId);
   const [subscriptions, setSubscriptions] = useState([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
   const [ownerTeam, setOwnerTeam] = useState(undefined);
@@ -150,18 +150,18 @@ const ApiHomeComponent = ({
 
   useEffect(() => {
     updateSubscriptions(match.params.apiId);
-  }, [match.params.apiId]);
+  }, [match.params.apiId, match.params.versionId]);
 
   useEffect(() => {
     if (api) {
       Services.team(api.team).then((ownerTeam) => setOwnerTeam(ownerTeam));
     }
-  }, [api]);
+  }, [api, match.params.versionId]);
 
   const updateSubscriptions = (apiId) => {
     Promise.all([
-      Services.getVisibleApi(apiId, apiVersion),
-      Services.getMySubscriptions(apiId, apiVersion),
+      Services.getVisibleApi(apiId, match.params.versionId),
+      Services.getMySubscriptions(apiId, match.params.versionId),
       Services.myTeams(),
     ]).then(([api, { subscriptions, requests }, teams]) => {
       if (api.error) {
@@ -246,7 +246,7 @@ const ApiHomeComponent = ({
     return null;
   }
   const apiId = api._humanReadableId;
-  const versionId = apiVersion;
+  const versionId = match.params.versionId;
   const teamId = match.params.teamId;
 
   //for contact modal
@@ -267,6 +267,7 @@ const ApiHomeComponent = ({
         toggleStar={toggleStar}
         currentLanguage={currentLanguage}
         params={match.params}
+        tab={tab}
       />
       <div className="container">
         <div className="row">

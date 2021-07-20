@@ -18,7 +18,8 @@ export const MODAL_TYPES = {
   teamInvitation: Modals.TeamInvitationModal,
   joinTeamInvitation: Modals.JoinTeamInvitationModal,
   loginOrRegisterModal: Modals.LoginOrRegisterModal,
-  apiKeySelectModal: Modals.ApiKeySelectModal
+  apiKeySelectModal: Modals.ApiKeySelectModal,
+  apiSelectModal: Modals.ApiSelectModal
 };
 
 const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {

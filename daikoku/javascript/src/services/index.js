@@ -1852,9 +1852,24 @@ export function getAllApiVersions(teamId, apiId) {
     method: 'GET'
   })
     .then(r => r.json())
+    .then(r => r.sort((a, b) => a < b ? 1 : -1))
 }
 
 export function getDefaultApiVersion(apiId) {
   return fetch(`/api/apis/${apiId}/default_version`)
     .then(r => r.json())
+}
+
+export function getAllPlanOfApi(teamId, apiId) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/plans`)
+    .then(r => r.json());
+}
+
+export function cloneApiPlan(teamId, apiId, fromApi, plan) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/plans`, {
+    ...POST_HEADERS,
+    body: JSON.stringify({
+      plan, api: fromApi
+    })
+  })
 }

@@ -11,3 +11,4 @@ export * from './TeamInvitationModal';
 export * from './JoinTeamInvitationModal';
 export * from './LoginOrRegisterModal';
 export * from './ApiKeySelectModal';
+export * from './ApiSelectModal';

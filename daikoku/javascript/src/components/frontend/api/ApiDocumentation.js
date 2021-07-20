@@ -42,26 +42,27 @@ export class ApiDocumentation extends Component {
     Services.getDocDetails(this.props.api._id, this.props.match.params.versionId).then((details) => {
       this.setState({ details });
       const pageId = this.props.match.params.pageId || details.pages[0];
-      Services.getDocPage(this.props.api._id, pageId).then((page) => {
-        if (page.remoteContentEnabled) {
-          this.setState({
-            content: null,
-            contentType: page.contentType,
-            remoteContent: {
-              url: page.contentUrl,
-            },
-          });
-        } else {
-          this.setState({
-            content: page.content,
-            contentType: page.contentType,
-            remoteContent: null,
-          });
-          window.$('pre code').each((i, block) => {
-            hljs.highlightBlock(block);
-          });
-        }
-      });
+      if (pageId)
+        Services.getDocPage(this.props.api._id, pageId).then((page) => {
+          if (page.remoteContentEnabled) {
+            this.setState({
+              content: null,
+              contentType: page.contentType,
+              remoteContent: {
+                url: page.contentUrl,
+              },
+            });
+          } else {
+            this.setState({
+              content: page.content,
+              contentType: page.contentType,
+              remoteContent: null,
+            });
+            window.$('pre code').each((i, block) => {
+              hljs.highlightBlock(block);
+            });
+          }
+        });
     });
   };
 

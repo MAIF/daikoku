@@ -444,6 +444,7 @@
   "Cost per request": "Coût par requête",
   "delete.plan.confirm": "Êtes-vous certain de vouloir supprimer ce plan ?",
   "add a new plan": "Ajouter un nouveau plan",
+  "import a plan": "Importer un plan",
   "Make default plan": "Plan par défaut",
   "Make it private": "Le rendre privé",
   "Make it public": "Le rendre public",
@@ -913,5 +914,6 @@
   "I understood": "J'ai compris",
   "team_apikey_for_api.make_unique": "Rendre unique",
   "team_apikey_for_api.ask_for_make_unique": "Êtes-vous sûr de vouloir séparer cette api key de la clé parent et d'en créer une nouvelle ?",
-  "team_api_info.isDefault": "Utiliser comme dernière version"
+  "team_api_info.isDefault": "Utiliser comme dernière version",
+  "api_select_modal.title": "Choisir un plan"
 }

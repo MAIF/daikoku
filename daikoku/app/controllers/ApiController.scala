@@ -1274,14 +1274,24 @@ class ApiController(DaikokuAction: DaikokuAction,
 
       val maybeHumanReadableId = name.urlPathSegmentSanitized
 
+      val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+
       id match {
-        case Some(value) => env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId, "_id" -> Json.obj("$ne" -> value)))
-          .map(exists => Ok(Json.obj("exists" -> exists)))
-        case None => env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId))
+        case Some(value) =>
+          apiRepo.findByIdNotDeleted(value)
+            .flatMap {
+              case None => FastFuture.successful(Ok(Json.obj("exists" -> false)))
+              case Some(api) =>
+                val v = api.parent match {
+                  case Some(parent) => parent.value
+                  case None => value
+                }
+                apiRepo
+                  .exists(Json.obj("parent" -> JsNull, "_humanReadableId" -> maybeHumanReadableId, "_id" -> Json.obj("$ne" -> v)))
+                  .map(exists => Ok(Json.obj("exists" -> exists)))
+            }
+        case None => apiRepo
+          .exists(Json.obj("parent" -> JsNull, "_humanReadableId" -> maybeHumanReadableId))
           .map(exists => Ok(Json.obj("exists" -> exists)))
       }
     }
@@ -1581,6 +1591,20 @@ class ApiController(DaikokuAction: DaikokuAction,
                 } yield {
                   ctx.setCtxValue("api.name", api.name)
                   ctx.setCtxValue("api.id", api.id)
+
+                  if(oldApi.name != apiToSave.name) {
+                    env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+                      .find(Json.obj("_humanReadableId" -> oldApi.humanReadableId))
+                      .map { apis =>
+                        for {
+                         _ <- Future.sequence(apis.map(api => env.dataStore.apiRepo
+                                                          .forTenant(ctx.tenant.id)
+                          .save(api.copy(name = apiToSave.name))))
+                        } yield {
+                           Ok(apiToSave.asJson)
+                        }
+                      }
+                  }
                   Ok(apiToSave.asJson)
                 }
             }
@@ -2231,7 +2255,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         case Some(newVersion) =>
           val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
           apiRepo
-            .findOne(Json.obj("$or" -> Json.arr("_humanReadableId" -> apiId, "_id" -> apiId), "parent" -> JsNull))
+            .findOne(Json.obj("$or" -> Json.arr(Json.obj("_humanReadableId" -> apiId), Json.obj("_id" -> apiId)), "parent" -> JsNull))
             .flatMap {
               case None => FastFuture.successful(AppError.render(ApiNotFound))
               case Some(api) if api.currentVersion.value == newVersion => FastFuture.successful(AppError.render(ApiVersionConflict))
@@ -2307,6 +2331,58 @@ class ApiController(DaikokuAction: DaikokuAction,
               }
           case Some(api) => FastFuture.successful(Ok(Json.obj("defaultVersion" -> api.currentVersion.asJson)))
         }
+    }
+  }
+
+  def getAllPlan(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+    TeamApiEditorOnly(
+      AuditTrailEvent(s"@{user.name} has requested all plan of api @{api.id} with @{team.name} - @{team.id}")
+    )(teamId, ctx) { _ =>
+      val repo = env.dataStore.apiRepo
+        .forTenant(ctx.tenant.id)
+
+      repo.find(Json.obj("_humanReadableId" -> apiId))
+        .flatMap { apis => FastFuture.successful(Ok(SeqApiFormat.writes(apis))) }
+    }
+  }
+
+  def clonePlan(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(
+      AuditTrailEvent(s"@{user.name} has cloned plan of api @{api.id} with @{team.name} - @{team.id}")
+    )(teamId, ctx) { _ =>
+      val planId = (ctx.request.body \ "plan").as[String]
+      val fromApiId = (ctx.request.body \ "api").as[String]
+
+      val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+
+      for {
+        fromApi <- apiRepo.findById(fromApiId)
+        api <- apiRepo.findById(apiId)
+      } yield {
+        fromApi match {
+          case None if api.isEmpty || fromApi.isEmpty => AppError.render(ApiNotFound)
+          case Some(fromApi) =>
+            fromApi.possibleUsagePlans.find(_.id.value == planId) match {
+              case None => AppError.render(PlanNotFound)
+              case Some(originalPlan) =>
+                val id = UsagePlanId(BSONObjectID.generate().stringify)
+                val customName = Some(s"Imported plan from ${fromApi.currentVersion} - ${originalPlan.typeName}")
+                apiRepo.save(api.get.copy(
+                  possibleUsagePlans = api.get.possibleUsagePlans ++ Seq((originalPlan match {
+                    case u: UsagePlan.Admin => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.PayPerUse => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.FreeWithQuotas => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.FreeWithoutQuotas => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.QuotasWithLimits => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.QuotasWithoutLimits => u.copy(id = id, customName = customName)
+                  }).asInstanceOf[UsagePlan])
+                ))
+                .map(_ => Created(Json.obj("done" -> true)))
+            }
+        }
+      }
+
+      FastFuture.successful(Ok(Json.obj()))
     }
   }
 }
