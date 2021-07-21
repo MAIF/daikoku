@@ -1597,8 +1597,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                       .find(Json.obj("_humanReadableId" -> oldApi.humanReadableId))
                       .map { apis =>
                         for {
-                         _ <- Future.sequence(apis.map(api => env.dataStore.apiRepo
-                                                          .forTenant(ctx.tenant.id)
+                         _ <- Future.sequence(apis.map(api => env.dataStore.apiRepo.forTenant(ctx.tenant.id)
                           .save(api.copy(name = apiToSave.name))))
                         } yield {
                            Ok(apiToSave.asJson)
@@ -2334,14 +2333,19 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getAllPlan(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+  def getAllPlan(teamId: String, apiId: String, version: Option[String]) = DaikokuAction.async { ctx =>
     TeamApiEditorOnly(
       AuditTrailEvent(s"@{user.name} has requested all plan of api @{api.id} with @{team.name} - @{team.id}")
     )(teamId, ctx) { _ =>
-      val repo = env.dataStore.apiRepo
-        .forTenant(ctx.tenant.id)
 
-      repo.find(Json.obj("_humanReadableId" -> apiId))
+      val query = version match {
+        case None     => Json.obj("_humanReadableId" -> apiId)
+        case Some(v)  => Json.obj("_humanReadableId" -> apiId, "currentVersion" -> Json.obj("$ne" -> v))
+      }
+
+      env.dataStore.apiRepo
+        .forTenant(ctx.tenant.id)
+        .find(query)
         .flatMap { apis => FastFuture.successful(Ok(SeqApiFormat.writes(apis))) }
     }
   }

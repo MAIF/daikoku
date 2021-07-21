@@ -1860,8 +1860,8 @@ export function getDefaultApiVersion(apiId) {
     .then(r => r.json())
 }
 
-export function getAllPlanOfApi(teamId, apiId) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/plans`)
+export function getAllPlanOfApi(teamId, apiId, version) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/plans${version ? `?version=${version}` : ''}`)
     .then(r => r.json());
 }
 

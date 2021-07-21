@@ -9,7 +9,7 @@ export const ApiSelectModal = ({ closeModal, currentLanguage, teamId, api, onClo
     const [plan, setPlan] = useState();
 
     useEffect(() => {
-        Services.getAllPlanOfApi(teamId, api._humanReadableId)
+        Services.getAllPlanOfApi(teamId, api._humanReadableId, api.currentVersion)
             .then(apis => {
                 setApis(apis.flatMap(api => api.possibleUsagePlans.reduce((a, plan) => {
                     const value = { apiId: api._id, version: api.currentVersion, planId: plan._id }

@@ -223,7 +223,7 @@ function TeamApiComponent(props) {
       .then(res => {
         if (res.status === 201) {
           toastr.success("New version of api created");
-          history.push(`/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab}`)
+          history.push(`/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab ? params.tab : 'infos'}`)
         } else
           res.json()
             .then(data => toastr.error(data.error))
@@ -276,7 +276,7 @@ function TeamApiComponent(props) {
                       </Link>
                     </h1>
                     <div className="d-flex align-items-center">
-                      <div style={{ minWidth: '125px' }}>
+                      {versions.length > 1 && <div style={{ minWidth: '125px' }}>
                         <Select
                           name="versions-selector"
                           value={apiVersion}
@@ -287,7 +287,7 @@ function TeamApiComponent(props) {
                           menuPlacement="auto"
                           menuPosition="fixed"
                         />
-                      </div>
+                      </div>}
                       <button type="button" className="btn btn-outline-info" onClick={promptVersion}>
                         <i className="fas fa-plus mr-1" />
                         {t('teamapi.new_version', props.currentLanguage)}
@@ -435,6 +435,7 @@ function TeamApiComponent(props) {
                       tenant={props.tenant}
                       reload={() => Services.teamApi(props.currentTeam._id, params.apiId, params.versionId)
                         .then(api => setState({ ...state, api }))}
+                      params={params}
                     />
                   )}
                   {false && editedApi && tab === 'otoroshi' && (

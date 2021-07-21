@@ -193,7 +193,7 @@ POST        /api/teams/:teamId/apis/:apiId/versions                  fr.maif.oto
 ### NoDocs ###
 GET         /api/teams/:teamId/apis/:apiId/versions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApiVersions(teamId, apiId)
 ### NoDocs ###
-GET         /api/teams/:teamId/apis/:apiId/plans                     fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllPlan(teamId, apiId)
+GET         /api/teams/:teamId/apis/:apiId/plans                     fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllPlan(teamId, apiId, version: Option[String] ?= None)
 ### NoDocs ###
 POST        /api/teams/:teamId/apis/:apiId/plans                     fr.maif.otoroshi.daikoku.ctrls.ApiController.clonePlan(teamId, apiId)
 

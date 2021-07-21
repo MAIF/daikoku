@@ -221,7 +221,7 @@ const ApiHomeComponent = ({
   const editUrl = (api) => {
     return Option(myTeams.find((team) => api.team === team._id)).fold(
       () => '#',
-      (adminTeam) => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}`
+      (adminTeam) => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
     );
   };
 
