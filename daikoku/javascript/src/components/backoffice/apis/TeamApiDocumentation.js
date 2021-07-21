@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useEffect, useState } from 'react';
 import _ from 'lodash';
 import * as Services from '../../../services';
 import faker from 'faker';
@@ -76,17 +76,19 @@ class AssetButton extends Component {
   }
 }
 
-export class TeamApiDocumentation extends Component {
-  state = {
-    selected: null,
-  };
+export function TeamApiDocumentation(props) {
+  const { currentLanguage, team, value, versionId, creationInProgress, hookSavePage } = props
 
-  flow = [
+  const [selected, setSelected] = useState(null);
+  const [details, setDetails] = useState(undefined);
+  const [error, setError] = useState()
+
+  const flow = [
     '_id',
     'title',
     'level',
     'contentType',
-    `>>> ${t('Remote content', this.props.currentLanguage)}`,
+    `>>> ${t('Remote content', currentLanguage)}`,
     'remoteContentEnabled',
     'remoteContentUrl',
     'assetButton',
@@ -95,205 +97,187 @@ export class TeamApiDocumentation extends Component {
     'content',
   ];
 
-  schema = {
-    _id: { type: 'string', disabled: true, props: { label: t('Id', this.props.currentLanguage) } },
-    title: { type: 'string', props: { label: t('Page title', this.props.currentLanguage) } },
+  const schema = {
+    _id: { type: 'string', disabled: true, props: { label: t('Id', currentLanguage) } },
+    title: { type: 'string', props: { label: t('Page title', currentLanguage) } },
     //index: { type: 'number', props: { label: 'Page index' } },
-    level: { type: 'number', props: { label: t('Page level', this.props.currentLanguage) } },
+    level: { type: 'number', props: { label: t('Page level', currentLanguage) } },
     content: {
       type: 'markdown',
       props: {
-        currentLanguage: this.props.currentLanguage,
+        currentLanguage: currentLanguage,
         label: 'Page content',
         height: '800px',
-        team: this.props.team,
+        team: team,
       },
     },
     remoteContentEnabled: {
       type: 'bool',
-      props: { label: t('Remote content', this.props.currentLanguage) },
+      props: { label: t('Remote content', currentLanguage) },
     },
     contentType: {
       type: 'select',
-      props: { label: t('Content type', this.props.currentLanguage), possibleValues: mimeTypes },
+      props: { label: t('Content type', currentLanguage), possibleValues: mimeTypes },
     },
     remoteContentUrl: {
       type: 'string',
-      props: { label: t('Content URL', this.props.currentLanguage) },
+      props: { label: t('Content URL', currentLanguage) },
     },
     assetButton: {
       type: AssetButton,
-      props: { label: '', parentProps: () => this.props },
+      props: { label: '', parentProps: () => props },
     },
     remoteContentHeaders: {
       type: 'object',
-      props: { label: t('Content headers', this.props.currentLanguage) },
+      props: { label: t('Content headers', currentLanguage) },
     },
   };
 
-  updateDetails = () => {
-    return Services.getDocDetails(this.props.value._id, this.props.versionId).then((details) => {
-      return this.setState({ details });
-    });
+  function updateDetails() {
+    Services.getDocDetails(value._id, versionId)
+      .then(setDetails);
   };
 
-  componentDidMount() {
-    if (!this.props.creationInProgress) {
-      this.updateDetails();
-    }
-    if (this.props.hookSavePage) {
-      this.props.hookSavePage(() => {
-        if (this.state.selected) {
-          this.onSave(this.state.selected);
-        }
+  useEffect(() => {
+    if (!creationInProgress)
+      updateDetails();
+
+    if (hookSavePage) {
+      hookSavePage(() => {
+        if (selected)
+          onSave(selected);
       });
     }
-  }
+  }, [versionId])
 
-  componentWillUnmount() {
-    if (this.props.hookSavePage) {
-      this.props.hookSavePage(null);
-    }
-  }
-
-  select = (selected) => {
-    if (this.state.selected) {
-      this.onSave(this.state.selected)
+  function select(selectedPage) {
+    if (selected) {
+      onSave(selected)
+        .then(updateDetails)
         .then(() => {
-          return this.updateDetails();
-        })
-        .then(() => {
-          Services.getDocPage(this.props.value._id, selected._id).then((page) => {
-            if (page.error) {
-              this.setState({ error: page.error });
-            } else {
-              this.setState({ selected: page });
-            }
-          });
+          Services.getDocPage(value._id, selectedPage._id)
+            .then((page) => {
+              if (page.error)
+                setError(page.error);
+              else
+                setSelected(page);
+            });
         });
     } else {
-      Services.getDocPage(this.props.value._id, selected._id).then((page) => {
-        if (page.error) {
-          this.setState({ error: page.error });
-        } else {
-          this.setState({ selected: page });
-        }
-      });
+      Services.getDocPage(value._id, selectedPage._id)
+        .then(page => {
+          if (page.error)
+            setError(page.error);
+          else
+            setSelected(page);
+        });
     }
   };
 
-  onChange = (v) => {
-    this.onSave(v);
-  };
-
-  onSave = (page) => {
-    return Services.saveDocPage(this.props.teamId, this.props.value._id, page).then(() => {
-      toastr.success(t('Page saved', this.props.currentLanguage));
-      return this.updateDetails();
-    });
-  };
-
-  isSelected = (page) => {
-    return this.state.selected && page._id === this.state.selected._id;
-  };
-
-  onReorder = () => {
-    return Services.reorderDoc(this.props.team._humanReadableId, this.props.value._humanReadableId)
-      .then((details) => {
-        return this.setState({ details });
-      })
-      .catch((e) => {
-        console.log(e);
+  function onSave(page) {
+    return Services.saveDocPage(team._id, value._id, page)
+      .then(() => {
+        toastr.success(t('Page saved', currentLanguage));
+        updateDetails();
       });
   };
 
-  onUp = () => {
-    let pages = _.cloneDeep(this.props.value.documentation.pages);
-    if (this.state.selected) {
-      const oldIndex = pages.indexOf(this.state.selected._id);
+  function isSelected(page) {
+    return selected && page._id === selected._id;
+  };
+
+  function onUp() {
+    let pages = _.cloneDeep(value.documentation.pages);
+    if (selected) {
+      const oldIndex = pages.indexOf(selected._id);
       if (oldIndex >= 0) {
         pages = pages.move(oldIndex, oldIndex - 1);
-        const value = _.cloneDeep(this.props.value);
-        value.documentation.pages = pages;
-        this.props.onChange(value);
-        this.props.save().then(() => {
-          this.updateDetails();
+        const newValue = _.cloneDeep(value);
+        newValue.documentation.pages = pages;
+        props.onChange(newValue);
+        props.save().then(() => {
+          updateDetails();
         });
       }
     }
   };
 
-  onDown = () => {
-    let pages = _.cloneDeep(this.props.value.documentation.pages);
-    if (this.state.selected) {
-      const oldIndex = pages.indexOf(this.state.selected._id);
+  function onDown() {
+    let pages = _.cloneDeep(value.documentation.pages);
+    if (selected) {
+      const oldIndex = pages.indexOf(selected._id);
       if (oldIndex < pages.length) {
         pages = pages.move(oldIndex, oldIndex + 1);
-        const value = _.cloneDeep(this.props.value);
-        value.documentation.pages = pages;
-        this.props.onChange(value);
-        this.props.save().then(() => {
-          this.updateDetails();
+        const newValue = _.cloneDeep(value);
+        newValue.documentation.pages = pages;
+        props.onChange(newValue);
+        props.save().then(() => {
+          updateDetails();
         });
       }
     }
   };
 
-  addNewPage = () => {
-    const selected = this.state.selected;
-    let index = this.props.value.documentation.pages.length;
+  function addNewPage() {
+    let index = value.documentation.pages.length;
     if (selected) {
-      index = this.props.value.documentation.pages.indexOf(selected._id) + 1;
+      index = value.documentation.pages.indexOf(selected._id) + 1;
     }
 
-    Services.createDocPage(this.props.teamId, this.props.value._id, {
+    Services.createDocPage(team._id, value._id, {
       _id: faker.random.alphaNumeric(32),
-      _tenant: this.props.value._tenant,
-      api: this.props.value._id,
+      _tenant: value._tenant,
+      api: value._id,
       title: 'New page',
       index: index,
       level: 0,
       lastModificationAt: Date.now(),
       content: '# New page\n\nA new page',
     }).then((page) => {
-      let pages = _.cloneDeep(this.props.value.documentation.pages);
+      let pages = _.cloneDeep(value.documentation.pages);
       //pages.push(page._id);
       pages.splice(index, 0, page._id);
-      const value = _.cloneDeep(this.props.value);
-      value.documentation.pages = pages;
-      this.props.onChange(value);
-      this.props.save().then(() => {
-        this.setState({ selected: page });
-        this.updateDetails();
-      });
+      const newValue = _.cloneDeep(value);
+      newValue.documentation.pages = pages;
+      props.onChange(newValue);
+
+      setTimeout(() => {
+
+        props.save().then(() => {
+          setSelected(page)
+          updateDetails();
+        });
+
+      }, 1500)
+
     });
   };
 
-  deletePage = () => {
+  function deletePage() {
     window
       .confirm(
         t(
           'delete.documentation.page.confirm',
-          this.props.currentLanguage,
+          currentLanguage,
           'Are you sure you want to delete this page ?'
         )
       )
       .then((ok) => {
         if (ok) {
           Services.deleteDocPage(
-            this.props.teamId,
-            this.props.value._id,
-            this.state.selected._id
+            team._id,
+            value._id,
+            selected._id
           ).then(() => {
-            let pages = _.cloneDeep(this.props.value.documentation.pages).filter(
-              (p) => p !== this.state.selected._id
+            let pages = _.cloneDeep(value.documentation.pages).filter(
+              (p) => p !== selected._id
             );
-            const value = _.cloneDeep(this.props.value);
-            value.documentation.pages = pages;
-            this.props.save().then(() => {
-              this.setState({ selected: null }, () => {
-                this.props.onChange(value);
-                this.updateDetails();
+            const newValue = _.cloneDeep(value);
+            newValue.documentation.pages = pages;
+            props.save().then(() => {
+              setSelected(null, () => {
+                props.onChange(newValue);
+                updateDetails();
               });
             });
           });
@@ -301,92 +285,92 @@ export class TeamApiDocumentation extends Component {
       });
   };
 
-  render() {
-    if (this.props.value === null) return null;
-    return (
-      <div className="row">
-        <div className="col-12 col-sm-6 col-lg-3 p-1">
-          <table className="table table-striped table-hover table-sm table-plan-name section">
-            <thead className="thead-light">
-              <tr>
-                <th scope="col" className="d-flex justify-content-between align-items-center">
-                  Plan title{' '}
-                  <div className="btn-group">
-                    <button
-                      onClick={this.onUp}
-                      type="button"
-                      className="btn btn-sm btn-outline-success">
-                      <i className="fas fa-arrow-up" />
-                    </button>
-                    <button
-                      onClick={this.onDown}
-                      type="button"
-                      className="btn btn-sm btn-outline-success">
-                      <i className="fas fa-arrow-down" />
-                    </button>
-                    <button
-                      onClick={this.addNewPage}
-                      type="button"
-                      className="btn btn-sm btn-outline-primary">
-                      <i className="fas fa-plus mr-1" />
-                      <Translation i18nkey="Add page" language={this.props.currentLanguage}>
-                        add page
-                      </Translation>
-                    </button>
-                  </div>
-                </th>
-              </tr>
-            </thead>
-            {this.state.details && (
-              <tbody>
-                {this.state.details.titles.map((page, index) => {
-                  return (
-                    <tr key={page._id}>
-                      <td
-                        className={this.isSelected(page) ? 'planSelected' : ''}
-                        onClick={() => this.select(page)}>
-                        <span>
-                          {index + 1} - {page.title}
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-primary float-right">
-                            <i className="fas fa-edit" />
-                          </button>
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            )}
-          </table>
-        </div>
-        <div className="col-12 col-sm-6 col-lg-9">
-          {!!this.state.selected && (
-            <div>
-              <div className="d-flex justify-content-end">
-                <button
-                  onClick={this.deletePage}
-                  type="button"
-                  className="btn btn-sm btn-outline-danger mb-2">
-                  <i className="fas fa-trash mr-1" />
-                  <Translation i18nkey="Delete page" language={this.props.currentLanguage}>
-                    Delete page
-                  </Translation>
-                </button>
-              </div>
-              <React.Suspense fallback={<Spinner />}>
-                <LazyForm
-                  flow={this.flow}
-                  schema={this.schema}
-                  value={this.state.selected}
-                  onChange={(selected) => this.setState({ selected })}
-                />
-              </React.Suspense>
-            </div>
+  if (value === null)
+    return null;
+
+  return (
+    <div className="row">
+      <div className="col-12 col-sm-6 col-lg-3 p-1">
+        <table className="table table-striped table-hover table-sm table-plan-name section">
+          <thead className="thead-light">
+            <tr>
+              <th scope="col" className="d-flex justify-content-between align-items-center">
+                Plan title{' '}
+                <div className="btn-group">
+                  <button
+                    onClick={onUp}
+                    type="button"
+                    className="btn btn-sm btn-outline-success">
+                    <i className="fas fa-arrow-up" />
+                  </button>
+                  <button
+                    onClick={onDown}
+                    type="button"
+                    className="btn btn-sm btn-outline-success">
+                    <i className="fas fa-arrow-down" />
+                  </button>
+                  <button
+                    onClick={addNewPage}
+                    type="button"
+                    className="btn btn-sm btn-outline-primary">
+                    <i className="fas fa-plus mr-1" />
+                    <Translation i18nkey="Add page" language={currentLanguage}>
+                      add page
+                    </Translation>
+                  </button>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          {details && (
+            <tbody>
+              {details.titles.map((page, index) => {
+                return (
+                  <tr key={page._id}>
+                    <td
+                      className={isSelected(page) ? 'planSelected' : ''}
+                      onClick={() => select(page)}>
+                      <span>
+                        {index + 1} - {page.title}
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary float-right">
+                          <i className="fas fa-edit" />
+                        </button>
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
           )}
-        </div>
+        </table>
       </div>
-    );
-  }
+      <div className="col-12 col-sm-6 col-lg-9">
+        {!!selected && (
+          <div>
+            <div className="d-flex justify-content-end">
+              <button
+                onClick={deletePage}
+                type="button"
+                className="btn btn-sm btn-outline-danger mb-2">
+                <i className="fas fa-trash mr-1" />
+                <Translation i18nkey="Delete page" language={currentLanguage}>
+                  Delete page
+                </Translation>
+              </button>
+            </div>
+            <React.Suspense fallback={<Spinner />}>
+              <LazyForm
+                flow={flow}
+                schema={schema}
+                value={selected}
+                onChange={setSelected}
+              />
+            </React.Suspense>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

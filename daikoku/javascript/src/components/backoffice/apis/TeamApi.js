@@ -87,7 +87,7 @@ function TeamApiComponent(props) {
         )
         .catch((error) => toastr.error(t(error, props.currentLanguage)));
     } else {
-      Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
+      return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
         .then(r => {
           if (!r.exists)
             return Services.saveTeamApi(props.currentTeam._id, editedApi, apiVersion.value)
