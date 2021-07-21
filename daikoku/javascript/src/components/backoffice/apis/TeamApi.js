@@ -44,7 +44,6 @@ function TeamApiComponent(props) {
           ...state,
           otoroshiSettings,
           api: location.state.newApi,
-          originalApi: location.state.newApi,
           create: true,
         })
       );
@@ -55,7 +54,7 @@ function TeamApiComponent(props) {
         Services.getAllApiVersions(props.currentTeam._id, params.apiId)
       ]).then(([api, otoroshiSettings, versions]) => {
         if (!api.error)
-          setState({ ...state, api, originalApi: api, otoroshiSettings });
+          setState({ ...state, api, otoroshiSettings });
         else
           toastr.error(api.error)
         setApiVersions(versions.map(v => ({ label: v, value: v })));
@@ -65,9 +64,6 @@ function TeamApiComponent(props) {
   }, [params.tab, params.versionId]);
 
   function save() {
-    if (params.tab === 'documentation' && state.savePage) {
-      state.savePage();
-    }
     const editedApi = transformPossiblePlansBack(state.api);
     if (state.create) {
       return Services.createTeamApi(props.currentTeam._id, editedApi)
@@ -100,8 +96,6 @@ function TeamApiComponent(props) {
                   history.push(
                     `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._humanReadableId}/${newApi.currentVersion}/infos`
                   )
-                else
-                  setState({ ...state, originalApi: newApi })
               })
           else
             toastr.error(`api with name "${editedApi.name}" already exists`)
@@ -454,7 +448,6 @@ function TeamApiComponent(props) {
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
                       save={save}
-                      hookSavePage={(savePage) => setState({ ...state, savePage })}
                       versionId={props.match.params.versionId}
                     />
                   )}
@@ -467,7 +460,6 @@ function TeamApiComponent(props) {
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
                       save={save}
-                      hookSavePage={(savePage) => setState({ ...state, savePage })}
                       otoroshiSettings={state.otoroshiSettings}
                       openSubMetadataModal={props.openSubMetadataModal}
                       openTestingApiKeyModal={props.openTestingApiKeyModal}

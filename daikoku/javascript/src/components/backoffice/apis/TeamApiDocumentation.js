@@ -77,7 +77,7 @@ class AssetButton extends Component {
 }
 
 export function TeamApiDocumentation(props) {
-  const { currentLanguage, team, value, versionId, creationInProgress, hookSavePage } = props
+  const { currentLanguage, team, value, versionId, creationInProgress } = props
 
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState(undefined);
@@ -141,14 +141,16 @@ export function TeamApiDocumentation(props) {
   useEffect(() => {
     if (!creationInProgress)
       updateDetails();
-
-    if (hookSavePage) {
-      hookSavePage(() => {
-        if (selected)
-          onSave(selected);
-      });
-    }
   }, [versionId])
+
+  useEffect(() => {
+    console.log("Save new page")
+    // props.save(value)
+    //   .then(() => {
+    //     setSelected(page)
+    //     updateDetails();
+    //   });
+  }, [value])
 
   function select(selectedPage) {
     if (selected) {
@@ -241,15 +243,11 @@ export function TeamApiDocumentation(props) {
       newValue.documentation.pages = pages;
       props.onChange(newValue);
 
-      setTimeout(() => {
-
-        props.save().then(() => {
-          setSelected(page)
-          updateDetails();
-        });
-
-      }, 1500)
-
+      // props.save(newValue)
+      //   .then(() => {
+      //     setSelected(page)
+      //     updateDetails();
+      //   });
     });
   };
 
