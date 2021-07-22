@@ -1,5 +1,6 @@
-import React, { Suspense } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
+import { Route, Link, Switch, useLocation, useHistory } from 'react-router-dom';
 import { Spinner } from '../..';
 import { t } from '../../../locales';
 import * as Services from '../../../services/index';
@@ -7,168 +8,181 @@ import * as Services from '../../../services/index';
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 const LazyForm = React.lazy(() => import('../../../components/inputs/Form'));
 
-export class TeamApiPost extends React.Component {
-  state = {
-    selected: null,
-    newPostOpen: false,
+const ApiPost = ({ currentLanguage, publishPost, params, team }) => {
+  const [selected, setSelected] = useState({
+    title: "",
+    content: ""
+  });
+
+  const flow = ['title', 'content'];
+
+  const schema = {
+    title: {
+      type: 'string',
+      props: { label: t('team_api_post.title', currentLanguage) },
+    },
+    content: {
+      type: 'markdown',
+      props: {
+        currentLanguage,
+        label: t('team_api_post.content', currentLanguage),
+        height: '320px',
+        team
+      },
+    },
+  };
+
+  return <div>
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
+        flow={flow}
+        schema={schema}
+        value={selected}
+        onChange={setSelected}
+      />
+    </React.Suspense>
+    <div className="d-flex justify-content-end my-3">
+      <Link className="btn btn-outline-danger mr-1" to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}>
+        {t('Cancel', currentLanguage)}
+      </Link>
+      <button className="btn btn-outline-success" onClick={() => publishPost(selected)}>
+        {t('team_api_post.publish', currentLanguage)}
+      </button>
+    </div>
+  </div>
+}
+
+export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
+  const history = useHistory()
+  const location = useLocation()
+
+  const [state, setState] = useState({
     posts: [],
     pagination: {
       limit: 1,
       offset: 0,
       total: 0,
     },
-  };
+  });
 
-  flow = ['title', 'content'];
+  useEffect(() => {
+    if (location.pathname.split("/").slice(-1)[0] === 'news')
+      loadPosts(0, 1, true)
+  }, [params.versionId, location.pathname])
 
-  schema = {
-    title: {
-      type: 'string',
-      props: { label: t('team_api_post.title', this.props.currentLanguage) },
-    },
-    content: {
-      type: 'markdown',
-      props: {
-        currentLanguage: this.props.currentLanguage,
-        label: t('team_api_post.content', this.props.currentLanguage),
-        height: '320px',
-        team: this.props.team,
-      },
-    },
-  };
-
-  componentDidMount() {
-    this.loadPosts();
-  }
-
-  loadPosts = (offset = 0, limit = 1) => {
-    Services.getAPIPosts(this.props.api._id, offset, limit, this.props.versionId).then((data) => {
-      this.setState({
+  function loadPosts(offset = 0, limit = 1, reset = false) {
+    Services.getAPIPosts(api._humanReadableId, offset, limit, params.versionId).then((data) => {
+      setState({
         posts: [
-          ...this.state.posts,
+          ...(reset ? [] : state.posts),
           ...data.posts
-            .filter((p) => !this.state.posts.find((o) => o._id === p._id))
+            .filter((p) => !state.posts.find((o) => o._id === p._id))
             .map((p) => ({
               ...p,
               isOpen: false,
             })),
         ],
-        newPostOpen: data.posts.length === 0,
         pagination: {
-          ...this.state.pagination,
+          ...state.pagination,
           total: data.total,
         },
       });
     });
   };
 
-  loadOldPosts = () => {
-    const { posts, pagination } = this.state;
-    this.loadPosts(posts.length < 10 ? 0 : pagination.offset + 1, 10);
+  function loadOldPosts() {
+    const { posts, pagination } = state;
+    loadPosts(posts.length < 10 ? 0 : pagination.offset + 1, 10);
   };
 
-  handleContent = (i, code) => {
-    this.setState({
-      posts: this.state.posts.map((post, j) => {
+  function handleContent(i, code) {
+    setState({
+      ...state,
+      posts: state.posts.map((post, j) => {
         if (j === i) post.content = code;
         return post;
-      }),
+      })
     });
   };
 
-  handleTitle = (i, title) => {
-    this.setState({
-      posts: this.state.posts.map((post, j) => {
+  function handleTitle(i, title) {
+    setState({
+      ...state,
+      posts: state.posts.map((post, j) => {
         if (j === i) post.title = title;
         return post;
       }),
     });
   };
 
-  toggleNewPost = () => {
-    this.setState({ newPostOpen: !this.state.newPostOpen });
-  };
-
-  togglePost = (i) => {
-    this.setState({
-      posts: this.state.posts.map((post, j) => {
+  function togglePost(i) {
+    setState({
+      ...state,
+      posts: state.posts.map((post, j) => {
         if (j === i) post.isOpen = !post.isOpen;
         return post;
       }),
     });
   };
 
-  savePost = (i) => {
-    const { api, team, currentLanguage } = this.props;
-    const post = this.state.posts.find((_, j) => j === i);
-    Services.savePost(api._id, team._id, post._id, post).then((res) => {
-      if (res.status === 200) toastr.success(t('team_api_post.saved', currentLanguage));
-      else toastr.error(t('team_api_post.failed', currentLanguage));
-      window.location.reload();
-    });
+  function savePost(i) {
+    const post = state.posts.find((_, j) => j === i);
+    Services.savePost(api._id, team._id, post._id, post)
+      .then(res => {
+        if (res.status === 200) toastr.success(t('team_api_post.saved', currentLanguage));
+        else toastr.error(t('team_api_post.failed', currentLanguage));
+      });
   };
 
-  publishPost = () => {
-    const { api, team, currentLanguage } = this.props;
+  function publishPost(selected) {
     Services.publishNewPost(api._id, team._id, {
-      ...this.state.selected,
+      ...selected,
       _id: '',
     }).then((res) => {
       if (res.status === 200) {
         toastr.success(t('team_api_post.saved', currentLanguage));
-        this.toggleNewPost();
-        window.location.reload();
-      } else toastr.error(t('team_api_post.failed', currentLanguage));
+        history.push(`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`)
+      } else
+        toastr.error(t('team_api_post.failed', currentLanguage));
     });
   };
 
-  removePost = (postId, i) => {
-    const { api, team, currentLanguage } = this.props;
-    window.confirm(t('team_api_post.delete.confirm', currentLanguage)).then((ok) => {
-      if (ok)
-        Services.removePost(api._id, team._id, postId).then((res) => {
-          if (res.status === 200) {
-            toastr.success(t('team_api_post.saved', currentLanguage));
-            window.location.reload();
-          } else toastr.error(t('team_api_post.failed', currentLanguage));
-        });
-    });
+  function removePost(postId, i) {
+    window.confirm(t('team_api_post.delete.confirm', currentLanguage))
+      .then((ok) => {
+        if (ok)
+          Services.removePost(api._id, team._id, postId).then((res) => {
+            if (res.status === 200) {
+              toastr.success(t('team_api_post.saved', currentLanguage));
+              setState({
+                ...state,
+                posts: state.posts.filter(p => p._id !== postId)
+              })
+            }
+            else
+              toastr.error(t('team_api_post.failed', currentLanguage));
+          });
+      });
   };
 
-  render() {
-    const { posts, selected, newPostOpen, pagination } = this.state;
-    const { team, currentLanguage } = this.props;
-    return (
-      <div>
-        <div>
-          {newPostOpen ? (
-            <>
-              <React.Suspense fallback={<Spinner />}>
-                <LazyForm
-                  flow={this.flow}
-                  schema={this.schema}
-                  value={selected}
-                  onChange={(selected) => this.setState({ selected })}
-                />
-              </React.Suspense>
-              <div className="m-3">
-                <button className="btn btn-outline-success mr-1" onClick={this.publishPost}>
-                  {t('team_api_post.publish', currentLanguage)}
-                </button>
-                <button className="btn btn-outline-danger" onClick={this.toggleNewPost}>
-                  {t('Cancel', currentLanguage)}
-                </button>
-              </div>
-            </>
-          ) : (
-            <button className="btn btn-outline-success my-3" onClick={this.toggleNewPost}>
-              {t('team_api_post.new', currentLanguage)}
-            </button>
-          )}
-        </div>
-        {!newPostOpen && (
-          <div>
-            <h2>{t('News', currentLanguage)}</h2>
+  const { posts, pagination } = state;
+
+  const basePath = "/:teamId/settings/apis/:apiId/:versionId/news"
+
+  return (
+    <div>
+      <Switch>
+        <Route path={`${basePath}/new`} render={props =>
+          <ApiPost {...props} currentLanguage={currentLanguage} publishPost={publishPost} params={params} />
+        } />
+        <Route path={basePath} render={() => (
+          <div className="p-3">
+            <div className="d-flex align-items-center justify-content-between">
+              <h2>{t('News', currentLanguage)}</h2>
+              <Link className="btn btn-outline-success" to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news/new`}>
+                {t('team_api_post.new', currentLanguage)}
+              </Link>
+            </div>
             <div>
               {posts.length === 0 && <p>{t('team_api_post.empty_posts_list', currentLanguage)}</p>}
               {posts.map((post, i) => (
@@ -178,7 +192,7 @@ export class TeamApiPost extends React.Component {
                       <input
                         type="text"
                         value={post.title}
-                        onChange={(e) => this.handleTitle(i, e.target.value)}
+                        onChange={(e) => handleTitle(i, e.target.value)}
                         className="form-control mr-1"
                         style={{ flex: 1 }}
                       />
@@ -189,16 +203,16 @@ export class TeamApiPost extends React.Component {
                       {post.isOpen && (
                         <button
                           className="btn btn-outline-success mr-1"
-                          onClick={() => this.savePost(i)}>
+                          onClick={() => savePost(i)}>
                           <i className="fas fa-save" />
                         </button>
                       )}
                       <button
                         className="btn btn-outline-danger mr-1"
-                        onClick={() => this.removePost(post._id, i)}>
+                        onClick={() => removePost(post._id, i)}>
                         <i className="fas fa-trash" />
                       </button>
-                      <button className="btn btn-outline-info" onClick={() => this.togglePost(i)}>
+                      <button className="btn btn-outline-info" onClick={() => togglePost(i)}>
                         <i className={`fas fa-chevron-${post.isOpen ? 'up' : 'down'}`} />
                       </button>
                     </div>
@@ -206,25 +220,25 @@ export class TeamApiPost extends React.Component {
                   {post.isOpen && (
                     <React.Suspense fallback={<div>loading ...</div>}>
                       <LazySingleMarkdownInput
-                        currentLanguage={this.props.currentLanguage}
+                        currentLanguage={currentLanguage}
                         team={team}
                         height={window.innerHeight - 300 + 'px'}
                         value={post.content}
-                        onChange={(code) => this.handleContent(i, code)}
+                        onChange={(code) => handleContent(i, code)}
                       />
                     </React.Suspense>
                   )}
                 </div>
               ))}
             </div>
-            {posts.length < pagination.total && (
-              <button className="btn btn-outline-info" onClick={this.loadOldPosts}>
+            {posts.length > 0 && posts.length < pagination.total && (
+              <button className="btn btn-outline-info" onClick={loadOldPosts}>
                 {t('team_api_post.load_old_posts', currentLanguage)}
               </button>
             )}
           </div>
-        )}
-      </div>
-    );
-  }
+        )} />
+      </Switch>
+    </div>
+  )
 }

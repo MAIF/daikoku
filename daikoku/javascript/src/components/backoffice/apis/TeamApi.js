@@ -481,8 +481,8 @@ function TeamApiComponent(props) {
                       value={editedApi}
                       team={props.currentTeam}
                       api={state.api}
-                      versionId={props.match.params.versionId}
                       onChange={(api) => setState({ ...state, api })}
+                      params={params}
                     />
                   )}
                 </div>

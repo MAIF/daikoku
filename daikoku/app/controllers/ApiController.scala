@@ -1670,7 +1670,6 @@ class ApiController(DaikokuAction: DaikokuAction,
     ) { team =>
       ctx.setCtxValue("page.id", pageId)
 
-      println(s"Delete $pageId")
       env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id).deleteByIdLogically(pageId).map { _ =>
         Ok(Json.obj("done" -> true))
       }
@@ -1878,7 +1877,6 @@ class ApiController(DaikokuAction: DaikokuAction,
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed posts for @{api.id}"))(ctx) {
       ctx.setCtxValue("api.id", apiId)
 
-      println(offset, limit)
       getPostsImpl(ctx.tenant, apiId, limit.getOrElse(10), offset.getOrElse(0), version).map {
         case Left(r) => NotFound(r)
         case Right(r) => Ok(r)
@@ -1891,7 +1889,6 @@ class ApiController(DaikokuAction: DaikokuAction,
     env.dataStore.apiRepo.findByVersion(tenant, apiId, version).flatMap {
       case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
       case Some(api) =>
-        println(offset, limit)
         env.dataStore.apiPostRepo
           .forTenant(tenant.id)
           .findWithPagination(Json.obj(
