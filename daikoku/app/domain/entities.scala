@@ -1056,7 +1056,9 @@ case class ApiIssue(id: ApiIssueId,
                     closedAt: Option[DateTime],
                     by: UserId,
                     comments: Seq[ApiIssueComment],
-                    lastModificationAt: DateTime)
+                    lastModificationAt: DateTime,
+                    apiVersion: Option[String] = Some("1.0.0")
+                   )
     extends CanJson[ApiIssue] {
   def humanReadableId: String = seqId.toString
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)

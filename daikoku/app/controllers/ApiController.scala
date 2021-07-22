@@ -1606,6 +1606,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                   _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
                   _ <- updateAllHumanReadableId(ctx, apiToSave, oldApi)
                   _ <- turnOffDefaultVersion(ctx, apiToSave, oldApi, apiToSave.humanReadableId, apiToSave.currentVersion.value)
+                  _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
                 } yield {
                   ctx.setCtxValue("api.name", api.name)
                   ctx.setCtxValue("api.id", api.id)
@@ -1615,6 +1616,19 @@ class ApiController(DaikokuAction: DaikokuAction,
             }
       }
     }
+  }
+
+  private def checkIssuesVersion(ctx: DaikokuActionContext[JsValue], apiToSave: Api, oldApi: Api) = {
+    if(oldApi.currentVersion != oldApi.currentVersion) {
+      env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id)
+        .find(Json.obj("_id" -> Json.obj("$in" -> apiToSave.issues.map(_.value))))
+        .map { issues =>
+          Future.sequence(issues.map(issue => env.dataStore.apiIssueRepo
+            .forTenant(ctx.tenant.id)
+            .save(issue.copy(apiVersion = Some(apiToSave.currentVersion.value)))))
+        }
+    } else
+      FastFuture.successful(())
   }
 
   private def updateAllHumanReadableId(ctx: DaikokuActionContext[JsValue], apiToSave: Api, oldApi: Api) = {
