@@ -536,7 +536,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
             />
             <FrontOfficeRoute
               exact
-              path="/:teamId/:apiId/:versionId"
+              path={["/:teamId/:apiId/:versionId", "/:teamId/:apiId/:versionId/description"]}
               render={(p) => <ApiHome match={p.match} history={p.history} tab="description" />}
             />
             <FrontOfficeRoute

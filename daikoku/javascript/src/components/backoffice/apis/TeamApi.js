@@ -32,6 +32,7 @@ function TeamApiComponent(props) {
     create: false,
     error: null,
     otoroshiSettings: [],
+    changed: false
   });
 
   const [versions, setApiVersions] = useState([]);
@@ -63,7 +64,18 @@ function TeamApiComponent(props) {
     }
   }, [params.tab, params.versionId]);
 
+  useEffect(() => {
+    if (state.changed) {
+      console.log("RUN SAVE")
+      setState({ ...state, changed: false })
+      save()
+    }
+  }, [state.changed])
+
   function save() {
+    if (params.tab === 'documentation' && state.savePage)
+      state.savePage();
+
     const editedApi = transformPossiblePlansBack(state.api);
     if (state.create) {
       return Services.createTeamApi(props.currentTeam._id, editedApi)
@@ -105,13 +117,7 @@ function TeamApiComponent(props) {
 
   function deleteApi() {
     window
-      .confirm(
-        t(
-          'delete.api.confirm',
-          props.currentLanguage,
-          'Are you sure you want to delete this api ?'
-        )
-      )
+      .confirm(t('delete.api.confirm', props.currentLanguage))
       .then((ok) => {
         if (ok) {
           Services.deleteTeamApi(props.currentTeam._id, state.api._id)
@@ -446,9 +452,11 @@ function TeamApiComponent(props) {
                       team={props.currentTeam}
                       teamId={teamId}
                       value={editedApi}
-                      onChange={(api) => setState({ ...state, api })}
+                      onChange={api => setState({ ...state, api })}
+                      hookSavePage={savePage => setState({ ...state, savePage })}
                       save={save}
                       versionId={props.match.params.versionId}
+                      params={params}
                     />
                   )}
                   {editedApi && tab === 'testing' && (
@@ -458,11 +466,13 @@ function TeamApiComponent(props) {
                       team={props.currentTeam}
                       teamId={teamId}
                       value={editedApi}
-                      onChange={(api) => setState({ ...state, api })}
+                      onChange={api => setState({ ...state, api })}
+                      onAction={api => setState({ ...state, api, changed: true })}
                       save={save}
                       otoroshiSettings={state.otoroshiSettings}
                       openSubMetadataModal={props.openSubMetadataModal}
                       openTestingApiKeyModal={props.openTestingApiKeyModal}
+                      params={params}
                     />
                   )}
                   {editedApi && tab === 'news' && (

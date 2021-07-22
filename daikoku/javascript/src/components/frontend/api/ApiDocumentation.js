@@ -39,7 +39,7 @@ export class ApiDocumentation extends Component {
   };
 
   fetchPage = () => {
-    Services.getDocDetails(this.props.api._id, this.props.match.params.versionId).then((details) => {
+    Services.getDocDetails(this.props.api._humanReadableId, this.props.match.params.versionId).then((details) => {
       this.setState({ details });
       const pageId = this.props.match.params.pageId || details.pages[0];
       if (pageId)
@@ -86,6 +86,9 @@ export class ApiDocumentation extends Component {
     if (!api || !this.state.details) {
       return null;
     }
+
+    console.log(this.state.details)
+
     const details = this.state.details;
     const apiId = this.props.match.params.apiId;
     const pageId = this.props.match.params.pageId;
@@ -93,6 +96,7 @@ export class ApiDocumentation extends Component {
     const idx = _.findIndex(details.pages, (p) => p === pageId);
     let prevId = null;
     let nextId = null;
+
     const next = details.pages[idx + (pageId ? 1 : 2)];
     const prev = details.pages[idx - 1];
     if (next) nextId = next;

@@ -404,8 +404,10 @@ class ApiController(DaikokuAction: DaikokuAction,
         env.dataStore.apiDocumentationPageRepo
           .forTenant(tenant.id)
           .findWithProjection(
-            Json.obj("_deleted" -> false,
-              "_id" -> Json.obj("$in" -> JsArray(doc.pages.map(_.value).map(JsString.apply).toSeq))),
+            Json.obj(
+              "_deleted" -> false,
+              "_id" -> Json.obj("$in" -> JsArray(doc.pages.map(_.value).map(JsString.apply).toSeq))
+            ),
             Json.obj(
               "_id" -> true,
               "_humanReadableId" -> true,
@@ -1554,7 +1556,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                 FastFuture
                   .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
               case JsSuccess(api, _) if ctx.tenant.aggregationApiKeysSecurity.isEmpty &&
-                api.possibleUsagePlans.exists(plan => plan.aggregationApiKeysSecurity.forall(p => p)) =>
+                api.possibleUsagePlans.exists(plan => plan.aggregationApiKeysSecurity.exists(identity)) =>
                 FastFuture.successful(BadRequest(AppError.toJson(SubscriptionAggregationDisabled)))
               case JsSuccess(api, _) if oldApi.visibility == ApiVisibility.AdminOnly =>
                 val oldAdminPlan = oldApi.possibleUsagePlans.head
@@ -1588,27 +1590,41 @@ class ApiController(DaikokuAction: DaikokuAction,
                   _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
                   _ <- otoroshiSynchronisator.verify(Json.obj("api" -> apiId)) //launch synhro to maybe update customeMetadata & authorizedEntities
                   _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
+                  _ <- updateAllHumanReadableId(ctx, apiToSave, oldApi)
+                  _ <- turnOffDefaultVersion(ctx, apiToSave, oldApi, apiToSave.humanReadableId, apiToSave.currentVersion.value)
                 } yield {
                   ctx.setCtxValue("api.name", api.name)
                   ctx.setCtxValue("api.id", api.id)
 
-                  if(oldApi.name != apiToSave.name) {
-                    env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-                      .find(Json.obj("_humanReadableId" -> oldApi.humanReadableId))
-                      .map { apis =>
-                        for {
-                         _ <- Future.sequence(apis.map(api => env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-                          .save(api.copy(name = apiToSave.name))))
-                        } yield {
-                           Ok(apiToSave.asJson)
-                        }
-                      }
-                  }
                   Ok(apiToSave.asJson)
                 }
             }
       }
     }
+  }
+
+  private def updateAllHumanReadableId(ctx: DaikokuActionContext[JsValue], apiToSave: Api, oldApi: Api) = {
+    if(oldApi.name != apiToSave.name) {
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+        .find(Json.obj("_humanReadableId" -> oldApi.humanReadableId))
+        .flatMap { apis =>
+          Future
+            .sequence(apis.map(api => env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+              .save(api.copy(name = apiToSave.name))))
+        }
+    } else
+      FastFuture.successful(())
+  }
+
+  private def turnOffDefaultVersion(ctx: DaikokuActionContext[JsValue], apiToSave: Api, oldApi: Api, humanReadableId: String, version: String) = {
+    if (apiToSave.isDefault && !oldApi.isDefault)
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+        .find(Json.obj("_humanReadableId" -> humanReadableId, "currentVersion" -> Json.obj("$ne" -> version)))
+        .map { apis => Future.sequence(apis.map(api => env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+          .save(api.copy(isDefault = false))))
+        }
+    else
+      FastFuture.successful(())
   }
 
   private def updateTagsOfIssues(tenantId: TenantId, api: Api) = {
@@ -1653,6 +1669,8 @@ class ApiController(DaikokuAction: DaikokuAction,
       ctx
     ) { team =>
       ctx.setCtxValue("page.id", pageId)
+
+      println(s"Delete $pageId")
       env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id).deleteByIdLogically(pageId).map { _ =>
         Ok(Json.obj("done" -> true))
       }

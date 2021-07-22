@@ -77,11 +77,13 @@ class AssetButton extends Component {
 }
 
 export function TeamApiDocumentation(props) {
-  const { currentLanguage, team, value, versionId, creationInProgress } = props
+  const { currentLanguage, team, value, versionId, creationInProgress, params } = props
 
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState(undefined);
   const [error, setError] = useState()
+
+  const [deletedPage, setDeletedPage] = useState(false)
 
   const flow = [
     '_id',
@@ -134,9 +136,16 @@ export function TeamApiDocumentation(props) {
   };
 
   function updateDetails() {
-    Services.getDocDetails(value._id, versionId)
+    Services.getDocDetails(params.apiId, versionId)
       .then(setDetails);
   };
+
+  useEffect(() => {
+    props.hookSavePage(() => {
+      if (selected)
+        onSave(selected);
+    });
+  }, [])
 
   useEffect(() => {
     if (!creationInProgress)
@@ -144,12 +153,12 @@ export function TeamApiDocumentation(props) {
   }, [versionId])
 
   useEffect(() => {
-    console.log("Save new page")
-    // props.save(value)
-    //   .then(() => {
-    //     setSelected(page)
-    //     updateDetails();
-    //   });
+    if (selected || deletedPage) {
+      setDeletedPage(false)
+      props.save().then(() => {
+        updateDetails();
+      });
+    }
   }, [value])
 
   function select(selectedPage) {
@@ -237,17 +246,12 @@ export function TeamApiDocumentation(props) {
       content: '# New page\n\nA new page',
     }).then((page) => {
       let pages = _.cloneDeep(value.documentation.pages);
-      //pages.push(page._id);
       pages.splice(index, 0, page._id);
       const newValue = _.cloneDeep(value);
       newValue.documentation.pages = pages;
-      props.onChange(newValue);
 
-      // props.save(newValue)
-      //   .then(() => {
-      //     setSelected(page)
-      //     updateDetails();
-      //   });
+      setSelected(page)
+      props.onChange(newValue);
     });
   };
 
@@ -272,12 +276,9 @@ export function TeamApiDocumentation(props) {
             );
             const newValue = _.cloneDeep(value);
             newValue.documentation.pages = pages;
-            props.save().then(() => {
-              setSelected(null, () => {
-                props.onChange(newValue);
-                updateDetails();
-              });
-            });
+            setDeletedPage(true)
+            setSelected(null);
+            props.onChange(newValue);
           });
         }
       });
