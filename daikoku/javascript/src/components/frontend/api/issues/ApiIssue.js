@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Switch, useParams, Route } from 'react-router-dom';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
@@ -9,16 +9,32 @@ import * as Services from '../../../../services';
 import { toastr } from 'react-redux-toastr';
 import { t } from '../../../../locales';
 
-export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
+export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
+  const { issueId, versionId, apiId } = useParams();
+  const [api, setRootApi] = useState({})
+
   const [filter, setFilter] = useState('open');
+
+  useEffect(() => {
+    Services.getRootApi(apiId)
+      .then(rootApi => {
+        setRootApi(rootApi)
+      })
+  }, [])
 
   function onChange(editedApi) {
     Services.saveTeamApi(ownerTeam._id, editedApi)
-      .then((res) => props.onChange(res))
+      .then(res => {
+        props.onChange({
+          ...props.api,
+          issues: res.issues,
+          issuesTags: res.issuesTags
+        })
+        setRootApi(res)
+      })
       .then(() => toastr.success(t('Api saved', currentLanguage)));
   }
 
-  const { issueId, versionId } = useParams();
   const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;
 
   return (
@@ -73,7 +89,7 @@ export function ApiIssue({ api, currentLanguage, ownerTeam, ...props }) {
                   connectedUser={props.connectedUser}
                   currentLanguage={currentLanguage}
                 />
-                <ApiIssues currentLanguage={currentLanguage} filter={filter} api={api} versionId={versionId} />
+                <ApiIssues currentLanguage={currentLanguage} filter={filter} api={api} />
               </>
             )}
           />

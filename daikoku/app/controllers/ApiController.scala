@@ -432,6 +432,20 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def getRootApi(apiId: String)  = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed documentation details for @{api.id}"))(ctx) {
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+        .findOne(Json.obj(
+          "_humanReadableId" -> apiId,
+          "parent" -> JsNull
+        ))
+        .map {
+          case None => AppError.render(ApiNotFound)
+          case Some(api) => Ok(ApiFormat.writes(api))
+        }
+    }
+  }
+
   def getDocumentationDetails(apiId: String, version: Option[String]) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed documentation details for @{api.id}"))(
       ctx
@@ -2031,7 +2045,10 @@ class ApiController(DaikokuAction: DaikokuAction,
           for {
             creators      <- Future.sequence(issue.comments.map(comment => env.dataStore.userRepo.findById(comment.by.value)))
             issueCreator  <- env.dataStore.userRepo.findById(issue.by.value)
-            api           <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findById(apiId)
+            api           <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+              "_humanReadableId" -> apiId,
+              "parent" -> JsNull
+            ))
           } yield {
             issueCreator
               .map { creator =>
@@ -2052,11 +2069,14 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getIssues(apiId: String, version: Option[String]) = DaikokuActionMaybeWithGuest.async { ctx =>
+  def getIssues(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed issues for @{api.id}"))(ctx) {
       ctx.setCtxValue("api.id", apiId)
 
-      env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version).flatMap {
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+        "_humanReadableId" -> apiId,
+        "parent" -> JsNull
+      )).flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         case Some(api) =>
           env.dataStore.apiIssueRepo
@@ -2104,7 +2124,10 @@ class ApiController(DaikokuAction: DaikokuAction,
             if (created) {
               env.dataStore.apiRepo
                 .forTenant(ctx.tenant.id)
-                .findByIdNotDeleted(apiId)
+                .findOne(Json.obj(
+                  "_humanReadableId" -> apiId,
+                  "parent" -> JsNull
+                ))
                 .flatMap {
                   case Some(api) =>
                     env.dataStore.apiRepo.forTenant(ctx.tenant.id)
@@ -2114,8 +2137,13 @@ class ApiController(DaikokuAction: DaikokuAction,
                           for {
                             subs <- env.dataStore.apiSubscriptionRepo
                               .forTenant(ctx.tenant.id)
-                              .find(Json.obj("api" -> apiId))
-                            api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId)
+                              .find(Json.obj(
+                                "_humanReadableId" -> apiId
+                              ))
+                            api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+                              "_humanReadableId" -> apiId,
+                              "parent" -> JsNull
+                            ))
                             _ <- {
                               Future.sequence(subs.distinctBy(_.team)
                                   .map(sub =>
@@ -2209,8 +2237,13 @@ class ApiController(DaikokuAction: DaikokuAction,
                       if (updated) {
                         if (existingIssue.comments.size < issue.comments.size)
                           for {
-                            subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id).find(Json.obj("api" -> apiId))
-                            api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId)
+                            subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id).find(Json.obj(
+                              "_humanReadableId" -> apiId
+                            ))
+                            api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+                              "_humanReadableId" -> apiId,
+                              "parent" -> JsNull
+                            ))
                             _ <- {
                               Future.sequence(subs.distinctBy(_.team)
                                 .map(sub => notifyTeam(
@@ -2237,7 +2270,10 @@ class ApiController(DaikokuAction: DaikokuAction,
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed comments for @{api.id}"))(ctx) {
       ctx.setCtxValue("api.id", apiId)
 
-      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+        "_humanReadableId" -> apiId,
+        "parent" -> JsNull
+      )).flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         case Some(_) =>
           env.dataStore.apiIssueRepo

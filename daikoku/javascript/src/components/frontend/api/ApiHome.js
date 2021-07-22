@@ -104,7 +104,7 @@ const ApiHeader = ({
             {api.name}
             <EditButton />
             <div style={{ position: 'absolute', right: 0, bottom: 0 }} className="d-flex align-items-center">
-              {versions.length > 1 && <div style={{ minWidth: '125px', fontSize: 'initial' }}>
+              {versions.length > 1 && tab !== "issues" && <div style={{ minWidth: '125px', fontSize: 'initial' }}>
                 <Select
                   name="versions-selector"
                   value={{ label: params.versionId, value: params.versionId }}

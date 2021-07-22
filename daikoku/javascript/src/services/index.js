@@ -1719,8 +1719,8 @@ export function getDaikokuVersion() {
   }).then((r) => r.json());
 }
 
-export function getAPIIssues(apiId, version) {
-  return fetch(`/api/apis/${apiId}/issues${version ? `?version=${version}` : ''}`, {
+export function getAPIIssues(apiId) {
+  return fetch(`/api/apis/${apiId}/issues`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -1873,3 +1873,9 @@ export function cloneApiPlan(teamId, apiId, fromApi, plan) {
     })
   })
 }
+
+export function getRootApi(apiId) {
+  return fetch(`/api/apis/${apiId}/_root`)
+    .then(r => r.json())
+}
+

@@ -129,6 +129,8 @@ POST    /api/subscriptions/_init                        fr.maif.otoroshi.daikoku
 POST    /api/apis/_init                                 fr.maif.otoroshi.daikoku.ctrls.ApiController.initApis()
 
 ### NoDocs ###
+GET     /api/apis/:apiId/_root                          fr.maif.otoroshi.daikoku.ctrls.ApiController.getRootApi(apiId)
+### NoDocs ###
 GET     /api/apis/:apiId/doc                            fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId, version: Option[String] ?= None)
 ### NoDocs ###
 POST    /api/apis/:apiId/access                         fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiAccess(apiId)
@@ -139,7 +141,7 @@ POST    /api/apis/_names                                fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/apis/:apiId/posts                          fr.maif.otoroshi.daikoku.ctrls.ApiController.getPosts(apiId, offset: Option[Int], limit: Option[Int], version: Option[String] ?= None)
 ### NoDocs ###
-GET     /api/apis/:apiId/issues                         fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssues(apiId, version: Option[String] ?= None)
+GET     /api/apis/:apiId/issues                         fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssues(apiId)
 ### NoDocs ###
 GET     /api/apis/:apiId/issues/:issueId/comments       fr.maif.otoroshi.daikoku.ctrls.ApiController.getComments(apiId, issueId)
 ### NoDocs ###

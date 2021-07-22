@@ -19,7 +19,7 @@ const styles = {
 };
 
 export function NewIssue({ currentLanguage, user, api, ...props }) {
-  const { issuesTags, _id, team, _tenant } = api;
+  const { issuesTags, _id, team, _humanReadableId } = api;
   const [issue, setIssue] = useState(null);
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
     if (issue.title.length === 0 || issue.comments[0].content.length === 0)
       toastr.error('Title or content are too short');
     else {
-      Services.createNewIssue(_id, team, {
+      Services.createNewIssue(_humanReadableId, team, {
         ...issue,
         tags: issue.tags.map((tag) => tag.value.id),
       }).then((res) => {

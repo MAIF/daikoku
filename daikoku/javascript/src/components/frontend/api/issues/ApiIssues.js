@@ -1,16 +1,14 @@
 import moment from 'moment';
 import { t } from '../../../../locales';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import * as Services from '../../../../services/index';
 
-export function ApiIssues({ filter, currentLanguage, api, versionId }) {
+export function ApiIssues({ filter, currentLanguage, api }) {
   const [issues, setIssues] = useState([]);
 
-  const params = useParams()
-
   useEffect(() => {
-    Services.getAPIIssues(api._id, versionId).then((res) => setIssues(res));
+    Services.getAPIIssues(api._humanReadableId).then((res) => setIssues(res));
   }, [api._id]);
 
   const filteredIssues = issues

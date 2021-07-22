@@ -5,12 +5,12 @@ import { t } from '../../../../locales';
 
 export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
   const [showTagForm, showNewTagForm] = useState(false);
-  const [issue, setIssue] = useState(value);
+  const [api, setApi] = useState(value);
 
   function deleteTag(id) {
-    setIssue({
-      ...issue,
-      issuesTags: [...issue.issuesTags.filter((iss) => iss.id !== id)],
+    setApi({
+      ...api,
+      issuesTags: [...api.issuesTags.filter((iss) => iss.id !== id)],
     });
   }
 
@@ -18,10 +18,10 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
     <div style={{ paddingBottom: '250px' }}>
       {showTagForm ? (
         <NewTag
-          issuesTags={issue.issuesTags}
+          issuesTags={api.issuesTags}
           currentLanguage={currentLanguage}
           handleCreate={(newTag) => {
-            setIssue({ ...issue, issuesTags: [...issue.issuesTags, newTag] });
+            setApi({ ...api, issuesTags: [...api.issuesTags, newTag] });
             showNewTagForm(false);
           }}
           onCancel={() => showNewTagForm(false)}
@@ -39,7 +39,7 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
       <div className="form-group row pt-3">
         <label className="col-xs-12 col-sm-2">{t('issues.tags', currentLanguage)}</label>
         <div className="col-sm-10">
-          {issue.issuesTags.map((issueTag, i) => (
+          {api.issuesTags.map((issueTag, i) => (
             <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
               <span
                 className="badge badge-primary d-flex align-items-center justify-content-center px-3 py-2"
@@ -55,9 +55,9 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
                 className="form-control mx-3"
                 value={issueTag.name}
                 onChange={(e) =>
-                  setIssue({
-                    ...issue,
-                    issuesTags: issue.issuesTags.map((issue, j) => {
+                  setApi({
+                    ...api,
+                    issuesTags: api.issuesTags.map((issue, j) => {
                       if (i === j) issue.name = e.target.value;
                       return issue;
                     }),
@@ -68,9 +68,9 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
                 className="pr-3"
                 initialColor={issueTag.color}
                 handleColorChange={(color) =>
-                  setIssue({
-                    ...issue,
-                    issuesTags: issue.issuesTags.map((issue, j) => {
+                  setApi({
+                    ...api,
+                    issuesTags: api.issuesTags.map((issue, j) => {
                       if (i === j) issue.color = color;
                       return issue;
                     }),
@@ -88,13 +88,13 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
               </div>
             </div>
           ))}
-          {issue.issuesTags.length === 0 && <p>{t('issues.no_tags', currentLanguage)}</p>}
+          {api.issuesTags.length === 0 && <p>{t('issues.no_tags', currentLanguage)}</p>}
         </div>
       </div>
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2" />
         <div className="col-sm-10 d-flex">
-          <button className="btn btn-success ml-auto" onClick={() => onChange(issue)}>
+          <button className="btn btn-success ml-auto" onClick={() => onChange(api)}>
             {t('Save', currentLanguage)}
           </button>
         </div>
