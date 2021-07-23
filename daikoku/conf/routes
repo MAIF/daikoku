@@ -218,6 +218,10 @@ GET     /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/teams/:teamId/visible-apis                 fr.maif.otoroshi.daikoku.ctrls.ApiController.visibleApisOfTeam(teamId)
 ### NoDocs ###
+GET     /api/teams/:teamId/apis/:apiId/pages            fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApiDocumentation(teamId, apiId, version: Option[String] ?= None)
+### NoDocs ###
+PUT     /api/teams/:teamId/apis/:apiId/pages            fr.maif.otoroshi.daikoku.ctrls.ApiController.cloneDocumentation(teamId, apiId, version: Option[String] ?= None)
+### NoDocs ###
 GET     /api/categories                                 fr.maif.otoroshi.daikoku.ctrls.ApiController.categories()
 
 ### NoDocs ###

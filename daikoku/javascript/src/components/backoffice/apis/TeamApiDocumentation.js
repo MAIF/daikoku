@@ -8,6 +8,8 @@ import { Spinner } from '../../utils';
 
 import { t, Translation } from '../../../locales';
 import { AssetChooserByModal } from '../../frontend';
+import { connect } from 'react-redux';
+import { openApiDocumentationSelectModal } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -76,7 +78,7 @@ class AssetButton extends Component {
   }
 }
 
-export function TeamApiDocumentation(props) {
+const TeamApiDocumentationComponent = props => {
   const { currentLanguage, team, value, versionId, creationInProgress, params } = props
 
   const [selected, setSelected] = useState(null);
@@ -284,6 +286,18 @@ export function TeamApiDocumentation(props) {
       });
   };
 
+  function importPage() {
+    props.openApiDocumentationSelectModal({
+      currentLanguage,
+      api: value,
+      teamId: props.teamId,
+      onClose: () => {
+        props.reloadState()
+        updateDetails()
+      }
+    })
+  }
+
   if (value === null)
     return null;
 
@@ -312,10 +326,13 @@ export function TeamApiDocumentation(props) {
                     onClick={addNewPage}
                     type="button"
                     className="btn btn-sm btn-outline-primary">
-                    <i className="fas fa-plus mr-1" />
-                    <Translation i18nkey="Add page" language={currentLanguage}>
-                      add page
-                    </Translation>
+                    <i className="fas fa-plus" />
+                  </button>
+                  <button
+                    onClick={importPage}
+                    type="button"
+                    className="btn btn-sm btn-outline-primary">
+                    <i className="fas fa-download" />
                   </button>
                 </div>
               </th>
@@ -373,3 +390,14 @@ export function TeamApiDocumentation(props) {
     </div>
   );
 }
+
+const mapStateToProps = (state) => ({
+  ...state.context,
+  error: state.error,
+});
+
+const mapDispatchToProps = {
+  openApiDocumentationSelectModal: (team) => openApiDocumentationSelectModal(team),
+};
+
+export const TeamApiDocumentation = connect(mapStateToProps, mapDispatchToProps)(TeamApiDocumentationComponent);

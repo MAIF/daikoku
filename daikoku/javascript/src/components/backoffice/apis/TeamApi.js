@@ -50,29 +50,32 @@ function TeamApiComponent(props) {
           create: true,
         })
       );
-    } else {
-      Promise.all([
-        Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
-        Services.allSimpleOtoroshis(props.tenant._id),
-        Services.getAllApiVersions(props.currentTeam._id, params.apiId)
-      ]).then(([api, otoroshiSettings, versions]) => {
-        if (!api.error)
-          setState({ ...state, api, otoroshiSettings });
-        else
-          toastr.error(api.error)
-        setApiVersions(versions.map(v => ({ label: v, value: v })));
-        setApiVersion({ value: params.versionId, label: params.versionId })
-      });
-    }
+    } else
+      reloadState()
   }, [params.tab, params.versionId]);
 
   useEffect(() => {
     if (state.changed) {
-      console.log("RUN SAVE")
       setState({ ...state, changed: false })
       save()
     }
   }, [state.changed])
+
+  function reloadState() {
+    console.log("RELOAD STATE")
+    Promise.all([
+      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
+      Services.allSimpleOtoroshis(props.tenant._id),
+      Services.getAllApiVersions(props.currentTeam._id, params.apiId)
+    ]).then(([api, otoroshiSettings, versions]) => {
+      if (!api.error)
+        setState({ ...state, api, otoroshiSettings });
+      else
+        toastr.error(api.error)
+      setApiVersions(versions.map(v => ({ label: v, value: v })));
+      setApiVersion({ value: params.versionId, label: params.versionId })
+    });
+  }
 
   function save() {
     if (params.tab === 'documentation' && state.savePage)
@@ -469,6 +472,7 @@ function TeamApiComponent(props) {
                       save={save}
                       versionId={props.match.params.versionId}
                       params={params}
+                      reloadState={reloadState}
                     />
                   )}
                   {editedApi && tab === 'testing' && (

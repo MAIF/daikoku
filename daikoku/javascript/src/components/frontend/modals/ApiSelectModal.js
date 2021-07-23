@@ -2,7 +2,6 @@ import Select from 'react-select';
 import React, { useEffect, useState } from 'react';
 import { t } from '../../../locales';
 import * as Services from '../../../services';
-import { toastr } from 'react-redux-toastr';
 
 export const ApiSelectModal = ({ closeModal, currentLanguage, teamId, api, onClose }) => {
     const [apis, setApis] = useState([]);

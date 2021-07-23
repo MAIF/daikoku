@@ -1879,3 +1879,18 @@ export function getRootApi(apiId) {
     .then(r => r.json())
 }
 
+export function importApiPages(teamId, apiId, pages, version) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`, {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify({
+      pages
+    })
+  })
+    .then(r => r.json())
+}
+
+export function getAllApiDocumentation(teamId, apiId, version) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`)
+    .then(r => r.json())
+}

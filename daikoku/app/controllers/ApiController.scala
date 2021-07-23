@@ -1327,6 +1327,69 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def getAllApiDocumentation(teamId: String, apiId: String, version: Option[String]) = DaikokuAction.async { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has requested all pages of @{api.name} - @{team.id}"))(teamId, ctx) {
+      team => {
+        version match {
+          case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing version")))
+          case Some(v) =>
+            env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+              .find(Json.obj("_humanReadableId" -> apiId, "currentVersion" -> Json.obj("$ne" -> v)))
+              .flatMap(apis => Future.sequence(
+                apis.map { api =>
+                  env.dataStore.apiDocumentationPageRepo
+                    .forTenant(ctx.tenant.id)
+                    .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(api.documentation.pages.map(_.asJson)))))
+                    .map { pages => Json.obj(
+                      "currentVersion" -> api.currentVersion.value,
+                      "apiId" -> api.id.asJson,
+                      "pages" -> pages.map(page => Json.obj(
+                        "_id" -> page.id.asJson,
+                        "title" -> JsString(page.title)
+                      ))
+                    )}
+                })
+              )
+            .map(v => Ok(JsArray(v)))
+        }
+      }
+    }
+  }
+
+  def cloneDocumentation(teamId: String, apiId: String, version: Option[String]) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has imported pages in @{api.name} - @{team.id}"))(teamId, ctx) {
+      team => {
+        val pages = (ctx.request.body \ "pages").as[Seq[JsObject]]
+
+        for {
+          fromPages <- env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id)
+            .find(Json.obj(
+              "_id" -> Json.obj("$in" -> JsArray(pages.map(page => (page \ "pageId").as[JsString])))
+            ))
+          createdPages <- Future.sequence(
+            fromPages.map(page => {
+              val generatedId = BSONObjectID.generate().stringify
+              env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id)
+                .save(page.copy(id = ApiDocumentationPageId(generatedId)))
+                .flatMap(_ => FastFuture.successful(ApiDocumentationPageId(generatedId)))
+            }))
+          api <- env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version)
+        } yield {
+          api match {
+            case None => FastFuture.successful(AppError.render(ApiNotFound))
+            case Some(api) => env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(
+              api.copy(documentation = api.documentation.copy(pages = api.documentation.pages ++ createdPages))
+            ).map { _ =>
+              Ok(Json.obj("cloned" -> true))
+            }
+          }
+        }
+
+        FastFuture.successful(Ok(Json.obj()))
+      }
+    }
+  }
+
   def getVisibleApis(teams: Seq[Team], user: User, tenant: Tenant): Future[JsArray] = {
     val teamFilter = Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))))
     for {

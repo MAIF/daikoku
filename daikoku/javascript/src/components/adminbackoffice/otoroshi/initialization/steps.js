@@ -312,7 +312,7 @@ export const ServicesStep = (props) => {
               Api group
             </Translation>
           </span>{' '}
-          : {props.groups.find((g) => g.id === props.service.groupId).name}
+          : {props.groups.find((g) => g.id === props.service.groupId) ? props.groups.find((g) => g.id === props.service.groupId).name : ""}
         </div>
       </div>
       <div className="col-6">
@@ -731,9 +731,8 @@ const ApiKey = (props) => {
       </td>
       <td style={{ width: '10%' }} className="align-middle text-center">
         <button
-          className={`btn btn-outline-${
-            props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
-          } mr-2`}
+          className={`btn btn-outline-${props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
+            } mr-2`}
           disabled={!selectedTeam || error.name || !selectedPlan ? 'disabled' : null}
           onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
           {props.maybeCreatedSub(props.apikey).isDefined
