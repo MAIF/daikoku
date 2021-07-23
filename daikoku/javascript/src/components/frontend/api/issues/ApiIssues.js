@@ -4,12 +4,14 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import * as Services from '../../../../services/index';
 
-export function ApiIssues({ filter, currentLanguage, api }) {
+export function ApiIssues({ filter, currentLanguage, api, selectedVersion }) {
   const [issues, setIssues] = useState([]);
 
   useEffect(() => {
-    Services.getAPIIssues(api._humanReadableId).then((res) => setIssues(res));
-  }, [api._id]);
+    Services.getAPIIssues(api._humanReadableId).then((res) => setIssues(res
+      .filter(r => r.apiVersion === selectedVersion.value || selectedVersion.value === 'all'
+      )));
+  }, [api._id, selectedVersion.value]);
 
   const filteredIssues = issues
     .filter(
@@ -22,43 +24,48 @@ export function ApiIssues({ filter, currentLanguage, api }) {
 
   return (
     <div className="d-flex flex-column pt-3">
-      {filteredIssues.map(({ seqId, title, tags, by, createdDate, closedDate, open }) => (
+      {filteredIssues.map(({ seqId, title, tags, by, createdDate, closedDate, open, apiVersion }) => (
         <div
-          className="border-bottom py-3 d-flex align-items-center"
+          className="border-bottom py-3 d-flex align-items-center justify-content-between"
           key={`issue-${seqId}`}
           style={{ backgroundColor: '#fff' }}>
-          <i
-            className="fa fa-exclamation-circle mx-3"
-            style={{ color: open ? 'inherit' : 'red' }}></i>
-          <div>
+          <div className="d-flex align-items-center">
+            <i
+              className="fa fa-exclamation-circle mx-3"
+              style={{ color: open ? 'inherit' : 'red' }}></i>
             <div>
-              <Link to={`issues/${seqId}`} className="mr-2">
-                {title}
-              </Link>
-              {tags
-                .sort((a, b) => (a.name < b.name ? -1 : 1))
-                .map((tag, i) => (
-                  <span
-                    className="badge badge-primary mr-1"
-                    style={{ backgroundColor: tag.color }}
-                    key={`issue-${seqId}-tag${i}`}>
-                    {tag.name}
-                  </span>
-                ))}
+              <div>
+                <Link to={`issues/${seqId}`} className="mr-2">
+                  {title}
+                </Link>
+                {tags
+                  .sort((a, b) => (a.name < b.name ? -1 : 1))
+                  .map((tag, i) => (
+                    <span
+                      className="badge badge-primary mr-1"
+                      style={{ backgroundColor: tag.color }}
+                      key={`issue-${seqId}-tag${i}`}>
+                      {tag.name}
+                    </span>
+                  ))}
+              </div>
+              {open ? (
+                <span>
+                  #{seqId} {t('issues.opened_on', currentLanguage)}{' '}
+                  {moment(createdDate).format(t('moment.date.format.without.hours', currentLanguage))}{' '}
+                  {t('issues.by', currentLanguage)} {by._humanReadableId}
+                </span>
+              ) : (
+                <span>
+                  #{seqId} {t('issues.by', currentLanguage)} {by._humanReadableId}{' '}
+                  {t('was closed on', currentLanguage)}{' '}
+                  {moment(closedDate).format(t('moment.date.format.without.hours', currentLanguage))}{' '}
+                </span>
+              )}
             </div>
-            {open ? (
-              <span>
-                #{seqId} {t('issues.opened_on', currentLanguage)}{' '}
-                {moment(createdDate).format(t('moment.date.format.without.hours', currentLanguage))}{' '}
-                {t('issues.by', currentLanguage)} {by._humanReadableId}
-              </span>
-            ) : (
-              <span>
-                #{seqId} {t('issues.by', currentLanguage)} {by._humanReadableId}{' '}
-                {t('was closed on', currentLanguage)}{' '}
-                {moment(closedDate).format(t('moment.date.format.without.hours', currentLanguage))}{' '}
-              </span>
-            )}
+          </div>
+          <div className="py-2 px-3">
+            <span className="badge badge-info">{apiVersion}</span>
           </div>
         </div>
       ))}

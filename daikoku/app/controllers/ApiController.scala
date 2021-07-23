@@ -1597,22 +1597,32 @@ class ApiController(DaikokuAction: DaikokuAction,
                 val deletedPlansId = oldPlans.diff(newPlans)
                 val deletedPlans = oldApi.possibleUsagePlans.filter(pp => deletedPlansId.contains(pp.id))
 
-                for {
-                  plans <- changePlansVisibility(flippedPlans, api, ctx.tenant)
-                  _ <- deleteApiPlansSubscriptions(deletedPlans, oldApi, ctx.tenant, ctx.user)
-                  apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
-                  _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
-                  _ <- otoroshiSynchronisator.verify(Json.obj("api" -> apiId)) //launch synhro to maybe update customeMetadata & authorizedEntities
-                  _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
-                  _ <- updateAllHumanReadableId(ctx, apiToSave, oldApi)
-                  _ <- turnOffDefaultVersion(ctx, apiToSave, oldApi, apiToSave.humanReadableId, apiToSave.currentVersion.value)
-                  _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
-                } yield {
-                  ctx.setCtxValue("api.name", api.name)
-                  ctx.setCtxValue("api.id", api.id)
+                env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+                   .exists(Json.obj(
+                     "_humanReadableId" -> api.humanReadableId,
+                     "currentVersion" -> api.currentVersion.asJson,
+                     "_id" -> Json.obj("$ne" -> api.id.value)
+                   ))
+                   .flatMap {
+                     case true  => FastFuture.successful(BadRequest(Json.obj("error" -> "Version already existing")))
+                     case false =>
+                       for {
+                         plans <- changePlansVisibility(flippedPlans, api, ctx.tenant)
+                         _ <- deleteApiPlansSubscriptions(deletedPlans, oldApi, ctx.tenant, ctx.user)
+                         apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
+                         _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
+                         _ <- otoroshiSynchronisator.verify(Json.obj("api" -> apiId)) //launch synhro to maybe update customeMetadata & authorizedEntities
+                         _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
+                         _ <- updateAllHumanReadableId(ctx, apiToSave, oldApi)
+                         _ <- turnOffDefaultVersion(ctx, apiToSave, oldApi, apiToSave.humanReadableId, apiToSave.currentVersion.value)
+                         _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
+                       } yield {
+                         ctx.setCtxValue("api.name", api.name)
+                         ctx.setCtxValue("api.id", api.id)
 
-                  Ok(apiToSave.asJson)
-                }
+                         Ok(apiToSave.asJson)
+                       }
+                   }
             }
       }
     }
@@ -1623,7 +1633,12 @@ class ApiController(DaikokuAction: DaikokuAction,
       env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id)
         .find(Json.obj("_id" -> Json.obj("$in" -> apiToSave.issues.map(_.value))))
         .map { issues =>
-          Future.sequence(issues.map(issue => env.dataStore.apiIssueRepo
+          Future.sequence(issues
+              .filter(issue => issue.apiVersion match {
+                case None => true
+                case Some(version) => version == apiToSave.currentVersion.value
+              })
+              .map(issue => env.dataStore.apiIssueRepo
             .forTenant(ctx.tenant.id)
             .save(issue.copy(apiVersion = Some(apiToSave.currentVersion.value)))))
         }
@@ -2096,26 +2111,24 @@ class ApiController(DaikokuAction: DaikokuAction,
           env.dataStore.apiIssueRepo
             .forTenant(ctx.tenant.id)
             .find(Json.obj(
-              "_id" -> Json.obj(
-              "$in" -> JsArray(api.issues.map(_.asJson))
-              )
+              "_id" -> Json.obj("$in" -> JsArray(api.issues.map(_.asJson)))
             ))
             .map(issues => issues.filter(!_.deleted))
             .flatMap(issues =>
               for {
-                creators  <- Future.sequence(issues.map(issue => env.dataStore.userRepo.findById(issue.by.value)))
+                creators <- Future.sequence(issues.map(issue => env.dataStore.userRepo.findById(issue.by.value)))
               } yield {
                 Ok(
                   JsArray(
-                  issues
-                    .zipWithIndex
-                    .map {
-                      case (issue, i) =>
-                        issue.asJson.as[JsObject] +
-                          ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj())) +
-                          ("tags" -> Json.toJson(issue.tags
+                    issues
+                      .zipWithIndex
+                      .map {
+                        case (issue, i) =>
+                          issue.asJson.as[JsObject] +
+                            ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj())) +
+                            ("tags" -> Json.toJson(issue.tags
                               .map(tagId => api.issuesTags.find(_.id == tagId).map(tag => ApiTagFormat.writes(tag)).getOrElse(Json.obj()))))
-                    }
+                      }
                   )
                 )
               }

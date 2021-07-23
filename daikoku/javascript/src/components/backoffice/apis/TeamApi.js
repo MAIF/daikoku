@@ -22,6 +22,8 @@ import { setError, openSubMetadataModal, openTestingApiKeyModal } from '../../..
 import { gt } from 'semver';
 import Select from 'react-select';
 
+const reservedCharacters = [";", "/", "?", ":", "@", "&", "=", "+", "$", ","]
+
 function TeamApiComponent(props) {
   const location = useLocation()
   const params = useParams()
@@ -97,18 +99,26 @@ function TeamApiComponent(props) {
     } else {
       return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
         .then(r => {
-          if (!r.exists)
-            return Services.saveTeamApi(props.currentTeam._id, editedApi, apiVersion.value)
-              .then(res => {
-                toastr.success(t('Api saved', props.currentLanguage))
-                return res;
-              })
-              .then(newApi => {
-                if (newApi._humanReadableId !== params.apiId)
-                  history.push(
-                    `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._humanReadableId}/${newApi.currentVersion}/infos`
-                  )
-              })
+          if (!r.exists) {
+            if (editedApi.currentVersion.split("").find(c => reservedCharacters.includes(c))) {
+              toastr.error("Can't set version with special characters : " + reservedCharacters.join(" | "))
+              return Promise.resolve()
+            } else
+              return Services.saveTeamApi(props.currentTeam._id, editedApi, apiVersion.value)
+                .then(res => {
+                  if (res.error)
+                    toastr.error(t(res.error, props.currentLanguage))
+                  else
+                    toastr.success(t('Api saved', props.currentLanguage))
+                  return res;
+                })
+                .then(newApi => {
+                  if (newApi._humanReadableId !== params.apiId || newApi.currentVersion !== params.versionId)
+                    history.push(
+                      `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._humanReadableId}/${newApi.currentVersion}/infos`
+                    )
+                })
+          }
           else
             toastr.error(`api with name "${editedApi.name}" already exists`)
         });
@@ -207,10 +217,8 @@ function TeamApiComponent(props) {
     const { api } = state
     window.prompt("Version number", undefined, false, "Create a new version", `Current version : ${api.currentVersion}`)
       .then(newVersion => {
-        const reservedWords = [";", "/", "?", ":", "@", "&", "=", "+", "$", ","]
-
-        if (newVersion.split("").find(c => reservedWords.includes(c)))
-          toastr.error("Can't create version with special characters : " + reservedWords.join(" | "))
+        if (newVersion.split("").find(c => reservedCharacters.includes(c)))
+          toastr.error("Can't create version with special characters : " + reservedCharacters.join(" | "))
         else if (gt(api.currentVersion, newVersion))
           window.confirm("Are you sure to create a version less greater than the previous ?")
             .then(ok => {

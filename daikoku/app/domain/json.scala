@@ -1417,10 +1417,7 @@ object json {
               .getOrElse(Seq.empty),
             closedAt = (json \ "closedAt")
               .asOpt[DateTime](DateTimeFormat.reads),
-            apiVersion = (json \ "apiVersion")
-              .asOpt[String]
-              .getOrElse(Some("1.0.0"))
-              .asInstanceOf[Option[String]]
+            apiVersion = (json \ "apiVersion").asOpt[String]
           )
         )
       } recover {
@@ -1444,7 +1441,10 @@ object json {
         .as[JsValue],
       "by" -> o.by.asJson,
       "comments" -> o.comments.map(ApiIssueCommentFormat.writes),
-      "apiVersion" -> o.apiVersion.map(v => v).getOrElse("1.0.0").asInstanceOf[JsValue]
+      "apiVersion" -> o.apiVersion
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val ApiIssueTagIdFormat = new Format[ApiIssueTagId] {

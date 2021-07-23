@@ -14,6 +14,7 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
   const [api, setRootApi] = useState({})
 
   const [filter, setFilter] = useState('open');
+  const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' })
 
   useEffect(() => {
     Services.getRootApi(apiId)
@@ -88,8 +89,12 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                   filter={filter}
                   connectedUser={props.connectedUser}
                   currentLanguage={currentLanguage}
+                  api={api}
+                  team={ownerTeam._id}
+                  selectedVersion={selectedVersion}
+                  setSelectedVersion={setSelectedVersion}
                 />
-                <ApiIssues currentLanguage={currentLanguage} filter={filter} api={api} />
+                <ApiIssues currentLanguage={currentLanguage} filter={filter} api={api} selectedVersion={selectedVersion} />
               </>
             )}
           />

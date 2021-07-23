@@ -663,7 +663,6 @@ class NotificationControllerSpec()
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
-      println(resp.body)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
 

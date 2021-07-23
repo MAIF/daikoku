@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { t } from '../../../../locales';
+import * as Services from '../../../../services';
+import Select from 'react-select';
 
 export function ApiFilter({
   tags,
@@ -8,10 +11,21 @@ export function ApiFilter({
   pathname,
   connectedUser,
   currentLanguage,
+  team,
+  api,
+  selectedVersion,
+  setSelectedVersion
 }) {
+  const [availableApiVersions, setApiVersions] = useState([])
+
+  useEffect(() => {
+    Services.getAllApiVersions(team, api._humanReadableId)
+      .then(setApiVersions)
+  }, []);
+
   return (
     <div className="d-flex flex-row justify-content-between">
-      <div>
+      <div className="d-flex align-items-center">
         <button
           className={`btn btn-${filter !== 'all' ? 'outline-' : ''}primary`}
           style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
@@ -30,6 +44,21 @@ export function ApiFilter({
           onClick={() => handleFilter('closed')}>
           {t('issues.closed', currentLanguage)}
         </button>
+        <Select
+          id="apiVersion"
+          onChange={apiVersion => setSelectedVersion(apiVersion)}
+          options={[...availableApiVersions.map((iss) => ({ value: iss, label: `Version : ${iss}` })), { value: 'all', label: 'All' }]}
+          value={selectedVersion}
+          className="input-select reactSelect ml-1"
+          classNamePrefix="reactSelect"
+          styles={{
+            menu: (provided) => ({ ...provided, zIndex: 9999 }),
+            container: base => ({
+              ...base,
+              minWidth: '140px'
+            })
+          }}
+        />
       </div>
 
       {connectedUser && !connectedUser.isGuest && (

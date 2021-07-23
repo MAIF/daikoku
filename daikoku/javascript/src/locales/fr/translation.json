@@ -874,6 +874,7 @@
   "issues.by": "par",
   "issues.closed_on": "a été fermé le",
   "issues.nothing_matching_filter": "Aucun problème correspondant aux filtres",
+  "issues.apiVersion": "Version de l'api concernée",
   "Edit": "Editer",
   "Kafka host validation": "Validation de l'hôte Kafka",
   "kafka.audit.hostValidation.help": "Désactiver la validation nom d'hôte du serveur à l'aide du certificat du serveur par Kafka",

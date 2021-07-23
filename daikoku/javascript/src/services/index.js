@@ -1852,7 +1852,7 @@ export function getAllApiVersions(teamId, apiId) {
     method: 'GET'
   })
     .then(r => r.json())
-    .then(r => r.sort((a, b) => a < b ? 1 : -1))
+    .then(r => !r.error ? r.sort((a, b) => a < b ? 1 : -1) : r)
 }
 
 export function getDefaultApiVersion(apiId) {

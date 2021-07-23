@@ -874,6 +874,7 @@
     "issues.by": "by",
     "issues.closed_on": "was closed on",
     "issues.nothing_matching_filter": "No issues matching filter",
+    "issues.apiVersion": "Version of api concerned",
     "star": "Star",
     "unstar": "Unstar",
     "Edit": "Edit",
