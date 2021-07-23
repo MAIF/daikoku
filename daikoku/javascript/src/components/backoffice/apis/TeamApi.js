@@ -62,7 +62,6 @@ function TeamApiComponent(props) {
   }, [state.changed])
 
   function reloadState() {
-    console.log("RELOAD STATE")
     Promise.all([
       Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.allSimpleOtoroshis(props.tenant._id),
@@ -107,7 +106,7 @@ function TeamApiComponent(props) {
               toastr.error("Can't set version with special characters : " + reservedCharacters.join(" | "))
               return Promise.resolve()
             } else
-              return Services.saveTeamApi(props.currentTeam._id, editedApi, apiVersion.value)
+              return Services.saveTeamApiWithId(props.currentTeam._id, editedApi, apiVersion.value, editedApi._humanReadableId)
                 .then(res => {
                   if (res.error)
                     toastr.error(t(res.error, props.currentLanguage))

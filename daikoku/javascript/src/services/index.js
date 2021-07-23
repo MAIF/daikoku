@@ -592,8 +592,8 @@ export function deleteTeamApi(teamId, id) {
   }).then((r) => r.json());
 }
 
-export function saveTeamApi(teamId, api, version) {
-  return fetch(`/api/teams/${teamId}/apis/${api._id}${version ? `?version=${version}` : ''}`, {
+export function saveTeamApiWithId(teamId, api, version, apiId) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}${version ? `?version=${version}` : ''}`, {
     method: 'PUT',
     credentials: 'include',
     headers: {
@@ -602,6 +602,10 @@ export function saveTeamApi(teamId, api, version) {
     },
     body: JSON.stringify(api),
   }).then((r) => r.json());
+}
+
+export function saveTeamApi(teamId, api, version) {
+  return saveTeamApiWithId(teamId, api, version, api._id);
 }
 
 export function createTeamApi(teamId, api) {

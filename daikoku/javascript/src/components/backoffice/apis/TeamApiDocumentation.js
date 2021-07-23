@@ -150,8 +150,10 @@ const TeamApiDocumentationComponent = props => {
   }, [])
 
   useEffect(() => {
-    if (!creationInProgress)
+    if (!creationInProgress) {
       updateDetails();
+      setSelected(null)
+    }
   }, [versionId])
 
   useEffect(() => {
