@@ -8,11 +8,11 @@ import controllers.AppError
 import controllers.AppError.{MissingParentSubscription, SubscriptionAggregationDisabled, SubscriptionParentExisted}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator}
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithQuotas, FreeWithoutQuotas, PayPerUse, QuotasWithLimits, QuotasWithoutLimits}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ActualOtoroshiApiKeyFormat, ApiFormat, ApiSubscriptionFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
@@ -514,7 +514,8 @@ class ApiControllerSpec()
         apis = Seq(defaultApi,
                    defaultApi.copy(id = ApiId("another-api"),
                                    description = "another-api",
-                                   team = teamOwnerId))
+                                   team = teamOwnerId,
+                                    name = "another-api"))
       )
 
       val updatedApi = defaultApi.copy(description = "description")
@@ -524,7 +525,7 @@ class ApiControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}",
         method = "PUT",
         body = Some(updatedApi.asJson))(tenant, session)
-
+      
       resp.status mustBe 200
       val result =
         fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(resp.json)
@@ -1262,8 +1263,9 @@ class ApiControllerSpec()
         teams = Seq(teamOwner),
         apis = Seq(defaultApi,
                    defaultApi.copy(id = ApiId("another-api"),
-                                   description = "another-api",
-                                   team = teamOwnerId))
+                     description = "another-api",
+                     team = teamOwnerId,
+                     name = "another-api"))
       )
 
       val updatedApi = defaultApi.copy(description = "description")
@@ -1327,6 +1329,42 @@ class ApiControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id}",
         method = "DELETE")(tenant, session)
       resp2.status mustBe 404
+    }
+
+    "create a new version of api" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userApiEditor),
+        teams = Seq(teamOwner),
+        apis = Seq(defaultApi)
+      )
+
+      val session = loginWithBlocking(userApiEditor, tenant)
+      val resp = httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/versions",
+        method = "POST",
+        body = Some(Json.obj(
+          "version" -> "2.0.0"
+        )))(tenant, session)
+
+      resp.status mustBe 201
+    }
+
+    "can't create a new version of api which already existing" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userApiEditor),
+        teams = Seq(teamOwner),
+        apis = Seq(defaultApi)
+      )
+
+      val session = loginWithBlocking(userApiEditor, tenant)
+      val resp = httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/versions",
+        method = "POST",
+        body = Some(Json.obj(
+          "version" -> defaultApi.currentVersion.value
+        )))(tenant, session)
+
+      resp.status mustBe Status.CONFLICT
     }
   }
 

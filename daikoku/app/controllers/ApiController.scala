@@ -1632,7 +1632,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               case JsError(e) =>
                 FastFuture
                   .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
-              case JsSuccess(api, _) if ctx.tenant.aggregationApiKeysSecurity.isEmpty &&
+              case JsSuccess(api, _) if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) &&
                 api.possibleUsagePlans.exists(plan => plan.aggregationApiKeysSecurity.exists(identity)) =>
                 FastFuture.successful(BadRequest(AppError.toJson(SubscriptionAggregationDisabled)))
               case JsSuccess(api, _) if oldApi.visibility == ApiVisibility.AdminOnly =>
@@ -1667,7 +1667,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                      "_id" -> Json.obj("$ne" -> api.id.value)
                    ))
                    .flatMap {
-                     case true  => FastFuture.successful(BadRequest(Json.obj("error" -> "Version already existing")))
+                     case true  => FastFuture.successful(AppError.render(ApiVersionConflict))
                      case false =>
                        for {
                          plans <- changePlansVisibility(flippedPlans, api, ctx.tenant)
