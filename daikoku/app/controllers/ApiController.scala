@@ -1361,7 +1361,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       team => {
         val pages = (ctx.request.body \ "pages").as[Seq[JsObject]]
 
-        for {
+        (for {
           fromPages <- env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id)
             .find(Json.obj(
               "_id" -> Json.obj("$in" -> JsArray(pages.map(page => (page \ "pageId").as[JsString])))
@@ -1383,9 +1383,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               Ok(Json.obj("cloned" -> true))
             }
           }
-        }
-
-        FastFuture.successful(Ok(Json.obj()))
+        }).flatten
       }
     }
   }
