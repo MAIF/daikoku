@@ -1,4 +1,4 @@
-import React, { Component, useEffect, useState } from 'react';
+import React, { Component, useEffect, useState, useImperativeHandle } from 'react';
 import _ from 'lodash';
 import * as Services from '../../../services';
 import faker from 'faker';
@@ -78,7 +78,7 @@ class AssetButton extends Component {
   }
 }
 
-const TeamApiDocumentationComponent = props => {
+const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   const { currentLanguage, team, value, versionId, creationInProgress, params } = props
 
   const [selected, setSelected] = useState(null);
@@ -142,15 +142,15 @@ const TeamApiDocumentationComponent = props => {
       .then(setDetails);
   };
 
-  useEffect(() => {
-    props.hookSavePage(() => {
-      if (selected)
-        onSave(selected);
-    });
-  }, [])
+  useImperativeHandle(ref, () => ({
+    saveCurrentPage() {
+      onSave()
+    }
+  }))
 
   useEffect(() => {
     if (!creationInProgress) {
+      console.log("updateDetails from useEffect")
       updateDetails();
       setSelected(null)
     }
@@ -190,11 +190,13 @@ const TeamApiDocumentationComponent = props => {
   };
 
   function onSave(page) {
-    return Services.saveDocPage(team._id, value._id, page)
-      .then(() => {
-        toastr.success(t('Page saved', currentLanguage));
-        updateDetails();
-      });
+    const data = page || selected;
+    if (data)
+      return Services.saveDocPage(team._id, value._id, data)
+        .then(() => {
+          toastr.success(t('Page saved', currentLanguage));
+          updateDetails();
+        });
   };
 
   function isSelected(page) {
@@ -300,6 +302,8 @@ const TeamApiDocumentationComponent = props => {
     })
   }
 
+  console.log(selected)
+
   if (value === null)
     return null;
 
@@ -391,7 +395,7 @@ const TeamApiDocumentationComponent = props => {
       </div>
     </div>
   );
-}
+})
 
 const mapStateToProps = (state) => ({
   ...state.context,
@@ -402,4 +406,4 @@ const mapDispatchToProps = {
   openApiDocumentationSelectModal: (team) => openApiDocumentationSelectModal(team),
 };
 
-export const TeamApiDocumentation = connect(mapStateToProps, mapDispatchToProps)(TeamApiDocumentationComponent);
+export const TeamApiDocumentation = connect(mapStateToProps, mapDispatchToProps, null, { forwardRef: true })(TeamApiDocumentationComponent);

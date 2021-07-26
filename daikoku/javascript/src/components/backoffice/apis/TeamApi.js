@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
@@ -40,6 +40,8 @@ function TeamApiComponent(props) {
   const [versions, setApiVersions] = useState([]);
   const [apiVersion, setApiVersion] = useState({ value: params.versionId, label: params.versionId })
 
+  const teamApiDocumentationRef = useRef()
+
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
       Services.allSimpleOtoroshis(props.tenant._id).then((otoroshiSettings) =>
@@ -77,8 +79,8 @@ function TeamApiComponent(props) {
   }
 
   function save() {
-    if (params.tab === 'documentation' && state.savePage)
-      state.savePage();
+    if (params.tab === 'documentation')
+      teamApiDocumentationRef.current.saveCurrentPage()
 
     const editedApi = transformPossiblePlansBack(state.api);
     if (state.create) {
@@ -467,11 +469,11 @@ function TeamApiComponent(props) {
                       teamId={teamId}
                       value={editedApi}
                       onChange={api => setState({ ...state, api })}
-                      hookSavePage={savePage => setState({ ...state, savePage })}
                       save={save}
                       versionId={props.match.params.versionId}
                       params={params}
                       reloadState={reloadState}
+                      ref={teamApiDocumentationRef}
                     />
                   )}
                   {editedApi && tab === 'testing' && (
