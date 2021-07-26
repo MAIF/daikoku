@@ -2226,7 +2226,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                             subs <- env.dataStore.apiSubscriptionRepo
                               .forTenant(ctx.tenant.id)
                               .find(Json.obj(
-                                "_humanReadableId" -> apiId
+                                "api" -> api.id.value
                               ))
                             api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
                               "_humanReadableId" -> apiId,
