@@ -330,10 +330,8 @@ class DaikokuEnv(ws: WSClient,
           }).map { _ =>
             config.init.data.from match {
               case Some(path)
-                  if path.startsWith("http://") || path
-                    .startsWith("https://") =>
-                AppLogger.warn(
-                  s"Main dataStore seems to be empty, importing from $path ...")
+                  if path.startsWith("http://") || path.startsWith("https://") =>
+                AppLogger.warn(s"Main dataStore seems to be empty, importing from $path ...")
                 implicit val ec: ExecutionContext = defaultExecutionContext
                 implicit val env: DaikokuEnv = this
                 val initialDataFu = wsClient

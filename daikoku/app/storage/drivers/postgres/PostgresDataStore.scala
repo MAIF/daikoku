@@ -26,7 +26,7 @@ import storage.drivers.postgres.pgimplicits.EnhancedRow
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsJava}
 
 trait RepositoryPostgres[Of, Id <: ValueType] extends Repo[Of, Id] {
   override def collectionName: String = "ignored"
@@ -538,13 +538,6 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     Future.sequence(TABLES.map { case (key, value) => createTable(key, value) })
   }
 
-  def cleanDatabase() = {
-    logger.info("clean all tables")
-    Future.sequence(TABLES.map {
-      case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key")
-    })
-  }
-
   def createTable(table: String, allFields: Boolean): Future[Any] = {
     logger.debug(
       s"CREATE TABLE $getSchema.$table (" +
@@ -552,19 +545,21 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         s"${if (allFields) "_deleted BOOLEAN," else ""}" +
         s"content JSONB)")
 
-    reactivePg.queryOne("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)",
-      Seq(getSchema, table)) { row =>
-      row.optBoolean("exists").map {
-        case false =>
-          AppLogger.info(s"Create missing table : $table")
-          reactivePg.rawQuery(
-            s"CREATE TABLE $getSchema.$table (" +
-              s"_id character varying PRIMARY KEY," +
-              s"${if (allFields) "_deleted BOOLEAN," else ""}" +
-              s"content JSONB)")
-        case true => FastFuture.successful(())
+    reactivePg
+      .query("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)", Seq(getSchema, table))
+      .map { r => r.asScala.toSeq.head.getBoolean("exists") }
+      .filter(f => !f)
+      .flatMap { _ =>
+        AppLogger.info(s"Create missing table : $table")
+        reactivePg.rawQuery(
+          s"CREATE TABLE $getSchema.$table (" +
+            s"_id character varying PRIMARY KEY," +
+            s"${if (allFields) "_deleted BOOLEAN," else ""}" +
+            s"content JSONB)")
+          .map { _ =>
+            println(s"Created : $table")
+          }
       }
-    }
   }
 
   override def exportAsStream(pretty: Boolean,
@@ -613,8 +608,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   override def importFromStream(source: Source[ByteString, _]): Future[Unit] = {
     logger.debug("importFromStream")
 
-    cleanDatabase()
-      .map { value =>
+    Future.sequence(TABLES.map {
+      case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key")
+    })
+      .map { _ =>
         source
           .via(Framing.delimiter(ByteString("\n"),
                                  1000000000,

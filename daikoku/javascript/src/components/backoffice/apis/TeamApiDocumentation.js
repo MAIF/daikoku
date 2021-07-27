@@ -194,7 +194,6 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     if (data)
       return Services.saveDocPage(team._id, value._id, data)
         .then(() => {
-          toastr.success(t('Page saved', currentLanguage));
           updateDetails();
         });
   };
