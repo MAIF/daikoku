@@ -2354,7 +2354,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getComments(apiId: String, issueId: String) = DaikokuAction.async { ctx =>
+  def getComments(apiId: String, issueId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed comments for @{api.id}"))(ctx) {
       ctx.setCtxValue("api.id", apiId)
 
@@ -2430,7 +2430,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getAllApiVersions(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+  def getAllApiVersions(teamId: String, apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has requested all versions of api @{api.id}"))(ctx) {
       val repo = env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
@@ -2449,7 +2449,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getDefaultApiVersion(apiId: String) = DaikokuAction.async { ctx =>
+  def getDefaultApiVersion(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed to default version of api @{api.name}"))(ctx) {
       env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
