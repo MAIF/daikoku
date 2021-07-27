@@ -27,7 +27,7 @@ describe('API page', () => {
         expect(text).to.include('Swagger Petstore (1.0.0)');
       })
       .get('a.nav-link').contains('Try it !').click()
-      .get('#swagger-ui').should('be.visible') ;
+      .get('#swagger-ui').should('be.visible');
   });
 });
 
@@ -51,8 +51,14 @@ describe('Select version of api', () => {
   it('load well', () => {
     cy
       .visit('http://localhost:9000/testers/test-api/1.0.0')
-      .get('h1.jumbotron-heading').should(($div) => {
-        expect($div.text().trim()).contains('test API');
-      });
+      .get('input[name="versions-selector"]').should('have.value', '1.0.0')
+      .get('.reactSelect__control')
+      .click({ multiple: true })
+      .get('.reactSelect__menu')
+      .find('.reactSelect__option')
+      .first()
+      .click()
+      .get('input[name="versions-selector"]').should('have.value', '2.0.0')
+      .url().should('include', '2.0.0')
   });
 })
