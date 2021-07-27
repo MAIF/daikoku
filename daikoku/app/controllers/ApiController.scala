@@ -2431,9 +2431,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def getAllApiVersions(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
-    TeamApiEditorOnly(
-      AuditTrailEvent(s"@{user.name} has requested all versions of api @{api.id} with @{team.name} - @{team.id}")
-    )(teamId, ctx) { team =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has requested all versions of api @{api.id}"))(ctx) {
       val repo = env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
 
