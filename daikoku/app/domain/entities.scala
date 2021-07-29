@@ -1688,21 +1688,13 @@ case class AccountCreation(
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
-sealed trait TranslationElement
-
-object TranslationElement {
-  case class ApiTranslationElement(api: ApiId) extends TranslationElement
-  case class TenantTranslationElement(tenant: TenantId)
-      extends TranslationElement
-  case class TeamTranslationElement(team: TeamId) extends TranslationElement
-}
 
 case class Translation(id: DatastoreId,
                        tenant: TenantId,
-                       element: TranslationElement,
                        language: String,
                        key: String,
-                       value: String)
+                       value: String,
+                       lastModificationAt: Option[DateTime] = None)
     extends CanJson[Translation] {
   override def asJson: JsValue = json.TranslationFormat.writes(this)
   def asUiTranslationJson: JsValue = {

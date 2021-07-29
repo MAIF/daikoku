@@ -267,7 +267,8 @@ class DaikokuEnv(ws: WSClient,
                  val environment: Environment,
                  configuration: Configuration,
                  context: Context,
-                 messagesApi: MessagesApi)
+                 messagesApi: MessagesApi,
+                 translator: Translator)
   extends Env {
 
   val actorSystem: ActorSystem = ActorSystem("daikoku")
@@ -277,7 +278,7 @@ class DaikokuEnv(ws: WSClient,
   val snowflakeGenerator: IdGenerator = IdGenerator(snowflakeSeed)
 
   val auditActor: ActorRef =
-    actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
+    actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi, translator))
 
   private val daikokuConfig = new Config(configuration)
 

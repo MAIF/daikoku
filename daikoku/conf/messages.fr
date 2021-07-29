@@ -1,63 +1,63 @@
 mail.contact.title=Demande de contact
 mail.contact.sender=<div>Voici les données que vous nous avez fait parvenir dans le cadre de votre demande de contact :</div>\
-<div>Nom: <strong>{0}</strong></div>\
-<div>Courriel de contact: {1}</div>\
-<div>Objet: <strong>{2}<strong></div>\
-</br>{3}</br>\
+<div>Nom: <strong>{user}</strong></div>\
+<div>Courriel de contact: {email}</div>\
+<div>Objet: <strong>{subject}<strong></div>\
+</br>{body}</br>\
 <small>Cet e-mail vous est émis automatiquement, merci de ne pas répondre.</small></br>\
 <small>Votre demande a bien été prise en compte. Elle sera traitée dans les meilleurs délais.</small>
 mail.contact.contact=<div>Quelqu''un vous a envoyé une demande de contact:</div>\
-<div>Nom : <strong>{0}</strong></div>\
-<div>Courriel de contact : {1}</div>\
-<div>Objet: <strong>{2}<strong></div>\
-</br>{3}
+<div>Nom : <strong>{user}</strong></div>\
+<div>Courriel de contact : {email}</div>\
+<div>Objet: <strong>{subject}<strong></div>\
+</br>{body}
 unknown.plan=Plan inconnu
 mail.apikey.rotation.title=Votre clé d''api a été modifiée
-mail.apikey.rotation.body=Le secret de votre clé d''api pour l''api {0} et le plan {1} a été modifié suite à sa rotation automatique.\
+mail.apikey.rotation.body=Le secret de votre clé d''api pour l''api {apiName} et le plan {planName} a été modifié suite à sa rotation automatique.\
   Si vous ne travaillez pas avec un système d''intégration automatique des secrets, pensez à le modifier.
 mail.apikey.refresh.title=Votre clé d''api a été modifiée
-mail.apikey.refresh.body=Le secret de votre clé d''api pour l''api {0} et le plan {1} a été modifié suite à une demande de régénération.\
+mail.apikey.refresh.body=Le secret de votre clé d''api pour l''api {apiName} et le plan {planName} a été modifié suite à une demande de régénération.\
   Si vous ne travaillez pas avec un système d''intégration automatique des secrets, pensez à le modifier.
 mail.apikey.demand.title=Demande de clé d''API
-mail.apikey.demand.body={0} demande une clé d''api pour l''api {1}.\
+mail.apikey.demand.body={user} demande une clé d''api pour l''api {apiName}.\
   Vous recevez ce message car vous êtes administrateur de l''équipe propriétaire.\
   </br>\
-  <a href="{2}">Accepter/rejeter la demande</a>
+  <a href="{link}">Accepter/rejeter la demande</a>
 mail.api.access.title=Demande d''accès à une API
-mail.api.access.body={0} veut accéder a votre API {1} pour l''équipe {2}. \
+mail.api.access.body={user} veut accéder a votre API {apiName} pour l''équipe {teamName}. \
   Vous recevez ce message car vous êtes administrateur de l''équipe propriétaire.\
   </br>\
-  <a href="{3}">Accepter/rejeter la demande</a>
+  <a href="{link}">Accepter/rejeter la demande</a>
 mail.team.access.title=Quelqu''un veut rejoindre votre équipe
-mail.team.access.body={0} veut rejoindre votre équipe {1}. \
+mail.team.access.body={user} veut rejoindre votre équipe {teamName}. \
    Vous recevez ce message car vous êtes administrateur de cette équipe. \
   </br>\
-  <a href="{2}">Accepter/rejeter la demande</a>
+  <a href="{link}">Accepter/rejeter la demande</a>
 mail.team.invitation.title=Quelqu''un vous invite a rejoindre son équipe
-mail.team.invitation.body={0}, en tant qu''administrateur de l''équipe {1}, veut que vous rejoigniez son équipe. \
+mail.team.invitation.body={user}, en tant qu''administrateur de l''équipe {teamName}, veut que vous rejoigniez son équipe. \
   </br>\
-  <a href="{2}">Accepter/rejeter la demande</a>
+  <a href="{link}">Accepter/rejeter la demande</a>
 unrecognized.api= API inconnue
 unrecognized.team= Équipe inconnue
 unrecognized.user=Utilisateur innconnu
 mail.rejection.title=Votre demande a été rejetée.
 mail.acceptation.title=Votre demande a été acceptée.
-mail.api.access.rejection.body=Votre demande d''accès à l''API {0} a été rejetée.
-mail.api.access.acceptation.body=La demande d''accès à l''API {0} par {1} a été acceptée.
-mail.api.subscription.rejection.body=Votre demande de clé d''API pour {0} a été rejetée.
-mail.api.subscription.acceptation.body=La demande de {0} de souscription à l''API {1} a été acceptée.
-mail.team.access.rejection.body=Votre demande d''accès à l''équipe {0} a été rejetée.
-mail.team.access.acceptation.body=Votre demande d''accès à l''équipe {0} a été acceptée.
-mail.user.invitation.rejection.body=Votre invitation à {0} dans votre équipe {1} a été rejetée.
-mail.user.invitation.acceptation.body={0} a accepté de rejoindre votre équipe {1}.
-mail.new.message.title=Nouveau message de {0}
+mail.api.access.rejection.body=Votre demande d''accès à l''API {apiName} a été rejetée.
+mail.api.access.acceptation.body=La demande d''accès à l''API {apiName} par {user} a été acceptée.
+mail.api.subscription.rejection.body=Votre demande de clé d''API pour {apiName} a été rejetée.
+mail.api.subscription.acceptation.body=La demande de {user} de souscription à l''API {apiName} a été acceptée.
+mail.team.access.rejection.body=Votre demande d''accès à l''équipe {teamName} a été rejetée.
+mail.team.access.acceptation.body=Votre demande d''accès à l''équipe {teamName} a été acceptée.
+mail.user.invitation.rejection.body=Votre invitation à {teamName} dans votre équipe {user} a été rejetée.
+mail.user.invitation.acceptation.body={user} a accepté de rejoindre votre équipe {teamName}.
+mail.new.message.title=Nouveau message de {user}
 mail.new.message.body=Bonjour,\
   <br/>\
   vous avez un nouveau message,\
   <br>\
   <div>\
-  {0} :\
+  {user} :\
   <br>\
-  {1}\
+  {body}\
   </div>\
-  <a href="{2}">Répondre</a>
+  <a href="{link}">Répondre</a>

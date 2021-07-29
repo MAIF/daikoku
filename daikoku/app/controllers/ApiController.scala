@@ -12,14 +12,13 @@ import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, Da
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
-import fr.maif.otoroshi.daikoku.domain.TranslationElement.ApiTranslationElement
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
-import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient, Translator}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -41,7 +40,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                     env: Env,
                     otoroshiClient: OtoroshiClient,
                     cc: ControllerComponents,
-                    otoroshiSynchronisator: OtoroshiVerifierJob)
+                    otoroshiSynchronisator: OtoroshiVerifierJob,
+                    translator: Translator)
   extends AbstractController(cc)
     with I18nSupport {
 
@@ -740,16 +740,17 @@ class ApiController(DaikokuAction: DaikokuAction,
     )
 
     val language = tenant.defaultLanguage.getOrElse("en")
-    implicit val lang: Lang = Lang(language)
-    val title = messagesApi("mail.apikey.demand.title")
     val notificationUrl = env.config.exposedPort match {
       case 80 => s"http://${tenant.domain}/notifications"
       case 443 => s"https://${tenant.domain}/notifications"
       case value => s"http://${tenant.domain}:$value/"
     }
-    val body = messagesApi("mail.apikey.demand.body", user.name, api.name, notificationUrl)
-
     for {
+      title <- translator.translate("mail.apikey.demand.title", language)(messagesApi, env, ctx.tenant)
+      body <- translator.translate("mail.apikey.demand.body", language, Map(
+      "user" -> user.name,
+      "apiName" -> api.name,
+      "link" -> notificationUrl))(messagesApi, env, ctx.tenant)
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       maybeApiTeam <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
       maybeAdmins <- maybeApiTeam.traverse(
@@ -1416,31 +1417,18 @@ class ApiController(DaikokuAction: DaikokuAction,
       adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
         Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ teamFilter
       )
-      translations <- env.dataStore.translationRepo.forTenant(tenant)
-        .find(Json.obj(
-          "element.id" -> Json.obj(
-            "$in" -> JsArray(publicApis.map(_.id.asJson) ++ almostPublicApis.map(_.id.asJson) ++ privateApis.map(_.id.asJson)))))
     } yield {
       val apis = (publicApis ++ almostPublicApis ++ privateApis).filter(api => api.published || myTeams.exists(api.team == _.id))
 
       val sortedApis = apis.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
 
-      val apiTranslations: Map[ApiId, Seq[Translation]] = translations.groupBy(t => t.element.asInstanceOf[ApiTranslationElement].api)
-
       val jsons = sortedApis
         .filter(api => api.parent.isEmpty)
         .map { api =>
 
-        val translations: Seq[Translation] = apiTranslations.getOrElse(api.id, Seq.empty)
-        val translationAsJsObject = translations
-          .groupBy(t => t.language)
-          .map {
-            case (k, v) => Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
-          }.fold(Json.obj())(_ deepMerge _)
-        val translation = Json.obj("translation" -> translationAsJsObject)
         val json = api
           .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team)))
-          .asSimpleJson.as[JsObject] ++ translation
+          .asSimpleJson.as[JsObject]
         val authorizations = teams
           .filter(t => t.`type` != TeamType.Admin)
           .map(
@@ -1513,11 +1501,15 @@ class ApiController(DaikokuAction: DaikokuAction,
     )
 
     val language = ctx.tenant.defaultLanguage.getOrElse("en")
-    implicit val lang: Lang = Lang(language)
-    val title = messagesApi("mail.api.access.title")
-    val body = messagesApi("mail.api.access.body", ctx.user.name, api.name, team.name, s"${ctx.tenant.domain}/notifications")
 
     for {
+      title <- translator.translate("mail.api.access.title", language)(messagesApi, env, ctx.tenant)
+      body <- translator.translate("mail.api.access.body", language, Map(
+        "user" -> ctx.user.name,
+        "apiName" -> api.name,
+        "teamName" -> team.name,
+        "link" -> s"${ctx.tenant.domain}/notifications"
+      ))(messagesApi, env, ctx.tenant)
       notificationRepo <- env.dataStore.notificationRepo.forTenantF(ctx.tenant.id)
       saved <- notificationRepo.save(notification)
       maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(api.team)

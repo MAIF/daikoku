@@ -13,8 +13,6 @@ import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
 }
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
-import fr.maif.otoroshi.daikoku.domain.TenantMode
-import fr.maif.otoroshi.daikoku.domain.TranslationElement._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -1479,9 +1477,8 @@ object json {
     override def writes(o: ApiDocumentation): JsValue = Json.obj(
       "_id" -> ApiDocumentationIdFormat.writes(o.id),
       "_tenant" -> o.tenant.asJson,
-      //"api" -> o.api.asJson,
       "pages" -> JsArray(o.pages.map(ApiDocumentationPageIdFormat.writes)),
-      "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
+      "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt)
     )
   }
   val DaikokuStyleFormat = new Format[DaikokuStyle] {
@@ -2953,78 +2950,6 @@ object json {
       )
     }
 
-  val ApiTranslationElementFormat = new Format[ApiTranslationElement] {
-    override def reads(json: JsValue): JsResult[ApiTranslationElement] =
-      Try {
-        JsSuccess(
-          ApiTranslationElement(
-            api = (json \ "id").as(ApiIdFormat)
-          )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
-
-    override def writes(o: ApiTranslationElement): JsValue =
-      Json.obj(
-        "id" -> ApiIdFormat.writes(o.api)
-      ) ++ Json.obj("type" -> "Api")
-  }
-
-  val TenantTranslationElementFormat = new Format[TenantTranslationElement] {
-    override def reads(json: JsValue): JsResult[TenantTranslationElement] =
-      Try {
-        JsSuccess(
-          TenantTranslationElement(
-            tenant = (json \ "id").as(TenantIdFormat)
-          )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
-
-    override def writes(o: TenantTranslationElement): JsValue =
-      Json.obj(
-        "id" -> TenantIdFormat.writes(o.tenant)
-      ) ++ Json.obj("type" -> "Tenant")
-  }
-
-  val TeamTranslationElementFormat = new Format[TeamTranslationElement] {
-    override def reads(json: JsValue): JsResult[TeamTranslationElement] =
-      Try {
-        JsSuccess(
-          TeamTranslationElement(
-            team = (json \ "id").as(TeamIdFormat)
-          )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
-
-    override def writes(o: TeamTranslationElement): JsValue =
-      Json.obj(
-        "id" -> TeamIdFormat.writes(o.team)
-      ) ++ Json.obj("type" -> "Team")
-  }
-
-  val TranslationElementFormat: Format[TranslationElement] =
-    new Format[TranslationElement] {
-      override def reads(json: JsValue): JsResult[TranslationElement] =
-        (json \ "type").as[String] match {
-          case "Api"    => ApiTranslationElementFormat.reads(json)
-          case "Team"   => TeamTranslationElementFormat.reads(json)
-          case "Tenant" => TenantTranslationElementFormat.reads(json)
-          case str      => JsError(s"Bad notification value: $str")
-        }
-
-      override def writes(o: TranslationElement): JsValue = o match {
-        case p: ApiTranslationElement => ApiTranslationElementFormat.writes(p)
-        case p: TenantTranslationElement =>
-          TenantTranslationElementFormat.writes(p)
-        case p: TeamTranslationElement => TeamTranslationElementFormat.writes(p)
-      }
-    }
-
   val TranslationFormat: Format[Translation] = new Format[Translation] {
     override def reads(json: JsValue): JsResult[Translation] =
       Try {
@@ -3032,10 +2957,10 @@ object json {
           Translation(
             id = (json \ "_id").as(DatastoreIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            element = (json \ "element").as(TranslationElementFormat),
             language = (json \ "language").as[String],
             key = (json \ "key").as[String],
-            value = (json \ "value").as[String]
+            value = (json \ "value").as[String],
+            lastModificationAt = (json \ "lastModificationAt").asOpt(DateTimeFormat)
           )
         )
       } recover {
@@ -3045,10 +2970,13 @@ object json {
     override def writes(o: Translation): JsValue = Json.obj(
       "_id" -> o.id.value,
       "_tenant" -> TenantIdFormat.writes(o.tenant),
-      "element" -> TranslationElementFormat.writes(o.element),
       "language" -> o.language,
       "key" -> o.key,
-      "value" -> o.value
+      "value" -> o.value,
+      "lastModificationAt" -> o.lastModificationAt
+        .map(DateTimeFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
 

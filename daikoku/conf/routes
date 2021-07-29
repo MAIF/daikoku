@@ -392,13 +392,11 @@ POST    /api/tenants/:tenantId/admins                   fr.maif.otoroshi.daikoku
 DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.otoroshi.daikoku.ctrls.TenantController.removeAdminFromTenant(tenantId, adminId)
 
 ### NoDocs ###
-POST    /api/teams/:teamId/apis/:apiId/_translate       fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveApiTranslation(teamId, apiId)
+GET     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.getTranslations(domain: Option[String] ?= None)
 ### NoDocs ###
-POST    /api/tenant/:tenantId/_translate                fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTenantTranslation(tenantId)
+PUT     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTranslation()
 ### NoDocs ###
-POST    /api/teams/:teamId/_translate                   fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTeamTranslation(teamId)
-### NoDocs ###
-GET     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.getTenantTranslation()
+POST    /api/translations/:translationId/_reset         fr.maif.otoroshi.daikoku.ctrls.TranslationController.resetTranslation(translationId: String)
 
 ### NoDocs ###
 GET     /api/admin/users/:id/_impersonate               fr.maif.otoroshi.daikoku.ctrls.UsersController.impersonate(id)

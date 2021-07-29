@@ -26,7 +26,8 @@ import scala.util.Try
 class TenantController(DaikokuAction: DaikokuAction,
                        DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                        env: Env,
-                       cc: ControllerComponents)
+                       cc: ControllerComponents,
+                       translator: Translator)
     extends AbstractController(cc)
     with I18nSupport {
 
@@ -442,25 +443,16 @@ class TenantController(DaikokuAction: DaikokuAction,
 
         val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
 
-        val titleToSender: String =
-          messagesApi("mail.contact.title")(Lang(currentLanguage))
-        val titleToContact: String =
-          messagesApi("mail.contact.title")(Lang(tenantLanguage))
-        val mailToSender: String =
-          messagesApi("mail.contact.sender",
-                      name,
-                      email,
-                      subject,
-                      sanitizeBody)(Lang(currentLanguage))
-        val mailToContact: String =
-          messagesApi("mail.contact.contact",
-                      name,
-                      email,
-                      subject,
-                      sanitizeBody)(Lang(tenantLanguage))
-
         def sendMail: String => Future[Result] = (contact: String) => {
           for {
+            titleToSender <- translator.translate("mail.contact.title", currentLanguage)(messagesApi, env, ctx.tenant)
+            titleToContact <- translator.translate("mail.contact.title", currentLanguage)(messagesApi, env, ctx.tenant)
+            mailToSender <- translator.translate("mail.contact.sender",
+                currentLanguage,
+                Map("user" -> name, "email" -> email, "subject" -> subject, "body" -> sanitizeBody))(messagesApi, env, ctx.tenant)
+            mailToContact <- translator.translate("mail.contact.contact",
+                tenantLanguage,
+              Map("user" -> name, "email" -> email, "subject" -> subject, "body" -> sanitizeBody))(messagesApi, env, ctx.tenant)
             _ <- ctx.tenant.mailer.send(titleToSender, Seq(email), mailToSender)
             _ <- ctx.tenant.mailer.send(titleToContact,
                                         Seq(contact),
