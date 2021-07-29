@@ -914,5 +914,6 @@
   "team_apikey_for_api.make_unique": "Rendre unique",
   "team_apikey_for_api.ask_for_make_unique": "Êtes-vous sûr de vouloir séparer cette api key de la clé parent et d'en créer une nouvelle ?",
   "team_api_info.isDefault": "Utiliser comme dernière version",
-  "api_select_modal.title": "Choisir un plan"
+  "api_select_modal.title": "Choisir un plan",
+  "internationalization": "Internationalisation"
 }

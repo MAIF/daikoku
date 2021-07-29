@@ -916,5 +916,6 @@
     "team_apikey_for_api.make_unique": "Make unique",
     "team_apikey_for_api.ask_for_make_unique": "Are you sure to make this api key unique and separate from his parent plan ?",
     "team_api_info.isDefault": "Use as latest version",
-    "api_select_modal.title": "Choose your plan"
+    "api_select_modal.title": "Choose your plan",
+    "internationalization": "Internationalization"
 }

@@ -305,7 +305,7 @@ const ApiListComponent = (props) => {
               'flex-wrap': view === GRID,
               'flex-row': view === GRID,
             })}>
-            <div className="col-12 mb-1">{filterPreview(filteredApis.length)}</div>
+            {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => (
               <ApiCard
                 key={api._id}

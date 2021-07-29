@@ -63,6 +63,7 @@ import {
   TeamList,
   TenantAdminList,
   InitializeFromOtoroshi,
+  MailingInternalization,
   AdminMessages,
 } from '../components/adminbackoffice';
 
@@ -373,6 +374,14 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
               path="/settings/init"
               render={(p) => (
                 <InitializeFromOtoroshi match={p.match} history={p.history} location={p.location} />
+              )}
+            />
+            <RouteWithTitle
+              title={`${tenant.name} - ${t('Internalization', currentLanguage)}`}
+              exact
+              path="/settings/internationalization"
+              render={(p) => (
+                <MailingInternalization match={p.match} history={p.history} location={p.location} />
               )}
             />
             {!tenant.hideTeamsPage && (

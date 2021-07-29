@@ -1385,51 +1385,25 @@ export function testingCall(teamId, apiId, body) {
   }).then((r) => r.json());
 }
 
-export function getTranslations() {
-  return fetch('/api/translations', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
+export function getTranslations(domain) {
+  return fetch(`/api/translations${domain ? `?domain=${domain}` : ''}`)
+    .then((r) => r.json());
 }
 
-export function saveApiTranslations(teamId, apiId, translations) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/_translate`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(translations),
-  }).then((r) => r.json());
+export function saveTranslation(translation) {
+  return fetch(`/api/translations`, {
+    ...POST_HEADERS,
+    method: 'PUT',
+    body: JSON.stringify({
+      translation
+    }),
+  })
 }
 
-export function saveTenantTranslations(tenantId, translations) {
-  return fetch(`/api/tenant/${tenantId}/_translate`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(translations),
-  }).then((r) => r.json());
-}
-
-export function saveTeamTranslations(teamId, translations) {
-  return fetch(`/api/teams/${teamId}/_translate`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(translations),
-  }).then((r) => r.json());
+export function resetTranslation(translation) {
+  return fetch(`/api/translations/${translation._id}/_reset`, {
+    ...POST_HEADERS
+  })
 }
 
 export function sendEmails(name, email, subject, body, tenantId, teamId, apiId, language) {

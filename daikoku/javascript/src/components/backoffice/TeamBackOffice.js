@@ -460,6 +460,16 @@ const UserBackOfficeComponent = ({
                         </Translation>
                       </Link>
                     </li>
+                    <li className="nav-item">
+                      <Link
+                        className={`nav-link ${tab === 'Email internationalization' ? 'active' : ''}`}
+                        to={'/settings/internationalization'}>
+                        <i className="fas fa-language" />
+                        <Translation i18nkey="Internationalization" language={currentLanguage}>
+                          Internationalization
+                        </Translation>
+                      </Link>
+                    </li>
                   </ul>
                 </Can>
 
