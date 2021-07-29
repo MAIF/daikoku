@@ -19,10 +19,8 @@ class Translator {
         case Some(translation) => translation.value
       }
       .map { value =>
-          args.zipWithIndex.foldLeft(value) {
-            (acc, a) =>
-              val idx = s"{${a._2-1}}"
-              acc.replaceAll(idx, a._1.toString)
+          args.foldLeft(value) {
+            (acc, a) => acc.replace(s"[${a._1}]", a._2)
           }
       }
   }
