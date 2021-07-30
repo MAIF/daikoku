@@ -1,19 +1,20 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Can, manage, tenant as TENANT } from '../../utils';
 import { connect } from 'react-redux';
 import { UserBackOffice } from '../../backoffice';
 import { t, Translation } from '../../../locales';
-import { useEffect, useState } from 'react';
 import * as Services from '../../../services';
 import { toastr } from 'react-redux-toastr';
+import { Link, Route, Switch, useParams } from 'react-router-dom';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
 const MarkdownComponent = ({
-    currentLanguage, team, value, translationKey, language, toggleTranslation, saveTranslation, handleInputChange
+    currentLanguage, team, value, translationKey, language,
+    toggleTranslation, saveTranslation, handleInputChange, resetTranslation
 }) => (
     <Suspense fallback={<div>loading ...</div>}>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }} className="my-2">
             <LazySingleMarkdownInput
                 currentLanguage={currentLanguage}
                 team={team}
@@ -21,12 +22,16 @@ const MarkdownComponent = ({
                 onChange={code => handleInputChange(translationKey, language, code)}
             />
             <div style={{ position: 'absolute', top: 0, right: 0 }}>
-                <button type="button" onClick={() => toggleTranslation(translationKey, language)}
+                <button type="button" onClick={() => toggleTranslation(translationKey)}
                     className="btn btn-outline-danger">
                     <i className="fas fa-times" />
                 </button>
+                <button type="button" onClick={() => resetTranslation(translationKey, language)}
+                    className="btn btn-outline-info mx-1">
+                    <i className="fas fa-undo" />
+                </button>
                 <button type="button" onClick={() => saveTranslation(translationKey, language)}
-                    className="btn ml-1 btn-outline-success">
+                    className="btn btn-outline-success">
                     <i className="fas fa-save" />
                 </button>
             </div>
@@ -34,37 +39,50 @@ const MarkdownComponent = ({
     </Suspense>
 )
 
-const TranslationComponent = ({ language, value, translationKey, lastModificationAt, toggleTranslation, resetTranslation }) => (
-    <div className="input-group mt-1">
-        <div className="input-group-prepend">
-            <span className="input-group-text" style={{ minWidth: '50px' }}>{language}</span>
-        </div>
+const Collapse = ({ label, children, edited, toggleTranslation, translationKey }) => {
 
-        <textarea className="form-control"
-            value={value}
-            disabled
-            style={{
-                resize: 'none',
-                backgroundColor: "#fff",
-                color: "#000",
-                borderColor: "rgb(206, 212, 218)"
-            }}></textarea>
+    function getRequiredVariables(str) {
+        let dels = [];
+        const words = [];
+        for (let i = 0; i < str.length; i++) {
+            if (str[i] === '[')
+                dels.push(i);
+            else if (str[i] === ']' && dels.length > 0) {
+                let pos = dels[dels.length - 1];
+                dels.pop();
 
-        <div className="input-group-append">
-            <span className="input-group-text"
-                onClick={() => toggleTranslation(translationKey, language)} style={{ cursor: 'pointer' }}>
-                <i className="fas fa-edit fa-xs" />
-            </span>
-            {lastModificationAt && <span className="input-group-text"
-                onClick={() => resetTranslation(translationKey, language)} style={{ cursor: 'pointer' }}>
-                <i className="fas fa-undo fa-xs" />
-            </span>}
+                const len = i - 1 - pos;
+                words.push(str.substring(pos + 1, (pos < len ? len : len + pos) + 1))
+            }
+        }
+        return words;
+    }
+
+    return <div onClick={() => toggleTranslation(translationKey)} style={{ cursor: 'pointer' }}>
+        <div className="row">
+            <div className="col-12 d-flex justify-space-between">
+                <span style={{ fontWeight: 'bold', flex: 1 }}>{label}</span>
+                <div style={{ flex: 1 }} className="text-center">
+                    {getRequiredVariables(label).map((word, i) => (
+                        <span className="badge badge-info mr-2" key={`translationKey${i}`}>[{word}]</span>
+                    ))}
+                </div>
+                <button
+                    type="button"
+                    className="btn btn-access-negative btn-sm"
+                    style={{ float: 'right' }}>
+                    <i className={`fas fa-eye${!edited ? '' : '-slash'}`} />
+                </button>
+            </div>
         </div>
+        {edited && children}
+        <hr />
     </div>
-)
+}
 
 function MailingInternalizationComponent({ currentLanguage, team }) {
     const [translations, setTranslations] = useState([]);
+    const params = useParams()
 
     useEffect(() => {
         Services.getTranslations("mail")
@@ -95,8 +113,8 @@ function MailingInternalizationComponent({ currentLanguage, team }) {
         editTranslations(editedKey, language, [{ action: _ => value, field: 'value' }])
     }
 
-    function toggleTranslation(editedKey, language) {
-        editTranslations(editedKey, language, [{ action: edited => !edited ? true : false, field: 'edited' }])
+    function toggleTranslation(editedKey) {
+        setTranslations(translations.map(([key, values, edited]) => [key, values, key === editedKey ? (edited === undefined ? true : !edited) : edited]))
     }
 
     function resetTranslation(key, language) {
@@ -133,40 +151,70 @@ function MailingInternalizationComponent({ currentLanguage, team }) {
         }))
     }
 
+    const basePath = '/settings/internationalization';
+
+    console.log(translations)
+
     return (
         <UserBackOffice tab="Internalization">
             <Can I={manage} a={TENANT} dispatchError>
-                <div className="row">
-                    <h1><Translation i18nkey="internationalization" language={currentLanguage} /></h1>
-                    <div className="container">
-                        {translations.map(([key, values]) => (
-                            <div className="row d-flex flex-column mb-3" key={key}>
-                                <span style={{ fontWeight: 'bold' }}>{key}</span>
-                                <div>
-                                    {values.map(({ edited, ...v }, i) => (
-                                        edited ?
-                                            <MarkdownComponent
-                                                {...v}
-                                                key={`${key}-${v.language}-${i}`}
-                                                currentLanguage={currentLanguage}
-                                                team={team}
-                                                translationKey={key}
-                                                toggleTranslation={toggleTranslation}
-                                                saveTranslation={saveTranslation}
-                                                handleInputChange={handleInputChange} /> :
-                                            <TranslationComponent
-                                                {...v}
-                                                key={`${key}-${v.language}-${i}`}
-                                                translationKey={key}
-                                                toggleTranslation={toggleTranslation}
-                                                resetTranslation={resetTranslation}
-                                            />
-                                    ))}
-                                </div>
+                <h1><Translation i18nkey="internationalization" language={currentLanguage} /></h1>
+                <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
+                    <li className="nav-item">
+                        <Link
+                            className={`nav-link ${params.domain === 'mail' ? 'active' : ''}`}
+                            to={`/settings/internationalization/mail`}>
+                            <i className="fas fa-envelope mr-1" />
+                            <Translation i18nkey="Mail" language={currentLanguage}>
+                                Mail
+                            </Translation>
+                        </Link>
+                    </li>
+                    <li className="nav-item">
+                        <Link
+                            className={`nav-link ${params.domain === 'front' ? 'active' : ''}`}
+                            to={`/settings/internationalization/front`}>
+                            <i className="fas fa-globe mr-1" />
+                            <Translation i18nkey="Front office" language={currentLanguage}>
+                                Front Office
+                            </Translation>
+                        </Link>
+                    </li>
+                </ul>
+
+                <Switch>
+                    <Route path={`${basePath}/mail`} render={() => (
+                        <div className="col-12 pb-3">
+                            <div className="d-flex justify-space-between py-3">
+                                <span style={{ flex: 1 }} className="lead">Message text</span>
+                                <span style={{ flex: 1 }} className="lead text-center">Required variables</span>
+                                <span className="lead">Action</span>
                             </div>
-                        ))}
-                    </div>
-                </div>
+                            {translations.map(([key, values, edited]) => (
+                                <Collapse
+                                    label={t(key, currentLanguage)}
+                                    edited={edited === undefined ? false : edited}
+                                    translationKey={key}
+                                    toggleTranslation={toggleTranslation}
+                                    key={`${key}-collapse`}>
+                                    {values.map((v, i) => (
+                                        <MarkdownComponent
+                                            {...v}
+                                            key={`${key}-${v.language}-${i}`}
+                                            currentLanguage={currentLanguage}
+                                            team={team}
+                                            translationKey={key}
+                                            toggleTranslation={toggleTranslation}
+                                            saveTranslation={saveTranslation}
+                                            resetTranslation={resetTranslation}
+                                            handleInputChange={handleInputChange} />
+                                    ))}
+                                </Collapse>
+                            ))}
+                        </div>)}
+                    />
+                    <Route path={`${basePath}/front`} render={() => <p style={{ fontStyle: 'italic' }} className="text-center w-100">Edition of all front office text will be available in next version</p>} />
+                </Switch>
             </Can>
         </UserBackOffice>
     )

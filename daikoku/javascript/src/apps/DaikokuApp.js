@@ -379,7 +379,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
             <RouteWithTitle
               title={`${tenant.name} - ${t('Internalization', currentLanguage)}`}
               exact
-              path="/settings/internationalization"
+              path={["/settings/internationalization", "/settings/internationalization/:domain"]}
               render={(p) => (
                 <MailingInternalization match={p.match} history={p.history} location={p.location} />
               )}

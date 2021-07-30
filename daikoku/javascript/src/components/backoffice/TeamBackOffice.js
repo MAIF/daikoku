@@ -463,7 +463,7 @@ const UserBackOfficeComponent = ({
                     <li className="nav-item">
                       <Link
                         className={`nav-link ${tab === 'Email internationalization' ? 'active' : ''}`}
-                        to={'/settings/internationalization'}>
+                        to={'/settings/internationalization/mail'}>
                         <i className="fas fa-language" />
                         <Translation i18nkey="Internationalization" language={currentLanguage}>
                           Internationalization
