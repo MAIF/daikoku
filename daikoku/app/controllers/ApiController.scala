@@ -433,7 +433,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def getRootApi(apiId: String)  = DaikokuActionMaybeWithGuest.async { ctx =>
-    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed documentation details for @{api.id}"))(ctx) {
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has requested root api @{api.id}"))(ctx) {
       env.dataStore.apiRepo.forTenant(ctx.tenant.id)
         .findOne(Json.obj(
           "_humanReadableId" -> apiId,
@@ -1357,7 +1357,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   }
 
   def cloneDocumentation(teamId: String, apiId: String, version: Option[String]) = DaikokuAction.async(parse.json) { ctx =>
-    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has imported pages in @{api.name} - @{team.id}"))(teamId, ctx) {
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has imported pages from $version in @{api.name} @{team.id}"))(teamId, ctx) {
       team => {
         val pages = (ctx.request.body \ "pages").as[Seq[JsObject]]
 
@@ -1710,7 +1710,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   private def updateAllHumanReadableId(ctx: DaikokuActionContext[JsValue], apiToSave: Api, oldApi: Api) = {
     if(oldApi.name != apiToSave.name) {
       env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-        .find(Json.obj("_humanReadableId" -> oldApi.humanReadableId))
+        .find(Json.obj( -> oldApi.humanReadableId))
         .flatMap { apis =>
           Future
             .sequence(apis.map(api => env.dataStore.apiRepo.forTenant(ctx.tenant.id)
@@ -2383,9 +2383,11 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def createVersion(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
     TeamApiEditorOnly(
-      AuditTrailEvent(s"@{user.name} has created new version of api @{api.id} with @{team.name} - @{team.id}")
+      AuditTrailEvent(s"@{user.name} has created new version (@{newVersion}) of api @{api.id} with @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
       val newVersion = (ctx.request.body \ "version").asOpt[String]
+
+      ctx.setCtxValue("newVersion", newVersion)
 
       newVersion match {
         case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing parameters")))
@@ -2435,16 +2437,9 @@ class ApiController(DaikokuAction: DaikokuAction,
       val repo = env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
 
-      repo.findOne(Json.obj("_humanReadableId" -> apiId, "parent" -> JsNull))
-        .flatMap {
-          case None => FastFuture.successful(AppError.render(ApiNotFound))
-          case Some(api) =>
-            repo.find(Json.obj("$or" -> Json.arr(
-              Json.obj("_id" -> api.id.value),
-              Json.obj("parent" -> api.id.value)
-            )))
-              .map(apis => SeqVersionFormat.writes((apis.map(_.currentVersion) ++ Seq(api.currentVersion)).distinct))
-              .map(Ok(_))
+      repo.find(Json.obj("_humanReadableId" -> apiId))
+        .map { apis =>
+          Ok(SeqVersionFormat.writes(apis.map(_.currentVersion)))
         }
     }
   }
