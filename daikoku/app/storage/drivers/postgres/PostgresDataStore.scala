@@ -557,7 +557,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
             s"${if (allFields) "_deleted BOOLEAN," else ""}" +
             s"content JSONB)")
           .map { _ =>
-            println(s"Created : $table")
+            AppLogger.info(s"Created : $table")
           }
       }
   }
@@ -685,7 +685,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       }
       .recover {
         case e: Throwable =>
-          println(e.getMessage)
+          AppLogger.info(e.getMessage)
 
       }.asInstanceOf[Future[Unit]]
   }

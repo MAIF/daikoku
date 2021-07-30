@@ -94,7 +94,19 @@ object Helper {
           value.fields.headOption match {
             case Some((key: String, _: JsValue)) if key == "$in" =>
               val (a, b) = _convertTuple(value.fields.head, params)
-              (s"content->>${getParam(b.size)} IN $a", b ++ Seq(field._1))
+              val arr = a.replace("(", "")
+                .replace(")", "")
+
+              var formattedKey = s"content->>'${field._1}'"
+              if(field._1.contains(".")) {
+                val parts = field._1.split("\\.")
+                if (parts.length > 2)
+                  throw new UnsupportedOperationException("Queries with three dots in the property are not supported")
+                else if(parts.length == 2)
+                  formattedKey = s"content->'${parts.head}'->>'${parts.last}'"
+              }
+
+              (s"$formattedKey IN $a OR content->${getParam(b.size)} ?| ARRAY[$arr]", b ++ Seq(field._1))
 
             case Some((key: String, _: JsValue)) if key == "$nin" =>
               val (a, b) = _convertTuple(value.fields.head, params)

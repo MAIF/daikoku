@@ -147,8 +147,10 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def myVisibleApis() = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
-      env.dataStore.teamRepo.forTenant(ctx.tenant).findAllNotDeleted()
-        .flatMap(teams => getVisibleApis(teams, ctx.user, ctx.tenant))
+      env.dataStore.teamRepo
+        .forTenant(ctx.tenant)
+        .findAllNotDeleted()
+        .flatMap(teams => getVisibleApis(if(ctx.user.isDaikokuAdmin) teams else teams.filter(team => team.users.exists(u => u.userId == ctx.user.id)), ctx.user, ctx.tenant))
         .map(Ok(_))
     }
   }
@@ -1400,10 +1402,15 @@ class ApiController(DaikokuAction: DaikokuAction,
             "status.status" -> "Pending")
         )
       apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
-      publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public") ++ teamFilter)
+      publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public"))
       almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-        Json.obj("visibility" -> "PublicWithAuthorizations") ++ teamFilter
-      )
+        Json.obj(
+          "visibility" -> "PublicWithAuthorizations"
+          /*"$or" -> Json.arr(
+            Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
+            teamFilter
+          )*/
+      ))
       privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
         Json.obj(
           "visibility" -> "Private",
@@ -1710,7 +1717,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   private def updateAllHumanReadableId(ctx: DaikokuActionContext[JsValue], apiToSave: Api, oldApi: Api) = {
     if(oldApi.name != apiToSave.name) {
       env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-        .find(Json.obj( -> oldApi.humanReadableId))
+        .find(Json.obj("_humanReadableId" -> oldApi.humanReadableId))
         .flatMap { apis =>
           Future
             .sequence(apis.map(api => env.dataStore.apiRepo.forTenant(ctx.tenant.id)

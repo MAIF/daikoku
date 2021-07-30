@@ -99,20 +99,22 @@ class NotificationController(
         myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
         notificationRepo <- env.dataStore.notificationRepo
           .forTenantF(ctx.tenant.id)
-        notifications <- notificationRepo.findWithPagination(
-          Json.obj(
-            "_deleted" -> false,
-            "$or" -> Json.arr(
-              Json.obj(
-                "team" -> Json.obj("$in" -> JsArray(myTeams
-                  .filter(t => t.admins().contains(ctx.user.id))
-                  .map(_.id.asJson)))),
-              Json.obj("action.user" -> ctx.user.id.asJson)
-            )
-          ),
-          page,
-          pageSize
-        )
+        notifications <- {
+          notificationRepo.findWithPagination(
+            Json.obj(
+              "_deleted" -> false,
+              "$or" -> Json.arr(
+                Json.obj(
+                  "team" -> Json.obj("$in" -> JsArray(myTeams
+                    .filter(t => t.admins().contains(ctx.user.id))
+                    .map(_.id.asJson)))),
+                Json.obj("action.user" -> ctx.user.id.asJson)
+              )
+            ),
+            page,
+            pageSize
+          )
+        }
       } yield {
         Ok(
           Json.obj("notifications" -> notifications._1.map(_.asJson),
