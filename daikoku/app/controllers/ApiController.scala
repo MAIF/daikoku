@@ -828,16 +828,17 @@ class ApiController(DaikokuAction: DaikokuAction,
       env.dataStore.teamRepo
         .myTeams(ctx.tenant, ctx.user)
         .flatMap(
-          myTeams =>
+          myTeams => {
             env.dataStore.apiRepo
               .findByVersion(ctx.tenant, apiId, version)
               .flatMap {
                 case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
                 case Some(api)
-                  if api.visibility == ApiVisibility.Public || api.authorizedTeams.diff(myTeams.map(_.id)).isEmpty =>
+                  if api.visibility == ApiVisibility.Public || api.authorizedTeams.intersect(myTeams.map(_.id)).nonEmpty =>
                   findSubscriptions(api, myTeams)
                 case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api", "status" -> 403)))
               }
+          }
         )
     }
   }
@@ -1426,29 +1427,13 @@ class ApiController(DaikokuAction: DaikokuAction,
       adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
         Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ teamFilter
       )
-      translations <- env.dataStore.translationRepo.forTenant(tenant)
-        .find(Json.obj(
-          "element.id" -> Json.obj(
-            "$in" -> JsArray(publicApis.map(_.id.asJson) ++ almostPublicApis.map(_.id.asJson) ++ privateApis.map(_.id.asJson)))))
     } yield {
       val apis = (publicApis ++ almostPublicApis ++ privateApis).filter(api => api.published || myTeams.exists(api.team == _.id))
 
       val sortedApis = apis.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
 
-      val apiTranslations: Map[ApiId, Seq[Translation]] = translations.groupBy(t => t.element.asInstanceOf[ApiTranslationElement].api)
-
       val jsons = sortedApis
-        .filter(api => api.parent.isEmpty)
         .map { api =>
-
-        val translations: Seq[Translation] = apiTranslations.getOrElse(api.id, Seq.empty)
-        val translationAsJsObject = translations
-          .groupBy(t => t.language)
-          .map {
-            case (k, v) => Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
-          }.fold(Json.obj())(_ deepMerge _)
-        val translation = Json.obj("translation" -> translationAsJsObject)
-
         val app = api
           .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team)))
 
@@ -1460,12 +1445,9 @@ class ApiController(DaikokuAction: DaikokuAction,
         else
           json = app.asSimpleJson.as[JsObject]
 
-        json = json ++ translation
-
         val authorizations = teams
           .filter(t => t.`type` != TeamType.Admin)
-          .map(
-            team =>
+          .map(team =>
               Json.obj(
                 "team" -> team.id.asJson,
                 "authorized" -> (api.authorizedTeams.contains(team.id) || api.team == team.id),
@@ -1473,25 +1455,22 @@ class ApiController(DaikokuAction: DaikokuAction,
                   val accessApi = notif.action.asInstanceOf[ApiAccess]
                   accessApi.team == team.id && accessApi.api == api.id
                 })
-              )
-          )
+              ))
 
         api.visibility.name match {
-          case "PublicWithAuthorizations" =>
-            json.as[JsObject] ++ Json.obj("authorizations" -> JsArray(authorizations))
+          case "PublicWithAuthorizations" => json.as[JsObject] ++ Json.obj("authorizations" -> JsArray(authorizations))
           case "Private" => json.as[JsObject] ++ Json.obj("authorizations" -> authorizations)
           case _ => json
         }
       }
 
-      val result = if (user.isDaikokuAdmin) adminApis.map(api => api.asJson.as[JsObject] ++ Json.obj("authorizations" -> teams.map(team =>
+      JsArray(if (user.isDaikokuAdmin) adminApis.map(api => api.asJson.as[JsObject] ++ Json.obj("authorizations" -> teams.map(team =>
         Json.obj(
           "team" -> team.id.asJson,
           "authorized" -> (user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id)),
           "pending" -> false
         )
-      ))) ++ jsons else jsons
-      JsArray(result)
+      ))) ++ jsons else jsons)
     }
   }
 
@@ -2467,36 +2446,22 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   def getDefaultApiVersion(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed to default version of api @{api.name}"))(ctx) {
-
       for {
         myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
         apis <- env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .find(Json.obj(
-            "_humanReadableId" -> apiId,
-            "isDefault" -> true,
-            
+            "_humanReadableId" -> apiId
           ))
       } yield {
+        val filteredApis = apis
+          .filter(api => api.authorizedTeams.exists(t => myTeams.exists(a => a.id == t)) || myTeams.exists(a => a.id == api.team))
 
+        filteredApis.find(api => api.isDefault) match {
+            case None => Ok(Json.obj("defaultVersion" -> apis.find(api => api.parent.isEmpty).get.currentVersion.asJson))
+            case Some(api) => Ok(Json.obj("defaultVersion" -> api.currentVersion.asJson))
+          }
       }
-
-      env.dataStore.apiRepo
-        .forTenant(ctx.tenant.id)
-        .findOne(
-          Json.obj("_humanReadableId" -> apiId, "isDefault" -> true)
-        )
-        .flatMap {
-          case None =>
-            env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .findOne(Json.obj("_humanReadableId" -> apiId, "parent" -> JsNull))
-              .map {
-                case None => AppError.render(ApiNotFound)
-                case Some(api) => Ok(Json.obj("defaultVersion" -> api.currentVersion.asJson))
-              }
-          case Some(api) => FastFuture.successful(Ok(Json.obj("defaultVersion" -> api.currentVersion.asJson)))
-        }
     }
   }
 

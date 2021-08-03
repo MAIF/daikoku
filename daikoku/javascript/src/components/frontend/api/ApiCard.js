@@ -10,7 +10,7 @@ export const ApiCard = (props) => {
   const allTeamsAreAuthorized =
     props.api.visibility === 'Public' || props.api.authorizations.every((a) => a.authorized);
   const isPending =
-    props.api.authorizations && props.api.authorizations.every((a) => a.pending && !a.authorized);
+    props.api.authorizations && props.api.authorizations.some((a) => a.pending && !a.authorized);
   const api = props.api;
   const team = props.team || { name: '--', avatar: '#', _id: api.team };
 

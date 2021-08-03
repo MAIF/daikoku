@@ -191,9 +191,13 @@ const ApiListComponent = (props) => {
     .map(value => {
       if (value.length === 1)
         return value[0]
+
       const app = value.find(v => v.isDefault)
+
       if (!app)
         return value.find(v => v.currentVersion === "1.0.0") || value[0]
+
+      return app
     })
     .value()
 
