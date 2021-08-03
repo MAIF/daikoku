@@ -265,9 +265,9 @@ class ApiController(DaikokuAction: DaikokuAction,
             )
         )
       } yield {
-        if (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
+        if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
           .intersect(myTeams.map(_.id))
-          .nonEmpty && (api.published || myTeams.exists(_.id == api.team))) {
+          .nonEmpty) && (api.published || myTeams.exists(_.id == api.team))) {
           val betterApi = api
             .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || p.typeName == "Admin" || myTeams.exists(_.id == api.team)))
             .asJson.as[JsObject] ++ Json.obj(
@@ -282,7 +282,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         } else {
           Unauthorized(Json.obj(
             "error" -> "You're not authorized on this api",
-            "status" -> 403,
+            "status" -> 401,
             "visibility" -> api.visibility.name
           ))
         }

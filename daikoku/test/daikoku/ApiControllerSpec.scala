@@ -2122,8 +2122,8 @@ class ApiControllerSpec()
         path = s"/api/me/visible-apis/${defaultApi.id.value}"
       )(tenant, session)
 
-      resp.status mustBe 404
-      (resp.json \ "error").as[String] mustBe "Api not found"
+      resp.status mustBe 401
+      (resp.json \ "error").as[String] mustBe "You're not authorized on this api"
 
       val sessionAdmin = loginWithBlocking(userAdmin, tenant)
       val respAdmin = httpJsonCallBlocking(
