@@ -446,7 +446,6 @@ export class OAuth2Config extends Component {
         <LazyForm
           value={this.props.value}
           onChange={(e) => {
-            console.log('onChange', e);
             this.props.onChange(e);
           }}
           flow={this.formFlow}

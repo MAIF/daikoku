@@ -1384,6 +1384,23 @@ case class Api(
       "stars" -> stars
     )
   }
+  def asPublicWithAuthorizationsJson(): JsValue = Json.obj(
+    "_id" -> id.value,
+      "_humanReadableId" -> name.urlPathSegmentSanitized,
+      "tenant" -> tenant.asJson,
+      "team" -> team.value,
+      "name" -> name,
+      "smallDescription" -> smallDescription,
+      "description" -> description,
+      "currentVersion" -> currentVersion.asJson,
+      "isDefault" -> isDefault,
+      "published" -> published,
+      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
+      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
+      "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
+      "stars" -> stars,
+      "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
+  )
 }
 
 case class ApiKeyRotation(

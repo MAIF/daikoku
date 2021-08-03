@@ -71,17 +71,15 @@ class MyHomeComponent extends Component {
   };
 
   redirectToApiPage = (api) => {
-    if (api.visibility === 'Public' || api.authorizations.some((auth) => auth.authorized)) {
-      const apiOwner = this.state.teams.find((t) => t._id === api.team);
+    const apiOwner = this.state.teams.find((t) => t._id === api.team);
 
-      const route = version => `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}/${version}`
+    const route = version => `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}/${version}`
 
-      if (api.isDefault)
-        this.props.history.push(route(api.currentVersion));
-      else
-        Services.getDefaultApiVersion(api._humanReadableId)
-          .then(res => this.props.history.push(route(res.defaultVersion)))
-    }
+    if (api.isDefault)
+      this.props.history.push(route(api.currentVersion));
+    else
+      Services.getDefaultApiVersion(api._humanReadableId)
+        .then(res => this.props.history.push(route(res.defaultVersion)))
   };
 
   redirectToEditPage = (api) => {

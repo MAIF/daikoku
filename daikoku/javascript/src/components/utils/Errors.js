@@ -1,16 +1,17 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import { goBack } from 'connected-react-router';
 import { t } from '../../locales';
 
 const getErrorLabel = (status, error) => {
+  console.log(status, error)
   if (status === 400) {
     return 'Bad Request';
   } else if (status === 401) {
-    return 'Forbidden';
+    return error.message || 'Forbidden';
   } else if (status === 403) {
-    return 'Unauthorized';
+    return error.message || 'Unauthorized';
   } else if (status === 404) {
     return error.message || 'Page Not Found';
   } else if (status > 399 && status < 500) {
@@ -22,7 +23,9 @@ const getErrorLabel = (status, error) => {
   }
 };
 
-const ErrorComponent = ({ error, goBack, tenant, currentLanguage }) => {
+const ErrorComponent = ({ error, tenant, currentLanguage }) => {
+  const history = useHistory()
+
   document.title = `${tenant} - ${t('Error', currentLanguage)}`;
   const label = getErrorLabel(error.status, error);
 
@@ -42,7 +45,7 @@ const ErrorComponent = ({ error, goBack, tenant, currentLanguage }) => {
             <Link className="btn btn-access-negative mr-1" to="/">
               <i className="fas fa-home" /> Go home
             </Link>
-            <button className="btn btn-access-negative" onClick={() => goBack()}>
+            <button className="btn btn-access-negative" onClick={() => history.goBack()}>
               <i className="fas fa-angle-double-left" /> Go back
             </button>
           </div>

@@ -1898,3 +1898,8 @@ export function getAllApiDocumentation(teamId, apiId, version) {
   return fetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`)
     .then(r => r.json())
 }
+
+export function getMyTeamsStatusAccess(teamId, apiId, version) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/access?version=${version}`)
+    .then(r => r.json())
+}

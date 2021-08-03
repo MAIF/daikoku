@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import hljs from 'highlight.js';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import {
@@ -16,7 +16,7 @@ import {
   ApiIssue,
 } from '.';
 import { converter } from '../../../services/showdown';
-import { Can, manage, api as API, Option } from '../../utils';
+import { Can, manage, api as API, Option, ActionWithTeamSelector } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal, updateUser } from '../../../core';
 
@@ -147,6 +147,9 @@ const ApiHomeComponent = ({
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
   const [ownerTeam, setOwnerTeam] = useState(undefined);
   const [myTeams, setMyTeams] = useState([]);
+  const [showAccessModal, setAccessModalError] = useState(false);
+
+  const params = useParams()
 
   useEffect(() => {
     updateSubscriptions(match.params.apiId);
@@ -165,7 +168,17 @@ const ApiHomeComponent = ({
       Services.myTeams(),
     ]).then(([api, { subscriptions, requests }, teams]) => {
       if (api.error) {
-        setError({ error: { status: 404, message: api.error } });
+        if (api.visibility && api.visibility === "PublicWithAuthorizations") {
+          Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId)
+            .then(res => {
+              setAccessModalError({
+                error: api.error,
+                api: res
+              })
+            })
+        }
+        else
+          setError({ error: { status: api.status || 404, message: api.error } });
       } else {
         setApi(api);
         setSubscriptions(subscriptions);
@@ -241,6 +254,53 @@ const ApiHomeComponent = ({
       }
     });
   };
+
+  if (showAccessModal) {
+    const teams = showAccessModal.api.myTeams.filter((t) => t.type !== 'Admin');
+    const pendingTeams = showAccessModal.api.authorizations.filter((auth) => auth.pending).map((auth) => auth.team);
+    const authorizedTeams = showAccessModal.api.authorizations
+      .filter((auth) => auth.authorized)
+      .map((auth) => auth.team);
+
+    return <div className="mx-auto mt-3 d-flex flex-column justify-content-center">
+      <h1 style={{ margin: 0 }}>{showAccessModal.error}</h1>
+      {
+        (teams.length === 1 && (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
+          (showAccessModal.api.authorizations.every(auth => auth.pending && !auth.authorized))
+          ?
+          <>
+            <h2 className="text-center my-3">{t('request_already_pending', currentLanguage)}</h2>
+            <button className="btn btn-outline-info mx-auto" style={{ width: 'fit-content' }}
+              onClick={() => history.goBack()}>
+              {t('go_back', currentLanguage)}
+            </button>
+          </>
+          :
+          <>
+            <span className="text-center my-3">{t("request_api_access", currentLanguage)}</span>
+            <ActionWithTeamSelector
+              title="Api access"
+              description={t(
+                'api.access.request',
+                currentLanguage,
+                false,
+                `You will send an access request to the API "${params.apIid}". For which team do you want to send the request ?`,
+                [params.apIid]
+              )}
+              pendingTeams={pendingTeams}
+              authorizedTeams={authorizedTeams}
+              teams={teams}
+              action={(teams) => {
+                Services.askForApiAccess(teams, showAccessModal.api._id)
+                  .then(_ => updateSubscriptions(showAccessModal.api._id))
+              }}>
+              <button className="btn btn-success mx-auto" style={{ width: 'fit-content' }}>
+                {t('notif.api.access', currentLanguage, null, false, [params.apiId])}
+              </button>
+            </ActionWithTeamSelector>
+          </>}
+    </div>
+  }
 
   if (!api || !ownerTeam) {
     return null;

@@ -42,7 +42,7 @@ object AppError {
     case TeamUnauthorized =>
       Unauthorized(Json.obj("error" -> "You're not authorized on this team"))
     case ApiUnauthorized =>
-      Unauthorized(Json.obj("error" -> "You're not authorized on this api"))
+      Unauthorized(Json.obj("error" -> "You're not authorized on this api", "status" -> 403))
     case PlanUnauthorized =>
       Unauthorized(Json.obj("error" -> "You're not authorized on this plan"))
     case PlanNotFound =>

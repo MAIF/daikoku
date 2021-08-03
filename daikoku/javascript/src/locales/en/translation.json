@@ -916,5 +916,8 @@
     "team_apikey_for_api.make_unique": "Make unique",
     "team_apikey_for_api.ask_for_make_unique": "Are you sure to make this api key unique and separate from his parent plan ?",
     "team_api_info.isDefault": "Use as latest version",
-    "api_select_modal.title": "Choose your plan"
+    "api_select_modal.title": "Choose your plan",
+    "request_api_access": "You need to be authorized to view this api.",
+    "request_already_pending": "Your request is already pending",
+    "go_back": "Go back"
 }

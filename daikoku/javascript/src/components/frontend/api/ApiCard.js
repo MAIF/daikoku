@@ -7,22 +7,12 @@ import { Translation, t } from '../../../locales';
 import StarsButton from './StarsButton';
 
 export const ApiCard = (props) => {
-  const isAuthorized =
-    props.api.visibility === 'Public' || props.api.authorizations.some((a) => a.authorized);
   const allTeamsAreAuthorized =
     props.api.visibility === 'Public' || props.api.authorizations.every((a) => a.authorized);
   const isPending =
     props.api.authorizations && props.api.authorizations.every((a) => a.pending && !a.authorized);
   const api = props.api;
   const team = props.team || { name: '--', avatar: '#', _id: api.team };
-
-  console.log(props.api)
-
-  const redirectToApiPage = (auth) => {
-    if (auth) {
-      props.redirectToApiPage();
-    }
-  };
 
   const accessButton = () => {
     if (
@@ -89,8 +79,8 @@ export const ApiCard = (props) => {
         </div>
         <div className="card-body plan-body d-flex flex-column">
           <h4
-            className={isAuthorized ? 'cursor-pointer underline-on-hover a-fake' : 'api--forbidden'}
-            onClick={() => redirectToApiPage(isAuthorized)}>
+            className='cursor-pointer underline-on-hover a-fake'
+            onClick={props.redirectToApiPage}>
             {api.name}
           </h4>
           <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
@@ -111,8 +101,8 @@ export const ApiCard = (props) => {
     <div className="row border-bottom py-4">
       <div className="col-12 d-flex justify-content-between">
         <div
-          className={isAuthorized ? 'cursor-pointer underline-on-hover a-fake' : 'api--forbidden'}
-          onClick={() => redirectToApiPage(isAuthorized)}>
+          className='cursor-pointer underline-on-hover a-fake'
+          onClick={props.redirectToApiPage}>
           <h3>{api.name}</h3>
         </div>
         <div className="ml-2">
