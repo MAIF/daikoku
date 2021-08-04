@@ -76,8 +76,6 @@ describe('Request api access from api view', () => {
       .get('.form-horizontal').submit()
       .url().should('contains', 'http://localhost:9000/')
       .get('.row:nth-child(1) h3').click()
-      // .get('.btn-success').click()
-      .get('.btn-outline-info').click()
       .get('.dropdown-toggle').click()
       .get('.fa-sign-out-alt').parent().click()
       .url().should('contains', 'http://localhost:9000/')
