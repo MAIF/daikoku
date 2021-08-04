@@ -85,3 +85,19 @@ describe('users page', () => {
   });
 });
 
+describe('create new api version', () => {
+  it('load well', () => {
+    cy.visit('http://localhost:9000/')
+      .get('.row:nth-child(2) h3').click()
+      .get('.fa-edit').click({ force: true })
+      .get('.reactSelect__value-container--has-value').click()
+      .get('.css-1gtu0rj-indicatorContainer > .css-6q0nyr-Svg').click()
+      .get('.btn-outline-info').click()
+      .get('.form-control:nth-child(2)').click()
+      .get('.form-control:nth-child(2)').type('4.0.0')
+      .get('.modal-footer > .btn-outline-success').click()
+      .get('.fa-save').click()
+      .get('h1 > .btn').click()
+      .get('.badge').first().should('have.text', '4.0.0')
+  })
+})
