@@ -79,7 +79,7 @@ describe('Request api access from api view', () => {
       .get('.btn-success').click()
       .get('.btn-outline-info').click()
       .get('.dropdown-toggle').click()
-      .get('.dropdown-item:nth-child(8)').click()
+      .get('.dropdown-item:nth-child(5)').click()
       .url().should('contains', 'http://localhost:9000/')
       .get('.btn-outline-success').click()
       .url().should('contains', 'http://localhost:9000/auth/Local/login')
