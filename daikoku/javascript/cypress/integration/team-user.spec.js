@@ -70,7 +70,7 @@ describe('Team back-office', () => {
       .visit('http://localhost:9000/testers/settings')
       .get('nav#sidebar a.nav-link').contains('Team Apis').click()
       .url().should('include', '/testers/settings/apis')
-      .get('table tbody tr').should('have.length', 1)
+      .get('table tbody tr').should('have.length', 2)
       .visit('http://localhost:9000/testers/settings/subscriptions/apis/test-api/1.0.0')
       .get('table tbody tr').should('have.length', 2)
       .visit('http://localhost:9000/testers/settings/consumptions/apis/test-api/1.0.0')
