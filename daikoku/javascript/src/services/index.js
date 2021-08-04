@@ -231,8 +231,8 @@ export function reorderDoc(team, api) {
   }).then((r) => r.json());
 }
 
-export function getTeamSubscriptions(api, team) {
-  return fetch(`/api/apis/${api}/subscriptions/teams/${team}`, {
+export function getTeamSubscriptions(api, team, version) {
+  return fetch(`/api/apis/${api}/subscriptions/teams/${team}?version=${version}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -1066,8 +1066,8 @@ export function apiGlobalConsumption(apiId, teamId, from, to) {
   }).then((r) => r.json());
 }
 
-export function apiSubscriptions(apiId, teamId) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/subscriptions`, {
+export function apiSubscriptions(apiId, teamId, version) {
+  return fetch(`/api/teams/${teamId}/apis/${apiId}/subscriptions?version=${version}`, {
     method: 'GET',
     credentials: 'include',
     headers: {

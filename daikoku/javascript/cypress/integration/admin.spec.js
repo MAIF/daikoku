@@ -87,17 +87,22 @@ describe('users page', () => {
 
 describe('create new api version', () => {
   it('load well', () => {
-    cy.visit('http://localhost:9000/')
-      .get('.row:nth-child(2) h3').click()
-      .get('.fa-edit').click({ force: true })
+    const version = "1.0.1"
+    cy.visit('http://localhost:9000/apis')
+      .url().should('include', '/apis')
+      .visit('http://localhost:9000/')
+      .get('.row:nth-child(3) > .col-12 h3').click()
+      .url().should('include', 'testers/test-api/1.0.0')
+      .get('.btn-sm:nth-child(1)').click({ force: true })
       .get('.reactSelect__value-container--has-value').click()
       .get('.css-1gtu0rj-indicatorContainer > .css-6q0nyr-Svg').click()
       .get('.btn-outline-info').click()
       .get('.form-control:nth-child(2)').click()
-      .get('.form-control:nth-child(2)').type('4.0.0')
+      .get('.form-control:nth-child(2)').type(version)
       .get('.modal-footer > .btn-outline-success').click()
       .get('.fa-save').click()
-      .get('h1 > .btn').click()
-      .get('.badge').first().should('have.text', '4.0.0')
+      .visit(`http://localhost:9000/testers/test-api/${version}`)
+      .url().should('include', `/testers/test-api/${version}`)
+      .get('.badge').first().should('have.text', version)
   })
 })

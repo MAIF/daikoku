@@ -75,6 +75,7 @@ object AppError {
       case ApiKeyRotationError(e) => e
       case err =>
         Json.obj("error" -> (err match {
+          case ApiVersionConflict   => "This version already existed"
           case ApiNotFound          => "Api not found"
           case TeamNotFound         => "Team not found"
           case UserNotFound         => "User not found"

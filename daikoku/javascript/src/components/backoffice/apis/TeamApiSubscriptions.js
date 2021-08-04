@@ -16,6 +16,7 @@ import * as Services from '../../../services';
 import { Translation, t } from '../../../locales';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
 import { openSubMetadataModal } from '../../../core';
+import { useParams } from 'react-router-dom';
 
 const TeamApiSubscriptionsComponent = (props) => {
   const [api, setApi] = useState(undefined);
@@ -23,6 +24,8 @@ const TeamApiSubscriptionsComponent = (props) => {
   const [columns, setColumns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [table, setTable] = useState(undefined);
+
+  const params = useParams()
 
   useEffect(() => {
     Promise.all([
@@ -208,7 +211,7 @@ const TeamApiSubscriptionsComponent = (props) => {
                 itemName="sub"
                 columns={columns}
                 fetchItems={() =>
-                  Services.apiSubscriptions(props.match.params.apiId, props.currentTeam._id)
+                  Services.apiSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId)
                 }
                 showActions={false}
                 showLink={false}

@@ -17,7 +17,7 @@ class TeamApisComponent extends Component {
       id: 'name',
       Header: t('Name', this.props.currentLanguage),
       style: { textAlign: 'left' },
-      accessor: (api) => api.name,
+      accessor: (api) => `${api.name} - (${api.currentVersion})`,
       sortType: 'basic',
     },
     {

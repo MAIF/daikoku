@@ -888,7 +888,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getApiSubscriptionsForTeam(apiId: String, teamId: String) = DaikokuAction.async { ctx =>
+  def getApiSubscriptionsForTeam(apiId: String, teamId: String, version: Option[String]) = DaikokuAction.async { ctx =>
     TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(teamId, ctx) {
       team =>
         val teamPermission = team.users
@@ -958,7 +958,7 @@ class ApiController(DaikokuAction: DaikokuAction,
             }
         }
 
-        env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
+        env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version).flatMap {
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
           case Some(api) if api.visibility == ApiVisibility.Public => findSubscriptions(api, team)
           case Some(api) if api.team == team.id => findSubscriptions(api, team)
@@ -1965,9 +1965,9 @@ class ApiController(DaikokuAction: DaikokuAction,
       }
   }
 
-  def getApiSubscriptions(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+  def getApiSubscriptions(teamId: String, apiId: String, version: Option[String]) = DaikokuAction.async { ctx =>
     TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"))(teamId, ctx) { team =>
-      env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(apiId).flatMap {
+      env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version).flatMap {
         case Some(api) if api.team != team.id => FastFuture.successful(Unauthorized(Json.obj("error" -> "Unauthorized to access to this api")))
         case Some(api) => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
           .findNotDeleted(Json.obj("api" -> api.id.asJson))
