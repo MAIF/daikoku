@@ -13,9 +13,9 @@ class Translator {
     implicit val mat = env.defaultMaterializer
 
     env.dataStore.translationRepo.forTenant(tenant)
-      .findOne(Json.obj("key" -> key, "language" -> language))
+      .findOne(Json.obj("key" -> key, "language" -> language.toLowerCase))
       .map {
-        case None => messagesApi(key)(lang = Lang(language))
+        case None => messagesApi(key)(lang = Lang(language.toLowerCase))
         case Some(translation) => translation.value
       }
       .map { value =>

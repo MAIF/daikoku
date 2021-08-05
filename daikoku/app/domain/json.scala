@@ -3033,7 +3033,6 @@ object json {
           )
         } recover {
           case e =>
-            AppLogger.error(e.getMessage, e)
             JsError(e.getMessage)
         } get
 

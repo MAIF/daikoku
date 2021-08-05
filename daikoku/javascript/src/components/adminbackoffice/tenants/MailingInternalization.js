@@ -11,7 +11,8 @@ const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMark
 
 const MarkdownComponent = ({
     currentLanguage, team, value, translationKey, language,
-    toggleTranslation, saveTranslation, handleInputChange, resetTranslation
+    toggleTranslation, saveTranslation, handleInputChange, resetTranslation,
+    lastModificationAt
 }) => (
     <Suspense fallback={<div>loading ...</div>}>
         <div style={{ position: 'relative' }} className="my-2">
@@ -22,16 +23,12 @@ const MarkdownComponent = ({
                 onChange={code => handleInputChange(translationKey, language, code)}
             />
             <div style={{ position: 'absolute', top: 0, right: 0 }}>
-                <button type="button" onClick={() => toggleTranslation(translationKey)}
-                    className="btn btn-outline-danger">
-                    <i className="fas fa-times" />
-                </button>
-                <button type="button" onClick={() => resetTranslation(translationKey, language)}
-                    className="btn btn-outline-info mx-1">
+                {lastModificationAt && <button type="button" onClick={() => resetTranslation(translationKey, language)}
+                    className="btn btn-outline-info">
                     <i className="fas fa-undo" />
-                </button>
+                </button>}
                 <button type="button" onClick={() => saveTranslation(translationKey, language)}
-                    className="btn btn-outline-success">
+                    className="btn btn-outline-success ml-1">
                     <i className="fas fa-save" />
                 </button>
             </div>
@@ -58,7 +55,7 @@ const Collapse = ({ label, children, edited, toggleTranslation, translationKey }
         return words;
     }
 
-    return <div onClick={() => toggleTranslation(translationKey)} style={{ cursor: 'pointer' }}>
+    return <div>
         <div className="row">
             <div className="col-12 d-flex justify-space-between">
                 <span style={{ fontWeight: 'bold', flex: 1 }}>{label}</span>
@@ -70,7 +67,8 @@ const Collapse = ({ label, children, edited, toggleTranslation, translationKey }
                 <button
                     type="button"
                     className="btn btn-access-negative btn-sm"
-                    style={{ float: 'right' }}>
+                    style={{ float: 'right' }}
+                    onClick={() => toggleTranslation(translationKey)}>
                     <i className={`fas fa-eye${!edited ? '' : '-slash'}`} />
                 </button>
             </div>
@@ -137,7 +135,7 @@ function MailingInternalizationComponent({ currentLanguage, team }) {
     }
 
     function editTranslations(editedKey, language, actions) {
-        setTranslations(translations.map(([key, values]) => {
+        setTranslations(translations.map(([key, values, edited]) => {
             if (key === editedKey)
                 return [
                     key,
@@ -145,15 +143,14 @@ function MailingInternalizationComponent({ currentLanguage, team }) {
                         if (translation.key === editedKey && translation.language === language)
                             actions.forEach(({ action, field }) => translation[field] = action(translation[field]))
                         return translation
-                    })
+                    }),
+                    edited
                 ]
-            return [key, values]
+            return [key, values, edited]
         }))
     }
 
     const basePath = '/settings/internationalization';
-
-    console.log(translations)
 
     return (
         <UserBackOffice tab="Internalization">
@@ -186,9 +183,8 @@ function MailingInternalizationComponent({ currentLanguage, team }) {
                     <Route path={`${basePath}/mail`} render={() => (
                         <div className="col-12 pb-3">
                             <div className="d-flex justify-space-between py-3">
-                                <span style={{ flex: 1 }} className="lead">Message text</span>
-                                <span style={{ flex: 1 }} className="lead text-center">Required variables</span>
-                                <span className="lead">Action</span>
+                                <span style={{ flex: 1 }} className="lead">{t('mailing_internalization.message_text text', currentLanguage)}</span>
+                                <span style={{ flex: 1 }} className="lead text-center">{t('mailing_internalization.required_variables', currentLanguage)}</span>
                             </div>
                             {translations.map(([key, values, edited]) => (
                                 <Collapse
@@ -213,7 +209,10 @@ function MailingInternalizationComponent({ currentLanguage, team }) {
                             ))}
                         </div>)}
                     />
-                    <Route path={`${basePath}/front`} render={() => <p style={{ fontStyle: 'italic' }} className="text-center w-100">Edition of all front office text will be available in next version</p>} />
+                    <Route path={`${basePath}/front`} render={() =>
+                        <p style={{ fontStyle: 'italic' }} className="text-center w-100">
+                            {t('mailing_internalization.missing_translations', currentLanguage)}
+                        </p>} />
                 </Switch>
             </Can>
         </UserBackOffice>
