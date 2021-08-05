@@ -43,7 +43,7 @@ export class TeamApiKeysComponent extends Component {
           this.state.showApiKey && (
             <div style={{ minWidth: 100 }}>
               <Link
-                to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}`}
+                to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
                 className="btn btn-sm btn-access-negative">
                 <i className="fas fa-eye mr-1" />
                 <Translation i18nkey="Api keys" language={this.props.currentLanguage}>

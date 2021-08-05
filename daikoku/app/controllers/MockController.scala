@@ -611,7 +611,7 @@ class MockController(DaikokuAction: DaikokuAction,
     val (user5, userTeam5) =
       createUserAndTeam("fifou", "fifou@foo.bar", tenantId, false)
     val (user6, userTeam6) =
-      createUserAndTeam("Etienne", "etienne@foo.bar", tenantId)
+      createUserAndTeam("Etienne", "etienne@foo.bar", tenantId, false)
 
     val issuesTags = Seq(
       ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),

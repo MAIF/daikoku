@@ -2,7 +2,7 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
 import hljs from 'highlight.js';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import asciidoctor from 'asciidoctor';
 
 import * as Services from '../../../services';
@@ -13,25 +13,23 @@ import 'highlight.js/styles/monokai.css';
 
 const asciidoctorConverter = asciidoctor();
 
-export class ApiDocumentationCartidge extends Component {
-  render() {
-    const apiId = this.props.match.params.apiId;
-    return (
-      <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
-        <ul>
-          {this.props.details.titles.map((obj) => {
-            return (
-              <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
-                <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${obj._id}`}>
-                  {obj.title}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    );
-  }
+export function ApiDocumentationCartidge({ details }) {
+  const params = useParams()
+  return (
+    <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
+      <ul>
+        {details.titles.map((obj) => {
+          return (
+            <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
+              <Link to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}>
+                {obj.title}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }
 
 export class ApiDocumentation extends Component {
@@ -41,29 +39,30 @@ export class ApiDocumentation extends Component {
   };
 
   fetchPage = () => {
-    Services.getDocDetails(this.props.api._id).then((details) => {
+    Services.getDocDetails(this.props.api._humanReadableId, this.props.match.params.versionId).then((details) => {
       this.setState({ details });
       const pageId = this.props.match.params.pageId || details.pages[0];
-      Services.getDocPage(this.props.api._id, pageId).then((page) => {
-        if (page.remoteContentEnabled) {
-          this.setState({
-            content: null,
-            contentType: page.contentType,
-            remoteContent: {
-              url: page.contentUrl,
-            },
-          });
-        } else {
-          this.setState({
-            content: page.content,
-            contentType: page.contentType,
-            remoteContent: null,
-          });
-          window.$('pre code').each((i, block) => {
-            hljs.highlightBlock(block);
-          });
-        }
-      });
+      if (pageId)
+        Services.getDocPage(this.props.api._id, pageId).then((page) => {
+          if (page.remoteContentEnabled) {
+            this.setState({
+              content: null,
+              contentType: page.contentType,
+              remoteContent: {
+                url: page.contentUrl,
+              },
+            });
+          } else {
+            this.setState({
+              content: page.content,
+              contentType: page.contentType,
+              remoteContent: null,
+            });
+            window.$('pre code').each((i, block) => {
+              hljs.highlightBlock(block);
+            });
+          }
+        });
     });
   };
 
@@ -87,12 +86,15 @@ export class ApiDocumentation extends Component {
     if (!api || !this.state.details) {
       return null;
     }
+
     const details = this.state.details;
     const apiId = this.props.match.params.apiId;
     const pageId = this.props.match.params.pageId;
+    const versionId = this.props.match.params.versionId;
     const idx = _.findIndex(details.pages, (p) => p === pageId);
     let prevId = null;
     let nextId = null;
+
     const next = details.pages[idx + (pageId ? 1 : 2)];
     const prev = details.pages[idx - 1];
     if (next) nextId = next;
@@ -109,7 +111,7 @@ export class ApiDocumentation extends Component {
         <div className="col p-3">
           <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
             {prevId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${prevId}`}>
+              <Link to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
                 <i className="fas fa-chevron-left mr-1" />
                 <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
                   Previous page
@@ -117,7 +119,7 @@ export class ApiDocumentation extends Component {
               </Link>
             )}
             {nextId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${nextId}`}>
+              <Link to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
                 <Translation i18nkey="Next page" language={this.props.currentLanguage}>
                   Next page
                 </Translation>
@@ -139,7 +141,7 @@ export class ApiDocumentation extends Component {
           )}
           <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
             {prevId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${prevId}`}>
+              <Link to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
                 <i className="fas fa-chevron-left mr-1" />
                 <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
                   Previous page
@@ -147,7 +149,7 @@ export class ApiDocumentation extends Component {
               </Link>
             )}
             {nextId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/documentation/${nextId}`}>
+              <Link to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
                 <Translation i18nkey="Next page" language={this.props.currentLanguage}>
                   Next page
                 </Translation>

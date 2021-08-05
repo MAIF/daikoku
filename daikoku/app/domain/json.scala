@@ -1417,6 +1417,7 @@ object json {
               .getOrElse(Seq.empty),
             closedAt = (json \ "closedAt")
               .asOpt[DateTime](DateTimeFormat.reads),
+            apiVersion = (json \ "apiVersion").asOpt[String]
           )
         )
       } recover {
@@ -1439,7 +1440,11 @@ object json {
         .getOrElse(JsNull)
         .as[JsValue],
       "by" -> o.by.asJson,
-      "comments" -> o.comments.map(ApiIssueCommentFormat.writes)
+      "comments" -> o.comments.map(ApiIssueCommentFormat.writes),
+      "apiVersion" -> o.apiVersion
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   val ApiIssueTagIdFormat = new Format[ApiIssueTagId] {
@@ -1948,7 +1953,9 @@ object json {
             issuesTags = (json \ "issuesTags")
               .asOpt(SetApiTagFormat)
               .getOrElse(Set.empty),
-            stars = (json \ "stars").asOpt[Int].getOrElse(0)
+            stars = (json \ "stars").asOpt[Int].getOrElse(0),
+            parent = (json \ "parent").asOpt(ApiIdFormat),
+            isDefault = (json \ "isDefault").asOpt[Boolean].getOrElse(false)
           )
         )
       } recover {
@@ -1987,7 +1994,12 @@ object json {
       "posts" -> SeqPostIdFormat.writes(o.posts),
       "issues" -> SeqIssueIdFormat.writes(o.issues),
       "issuesTags" -> SetApiTagFormat.writes(o.issuesTags),
-      "stars" -> o.stars
+      "stars" -> o.stars,
+      "parent" -> o.parent
+        .map(ApiIdFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "isDefault" -> o.isDefault
     )
   }
 

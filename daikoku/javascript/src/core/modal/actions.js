@@ -99,6 +99,20 @@ export const openApiKeySelectModal = (modalProps) => (dispatch) =>
     modalType: 'apiKeySelectModal',
   });
 
+export const openApiSelectModal = modalProps => dispatch =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'apiSelectModal'
+  });
+
+export const openApiDocumentationSelectModal = modalProps => dispatch =>
+  dispatch({
+    type: OPEN_MODAL,
+    modalProps,
+    modalType: 'apiDocumentationSelectModal'
+  });
+
 export const closeModal = () => (dispatch) => {
   return dispatch({
     type: CLOSE_MODAL,

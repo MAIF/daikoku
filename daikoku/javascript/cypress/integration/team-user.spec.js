@@ -13,7 +13,7 @@ describe('Login page & login form', () => {
 describe('API page', () => {
   it('load well', () => {
     cy
-      .visit('http://localhost:9000/testers/test-api')
+      .visit('http://localhost:9000/testers/test-api/1.0.0')
       .get('h1.jumbotron-heading').should(($div) => {
         expect($div.text().trim()).contains('test API');
       })
@@ -27,7 +27,7 @@ describe('API page', () => {
         expect(text).to.include('Swagger Petstore (1.0.0)');
       })
       .get('a.nav-link').contains('Try it !').click()
-      .get('#swagger-ui').should('be.visible') ;
+      .get('#swagger-ui').should('be.visible');
   });
 });
 
@@ -70,12 +70,12 @@ describe('Team back-office', () => {
       .visit('http://localhost:9000/testers/settings')
       .get('nav#sidebar a.nav-link').contains('Team Apis').click()
       .url().should('include', '/testers/settings/apis')
-      .get('table tbody tr').should('have.length', 1)
-      .visit('http://localhost:9000/testers/settings/subscriptions/apis/test-api')
+      .get('table tbody tr').should('have.length', 4)
+      .visit('http://localhost:9000/testers/settings/subscriptions/apis/test-api/1.0.0')
       .get('table tbody tr').should('have.length', 2)
-      .visit('http://localhost:9000/testers/settings/consumptions/apis/test-api')
+      .visit('http://localhost:9000/testers/settings/consumptions/apis/test-api/1.0.0')
       .get('div.data-vizualisation').should('be.visible');
-      
+
   });
 
   it('Team income works', () => {
@@ -99,7 +99,7 @@ describe('Team back-office', () => {
       .url().should('include', '/testers/settings/billing')
       .get('.month__and__total button.btn-access-negative').click()
       .get('.col.apis').should('be.visible')
-      .get('.api__billing__card').click()
+      .get('.api__billing__card').click({ force: true })
       .get('.col.apikeys h3').should('have.text', 'test API');
   });
 
@@ -112,7 +112,7 @@ describe('Team back-office', () => {
       .get('table tbody tr a.btn').first().click()
       .url().should('include', '/testers/settings/apikeys/test-api')
       .get('.card').should('have.length', 1);
-      
+
   });
 
   it('Team assets works', () => {

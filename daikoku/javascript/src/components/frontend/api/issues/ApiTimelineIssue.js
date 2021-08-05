@@ -57,7 +57,7 @@ export function ApiTimelineIssue({
   const id = issueId || useParams().issueId;
 
   useEffect(() => {
-    Services.getAPIIssue(api._id, id).then((res) => {
+    Services.getAPIIssue(api._humanReadableId, id).then((res) => {
       const entryTags = res.tags.map((tag) => ({ value: tag.id, label: tag.name }));
       setIssue({ ...res, tags: entryTags });
       setTags(entryTags);
@@ -108,7 +108,7 @@ export function ApiTimelineIssue({
   function deleteIssue() {
     window.confirm(t('issues.confirm_delete', currentLanguage)).then((ok) => {
       if (ok)
-        Services.updateIssue(api._id, team._id, id, {
+        Services.updateIssue(api._humanReadableId, team._id, id, {
           ...issue,
           _deleted: true,
           tags: issue.tags.map((tag) => tag.value),
@@ -137,7 +137,7 @@ export function ApiTimelineIssue({
           comments: issue.comments.filter((_, j) => i !== j),
         };
         setIssue(updatedIssue);
-        Services.updateIssue(api._id, team._id, id, updatedIssue).then((res) => {
+        Services.updateIssue(api._humanReadableId, team._id, id, updatedIssue).then((res) => {
           if (res.status > 300) res.json().then((r) => toastr.error(r.error));
           else toastr.success(t('Api saved', currentLanguage));
         });
@@ -173,7 +173,7 @@ export function ApiTimelineIssue({
   }
 
   function setIssueStatus(value) {
-    Services.updateIssue(api._id, team._id, id, {
+    Services.updateIssue(api._humanReadableId, team._id, id, {
       ...issue,
       open: value,
       tags: issue.tags.map((tag) => tag.value),
@@ -195,7 +195,7 @@ export function ApiTimelineIssue({
             ]
           : issue.comments,
     };
-    Services.updateIssue(api._id, team._id, id, {
+    Services.updateIssue(api._humanReadableId, team._id, id, {
       ...newIssue,
       tags: issue.tags.map((tag) => tag.value),
     }).then(() => setIssue(newIssue));
@@ -236,7 +236,7 @@ export function ApiTimelineIssue({
                   {t('Edit', currentLanguage)}
                 </button>
                 <Link
-                  to={`/${team._humanReadableId}/${api._humanReadableId}/issues/new`}
+                  to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/new`}
                   style={{ whiteSpace: 'nowrap' }}>
                   <button className="btn btn-success">
                     {t('issues.new_issue', currentLanguage)}

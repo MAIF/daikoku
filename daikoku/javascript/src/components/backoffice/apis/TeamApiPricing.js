@@ -1,4 +1,4 @@
-import React, { Component, useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import _ from 'lodash';
 import { currencies } from '../../../services/currencies';
 import faker from 'faker';
@@ -11,6 +11,8 @@ import { t, Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { Help } from '../../inputs';
 import { toastr } from 'react-redux-toastr';
+import { connect } from 'react-redux';
+import { openApiSelectModal } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -138,19 +140,39 @@ const OtoroshiServicesAndGroupSelector = props => {
   );
 };
 
-export class TeamApiPricing extends Component {
-  state = {
-    selected: this.props.value.possibleUsagePlans[0],
-    otoroshiSettings: [],
-  };
+function usePrevious(value) {
+  const ref = useRef();
+  useEffect(() => { ref.current = value }, [value]);
+  return ref.current;
+}
 
-  componentDidMount() {
-    Services.allSimpleOtoroshis(this.props.tenant._id).then((otoroshiSettings) =>
-      this.setState({ otoroshiSettings })
-    );
+function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
+  const [selected, setSelected] = useState(value.possibleUsagePlans[0])
+  const [otoroshiSettings, setOtoroshiSettings] = useState([]);
+
+  const prevValue = usePrevious(value)
+
+  useEffect(() => {
+    Services.allSimpleOtoroshis(tenant._id)
+      .then(settings => setOtoroshiSettings(settings));
+  }, [])
+
+  useEffect(() => {
+    if (prevValue) {
+      if (prevValue.possibleUsagePlans.length < value.possibleUsagePlans.length)
+        setSelected(value.possibleUsagePlans.slice(-1)[0])
+      else if (!equals(
+        prevValue.possibleUsagePlans.map(p => p._id).sort(),
+        value.possibleUsagePlans.map(p => p._id).sort()))
+        setSelected(value.possibleUsagePlans[0])
+    }
+  }, [props.params.versionId, value.possibleUsagePlans])
+
+  function equals(a, b) {
+    return a.length === b.length && a.every((v, i) => v === b[i])
   }
 
-  otoroshiFlow = (_found) => {
+  function otoroshiFlow(_found) {
     if (
       !(
         !!_found.otoroshiTarget &&
@@ -159,13 +181,13 @@ export class TeamApiPricing extends Component {
       )
     ) {
       return [
-        `>>> ${t('Otoroshi', this.props.currentLanguage)}`,
+        `>>> ${t('Otoroshi', currentLanguage)}`,
         'otoroshiTarget.otoroshiSettings',
         'otoroshiTarget.authorizedEntities',
       ];
     }
     return [
-      `>>> ${t('Otoroshi', this.props.currentLanguage)}`,
+      `>>> ${t('Otoroshi', currentLanguage)}`,
       'otoroshiTarget.otoroshiSettings',
       'otoroshiTarget.authorizedEntities',
       'otoroshiTarget.apikeyCustomization.clientIdOnly',
@@ -183,13 +205,13 @@ export class TeamApiPricing extends Component {
     ];
   };
 
-  otoroshiForm = (_found) => {
+  function otoroshiForm(_found) {
     const firstPartOfOtoroshiForm = {
       'otoroshiTarget.otoroshiSettings': {
         type: 'select',
         props: {
-          label: t('Otoroshi instance', this.props.currentLanguage),
-          possibleValues: this.state.otoroshiSettings.map((s) => ({
+          label: t('Otoroshi instance', currentLanguage),
+          possibleValues: otoroshiSettings.map((s) => ({
             label: s.url,
             value: s._id,
           })),
@@ -198,11 +220,11 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.authorizedEntities': {
         type: OtoroshiServicesAndGroupSelector,
         props: {
-          label: t('Authorized entities', this.props.currentLanguage),
+          label: t('Authorized entities', currentLanguage),
           _found,
-          placeholder: t('Authorized.entities.placeholder', this.props.currentLanguage),
-          tenant: this.props.tenant,
-          help: t('authorized.entities.help', this.props.currentLanguage),
+          placeholder: t('Authorized.entities.placeholder', currentLanguage),
+          tenant: tenant,
+          help: t('authorized.entities.help', currentLanguage),
 
         },
       },
@@ -221,28 +243,28 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.apikeyCustomization.clientIdOnly': {
         type: 'bool',
         props: {
-          label: t('Apikey with clientId only', this.props.currentLanguage),
+          label: t('Apikey with clientId only', currentLanguage),
         },
       },
       'otoroshiTarget.apikeyCustomization.readOnly': {
         type: 'bool',
         props: {
-          label: t('Read only apikey', this.props.currentLanguage),
+          label: t('Read only apikey', currentLanguage),
         },
       },
       'otoroshiTarget.apikeyCustomization.constrainedServicesOnly': {
         type: 'bool',
         props: {
-          label: t('Constrained services only', this.props.currentLanguage),
+          label: t('Constrained services only', currentLanguage),
         },
       },
       'otoroshiTarget.apikeyCustomization.dynamicPrefix': {
         type: 'string',
         props: {
-          label: t('Dynamic prefix', this.props.currentLanguage),
+          label: t('Dynamic prefix', currentLanguage),
           help: t(
             'dynamic.prefix.help',
-            this.props.currentLanguage,
+            currentLanguage,
             false,
             'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
           ),
@@ -251,10 +273,10 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.apikeyCustomization.metadata': {
         type: 'object',
         props: {
-          label: t('Automatic API key metadata', this.props.currentLanguage),
+          label: t('Automatic API key metadata', currentLanguage),
           help: t(
             'automatic.metadata.help',
-            this.props.currentLanguage,
+            currentLanguage,
             false,
             'Automatic metadata will be calculated on subscription acceptation'
           ),
@@ -263,11 +285,11 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.apikeyCustomization.customMetadata': {
         type: CustomMetadataInput,
         props: {
-          label: t('Custom Apikey metadata', this.props.currentLanguage),
-          toastr: () => toastr.info(t('sub.process.update.to.manual', this.props.currentLanguage)),
+          label: t('Custom Apikey metadata', currentLanguage),
+          toastr: () => toastr.info(t('sub.process.update.to.manual', currentLanguage)),
           help: t(
             'custom.metadata.help',
-            this.props.currentLanguage,
+            currentLanguage,
             false,
             'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
           ),
@@ -276,22 +298,22 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.apikeyCustomization.tags': {
         type: 'array',
         props: {
-          label: t('Apikey tags', this.props.currentLanguage),
+          label: t('Apikey tags', currentLanguage),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.enabled': {
         type: 'bool',
         props: {
-          label: t('Enable restrictions', this.props.currentLanguage),
+          label: t('Enable restrictions', currentLanguage),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.allowLast': {
         type: 'bool',
         props: {
-          label: t('Allow at last', this.props.currentLanguage),
+          label: t('Allow at last', currentLanguage),
           help: t(
             'allow.least.help',
-            this.props.currentLanguage,
+            currentLanguage,
             'Allowed path will be evaluated at last'
           ),
         },
@@ -299,39 +321,39 @@ export class TeamApiPricing extends Component {
       'otoroshiTarget.apikeyCustomization.restrictions.allowed': {
         type: OtoroshiPathInput,
         props: {
-          label: t('Allowed pathes', this.props.currentLanguage),
+          label: t('Allowed pathes', currentLanguage),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.forbidden': {
         type: OtoroshiPathInput,
         props: {
-          label: t('Forbidden pathes', this.props.currentLanguage),
+          label: t('Forbidden pathes', currentLanguage),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.notFound': {
         type: OtoroshiPathInput,
         props: {
-          label: t('Not found pathes', this.props.currentLanguage),
+          label: t('Not found pathes', currentLanguage),
         },
       },
     };
   };
 
-  securityFlow = (_found) => {
+  function securityFlow(_found) {
     return [
-      `>>> ${t('Security', this.props.currentLanguage)}`,
+      `>>> ${t('Security', currentLanguage)}`,
       'autoRotation',
       'subscriptionProcess',
       'integrationProcess',
     ];
   };
 
-  securityForm = (_found) => {
+  function securityForm(_found) {
     return {
       autoRotation: {
         type: 'bool',
         props: {
-          label: t('Force apikey auto-rotation', this.props.currentLanguage),
+          label: t('Force apikey auto-rotation', currentLanguage),
         },
       },
       subscriptionProcess: {
@@ -340,40 +362,36 @@ export class TeamApiPricing extends Component {
           _found.otoroshiTarget.apikeyCustomization.customMetadata &&
           !!_found.otoroshiTarget.apikeyCustomization.customMetadata.length,
         props: {
-          label: t('Subscription', this.props.currentLanguage),
+          label: t('Subscription', currentLanguage),
           possibleValues: [
             {
-              label: t('Automatic', this.props.currentLanguage),
+              label: t('Automatic', currentLanguage),
               value: 'Automatic',
             },
-            { label: t('Manual', this.props.currentLanguage), value: 'Manual' },
+            { label: t('Manual', currentLanguage), value: 'Manual' },
           ],
         },
       },
       integrationProcess: {
         type: 'select',
         props: {
-          label: t('Integration', this.props.currentLanguage),
+          label: t('Integration', currentLanguage),
           possibleValues: [
             {
-              label: t('Automatic', this.props.currentLanguage),
+              label: t('Automatic', currentLanguage),
               value: 'Automatic',
             },
-            { label: t('ApiKey', this.props.currentLanguage), value: 'ApiKey' },
+            { label: t('ApiKey', currentLanguage), value: 'ApiKey' },
           ],
         },
       },
     };
   };
 
-  select = (selected) => {
-    this.setState({ selected });
-  };
-
-  smartNameAndDescription = (newType) => {
+  function smartNameAndDescription(newType) {
     let response = {};
-    if (newType !== this.state.selected.type) {
-      const { customName, customDescription, type } = this.state.selected;
+    if (newType !== selected.type) {
+      const { customName, customDescription, type } = selected;
       const { defaultName, defaultDescription } = SUBSCRIPTION_PLAN_TYPES[type];
       if (!customName || customName === defaultName) {
         response = { ...response, customName: SUBSCRIPTION_PLAN_TYPES[newType].defaultName };
@@ -388,36 +406,36 @@ export class TeamApiPricing extends Component {
     return response;
   };
 
-  onChange = (v) => {
+  function onChange(v) {
     if (!v.currency) {
       v.currency = { code: 'EUR' };
     }
-    v = { ...v, ...this.smartNameAndDescription(v.type) };
-    const selected = this.props.value.possibleUsagePlans.filter((p) => p._id === v._id)[0];
-    const idx = this.props.value.possibleUsagePlans.indexOf(selected);
-    let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
+    v = { ...v, ...smartNameAndDescription(v.type) };
+    const selected = value.possibleUsagePlans.filter((p) => p._id === v._id)[0];
+    const idx = value.possibleUsagePlans.indexOf(selected);
+    let plans = _.cloneDeep(value.possibleUsagePlans);
     plans.splice(idx, 1, v);
-    const value = _.cloneDeep(this.props.value);
-    value.possibleUsagePlans = plans;
-    this.props.onChange(value);
-    this.setState({ selected: v });
+    const newValue = _.cloneDeep(value);
+    newValue.possibleUsagePlans = plans;
+    props.onChange(newValue);
+    setSelected(v);
   };
 
-  renderAdmin = (plan) => {
-    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
+  function renderAdmin(plan) {
+    const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
         authorizedEntities: [],
       };
     }
-    const flow = ['_id', 'type', 'customName', 'customDescription', ...this.otoroshiFlow(found)];
+    const flow = ['_id', 'type', 'customName', 'customDescription', ...otoroshiFlow(found)];
     const schema = {
       _id: {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', this.props.currentLanguage),
+          label: t('Id', currentLanguage),
           placeholder: '---',
         },
       },
@@ -425,36 +443,36 @@ export class TeamApiPricing extends Component {
         type: 'select',
         disabled: true,
         props: {
-          label: t('Type', this.props.currentLanguage),
+          label: t('Type', currentLanguage),
           possibleValues: [
             {
               label: t(
                 'FreeWithoutQuotas',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Free without quotas'
               ),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
               label: t(
                 'QuotasWithoutLimits',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Quotas without limits'
               ),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -464,19 +482,19 @@ export class TeamApiPricing extends Component {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage),
+          label: t('Name', currentLanguage),
+          placeholder: t('Plan name', currentLanguage),
         },
       },
       customDescription: {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage),
+          label: t('Description', currentLanguage),
+          placeholder: t('Plan description', currentLanguage),
         },
       },
-      ...this.otoroshiForm(found),
+      ...otoroshiForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -484,15 +502,15 @@ export class TeamApiPricing extends Component {
           flow={flow}
           schema={schema}
           value={found}
-          onChange={this.onChange}
-          currentLanguage={this.props.currentLanguage}
+          onChange={onChange}
+          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
   };
 
-  renderFreeWithoutQuotas = (plan) => {
-    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
+  function renderFreeWithoutQuotas(plan) {
+    const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -505,55 +523,55 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
-      `>>> ${t('Billing', this.props.currentLanguage)}`,
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      `>>> ${t('Billing', currentLanguage)}`,
       'billingDuration.value',
       'billingDuration.unit',
-      ...this.otoroshiFlow(found),
-      ...this.securityFlow(found),
+      ...otoroshiFlow(found),
+      ...securityFlow(found),
     ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', this.props.currentLanguage),
+          label: t('Id', currentLanguage),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', this.props.currentLanguage),
+          label: t('Type', currentLanguage),
           possibleValues: [
             {
               label: t(
                 'FreeWithoutQuotas',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Free without quotas'
               ),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
               label: t(
                 'QuotasWithoutLimits',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Quotas without limits'
               ),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -562,53 +580,53 @@ export class TeamApiPricing extends Component {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
           possibleValues: [
-            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
-            { label: t('Days', this.props.currentLanguage), value: 'Day' },
-            { label: t('Months', this.props.currentLanguage), value: 'Month' },
-            { label: t('Years', this.props.currentLanguage), value: 'Year' },
+            { label: t('Hours', currentLanguage), value: 'Hour' },
+            { label: t('Days', currentLanguage), value: 'Day' },
+            { label: t('Months', currentLanguage), value: 'Month' },
+            { label: t('Years', currentLanguage), value: 'Year' },
           ],
         },
       },
       customName: {
         type: 'string',
         props: {
-          label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage),
+          label: t('Name', currentLanguage),
+          placeholder: t('Plan name', currentLanguage),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage),
+          label: t('Description', currentLanguage),
+          placeholder: t('Plan description', currentLanguage),
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', this.props.currentLanguage),
+          label: t('Allow multiple apiKey demands', currentLanguage),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', this.props.currentLanguage),
+          label: t('aggregation api keys security', currentLanguage),
           help: t(
             'aggregation_apikeys.security.help',
-            this.props.currentLanguage
+            currentLanguage
           )
         },
       },
-      ...this.otoroshiForm(found),
-      ...this.securityForm(found),
+      ...otoroshiForm(found),
+      ...securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -616,15 +634,15 @@ export class TeamApiPricing extends Component {
           flow={flow}
           schema={schema}
           value={found}
-          onChange={this.onChange}
-          currentLanguage={this.props.currentLanguage}
+          onChange={onChange}
+          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
   };
 
-  renderFreeWithQuotas = (plan) => {
-    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
+  function renderFreeWithQuotas(plan) {
+    const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -637,59 +655,59 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
-      `>>> ${t('Quotas', this.props.currentLanguage)}`,
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      `>>> ${t('Quotas', currentLanguage)}`,
       'maxPerSecond',
       'maxPerDay',
       'maxPerMonth',
-      `>>> ${t('Billing', this.props.currentLanguage)}`,
+      `>>> ${t('Billing', currentLanguage)}`,
       'billingDuration.value',
       'billingDuration.unit',
-      ...this.otoroshiFlow(found),
-      ...this.securityFlow(found),
+      ...otoroshiFlow(found),
+      ...securityFlow(found),
     ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', this.props.currentLanguage),
+          label: t('Id', currentLanguage),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', this.props.currentLanguage),
+          label: t('Type', currentLanguage),
           possibleValues: [
             {
               label: t(
                 'FreeWithoutQuotas',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Free without quotas'
               ),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
               label: t(
                 'QuotasWithoutLimits',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Quotas without limits'
               ),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -698,74 +716,74 @@ export class TeamApiPricing extends Component {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
           possibleValues: [
-            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
-            { label: t('Days', this.props.currentLanguage), value: 'Day' },
-            { label: t('Months', this.props.currentLanguage), value: 'Month' },
-            { label: t('Years', this.props.currentLanguage), value: 'Year' },
+            { label: t('Hours', currentLanguage), value: 'Hour' },
+            { label: t('Days', currentLanguage), value: 'Day' },
+            { label: t('Months', currentLanguage), value: 'Month' },
+            { label: t('Years', currentLanguage), value: 'Year' },
           ],
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', this.props.currentLanguage),
+          label: t('Allow multiple apiKey demands', currentLanguage),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', this.props.currentLanguage),
+          label: t('aggregation api keys security', currentLanguage),
           help: t(
             'aggregation_apikeys.security.help',
-            this.props.currentLanguage
+            currentLanguage
           )
         },
       },
       maxPerSecond: {
         type: 'number',
         props: {
-          label: t('Max. per second', this.props.currentLanguage),
-          placeholder: t('Max. requests per second', this.props.currentLanguage),
+          label: t('Max. per second', currentLanguage),
+          placeholder: t('Max. requests per second', currentLanguage),
         },
       },
       maxPerDay: {
         type: 'number',
         props: {
-          label: t('Max. per day', this.props.currentLanguage),
-          placeholder: t('Max. requests per day', this.props.currentLanguage),
+          label: t('Max. per day', currentLanguage),
+          placeholder: t('Max. requests per day', currentLanguage),
         },
       },
       maxPerMonth: {
         type: 'number',
         props: {
-          label: t('Max. per month', this.props.currentLanguage),
-          placeholder: t('Max. requests per month', this.props.currentLanguage),
+          label: t('Max. per month', currentLanguage),
+          placeholder: t('Max. requests per month', currentLanguage),
         },
       },
       customName: {
         type: 'string',
         props: {
-          label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage),
+          label: t('Name', currentLanguage),
+          placeholder: t('Plan name', currentLanguage),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage),
+          label: t('Description', currentLanguage),
+          placeholder: t('Plan description', currentLanguage),
         },
       },
-      ...this.otoroshiForm(found),
-      ...this.securityForm(found),
+      ...otoroshiForm(found),
+      ...securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -773,15 +791,15 @@ export class TeamApiPricing extends Component {
           flow={flow}
           schema={schema}
           value={found}
-          onChange={this.onChange}
-          currentLanguage={this.props.currentLanguage}
+          onChange={onChange}
+          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
   };
 
-  renderQuotasWithLimits = (plan) => {
-    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
+  function renderQuotasWithLimits(plan) {
+    const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -794,64 +812,64 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
-      `>>> ${t('Quotas', this.props.currentLanguage)}`,
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      `>>> ${t('Quotas', currentLanguage)}`,
       'maxPerSecond',
       'maxPerDay',
       'maxPerMonth',
-      `>>> ${t('Trial', this.props.currentLanguage)}`,
+      `>>> ${t('Trial', currentLanguage)}`,
       'trialPeriod.value',
       'trialPeriod.unit',
-      `>>> ${t('Billing', this.props.currentLanguage)}`,
+      `>>> ${t('Billing', currentLanguage)}`,
       'costPerMonth',
       'currency.code',
       'billingDuration.value',
       'billingDuration.unit',
-      ...this.otoroshiFlow(found),
-      ...this.securityFlow(found),
+      ...otoroshiFlow(found),
+      ...securityFlow(found),
     ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', this.props.currentLanguage),
+          label: t('Id', currentLanguage),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', this.props.currentLanguage),
+          label: t('Type', currentLanguage),
           possibleValues: [
             {
               label: t(
                 'FreeWithoutQuotas',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Free without quotas'
               ),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
               label: t(
                 'QuotasWithoutLimits',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Quotas without limits'
               ),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -860,88 +878,88 @@ export class TeamApiPricing extends Component {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
           possibleValues: [
-            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
-            { label: t('Days', this.props.currentLanguage), value: 'Day' },
-            { label: t('Months', this.props.currentLanguage), value: 'Month' },
-            { label: t('Years', this.props.currentLanguage), value: 'Year' },
+            { label: t('Hours', currentLanguage), value: 'Hour' },
+            { label: t('Days', currentLanguage), value: 'Day' },
+            { label: t('Months', currentLanguage), value: 'Month' },
+            { label: t('Years', currentLanguage), value: 'Year' },
           ],
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', this.props.currentLanguage),
+          label: t('Allow multiple apiKey demands', currentLanguage),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', this.props.currentLanguage),
+          label: t('aggregation api keys security', currentLanguage),
           help: t(
             'aggregation_apikeys.security.help',
-            this.props.currentLanguage
+            currentLanguage
           )
         },
       },
       'trialPeriod.value': {
         type: 'number',
         props: {
-          label: t('Trial period', this.props.currentLanguage),
-          placeholder: t('The trial period', this.props.currentLanguage),
+          label: t('Trial period', currentLanguage),
+          placeholder: t('The trial period', currentLanguage),
         },
       },
       'trialPeriod.unit': {
         type: 'select',
         props: {
-          label: t('Trial period unit', this.props.currentLanguage),
+          label: t('Trial period unit', currentLanguage),
           possibleValues: [
-            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
-            { label: t('Days', this.props.currentLanguage), value: 'Day' },
-            { label: t('Months', this.props.currentLanguage), value: 'Month' },
-            { label: t('Years', this.props.currentLanguage), value: 'Year' },
+            { label: t('Hours', currentLanguage), value: 'Hour' },
+            { label: t('Days', currentLanguage), value: 'Day' },
+            { label: t('Months', currentLanguage), value: 'Month' },
+            { label: t('Years', currentLanguage), value: 'Year' },
           ],
         },
       },
       maxPerSecond: {
         type: 'number',
         props: {
-          label: t('Max. per second', this.props.currentLanguage),
-          placeholder: t('Max. requests per second', this.props.currentLanguage),
+          label: t('Max. per second', currentLanguage),
+          placeholder: t('Max. requests per second', currentLanguage),
         },
       },
       maxPerDay: {
         type: 'number',
         props: {
-          label: t('Max. per day', this.props.currentLanguage),
-          placeholder: t('Max. requests per day', this.props.currentLanguage),
+          label: t('Max. per day', currentLanguage),
+          placeholder: t('Max. requests per day', currentLanguage),
         },
       },
       maxPerMonth: {
         type: 'number',
         props: {
-          label: t('Max. per month', this.props.currentLanguage),
-          placeholder: t('Max. requests per month', this.props.currentLanguage),
+          label: t('Max. per month', currentLanguage),
+          placeholder: t('Max. requests per month', currentLanguage),
         },
       },
       costPerMonth: {
         type: 'number',
         props: {
-          label: t('Cost per month', this.props.currentLanguage),
-          placeholder: t('Cost per month', this.props.currentLanguage),
+          label: t('Cost per month', currentLanguage),
+          placeholder: t('Cost per month', currentLanguage),
         },
       },
       'currency.code': {
         type: 'select',
         props: {
-          label: t('Currency', this.props.currentLanguage),
+          label: t('Currency', currentLanguage),
           possibleValues: currencies.map((c) => ({
             label: `${c.name} (${c.symbol})`,
             value: c.code,
@@ -951,19 +969,19 @@ export class TeamApiPricing extends Component {
       customName: {
         type: 'string',
         props: {
-          label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage),
+          label: t('Name', currentLanguage),
+          placeholder: t('Plan name', currentLanguage),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage),
+          label: t('Description', currentLanguage),
+          placeholder: t('Plan description', currentLanguage),
         },
       },
-      ...this.otoroshiForm(found),
-      ...this.securityForm(found),
+      ...otoroshiForm(found),
+      ...securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -971,15 +989,15 @@ export class TeamApiPricing extends Component {
           flow={flow}
           schema={schema}
           value={found}
-          onChange={this.onChange}
-          currentLanguage={this.props.currentLanguage}
+          onChange={onChange}
+          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
   };
 
-  renderQuotasWithoutLimits = (plan) => {
-    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
+  function renderQuotasWithoutLimits(plan) {
+    const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -992,65 +1010,65 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
-      `>>> ${t('Quotas', this.props.currentLanguage)}`,
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      `>>> ${t('Quotas', currentLanguage)}`,
       'maxPerSecond',
       'maxPerDay',
       'maxPerMonth',
-      `>>> ${t('Trial', this.props.currentLanguage)}`,
+      `>>> ${t('Trial', currentLanguage)}`,
       'trialPeriod.value',
       'trialPeriod.unit',
-      `>>> ${t('Billing', this.props.currentLanguage)}`,
+      `>>> ${t('Billing', currentLanguage)}`,
       'costPerMonth',
       'costPerAdditionalRequest',
       'currency.code',
       'billingDuration.value',
       'billingDuration.unit',
-      ...this.otoroshiFlow(found),
-      ...this.securityFlow(found),
+      ...otoroshiFlow(found),
+      ...securityFlow(found),
     ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', this.props.currentLanguage),
+          label: t('Id', currentLanguage),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', this.props.currentLanguage),
+          label: t('Type', currentLanguage),
           possibleValues: [
             {
               label: t(
                 'FreeWithoutQuotas',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Free without quotas'
               ),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
               label: t(
                 'QuotasWithoutLimits',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Quotas without limits'
               ),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -1059,95 +1077,95 @@ export class TeamApiPricing extends Component {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
           possibleValues: [
-            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
-            { label: t('Days', this.props.currentLanguage), value: 'Day' },
-            { label: t('Months', this.props.currentLanguage), value: 'Month' },
-            { label: t('Years', this.props.currentLanguage), value: 'Year' },
+            { label: t('Hours', currentLanguage), value: 'Hour' },
+            { label: t('Days', currentLanguage), value: 'Day' },
+            { label: t('Months', currentLanguage), value: 'Month' },
+            { label: t('Years', currentLanguage), value: 'Year' },
           ],
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', this.props.currentLanguage),
+          label: t('Allow multiple apiKey demands', currentLanguage),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', this.props.currentLanguage),
+          label: t('aggregation api keys security', currentLanguage),
           help: t(
             'aggregation_apikeys.security.help',
-            this.props.currentLanguage
+            currentLanguage
           )
         },
       },
       'trialPeriod.value': {
         type: 'number',
         props: {
-          label: t('Trial period', this.props.currentLanguage),
-          placeholder: t('The trial period', this.props.currentLanguage),
+          label: t('Trial period', currentLanguage),
+          placeholder: t('The trial period', currentLanguage),
         },
       },
       'trialPeriod.unit': {
         type: 'select',
         props: {
-          label: t('Trial period unit', this.props.currentLanguage),
+          label: t('Trial period unit', currentLanguage),
           possibleValues: [
-            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
-            { label: t('Days', this.props.currentLanguage), value: 'Day' },
-            { label: t('Months', this.props.currentLanguage), value: 'Month' },
-            { label: t('Years', this.props.currentLanguage), value: 'Year' },
+            { label: t('Hours', currentLanguage), value: 'Hour' },
+            { label: t('Days', currentLanguage), value: 'Day' },
+            { label: t('Months', currentLanguage), value: 'Month' },
+            { label: t('Years', currentLanguage), value: 'Year' },
           ],
         },
       },
       maxPerSecond: {
         type: 'number',
         props: {
-          label: t('Max. per second', this.props.currentLanguage),
-          placeholder: t('Max. requests per second', this.props.currentLanguage),
+          label: t('Max. per second', currentLanguage),
+          placeholder: t('Max. requests per second', currentLanguage),
         },
       },
       maxPerDay: {
         type: 'number',
         props: {
-          label: t('Max. per day', this.props.currentLanguage),
-          placeholder: t('Max. requests per day', this.props.currentLanguage),
+          label: t('Max. per day', currentLanguage),
+          placeholder: t('Max. requests per day', currentLanguage),
         },
       },
       maxPerMonth: {
         type: 'number',
         props: {
-          label: t('Max. per month', this.props.currentLanguage),
-          placeholder: t('Max. requests per month', this.props.currentLanguage),
+          label: t('Max. per month', currentLanguage),
+          placeholder: t('Max. requests per month', currentLanguage),
         },
       },
       costPerMonth: {
         type: 'number',
         props: {
-          label: t('Cost per month', this.props.currentLanguage),
-          placeholder: t('Cost per month', this.props.currentLanguage),
+          label: t('Cost per month', currentLanguage),
+          placeholder: t('Cost per month', currentLanguage),
         },
       },
       costPerAdditionalRequest: {
         type: 'number',
         props: {
-          label: t('Cost per add. req.', this.props.currentLanguage),
-          placeholder: t('Cost per additionnal request', this.props.currentLanguage),
+          label: t('Cost per add. req.', currentLanguage),
+          placeholder: t('Cost per additionnal request', currentLanguage),
         },
       },
       'currency.code': {
         type: 'select',
         props: {
-          label: t('Currency', this.props.currentLanguage),
+          label: t('Currency', currentLanguage),
           possibleValues: currencies.map((c) => ({
             label: `${c.name} (${c.symbol})`,
             value: c.code,
@@ -1157,19 +1175,19 @@ export class TeamApiPricing extends Component {
       customName: {
         type: 'string',
         props: {
-          label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage),
+          label: t('Name', currentLanguage),
+          placeholder: t('Plan name', currentLanguage),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage),
+          label: t('Description', currentLanguage),
+          placeholder: t('Plan description', currentLanguage),
         },
       },
-      ...this.otoroshiForm(found),
-      ...this.securityForm(found),
+      ...otoroshiForm(found),
+      ...securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -1177,15 +1195,15 @@ export class TeamApiPricing extends Component {
           flow={flow}
           schema={schema}
           value={found}
-          onChange={this.onChange}
-          currentLanguage={this.props.currentLanguage}
+          onChange={onChange}
+          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
   };
 
-  renderPayPerUse = (plan) => {
-    const found = _.find(this.props.value.possibleUsagePlans, (p) => p._id === plan._id);
+  function renderPayPerUse(plan) {
+    const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
     if (!found.otoroshiTarget) {
       found.otoroshiTarget = {
         otoroshiSettings: null,
@@ -1198,61 +1216,61 @@ export class TeamApiPricing extends Component {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (this.props.tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
-      `>>> ${t('Billing', this.props.currentLanguage)}`,
+      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      `>>> ${t('Billing', currentLanguage)}`,
       'costPerMonth',
       'costPerRequest',
       'currency.code',
       'billingDuration.value',
       'billingDuration.unit',
-      `>>> ${t('Trial', this.props.currentLanguage)}`,
+      `>>> ${t('Trial', currentLanguage)}`,
       'trialPeriod.value',
       'trialPeriod.unit',
-      ...this.otoroshiFlow(found),
-      ...this.securityFlow(found),
+      ...otoroshiFlow(found),
+      ...securityFlow(found),
     ].filter(f => f);
     const schema = {
       _id: {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', this.props.currentLanguage),
+          label: t('Id', currentLanguage),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', this.props.currentLanguage),
+          label: t('Type', currentLanguage),
           possibleValues: [
             {
               label: t(
                 'FreeWithoutQuotas',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Free without quotas'
               ),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', this.props.currentLanguage, false, 'Free with quotas'),
+              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', this.props.currentLanguage, false, 'Quotas with limits'),
+              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
               label: t(
                 'QuotasWithoutLimits',
-                this.props.currentLanguage,
+                currentLanguage,
                 false,
                 'Quotas without limits'
               ),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', this.props.currentLanguage, false, 'Pay per use'),
+              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -1261,21 +1279,21 @@ export class TeamApiPricing extends Component {
       costPerMonth: {
         type: 'number',
         props: {
-          label: t('Cost per month', this.props.currentLanguage),
-          placeholder: t('Cost per month', this.props.currentLanguage),
+          label: t('Cost per month', currentLanguage),
+          placeholder: t('Cost per month', currentLanguage),
         },
       },
       costPerRequest: {
         type: 'number',
         props: {
-          label: t('Cost per req.', this.props.currentLanguage),
-          placeholder: t('Cost per request', this.props.currentLanguage),
+          label: t('Cost per req.', currentLanguage),
+          placeholder: t('Cost per request', currentLanguage),
         },
       },
       'currency.code': {
         type: 'select',
         props: {
-          label: t('Currency', this.props.currentLanguage),
+          label: t('Currency', currentLanguage),
           possibleValues: currencies.map((c) => ({
             label: `${c.name} (${c.symbol})`,
             value: c.code,
@@ -1285,72 +1303,72 @@ export class TeamApiPricing extends Component {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', this.props.currentLanguage),
+          label: t('Billing every', currentLanguage),
           possibleValues: [
-            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
-            { label: t('Days', this.props.currentLanguage), value: 'Day' },
-            { label: t('Months', this.props.currentLanguage), value: 'Month' },
-            { label: t('Years', this.props.currentLanguage), value: 'Year' },
+            { label: t('Hours', currentLanguage), value: 'Hour' },
+            { label: t('Days', currentLanguage), value: 'Day' },
+            { label: t('Months', currentLanguage), value: 'Month' },
+            { label: t('Years', currentLanguage), value: 'Year' },
           ],
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', this.props.currentLanguage),
+          label: t('Allow multiple apiKey demands', currentLanguage),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', this.props.currentLanguage),
+          label: t('aggregation api keys security', currentLanguage),
           help: t(
             'aggregation_apikeys.security.help',
-            this.props.currentLanguage
+            currentLanguage
           )
         },
       },
       'trialPeriod.value': {
         type: 'number',
         props: {
-          label: t('Trial period', this.props.currentLanguage),
-          placeholder: t('The trial period', this.props.currentLanguage),
+          label: t('Trial period', currentLanguage),
+          placeholder: t('The trial period', currentLanguage),
         },
       },
       'trialPeriod.unit': {
         type: 'select',
         props: {
-          label: t('Trial period unit', this.props.currentLanguage),
+          label: t('Trial period unit', currentLanguage),
           possibleValues: [
-            { label: t('Hours', this.props.currentLanguage), value: 'Hour' },
-            { label: t('Days', this.props.currentLanguage), value: 'Day' },
-            { label: t('Months', this.props.currentLanguage), value: 'Month' },
-            { label: t('Years', this.props.currentLanguage), value: 'Year' },
+            { label: t('Hours', currentLanguage), value: 'Hour' },
+            { label: t('Days', currentLanguage), value: 'Day' },
+            { label: t('Months', currentLanguage), value: 'Month' },
+            { label: t('Years', currentLanguage), value: 'Year' },
           ],
         },
       },
       customName: {
         type: 'string',
         props: {
-          label: t('Name', this.props.currentLanguage),
-          placeholder: t('Plan name', this.props.currentLanguage),
+          label: t('Name', currentLanguage),
+          placeholder: t('Plan name', currentLanguage),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', this.props.currentLanguage),
-          placeholder: t('Plan description', this.props.currentLanguage),
+          label: t('Description', currentLanguage),
+          placeholder: t('Plan description', currentLanguage),
         },
       },
-      ...this.otoroshiForm(found),
-      ...this.securityForm(found),
+      ...otoroshiForm(found),
+      ...securityForm(found),
     };
     return (
       <React.Suspense fallback={<Spinner />}>
@@ -1358,95 +1376,105 @@ export class TeamApiPricing extends Component {
           flow={flow}
           schema={schema}
           value={found}
-          onChange={this.onChange}
-          currentLanguage={this.props.currentLanguage}
+          onChange={onChange}
+          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
   };
 
-  isSelected = (plan) => {
-    return this.state.selected && plan._id === this.state.selected._id;
-  };
-
-  addNewPlan = () => {
-    let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
+  function addNewPlan() {
+    let plans = _.cloneDeep(value.possibleUsagePlans);
     const newPlan = newPossibleUsagePlan(faker.commerce.productName() + ' plan');
     plans.push(newPlan);
-    const value = _.cloneDeep(this.props.value);
-    value.possibleUsagePlans = plans;
-    this.props.onChange(value);
-    this.select(newPlan);
+    const newValue = _.cloneDeep(value);
+    newValue.possibleUsagePlans = plans;
+    props.onChange(newValue);
+    setSelected(newPlan);
   };
 
-  clonePlan = () => {
-    let plans = _.cloneDeep(this.props.value.possibleUsagePlans);
+  function importPlan() {
+    props.openApiSelectModal({
+      currentLanguage,
+      api: value,
+      teamId: props.teamId,
+      onClose: () => {
+        props.reload()
+        setSelected(value.possibleUsagePlans.slice(-1)[0])
+      }
+    });
+  }
+
+  function clonePlan() {
+    let plans = _.cloneDeep(value.possibleUsagePlans);
     const clone = {
-      ..._.cloneDeep(this.state.selected),
+      ..._.cloneDeep(selected),
       _id: faker.random.alphaNumeric(32),
-      customName: `${this.state.selected.customName} (copy)`,
+      customName: `${selected.customName} (copy)`,
     };
     plans.push(clone);
-    const value = _.cloneDeep(this.props.value);
+    const value = _.cloneDeep(value);
     value.possibleUsagePlans = plans;
-    this.props.onChange(value);
-    this.select(clone);
+    props.onChange(value);
+    setSelected(clone);
   };
 
-  deletePlan = () => {
+  function deletePlan() {
     window
       .confirm(
         t(
           'delete.plan.confirm',
-          this.props.currentLanguage,
+          currentLanguage,
           'Are you sure you want to delete this plan ?'
         )
       )
       .then((ok) => {
         if (ok) {
-          let plans = _.cloneDeep(this.props.value.possibleUsagePlans).filter(
-            (p) => p._id !== this.state.selected._id
+          let plans = _.cloneDeep(value.possibleUsagePlans).filter(
+            (p) => p._id !== selected._id
           );
-          const value = _.cloneDeep(this.props.value);
-          value.possibleUsagePlans = plans;
-          this.setState({ selected: plans.length ? plans[0] : null }, () => {
-            this.props.onChange(value);
-          });
+          const newValue = _.cloneDeep(value);
+          newValue.possibleUsagePlans = plans;
+          setSelected(plans.length ? plans[0] : null)
+          props.onChange(newValue);
         }
       });
   };
 
-  makesDefault = () => {
-    if (this.state.selected.visibility === PUBLIC) {
-      const value = _.cloneDeep(this.props.value);
-      value.defaultUsagePlan = this.state.selected._id;
-      this.props.onChange(value);
+  function makesDefault() {
+    if (selected.visibility === PUBLIC) {
+      const newValue = _.cloneDeep(value);
+      newValue.defaultUsagePlan = selected._id;
+      props.onChange(newValue);
     }
   };
 
-  makePrivate = () => {
-    if (this.props.value.defaultUsagePlan !== this.state.selected._id) {
-      const originalVisibility = this.state.selected.visibility;
+  function makePrivate() {
+    if (value.defaultUsagePlan !== selected._id) {
+      const originalVisibility = selected.visibility;
       const visibility = originalVisibility === PUBLIC ? PRIVATE : PUBLIC;
-      const updatedPlan = { ...this.state.selected, visibility };
-      this.select(updatedPlan);
+      const updatedPlan = { ...selected, visibility };
+      setSelected(updatedPlan);
 
       const updatedValue = {
-        ...this.props.value,
+        ...value,
         possibleUsagePlans: [
-          ...this.props.value.possibleUsagePlans.filter((pp) => pp._id !== this.state.selected._id),
+          ...value.possibleUsagePlans.filter((pp) => pp._id !== selected._id),
           updatedPlan,
         ],
       };
 
-      this.props.onChange(updatedValue);
+      props.onChange(updatedValue);
     }
   };
 
-  planToOption = (plan) => {
+  function planToOption(plan) {
+    if (!plan || value.possibleUsagePlans.length === 0)
+      return null
+
     return {
       label:
-        this.props.value.defaultUsagePlan === plan._id ? (
+        value.defaultUsagePlan === plan._id ? (
           <span>
             <i className="fas fa-star" /> {plan.customName || plan.type}
           </span>
@@ -1457,145 +1485,128 @@ export class TeamApiPricing extends Component {
         ) : (
           <span>{plan.customName || plan.type}</span>
         ),
-      default: this.props.value.defaultUsagePlan === plan._id,
+      default: value.defaultUsagePlan === plan._id,
       value: plan._id,
       plan,
     };
   };
 
-  render() {
-    if (this.props.value === null) return null;
+  if (value === null)
+    return null;
 
-    if (!this.props.value.possibleUsagePlans.length) {
-      return (
-        <button onClick={this.addNewPlan} type="button" className="btn btn-sm btn-outline-primary">
-          <i className="fas fa-plus mr-1" />
-          <Translation i18nkey="add a new plan" language={this.props.currentLanguage}>
-            add a new plan
-          </Translation>
-        </button>
-      );
-    }
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 100 }}>
-        <div
-          style={{
-            padding: 10,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 10,
-            paddingBottom: 20,
-            borderBottom: '1px solid #DFDFDF',
-          }}>
-          {this.props.value.visibility !== 'AdminOnly' && (
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 100 }}>
+      <div
+        className="d-flex align-items-center justify-space-between py-3 mb-2"
+        style={{ borderBottom: '1px solid #DFDFDF' }}>
+        {value.visibility !== 'AdminOnly' && (
+          <>
             <button
-              onClick={this.addNewPlan}
+              onClick={addNewPlan}
               type="button"
-              className="btn btn-sm btn-outline-primary float-right">
-              <i className="fas fa-plus mr-1" />
-              <Translation i18nkey="add a new plan" language={this.props.currentLanguage}>
-                add a new plan
-              </Translation>
+              className="btn btn-outline-primary mr-1">
+              {t('add a new plan', currentLanguage)}
             </button>
-          )}
-          <div style={{ width: '100%', marginLeft: 10 }}>
-            <Select
-              clearable={false}
-              style={{ width: '100%' }}
-              value={this.planToOption(
-                this.state.selected ? this.state.selected : this.props.value.possibleUsagePlans[0]
-              )}
-              placeholder="Select a plan to edit it"
-              options={this.props.value.possibleUsagePlans.map(this.planToOption)}
-              onChange={(e) => this.select(e.plan)}
-              classNamePrefix="reactSelect"
-              className="reactSelect"
-            />
-          </div>
-        </div>
-        <div className="col-12">
-          {!!this.state.selected && (
-            <div>
-              <div className="d-flex justify-content-end">
-                {this.props.value.defaultUsagePlan !== this.state.selected._id &&
-                  this.state.selected.visibility !== PRIVATE && (
-                    <button
-                      onClick={this.makesDefault}
-                      type="button"
-                      className="btn btn-sm btn-outline-primary mr-1 mb-2">
-                      <i className="fas fa-star mr-1" title="Default plan" />
-                      <Translation
-                        i18nkey="Make default plan"
-                        language={this.props.currentLanguage}>
-                        Make default plan
-                      </Translation>
-                    </button>
-                  )}
-                {this.props.value.defaultUsagePlan !== this.state.selected._id && (
-                  <button
-                    onClick={this.makePrivate}
-                    type="button"
-                    className="btn btn-sm btn-outline-primary mb-2 mr-1">
-                    <i
-                      className={classNames('fas mr-1', {
-                        'fa-lock': this.state.selected.visibility === 'Public',
-                        'fa-unlock': this.state.selected.visibility === 'Private',
-                      })}
-                    />
-                    {this.state.selected.visibility === 'Public' && (
-                      <Translation i18nkey="Make it private" language={this.props.currentLanguage}>
-                        Make it private
-                      </Translation>
-                    )}
-                    {this.state.selected.visibility === 'Private' && (
-                      <Translation i18nkey="Make it public" language={this.props.currentLanguage}>
-                        Make it public
-                      </Translation>
-                    )}
-                  </button>
-                )}
-                {this.props.value.visibility !== 'AdminOnly' && (
-                  <button
-                    onClick={this.clonePlan}
-                    type="button"
-                    className="btn btn-sm btn-outline-primary mb-2 mr-1">
-                    <i className="fas fa-clone mr-1" />
-                    <Translation i18nkey="Duplicate plan" language={this.props.currentLanguage}>
-                      Duplicate plan
-                    </Translation>
-                  </button>
-                )}
-                {this.props.value.visibility !== 'AdminOnly' && (
-                  <button
-                    onClick={this.deletePlan}
-                    type="button"
-                    className="btn btn-sm btn-outline-danger mb-2">
-                    <i className="fas fa-trash mr-1" />
-                    <Translation i18nkey="Delete plan" language={this.props.currentLanguage}>
-                      Delete plan
-                    </Translation>
-                  </button>
-                )}
-              </div>
-              {this.state.selected.type === 'Admin' && this.renderAdmin(this.state.selected)}
-              {this.state.selected.type === 'FreeWithoutQuotas' &&
-                this.renderFreeWithoutQuotas(this.state.selected)}
-              {this.state.selected.type === 'FreeWithQuotas' &&
-                this.renderFreeWithQuotas(this.state.selected)}
-              {this.state.selected.type === 'QuotasWithLimits' &&
-                this.renderQuotasWithLimits(this.state.selected)}
-              {this.state.selected.type === 'QuotasWithoutLimits' &&
-                this.renderQuotasWithoutLimits(this.state.selected)}
-              {this.state.selected.type === 'PayPerUse' &&
-                this.renderPayPerUse(this.state.selected)}
-            </div>
-          )}
-        </div>
+            <button
+              onClick={importPlan}
+              type="button"
+              className="btn btn-outline-primary mr-1"
+              style={{ marginTop: 0 }}>
+              {t('import a plan', currentLanguage)}
+            </button>
+          </>
+        )}
+        <Select
+          clearable={false}
+          value={planToOption(selected)}
+          placeholder="Select a plan to edit it"
+          options={value.possibleUsagePlans.map(planToOption)}
+          onChange={e => setSelected(e.plan)}
+          classNamePrefix="reactSelect"
+          className="reactSelect"
+          styles={{
+            container: base => ({
+              ...base,
+              flex: 1
+            })
+          }}
+        />
       </div>
-    );
-  }
+      <div className="col-12">
+        {!!selected && value.possibleUsagePlans.find(p => p._id === selected._id) && (
+          <div>
+            <div className="d-flex justify-content-end">
+              {value.defaultUsagePlan !== selected._id &&
+                selected.visibility !== PRIVATE && (
+                  <button
+                    onClick={makesDefault}
+                    type="button"
+                    className="btn btn-sm btn-outline-primary mr-1 mb-2">
+                    <i className="fas fa-star mr-1" title="Default plan" />
+                    <Translation
+                      i18nkey="Make default plan"
+                      language={currentLanguage}>
+                      Make default plan
+                    </Translation>
+                  </button>
+                )}
+              {value.defaultUsagePlan !== selected._id && (
+                <button
+                  onClick={makePrivate}
+                  type="button"
+                  className="btn btn-sm btn-outline-primary mb-2 mr-1">
+                  <i
+                    className={classNames('fas mr-1', {
+                      'fa-lock': selected.visibility === 'Public',
+                      'fa-unlock': selected.visibility === 'Private',
+                    })}
+                  />
+                  {selected.visibility === 'Public' && (
+                    <Translation i18nkey="Make it private" language={currentLanguage}>
+                      Make it private
+                    </Translation>
+                  )}
+                  {selected.visibility === 'Private' && (
+                    <Translation i18nkey="Make it public" language={currentLanguage}>
+                      Make it public
+                    </Translation>
+                  )}
+                </button>
+              )}
+              {value.visibility !== 'AdminOnly' && (
+                <button
+                  onClick={clonePlan}
+                  type="button"
+                  className="btn btn-sm btn-outline-primary mb-2 mr-1">
+                  <i className="fas fa-clone mr-1" />
+                  <Translation i18nkey="Duplicate plan" language={currentLanguage}>
+                    Duplicate plan
+                  </Translation>
+                </button>
+              )}
+              {value.visibility !== 'AdminOnly' && (
+                <button
+                  onClick={deletePlan}
+                  type="button"
+                  className="btn btn-sm btn-outline-danger mb-2">
+                  <i className="fas fa-trash mr-1" />
+                  <Translation i18nkey="Delete plan" language={currentLanguage}>
+                    Delete plan
+                  </Translation>
+                </button>
+              )}
+            </div>
+            {selected.type === 'Admin' && renderAdmin(selected)}
+            {selected.type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas(selected)}
+            {selected.type === 'FreeWithQuotas' && renderFreeWithQuotas(selected)}
+            {selected.type === 'QuotasWithLimits' && renderQuotasWithLimits(selected)}
+            {selected.type === 'QuotasWithoutLimits' && renderQuotasWithoutLimits(selected)}
+            {selected.type === 'PayPerUse' && renderPayPerUse(selected)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const CustomMetadataInput = (props) => {
@@ -1829,3 +1840,15 @@ const OtoroshiPathInput = (props) => {
     </div>
   );
 };
+
+
+const mapStateToProps = (state) => ({
+  ...state.context,
+  error: state.error,
+});
+
+const mapDispatchToProps = {
+  openApiSelectModal: (team) => openApiSelectModal(team),
+};
+
+export const TeamApiPricing = connect(mapStateToProps, mapDispatchToProps)(TeamApiPricingComponent);

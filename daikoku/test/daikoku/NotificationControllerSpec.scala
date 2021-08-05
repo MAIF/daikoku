@@ -663,7 +663,6 @@ class NotificationControllerSpec()
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
-      println(resp.body)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
 
@@ -779,12 +778,13 @@ class NotificationControllerSpec()
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumer.id.value}/apis/${defaultApi.id.value}/issues",
+          s"/api/teams/${teamConsumer.id.value}/apis/${defaultApi.humanReadableId}/issues",
         method = "POST",
         body = Some(issues.head.asJson))(
         tenant,
         session
       )
+
       resp.status mustBe 201
 
       val notificationsResp = httpJsonCallBlocking(
@@ -986,4 +986,5 @@ class NotificationControllerSpec()
     }
 
   }
+
 }

@@ -26,7 +26,7 @@ import storage.drivers.postgres.pgimplicits.EnhancedRow
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsJava}
 
 trait RepositoryPostgres[Of, Id <: ValueType] extends Repo[Of, Id] {
   override def collectionName: String = "ignored"
@@ -538,13 +538,6 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     Future.sequence(TABLES.map { case (key, value) => createTable(key, value) })
   }
 
-  def cleanDatabase() = {
-    logger.info("clean all tables")
-    Future.sequence(TABLES.map {
-      case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key")
-    })
-  }
-
   def createTable(table: String, allFields: Boolean): Future[Any] = {
     logger.debug(
       s"CREATE TABLE $getSchema.$table (" +
@@ -552,19 +545,21 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         s"${if (allFields) "_deleted BOOLEAN," else ""}" +
         s"content JSONB)")
 
-    reactivePg.queryOne("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)",
-      Seq(getSchema, table)) { row =>
-      row.optBoolean("exists").map {
-        case false =>
-          AppLogger.info(s"Create missing table : $table")
-          reactivePg.rawQuery(
-            s"CREATE TABLE $getSchema.$table (" +
-              s"_id character varying PRIMARY KEY," +
-              s"${if (allFields) "_deleted BOOLEAN," else ""}" +
-              s"content JSONB)")
-        case true => FastFuture.successful(())
+    reactivePg
+      .query("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)", Seq(getSchema, table))
+      .map { r => r.asScala.toSeq.head.getBoolean("exists") }
+      .filter(f => !f)
+      .flatMap { _ =>
+        AppLogger.info(s"Create missing table : $table")
+        reactivePg.rawQuery(
+          s"CREATE TABLE $getSchema.$table (" +
+            s"_id character varying PRIMARY KEY," +
+            s"${if (allFields) "_deleted BOOLEAN," else ""}" +
+            s"content JSONB)")
+          .map { _ =>
+            AppLogger.info(s"Created : $table")
+          }
       }
-    }
   }
 
   override def exportAsStream(pretty: Boolean,
@@ -613,8 +608,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   override def importFromStream(source: Source[ByteString, _]): Future[Unit] = {
     logger.debug("importFromStream")
 
-    cleanDatabase()
-      .map { value =>
+    Future.sequence(TABLES.map {
+      case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key")
+    })
+      .map { _ =>
         source
           .via(Framing.delimiter(ByteString("\n"),
                                  1000000000,
@@ -686,6 +683,11 @@ class PostgresDataStore(configuration: Configuration, env: Env)
           .toMat(Sink.ignore)(Keep.right)
           .run()(env.defaultMaterializer)
       }
+      .recover {
+        case e: Throwable =>
+          AppLogger.info(e.getMessage)
+
+      }.asInstanceOf[Future[Unit]]
   }
 }
 
@@ -1172,11 +1174,10 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     sort match {
       case None =>
         if (query.values.isEmpty)
-          reactivePg.querySeq(s"SELECT * FROM $tableName") {
+          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}'") {
             rowToJson(_, format)
           } else {
-          val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value))
+          val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql"
           params.zipWithIndex.reverse.foreach {
@@ -1191,7 +1192,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       case Some(s) =>
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT *, $$2 FROM $tableName ORDER BY $$1",
+            s"SELECT *, $$2 FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' ORDER BY $$1",
             Seq(
               s.keys.map(key => s"$quotes$key$quotes").mkString(","),
               s.keys
@@ -1201,7 +1202,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
                 .mkString(",")
             )
           ) { rowToJson(_, format) } else {
-          val (sql, params) = convertQuery(query)
+          val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
           reactivePg.querySeq(
             s"SELECT *, ${getParam(params.size + 1)} FROM $tableName WHERE $sql ORDER BY ${getParam(
               params.size)}",

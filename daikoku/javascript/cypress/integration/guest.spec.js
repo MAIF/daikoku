@@ -12,7 +12,7 @@ describe('Login page & login form', () => {
 describe('API page', () => {
   it('load well', () => {
     cy
-      .visit('http://localhost:9000/testers/test-api')
+      .visit('http://localhost:9000/testers/test-api/1.0.0')
       .get('h1.jumbotron-heading').should(($div) => {
         expect($div.text().trim()).contains('test API');
       })

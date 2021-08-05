@@ -8,11 +8,11 @@ import controllers.AppError
 import controllers.AppError.{MissingParentSubscription, SubscriptionAggregationDisabled, SubscriptionParentExisted}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithQuotas, FreeWithoutQuotas, PayPerUse, QuotasWithLimits, QuotasWithoutLimits}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ActualOtoroshiApiKeyFormat, ApiFormat, ApiSubscriptionFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, ApiSubscriptionFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
@@ -514,7 +514,8 @@ class ApiControllerSpec()
         apis = Seq(defaultApi,
                    defaultApi.copy(id = ApiId("another-api"),
                                    description = "another-api",
-                                   team = teamOwnerId))
+                                   team = teamOwnerId,
+                                    name = "another-api"))
       )
 
       val updatedApi = defaultApi.copy(description = "description")
@@ -1262,8 +1263,9 @@ class ApiControllerSpec()
         teams = Seq(teamOwner),
         apis = Seq(defaultApi,
                    defaultApi.copy(id = ApiId("another-api"),
-                                   description = "another-api",
-                                   team = teamOwnerId))
+                     description = "another-api",
+                     team = teamOwnerId,
+                     name = "another-api"))
       )
 
       val updatedApi = defaultApi.copy(description = "description")
@@ -1327,6 +1329,141 @@ class ApiControllerSpec()
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id}",
         method = "DELETE")(tenant, session)
       resp2.status mustBe 404
+    }
+
+    "create a new version of api" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userApiEditor),
+        teams = Seq(teamOwner),
+        apis = Seq(defaultApi)
+      )
+
+      val session = loginWithBlocking(userApiEditor, tenant)
+      val resp = httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/versions",
+        method = "POST",
+        body = Some(Json.obj(
+          "version" -> "2.0.0"
+        )))(tenant, session)
+
+      resp.status mustBe 201
+    }
+
+    "can't create a new version of api which already existing" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userApiEditor),
+        teams = Seq(teamOwner),
+        apis = Seq(defaultApi)
+      )
+
+      val session = loginWithBlocking(userApiEditor, tenant)
+      val resp = httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/versions",
+        method = "POST",
+        body = Some(Json.obj(
+          "version" -> defaultApi.currentVersion.value
+        )))(tenant, session)
+
+      resp.status mustBe Status.CONFLICT
+    }
+
+    "import plan from an other version of api" in {
+      val secondApi = defaultApi.copy(
+        id = ApiId("another-api"),
+        currentVersion = Version("2.0.0"),
+        possibleUsagePlans = Seq.empty
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userApiEditor),
+        teams = Seq(teamOwner),
+        apis = Seq(
+          defaultApi.copy(possibleUsagePlans = Seq(
+            Admin(
+              id = UsagePlanId("admin"),
+              customName = Some("admin"),
+              customDescription = None,
+              otoroshiTarget = None
+            )
+          )),
+          secondApi
+        )
+      )
+
+      val session = loginWithBlocking(userApiEditor, tenant)
+      var resp = httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}")(tenant, session)
+
+      resp.status mustBe Status.OK
+      ApiFormat.reads(resp.json).get.possibleUsagePlans.size mustBe 0
+
+      resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/plans",
+        method = "POST",
+        body = Some(Json.obj(
+          "plan" -> "admin",
+          "api" -> defaultApi.id.value
+        ))
+      )(tenant, session)
+      resp.status mustBe Status.OK
+
+      resp = httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}")(tenant, session)
+      resp.status mustBe Status.OK
+
+      ApiFormat.reads(resp.json).get.possibleUsagePlans.size mustBe 1
+    }
+
+    "import documentation page from an other version of api" in {
+      val secondApi = adminApi.copy(
+        id = ApiId("another-api"),
+        team = teamOwner.id,
+        currentVersion = Version("2.0.0"),
+        documentation = adminApi.documentation.copy(
+          pages = Seq.empty
+        )
+      )
+
+      val page = ApiDocumentationPage(
+        id = ApiDocumentationPageId(""),
+        tenant = tenant.id,
+        title = "title",
+        lastModificationAt = DateTime.now(),
+        content = ""
+      )
+
+      val rootApi = adminApi.copy(
+        team = teamOwner.id,
+        documentation = adminApi.documentation.copy(pages = Seq(page.id))
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userApiEditor),
+        teams = Seq(teamOwner),
+        apis = Seq(rootApi, secondApi),
+        pages = Seq(page)
+      )
+
+      val session = loginWithBlocking(userApiEditor, tenant)
+      var resp = httpJsonCallBlocking(path = s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}")(tenant, session)
+
+      resp.status mustBe Status.OK
+      ApiFormat.reads(resp.json).get.documentation.pages.size mustBe 0
+
+      resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/pages?version=${secondApi.currentVersion.value}",
+        method = "PUT",
+        body = Some(Json.obj(
+          "pages" -> Json.arr(
+            Json.obj(
+              "apiId" -> rootApi.id.value,
+              "pageId" -> rootApi.documentation.pages.head.value,
+              "version" -> rootApi.currentVersion.value
+            )
+        ))))(tenant, session)
+
+      resp.status mustBe Status.OK
+      (resp.json \ "cloned").as[Boolean] mustBe true
     }
   }
 
@@ -1452,7 +1589,7 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userApiEditor, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path = s"/api/apis/${defaultApi.id.value}/subscriptions?version=${defaultApi.currentVersion.value}",
         method = "POST",
         body = Some(
           Json.obj("plan" -> plan,
@@ -1510,7 +1647,7 @@ class ApiControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}"
+          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}?version=${defaultApi.currentVersion.value}"
       )(tenant, session)
       resp.status mustBe 200
 
@@ -1569,7 +1706,7 @@ class ApiControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}"
+          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}?version=${defaultApi.currentVersion.value}"
       )(tenant, session)
       resp.status mustBe 403
     }
@@ -1610,7 +1747,7 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/me/teams/${teamConsumerId.value}/visible-apis/another-api"
+        path = s"/api/me/teams/${teamConsumerId.value}/visible-apis/another-api?version=${defaultApi.currentVersion.value}"
       )(tenant, session)
       resp.status mustBe 404
     }
@@ -1985,8 +2122,8 @@ class ApiControllerSpec()
         path = s"/api/me/visible-apis/${defaultApi.id.value}"
       )(tenant, session)
 
-      resp.status mustBe 404
-      (resp.json \ "error").as[String] mustBe "Api not found"
+      resp.status mustBe 401
+      (resp.json \ "error").as[String] mustBe "You're not authorized on this api"
 
       val sessionAdmin = loginWithBlocking(userAdmin, tenant)
       val respAdmin = httpJsonCallBlocking(
@@ -2561,6 +2698,55 @@ class ApiControllerSpec()
       )(tenant)
 
       assert(resp.status != 204)
+    }
+    "can retrieve all same issues list from any api versions" in {
+      val issuesTags = Set(ApiIssueTag(ApiIssueTagId("foo"), "foo", "foo"), ApiIssueTag(ApiIssueTagId("bar"), "bar", "bar"))
+      val rootApi = defaultApi.copy(
+        issuesTags = issuesTags,
+        issues = Seq(ApiIssueId("issue-foo"))
+      )
+
+      val secondApi = rootApi.copy(
+        id = ApiId("foo"),
+        currentVersion = Version("2.0.0")
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userApiEditor),
+        teams = Seq(teamOwner),
+        apis = Seq(rootApi, secondApi),
+        issues = Seq(ApiIssue(
+          id = ApiIssueId("issue-foo"),
+          seqId = 0,
+          tenant = tenant.id,
+          title = "super issue",
+          tags = issuesTags.map(_.id),
+          open = true,
+          createdAt = DateTime.now(),
+          closedAt = None,
+          by = userApiEditor.id,
+          comments = Seq.empty,
+          lastModificationAt = DateTime.now()
+        ))
+      )
+
+      val session = loginWithBlocking(userApiEditor, tenant)
+      val issuesOfRootApi = httpJsonCallBlocking(path = s"/api/apis/${rootApi.humanReadableId}/issues")(tenant, session)
+      val issuesOfFooApi  = httpJsonCallBlocking(path = s"/api/apis/${secondApi.humanReadableId}/issues")(tenant, session)
+
+      issuesOfRootApi.status mustBe Status.OK
+      issuesOfFooApi.status mustBe Status.OK
+
+      issuesOfRootApi.json.as[Seq[JsObject]].size mustBe issuesOfFooApi.json.as[Seq[JsObject]].size
+
+      (issuesOfRootApi
+        .json.as[Seq[JsObject]]
+        .head  \ "tags").get.asInstanceOf[JsArray].value.size mustBe 2
+
+      (issuesOfFooApi
+        .json.as[Seq[JsObject]]
+        .head  \ "tags").get.asInstanceOf[JsArray].value.size mustBe 2
     }
   }
 
@@ -3537,5 +3723,5 @@ class ApiControllerSpec()
       assert(subscriptions.get.head.apiKey.clientSecret != subscriptions.get(1).apiKey.clientSecret)
     }
   }
-
 }
+

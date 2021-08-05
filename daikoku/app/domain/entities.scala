@@ -1056,7 +1056,9 @@ case class ApiIssue(id: ApiIssueId,
                     closedAt: Option[DateTime],
                     by: UserId,
                     comments: Seq[ApiIssueComment],
-                    lastModificationAt: DateTime)
+                    lastModificationAt: DateTime,
+                    apiVersion: Option[String] = Some("1.0.0")
+                   )
     extends CanJson[ApiIssue] {
   def humanReadableId: String = seqId.toString
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)
@@ -1323,6 +1325,7 @@ case class Api(
     description: String,
     currentVersion: Version = Version("1.0.0"),
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
+    isDefault: Boolean = false,
     lastUpdate: DateTime,
     published: Boolean = false,
     testing: Testing = Testing(),
@@ -1338,7 +1341,8 @@ case class Api(
     posts: Seq[ApiPostId] = Seq.empty,
     issues: Seq[ApiIssueId] = Seq.empty,
     issuesTags: Set[ApiIssueTag] = Set.empty,
-    stars: Int = 0
+    stars: Int = 0,
+    parent: Option[ApiId] = None
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
@@ -1361,7 +1365,9 @@ case class Api(
     "posts" -> SeqPostIdFormat.writes(posts),
     "issues" -> SeqIssueIdFormat.writes(issues),
     "issuesTags" -> SetApiTagFormat.writes(issuesTags),
-    "stars" -> stars
+    "stars" -> stars,
+    "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue],
+    "isDefault" -> isDefault
   )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
@@ -1378,6 +1384,23 @@ case class Api(
       "stars" -> stars
     )
   }
+  def asPublicWithAuthorizationsJson(): JsValue = Json.obj(
+    "_id" -> id.value,
+      "_humanReadableId" -> name.urlPathSegmentSanitized,
+      "tenant" -> tenant.asJson,
+      "team" -> team.value,
+      "name" -> name,
+      "smallDescription" -> smallDescription,
+      "description" -> description,
+      "currentVersion" -> currentVersion.asJson,
+      "isDefault" -> isDefault,
+      "published" -> published,
+      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
+      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
+      "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
+      "stars" -> stars,
+      "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
+  )
 }
 
 case class ApiKeyRotation(

@@ -3,7 +3,7 @@ import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import Select from 'react-select';
 import Pagination from 'react-paginate';
-import _ from 'lodash';
+import _, { filter } from 'lodash';
 import faker from 'faker';
 import { Grid, List } from 'react-feather';
 import classNames from 'classnames';
@@ -172,20 +172,34 @@ const ApiListComponent = (props) => {
     (api) => selectedTag.value === all.value || api.tags.includes(selectedTag.value)
   );
 
-  const filteredApis =
+  const filteredApis = _.chain(
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (teamMatch(api, searchedTrim)) {
-            return true;
-          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-        });
+        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (teamMatch(api, searchedTrim)) {
+          return true;
+        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+      })
+  )
+    .groupBy("_humanReadableId")
+    .map(value => {
+      if (value.length === 1)
+        return value[0]
+
+      const app = value.find(v => v.isDefault)
+
+      if (!app)
+        return value.find(v => v.currentVersion === "1.0.0") || value[0]
+
+      return app
+    })
+    .value()
 
   const paginateApis = (() => {
     const starredApis = [],
@@ -196,8 +210,8 @@ const ApiListComponent = (props) => {
     });
 
     return [
-      ...starredApis.sort((a, b) => (a.stars === b.stars ? 0 : a.stars < b.stars ? 1 : -1)),
-      ...unstarredApis.sort((a, b) => (a.stars === b.stars ? 0 : a.stars < b.stars ? 1 : -1)),
+      ...starredApis.sort((a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)),
+      ...unstarredApis.sort((a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)),
     ];
   })().slice(offset, offset + pageNumber);
 
@@ -305,7 +319,7 @@ const ApiListComponent = (props) => {
               'flex-wrap': view === GRID,
               'flex-row': view === GRID,
             })}>
-            <div className="col-12 mb-1">{filterPreview(filteredApis.length)}</div>
+            {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => (
               <ApiCard
                 key={api._id}

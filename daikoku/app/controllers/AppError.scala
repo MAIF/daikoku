@@ -7,6 +7,7 @@ import play.api.mvc.Results._
 sealed trait AppError
 
 object AppError {
+  case object ApiVersionConflict extends AppError
   case object ApiNotFound extends AppError
   case object TeamNotFound extends AppError
   case object UserNotFound extends AppError
@@ -30,6 +31,7 @@ object AppError {
   case object MissingParentSubscription extends AppError
 
   def render(error: AppError): mvc.Result = error match {
+    case ApiVersionConflict => Conflict(toJson(ApiVersionConflict))
     case ApiNotFound  => NotFound(Json.obj("error" -> "Api not found"))
     case TeamNotFound => NotFound(Json.obj("error" -> "Team not found"))
     case UserNotFound => NotFound(Json.obj("error" -> "User not found"))
@@ -40,7 +42,7 @@ object AppError {
     case TeamUnauthorized =>
       Unauthorized(Json.obj("error" -> "You're not authorized on this team"))
     case ApiUnauthorized =>
-      Unauthorized(Json.obj("error" -> "You're not authorized on this api"))
+      Unauthorized(Json.obj("error" -> "You're not authorized on this api", "status" -> 403))
     case PlanUnauthorized =>
       Unauthorized(Json.obj("error" -> "You're not authorized on this plan"))
     case PlanNotFound =>
@@ -73,6 +75,7 @@ object AppError {
       case ApiKeyRotationError(e) => e
       case err =>
         Json.obj("error" -> (err match {
+          case ApiVersionConflict   => "This version already existed"
           case ApiNotFound          => "Api not found"
           case TeamNotFound         => "Team not found"
           case UserNotFound         => "User not found"

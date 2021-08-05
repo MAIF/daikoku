@@ -153,7 +153,7 @@ class Prompt extends Component {
           <div className="modal-dialog modal-lg" role="document">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Confirm</h5>
+                <h5 className="modal-title">{this.props.title || "Confirm"}</h5>
                 <button type="button" className="close" onClick={this.props.cancel}>
                   <span aria-hidden="true">&times;</span>
                 </button>
@@ -165,6 +165,7 @@ class Prompt extends Component {
                     type={this.props.isPassword ? 'password' : 'text'}
                     className="form-control"
                     value={this.state.text}
+                    placeholder={this.props.placeholder || ""}
                     ref={(r) => (this.ref = r)}
                     onChange={(e) => this.setState({ text: e.target.value })}
                   />
@@ -265,7 +266,7 @@ export function registerPrompt(store) {
     div.setAttribute('id', 'daikoku-alerts-container');
     document.body.appendChild(div);
   }
-  window.prompt = (message, value, isPassword) => {
+  window.prompt = (message, value, isPassword, title, placeholder) => {
     return new Promise((success) => {
       ReactDOM.render(
         <Provider store={store}>
@@ -273,6 +274,8 @@ export function registerPrompt(store) {
             isPassword={!!isPassword}
             message={message}
             value={value}
+            title={title}
+            placeholder={placeholder}
             ok={(inputValue) => {
               success(inputValue);
               ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));

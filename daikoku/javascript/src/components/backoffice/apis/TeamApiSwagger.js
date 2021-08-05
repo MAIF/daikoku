@@ -8,7 +8,7 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
   let unsubscribe = () => {};
 
   useEffect(() => {
-    if (value.swagger.content) {
+    if (value.swagger && value.swagger.content) {
       initSwaggerEditor(value.swagger.content);
     } else {
       killSwaggerEditor();
@@ -20,7 +20,6 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
   }, [value]);
 
   const initSwaggerEditor = (content) => {
-    console.log('init swagger editor');
     window.editor = SwaggerEditorBundle({
       // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
@@ -44,13 +43,11 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
   };
 
   const updateStateFromSwaggerEditor = () => {
-    console.log('updateStateFromSwaggerEditor');
     const content = window.editor.specSelectors.specStr();
     onChange({ ...value, swagger: { ...value.swagger, content } });
   };
 
   const killSwaggerEditor = () => {
-    console.log('killSwaggerEditor');
     if (unsubscribe) {
       unsubscribe();
     }

@@ -103,7 +103,7 @@ class TeamApiConsumptionComponent extends Component {
                 period={this.state.period}
                 handleClick={() =>
                   this.props.history.push(
-                    `/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${this.state.api._humanReadableId}/plan/${plan._id}`
+                    `/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${this.state.api._humanReadableId}/${this.state.api.currentVersion}/plan/${plan._id}`
                   )
                 }
                 currentLanguage={this.props.currentLanguage}

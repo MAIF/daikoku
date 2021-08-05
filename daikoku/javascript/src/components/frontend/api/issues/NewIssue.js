@@ -19,26 +19,33 @@ const styles = {
 };
 
 export function NewIssue({ currentLanguage, user, api, ...props }) {
-  const { issuesTags, _id, team, _tenant } = api;
+  const { issuesTags, team, _humanReadableId } = api;
   const [issue, setIssue] = useState(null);
+  const [availableApiVersions, setApiVersions] = useState([])
 
   useEffect(() => {
     Services.fetchNewIssue().then((template) => setIssue(template));
+
+    Services.getAllApiVersions(team, api._humanReadableId)
+      .then(setApiVersions)
   }, []);
 
   function createIssue() {
     if (issue.title.length === 0 || issue.comments[0].content.length === 0)
       toastr.error('Title or content are too short');
+    else if (!issue.apiVersion)
+      toastr.error("Select a version to continue")
     else {
-      Services.createNewIssue(_id, team, {
+      Services.createNewIssue(_humanReadableId, team, {
         ...issue,
+        apiVersion: issue.apiVersion.value,
         tags: issue.tags.map((tag) => tag.value.id),
       }).then((res) => {
         if (res.status === 201) {
           toastr.success('Issue created');
           props.history.push(`${props.basePath}/issues`);
-        } else res.json().then((r) => toastr.error(r.error));
-        s;
+        } else
+          res.json().then((r) => toastr.error(r.error));
       });
     }
   }
@@ -65,6 +72,24 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
               placeholder={t('Title', currentLanguage)}
               value={issue.title}
               onChange={(e) => setIssue({ ...issue, title: e.target.value })}
+            />
+          </div>
+          <div className="py-2">
+            <label htmlFor="apiVersion">{t('issues.apiVersion', currentLanguage)}</label>
+            <Select
+              id="apiVersion"
+              onChange={apiVersion => setIssue({
+                ...issue,
+                apiVersion
+              })
+              }
+              options={availableApiVersions.map((iss) => ({ value: iss, label: iss }))}
+              value={issue.apiVersion}
+              className="input-select reactSelect"
+              classNamePrefix="reactSelect"
+              styles={{
+                menu: (provided) => ({ ...provided, zIndex: 9999 }),
+              }}
             />
           </div>
           <Can I={manage} a={API} team={props.currentTeam}>

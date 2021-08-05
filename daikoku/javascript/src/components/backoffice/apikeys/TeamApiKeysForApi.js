@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import classNames from 'classnames';
@@ -28,11 +28,12 @@ function TeamApiKeysForApiComponent(props) {
   const [searched, setSearched] = useState('');
 
   const location = useLocation()
+  const params = useParams()
 
   useEffect(() => {
     Promise.all([
-      Services.getTeamVisibleApi(props.currentTeam._id, props.match.params.apiId),
-      Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id),
+      Services.getTeamVisibleApi(props.currentTeam._id, props.match.params.apiId, params.versionId),
+      Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId),
     ]).then(([api, subscriptions]) => {
       setSubscriptions(subscriptions)
       setApi(api)
@@ -53,7 +54,7 @@ function TeamApiKeysForApiComponent(props) {
       !subscription.enabled
     )
       .then(() =>
-        Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id)
+        Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId)
       )
       .then(subs => setSubscriptions(subs));
   };
@@ -63,7 +64,7 @@ function TeamApiKeysForApiComponent(props) {
       .then(ok => {
         if (ok)
           Services.makeUniqueApiKey(props.currentTeam._id, subscription._id)
-            .then(() => Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id))
+            .then(() => Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId))
         then(subs => setSubscriptions(subs));
       })
   }
@@ -88,7 +89,7 @@ function TeamApiKeysForApiComponent(props) {
       gracePeriod
     )
       .then(() =>
-        Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id)
+        Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId)
       )
       .then(subs => setSubscriptions(subs));
   };
@@ -109,7 +110,8 @@ function TeamApiKeysForApiComponent(props) {
             .then(() =>
               Services.getTeamSubscriptions(
                 props.match.params.apiId,
-                props.currentTeam._id
+                props.currentTeam._id,
+                params.versionId
               )
             )
             .then(subs => setSubscriptions(subs))
@@ -177,7 +179,7 @@ function TeamApiKeysForApiComponent(props) {
                 </Translation>
                 &nbsp;
                 <Link
-                  to={`/${apiTeam._humanReadableId}/${api._humanReadableId}`}
+                  to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
                   className="cursor-pointer underline-on-hover a-fake">
                   {api.name}
                 </Link>

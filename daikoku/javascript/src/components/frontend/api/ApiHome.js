@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import hljs from 'highlight.js';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import {
@@ -16,13 +16,15 @@ import {
   ApiIssue,
 } from '.';
 import { converter } from '../../../services/showdown';
-import { Can, manage, api as API, Option } from '../../utils';
+import { Can, manage, api as API, Option, ActionWithTeamSelector } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal, updateUser } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
 import { Translation, t } from '../../../locales';
 import StarsButton from './StarsButton';
+import Select from 'react-select';
+import { LoginOrRegisterModal } from '../modals';
 window.hljs = hljs;
 
 const ApiDescription = ({ api }) => {
@@ -50,8 +52,12 @@ const ApiHeader = ({
   connectedUser,
   toggleStar,
   currentLanguage,
+  params,
+  tab
 }) => {
   const handleBtnEditClick = () => history.push(editUrl);
+
+  const [versions, setApiVersions] = useState([]);
 
   useEffect(() => {
     //fo custom header component
@@ -63,6 +69,9 @@ const ApiHeader = ({
         els.forEach((el) => el.removeEventListener('click', handleBtnEditClick, false));
       };
     }
+
+    Services.getAllApiVersions(ownerTeam._id, params.apiId)
+      .then(versions => setApiVersions(versions.map(v => ({ label: v, value: v }))))
   }, []);
 
   const EditButton = () => (
@@ -95,7 +104,19 @@ const ApiHeader = ({
           <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
             {api.name}
             <EditButton />
-            <div style={{ position: 'absolute', right: 0, bottom: 0 }}>
+            <div style={{ position: 'absolute', right: 0, bottom: 0 }} className="d-flex align-items-center">
+              {versions.length > 1 && tab !== "issues" && <div style={{ minWidth: '125px', fontSize: 'initial' }}>
+                <Select
+                  name="versions-selector"
+                  value={{ label: params.versionId, value: params.versionId }}
+                  options={versions}
+                  onChange={e => history.push(`/${params.teamId}/${params.apiId}/${e.value}/${tab}`)}
+                  classNamePrefix="reactSelect"
+                  className="mr-2"
+                  menuPlacement="auto"
+                  menuPosition="fixed"
+                />
+              </div>}
               <StarsButton
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
@@ -120,32 +141,49 @@ const ApiHomeComponent = ({
   currentLanguage,
   connectedUser,
   updateUser,
-  tenant,
+  tenant
 }) => {
   const [api, setApi] = useState(undefined);
   const [subscriptions, setSubscriptions] = useState([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
   const [ownerTeam, setOwnerTeam] = useState(undefined);
   const [myTeams, setMyTeams] = useState([]);
+  const [showAccessModal, setAccessModalError] = useState(false);
+  const [showGuestModal, setGuestModal] = useState(false);
+
+  const params = useParams()
 
   useEffect(() => {
     updateSubscriptions(match.params.apiId);
-  }, [match.params.apiId]);
+  }, [match.params.apiId, match.params.versionId]);
 
   useEffect(() => {
     if (api) {
       Services.team(api.team).then((ownerTeam) => setOwnerTeam(ownerTeam));
     }
-  }, [api]);
+  }, [api, match.params.versionId]);
 
   const updateSubscriptions = (apiId) => {
     Promise.all([
-      Services.getVisibleApi(apiId),
-      Services.getMySubscriptions(apiId),
+      Services.getVisibleApi(apiId, match.params.versionId),
+      Services.getMySubscriptions(apiId, match.params.versionId),
       Services.myTeams(),
     ]).then(([api, { subscriptions, requests }, teams]) => {
       if (api.error) {
-        setError({ error: { status: 404, message: api.error } });
+        if (api.visibility && api.visibility === "PublicWithAuthorizations") {
+          Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId)
+            .then(res => {
+              if (res.error)
+                setGuestModal(true)
+              else
+                setAccessModalError({
+                  error: api.error,
+                  api: res
+                })
+            })
+        }
+        else
+          setError({ error: { status: api.status || 404, message: api.error } });
       } else {
         setApi(api);
         setSubscriptions(subscriptions);
@@ -201,7 +239,7 @@ const ApiHomeComponent = ({
   const editUrl = (api) => {
     return Option(myTeams.find((team) => api.team === team._id)).fold(
       () => '#',
-      (adminTeam) => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}`
+      (adminTeam) => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
     );
   };
 
@@ -222,10 +260,69 @@ const ApiHomeComponent = ({
     });
   };
 
+  if (showGuestModal)
+    return <div className="m-3">
+      <LoginOrRegisterModal
+        tenant={tenant}
+        currentLanguage={currentLanguage}
+        showOnlyMessage={true}
+        asFlatFormat
+        message={t('guest_user_not_allowed', currentLanguage)}
+      />
+    </div>
+
+  if (showAccessModal) {
+    const teams = showAccessModal.api.myTeams.filter((t) => t.type !== 'Admin');
+    const pendingTeams = showAccessModal.api.authorizations.filter((auth) => auth.pending).map((auth) => auth.team);
+    const authorizedTeams = showAccessModal.api.authorizations
+      .filter((auth) => auth.authorized)
+      .map((auth) => auth.team);
+
+    return <div className="mx-auto mt-3 d-flex flex-column justify-content-center">
+      <h1 style={{ margin: 0 }}>{showAccessModal.error}</h1>
+      {
+        (teams.length === 1 && (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
+          (showAccessModal.api.authorizations.every(auth => auth.pending && !auth.authorized))
+          ?
+          <>
+            <h2 className="text-center my-3">{t('request_already_pending', currentLanguage)}</h2>
+            <button className="btn btn-outline-info mx-auto" style={{ width: 'fit-content' }}
+              onClick={() => history.goBack()}>
+              {t('go_back', currentLanguage)}
+            </button>
+          </>
+          :
+          <>
+            <span className="text-center my-3">{t("request_api_access", currentLanguage)}</span>
+            <ActionWithTeamSelector
+              title="Api access"
+              description={t(
+                'api.access.request',
+                currentLanguage,
+                false,
+                `You will send an access request to the API "${params.apIid}". For which team do you want to send the request ?`,
+                [params.apIid]
+              )}
+              pendingTeams={pendingTeams}
+              authorizedTeams={authorizedTeams}
+              teams={teams}
+              action={(teams) => {
+                Services.askForApiAccess(teams, showAccessModal.api._id)
+                  .then(_ => updateSubscriptions(showAccessModal.api._id))
+              }}>
+              <button className="btn btn-success mx-auto" style={{ width: 'fit-content' }}>
+                {t('notif.api.access', currentLanguage, null, false, [params.apiId])}
+              </button>
+            </ActionWithTeamSelector>
+          </>}
+    </div>
+  }
+
   if (!api || !ownerTeam) {
     return null;
   }
   const apiId = api._humanReadableId;
+  const versionId = match.params.versionId;
   const teamId = match.params.teamId;
 
   //for contact modal
@@ -245,6 +342,8 @@ const ApiHomeComponent = ({
         connectedUser={connectedUser}
         toggleStar={toggleStar}
         currentLanguage={currentLanguage}
+        params={match.params}
+        tab={tab}
       />
       <div className="container">
         <div className="row">
@@ -253,7 +352,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'description' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}`}>
                   <Translation i18nkey="Description" language={currentLanguage}>
                     Description
                   </Translation>
@@ -262,7 +361,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/pricing`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/pricing`}>
                   <Translation i18nkey="Plan" language={currentLanguage} isPlural={true}>
                     Plans
                   </Translation>
@@ -270,10 +369,9 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${
-                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                  }`}
-                  to={`/${match.params.teamId}/${apiId}/documentation`}>
+                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                    }`}
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/documentation`}>
                   <Translation i18nkey="Documentation" language={currentLanguage}>
                     Documentation
                   </Translation>
@@ -282,7 +380,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/redoc`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/redoc`}>
                   <Translation i18nkey="Api Reference" language={currentLanguage}>
                     Api Reference
                   </Translation>
@@ -291,7 +389,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/swagger`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/swagger`}>
                   <Translation i18nkey="Try it !" language={currentLanguage}>
                     Try it !
                   </Translation>
@@ -301,7 +399,7 @@ const ApiHomeComponent = ({
                 <li className="nav-item">
                   <Link
                     className={`nav-link ${tab === 'news' ? 'active' : ''}`}
-                    to={`/${match.params.teamId}/${apiId}/news`}>
+                    to={`/${match.params.teamId}/${apiId}/${versionId}/news`}>
                     <Translation i18nkey="News" language={currentLanguage}>
                       News
                     </Translation>
@@ -311,7 +409,7 @@ const ApiHomeComponent = ({
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
-                  to={`/${match.params.teamId}/${apiId}/issues`}>
+                  to={`/${match.params.teamId}/${apiId}/${versionId}/issues`}>
                   <Translation i18nkey="issues" language={currentLanguage}>
                     Issues
                   </Translation>
@@ -339,7 +437,7 @@ const ApiHomeComponent = ({
                 }
                 redirectToApiKeysPage={(team) => {
                   history.push(
-                    `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}`
+                    `/${team._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`
                   );
                 }}
               />
@@ -415,6 +513,7 @@ const ApiHomeComponent = ({
                 api={api}
                 ownerTeam={ownerTeam}
                 match={match}
+                versionId={match.params.versionId}
                 currentLanguage={currentLanguage}
               />
             )}
@@ -443,7 +542,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   setError,
   openContactModal,
-  updateUser,
+  updateUser
 };
 
 export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);

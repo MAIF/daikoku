@@ -71,12 +71,15 @@ class MyHomeComponent extends Component {
   };
 
   redirectToApiPage = (api) => {
-    if (api.visibility === 'Public' || api.authorizations.some((auth) => auth.authorized)) {
-      const apiOwner = this.state.teams.find((t) => t._id === api.team);
-      this.props.history.push(
-        `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}`
-      );
-    }
+    const apiOwner = this.state.teams.find((t) => t._id === api.team);
+
+    const route = version => `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}/${version}`
+
+    if (api.isDefault)
+      this.props.history.push(route(api.currentVersion));
+    else
+      Services.getDefaultApiVersion(api._humanReadableId)
+        .then(res => this.props.history.push(route(res.defaultVersion)))
   };
 
   redirectToEditPage = (api) => {
@@ -95,7 +98,7 @@ class MyHomeComponent extends Component {
         .updateTeam(adminTeam)
         .then(() =>
           this.props.history.push(
-            `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/infos`
+            `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
           )
         );
     }
