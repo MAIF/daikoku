@@ -1589,7 +1589,7 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userApiEditor, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path = s"/api/apis/${defaultApi.id.value}/subscriptions?version=${defaultApi.currentVersion.value}",
         method = "POST",
         body = Some(
           Json.obj("plan" -> plan,
@@ -1647,7 +1647,7 @@ class ApiControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}"
+          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}?version=${defaultApi.currentVersion.value}"
       )(tenant, session)
       resp.status mustBe 200
 
@@ -1706,7 +1706,7 @@ class ApiControllerSpec()
 
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}"
+          s"/api/me/teams/${teamConsumerId.value}/visible-apis/${defaultApi.id.value}?version=${defaultApi.currentVersion.value}"
       )(tenant, session)
       resp.status mustBe 403
     }
@@ -1747,7 +1747,7 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/me/teams/${teamConsumerId.value}/visible-apis/another-api"
+        path = s"/api/me/teams/${teamConsumerId.value}/visible-apis/another-api?version=${defaultApi.currentVersion.value}"
       )(tenant, session)
       resp.status mustBe 404
     }
