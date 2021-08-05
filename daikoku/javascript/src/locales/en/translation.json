@@ -919,7 +919,7 @@
     "request_api_access": "You need to be authorized to view this api.",
     "request_already_pending": "Your request is already pending",
     "go_back": "Go back",
-    "guest_user_not_allowed": "You need to be authenticated to access at this api"
+    "guest_user_not_allowed": "You need to be authenticated to access at this api",
     "api_select_modal.title": "Choose your plan",
     "internationalization": "Internationalization",
     "mail.contact.title": "Contact request",
@@ -948,7 +948,7 @@
     "mail.user.invitation.rejection.body": "[user] rejected your request to join your team [teamName].",
     "mail.user.invitation.acceptation.body": "[user] accepted your request to join your team [teamName].",
     "mail.new.message.title": "New message from [user]",
-    "mail.new.message.body": "You''ve got a new message",
+    "mail.new.message.body": "You've got a new message",
     "mail.new.user.title": "Validate your [tenant] account",
     "mail.new.user.body": "Thanks for creating your [tenant] account, you're almost done."
 }

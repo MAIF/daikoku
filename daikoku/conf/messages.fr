@@ -61,11 +61,11 @@ mail.new.message.body=Bonjour,\
   [body]\
   </div>\
   <a href="[link]">Répondre</a>
-mail.new.user.title=Validate your [tenant] account
-mail.new.user.body=Thanks for creating your [tenant] account, you're almost done. \
+mail.new.user.title=Validation de votre compte sur le tenant [tenant]
+mail.new.user.body=Merci d''avoir créer un compte sur [tenant], vous y êtes presque. \
  <br/>\
-Please click on the following link to finalize your account creation process\
+Cliquez sur le lien suivant pour finaliser la crétation de votre compte.\
 <br/>\
 [link]\
 <br/>\
-The [tenant] team
+L''équipe [tenant]
