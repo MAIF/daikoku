@@ -43,6 +43,7 @@ export class ApiRedoc extends Component {
         <LoginOrRegisterModal
           {...this.props}
           showOnlyMessage={true}
+          asFlatFormat
           message={t('api_redoc.guest_user', this.props.currentLanguage)}
         />
       );

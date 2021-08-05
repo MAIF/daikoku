@@ -75,7 +75,7 @@ GET     /api/me/visible-apis/:id                        fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/me/visible-apis                            fr.maif.otoroshi.daikoku.ctrls.ApiController.myVisibleApis()
 ### NoDocs ###
-GET     /api/me/teams/:teamId/visible-apis/:apiId       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId)
+GET     /api/me/teams/:teamId/visible-apis/:apiId       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId, version: Option[String] ?= None)
 ### NoDocs ###
 GET     /api/me/subscriptions/:apiId                    fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId, version: Option[String] ?= None)
 ### NoDocs ###
@@ -98,7 +98,7 @@ PUT     /api/apis/:apiId/subscriptions/:apiKeyId        fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
 ### NoDocs ###
-GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId)
+GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version: Option[String] ?= None)
 ### NoDocs ###
 GET     /api/subscriptions/teams/:teamId                fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionsOfTeam(teamId)
 ### NoDocs ###
@@ -173,7 +173,7 @@ GET     /api/teams/:teamId/billings                              fr.maif.otorosh
 ### NoDocs ###
 GET     /api/teams/:teamId/income                                fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId/subscriptions             fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(teamId, apiId)
+GET     /api/teams/:teamId/apis/:apiId/subscriptions             fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(teamId, apiId, version: Option[String] ?= None)
 ### NoDocs ###
 GET     /api/teams/:teamId/ldap/users/:email                     fr.maif.otoroshi.daikoku.ctrls.TeamController.checkUser(teamId, email)
 ### NoDocs ###
@@ -198,6 +198,8 @@ GET         /api/teams/:teamId/apis/:apiId/versions                  fr.maif.oto
 GET         /api/teams/:teamId/apis/:apiId/plans                     fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllPlan(teamId, apiId, version: Option[String] ?= None)
 ### NoDocs ###
 POST        /api/teams/:teamId/apis/:apiId/plans                     fr.maif.otoroshi.daikoku.ctrls.ApiController.clonePlan(teamId, apiId)
+### NoDocs ###
+GET         /api/teams/:teamId/apis/:apiId/access                    fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsStatusAccess(teamId, apiId, version: Option[String] ?= None)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)

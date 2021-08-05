@@ -150,7 +150,6 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   useEffect(() => {
     if (!creationInProgress) {
-      console.log("updateDetails from useEffect")
       updateDetails();
       setSelected(null)
     }
@@ -300,8 +299,6 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       }
     })
   }
-
-  console.log(selected)
 
   if (value === null)
     return null;

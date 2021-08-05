@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, withRouter, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, withRouter, Switch, useHistory } from 'react-router-dom';
 import { Redirect } from 'react-router';
 import { ConnectedRouter } from 'connected-react-router';
 import { connect } from 'react-redux';
@@ -8,7 +8,7 @@ import ReduxToastr from 'react-redux-toastr';
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
-import { updateTeamPromise, history } from '../core';
+import { updateTeamPromise, history, setError } from '../core';
 import { t } from '../locales';
 
 import 'react-redux-toastr/src/styles/index.scss';
@@ -602,6 +602,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   updateTeam: (team) => updateTeamPromise(team),
+  setError: (error) => setError(error)
 };
 
 export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
@@ -631,7 +632,15 @@ const TeamBackOfficeRouteComponent = ({
             return updateTeam(team);
           })
           .then(() => setLoading(false))
-          .catch((error) => setTeamError(error));
+          .catch((error) => {
+            rest.setError({
+              error: {
+                ...error,
+                message: error.error
+              }
+            })
+            setTeamError(error)
+          });
       } else {
         setNoRender(true);
       }

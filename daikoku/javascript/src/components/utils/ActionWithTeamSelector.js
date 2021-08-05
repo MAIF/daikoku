@@ -30,6 +30,7 @@ class ActionWithTeamSelectorComponent extends Component {
     ) {
       return null;
     }
+
     return (
       <>
         {React.cloneElement(this.props.children, { onClick: () => this.openTeamSelectorModal() })}

@@ -87,8 +87,6 @@ export class ApiDocumentation extends Component {
       return null;
     }
 
-    console.log(this.state.details)
-
     const details = this.state.details;
     const apiId = this.props.match.params.apiId;
     const pageId = this.props.match.params.pageId;

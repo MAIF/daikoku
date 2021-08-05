@@ -557,7 +557,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
             s"${if (allFields) "_deleted BOOLEAN," else ""}" +
             s"content JSONB)")
           .map { _ =>
-            println(s"Created : $table")
+            AppLogger.info(s"Created : $table")
           }
       }
   }
@@ -685,7 +685,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       }
       .recover {
         case e: Throwable =>
-          println(e.getMessage)
+          AppLogger.info(e.getMessage)
 
       }.asInstanceOf[Future[Unit]]
   }
@@ -1174,11 +1174,10 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     sort match {
       case None =>
         if (query.values.isEmpty)
-          reactivePg.querySeq(s"SELECT * FROM $tableName") {
+          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}'") {
             rowToJson(_, format)
           } else {
-          val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value))
+          val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql"
           params.zipWithIndex.reverse.foreach {
@@ -1193,7 +1192,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       case Some(s) =>
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT *, $$2 FROM $tableName ORDER BY $$1",
+            s"SELECT *, $$2 FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' ORDER BY $$1",
             Seq(
               s.keys.map(key => s"$quotes$key$quotes").mkString(","),
               s.keys
@@ -1203,7 +1202,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
                 .mkString(",")
             )
           ) { rowToJson(_, format) } else {
-          val (sql, params) = convertQuery(query)
+          val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
           reactivePg.querySeq(
             s"SELECT *, ${getParam(params.size + 1)} FROM $tableName WHERE $sql ORDER BY ${getParam(
               params.size)}",

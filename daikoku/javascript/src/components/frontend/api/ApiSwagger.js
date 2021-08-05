@@ -107,6 +107,7 @@ export class ApiSwagger extends Component {
         <LoginOrRegisterModal
           {...this.props}
           showOnlyMessage={true}
+          asFlatFormat
           message={t('api_swagger.guest_user', this.props.currentLanguage)}
         />
       );

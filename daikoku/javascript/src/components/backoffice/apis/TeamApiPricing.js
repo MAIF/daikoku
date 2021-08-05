@@ -1435,9 +1435,8 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           );
           const newValue = _.cloneDeep(value);
           newValue.possibleUsagePlans = plans;
-          setSelected(plans.length ? plans[0] : null, () => {
-            props.onChange(newValue);
-          });
+          setSelected(plans.length ? plans[0] : null)
+          props.onChange(newValue);
         }
       });
   };

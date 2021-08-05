@@ -19,7 +19,6 @@ import {
 } from '.';
 
 import { setError, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
-import { gt } from 'semver';
 import Select from 'react-select';
 
 const reservedCharacters = [";", "/", "?", ":", "@", "&", "=", "+", "$", ","]
@@ -221,14 +220,8 @@ function TeamApiComponent(props) {
     const { api } = state
     window.prompt("Version number", undefined, false, "Create a new version", `Current version : ${api.currentVersion}`)
       .then(newVersion => {
-        if (newVersion.split("").find(c => reservedCharacters.includes(c)))
+        if ((newVersion || "").split("").find(c => reservedCharacters.includes(c)))
           toastr.error("Can't create version with special characters : " + reservedCharacters.join(" | "))
-        else if (gt(api.currentVersion, newVersion))
-          window.confirm("Are you sure to create a version less greater than the previous ?")
-            .then(ok => {
-              if (ok)
-                createNewVersion(newVersion)
-            })
         else
           createNewVersion(newVersion)
       })
