@@ -186,16 +186,16 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getTeamVisibleApis(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+  def getTeamVisibleApis(teamId: String, apiId: String, version: Option[String]) = DaikokuAction.async { ctx =>
     import cats.implicits._
 
-    TeamMemberOnly(AuditTrailEvent("@{user.name} is accessing team @{team.name} visible api @{api.name}"))(teamId, ctx) {
+    TeamMemberOnly(AuditTrailEvent(s"@{user.name} is accessing team @{team.name} visible api @{api.name} (${version.get})"))(teamId, ctx) {
       team =>
         val r: EitherT[Future, Result, Result] = for {
-          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId),
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
             NotFound(Json.obj("error" -> "Api not found")))
           pendingRequests <- if (api.team == team.id) EitherT.liftF(FastFuture.successful(Seq.empty[Notification]))
-          else if (api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id))
+          else if (!ctx.user.isDaikokuAdmin && api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id))
             EitherT.leftT[Future, Seq[Notification]](
               Unauthorized(Json.obj("error" -> "You're not authorized on this api", "status" -> 403))
             )
@@ -960,7 +960,7 @@ class ApiController(DaikokuAction: DaikokuAction,
 
         env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version).flatMap {
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-          case Some(api) if api.visibility == ApiVisibility.Public => findSubscriptions(api, team)
+          case Some(api) if ctx.user.isDaikokuAdmin || api.visibility == ApiVisibility.Public => findSubscriptions(api, team)
           case Some(api) if api.team == team.id => findSubscriptions(api, team)
           case Some(api) if api.visibility != ApiVisibility.Public && api.authorizedTeams.contains(team.id) =>
             findSubscriptions(api, team)
@@ -2409,6 +2409,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                         parent = Some(api.id),
                         currentVersion = Version(newVersion),
                         published = false,
+                        isDefault = false,
                         testing = Testing(),
                         documentation = ApiDocumentation(
                           id = ApiDocumentationId(BSONObjectID.generate().stringify),

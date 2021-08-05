@@ -220,7 +220,7 @@ function TeamApiComponent(props) {
     const { api } = state
     window.prompt("Version number", undefined, false, "Create a new version", `Current version : ${api.currentVersion}`)
       .then(newVersion => {
-        if (newVersion.split("").find(c => reservedCharacters.includes(c)))
+        if ((newVersion || "").split("").find(c => reservedCharacters.includes(c)))
           toastr.error("Can't create version with special characters : " + reservedCharacters.join(" | "))
         else
           createNewVersion(newVersion)

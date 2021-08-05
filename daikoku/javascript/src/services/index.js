@@ -39,8 +39,8 @@ export function getVisibleApi(id, version) {
   }).then((r) => r.json());
 }
 
-export function getTeamVisibleApi(teamId, apiId) {
-  return fetch(`/api/me/teams/${teamId}/visible-apis/${apiId}`, {
+export function getTeamVisibleApi(teamId, apiId, version) {
+  return fetch(`/api/me/teams/${teamId}/visible-apis/${apiId}?version=${version}`, {
     method: 'GET',
     credentials: 'include',
     headers: {

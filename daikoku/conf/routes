@@ -75,7 +75,7 @@ GET     /api/me/visible-apis/:id                        fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/me/visible-apis                            fr.maif.otoroshi.daikoku.ctrls.ApiController.myVisibleApis()
 ### NoDocs ###
-GET     /api/me/teams/:teamId/visible-apis/:apiId       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId)
+GET     /api/me/teams/:teamId/visible-apis/:apiId       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId, version: Option[String] ?= None)
 ### NoDocs ###
 GET     /api/me/subscriptions/:apiId                    fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId, version: Option[String] ?= None)
 ### NoDocs ###

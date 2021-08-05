@@ -32,7 +32,7 @@ function TeamApiKeysForApiComponent(props) {
 
   useEffect(() => {
     Promise.all([
-      Services.getTeamVisibleApi(props.currentTeam._id, props.match.params.apiId),
+      Services.getTeamVisibleApi(props.currentTeam._id, props.match.params.apiId, params.versionId),
       Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId),
     ]).then(([api, subscriptions]) => {
       setSubscriptions(subscriptions)
