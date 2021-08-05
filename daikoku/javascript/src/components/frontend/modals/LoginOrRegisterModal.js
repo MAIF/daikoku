@@ -8,7 +8,7 @@ export const LoginOrRegisterModal = (props) => {
   return (
     asFlatFormat ?
       <div className="mx-auto" style={{ maxWidth: '448px', color: "#000" }}>
-        <p className="font-weight-bold">{props.message}</p>
+        <p className="font-weight-bold text-center">{props.message}</p>
         <div className="m-2 d-flex align-items-center justify-content-center login-button">
           <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1">
             {t('Login', props.currentLanguage)}

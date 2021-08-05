@@ -2440,7 +2440,9 @@ class ApiController(DaikokuAction: DaikokuAction,
 
       repo.find(Json.obj("_humanReadableId" -> apiId))
         .map { apis =>
-          Ok(SeqVersionFormat.writes(apis.map(_.currentVersion)))
+          Ok(SeqVersionFormat.writes(apis
+            .filter(api => !ctx.user.isGuest || api.visibility.name == ApiVisibility.Public.name)
+            .map(_.currentVersion)))
         }
     }
   }

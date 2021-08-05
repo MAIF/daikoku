@@ -917,5 +917,6 @@
   "api_select_modal.title": "Choisir un plan",
   "request_api_access": "Vous devez être autorisé pour visualiser cette api.",
   "request_already_pending": "Un requête d'autorisation est déjà en attente pour votre équipe.",
-  "go_back": "Revenir en arrière"
+  "go_back": "Revenir en arrière",
+  "guest_user_not_allowed": "Vous devez être connecté pour continuer à visualiser cette api."
 }

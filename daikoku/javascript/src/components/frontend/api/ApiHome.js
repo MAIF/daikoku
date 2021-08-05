@@ -24,6 +24,7 @@ import 'highlight.js/styles/monokai.css';
 import { Translation, t } from '../../../locales';
 import StarsButton from './StarsButton';
 import Select from 'react-select';
+import { LoginOrRegisterModal } from '../modals';
 window.hljs = hljs;
 
 const ApiDescription = ({ api }) => {
@@ -140,7 +141,7 @@ const ApiHomeComponent = ({
   currentLanguage,
   connectedUser,
   updateUser,
-  tenant,
+  tenant
 }) => {
   const [api, setApi] = useState(undefined);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -148,6 +149,7 @@ const ApiHomeComponent = ({
   const [ownerTeam, setOwnerTeam] = useState(undefined);
   const [myTeams, setMyTeams] = useState([]);
   const [showAccessModal, setAccessModalError] = useState(false);
+  const [showGuestModal, setGuestModal] = useState(false);
 
   const params = useParams()
 
@@ -171,10 +173,13 @@ const ApiHomeComponent = ({
         if (api.visibility && api.visibility === "PublicWithAuthorizations") {
           Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId)
             .then(res => {
-              setAccessModalError({
-                error: api.error,
-                api: res
-              })
+              if (res.error)
+                setGuestModal(true)
+              else
+                setAccessModalError({
+                  error: api.error,
+                  api: res
+                })
             })
         }
         else
@@ -254,6 +259,17 @@ const ApiHomeComponent = ({
       }
     });
   };
+
+  if (showGuestModal)
+    return <div className="m-3">
+      <LoginOrRegisterModal
+        tenant={tenant}
+        currentLanguage={currentLanguage}
+        showOnlyMessage={true}
+        asFlatFormat
+        message={t('guest_user_not_allowed', currentLanguage)}
+      />
+    </div>
 
   if (showAccessModal) {
     const teams = showAccessModal.api.myTeams.filter((t) => t.type !== 'Admin');
@@ -526,7 +542,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   setError,
   openContactModal,
-  updateUser,
+  updateUser
 };
 
 export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);
