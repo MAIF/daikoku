@@ -744,18 +744,18 @@ class ApiController(DaikokuAction: DaikokuAction,
       action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id)
     )
 
-    val language = tenant.defaultLanguage.getOrElse("en")
+    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
     val notificationUrl = env.config.exposedPort match {
       case 80 => s"http://${tenant.domain}/notifications"
       case 443 => s"https://${tenant.domain}/notifications"
       case value => s"http://${tenant.domain}:$value/"
     }
     for {
-      title <- translator.translate("mail.apikey.demand.title", language)(messagesApi, env, ctx.tenant)
-      body <- translator.translate("mail.apikey.demand.body", language, Map(
+      title <- translator.translate("mail.apikey.demand.title", tenant)
+      body <- translator.translate("mail.apikey.demand.body", tenant, Map(
       "user" -> user.name,
       "apiName" -> api.name,
-      "link" -> notificationUrl))(messagesApi, env, ctx.tenant)
+      "link" -> notificationUrl))
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       maybeApiTeam <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
       maybeAdmins <- maybeApiTeam.traverse(
@@ -1513,16 +1513,16 @@ class ApiController(DaikokuAction: DaikokuAction,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
 
-    val language = ctx.tenant.defaultLanguage.getOrElse("en")
+    implicit val language: String = ctx.tenant.defaultLanguage.getOrElse("en")
 
     for {
-      title <- translator.translate("mail.api.access.title", language)(messagesApi, env, ctx.tenant)
-      body <- translator.translate("mail.api.access.body", language, Map(
+      title <- translator.translate("mail.api.access.title", ctx.tenant)
+      body <- translator.translate("mail.api.access.body", ctx.tenant, Map(
         "user" -> ctx.user.name,
         "apiName" -> api.name,
         "teamName" -> team.name,
         "link" -> s"${ctx.tenant.domain}/notifications"
-      ))(messagesApi, env, ctx.tenant)
+      ))
       notificationRepo <- env.dataStore.notificationRepo.forTenantF(ctx.tenant.id)
       saved <- notificationRepo.save(notification)
       maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(api.team)

@@ -27,7 +27,7 @@ class TranslationController(DaikokuAction: DaikokuAction,
   implicit val ev = env
   implicit val mat = env.defaultMaterializer
 
-  val languages = List("en", "fr")
+  val languages = supportedLangs.availables.map(_.language)
 
   def getTranslations(domain: Option[String]) = DaikokuAction.async { ctx =>
     TenantAdminOnly(
@@ -104,7 +104,8 @@ class TranslationController(DaikokuAction: DaikokuAction,
               .deleteById(translationId)
               .map {
                 case true =>
-                  translator.translate(translation.key, translation.language)(messagesApi, env, ctx.tenant)
+                  implicit val language: String = translation.language
+                  translator.translate(translation.key, ctx.tenant)
                     .map { value =>
                       Ok(TranslationFormat.writes(translation.copy(
                         value = value,

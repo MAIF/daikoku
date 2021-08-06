@@ -37,7 +37,6 @@ class LoginController(DaikokuAction: DaikokuAction,
                       cc: ControllerComponents,
                       translator: Translator)
     extends AbstractController(cc) {
-
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
@@ -412,12 +411,13 @@ class LoginController(DaikokuAction: DaikokuAction,
                   .get("Otoroshi-Proxied-Host")
                   .orElse(ctx.request.headers.get("X-Forwarded-Host"))
                   .getOrElse(ctx.request.host)
+                implicit val language: String = ctx.tenant.defaultLanguage.getOrElse("en")
                 (for {
-                  title <- translator.translate("mail.new.user.title", ctx.tenant.defaultLanguage.getOrElse("en"), Map("tenant" -> ctx.tenant.name))(messagesApi, env, ctx.tenant)
-                  body <- translator.translate("mail.new.user.body", ctx.tenant.defaultLanguage.getOrElse("en"), Map(
+                  title <- translator.translate("mail.new.user.title", ctx.tenant, Map("tenant" -> ctx.tenant.name))
+                  body <- translator.translate("mail.new.user.body", ctx.tenant, Map(
                     "tenant" -> ctx.tenant.name,
                     "link" -> s"${ctx.request.theProtocol}://${host}/account/validate?id=${randomId}"
-                  ))(messagesApi, env, ctx.tenant)
+                  ))
                 } yield {
                   ctx.tenant.mailer.send(title, Seq(email), body)
                   .map { _ =>
