@@ -29,6 +29,7 @@ object AppError {
   case object SubscriptionParentExisted extends AppError
   case object SubscriptionAggregationDisabled extends AppError
   case object MissingParentSubscription extends AppError
+  case object TranslationNotFound extends AppError
 
   def render(error: AppError): mvc.Result = error match {
     case ApiVersionConflict => Conflict(toJson(ApiVersionConflict))
@@ -67,6 +68,7 @@ object AppError {
     case SubscriptionParentExisted => Conflict(toJson(SubscriptionParentExisted))
     case SubscriptionAggregationDisabled => BadRequest(toJson(SubscriptionAggregationDisabled))
     case MissingParentSubscription => NotFound(toJson(MissingParentSubscription))
+    case TranslationNotFound => NotFound(toJson(TranslationNotFound))
   }
 
   def toJson(error: AppError) = {
@@ -95,6 +97,7 @@ object AppError {
           case SubscriptionParentExisted        => "The subscription already has a subscription parent - it cannot be extended any further"
           case SubscriptionAggregationDisabled  => "Aggregation of api keys is disabled on plan or on tenant"
           case MissingParentSubscription        => "The parent of this subscription is missing"
+          case TranslationNotFound              => "Translation not found"
           case _ => ""
         }))
       }

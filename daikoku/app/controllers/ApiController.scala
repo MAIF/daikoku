@@ -12,14 +12,13 @@ import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, Da
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
-import fr.maif.otoroshi.daikoku.domain.TranslationElement.ApiTranslationElement
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
-import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient, Translator}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -41,7 +40,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                     env: Env,
                     otoroshiClient: OtoroshiClient,
                     cc: ControllerComponents,
-                    otoroshiSynchronisator: OtoroshiVerifierJob)
+                    otoroshiSynchronisator: OtoroshiVerifierJob,
+                    translator: Translator)
   extends AbstractController(cc)
     with I18nSupport {
 
@@ -744,17 +744,18 @@ class ApiController(DaikokuAction: DaikokuAction,
       action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id)
     )
 
-    val language = tenant.defaultLanguage.getOrElse("en")
-    implicit val lang: Lang = Lang(language)
-    val title = messagesApi("mail.apikey.demand.title")
+    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
     val notificationUrl = env.config.exposedPort match {
       case 80 => s"http://${tenant.domain}/notifications"
       case 443 => s"https://${tenant.domain}/notifications"
       case value => s"http://${tenant.domain}:$value/"
     }
-    val body = messagesApi("mail.apikey.demand.body", user.name, api.name, notificationUrl)
-
     for {
+      title <- translator.translate("mail.apikey.demand.title", tenant)
+      body <- translator.translate("mail.apikey.demand.body", tenant, Map(
+      "user" -> user.name,
+      "apiName" -> api.name,
+      "link" -> notificationUrl))
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       maybeApiTeam <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
       maybeAdmins <- maybeApiTeam.traverse(
@@ -1512,12 +1513,16 @@ class ApiController(DaikokuAction: DaikokuAction,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
 
-    val language = ctx.tenant.defaultLanguage.getOrElse("en")
-    implicit val lang: Lang = Lang(language)
-    val title = messagesApi("mail.api.access.title")
-    val body = messagesApi("mail.api.access.body", ctx.user.name, api.name, team.name, s"${ctx.tenant.domain}/notifications")
+    implicit val language: String = ctx.tenant.defaultLanguage.getOrElse("en")
 
     for {
+      title <- translator.translate("mail.api.access.title", ctx.tenant)
+      body <- translator.translate("mail.api.access.body", ctx.tenant, Map(
+        "user" -> ctx.user.name,
+        "apiName" -> api.name,
+        "teamName" -> team.name,
+        "link" -> s"${ctx.tenant.domain}/notifications"
+      ))
       notificationRepo <- env.dataStore.notificationRepo.forTenantF(ctx.tenant.id)
       saved <- notificationRepo.save(notification)
       maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(api.team)

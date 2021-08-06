@@ -528,13 +528,13 @@ class PostgresDataStore(configuration: Configuration, env: Env)
       }
       .recover {
         case e : Exception =>
-          AppLogger.error(e.getMessage)
+          logger.error(e.getMessage)
           FastFuture.successful(())
       }
   }
 
   def createDatabase(): Future[Any] = {
-    logger.info("create missing tables")
+    logger.info("Checking status of database ...")
     Future.sequence(TABLES.map { case (key, value) => createTable(key, value) })
   }
 
@@ -548,17 +548,18 @@ class PostgresDataStore(configuration: Configuration, env: Env)
     reactivePg
       .query("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)", Seq(getSchema, table))
       .map { r => r.asScala.toSeq.head.getBoolean("exists") }
-      .filter(f => !f)
-      .flatMap { _ =>
-        AppLogger.info(s"Create missing table : $table")
-        reactivePg.rawQuery(
-          s"CREATE TABLE $getSchema.$table (" +
-            s"_id character varying PRIMARY KEY," +
-            s"${if (allFields) "_deleted BOOLEAN," else ""}" +
-            s"content JSONB)")
-          .map { _ =>
-            AppLogger.info(s"Created : $table")
-          }
+      .flatMap {
+        case java.lang.Boolean.FALSE =>
+          AppLogger.info(s"Create missing table : $table")
+          reactivePg.rawQuery(
+            s"CREATE TABLE $getSchema.$table (" +
+              s"_id character varying PRIMARY KEY," +
+              s"${if (allFields) "_deleted BOOLEAN," else ""}" +
+              s"content JSONB)")
+            .map { _ =>
+              AppLogger.info(s"Created : $table")
+            }
+        case java.lang.Boolean.TRUE => FastFuture.successful(())
       }
   }
 

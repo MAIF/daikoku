@@ -3,31 +3,17 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand,
-  TeamAccess,
-  TeamInvitation
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{ApiService, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, OtoroshiClient, Translator}
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{
-  AbstractController,
-  AnyContent,
-  ControllerComponents,
-  Result
-}
+import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -36,7 +22,7 @@ class NotificationController(
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     env: Env,
     apiService: ApiService,
-    otoroshiClient: OtoroshiClient,
+    translator: Translator,
     cc: ControllerComponents)
     extends AbstractController(cc)
     with I18nSupport {
@@ -322,33 +308,35 @@ class NotificationController(
       teamId.value,
       ctx) { team =>
       {
-        implicit val lang: Lang = Lang(
-          notification.sender.defaultLanguage
+        implicit val lang: String = notification.sender.defaultLanguage
             .orElse(ctx.tenant.defaultLanguage)
-            .getOrElse("en"))
+            .getOrElse("en")
 
-        val message = notification.action match {
+        val message: Future[String] = notification.action match {
           case ApiAccess(api, _) =>
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(api)
-              .map {
+              .flatMap {
                 case None =>
-                  messagesApi("mail.api.access.rejection.body",
-                              messagesApi("unrecognized.api"))
-                case Some(api) =>
-                  messagesApi("mail.api.access.rejection.body", api.name)
+                  translator.translate("unrecognized.api", ctx.tenant)
+                    .flatMap { unrecognizedApi =>
+                      translator.translate("mail.api.access.rejection.body", ctx.tenant, Map("apiName" -> unrecognizedApi))
+                    }
+                case Some(api) => translator.translate("mail.api.access.rejection.body", ctx.tenant, Map("apiName" -> api.name))
               }
           case TeamAccess(team) =>
             env.dataStore.teamRepo
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(team)
-              .map {
+              .flatMap {
                 case None =>
-                  messagesApi("mail.team.access.rejection.body",
-                              messagesApi("unrecognized.team"))
+                  translator.translate("unrecognized.team", ctx.tenant)
+                    .flatMap { unrecognizedApi =>
+                      translator.translate("mail.team.access.rejection.body", ctx.tenant, Map("teamName" -> unrecognizedApi))
+                    }
                 case Some(team) =>
-                  messagesApi("mail.team.access.rejection.body", team.name)
+                  translator.translate("mail.team.access.rejection.body", ctx.tenant, Map("teamName" -> team.name))
               }
           case TeamInvitation(team, user) =>
             env.dataStore.teamRepo
@@ -356,34 +344,47 @@ class NotificationController(
               .findByIdNotDeleted(team)
               .flatMap {
                 case None =>
-                  FastFuture.successful(
-                    messagesApi("mail.user.invitation.rejection.body",
-                                messagesApi("unrecognized.user"),
-                                messagesApi("unrecognized.team")))
+                  (for {
+                    unrecognizedUser <- translator.translate("unrecognized.user", ctx.tenant)
+                    unrecognizedTeam <- translator.translate("unrecognized.team", ctx.tenant)
+                  } yield {
+                    translator.translate("mail.user.invitation.rejection.body", ctx.tenant, Map(
+                      "user" -> unrecognizedUser,
+                      "teamName" -> unrecognizedTeam
+                    ))
+                  }).flatten
                 case Some(team) =>
                   env.dataStore.userRepo
                     .findByIdNotDeleted(user)
-                    .map {
+                    .flatMap {
                       case None =>
-                        messagesApi("mail.user.invitation.rejection.body",
-                                    messagesApi("unrecognized.user"),
-                                    team.name)
+                        translator.translate("unrecognized.user", ctx.tenant)
+                          .flatMap { unrecognizedUser =>
+                            translator.translate("mail.user.invitation.rejection.body", ctx.tenant, Map(
+                              "teamName" -> team.name,
+                              "user" -> unrecognizedUser))
+                          }
+
                       case Some(user) =>
-                        messagesApi("mail.user.invitation.rejection.body",
-                                    user.name,
-                                    team.name)
+                        translator.translate("mail.user.invitation.rejection.body", ctx.tenant, Map(
+                                    "user" -> user.name,
+                                    "teamName" ->team.name))
                     }
               }
           case ApiSubscriptionDemand(apiId, _, _, _) =>
             env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(apiId)
-              .map {
+              .flatMap {
                 case None =>
-                  messagesApi("mail.api.subscription.rejection.body",
-                              messagesApi("unrecognized.api"))
+                  translator.translate("unrecognized.api", ctx.tenant)
+                    .flatMap { unrecognizedApi =>
+                      translator.translate("mail.api.subscription.rejection.body", ctx.tenant, Map(
+                        "apiName" -> unrecognizedApi
+                      ))
+                    }
                 case Some(api) =>
-                  messagesApi("mail.api.subscription.rejection.body", api.name)
+                  translator.translate("mail.api.subscription.rejection.body", ctx.tenant, Map("apiName" -> api.name))
               }
           case _ => FastFuture.successful("")
         }
@@ -393,7 +394,8 @@ class NotificationController(
           _ <- env.dataStore.notificationRepo
             .forTenant(ctx.tenant.id)
             .save(notification.copy(status = NotificationStatus.Rejected()))
-          _ <- ctx.tenant.mailer.send(messagesApi("mail.rejection.title"),
+          title <- translator.translate("mail.rejection.title", ctx.tenant)
+          _ <- ctx.tenant.mailer.send(title,
                                       Seq(notification.sender.email),
                                       mailBody)
         } yield Ok(Json.obj("done" -> true))
@@ -408,10 +410,9 @@ class NotificationController(
       import cats.data._
       import cats.implicits._
 
-      implicit val lang: Lang = Lang(
-        notification.sender.defaultLanguage
+      implicit val lang: String = notification.sender.defaultLanguage
           .orElse(ctx.tenant.defaultLanguage)
-          .getOrElse("en"))
+          .getOrElse("en")
 
       val value: EitherT[Future, AppError, String] = notification.action match {
         case TeamInvitation(team, user) if user == ctx.user.id =>
@@ -421,22 +422,32 @@ class NotificationController(
               .findByIdNotDeleted(team)
               .flatMap {
                 case None =>
-                  FastFuture.successful(
-                    messagesApi("mail.user.invitation.rejection.body",
-                                messagesApi("unrecognized.user"),
-                                messagesApi("unrecognized.team")))
+                  (for {
+                    unrecognizedUser <- translator.translate("unrecognized.user", ctx.tenant)
+                    unrecognizedTeam <- translator.translate("unrecognized.team", ctx.tenant)
+                  } yield {
+                    translator.translate("mail.user.invitation.rejection.body", ctx.tenant, Map(
+                      "teamName" -> unrecognizedTeam,
+                      "user" -> unrecognizedUser
+                    ))
+                  }).flatten
+
                 case Some(team) =>
                   env.dataStore.userRepo
                     .findByIdNotDeleted(user)
-                    .map {
+                    .flatMap {
                       case None =>
-                        messagesApi("mail.user.invitation.rejection.body",
-                                    messagesApi("unrecognized.user"),
-                                    team.name)
+                         translator.translate("unrecognized.user", ctx.tenant)
+                           .flatMap { unrecognizedUser =>
+                            translator.translate("mail.user.invitation.rejection.body", ctx.tenant, Map(
+                              "teamName" -> team.name,
+                              "user" -> unrecognizedUser
+                            ))
+                          }
                       case Some(user) =>
-                        messagesApi("mail.user.invitation.rejection.body",
-                                    user.name,
-                                    team.name)
+                        translator.translate("mail.user.invitation.rejection.body", ctx.tenant, Map(
+                          "user" -> user.name,
+                          "teamName" -> team.name))
                     }
               })
         case _ => EitherT.leftT[Future, String](ForbiddenAction)
@@ -448,7 +459,8 @@ class NotificationController(
             _ <- env.dataStore.notificationRepo
               .forTenant(ctx.tenant.id)
               .save(notification.copy(status = NotificationStatus.Rejected()))
-            _ <- ctx.tenant.mailer.send(messagesApi("mail.rejection.title"),
+            title <- translator.translate("mail.rejection.title", ctx.tenant)
+            _ <- ctx.tenant.mailer.send(title,
                                         Seq(notification.sender.email),
                                         mailBody)
           } yield Ok(Json.obj("done" -> true)))
@@ -483,7 +495,7 @@ class NotificationController(
     import cats.data._
     import cats.implicits._
 
-    implicit val lang: Lang = Lang(tenant.defaultLanguage.getOrElse("en"))
+    implicit val lang: String = tenant.defaultLanguage.getOrElse("en")
     val result: EitherT[Future, AppError, Unit] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo
                                    .forTenant(tenant.id)
@@ -510,11 +522,15 @@ class NotificationController(
           .save(api.copy(
             authorizedTeams = api.authorizedTeams ++ Set(teamRequestId)))
       )
+      title <- EitherT.liftF(translator.translate("mail.acceptation.title", tenant))
+      body <- EitherT.liftF(translator.translate("mail.api.access.acceptation.body", tenant, Map(
+        "apiName" -> api.name,
+        "user" -> sender.name)))
       _ <- EitherT.liftF(
         tenant.mailer.send(
-          messagesApi("mail.acceptation.title"),
+          title,
           administrators.map(_.email) ++ Seq(sender.email),
-          messagesApi("mail.api.access.acceptation.body", api.name, sender.name)
+          body
         ))
     } yield ()
 
@@ -524,17 +540,18 @@ class NotificationController(
   def acceptTeamAccess(tenant: Tenant,
                        team: Team,
                        sender: User): Future[Either[AppError, Unit]] = {
-    implicit val lang: Lang = Lang(
-      sender.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en"))
+    implicit val lang: String = sender.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en")
     for {
       _ <- env.dataStore.teamRepo
         .forTenant(tenant.id)
         .save(team.copy(
           users = team.users ++ Set(UserWithPermission(sender.id, TeamUser))))
+      title <- translator.translate("mail.acceptation.title", tenant)
+      body <- translator.translate("mail.team.access.acceptation.body", tenant, Map("teamName" -> team.name))
       _ <- tenant.mailer.send(
-        messagesApi("mail.acceptation.title"),
+        title,
         Seq(sender.email),
-        messagesApi("mail.team.access.acceptation.body", team.name))
+        body)
     } yield Right(())
   }
 
@@ -545,8 +562,7 @@ class NotificationController(
     import cats.data._
     import cats.implicits._
 
-    implicit val lang: Lang = Lang(
-      sender.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en"))
+    implicit val lang: String = sender.defaultLanguage.orElse(tenant.defaultLanguage).getOrElse("en")
     val r: EitherT[Future, AppError, Unit] = for {
       invitedUser <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(invitedUserId),
@@ -559,12 +575,15 @@ class NotificationController(
           .forTenant(tenant.id)
           .save(team.copy(users = team.users ++ Set(
             UserWithPermission(invitedUser.id, TeamUser)))))
-      _ <- EitherT.liftF(
-        tenant.mailer.send(messagesApi("mail.acceptation.title"),
-                           Seq(sender.email),
-                           messagesApi("mail.user.invitation.acceptation.body",
-                                       invitedUser.name,
-                                       team.name)))
+      title <- EitherT.liftF(
+        translator.translate("mail.acceptation.title", tenant)
+      )
+      body <- EitherT.liftF(
+        translator.translate("mail.user.invitation.acceptation.body", tenant, Map(
+          "user" -> invitedUser.name,
+          "teamName" -> team.name
+        )))
+      _ <- EitherT.liftF(tenant.mailer.send(title, Seq(sender.email), body))
     } yield Right(())
 
     r.value
@@ -585,7 +604,7 @@ class NotificationController(
       customReadOnly: Option[Boolean]): Future[Either[AppError, Unit]] = {
     import cats.data._
     import cats.implicits._
-    implicit val lang: Lang = Lang(tenant.defaultLanguage.getOrElse("en"))
+    implicit val lang: String = tenant.defaultLanguage.getOrElse("en")
     val r: EitherT[Future, AppError, Unit] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo
                                    .forTenant(tenant.id)
@@ -620,13 +639,15 @@ class NotificationController(
                           customMaxPerDay,
                           customMaxPerMonth,
                           customReadOnly))
+      title <- EitherT.liftF(translator.translate("mail.acceptation.title", tenant))
+      body <- EitherT.liftF(translator.translate("mail.api.subscription.acceptation.body", tenant, Map(
+        "user" -> sender.name,
+        "apiName" -> api.name)))
       _ <- EitherT.liftF(
         tenant.mailer.send(
-          messagesApi("mail.acceptation.title"),
+          title,
           administrators.map(_.email) ++ Seq(sender.email),
-          messagesApi("mail.api.subscription.acceptation.body",
-                      sender.name,
-                      api.name)
+          body
         )
       )
     } yield ()
