@@ -245,7 +245,7 @@ const ApiHomeComponent = ({
 
   const toggleStar = () => {
     Services.toggleStar(api._id).then((res) => {
-      if (res.status === 204) {
+      if (!res.error) {
         const alreadyStarred = connectedUser.starredApis.includes(api._id);
         api.stars += alreadyStarred ? -1 : 1;
         setApi(api);

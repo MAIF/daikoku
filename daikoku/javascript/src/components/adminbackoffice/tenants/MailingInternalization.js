@@ -92,18 +92,15 @@ function MailingInternalizationComponent({ currentLanguage, team }) {
             translations.find(([k, _]) => k === key)[1].find(translation => translation.key === key && translation.language === language)
         )
             .then(res => {
-                if (res.status === 200) {
-                    toastr.success(t("Translation updated", currentLanguage))
-                    res.json()
-                        .then(translation => {
-                            editTranslations(key, language, [
-                                { action: _ => translation.lastModificationAt, field: 'lastModificationAt' },
-                                { action: _ => false, field: 'edited' }
-                            ])
-                        })
-                }
-                else
+                if (res.error)
                     toastr.error(t("Failed to save translation", currentLanguage))
+                else {
+                    toastr.success(t("Translation updated", currentLanguage))
+                    editTranslations(key, language, [
+                        { action: _ => res.lastModificationAt, field: 'lastModificationAt' },
+                        { action: _ => false, field: 'edited' }
+                    ])
+                }
             })
     }
 
@@ -119,18 +116,15 @@ function MailingInternalizationComponent({ currentLanguage, team }) {
         Services.resetTranslation(
             translations.find(([k, _]) => k === key)[1].find(translation => translation.key === key && translation.language === language)
         ).then(res => {
-            if (res.status === 200) {
-                toastr.success(t("Translation reset", currentLanguage))
-                res.json()
-                    .then(translation => {
-                        editTranslations(key, language, [
-                            { action: _ => undefined, field: 'lastModificationAt' },
-                            { action: _ => translation.value, field: 'value' }
-                        ])
-                    })
-            }
-            else
+            if (res.error)
                 toastr.error(t("Failed to reset translation", currentLanguage))
+            else {
+                toastr.success(t("Translation reset", currentLanguage))
+                editTranslations(key, language, [
+                    { action: _ => undefined, field: 'lastModificationAt' },
+                    { action: _ => res.value, field: 'value' }
+                ])
+            }
         })
     }
 

@@ -51,14 +51,13 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
       setModal({ ...modal, code: '' });
     } else {
       Services.selfVerify2faCode(modal.code).then((res) => {
-        if (res.status >= 400) {
+        if (res.error) {
           setError(t('2fa.wrong_code', currentLanguage));
           setModal({ ...modal, code: '' });
-        } else
-          res.json().then((r) => {
-            toastr.success(r.message);
-            setBackupCodes(r.backupCodes);
-          });
+        } else {
+          toastr.success(res.message);
+          setBackupCodes(res.backupCodes);
+        }
       });
     }
   }
@@ -586,9 +585,8 @@ class MyProfileComponent extends Component {
               {user && (
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <img
-                    src={`${user.picture}${
-                      user.picture.startsWith('http') ? '' : `?${Date.now()}`
-                    }`}
+                    src={`${user.picture}${user.picture.startsWith('http') ? '' : `?${Date.now()}`
+                      }`}
                     style={{
                       width: 200,
                       borderRadius: '50%',

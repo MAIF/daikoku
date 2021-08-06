@@ -15,7 +15,7 @@ import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, OtoroshiVerifierJob}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
-import play.api.i18n.I18nSupport
+import play.api.i18n.{I18nSupport, Langs}
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc._
 import play.api.routing.Router

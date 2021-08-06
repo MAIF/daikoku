@@ -631,6 +631,7 @@ GET     /admin-api/issues/:id                           fr.maif.otoroshi.daikoku
 POST    /admin-api/issues                               fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.createEntity()
 GET     /admin-api/issues                               fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.findAll()
 
+
 ###
 #  summary: get apikey from integration token
 #  tags:
