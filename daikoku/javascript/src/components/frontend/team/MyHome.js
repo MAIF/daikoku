@@ -46,7 +46,7 @@ class MyHomeComponent extends Component {
 
   toggleStar = (api) => {
     Services.toggleStar(api._id).then((res) => {
-      if (res.status === 204) {
+      if (!res.error) {
         const alreadyStarred = this.props.connectedUser.starredApis.includes(api._id);
 
         this.setState({

@@ -1,12 +1,15 @@
 const HEADERS = {
-  credentials: 'include',
-  headers: {
-    Accept: 'application/json',
-    'Content-Type': 'application/json'
-  }
+  Accept: 'application/json',
+  'Content-Type': 'application/json'
 };
 
-const customFetch = (input, init = HEADERS) => fetch(input, init)
+const customFetch = (url, {
+  headers = HEADERS,
+  credentials = 'include',
+  method = "GET",
+  body,
+  ...props
+} = {}) => fetch(url, { headers, method, body, ...props })
   .then(r => r.json());
 
 export const me = () => customFetch('/api/me')
@@ -30,21 +33,18 @@ export const myAllNotifications = (page = 0, pageSize = 10) => customFetch(`/api
 export const myNotifications = (page = 0, pageSize = 10) => customFetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`)
 
 export const myUnreadNotificationsCount = () =>
-  fetch('/api/me/notifications/unread-count', {
-    ...HEADERS,
-  }).then(r => r.status === 200 ? r.json() : { count: 0 },
-    () => ({ count: 0 })
-  );
+  fetch('/api/me/notifications/unread-count')
+    .then(r => r.status === 200 ? r.json() : { count: 0 },
+      () => ({ count: 0 })
+    );
 
 export const acceptNotificationOfTeam = (NotificationId, values = {}) => customFetch(`/api/notifications/${NotificationId}/accept`, {
-  ...HEADERS,
   method: 'PUT',
   body: JSON.stringify(values)
 })
 
 export const rejectNotificationOfTeam = notificationId => customFetch(`/api/notifications/${notificationId}/reject`, {
-  method: 'PUT',
-  ...HEADERS,
+  method: 'PUT'
 })
 
 export const subscribedApis = team => customFetch(`/api/teams/${team}/subscribed-apis`)
@@ -53,8 +53,7 @@ export const getDocDetails = (api, version) => customFetch(`/api/apis/${api}/doc
 
 export const reorderDoc = (team, api) => customFetch(`/api/teams/${team}/apis/${api}/pages/_reorder`, {
   method: 'POST',
-  ...HEADERS,
-  body: '{}',
+  body: '{}'
 })
 
 export const getTeamSubscriptions = (api, team, version) =>
@@ -65,14 +64,12 @@ export const getMySubscriptions = (apiId, version) =>
 
 export const askForApiKey = (api, teams, plan) => customFetch(`/api/apis/${api}/subscriptions`, {
   method: 'POST',
-  ...HEADERS,
   body: JSON.stringify({ plan, teams }),
 })
 
 export const initApiKey = (api, team, plan, apikey) =>
   customFetch(`/api/apis/${api}/subscriptions/_init`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ plan, team, apikey }),
   })
 
@@ -100,38 +97,32 @@ export const subscriptionsInit = subscriptions =>
 
 export const archiveApiKey = (teamId, subscriptionId, enable) =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_archive?enabled=${enable}`, {
-    method: 'PUT',
-    ...HEADERS,
+    method: 'PUT'
   })
 
 export const makeUniqueApiKey = (teamId, subscriptionId) =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_makeUnique`, {
-    method: 'POST',
-    ...HEADERS,
+    method: 'POST'
   })
 
 export const toggleApiKeyRotation = (teamId, subscriptionId, rotationEvery, gracePeriod) =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ rotationEvery, gracePeriod }),
   })
 
 export const regenerateApiKeySecret = (teamId, subscriptionId) =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
     method: 'POST',
-    ...HEADERS,
   })
 
 export const cleanArchivedSubscriptions = teamId =>
   customFetch(`/api/teams/${teamId}/subscriptions/_clean`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const member = (teamId, userId) =>
   customFetch(`/api/teams/${teamId}/members/${userId}`, {
-    ...HEADERS,
   })
 
 export const members = teamId => customFetch(`/api/teams/${teamId}/members`)
@@ -150,21 +141,18 @@ export const isMaintenanceMode = () => customFetch('/api/state/lock')
 export const createTeam = team =>
   customFetch('/api/teams', {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(team),
   })
 
 export const updateTeam = team =>
   customFetch(`/api/teams/${team._id}`, {
     method: 'PUT',
-    ...HEADERS,
     body: JSON.stringify(team),
   })
 
 export const deleteTeam = teamId =>
   customFetch(`/api/teams/${teamId}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const pendingMembers = teamId => customFetch(`/api/teams/${teamId}/pending-members`)
@@ -179,20 +167,17 @@ export const oneOtoroshi = (tenantId, id) => customFetch(`/api/tenants/${tenantI
 export const deleteOtoroshiSettings = (tenantId, id) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${id}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const saveOtoroshiSettings = (tenantId, oto) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${oto._id}`, {
     method: 'PUT',
-    ...HEADERS,
     body: JSON.stringify(oto),
   })
 
 export const createOtoroshiSettings = (tenantId, oto) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(oto),
   })
 
@@ -208,13 +193,11 @@ export const getOtoroshiApiKeys = (tenantId, otoId) =>
 export const deleteTeamApi = (teamId, id) =>
   customFetch(`/api/teams/${teamId}/apis/${id}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const saveTeamApiWithId = (teamId, api, version, apiId) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}${version ? `?version=${version}` : ''}`, {
     method: 'PUT',
-    ...HEADERS,
     body: JSON.stringify(api),
   })
 
@@ -223,60 +206,51 @@ export const saveTeamApi = (teamId, api, version) => saveTeamApiWithId(teamId, a
 export const createTeamApi = (teamId, api) =>
   customFetch(`/api/teams/${teamId}/apis`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(api),
   })
 
 export const removeMemberFromTeam = (teamId, userId) =>
   customFetch(`/api/teams/${teamId}/members/${userId}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const addMembersToTeam = (teamId, members) =>
   customFetch(`/api/teams/${teamId}/members`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ members }),
   })
 
 export const addUncheckedMembersToTeam = (teamId, email) =>
   customFetch(`/api/teams/${teamId}/unchecked-members`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ email }),
   })
 
 export const removeInvitation = (teamId, userId) =>
   customFetch(`/api/teams/${teamId}/members/${userId}/invitations`, {
-    ...HEADERS,
     method: 'DELETE',
   });
 
 export const updateTeamMemberPermission = (teamId, members, permission) =>
   customFetch(`/api/teams/${teamId}/members/_permission`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ members, permission }),
   })
 
 export const createDocPage = (teamId, apiId, page) =>
   customFetch(`/api/teams/${teamId}/pages`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(page),
   })
 
 export const deleteDocPage = (teamId, apiId, pageId) =>
   customFetch(`/api/teams/${teamId}/pages/${pageId}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const saveDocPage = (teamId, apiId, page) =>
   customFetch(`/api/teams/${teamId}/pages/${page._id}`, {
     method: 'PUT',
-    ...HEADERS,
     body: JSON.stringify(page),
   })
 
@@ -286,33 +260,28 @@ export const oneTenant = tenant => customFetch(`/api/tenants/${tenant}`)
 export const createTenant = tenant =>
   customFetch('/api/tenants', {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(tenant),
   })
 
 export const saveTenant = tenant =>
   customFetch(`/api/tenants/${tenant._id}`, {
     method: 'PUT',
-    ...HEADERS,
     body: JSON.stringify(tenant),
   })
 
 export const deleteTenant = id =>
   customFetch(`/api/tenants/${id}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const askToJoinTeam = team =>
   customFetch(`/api/teams/${team}/join`, {
     method: 'POST',
-    ...HEADERS,
   })
 
 export const askForApiAccess = (teams, api) =>
   customFetch(`/api/apis/${api}/access`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ teams }),
   })
 
@@ -325,52 +294,40 @@ export const findUserById = id => customFetch(`/api/admin/users/${id}`)
 export const deleteUserById = id =>
   customFetch(`/api/admin/users/${id}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const deleteSelfUserById = () =>
   customFetch('/api/me', {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const setAdminStatus = (user, isDaikokuAdmin) =>
   customFetch(`/api/admin/users/${user._id}/_admin`, {
     method: 'PUT',
-    ...HEADERS,
     body: JSON.stringify({ isDaikokuAdmin }),
   })
 
 export const updateUserById = user =>
   customFetch(`/api/admin/users/${user._id}`, {
     method: 'PUT',
-    ...HEADERS,
     body: JSON.stringify(user),
   })
 
 export const createUser = user =>
   customFetch('/api/admin/users', {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(user),
   })
 
 export const simpleTenantList = () =>
-  customFetch('/api/tenants/simplified', {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch('/api/tenants/simplified')
 
 export const redirectToTenant = id =>
-  customFetch(`/api/tenants/${id}/_redirect`, {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch(`/api/tenants/${id}/_redirect`)
 
 export const getTenantNames = ids =>
   customFetch('/api/tenants/_names', {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(ids),
   })
 
@@ -384,32 +341,25 @@ export const fetchNewIssue = () => customFetch('/api/entities/issue');
 export const checkIfApiNameIsUnique = (name, id) =>
   customFetch('/api/apis/_names', {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ name, id }),
   })
 
 export const getSessions = () =>
-  customFetch('/api/admin/sessions', {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch('/api/admin/sessions')
 
 export const deleteSession = id =>
   customFetch(`/api/admin/sessions/${id}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const deleteSessions = () =>
   customFetch('/api/admin/sessions', {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const search = search =>
   customFetch('/api/_search', {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ search }),
   })
 
@@ -417,7 +367,6 @@ export const subscriptionConsumption = (subscriptionId, teamId, from, to) =>
   customFetch(
     `/api/teams/${teamId}/subscription/${subscriptionId}/consumption?from=${from}&to=${to}`,
     {
-      method: 'GET',
       credentials: 'include',
       headers: {
         Accept: 'application/json',
@@ -429,32 +378,27 @@ export const subscriptionConsumption = (subscriptionId, teamId, from, to) =>
 export const syncSubscriptionConsumption = (subscriptionId, teamId) =>
   customFetch(`/api/teams/${teamId}/subscription/${subscriptionId}/consumption/_sync`, {
     method: 'POST',
-    ...HEADERS,
   })
 
 export const syncApiConsumption = (apiId, teamId) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption/_sync`, {
     method: 'POST',
-    ...HEADERS,
   })
 
 export const syncTeamBilling = teamId =>
   customFetch(`/api/teams/${teamId}/billing/_sync`, {
     method: 'POST',
-    ...HEADERS,
   })
 
 export const syncTeamIncome = teamId =>
   customFetch(`/api/teams/${teamId}/income/_sync`, {
     method: 'POST',
-    ...HEADERS,
   })
 
 export const apiConsumption = (apiId, planId, teamId, from, to) =>
   customFetch(
     `/api/teams/${teamId}/apis/${apiId}/plan/${planId}/consumption?from=${from}&to=${to}`,
     {
-      method: 'GET',
       credentials: 'include',
       headers: {
         Accept: 'application/json',
@@ -464,16 +408,10 @@ export const apiConsumption = (apiId, planId, teamId, from, to) =>
   )
 
 export const apiGlobalConsumption = (apiId, teamId, from, to) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`, {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`)
 
 export const apiSubscriptions = (apiId, teamId, version) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/subscriptions?version=${version}`, {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/subscriptions?version=${version}`)
 
 export const archiveSubscriptionByOwner = (ownerId, subscriptionId, enabled) =>
   customFetch(
@@ -484,42 +422,26 @@ export const archiveSubscriptionByOwner = (ownerId, subscriptionId, enabled) =>
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-      },
+      }
     }
   )
 
 export const getSubscriptionInformations = (subscription, teamId) =>
-  customFetch(`/api/teams/${teamId}/subscription/${subscription}/informations`, {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch(`/api/teams/${teamId}/subscription/${subscription}/informations`)
 
 export const getTeamConsumptions = (teamId, from, to) =>
-  customFetch(`/api/teams/${teamId}/consumptions?from=${from}&to=${to}`, {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch(`/api/teams/${teamId}/consumptions?from=${from}&to=${to}`)
 
 export const getTeamBillings = (teamId, from, to) =>
-  customFetch(`/api/teams/${teamId}/billings?from=${from}&to=${to}`, {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch(`/api/teams/${teamId}/billings?from=${from}&to=${to}`)
 
 export const getTeamIncome = (teamId, from, to) =>
-  customFetch(`/api/teams/${teamId}/income?from=${from}&to=${to}`, {
-    method: 'GET',
-    ...HEADERS,
-  })
-export const getApiCategories = () =>
-  customFetch('/api/categories', {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch(`/api/teams/${teamId}/income?from=${from}&to=${to}`)
+
+export const getApiCategories = () => customFetch('/api/categories')
 
 export const getAsset = (teamId, assetId) =>
   customFetch(`/api/teams/${teamId}/assets/${assetId}`, {
-    method: 'GET',
     credentials: 'include',
     headers: {},
   })
@@ -527,14 +449,9 @@ export const getAsset = (teamId, assetId) =>
 export const deleteAsset = (teamId, assetId) =>
   customFetch(`/api/teams/${teamId}/assets/${assetId}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
-export const listAssets = teamId =>
-  customFetch(`/api/teams/${teamId}/assets`, {
-    method: 'GET',
-    ...HEADERS,
-  })
+export const listAssets = teamId => customFetch(`/api/teams/${teamId}/assets`)
 
 export const storeAsset = (teamId, filename, title, desc, contentType, formData) =>
   customFetch(`/api/teams/${teamId}/assets?filename=${filename}&title=${title}&desc=${desc}`, {
@@ -561,7 +478,6 @@ export const updateAsset = (teamId, assetId, contentType, formData) =>
 
 export const getTenantAsset = assetId =>
   customFetch(`/tenant-assets/${assetId}`, {
-    method: 'GET',
     credentials: 'include',
     headers: {},
   })
@@ -569,7 +485,6 @@ export const getTenantAsset = assetId =>
 export const deleteTenantAsset = assetId =>
   customFetch(`/tenant-assets/${assetId}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const updateTenantAsset = (assetId, contentType, formData) =>
@@ -586,7 +501,6 @@ export const updateTenantAsset = (assetId, contentType, formData) =>
 export const listTenantAssets = (teamId) => {
   if (teamId) {
     return customFetch(`/tenant-assets?teamId=${teamId}`, {
-      method: 'GET',
       credentials: 'include',
       headers: {
         Accept: 'application/json',
@@ -595,7 +509,6 @@ export const listTenantAssets = (teamId) => {
     }).then((r) => r.json());
   } else {
     return customFetch('/tenant-assets', {
-      method: 'GET',
       credentials: 'include',
       headers: {
         Accept: 'application/json',
@@ -641,14 +554,12 @@ export const uploadExportFile = file =>
 export const updateSubscriptionCustomName = (team, subscription, customName) =>
   customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}/name`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ customName }),
   })
 
 export const updateSubscription = (team, subscription) =>
   customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}`, {
     method: 'PUT',
-    ...HEADERS,
     body: JSON.stringify(subscription),
   })
 
@@ -666,28 +577,24 @@ export const storeThumbnail = (id, formData) =>
 export const createTestingApiKey = (teamId, body) =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(body),
   })
 
 export const updateTestingApiKey = (teamId, body) =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'PUT',
-    ...HEADERS,
     body: JSON.stringify(body),
   })
 
 export const deleteTestingApiKey = (teamId, body) =>
   customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'DELETE',
-    ...HEADERS,
     body: JSON.stringify(body),
   })
 
 export const testingCall = (teamId, apiId, body) =>
   customFetch(`/api/teams/${teamId}/testing/${apiId}/call`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(body),
   })
 
@@ -696,8 +603,7 @@ export const getTranslations = domain =>
 
 
 export const saveTranslation = translation =>
-  fetch(`/api/translations`, {
-    ...HEADERS,
+  customFetch(`/api/translations`, {
     method: 'PUT',
     body: JSON.stringify({
       translation
@@ -705,7 +611,7 @@ export const saveTranslation = translation =>
   })
 
 export const resetTranslation = translation =>
-  fetch(`/api/translations/${translation._id}/_reset`, {
+  customFetch(`/api/translations/${translation._id}/_reset`, {
     method: 'POST',
     ...HEADERS
   })
@@ -737,30 +643,24 @@ export const addableAdminsForTenant = tenantId =>
 export const addAdminsToTenant = (tenantId, adminIds) =>
   customFetch(`/api/tenants/${tenantId}/admins`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(adminIds),
   })
 
 export const removeAdminFromTenant = (tenantId, adminId) =>
   customFetch(`/api/tenants/${tenantId}/admins/${adminId}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const myMessages = () => customFetch('/api/me/messages')
 
 export const myChatMessages = (chat, date) =>
-  customFetch(`/api/me/messages?chat=${chat}${date ? `&date=${date}` : ''}`, {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch(`/api/me/messages?chat=${chat}${date ? `&date=${date}` : ''}`)
 
 export const myAdminMessages = () => customFetch('/api/me/messages/admin')
 
 export const sendMessage = (message, participants, chat) =>
   customFetch('/api/messages/_send', {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({
       message,
       participants,
@@ -773,23 +673,18 @@ export const messageSSE = () => customFetch('/api/messages/_sse')
 export const setMessagesRead = chatId =>
   customFetch(`/api/messages/${chatId}/_read`, {
     method: 'PUT',
-    ...HEADERS,
   })
 
 export const closeMessageChat = chatId =>
   customFetch(`/api/messages/${chatId}`, {
     method: 'DELETE',
-    ...HEADERS,
   })
 
 export const lastDateChat = (chatId, date) =>
-  customFetch(`/api/messages/${chatId}/last-date?date=${date}`, {
-    method: 'GET',
-    ...HEADERS,
-  })
+  customFetch(`/api/messages/${chatId}/last-date?date=${date}`)
 
 export const migrateMongoToPostgres = () =>
-  fetch('/api/state/migrate', {
+  customFetch('/api/state/migrate', {
     method: 'POST',
     credentials: 'include',
   });
@@ -809,7 +704,6 @@ export const disableMaintenanceMode = () =>
 export const checkConnection = (config, user) =>
   customFetch('/api/auth/ldap/_check', {
     method: 'POST',
-    ...HEADERS,
     body: user
       ? JSON.stringify({
         config,
@@ -833,9 +727,8 @@ export const login = (username, password, action) => {
 }
 
 export const toggleStar = apiId =>
-  fetch(`/api/apis/${apiId}/stars`, {
+  customFetch(`/api/apis/${apiId}/stars`, {
     method: 'PUT',
-    ...HEADERS,
   });
 
 export const searchLdapMember = (teamId, email) => customFetch(`/api/teams/${teamId}/ldap/users/${email}`)
@@ -843,7 +736,6 @@ export const searchLdapMember = (teamId, email) => customFetch(`/api/teams/${tea
 export const findUserByEmail = (teamId, email) =>
   customFetch(`/api/teams/${teamId}/users/_search`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({
       attributes: {
         email,
@@ -854,7 +746,6 @@ export const findUserByEmail = (teamId, email) =>
 export const createUserFromLDAP = (teamId, email) =>
   customFetch(`/api/teams/${teamId}/ldap/users`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({
       email,
       teamId,
@@ -865,21 +756,18 @@ export const getAPIPosts = (apiId, offset = 0, limit = 1, version) =>
   customFetch(`/api/apis/${apiId}/posts?offset=${offset}&limit=${limit}${version ? `&version=${version}` : ''}`)
 
 export const publishNewPost = (apiId, teamId, post) =>
-  fetch(`/api/teams/${teamId}/apis/${apiId}/posts`, {
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/posts`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(post),
   });
 
 export const removePost = (apiId, teamId, postId) =>
-  fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
-    ...HEADERS,
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
     method: 'DELETE'
   });
 
 export const savePost = (apiId, teamId, postId, content) =>
-  fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
-    ...HEADERS,
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
     method: 'PUT',
     body: JSON.stringify(content),
   });
@@ -891,15 +779,13 @@ export const getAPIIssues = apiId => customFetch(`/api/apis/${apiId}/issues`)
 export const getAPIIssue = (apiId, issueId) => customFetch(`/api/apis/${apiId}/issues/${issueId}`)
 
 export const createNewIssue = (apiId, teamId, issue) =>
-  fetch(`/api/teams/${teamId}/apis/${apiId}/issues`, {
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/issues`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify(issue),
   });
 
 export const updateIssue = (apiId, teamId, issueId, issue) =>
-  fetch(`/api/teams/${teamId}/apis/${apiId}/issues/${issueId}`, {
-    ...HEADERS,
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/issues/${issueId}`, {
     method: 'PUT',
     body: JSON.stringify({
       ...issue,
@@ -914,53 +800,37 @@ export const updateIssue = (apiId, teamId, issueId, issue) =>
 export const getQRCode = () => customFetch('/api/me/_2fa')
 
 export const verify2faCode = (token, code) =>
-  fetch(`/api/2fa?token=${token}&code=${code}`, {
-    method: 'GET',
-    ...HEADERS,
-  });
+  fetch(`/api/2fa?token=${token}&code=${code}`);
 
 export const disable2FA = () =>
   customFetch('/api/me/_2fa', {
     method: 'DELETE',
-    ...HEADERS,
   });
 
 export const reset2faAccess = backupCodes =>
-  fetch('/api/2fa', {
-    ...HEADERS,
+  customFetch('/api/2fa', {
     method: 'PUT',
     body: JSON.stringify({ backupCodes })
   });
 
-export const selfVerify2faCode = code =>
-  fetch(`/api/me/_2fa/enable?code=${code}`, {
-    method: 'GET',
-    ...HEADERS,
-  });
+export const selfVerify2faCode = code => customFetch(`/api/me/_2fa/enable?code=${code}`);
 
 export const validateInvitationToken = token =>
   customFetch(`/api/me/invitation/_check`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ token }),
   })
 
-export const removeTeamInvitation = token =>
-  customFetch(`/api/me/invitation`, {
-    ...HEADERS,
-    method: 'DELETE',
-  });
+export const removeTeamInvitation = () => customFetch(`/api/me/invitation`, { method: 'DELETE' });
 
 export const createNewApiVersion = (apiId, teamId, version) =>
-  fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({ version })
   })
 
 export const extendApiKey = (apiId, apiKeyId, teams, plan) =>
   customFetch(`/api/apis/${apiId}/subscriptions/${apiKeyId}`, {
-    ...HEADERS,
     method: 'PUT',
     body: JSON.stringify({ plan, teams }),
   })
@@ -983,7 +853,6 @@ export const getAllPlanOfApi = (teamId, apiId, version) =>
 export const cloneApiPlan = (teamId, apiId, fromApi, plan) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/plans`, {
     method: 'POST',
-    ...HEADERS,
     body: JSON.stringify({
       plan, api: fromApi
     })
@@ -993,7 +862,6 @@ export const getRootApi = apiId => customFetch(`/api/apis/${apiId}/_root`)
 
 export const importApiPages = (teamId, apiId, pages, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`, {
-    ...HEADERS,
     method: 'PUT',
     body: JSON.stringify({
       pages

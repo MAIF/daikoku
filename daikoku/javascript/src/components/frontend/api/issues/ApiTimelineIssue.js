@@ -79,14 +79,16 @@ export function ApiTimelineIssue({
       Services.updateIssue(api._id, team._id, id, {
         ...issue,
         tags: tags.map((tag) => tag.value),
-      }).then((res) => {
-        if (res.status > 300) res.json().then((r) => toastr.error(r.error));
-        else
-          setIssue({
-            ...issue,
-            tags: tags.length > 0 ? tags : issue.tags,
-          });
-      });
+      })
+        .then(res => {
+          if (res.error)
+            toastr.error(res.error);
+          else
+            setIssue({
+              ...issue,
+              tags: tags.length > 0 ? tags : issue.tags,
+            });
+        });
     }
   }
 
@@ -113,8 +115,10 @@ export function ApiTimelineIssue({
           _deleted: true,
           tags: issue.tags.map((tag) => tag.value),
         }).then((res) => {
-          if (res.status < 400) history.push(`${basePath}/issues`);
-          else toastr.error(t('issues.on_error', currentLanguage));
+          if (res.error)
+            toastr.error(t('issues.on_error', currentLanguage));
+          else
+            history.push(`${basePath}/issues`);
         });
     });
   }
@@ -137,10 +141,13 @@ export function ApiTimelineIssue({
           comments: issue.comments.filter((_, j) => i !== j),
         };
         setIssue(updatedIssue);
-        Services.updateIssue(api._humanReadableId, team._id, id, updatedIssue).then((res) => {
-          if (res.status > 300) res.json().then((r) => toastr.error(r.error));
-          else toastr.success(t('Api saved', currentLanguage));
-        });
+        Services.updateIssue(api._humanReadableId, team._id, id, updatedIssue)
+          .then(res => {
+            if (res.error)
+              toastr.error(res.error);
+            else
+              toastr.success(t('Api saved', currentLanguage));
+          });
       }
     });
   }
@@ -187,12 +194,12 @@ export function ApiTimelineIssue({
       comments:
         newComment.length > 0
           ? [
-              ...issue.comments,
-              {
-                by: connectedUser,
-                content: newComment,
-              },
-            ]
+            ...issue.comments,
+            {
+              by: connectedUser,
+              content: newComment,
+            },
+          ]
           : issue.comments,
     };
     Services.updateIssue(api._humanReadableId, team._id, id, {

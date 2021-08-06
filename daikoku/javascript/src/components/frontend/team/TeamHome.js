@@ -45,7 +45,7 @@ class TeamHomeComponent extends Component {
 
   toggleStar = (api) => {
     Services.toggleStar(api._id).then((res) => {
-      if (res.status === 204) {
+      if (!res.error) {
         const alreadyStarred = this.props.connectedUser.starredApis.includes(api._id);
         this.setState({
           apis: this.state.apis.map((a) => {
@@ -71,10 +71,10 @@ class TeamHomeComponent extends Component {
       const route = version => `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}/${version}`
 
       // if (api.isDefault)
-        this.props.history.push(route(api.currentVersion));
+      this.props.history.push(route(api.currentVersion));
       // else 
       //     Services.getDefaultApiVersion(api._humanReadableId)
-            // .then(res => this.props.history.push(route(res.defaultVersion)))
+      // .then(res => this.props.history.push(route(res.defaultVersion)))
     }
   };
 

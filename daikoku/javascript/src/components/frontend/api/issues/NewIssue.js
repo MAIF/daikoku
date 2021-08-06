@@ -40,12 +40,13 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
         ...issue,
         apiVersion: issue.apiVersion.value,
         tags: issue.tags.map((tag) => tag.value.id),
-      }).then((res) => {
-        if (res.status === 201) {
+      }).then(res => {
+        if (res.error)
+          toastr.error(res.error);
+        else {
           toastr.success('Issue created');
           props.history.push(`${props.basePath}/issues`);
-        } else
-          res.json().then((r) => toastr.error(r.error));
+        }
       });
     }
   }

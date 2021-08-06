@@ -129,8 +129,10 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
     const post = state.posts.find((_, j) => j === i);
     Services.savePost(api._id, team._id, post._id, post)
       .then(res => {
-        if (res.status === 200) toastr.success(t('team_api_post.saved', currentLanguage));
-        else toastr.error(t('team_api_post.failed', currentLanguage));
+        if (res.error === 200)
+          toastr.error(t('team_api_post.failed', currentLanguage))
+        else
+          toastr.success(t('team_api_post.saved', currentLanguage))
       });
   };
 
@@ -139,11 +141,12 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
       ...selected,
       _id: '',
     }).then((res) => {
-      if (res.status === 200) {
+      if (res.error)
+        toastr.error(t('team_api_post.failed', currentLanguage));
+      else {
         toastr.success(t('team_api_post.saved', currentLanguage));
         history.push(`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`)
-      } else
-        toastr.error(t('team_api_post.failed', currentLanguage));
+      }
     });
   };
 
@@ -152,15 +155,15 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
       .then((ok) => {
         if (ok)
           Services.removePost(api._id, team._id, postId).then((res) => {
-            if (res.status === 200) {
+            if (res.error)
+              toastr.error(t('team_api_post.failed', currentLanguage));
+            else {
               toastr.success(t('team_api_post.saved', currentLanguage));
               setState({
                 ...state,
                 posts: state.posts.filter(p => p._id !== postId)
               })
             }
-            else
-              toastr.error(t('team_api_post.failed', currentLanguage));
           });
       });
   };

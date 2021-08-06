@@ -48,8 +48,8 @@ export class ImportExportComponent extends Component {
           this.setState({
             migration: {
               processing: false,
-              error: res.status !== 200 ? (await res.json()).error : '',
-              onSuccessMessage: res.status === 200 ? (await res.json()).message : '',
+              error: res.error || '',
+              onSuccessMessage: res.error ? '' : res.message
             },
           });
         });
