@@ -129,7 +129,7 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
     const post = state.posts.find((_, j) => j === i);
     Services.savePost(api._id, team._id, post._id, post)
       .then(res => {
-        if (res.error === 200)
+        if (res.error)
           toastr.error(t('team_api_post.failed', currentLanguage))
         else
           toastr.success(t('team_api_post.saved', currentLanguage))
