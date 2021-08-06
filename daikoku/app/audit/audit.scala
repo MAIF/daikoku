@@ -309,23 +309,23 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
         }
       }
       .mapAsync(10) { event =>
+        implicit val language: String = tenant.defaultLanguage.getOrElse("en")
         val mailSend: OptionT[Future, Future[Unit]] = for {
           subscription <- OptionT(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(event.asInstanceOf[ApiKeyRotationEvent].subscription))
           api <- OptionT(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api))
           team <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team))
           admins <- OptionT.liftF(env.dataStore.userRepo.find(
             Json.obj("_id" -> Json.obj("$in" -> JsArray(team.users.filter(_.teamPermission == TeamPermission.Administrator).map(_.userId.asJson).toSeq)))))
-          language <- OptionT.liftF(FastFuture.successful(tenant.defaultLanguage.getOrElse("en")))
           plan <- OptionT.liftF(api.possibleUsagePlans
             .find(p => p.id == subscription.plan) match {
               case Some(p) => FastFuture.successful(p.customName.getOrElse(p.typeName))
-              case None => translator.translate("unknown.plan", language)(messagesApi, env, tenant)
+              case None => translator.translate("unknown.plan", tenant)
             })
-          title <- OptionT.liftF(translator.translate("mail.apikey.rotation.title", language)(messagesApi, env, tenant))
-          body <- OptionT.liftF(translator.translate("mail.apikey.rotation.body", language, Map(
+          title <- OptionT.liftF(translator.translate("mail.apikey.rotation.title", tenant))
+          body <- OptionT.liftF(translator.translate("mail.apikey.rotation.body", tenant, Map(
           "apiName" -> api.name,
           "planName" -> plan
-          ))(messagesApi, env, tenant))
+          )))
         } yield {
           tenant.mailer.send(title, admins.map(_.email), body)
         }

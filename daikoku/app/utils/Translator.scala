@@ -8,7 +8,7 @@ import play.api.libs.json.Json
 import scala.concurrent.Future
 
 class Translator {
-  def translate(key: String, language: String, args: Map[String, String] = Map.empty)(implicit messagesApi: MessagesApi, env: Env, tenant: Tenant): Future[String] = {
+  def translate(key: String, tenant: Tenant, args: Map[String, String] = Map.empty)(implicit messagesApi: MessagesApi, language: String, env: Env): Future[String] = {
     implicit val ec = env.defaultExecutionContext
     implicit val mat = env.defaultMaterializer
 

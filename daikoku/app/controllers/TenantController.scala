@@ -423,7 +423,7 @@ class TenantController(DaikokuAction: DaikokuAction,
         val tenantLanguage = ctx.tenant.defaultLanguage
           .getOrElse("en")
 
-        val currentLanguage = ctx.request.headers.toSimpleMap
+        implicit val currentLanguage: String = ctx.request.headers.toSimpleMap
           .find(test => test._1 == "X-contact-language")
           .map(h => h._2)
           .orElse(ctx.tenant.defaultLanguage)
@@ -445,14 +445,14 @@ class TenantController(DaikokuAction: DaikokuAction,
 
         def sendMail: String => Future[Result] = (contact: String) => {
           for {
-            titleToSender <- translator.translate("mail.contact.title", currentLanguage)(messagesApi, env, ctx.tenant)
-            titleToContact <- translator.translate("mail.contact.title", currentLanguage)(messagesApi, env, ctx.tenant)
+            titleToSender <- translator.translate("mail.contact.title", ctx.tenant)
+            titleToContact <- translator.translate("mail.contact.title", ctx.tenant)
             mailToSender <- translator.translate("mail.contact.sender",
-                currentLanguage,
-                Map("user" -> name, "email" -> email, "subject" -> subject, "body" -> sanitizeBody))(messagesApi, env, ctx.tenant)
+              ctx.tenant,
+                Map("user" -> name, "email" -> email, "subject" -> subject, "body" -> sanitizeBody))
             mailToContact <- translator.translate("mail.contact.contact",
-                tenantLanguage,
-              Map("user" -> name, "email" -> email, "subject" -> subject, "body" -> sanitizeBody))(messagesApi, env, ctx.tenant)
+              ctx.tenant,
+              Map("user" -> name, "email" -> email, "subject" -> subject, "body" -> sanitizeBody))
             _ <- ctx.tenant.mailer.send(titleToSender, Seq(email), mailToSender)
             _ <- ctx.tenant.mailer.send(titleToContact,
                                         Seq(contact),

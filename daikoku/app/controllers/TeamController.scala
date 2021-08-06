@@ -263,7 +263,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   def askForJoinTeam(teamId: String) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has asked to join team @{team.name} - @{team.id}"))(ctx) {
-      val lang = ctx.tenant.defaultLanguage.getOrElse("en")
+      implicit val lang: String = ctx.tenant.defaultLanguage.getOrElse("en")
       env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId).flatMap {
         case Some(team) if team.`type` == TeamType.Personal =>
           FastFuture.successful(Forbidden(
@@ -289,12 +289,12 @@ class TeamController(DaikokuAction: DaikokuAction,
                 Json.obj("_deleted" -> false,
                          "_id" -> Json.obj("$in" -> JsArray(
                            team.admins().map(_.asJson).toSeq))))
-            title <- translator.translate("mail.team.access.title", lang)(messagesApi, env, ctx.tenant)
-            body <- translator.translate("mail.team.access.body", lang, Map(
+            title <- translator.translate("mail.team.access.title", ctx.tenant)
+            body <- translator.translate("mail.team.access.body", ctx.tenant, Map(
               "user" -> ctx.user.name,
               "teamName" -> team.name,
               "link" -> s"${ctx.tenant.domain}/notifications"
-            ))(messagesApi, env, ctx.tenant)
+            ))
             _ <- ctx.tenant.mailer.send(
               title,
               admins.map(admin => admin.email),
@@ -423,16 +423,16 @@ class TeamController(DaikokuAction: DaikokuAction,
         .forTenant(ctx.tenant)
         .save(notification)
       _ <- maybeUser.traverse(user => {
-        val lang = user.defaultLanguage
+        implicit val lang: String = user.defaultLanguage
             .orElse(ctx.tenant.defaultLanguage)
             .getOrElse("en")
 
         (for {
-          title <- translator.translate("mail.team.invitation.title", lang)(messagesApi, env, ctx.tenant)
-          body <- translator.translate("mail.team.invitation.body", lang, Map(
+          title <- translator.translate("mail.team.invitation.title", ctx.tenant)
+          body <- translator.translate("mail.team.invitation.body", ctx.tenant, Map(
             "user" -> ctx.user.name,
             "teamName" -> team.name,
-            "link" -> s"${ctx.tenant.domain}/notifications"))(messagesApi, env, ctx.tenant)
+            "link" -> s"${ctx.tenant.domain}/notifications"))
         } yield {
           ctx.tenant.mailer.send(title, Seq(user.email), body)
         }).flatten
