@@ -1,282 +1,83 @@
-export function me() {
-  return fetch('/api/me', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+const HEADERS = {
+  credentials: 'include',
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json'
+  }
+};
 
-export function myOwnTeam() {
-  return fetch('/api/me/teams/own', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+const customFetch = (input, init = HEADERS) => fetch(input, init)
+  .then(r => r.json());
 
-//Restricted api with all of property
-export function oneOfMyTeam(id) {
-  return fetch(`/api/me/teams/${id}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const me = () => customFetch('/api/me')
+export const myOwnTeam = () => customFetch('/api/me/teams/own')
+export const oneOfMyTeam = id => customFetch(`/api/me/teams/${id}`)
 
-export function getVisibleApi(id, version) {
-  return fetch(`/api/me/visible-apis/${id}${version ? `?version=${version}` : ''}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/${id}${version ? `?version=${version}` : ''}`)
+export const getTeamVisibleApi = (teamId, apiId, version) => customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}?version=${version}`)
+export const myTeams = () => customFetch('/api/me/teams')
+export const allJoinableTeams = () => customFetch('/api/teams/joinable')
+export const myVisibleApis = () => customFetch('/api/me/visible-apis')
+export const myVisibleApisOfTeam = currentTeam => customFetch(`/api/teams/${currentTeam}/visible-apis`)
 
-export function getTeamVisibleApi(teamId, apiId, version) {
-  return fetch(`/api/me/teams/${teamId}/visible-apis/${apiId}?version=${version}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function myTeams() {
-  return fetch('/api/me/teams', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function allJoinableTeams() {
-  return fetch('/api/teams/joinable', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function myVisibleApis() {
-  return fetch('/api/me/visible-apis', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function myVisibleApisOfTeam(currentTeam) {
-  return fetch(`/api/teams/${currentTeam}/visible-apis`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function teamAllNotifications(teamId, page = 0) {
-  return fetch(`/api/teams/${teamId}/notifications/all?page=${page}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function teamNotifications(teamId) {
-  return fetch(`/api/teams/${teamId}/notifications`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function teamUnreadNotificationsCount(teamId) {
-  return fetch(`/api/teams/${teamId}/notifications/unread-count`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then(
-    (r) => {
-      if (r.status === 200) {
-        return r.json();
-      } else {
-        return { count: 0 };
-      }
-    },
+export const teamAllNotifications = (teamId, page = 0) => customFetch(`/api/teams/${teamId}/notifications/all?page=${page}`)
+export const teamNotifications = teamId => customFetch(`/api/teams/${teamId}/notifications`)
+export const teamUnreadNotificationsCount = teamId => fetch(`/api/teams/${teamId}/notifications/unread-count`, { ...HEADERS, })
+  .then(r => r.status === 200 ? r.json() : { count: 0 },
     () => ({ count: 0 })
   );
-}
+export const myAllNotifications = (page = 0, pageSize = 10) => customFetch(`/api/me/notifications/all?page=${page}&pageSize=${pageSize}`)
+export const myNotifications = (page = 0, pageSize = 10) => customFetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`)
 
-export function myAllNotifications(page = 0, pageSize = 10) {
-  return fetch(`/api/me/notifications/all?page=${page}&pageSize=${pageSize}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function myNotifications(page = 0, pageSize = 10) {
-  return fetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function myUnreadNotificationsCount() {
-  return fetch('/api/me/notifications/unread-count', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then(
-    (r) => {
-      if (r.status === 200) {
-        return r.json();
-      } else {
-        return { count: 0 };
-      }
-    },
+export const myUnreadNotificationsCount = () =>
+  fetch('/api/me/notifications/unread-count', {
+    ...HEADERS,
+  }).then(r => r.status === 200 ? r.json() : { count: 0 },
     () => ({ count: 0 })
   );
-}
 
-export function acceptNotificationOfTeam(NotificationId, values = {}) {
-  return fetch(`/api/notifications/${NotificationId}/accept`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(values),
-  }).then((r) => r.json());
-}
+export const acceptNotificationOfTeam = (NotificationId, values = {}) => customFetch(`/api/notifications/${NotificationId}/accept`, {
+  ...HEADERS,
+  method: 'PUT',
+  body: JSON.stringify(values)
+})
 
-export function rejectNotificationOfTeam(NotificationId) {
-  return fetch(`/api/notifications/${NotificationId}/reject`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const rejectNotificationOfTeam = notificationId => customFetch(`/api/notifications/${notificationId}/reject`, {
+  method: 'PUT',
+  ...HEADERS,
+})
 
-export function subscribedApis(team) {
-  return fetch(`/api/teams/${team}/subscribed-apis`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const subscribedApis = team => customFetch(`/api/teams/${team}/subscribed-apis`)
+export const getDocPage = (api, id) => customFetch(`/api/apis/${api}/pages/${id}`)
+export const getDocDetails = (api, version) => customFetch(`/api/apis/${api}/doc${version ? `?version=${version}` : ''}`)
 
-export function getDocPage(api, id) {
-  return fetch(`/api/apis/${api}/pages/${id}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const reorderDoc = (team, api) => customFetch(`/api/teams/${team}/apis/${api}/pages/_reorder`, {
+  method: 'POST',
+  ...HEADERS,
+  body: '{}',
+})
 
-export function getDocDetails(api, version) {
-  return fetch(`/api/apis/${api}/doc${version ? `?version=${version}` : ''}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getTeamSubscriptions = (api, team, version) =>
+  customFetch(`/api/apis/${api}/subscriptions/teams/${team}?version=${version}`)
 
-export function reorderDoc(team, api) {
-  return fetch(`/api/teams/${team}/apis/${api}/pages/_reorder`, {
+export const getMySubscriptions = (apiId, version) =>
+  customFetch(`/api/me/subscriptions/${apiId}${version ? `?version=${version}` : ''}`)
+
+export const askForApiKey = (api, teams, plan) => customFetch(`/api/apis/${api}/subscriptions`, {
+  method: 'POST',
+  ...HEADERS,
+  body: JSON.stringify({ plan, teams }),
+})
+
+export const initApiKey = (api, team, plan, apikey) =>
+  customFetch(`/api/apis/${api}/subscriptions/_init`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: '{}',
-  }).then((r) => r.json());
-}
-
-export function getTeamSubscriptions(api, team, version) {
-  return fetch(`/api/apis/${api}/subscriptions/teams/${team}?version=${version}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function getMySubscriptions(apiId, version) {
-  return fetch(`/api/me/subscriptions/${apiId}${version ? `?version=${version}` : ''}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function askForApiKey(api, teams, plan) {
-  return fetch(`/api/apis/${api}/subscriptions`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ plan, teams }),
-  }).then((r) => r.json());
-}
-
-export function initApiKey(api, team, plan, apikey) {
-  return fetch(`/api/apis/${api}/subscriptions/_init`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify({ plan, team, apikey }),
-  }).then((r) => r.json());
-}
+  })
 
-export function apisInit(apis) {
-  return fetch('/api/apis/_init', {
+export const apisInit = apis =>
+  customFetch('/api/apis/_init', {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -285,10 +86,9 @@ export function apisInit(apis) {
     },
     body: JSON.stringify(apis),
   });
-}
 
-export function subscriptionsInit(subscriptions) {
-  return fetch('/api/subscriptions/_init', {
+export const subscriptionsInit = subscriptions =>
+  customFetch('/api/subscriptions/_init', {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -297,694 +97,324 @@ export function subscriptionsInit(subscriptions) {
     },
     body: JSON.stringify(subscriptions),
   });
-}
 
-export function archiveApiKey(teamId, subscriptionId, enable) {
-  return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_archive?enabled=${enable}`, {
+export const archiveApiKey = (teamId, subscriptionId, enable) =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_archive?enabled=${enable}`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function makeUniqueApiKey(teamId, subscriptionId) {
-  return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_makeUnique`, {
-    ...POST_HEADERS
+    ...HEADERS,
   })
-    .then((r) => r.json());
-}
 
-export function toggleApiKeyRotation(teamId, subscriptionId, rotationEvery, gracePeriod) {
-  return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
+export const makeUniqueApiKey = (teamId, subscriptionId) =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_makeUnique`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
+  })
+
+export const toggleApiKeyRotation = (teamId, subscriptionId, rotationEvery, gracePeriod) =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_rotation`, {
+    method: 'POST',
+    ...HEADERS,
     body: JSON.stringify({ rotationEvery, gracePeriod }),
-  }).then((r) => r.json());
-}
-export function regenerateApiKeySecret(teamId, subscriptionId) {
-  return fetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+  })
 
-export function cleanArchivedSubscriptions(teamId) {
-  return fetch(`/api/teams/${teamId}/subscriptions/_clean`, {
+export const regenerateApiKeySecret = (teamId, subscriptionId) =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
+    method: 'POST',
+    ...HEADERS,
+  })
+
+export const cleanArchivedSubscriptions = teamId =>
+  customFetch(`/api/teams/${teamId}/subscriptions/_clean`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function member(teamId, userId) {
-  return fetch(`/api/teams/${teamId}/members/${userId}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const member = (teamId, userId) =>
+  customFetch(`/api/teams/${teamId}/members/${userId}`, {
+    ...HEADERS,
+  })
 
-export function members(teamId) {
-  return fetch(`/api/teams/${teamId}/members`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const members = teamId => customFetch(`/api/teams/${teamId}/members`)
+export const teamHome = teamId => customFetch(`/api/teams/${teamId}/home`)
 
-export function teamHome(teamId) {
-  return fetch(`/api/teams/${teamId}/home`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const teamApi = (teamId, apiId, version) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}${version ? `?version=${version}` : ''}`)
 
-export function teamApi(teamId, apiId, version) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}${version ? `?version=${version}` : ''}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const teamApis = teamId => customFetch(`/api/teams/${teamId}/apis`)
+export const team = teamId => customFetch(`/api/teams/${teamId}`)
+export const teamFull = teamId => customFetch(`/api/teams/${teamId}/_full`)
 
-export function teamApis(teamId) {
-  return fetch(`/api/teams/${teamId}/apis`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const teams = () => customFetch('/api/teams')
+export const isMaintenanceMode = () => customFetch('/api/state/lock')
 
-//public api with restricted property
-export function team(teamId) {
-  return fetch(`/api/teams/${teamId}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function teamFull(teamId) {
-  return fetch(`/api/teams/${teamId}/_full`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function teams() {
-  return fetch('/api/teams', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function isMaintenanceMode() {
-  return fetch('/api/state/lock', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function createTeam(team) {
-  return fetch('/api/teams', {
+export const createTeam = team =>
+  customFetch('/api/teams', {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(team),
-  }).then((r) => r.json());
-}
+  })
 
-export function updateTeam(team) {
-  return fetch(`/api/teams/${team._id}`, {
+export const updateTeam = team =>
+  customFetch(`/api/teams/${team._id}`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(team),
-  }).then((r) => r.json());
-}
+  })
 
-export function deleteTeam(teamId) {
-  return fetch(`/api/teams/${teamId}`, {
+export const deleteTeam = teamId =>
+  customFetch(`/api/teams/${teamId}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function pendingMembers(teamId) {
-  return fetch(`/api/teams/${teamId}/pending-members`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const pendingMembers = teamId => customFetch(`/api/teams/${teamId}/pending-members`)
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const allOtoroshis = tenantId => customFetch(`/api/tenants/${tenantId}/otoroshis`)
 
-export function allOtoroshis(tenantId) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-export function allSimpleOtoroshis(tenantId) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis/simplified`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const allSimpleOtoroshis = tenantId =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis/simplified`)
 
-export function oneOtoroshi(tenantId, id) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis/${id}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const oneOtoroshi = (tenantId, id) => customFetch(`/api/tenants/${tenantId}/otoroshis/${id}`)
 
-export function deleteOtoroshiSettings(tenantId, id) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis/${id}`, {
+export const deleteOtoroshiSettings = (tenantId, id) =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis/${id}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function saveOtoroshiSettings(tenantId, oto) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis/${oto._id}`, {
+export const saveOtoroshiSettings = (tenantId, oto) =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis/${oto._id}`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(oto),
-  }).then((r) => r.json());
-}
+  })
 
-export function createOtoroshiSettings(tenantId, oto) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis`, {
+export const createOtoroshiSettings = (tenantId, oto) =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(oto),
-  }).then((r) => r.json());
-}
+  })
 
-export function getOtoroshiGroups(tenantId, otoId) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/groups`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getOtoroshiGroups = (tenantId, otoId) =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/groups`)
 
-export function getOtoroshiServices(tenantId, otoId) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getOtoroshiServices = (tenantId, otoId) =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services`)
 
-export function getOtoroshiApiKeys(tenantId, otoId) {
-  return fetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getOtoroshiApiKeys = (tenantId, otoId) =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`)
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export function deleteTeamApi(teamId, id) {
-  return fetch(`/api/teams/${teamId}/apis/${id}`, {
+export const deleteTeamApi = (teamId, id) =>
+  customFetch(`/api/teams/${teamId}/apis/${id}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function saveTeamApiWithId(teamId, api, version, apiId) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}${version ? `?version=${version}` : ''}`, {
+export const saveTeamApiWithId = (teamId, api, version, apiId) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}${version ? `?version=${version}` : ''}`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(api),
-  }).then((r) => r.json());
-}
+  })
 
-export function saveTeamApi(teamId, api, version) {
-  return saveTeamApiWithId(teamId, api, version, api._id);
-}
+export const saveTeamApi = (teamId, api, version) => saveTeamApiWithId(teamId, api, version, api._id)
 
-export function createTeamApi(teamId, api) {
-  return fetch(`/api/teams/${teamId}/apis`, {
+export const createTeamApi = (teamId, api) =>
+  customFetch(`/api/teams/${teamId}/apis`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(api),
-  }).then((r) => r.json());
-}
+  })
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export function removeMemberFromTeam(teamId, userId) {
-  return fetch(`/api/teams/${teamId}/members/${userId}`, {
+export const removeMemberFromTeam = (teamId, userId) =>
+  customFetch(`/api/teams/${teamId}/members/${userId}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function addMembersToTeam(teamId, members) {
-  return fetch(`/api/teams/${teamId}/members`, {
+export const addMembersToTeam = (teamId, members) =>
+  customFetch(`/api/teams/${teamId}/members`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify({ members }),
-  }).then((r) => r.json());
-}
+  })
 
-export function addUncheckedMembersToTeam(teamId, email) {
-  return fetch(`/api/teams/${teamId}/unchecked-members`, {
-    ...POST_HEADERS,
+export const addUncheckedMembersToTeam = (teamId, email) =>
+  customFetch(`/api/teams/${teamId}/unchecked-members`, {
+    method: 'POST',
+    ...HEADERS,
     body: JSON.stringify({ email }),
-  }).then((r) => r.json());
-}
+  })
 
-export function removeInvitation(teamId, userId) {
-  return fetch(`/api/teams/${teamId}/members/${userId}/invitations`, {
-    ...POST_HEADERS,
+export const removeInvitation = (teamId, userId) =>
+  customFetch(`/api/teams/${teamId}/members/${userId}/invitations`, {
+    ...HEADERS,
     method: 'DELETE',
   });
-}
 
-export function updateTeamMemberPermission(teamId, members, permission) {
-  return fetch(`/api/teams/${teamId}/members/_permission`, {
+export const updateTeamMemberPermission = (teamId, members, permission) =>
+  customFetch(`/api/teams/${teamId}/members/_permission`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify({ members, permission }),
-  }).then((r) => r.json());
-}
+  })
 
-export function createDocPage(teamId, apiId, page) {
-  return fetch(`/api/teams/${teamId}/pages`, {
+export const createDocPage = (teamId, apiId, page) =>
+  customFetch(`/api/teams/${teamId}/pages`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(page),
-  }).then((r) => r.json());
-}
+  })
 
-export function deleteDocPage(teamId, apiId, pageId) {
-  return fetch(`/api/teams/${teamId}/pages/${pageId}`, {
+export const deleteDocPage = (teamId, apiId, pageId) =>
+  customFetch(`/api/teams/${teamId}/pages/${pageId}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function saveDocPage(teamId, apiId, page) {
-  return fetch(`/api/teams/${teamId}/pages/${page._id}`, {
+export const saveDocPage = (teamId, apiId, page) =>
+  customFetch(`/api/teams/${teamId}/pages/${page._id}`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(page),
-  }).then((r) => r.json());
-}
+  })
 
-export function allTenants() {
-  return fetch('/api/tenants', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const allTenants = () => customFetch('/api/tenants')
+export const oneTenant = tenant => customFetch(`/api/tenants/${tenant}`)
 
-export function oneTenant(tenant) {
-  return fetch(`/api/tenants/${tenant}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function createTenant(tenant) {
-  return fetch('/api/tenants', {
+export const createTenant = tenant =>
+  customFetch('/api/tenants', {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(tenant),
-  }).then((r) => r.json());
-}
+  })
 
-export function saveTenant(tenant) {
-  return fetch(`/api/tenants/${tenant._id}`, {
+export const saveTenant = tenant =>
+  customFetch(`/api/tenants/${tenant._id}`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(tenant),
-  }).then((r) => r.json());
-}
+  })
 
-export function deleteTenant(id) {
-  return fetch(`/api/tenants/${id}`, {
+export const deleteTenant = id =>
+  customFetch(`/api/tenants/${id}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function askToJoinTeam(team) {
-  return fetch(`/api/teams/${team}/join`, {
+export const askToJoinTeam = team =>
+  customFetch(`/api/teams/${team}/join`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function askForApiAccess(teams, api) {
-  return fetch(`/api/apis/${api}/access`, {
+export const askForApiAccess = (teams, api) =>
+  customFetch(`/api/apis/${api}/access`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify({ teams }),
-  }).then((r) => r.json());
-}
+  })
 
-export function fetchAuditTrail(from, to, page, size) {
-  return fetch(`/api/admin/auditTrail?from=${from}&to=${to}&page=${page}&size=${size}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const fetchAuditTrail = (from, to, page, size) =>
+  customFetch(`/api/admin/auditTrail?from=${from}&to=${to}&page=${page}&size=${size}`)
 
-////////////////////////////////////////////////////////////////////////////////////////////////
+export const fetchAllUsers = () => customFetch('/api/admin/users')
+export const findUserById = id => customFetch(`/api/admin/users/${id}`)
 
-export function fetchAllUsers() {
-  return fetch('/api/admin/users', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function findUserById(id) {
-  return fetch(`/api/admin/users/${id}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function deleteUserById(id) {
-  return fetch(`/api/admin/users/${id}`, {
+export const deleteUserById = id =>
+  customFetch(`/api/admin/users/${id}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function deleteSelfUserById() {
-  return fetch('/api/me', {
+export const deleteSelfUserById = () =>
+  customFetch('/api/me', {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function setAdminStatus(user, isDaikokuAdmin) {
-  return fetch(`/api/admin/users/${user._id}/_admin`, {
+export const setAdminStatus = (user, isDaikokuAdmin) =>
+  customFetch(`/api/admin/users/${user._id}/_admin`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify({ isDaikokuAdmin }),
-  }).then((r) => r.json());
-}
-export function updateUserById(user) {
-  return fetch(`/api/admin/users/${user._id}`, {
+  })
+
+export const updateUserById = user =>
+  customFetch(`/api/admin/users/${user._id}`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(user),
-  }).then((r) => r.json());
-}
+  })
 
-export function createUser(user) {
-  return fetch('/api/admin/users', {
+export const createUser = user =>
+  customFetch('/api/admin/users', {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(user),
-  }).then((r) => r.json());
-}
+  })
 
-export function simpleTenantList() {
-  return fetch('/api/tenants/simplified', {
+export const simpleTenantList = () =>
+  customFetch('/api/tenants/simplified', {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function redirectToTenant(id) {
-  return fetch(`/api/tenants/${id}/_redirect`, {
+export const redirectToTenant = id =>
+  customFetch(`/api/tenants/${id}/_redirect`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function getTenantNames(ids) {
-  return fetch('/api/tenants/_names', {
+export const getTenantNames = ids =>
+  customFetch('/api/tenants/_names', {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(ids),
-  }).then((r) => r.json());
-}
+  })
 
-function fetchEntity(url) {
-  return fetch(url, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const fetchNewTenant = () => customFetch('/api/entities/tenant');
+export const fetchNewTeam = () => customFetch('/api/entities/team');
+export const fetchNewApi = () => customFetch('/api/entities/api');
+export const fetchNewUser = () => customFetch('/api/entities/user');
+export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
+export const fetchNewIssue = () => customFetch('/api/entities/issue');
 
-export const fetchNewTenant = () => fetchEntity('/api/entities/tenant');
-export const fetchNewTeam = () => fetchEntity('/api/entities/team');
-export const fetchNewApi = () => fetchEntity('/api/entities/api');
-export const fetchNewUser = () => fetchEntity('/api/entities/user');
-export const fetchNewOtoroshi = () => fetchEntity('/api/entities/otoroshi');
-export const fetchNewIssue = () => fetchEntity('/api/entities/issue');
-
-export function checkIfApiNameIsUnique(name, id) {
-  return fetch('/api/apis/_names', {
+export const checkIfApiNameIsUnique = (name, id) =>
+  customFetch('/api/apis/_names', {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify({ name, id }),
-  }).then((r) => r.json());
-}
+  })
 
-export function getSessions() {
-  return fetch('/api/admin/sessions', {
+export const getSessions = () =>
+  customFetch('/api/admin/sessions', {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function deleteSession(id) {
-  return fetch(`/api/admin/sessions/${id}`, {
+export const deleteSession = id =>
+  customFetch(`/api/admin/sessions/${id}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function deleteSessions() {
-  return fetch('/api/admin/sessions', {
+export const deleteSessions = () =>
+  customFetch('/api/admin/sessions', {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function search(search) {
-  return fetch('/api/_search', {
+export const search = search =>
+  customFetch('/api/_search', {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify({ search }),
-  }).then((r) => r.json());
-}
+  })
 
-export function subscriptionConsumption(subscriptionId, teamId, from, to) {
-  return fetch(
+export const subscriptionConsumption = (subscriptionId, teamId, from, to) =>
+  customFetch(
     `/api/teams/${teamId}/subscription/${subscriptionId}/consumption?from=${from}&to=${to}`,
     {
       method: 'GET',
@@ -994,55 +424,34 @@ export function subscriptionConsumption(subscriptionId, teamId, from, to) {
         'Content-Type': 'application/json',
       },
     }
-  ).then((r) => r.json());
-}
+  )
 
-export function syncSubscriptionConsumption(subscriptionId, teamId) {
-  return fetch(`/api/teams/${teamId}/subscription/${subscriptionId}/consumption/_sync`, {
+export const syncSubscriptionConsumption = (subscriptionId, teamId) =>
+  customFetch(`/api/teams/${teamId}/subscription/${subscriptionId}/consumption/_sync`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function syncApiConsumption(apiId, teamId) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/consumption/_sync`, {
+export const syncApiConsumption = (apiId, teamId) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption/_sync`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function syncTeamBilling(teamId) {
-  return fetch(`/api/teams/${teamId}/billing/_sync`, {
+export const syncTeamBilling = teamId =>
+  customFetch(`/api/teams/${teamId}/billing/_sync`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function syncTeamIncome(teamId) {
-  return fetch(`/api/teams/${teamId}/income/_sync`, {
+export const syncTeamIncome = teamId =>
+  customFetch(`/api/teams/${teamId}/income/_sync`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function apiConsumption(apiId, planId, teamId, from, to) {
-  return fetch(
+export const apiConsumption = (apiId, planId, teamId, from, to) =>
+  customFetch(
     `/api/teams/${teamId}/apis/${apiId}/plan/${planId}/consumption?from=${from}&to=${to}`,
     {
       method: 'GET',
@@ -1052,33 +461,22 @@ export function apiConsumption(apiId, planId, teamId, from, to) {
         'Content-Type': 'application/json',
       },
     }
-  ).then((r) => r.json());
-}
+  )
 
-export function apiGlobalConsumption(apiId, teamId, from, to) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`, {
+export const apiGlobalConsumption = (apiId, teamId, from, to) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function apiSubscriptions(apiId, teamId, version) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/subscriptions?version=${version}`, {
+export const apiSubscriptions = (apiId, teamId, version) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/subscriptions?version=${version}`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function archiveSubscriptionByOwner(ownerId, subscriptionId, enabled) {
-  return fetch(
+export const archiveSubscriptionByOwner = (ownerId, subscriptionId, enabled) =>
+  customFetch(
     `/api/teams/${ownerId}/subscriptions/${subscriptionId}/_archiveByOwner?enabled=${enabled}`,
     {
       method: 'PUT',
@@ -1088,99 +486,58 @@ export function archiveSubscriptionByOwner(ownerId, subscriptionId, enabled) {
         'Content-Type': 'application/json',
       },
     }
-  ).then((r) => r.json());
-}
+  )
 
-export function getSubscriptionInformations(subscription, teamId) {
-  return fetch(`/api/teams/${teamId}/subscription/${subscription}/informations`, {
+export const getSubscriptionInformations = (subscription, teamId) =>
+  customFetch(`/api/teams/${teamId}/subscription/${subscription}/informations`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function getTeamConsumptions(teamId, from, to) {
-  return fetch(`/api/teams/${teamId}/consumptions?from=${from}&to=${to}`, {
+export const getTeamConsumptions = (teamId, from, to) =>
+  customFetch(`/api/teams/${teamId}/consumptions?from=${from}&to=${to}`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function getTeamBillings(teamId, from, to) {
-  return fetch(`/api/teams/${teamId}/billings?from=${from}&to=${to}`, {
+export const getTeamBillings = (teamId, from, to) =>
+  customFetch(`/api/teams/${teamId}/billings?from=${from}&to=${to}`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function getTeamIncome(teamId, from, to) {
-  return fetch(`/api/teams/${teamId}/income?from=${from}&to=${to}`, {
+export const getTeamIncome = (teamId, from, to) =>
+  customFetch(`/api/teams/${teamId}/income?from=${from}&to=${to}`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
-export function getApiCategories() {
-  return fetch('/api/categories', {
+    ...HEADERS,
+  })
+export const getApiCategories = () =>
+  customFetch('/api/categories', {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-/////////////////////////////////////////////////////////////////////////////////
-// Assets
-/////////////////////////////////////////////////////////////////////////////////
-
-export function getAsset(teamId, assetId) {
-  return fetch(`/api/teams/${teamId}/assets/${assetId}`, {
+export const getAsset = (teamId, assetId) =>
+  customFetch(`/api/teams/${teamId}/assets/${assetId}`, {
     method: 'GET',
     credentials: 'include',
     headers: {},
-  }).then((r) => r.json());
-}
+  })
 
-export function deleteAsset(teamId, assetId) {
-  return fetch(`/api/teams/${teamId}/assets/${assetId}`, {
+export const deleteAsset = (teamId, assetId) =>
+  customFetch(`/api/teams/${teamId}/assets/${assetId}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function listAssets(teamId) {
-  return fetch(`/api/teams/${teamId}/assets`, {
+export const listAssets = teamId =>
+  customFetch(`/api/teams/${teamId}/assets`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function storeAsset(teamId, filename, title, desc, contentType, formData) {
-  return fetch(`/api/teams/${teamId}/assets?filename=${filename}&title=${title}&desc=${desc}`, {
+export const storeAsset = (teamId, filename, title, desc, contentType, formData) =>
+  customFetch(`/api/teams/${teamId}/assets?filename=${filename}&title=${title}&desc=${desc}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -1189,11 +546,10 @@ export function storeAsset(teamId, filename, title, desc, contentType, formData)
       //'X-Thumbnail': thumbnail
     },
     body: formData,
-  }).then((r) => r.json());
-}
+  })
 
-export function updateAsset(teamId, assetId, contentType, formData) {
-  return fetch(`/api/teams/${teamId}/assets/${assetId}/_replace`, {
+export const updateAsset = (teamId, assetId, contentType, formData) =>
+  customFetch(`/api/teams/${teamId}/assets/${assetId}/_replace`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -1201,34 +557,23 @@ export function updateAsset(teamId, assetId, contentType, formData) {
       'Content-Type': contentType,
     },
     body: formData,
-  }).then((r) => r.json());
-}
+  })
 
-/////////////////////////////////////////////////////////////////////////////////
-// Tenant Assets
-/////////////////////////////////////////////////////////////////////////////////
-
-export function getTenantAsset(assetId) {
-  return fetch(`/tenant-assets/${assetId}`, {
+export const getTenantAsset = assetId =>
+  customFetch(`/tenant-assets/${assetId}`, {
     method: 'GET',
     credentials: 'include',
     headers: {},
-  }).then((r) => r.json());
-}
+  })
 
-export function deleteTenantAsset(assetId) {
-  return fetch(`/tenant-assets/${assetId}`, {
+export const deleteTenantAsset = assetId =>
+  customFetch(`/tenant-assets/${assetId}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function updateTenantAsset(assetId, contentType, formData) {
-  return fetch(`/tenant-assets/${assetId}/_replace`, {
+export const updateTenantAsset = (assetId, contentType, formData) =>
+  customFetch(`/tenant-assets/${assetId}/_replace`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -1236,12 +581,11 @@ export function updateTenantAsset(assetId, contentType, formData) {
       'Content-Type': contentType,
     },
     body: formData,
-  }).then((r) => r.json());
-}
+  })
 
-export function listTenantAssets(teamId) {
+export const listTenantAssets = (teamId) => {
   if (teamId) {
-    return fetch(`/tenant-assets?teamId=${teamId}`, {
+    return customFetch(`/tenant-assets?teamId=${teamId}`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -1250,7 +594,7 @@ export function listTenantAssets(teamId) {
       },
     }).then((r) => r.json());
   } else {
-    return fetch('/tenant-assets', {
+    return customFetch('/tenant-assets', {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -1261,8 +605,8 @@ export function listTenantAssets(teamId) {
   }
 }
 
-export function storeTenantAsset(filename, title, desc, contentType, formData) {
-  return fetch(`/tenant-assets?filename=${filename}&title=${title}&desc=${desc}`, {
+export const storeTenantAsset = (filename, title, desc, contentType, formData) =>
+  customFetch(`/tenant-assets?filename=${filename}&title=${title}&desc=${desc}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -1271,14 +615,10 @@ export function storeTenantAsset(filename, title, desc, contentType, formData) {
       //'X-Thumbnail': thumbnail
     },
     body: formData,
-  }).then((r) => r.json());
-}
+  })
 
-//////////////////////////////////////////////////////////////////////////////////////
-// USER ASSETS
-//////////////////////////////////////////////////////////////////////////////////////
-export function storeUserAvatar(filename, contentType, file) {
-  return fetch(`/user-avatar?filename=${filename}`, {
+export const storeUserAvatar = (filename, contentType, file) =>
+  customFetch(`/user-avatar?filename=${filename}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -1286,47 +626,34 @@ export function storeUserAvatar(filename, contentType, file) {
       'Asset-Content-Type': contentType,
     },
     body: file,
-  }).then((r) => r.json());
-}
-//////////////////////////////////////////////////////////////////////////////////////
+  })
 
-export function uploadExportFile(file) {
-  return fetch('/api/state/import', {
+export const uploadExportFile = file =>
+  customFetch('/api/state/import', {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/x-ndjson',
     },
     body: file,
-  }).then((r) => r.json());
-}
+  })
 
-export function updateSubscriptionCustomName(team, subscription, customName) {
-  return fetch(`/api/teams/${team._id}/subscriptions/${subscription._id}/name`, {
+export const updateSubscriptionCustomName = (team, subscription, customName) =>
+  customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}/name`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify({ customName }),
-  }).then((r) => r.json());
-}
+  })
 
-export function updateSubscription(team, subscription) {
-  return fetch(`/api/teams/${team._id}/subscriptions/${subscription._id}`, {
+export const updateSubscription = (team, subscription) =>
+  customFetch(`/api/teams/${team._id}/subscriptions/${subscription._id}`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(subscription),
-  }).then((r) => r.json());
-}
+  })
 
-export function storeThumbnail(id, formData) {
-  return fetch(`/asset-thumbnails/${id}`, {
+export const storeThumbnail = (id, formData) =>
+  customFetch(`/asset-thumbnails/${id}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -1334,80 +661,57 @@ export function storeThumbnail(id, formData) {
       'Asset-Content-Type': 'image/png',
     },
     body: formData,
-  }).then((r) => r.json());
-}
+  })
 
-export function createTestingApiKey(teamId, body) {
-  return fetch(`/api/teams/${teamId}/testing/apikeys`, {
+export const createTestingApiKey = (teamId, body) =>
+  customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(body),
-  }).then((r) => r.json());
-}
+  })
 
-export function updateTestingApiKey(teamId, body) {
-  return fetch(`/api/teams/${teamId}/testing/apikeys`, {
+export const updateTestingApiKey = (teamId, body) =>
+  customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(body),
-  }).then((r) => r.json());
-}
+  })
 
-export function deleteTestingApiKey(teamId, body) {
-  return fetch(`/api/teams/${teamId}/testing/apikeys`, {
+export const deleteTestingApiKey = (teamId, body) =>
+  customFetch(`/api/teams/${teamId}/testing/apikeys`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(body),
-  }).then((r) => r.json());
-}
+  })
 
-export function testingCall(teamId, apiId, body) {
-  return fetch(`/api/teams/${teamId}/testing/${apiId}/call`, {
+export const testingCall = (teamId, apiId, body) =>
+  customFetch(`/api/teams/${teamId}/testing/${apiId}/call`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(body),
-  }).then((r) => r.json());
-}
+  })
 
-export function getTranslations(domain) {
-  return fetch(`/api/translations${domain ? `?domain=${domain}` : ''}`)
-    .then((r) => r.json());
-}
+export const getTranslations = domain =>
+  customFetch(`/api/translations${domain ? `?domain=${domain}` : ''}`)
 
-export function saveTranslation(translation) {
-  return fetch(`/api/translations`, {
-    ...POST_HEADERS,
+
+export const saveTranslation = translation =>
+  fetch(`/api/translations`, {
+    ...HEADERS,
     method: 'PUT',
     body: JSON.stringify({
       translation
     }),
   })
-}
 
-export function resetTranslation(translation) {
-  return fetch(`/api/translations/${translation._id}/_reset`, {
-    ...POST_HEADERS
+export const resetTranslation = translation =>
+  fetch(`/api/translations/${translation._id}/_reset`, {
+    method: 'POST',
+    ...HEADERS
   })
-}
 
-export function sendEmails(name, email, subject, body, tenantId, teamId, apiId, language) {
-  return fetch(`/api/tenants/${tenantId}/_contact`, {
+export const sendEmails = (name, email, subject, body, tenantId, teamId, apiId, language) =>
+  customFetch(`/api/tenants/${tenantId}/_contact`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -1423,183 +727,98 @@ export function sendEmails(name, email, subject, body, tenantId, teamId, apiId, 
       teamId,
       apiId,
     }),
-  }).then((r) => r.json());
-}
+  })
 
-export function tenantAdmins(tenantId) {
-  return fetch(`/api/tenants/${tenantId}/admins`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const tenantAdmins = tenantId => customFetch(`/api/tenants/${tenantId}/admins`)
 
-export function addableAdminsForTenant(tenantId) {
-  return fetch(`/api/tenants/${tenantId}/addable-admins`, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const addableAdminsForTenant = tenantId =>
+  customFetch(`/api/tenants/${tenantId}/addable-admins`)
 
-export function addAdminsToTenant(tenantId, adminIds) {
-  return fetch(`/api/tenants/${tenantId}/admins`, {
+export const addAdminsToTenant = (tenantId, adminIds) =>
+  customFetch(`/api/tenants/${tenantId}/admins`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify(adminIds),
-  }).then((r) => r.json());
-}
+  })
 
-export function removeAdminFromTenant(tenantId, adminId) {
-  return fetch(`/api/tenants/${tenantId}/admins/${adminId}`, {
+export const removeAdminFromTenant = (tenantId, adminId) =>
+  customFetch(`/api/tenants/${tenantId}/admins/${adminId}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function myMessages() {
-  return fetch('/api/me/messages', {
+export const myMessages = () => customFetch('/api/me/messages')
+
+export const myChatMessages = (chat, date) =>
+  customFetch(`/api/me/messages?chat=${chat}${date ? `&date=${date}` : ''}`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function myChatMessages(chat, date) {
-  return fetch(`/api/me/messages?chat=${chat}${date ? `&date=${date}` : ''}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const myAdminMessages = () => customFetch('/api/me/messages/admin')
 
-export function myAdminMessages() {
-  return fetch('/api/me/messages/admin', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
-
-export function sendMessage(message, participants, chat) {
-  return fetch('/api/messages/_send', {
+export const sendMessage = (message, participants, chat) =>
+  customFetch('/api/messages/_send', {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
     body: JSON.stringify({
       message,
       participants,
       chat,
     }),
-  }).then((r) => r.json());
-}
+  })
 
-export function messageSSE() {
-  return fetch('/api/messages/_sse', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const messageSSE = () => customFetch('/api/messages/_sse')
 
-export function setMessagesRead(chatId) {
-  return fetch(`/api/messages/${chatId}/_read`, {
+export const setMessagesRead = chatId =>
+  customFetch(`/api/messages/${chatId}/_read`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function closeMessageChat(chatId) {
-  return fetch(`/api/messages/${chatId}`, {
+export const closeMessageChat = chatId =>
+  customFetch(`/api/messages/${chatId}`, {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function lastDateChat(chatId, date) {
-  return fetch(`/api/messages/${chatId}/last-date?date=${date}`, {
+export const lastDateChat = (chatId, date) =>
+  customFetch(`/api/messages/${chatId}/last-date?date=${date}`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+    ...HEADERS,
+  })
 
-export function migrateMongoToPostgres() {
-  return fetch('/api/state/migrate', {
+export const migrateMongoToPostgres = () =>
+  fetch('/api/state/migrate', {
     method: 'POST',
     credentials: 'include',
   });
-}
 
-const POST_HEADERS = {
-  method: 'POST',
-  credentials: 'include',
-  headers: {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-  },
-};
+export const enableMaintenanceMode = () =>
+  customFetch('/api/state/lock', {
+    method: 'POST',
+    ...HEADERS
+  })
 
-export function enableMaintenanceMode() {
-  return fetch('/api/state/lock', POST_HEADERS).then((r) => r.json());
-}
+export const disableMaintenanceMode = () =>
+  customFetch('/api/state/unlock', {
+    method: 'POST',
+    ...HEADERS
+  })
 
-export function disableMaintenanceMode() {
-  return fetch('/api/state/unlock', POST_HEADERS).then((r) => r.json());
-}
-
-export function checkConnection(config, user) {
-  return fetch('/api/auth/ldap/_check', {
-    ...POST_HEADERS,
+export const checkConnection = (config, user) =>
+  customFetch('/api/auth/ldap/_check', {
+    method: 'POST',
+    ...HEADERS,
     body: user
       ? JSON.stringify({
         config,
         user,
       })
       : JSON.stringify(config),
-  }).then((r) => r.json());
-}
+  })
 
-export function login(username, password, action) {
+export const login = (username, password, action) => {
   const body = new URLSearchParams();
   body.append('username', username);
   body.append('password', password);
@@ -1613,120 +832,74 @@ export function login(username, password, action) {
   });
 }
 
-export function toggleStar(apiId) {
-  return fetch(`/api/apis/${apiId}/stars`, {
+export const toggleStar = apiId =>
+  fetch(`/api/apis/${apiId}/stars`, {
     method: 'PUT',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
   });
-}
 
-export function searchLdapMember(teamId, email) {
-  return fetch(`/api/teams/${teamId}/ldap/users/${email}`, {
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const searchLdapMember = (teamId, email) => customFetch(`/api/teams/${teamId}/ldap/users/${email}`)
 
-export function findUserByEmail(teamId, email) {
-  return fetch(`/api/teams/${teamId}/users/_search`, {
-    ...POST_HEADERS,
+export const findUserByEmail = (teamId, email) =>
+  customFetch(`/api/teams/${teamId}/users/_search`, {
+    method: 'POST',
+    ...HEADERS,
     body: JSON.stringify({
       attributes: {
         email,
       },
     }),
-  }).then((r) => r.json());
-}
+  })
 
-export function createUserFromLDAP(teamId, email) {
-  return fetch(`/api/teams/${teamId}/ldap/users`, {
-    ...POST_HEADERS,
+export const createUserFromLDAP = (teamId, email) =>
+  customFetch(`/api/teams/${teamId}/ldap/users`, {
+    method: 'POST',
+    ...HEADERS,
     body: JSON.stringify({
       email,
       teamId,
     }),
-  }).then((r) => r.json());
-}
+  })
 
-export function getAPIPosts(apiId, offset = 0, limit = 1, version) {
-  return fetch(`/api/apis/${apiId}/posts?offset=${offset}&limit=${limit}${version ? `&version=${version}` : ''}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getAPIPosts = (apiId, offset = 0, limit = 1, version) =>
+  customFetch(`/api/apis/${apiId}/posts?offset=${offset}&limit=${limit}${version ? `&version=${version}` : ''}`)
 
-export function publishNewPost(apiId, teamId, post) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/posts`, {
-    ...POST_HEADERS,
+export const publishNewPost = (apiId, teamId, post) =>
+  fetch(`/api/teams/${teamId}/apis/${apiId}/posts`, {
+    method: 'POST',
+    ...HEADERS,
     body: JSON.stringify(post),
   });
-}
 
-export function removePost(apiId, teamId, postId) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
-    ...POST_HEADERS,
-    method: 'DELETE',
+export const removePost = (apiId, teamId, postId) =>
+  fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
+    ...HEADERS,
+    method: 'DELETE'
   });
-}
 
-export function savePost(apiId, teamId, postId, content) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
-    ...POST_HEADERS,
+export const savePost = (apiId, teamId, postId, content) =>
+  fetch(`/api/teams/${teamId}/apis/${apiId}/posts/${postId}`, {
+    ...HEADERS,
     method: 'PUT',
     body: JSON.stringify(content),
   });
-}
 
-export function getDaikokuVersion() {
-  return fetch('/api/versions/_daikoku', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getDaikokuVersion = () => customFetch('/api/versions/_daikoku')
 
-export function getAPIIssues(apiId) {
-  return fetch(`/api/apis/${apiId}/issues`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getAPIIssues = apiId => customFetch(`/api/apis/${apiId}/issues`)
 
-export function getAPIIssue(apiId, issueId) {
-  return fetch(`/api/apis/${apiId}/issues/${issueId}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getAPIIssue = (apiId, issueId) => customFetch(`/api/apis/${apiId}/issues/${issueId}`)
 
-export function createNewIssue(apiId, teamId, issue) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/issues`, {
-    ...POST_HEADERS,
+export const createNewIssue = (apiId, teamId, issue) =>
+  fetch(`/api/teams/${teamId}/apis/${apiId}/issues`, {
+    method: 'POST',
+    ...HEADERS,
     body: JSON.stringify(issue),
   });
-}
 
-export function updateIssue(apiId, teamId, issueId, issue) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/issues/${issueId}`, {
-    ...POST_HEADERS,
+export const updateIssue = (apiId, teamId, issueId, issue) =>
+  fetch(`/api/teams/${teamId}/apis/${apiId}/issues/${issueId}`, {
+    ...HEADERS,
     method: 'PUT',
     body: JSON.stringify({
       ...issue,
@@ -1737,143 +910,98 @@ export function updateIssue(apiId, teamId, issueId, issue) {
       })),
     }),
   });
-}
 
-export function getQRCode() {
-  return fetch('/api/me/_2fa', {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-  }).then((r) => r.json());
-}
+export const getQRCode = () => customFetch('/api/me/_2fa')
 
-export function verify2faCode(token, code) {
-  return fetch(`/api/2fa?token=${token}&code=${code}`, {
+export const verify2faCode = (token, code) =>
+  fetch(`/api/2fa?token=${token}&code=${code}`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
   });
-}
 
-export function disable2FA() {
-  return fetch('/api/me/_2fa', {
+export const disable2FA = () =>
+  customFetch('/api/me/_2fa', {
     method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
   });
-}
 
-export function reset2faAccess(backupCodes) {
-  return fetch('/api/2fa', {
-    ...POST_HEADERS,
+export const reset2faAccess = backupCodes =>
+  fetch('/api/2fa', {
+    ...HEADERS,
     method: 'PUT',
-    body: JSON.stringify({ backupCodes }),
+    body: JSON.stringify({ backupCodes })
   });
-}
 
-export function selfVerify2faCode(code) {
-  return fetch(`/api/me/_2fa/enable?code=${code}`, {
+export const selfVerify2faCode = code =>
+  fetch(`/api/me/_2fa/enable?code=${code}`, {
     method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    ...HEADERS,
   });
-}
 
-export function validateInvitationToken(token) {
-  return fetch(`/api/me/invitation/_check`, {
-    ...POST_HEADERS,
+export const validateInvitationToken = token =>
+  customFetch(`/api/me/invitation/_check`, {
+    method: 'POST',
+    ...HEADERS,
     body: JSON.stringify({ token }),
-  }).then((r) => r.json());
-}
+  })
 
-export function removeTeamInvitation(token) {
-  return fetch(`/api/me/invitation`, {
-    ...POST_HEADERS,
+export const removeTeamInvitation = token =>
+  customFetch(`/api/me/invitation`, {
+    ...HEADERS,
     method: 'DELETE',
   });
-}
 
-export function createNewApiVersion(apiId, teamId, version) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
-    ...POST_HEADERS,
+export const createNewApiVersion = (apiId, teamId, version) =>
+  fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
+    method: 'POST',
+    ...HEADERS,
     body: JSON.stringify({ version })
   })
-}
-export function extendApiKey(apiId, apiKeyId, teams, plan) {
-  return fetch(`/api/apis/${apiId}/subscriptions/${apiKeyId}`, {
-    ...POST_HEADERS,
+
+export const extendApiKey = (apiId, apiKeyId, teams, plan) =>
+  customFetch(`/api/apis/${apiId}/subscriptions/${apiKeyId}`, {
+    ...HEADERS,
     method: 'PUT',
     body: JSON.stringify({ plan, teams }),
-  }).then((r) => r.json());
-}
+  })
 
-export function getAllTeamSubscriptions(team) {
-  return fetch(`/api/subscriptions/teams/${team}`)
-    .then(r => r.json());
-}
+export const getAllTeamSubscriptions = team => customFetch(`/api/subscriptions/teams/${team}`)
 
-export function getAllApiVersions(teamId, apiId) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
-    ...POST_HEADERS,
-    method: 'GET'
+export const getAllApiVersions = (teamId, apiId) =>
+  fetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
+    ...HEADERS
   })
     .then(r => r.json())
     .then(r => !r.error ? r.sort((a, b) => a < b ? 1 : -1) : [])
-}
 
-export function getDefaultApiVersion(apiId) {
-  return fetch(`/api/apis/${apiId}/default_version`)
-    .then(r => r.json())
-}
+export const getDefaultApiVersion = apiId =>
+  customFetch(`/api/apis/${apiId}/default_version`)
 
-export function getAllPlanOfApi(teamId, apiId, version) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/plans${version ? `?version=${version}` : ''}`)
-    .then(r => r.json());
-}
+export const getAllPlanOfApi = (teamId, apiId, version) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/plans${version ? `?version=${version}` : ''}`)
 
-export function cloneApiPlan(teamId, apiId, fromApi, plan) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/plans`, {
-    ...POST_HEADERS,
+export const cloneApiPlan = (teamId, apiId, fromApi, plan) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/plans`, {
+    method: 'POST',
+    ...HEADERS,
     body: JSON.stringify({
       plan, api: fromApi
     })
   })
-}
 
-export function getRootApi(apiId) {
-  return fetch(`/api/apis/${apiId}/_root`)
-    .then(r => r.json())
-}
+export const getRootApi = apiId => customFetch(`/api/apis/${apiId}/_root`)
 
-export function importApiPages(teamId, apiId, pages, version) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`, {
-    ...POST_HEADERS,
+export const importApiPages = (teamId, apiId, pages, version) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`, {
+    ...HEADERS,
     method: 'PUT',
     body: JSON.stringify({
       pages
     })
   })
-    .then(r => r.json())
-}
 
-export function getAllApiDocumentation(teamId, apiId, version) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`)
-    .then(r => r.json())
-}
+export const getAllApiDocumentation = (teamId, apiId, version) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`)
 
-export function getMyTeamsStatusAccess(teamId, apiId, version) {
-  return fetch(`/api/teams/${teamId}/apis/${apiId}/access?version=${version}`)
-    .then(r => r.json())
-}
+export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/access?version=${version}`)

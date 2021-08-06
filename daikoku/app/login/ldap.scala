@@ -272,6 +272,10 @@ object LdapSupport {
             val boundUser = if (res.hasMore) {
               val item = res.next()
 
+              println(item.getAttributes)
+
+              println(usersInGroup)
+
               val dn = item.getNameInNamespace
               val attrs = item.getAttributes
               val email =
