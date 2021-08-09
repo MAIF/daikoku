@@ -8,9 +8,10 @@ import fr.maif.otoroshi.daikoku.domain.NotificationAction.{OtoroshiSyncApiError,
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{ConsoleMailer, IdGenerator, Mailer, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.{ConsoleMailer, IdGenerator, Mailer, OtoroshiClient, Translator}
 import org.joda.time.DateTime
 import play.api.Logger
+import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
@@ -18,7 +19,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
+class OtoroshiVerifierJob(client: OtoroshiClient, env: Env, translator: Translator, messagesApi: MessagesApi) {
 
   private val logger = Logger("OtoroshiVerifierJob")
 
@@ -26,6 +27,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
+  implicit val me = messagesApi
+  implicit val tr = translator
 
   private val jobUser = User(
     id = UserId("otoroshi-verifier-job"),
@@ -92,7 +95,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
     }
     env.dataStore.userRepo.findAll().map(_.filter(_.isDaikokuAdmin)).map {
       users =>
-        def sendMail(mailer: Mailer): Unit = {
+        def sendMail(mailer: Mailer, tenant: Tenant): Unit = {
+          implicit val language: String = tenant.defaultLanguage.getOrElse("en")
           mailer.send(
             "Otoroshi synchronizer error",
             users.map(_.email),
@@ -100,7 +104,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
             |<p>${err.message}</p>
             |<strong>Details</strong>
             |<pre>${Json.prettyPrint(err.json)}</pre>
-            """.stripMargin
+            """.stripMargin,
+            tenant
           )
         }
 
@@ -117,8 +122,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env) {
             tenants.find { t =>
               t.mailerSettings.isDefined && t.mailerSettings.get.mailerType != "console"
             } match {
-              case None         => sendMail(new ConsoleMailer())
-              case Some(tenant) => sendMail(tenant.mailer(env))
+              case None         => sendMail(new ConsoleMailer(ConsoleMailerSettings()), tenants.head)
+              case Some(tenant) => sendMail(tenant.mailer(env), tenant)
             }
           }
     }

@@ -69,3 +69,4 @@ Cliquez sur le lien suivant pour finaliser la crétation de votre compte.\
 [link]\
 <br/>\
 L''équipe [tenant]
+tenant.mail.template={{email}}

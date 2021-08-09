@@ -381,7 +381,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
               exact
               path={["/settings/internationalization", "/settings/internationalization/:domain"]}
               render={(p) => (
-                <MailingInternalization match={p.match} history={p.history} location={p.location} />
+                <MailingInternalization match={p.match} history={p.history} location={p.location} tenant={tenant} />
               )}
             />
             {!tenant.hideTeamsPage && (

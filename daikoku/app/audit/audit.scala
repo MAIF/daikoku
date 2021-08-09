@@ -284,9 +284,11 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
          |$email""".stripMargin
 
         if (evts.size > 1) {
+          implicit val language: String = tenant.defaultLanguage.getOrElse("en")
           tenant.mailer.send(s"Otoroshi Alert - ${evts.size} new alerts",
             emails,
-            emailBody)
+            emailBody,
+            tenant)
         } else {
           FastFuture.successful(())
         }
@@ -327,7 +329,7 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
           "planName" -> plan
           )))
         } yield {
-          tenant.mailer.send(title, admins.map(_.email), body)
+          tenant.mailer.send(title, admins.map(_.email), body, tenant)
         }
         mailSend.value
       }

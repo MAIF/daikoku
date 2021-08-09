@@ -29,6 +29,7 @@ class NotificationController(
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
+  implicit val tr = translator
 
   def unreadNotificationsCountOfTeam(teamId: String) = DaikokuAction.async {
     ctx =>
@@ -397,7 +398,7 @@ class NotificationController(
           title <- translator.translate("mail.rejection.title", ctx.tenant)
           _ <- ctx.tenant.mailer.send(title,
                                       Seq(notification.sender.email),
-                                      mailBody)
+                                      mailBody, ctx.tenant)
         } yield Ok(Json.obj("done" -> true))
       }
     }
@@ -462,7 +463,7 @@ class NotificationController(
             title <- translator.translate("mail.rejection.title", ctx.tenant)
             _ <- ctx.tenant.mailer.send(title,
                                         Seq(notification.sender.email),
-                                        mailBody)
+                                        mailBody, ctx.tenant)
           } yield Ok(Json.obj("done" -> true)))
         .leftMap(t => FastFuture.successful(AppError.render(t)))
         .value
@@ -530,7 +531,8 @@ class NotificationController(
         tenant.mailer.send(
           title,
           administrators.map(_.email) ++ Seq(sender.email),
-          body
+          body,
+          tenant
         ))
     } yield ()
 
@@ -551,7 +553,7 @@ class NotificationController(
       _ <- tenant.mailer.send(
         title,
         Seq(sender.email),
-        body)
+        body, tenant)
     } yield Right(())
   }
 
@@ -583,7 +585,7 @@ class NotificationController(
           "user" -> invitedUser.name,
           "teamName" -> team.name
         )))
-      _ <- EitherT.liftF(tenant.mailer.send(title, Seq(sender.email), body))
+      _ <- EitherT.liftF(tenant.mailer.send(title, Seq(sender.email), body, tenant))
     } yield Right(())
 
     r.value
@@ -647,7 +649,8 @@ class NotificationController(
         tenant.mailer.send(
           title,
           administrators.map(_.email) ++ Seq(sender.email),
-          body
+          body,
+          tenant
         )
       )
     } yield ()

@@ -33,6 +33,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val mat: Materializer = env.defaultMaterializer
+  implicit val tr = translator
 
   def team(teamId: String): Action[AnyContent] =
     DaikokuActionMaybeWithGuest.async { ctx =>
@@ -298,7 +299,8 @@ class TeamController(DaikokuAction: DaikokuAction,
             _ <- ctx.tenant.mailer.send(
               title,
               admins.map(admin => admin.email),
-              body
+              body,
+              ctx.tenant
             )
           } yield {
             Ok(Json.obj("done" -> saved))
@@ -434,7 +436,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             "teamName" -> team.name,
             "link" -> s"${ctx.tenant.domain}/notifications"))
         } yield {
-          ctx.tenant.mailer.send(title, Seq(user.email), body)
+          ctx.tenant.mailer.send(title, Seq(user.email), body, ctx.tenant)
         }).flatten
       })
     } yield userId
@@ -515,6 +517,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                     ))
                   .flatMap {
                     case true =>
+                      implicit val language: String = tenant.defaultLanguage.getOrElse("en")
                       tenant.mailer
                         .send(
                           s"Join ${team.name}",
@@ -526,7 +529,8 @@ class TeamController(DaikokuAction: DaikokuAction,
                              |
                              |${ctx.request.theProtocol}://${ctx.request.theHost}/join?token=${invitedUser.invitation.get.token}
                              |
-                          """.stripMargin
+                          """.stripMargin,
+                          tenant
                         )
                         .flatMap { _ =>
                           FastFuture.successful(
