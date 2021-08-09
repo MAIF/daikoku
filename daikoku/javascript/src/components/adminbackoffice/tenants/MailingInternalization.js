@@ -291,9 +291,7 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
                             className={`nav-link ${params.domain === 'mail' ? 'active' : ''}`}
                             to={`/settings/internationalization/mail`}>
                             <i className="fas fa-envelope mr-1" />
-                            <Translation i18nkey="Mail" language={currentLanguage}>
-                                Mail
-                            </Translation>
+                            {t('mailing_internalization.mail_tab', currentLanguage)}
                         </Link>
                     </li>
                     <li className="nav-item">
@@ -301,9 +299,7 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
                             className={`nav-link ${params.domain === 'mail-template' ? 'active' : ''}`}
                             to={`/settings/internationalization/mail-template`}>
                             <i className="fas fa-envelope mr-1" />
-                            <Translation i18nkey="Mail template" language={currentLanguage}>
-                                Mail template
-                            </Translation>
+                            {t('mailing_internalization.mail_template_tab', currentLanguage)}
                         </Link>
                     </li>
                     <li className="nav-item">
@@ -311,9 +307,7 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
                             className={`nav-link ${params.domain === 'front' ? 'active' : ''}`}
                             to={`/settings/internationalization/front`}>
                             <i className="fas fa-globe mr-1" />
-                            <Translation i18nkey="Front office" language={currentLanguage}>
-                                Front Office
-                            </Translation>
+                            {t('mailing_internalization.front_office_tab', currentLanguage)}
                         </Link>
                     </li>
                 </ul>
