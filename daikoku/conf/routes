@@ -631,7 +631,12 @@ GET     /admin-api/issues/:id                           fr.maif.otoroshi.daikoku
 POST    /admin-api/issues                               fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.createEntity()
 GET     /admin-api/issues                               fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.findAll()
 
-
+DELETE  /admin-api/translations/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.deleteEntity(id)
+PATCH   /admin-api/translations/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.patchEntity(id)
+PUT     /admin-api/translations/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.updateEntity(id)
+GET     /admin-api/translations/:id                     fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findById(id)
+POST    /admin-api/translations                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.createEntity()
+GET     /admin-api/translations                         fr.maif.otoroshi.daikoku.ctrls.TranslationsAdminApiController.findAll()
 ###
 #  summary: get apikey from integration token
 #  tags:

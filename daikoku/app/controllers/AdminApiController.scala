@@ -463,6 +463,23 @@ class PostsAdminApiController(daa: DaikokuApiAction,
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 }
 
+class TranslationsAdminApiController(daa: DaikokuApiAction,
+                               env: Env,
+                               cc: ControllerComponents)
+  extends AdminApiController[Translation, DatastoreId](daa, env, cc) {
+  override def entityClass = classOf[Translation]
+  override def entityName: String = "translation"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant,
+                           ds: DataStore): Repo[Translation, DatastoreId] = ds.translationRepo.forTenant(tenant)
+  override def toJson(entity: Translation): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, Translation] =
+    TranslationFormat
+      .reads(entity)
+      .asEither
+      .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
 class AdminApiSwaggerController(
     env: Env,
     cc: ControllerComponents,
@@ -478,7 +495,8 @@ class AdminApiSwaggerController(
     ctrl10: AuditEventAdminApiController,
     ctrl11: MessagesAdminApiController,
     ctrl12: IssuesAdminApiController,
-    ctrl13: PostsAdminApiController
+    ctrl13: PostsAdminApiController,
+    ctrl14: TranslationsAdminApiController
 ) extends AbstractController(cc) {
 
   def schema[A, B <: ValueType](
@@ -500,7 +518,8 @@ class AdminApiSwaggerController(
       schema(ctrl10) ++
       schema(ctrl11) ++
       schema(ctrl12) ++
-      schema(ctrl13)
+      schema(ctrl13) ++
+      schema(ctrl14)
 
   def paths: JsValue =
     path(ctrl1) ++
@@ -515,7 +534,8 @@ class AdminApiSwaggerController(
       path(ctrl10) ++
       path(ctrl11) ++
       path(ctrl12) ++
-      path(ctrl13)
+      path(ctrl13) ++
+      schema(ctrl14)
 
   def swagger() = Action {
     Ok(
