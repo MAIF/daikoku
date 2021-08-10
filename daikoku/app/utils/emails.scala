@@ -5,14 +5,14 @@ import akka.http.scaladsl.util.FastFuture.EnhancedFuture
 import fr.maif.otoroshi.daikoku.domain._
 import org.owasp.html.HtmlPolicyBuilder
 import play.api.Logger
+import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSClient}
 
-import java.util.{Date, Properties}
-import javax.mail.{Address, Message, Session, Transport}
-import javax.mail.internet.{InternetAddress, MimeMessage}
+import fr.maif.otoroshi.daikoku.env.Env
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+
 
 object HtmlSanitizer {
 
@@ -30,31 +30,39 @@ object HtmlSanitizer {
 }
 
 trait Mailer {
-  def send(title: String, to: Seq[String], body: String)(
-      implicit ec: ExecutionContext): Future[Unit]
+  def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
+      implicit ec: ExecutionContext, translator: Translator,
+      messagesApi: MessagesApi, env: Env, language: String): Future[Unit]
 }
 
 object ConsoleMailer {
-  def apply() = new ConsoleMailer()
+  def apply() = new ConsoleMailer(ConsoleMailerSettings())
 }
 
-class ConsoleMailer() extends Mailer {
+class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
 
   lazy val logger = Logger("daikoku-console-mailer")
 
-  def send(title: String, to: Seq[String], body: String)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
+      implicit ec: ExecutionContext, translator: Translator,
+      messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
-    val email = Json.prettyPrint(
-      Json.obj(
-        "from" -> s"Daikoku <daikoku@foo.bar>",
-        "to" -> Seq(to.mkString(", ")),
-        "subject" -> Seq(title),
-        "html" -> Seq(body)
-      )
-    )
-    logger.info(s"Sent email: $email")
-    FastFuture.successful(())
+    translator.translate("tenant.mail.template", tenant, Map(
+      "email" -> "{{email}}"
+    ))
+      .map(templatedBody => {
+        logger.info(s"Sent email: ${
+          Json.prettyPrint(
+            Json.obj(
+              "from" -> s"Daikoku <daikoku@foo.bar>",
+              "to" -> Seq(to.mkString(", ")),
+              "subject" -> Seq(title),
+              "html" -> templatedBody.replace("{{email}}", body)
+            )
+          )
+        }")
+        ()
+      })
   }
 }
 
@@ -63,33 +71,34 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
 
   lazy val logger = Logger("daikoku-mailer")
 
-  def send(title: String, to: Seq[String], body: String)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
+      implicit ec: ExecutionContext, translator: Translator,
+      messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
-    val templatedBody =
-      settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
-
-    wsClient
-      .url(if (settings.eu) {
-        s"https://api.eu.mailgun.net/v3/${settings.domain}/messages"
-      } else {
-        s"https://api.mailgun.net/v3/${settings.domain}/messages"
-      })
-      .withAuth("api", settings.key, WSAuthScheme.BASIC)
-      .post(
-        Map(
-          "from" -> Seq(s"${settings.fromTitle} <${settings.fromEmail}>"),
-          "to" -> Seq(to.mkString(", ")),
-          "subject" -> Seq(title),
-          "html" -> Seq(templatedBody),
-          "text" -> Seq(body)
-        )
-      )
-      .andThen {
-        case Success(res) => logger.info(s"Alert email sent \r\n ${res.json}")
-        case Failure(e)   => logger.error("Error while sending alert email", e)
-      }
-      .map(_ => ())
+      translator.translate("tenant.mail.template", tenant, Map(
+        "email" -> "{{email}}"
+      ))
+        .map(templatedBody => {
+          wsClient
+            .url(if (settings.eu) {
+              s"https://api.eu.mailgun.net/v3/${settings.domain}/messages"
+            } else {
+              s"https://api.mailgun.net/v3/${settings.domain}/messages"
+            })
+            .withAuth("api", settings.key, WSAuthScheme.BASIC)
+            .post(Map(
+              "from" -> Seq(s"${settings.fromTitle} <${settings.fromEmail}>"),
+              "to" -> Seq(to.mkString(", ")),
+              "subject" -> Seq(title),
+              "html" -> Seq(templatedBody.replace("{{email}}", body)),
+              "text" -> Seq(body)
+            ))
+            .andThen {
+              case Success(res) => logger.info(s"Alert email sent \r\n ${res.json}")
+              case Failure(e)   => logger.error("Error while sending alert email", e)
+            }
+            .map(_ -> ())
+        })
   }
 }
 
@@ -98,46 +107,50 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
 
   lazy val logger = Logger("daikoku-mailer")
 
-  def send(title: String, to: Seq[String], body: String)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
+      implicit ec: ExecutionContext, translator: Translator,
+      messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
-    val templatedBody =
-      settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
-    wsClient
-      .url(s"https://api.mailjet.com/v3.1/send")
-      .withAuth(settings.apiKeyPublic,
-                settings.apiKeyPrivate,
-                WSAuthScheme.BASIC)
-      .withHttpHeaders("Content-Type" -> "application/json")
-      .post(
-        Json.obj(
-          "Messages" -> Json.arr(
+    translator.translate("tenant.mail.template", tenant, Map(
+      "email" -> "{{email}}"
+    ))
+      .map(templatedBody => {
+        wsClient
+          .url(s"https://api.mailjet.com/v3.1/send")
+          .withAuth(settings.apiKeyPublic,
+            settings.apiKeyPrivate,
+            WSAuthScheme.BASIC)
+          .withHttpHeaders("Content-Type" -> "application/json")
+          .post(
             Json.obj(
-              "From" -> Json.obj(
-                "Email" -> settings.fromEmail,
-                "Name" -> settings.fromTitle
-              ),
-              "To" -> JsArray(
-                to.map(
-                  t =>
-                    Json.obj(
-                      "Email" -> t,
-                      "Name" -> t
-                  )
+              "Messages" -> Json.arr(
+                Json.obj(
+                  "From" -> Json.obj(
+                    "Email" -> settings.fromEmail,
+                    "Name" -> settings.fromTitle
+                  ),
+                  "To" -> JsArray(
+                    to.map(
+                      t =>
+                        Json.obj(
+                          "Email" -> t,
+                          "Name" -> t
+                        )
+                    )
+                  ),
+                  "Subject" -> title,
+                  "HTMLPart" -> templatedBody.replace("{{email}}", body),
+                  // TextPart
                 )
-              ),
-              "Subject" -> title,
-              "HTMLPart" -> templatedBody,
-              // TextPart
+              )
             )
           )
-        )
-      )
-      .andThen {
-        case Success(res) => logger.info("Alert email sent")
-        case Failure(e)   => logger.error("Error while sending alert email", e)
-      }
-      .map(_ => ())
+          .andThen {
+            case Success(res) => logger.info("Alert email sent")
+            case Failure(e) => logger.error("Error while sending alert email", e)
+          }
+          .map(_ => ())
+      })
   }
 }
 
@@ -150,87 +163,95 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
   lazy val logger = Logger("daikoku-mailer")
 
-  def send(title: String, to: Seq[String], body: String)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
+      implicit ec: ExecutionContext, translator: Translator,
+      messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
-    val templatedBody =
-      settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
+    translator.translate("tenant.mail.template", tenant, Map(
+      "email" -> "{{email}}"
+    ))
+      .map(templatedBody => {
 
-    val properties = new Properties()
-    properties.put("mail.smtp.host", settings.host)
-    properties.put("mail.smtp.port", Integer.valueOf(settings.port))
+        val properties = new Properties()
+        properties.put("mail.smtp.host", settings.host)
+        properties.put("mail.smtp.port", Integer.valueOf(settings.port))
 
-    Future
-      .sequence(
-        to.map(InternetAddress.parse)
-          .map { address =>
-            val message: Message =
-              new MimeMessage(Session.getDefaultInstance(properties, null))
-            message.setFrom(new InternetAddress(settings.fromEmail))
-            message.setRecipients(Message.RecipientType.TO,
-                                  address.asInstanceOf[Array[Address]])
+        Future
+          .sequence(
+            to.map(InternetAddress.parse)
+              .map { address =>
+                val message: Message =
+                  new MimeMessage(Session.getDefaultInstance(properties, null))
+                message.setFrom(new InternetAddress(settings.fromEmail))
+                message.setRecipients(Message.RecipientType.TO,
+                  address.asInstanceOf[Array[Address]])
 
-            message.setSentDate(new Date())
-            message.setSubject(title)
-            message.setText(templatedBody)
+                message.setSentDate(new Date())
+                message.setSubject(title)
+                message.setText(templatedBody.replace("{{email}}", body))
 
-            Try {
-              Transport.send(message)
-              logger.info(
-                s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}")
-            } recover {
-              case e: Exception =>
-                logger.error("Error while sending alert email", e)
-            } get
+                Try {
+                  Transport.send(message)
+                  logger.info(
+                    s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}")
+                } recover {
+                  case e: Exception =>
+                    logger.error("Error while sending alert email", e)
+                } get
 
+                FastFuture.successful(())
+              }
+          )
+          .flatMap { _ =>
             FastFuture.successful(())
           }
-      )
-      .flatMap { _ =>
-        FastFuture.successful(())
-      }
+      })
   }
 }
 
 class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
   lazy val logger = Logger("daikoku-mailer")
 
-  def send(title: String, to: Seq[String], body: String)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
+      implicit ec: ExecutionContext, translator: Translator,
+      messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
-    val templatedBody =
-      settings.template.map(t => t.replace("{{email}}", body)).getOrElse(body)
 
-    ws.url(s"https://api.sendgrid.com/v3/mail/send")
-      .withHttpHeaders(
-        "Authorization" -> s"Bearer ${settings.apikey}",
-        "Content-Type" -> "application/json"
-      )
-      .post(
-        Json.obj(
-          "personalizations" -> Json.arr(
+    translator.translate("tenant.mail.template", tenant, Map(
+      "email" -> "{{email}}"
+    ))
+      .map(templatedBody => {
+        ws.url(s"https://api.sendgrid.com/v3/mail/send")
+          .withHttpHeaders(
+            "Authorization" -> s"Bearer ${settings.apikey}",
+            "Content-Type" -> "application/json"
+          )
+          .post(
             Json.obj(
-              "subject" -> title,
-              "to" -> to.map(c => Json.obj("email" -> c, "name" -> c))
-            )
-          ),
-          "from" -> Json.obj(
-            "email" -> settings.fromEmail,
-            "name" -> settings.fromEmail
-          ),
-          "content" -> Json.arr(
-            Json.obj(
-              "type" -> "text/html",
-              "value" -> templatedBody
+              "personalizations" -> Json.arr(
+                Json.obj(
+                  "subject" -> title,
+                  "to" -> to.map(c => Json.obj("email" -> c, "name" -> c))
+                )
+              ),
+              "from" -> Json.obj(
+                "email" -> settings.fromEmail,
+                "name" -> settings.fromEmail
+              ),
+              "content" -> Json.arr(
+                Json.obj(
+                  "type" -> "text/html",
+                  "value" -> templatedBody.replace("{{email}}", body)
+                )
+              )
             )
           )
-        )
-      )
-      .andThen {
-        case Success(_) => logger.info(s"Alert email sent : ${to}")
-        case Failure(e) => logger.error("Error while sending alert email", e)
-      }
-      .fast
-      .map(_ => ())
+          .andThen {
+            case Success(_) => logger.info(s"Alert email sent : ${to}")
+            case Failure(e) => logger.error("Error while sending alert email", e)
+          }
+          .fast
+          .map(_ => ())
+      })
   }
 }

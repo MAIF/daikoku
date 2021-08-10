@@ -277,13 +277,13 @@ sealed trait MailerSettings {
   def asJson: JsValue
 }
 
-case class ConsoleMailerSettings()
+case class ConsoleMailerSettings(template: Option[String] = None)
     extends MailerSettings
     with CanJson[ConsoleMailerSettings] {
   def mailerType: String = "console"
-  def asJson: JsValue = Json.obj("type" -> "console")
+  def asJson: JsValue = json.ConsoleSettingsFormat.writes(this)
   def mailer(implicit env: Env): Mailer = {
-    new ConsoleMailer()
+    new ConsoleMailer(this)
   }
 }
 

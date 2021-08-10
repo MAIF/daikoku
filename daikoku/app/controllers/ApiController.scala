@@ -47,6 +47,7 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
+  implicit val tr = translator
 
   val logger = Logger("ApiController")
 
@@ -773,7 +774,8 @@ class ApiController(DaikokuAction: DaikokuAction,
           tenant.mailer.send(
             title,
             admins.map(admin => admin.email),
-            body
+            body,
+            tenant
           )
       )
     } yield {
@@ -1542,7 +1544,8 @@ class ApiController(DaikokuAction: DaikokuAction,
         ctx.tenant.mailer.send(
           title,
           admins.map(admin => admin.email),
-          body
+          body,
+          ctx.tenant
         )
       }
     } yield {

@@ -7,6 +7,7 @@ import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.domain.{Message, Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.utils.Translator
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, Lang, MessagesApi}
 import play.api.libs.json.{JsArray, JsNull, JsNumber, JsValue, Json}
@@ -43,7 +44,8 @@ case class GetLastClosedChatDates(chats: Set[String],
 
 class MessageActor(
     implicit env: Env,
-    messagesApi: MessagesApi
+    messagesApi: MessagesApi,
+    translator: Translator
 ) extends Actor
     with ActorLogging {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -52,7 +54,7 @@ class MessageActor(
 
   def maybeSendMailToRecipent(message: Message,
                               tenant: Tenant): Future[Unit] = {
-    implicit val lang: Lang = Lang(tenant.defaultLanguage.getOrElse("en"))
+    implicit val lang: String = tenant.defaultLanguage.getOrElse("en")
     for {
       sender <- env.dataStore.userRepo.findById(message.sender)
       lastMessage <- env.dataStore.messageRepo
@@ -95,16 +97,11 @@ class MessageActor(
       link = if (message.sender == message.chat) s"$baseLink/settings/messages"
       else baseLink
 
-      _ <- Future.sequence(
-        emails.map(
-          email =>
-            tenant.mailer.send(messagesApi("mail.new.message.title",
-                                           sender.get.name),
-                               Seq(email),
-                               messagesApi("mail.new.message.body",
-                                           sender.get.name,
-                                           message.message,
-                                           link))))
+      title <- translator.translate("mail.new.message.title", tenant, Map(
+        "user" -> sender.get.name
+      ))
+      body <- translator.translate("mail.new.message.body", tenant)
+      _ <- Future.sequence(emails.map(email => tenant.mailer.send(title, Seq(email), body, tenant)))
     } yield ()
   }
 

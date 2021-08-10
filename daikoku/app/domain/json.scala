@@ -537,6 +537,26 @@ object json {
           "type" -> "PayPerUse")
     }
   }
+  val ConsoleSettingsFormat = new Format[ConsoleMailerSettings] {
+    override def reads(json: JsValue): JsResult[ConsoleMailerSettings] =
+      Try {
+        JsSuccess(
+          ConsoleMailerSettings(
+            template = (json \ "template").asOpt[String]
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ConsoleMailerSettings): JsValue = Json.obj(
+      "type" -> "console",
+      "template" -> o.template
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
+  }
   val MailgunSettingsFormat = new Format[MailgunSettings] {
     override def reads(json: JsValue): JsResult[MailgunSettings] =
       Try {
@@ -1564,7 +1584,7 @@ object json {
                     SendGridSettingsFormat.reads(settings).asOpt
                   case "smtpClient" =>
                     SimpleSMTPClientSettingsFormat.reads(settings).asOpt
-                  case _ => Some(ConsoleMailerSettings())
+                  case "console" => ConsoleSettingsFormat.reads(settings).asOpt
                 }
               },
             bucketSettings =

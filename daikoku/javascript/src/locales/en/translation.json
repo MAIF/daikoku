@@ -953,5 +953,11 @@
     "mail.new.user.body": "Thanks for creating your [tenant] account, you're almost done.",
     "mailing_internalization.missing_translations": "Edition of all front office text will be available in next version",
     "mailing_internalization.message_text": "Message text",
-    "mailing_internalization.required_variables": "Required variables"
+    "mailing_internalization.required_variables": "Required variables",
+    "mailing_internalization.translation_updated": "Translation updated",
+    "mailing_internalization.failed_translation_update": "Failed to save translation",
+    "mailing_internalization.mail_tab": "Mail",
+    "mailing_internalization.mail_template_tab": "Mail template",
+    "mailing_internalization.front_office_tab": "Front office",
+    "mailing_internalization.go_to_edit_template": "Edit mail template"
 }

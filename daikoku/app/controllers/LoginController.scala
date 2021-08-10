@@ -39,6 +39,7 @@ class LoginController(DaikokuAction: DaikokuAction,
     extends AbstractController(cc) {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
+  implicit val tr = translator
 
   def loginPage(provider: String) = DaikokuTenantAction.async { ctx =>
     AuthProvider(provider) match {
@@ -419,7 +420,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                     "link" -> s"${ctx.request.theProtocol}://${host}/account/validate?id=${randomId}"
                   ))
                 } yield {
-                  ctx.tenant.mailer.send(title, Seq(email), body)
+                  ctx.tenant.mailer.send(title, Seq(email), body, ctx.tenant)
                   .map { _ =>
                     Ok(Json.obj("done" -> true))
                   }
@@ -548,6 +549,8 @@ class LoginController(DaikokuAction: DaikokuAction,
               .get("Otoroshi-Proxied-Host")
               .orElse(ctx.request.headers.get("X-Forwarded-Host"))
               .getOrElse(ctx.request.host)
+
+            implicit val language: String = ctx.tenant.defaultLanguage.getOrElse("en")
             ctx.tenant.mailer
               .send(
                 s"Reset your ${ctx.tenant.name} account password",
@@ -561,7 +564,8 @@ class LoginController(DaikokuAction: DaikokuAction,
                 |If not, just ignore this email
                 |
                 |The ${ctx.tenant.name} team
-              """.stripMargin
+              """.stripMargin,
+                ctx.tenant
               )
               .map { _ =>
                 Ok(Json.obj("done" -> true))

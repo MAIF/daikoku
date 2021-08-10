@@ -16,10 +16,12 @@ import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
 
-class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: MessagesApi) {
+class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: MessagesApi, translator: Translator) {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
+  implicit val me = messagesApi
+  implicit val tr = translator
 
   def subscribeToApi(tenant: Tenant,
                      user: User,
@@ -444,6 +446,8 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
+        implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+
         val newClientSecret = IdGenerator.token(64)
         val updatedSubscription = subscription.copy(apiKey = subscription.apiKey.copy(clientSecret = newClientSecret))
 
@@ -487,11 +491,12 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
               notificationType =
                 NotificationType.AcceptOnly
             )))
-          _ <- EitherT.liftF(tenant.mailer.send(
-            messagesApi("mail.apikey.refresh.title")(Lang(tenant.defaultLanguage.getOrElse("En"))),
-            admins.map(_.email),
-            messagesApi("mail.apikey.refresh.body", api.name, plan.customName.getOrElse(plan.typeName))(Lang(tenant.defaultLanguage.getOrElse("En")))
-          ))
+          title <- EitherT.liftF(translator.translate("mail.apikey.refresh.title", tenant))
+          body <- EitherT.liftF(translator.translate("mail.apikey.refresh.body", tenant, Map(
+            "apiName" -> api.name,
+            "planName" -> plan.customName.getOrElse(plan.typeName)
+          )))
+          _ <- EitherT.liftF(tenant.mailer.send(title, admins.map(_.email), body, tenant))
         } yield {
           Json.obj("done" -> true,
             "subscription" -> updatedSubscription.asJson)

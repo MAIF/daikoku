@@ -33,6 +33,7 @@ class TenantController(DaikokuAction: DaikokuAction,
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
+  implicit val tr = translator
 
   def namesOfTenants() = DaikokuAction.async(parse.json) { ctx =>
     val tenantIdsJs: JsArray = ctx.request.body.as[JsArray]
@@ -420,9 +421,6 @@ class TenantController(DaikokuAction: DaikokuAction,
         AuditTrailEvent(
           s"@{name} - @{email} send a contact email to @{contact}"))(ctx) {
 
-        val tenantLanguage = ctx.tenant.defaultLanguage
-          .getOrElse("en")
-
         implicit val currentLanguage: String = ctx.request.headers.toSimpleMap
           .find(test => test._1 == "X-contact-language")
           .map(h => h._2)
@@ -453,10 +451,11 @@ class TenantController(DaikokuAction: DaikokuAction,
             mailToContact <- translator.translate("mail.contact.contact",
               ctx.tenant,
               Map("user" -> name, "email" -> email, "subject" -> subject, "body" -> sanitizeBody))
-            _ <- ctx.tenant.mailer.send(titleToSender, Seq(email), mailToSender)
+            _ <- ctx.tenant.mailer.send(titleToSender, Seq(email), mailToSender, ctx.tenant)
             _ <- ctx.tenant.mailer.send(titleToContact,
                                         Seq(contact),
-                                        mailToContact)
+                                        mailToContact,
+                                        ctx.tenant)
           } yield {
             ctx.setCtxValue("contact", contact)
             Ok(Json.obj("send" -> true))

@@ -1,7 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import java.util.UUID.randomUUID
-
 import akka.actor.{ActorRef, PoisonPill, Props}
 import akka.http.scaladsl.util.FastFuture
 import akka.pattern.ask
@@ -10,18 +9,11 @@ import akka.stream.{CompletionStrategy, OverflowStrategy}
 import akka.util.Timeout
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  PublicUserAccess,
-  TenantAdminOnly
-}
-import fr.maif.otoroshi.daikoku.domain.{
-  Message,
-  MessageType,
-  DatastoreId,
-  UserId
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{PublicUserAccess, TenantAdminOnly}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Message, MessageType, UserId}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.messages._
+import fr.maif.otoroshi.daikoku.utils.Translator
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import play.api.Logger
@@ -36,13 +28,15 @@ import scala.concurrent.duration._
 
 class MessageController(DaikokuAction: DaikokuAction,
                         env: Env,
-                        cc: ControllerComponents)
+                        cc: ControllerComponents,
+                        translator: Translator)
     extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
   implicit val timeout: Timeout = Timeout(5.seconds)
+  implicit val tr = translator
 
   val messageActor: ActorRef =
     env.defaultActorSystem.actorOf(Props(new MessageActor()), "messages")

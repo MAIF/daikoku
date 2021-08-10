@@ -953,5 +953,11 @@
   "mail.new.user.body": "Merci d'avoir créer un compte sur [tenant], vous y êtes presque.",
   "mailing_internalization.missing_translations": "L'édition des traductions du front office sera disponible dans une future version.",
   "mailing_internalization.message_text": "Description du message",
-  "mailing_internalization.required_variables": "Variables requises"
+  "mailing_internalization.required_variables": "Variables requises",
+  "mailing_internalization.translation_updated": "Traduction sauvegardée",
+  "mailing_internalization.failed_translation_update": "Une erreur esr survenue lors de la mise à jour des traductions",
+  "mailing_internalization.mail_tab": "Mail",
+  "mailing_internalization.mail_template_tab": "Modèle de mail",
+  "mailing_internalization.front_office_tab": "Autres pages",
+  "mailing_internalization.go_to_edit_template": "Editer le modèle de mails"
 }
