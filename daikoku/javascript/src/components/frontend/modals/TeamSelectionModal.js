@@ -108,8 +108,11 @@ export const TeamSelectorModal = ({
             </div>
           )}
           {teams
-            .filter(team => allowMultipleDemand ||
-              (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)))
+            .filter(
+              (team) =>
+                allowMultipleDemand ||
+                (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))
+            )
             .map((team) => {
               return (
                 <div

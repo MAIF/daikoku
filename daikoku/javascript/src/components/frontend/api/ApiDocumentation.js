@@ -14,14 +14,15 @@ import 'highlight.js/styles/monokai.css';
 const asciidoctorConverter = asciidoctor();
 
 export function ApiDocumentationCartidge({ details }) {
-  const params = useParams()
+  const params = useParams();
   return (
     <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
       <ul>
         {details.titles.map((obj) => {
           return (
             <li key={obj._id} style={{ marginLeft: obj.level * 10 }}>
-              <Link to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}>
+              <Link
+                to={`/${params.teamId}/${params.apiId}/${params.versionId}/documentation/${obj._id}`}>
                 {obj.title}
               </Link>
             </li>
@@ -39,31 +40,33 @@ export class ApiDocumentation extends Component {
   };
 
   fetchPage = () => {
-    Services.getDocDetails(this.props.api._humanReadableId, this.props.match.params.versionId).then((details) => {
-      this.setState({ details });
-      const pageId = this.props.match.params.pageId || details.pages[0];
-      if (pageId)
-        Services.getDocPage(this.props.api._id, pageId).then((page) => {
-          if (page.remoteContentEnabled) {
-            this.setState({
-              content: null,
-              contentType: page.contentType,
-              remoteContent: {
-                url: page.contentUrl,
-              },
-            });
-          } else {
-            this.setState({
-              content: page.content,
-              contentType: page.contentType,
-              remoteContent: null,
-            });
-            window.$('pre code').each((i, block) => {
-              hljs.highlightBlock(block);
-            });
-          }
-        });
-    });
+    Services.getDocDetails(this.props.api._humanReadableId, this.props.match.params.versionId).then(
+      (details) => {
+        this.setState({ details });
+        const pageId = this.props.match.params.pageId || details.pages[0];
+        if (pageId)
+          Services.getDocPage(this.props.api._id, pageId).then((page) => {
+            if (page.remoteContentEnabled) {
+              this.setState({
+                content: null,
+                contentType: page.contentType,
+                remoteContent: {
+                  url: page.contentUrl,
+                },
+              });
+            } else {
+              this.setState({
+                content: page.content,
+                contentType: page.contentType,
+                remoteContent: null,
+              });
+              window.$('pre code').each((i, block) => {
+                hljs.highlightBlock(block);
+              });
+            }
+          });
+      }
+    );
   };
 
   componentDidMount() {
@@ -111,7 +114,8 @@ export class ApiDocumentation extends Component {
         <div className="col p-3">
           <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
             {prevId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
+              <Link
+                to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
                 <i className="fas fa-chevron-left mr-1" />
                 <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
                   Previous page
@@ -119,7 +123,8 @@ export class ApiDocumentation extends Component {
               </Link>
             )}
             {nextId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
+              <Link
+                to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
                 <Translation i18nkey="Next page" language={this.props.currentLanguage}>
                   Next page
                 </Translation>
@@ -141,7 +146,8 @@ export class ApiDocumentation extends Component {
           )}
           <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
             {prevId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
+              <Link
+                to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
                 <i className="fas fa-chevron-left mr-1" />
                 <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
                   Previous page
@@ -149,7 +155,8 @@ export class ApiDocumentation extends Component {
               </Link>
             )}
             {nextId && (
-              <Link to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
+              <Link
+                to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
                 <Translation i18nkey="Next page" language={this.props.currentLanguage}>
                   Next page
                 </Translation>

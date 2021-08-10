@@ -469,7 +469,8 @@ object authorizations {
                                       AuthorizationLevel.NotAuthorized)
             FastFuture.successful(
               Results.Forbidden(
-                Json.obj("error" -> "You're not part of the team", "status" -> 403)))
+                Json.obj("error" -> "You're not part of the team",
+                         "status" -> 403)))
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
                                       ctx.user,
@@ -478,7 +479,8 @@ object authorizations {
                                       ctx.ctx,
                                       AuthorizationLevel.NotAuthorized)
             FastFuture.successful(
-              Results.NotFound(Json.obj("error" -> "Team not found", "status" -> 404)))
+              Results.NotFound(
+                Json.obj("error" -> "Team not found", "status" -> 404)))
         }
     }
 

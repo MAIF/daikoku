@@ -79,7 +79,7 @@ export const ApiCard = (props) => {
         </div>
         <div className="card-body plan-body d-flex flex-column">
           <h4
-            className='cursor-pointer underline-on-hover a-fake'
+            className="cursor-pointer underline-on-hover a-fake"
             onClick={props.redirectToApiPage}>
             {api.name}
           </h4>
@@ -100,9 +100,7 @@ export const ApiCard = (props) => {
   return (
     <div className="row border-bottom py-4">
       <div className="col-12 d-flex justify-content-between">
-        <div
-          className='cursor-pointer underline-on-hover a-fake'
-          onClick={props.redirectToApiPage}>
+        <div className="cursor-pointer underline-on-hover a-fake" onClick={props.redirectToApiPage}>
           <h3>{api.name}</h3>
         </div>
         <div className="ml-2">

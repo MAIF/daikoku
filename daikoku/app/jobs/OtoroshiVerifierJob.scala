@@ -4,11 +4,20 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.actor.Cancellable
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{OtoroshiSyncApiError, OtoroshiSyncSubscriptionError}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  OtoroshiSyncApiError,
+  OtoroshiSyncSubscriptionError
+}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{ConsoleMailer, IdGenerator, Mailer, OtoroshiClient, Translator}
+import fr.maif.otoroshi.daikoku.utils.{
+  ConsoleMailer,
+  IdGenerator,
+  Mailer,
+  OtoroshiClient,
+  Translator
+}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.MessagesApi
@@ -19,7 +28,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class OtoroshiVerifierJob(client: OtoroshiClient, env: Env, translator: Translator, messagesApi: MessagesApi) {
+class OtoroshiVerifierJob(client: OtoroshiClient,
+                          env: Env,
+                          translator: Translator,
+                          messagesApi: MessagesApi) {
 
   private val logger = Logger("OtoroshiVerifierJob")
 
@@ -122,41 +134,48 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env, translator: Translat
             tenants.find { t =>
               t.mailerSettings.isDefined && t.mailerSettings.get.mailerType != "console"
             } match {
-              case None         => sendMail(new ConsoleMailer(ConsoleMailerSettings()), tenants.head)
+              case None =>
+                sendMail(new ConsoleMailer(ConsoleMailerSettings()),
+                         tenants.head)
               case Some(tenant) => sendMail(tenant.mailer(env), tenant)
             }
           }
     }
   }
 
-  private def verifyIfOtoroshiGroupsStillExists(query: JsObject = Json.obj()): Future[Unit] = {
-    def checkEntities(entities: AuthorizedEntities, otoroshi: OtoroshiSettings, api: Api): Unit = {
-      entities.groups.map(group => client
-        .getServiceGroup(group.value)(otoroshi)
-        .andThen {
-          case Failure(_) =>
-            sendErrorNotification(
-              NotificationAction.OtoroshiSyncApiError(
-                api,
-                s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore"),
-              api.team,
-              api.tenant)
-        }) ++
-        entities.services.map(service => client
-          .getServices()(otoroshi)
-          .andThen {
-            case Failure(_) =>
-              sendErrorNotification(
-                NotificationAction.OtoroshiSyncApiError(
-                  api,
-                  s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"),
-                api.team,
-                api.tenant)
-          }
-        )
+  private def verifyIfOtoroshiGroupsStillExists(
+      query: JsObject = Json.obj()): Future[Unit] = {
+    def checkEntities(entities: AuthorizedEntities,
+                      otoroshi: OtoroshiSettings,
+                      api: Api): Unit = {
+      entities.groups.map(
+        group =>
+          client
+            .getServiceGroup(group.value)(otoroshi)
+            .andThen {
+              case Failure(_) =>
+                sendErrorNotification(
+                  NotificationAction.OtoroshiSyncApiError(
+                    api,
+                    s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore"),
+                  api.team,
+                  api.tenant
+                )
+          }) ++
+        entities.services.map(
+          service =>
+            client
+              .getServices()(otoroshi)
+              .andThen {
+                case Failure(_) =>
+                  sendErrorNotification(
+                    NotificationAction.OtoroshiSyncApiError(
+                      api,
+                      s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"),
+                    api.team,
+                    api.tenant)
+            })
     }
-
-
 
     env.dataStore.apiRepo.forAllTenant().findNotDeleted(query).map { apis =>
       apis.map { api =>
@@ -185,8 +204,11 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env, translator: Translat
                     case Some(otoroshi) =>
                       target.authorizedEntities match {
                         case None => ()
-                        case Some(authorizedEntities) if authorizedEntities.isEmpty => ()
-                        case Some(authorizedEntities) => checkEntities(authorizedEntities, otoroshi, api)
+                        case Some(authorizedEntities)
+                            if authorizedEntities.isEmpty =>
+                          ()
+                        case Some(authorizedEntities) =>
+                          checkEntities(authorizedEntities, otoroshi, api)
                       }
                   }
               }
@@ -196,7 +218,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env, translator: Translat
     }
   }
 
-  private def verifyIfOtoroshiApiKeysStillExists(query: JsObject = Json.obj()): Future[Unit] = {
+  private def verifyIfOtoroshiApiKeysStillExists(
+      query: JsObject = Json.obj()): Future[Unit] = {
     env.dataStore.apiSubscriptionRepo.forAllTenant().findNotDeleted(query).map {
       subscriptions =>
         subscriptions.map { subscription =>
@@ -246,8 +269,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env, translator: Translat
                                   subscription.tenant)
                               case Some(settings) =>
                                 client
-                                  .getApikey(
-                                    subscription.apiKey.clientId)(settings)
+                                  .getApikey(subscription.apiKey.clientId)(
+                                    settings)
                                   .andThen {
                                     case Failure(e) =>
                                       sendErrorNotification(
@@ -411,7 +434,9 @@ class OtoroshiVerifierJob(client: OtoroshiClient, env: Env, translator: Translat
                                             subscription.customMaxPerMonth
                                               .orElse(plan.maxRequestPerMonth)
                                               .getOrElse(apk.monthlyQuota),
-                                          authorizedEntities = target.authorizedEntities.getOrElse(AuthorizedEntities()),
+                                          authorizedEntities =
+                                            target.authorizedEntities.getOrElse(
+                                              AuthorizedEntities()),
                                           readOnly = subscription.customReadOnly
                                             .orElse(plan.otoroshiTarget.map(
                                               _.apikeyCustomization.readOnly))

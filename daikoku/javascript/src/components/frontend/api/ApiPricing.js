@@ -119,23 +119,22 @@ class ApiPricingCardComponent extends Component {
     }
   };
 
-  showApiKeySelectModal = team => {
+  showApiKeySelectModal = (team) => {
     const { api, currentLanguage, plan } = this.props;
 
-    Services.getAllTeamSubscriptions(team)
-      .then(apiKeys => {
-        if (!plan.aggregationApiKeysSecurity || apiKeys.length <= 0)
-          this.props.askForApikeys(team, plan)
-        else
-          this.props.openApiKeySelectModal({
-            currentLanguage,
-            plan,
-            apiKeys,
-            onSubscribe: () => this.props.askForApikeys(team, plan),
-            extendApiKey: apiKey => this.props.askForApikeys(team, plan, apiKey)
-          });
-      })
-  }
+    Services.getAllTeamSubscriptions(team).then((apiKeys) => {
+      if (!plan.aggregationApiKeysSecurity || apiKeys.length <= 0)
+        this.props.askForApikeys(team, plan);
+      else
+        this.props.openApiKeySelectModal({
+          currentLanguage,
+          plan,
+          apiKeys,
+          onSubscribe: () => this.props.askForApikeys(team, plan),
+          extendApiKey: (apiKey) => this.props.askForApikeys(team, plan, apiKey),
+        });
+    });
+  };
 
   render() {
     const plan = this.props.plan;
@@ -239,44 +238,44 @@ class ApiPricingCardComponent extends Component {
                 )}>
                 {(this.props.api.visibility === 'AdminOnly' ||
                   (plan.otoroshiTarget && !isAccepted && !isPending)) && (
-                    <ActionWithTeamSelector
-                      title={t('team.selection.title', this.props.currentLanguage, 'Select teams')}
-                      description={t(
-                        plan.subscriptionProcess === 'Automatic'
-                          ? 'team.selection.desc.get'
-                          : 'team.selection.desc.request',
-                        this.props.currentLanguage,
-                        'You are going to get or request API keys. On which team do you want them for?'
+                  <ActionWithTeamSelector
+                    title={t('team.selection.title', this.props.currentLanguage, 'Select teams')}
+                    description={t(
+                      plan.subscriptionProcess === 'Automatic'
+                        ? 'team.selection.desc.get'
+                        : 'team.selection.desc.request',
+                      this.props.currentLanguage,
+                      'You are going to get or request API keys. On which team do you want them for?'
+                    )}
+                    currentLanguage={this.props.currentLanguage}
+                    teams={authorizedTeams
+                      .filter((t) => t.type !== 'Admin')
+                      .filter(
+                        (team) =>
+                          plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
+                      )
+                      .filter(
+                        (t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization'
                       )}
-                      currentLanguage={this.props.currentLanguage}
-                      teams={authorizedTeams
-                        .filter((t) => t.type !== 'Admin')
-                        .filter(
-                          (team) =>
-                            plan.visibility === 'Public' || team._id === this.props.ownerTeam._id
-                        )
-                        .filter(
-                          (t) => !this.props.tenant.subscriptionSecurity || t.type === 'Organization'
-                        )}
-                      pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
-                      authorizedTeams={this.props.subscriptions.map((subs) => subs.team)}
-                      withAllTeamSelector={false}
-                      action={teams => this.showApiKeySelectModal(teams)}>
-                      <button type="button" className="btn btn-sm btn-access-negative col-12">
-                        <Translation
-                          i18nkey={
-                            plan.subscriptionProcess === 'Automatic'
-                              ? 'Get API key'
-                              : 'Request API key'
-                          }
-                          language={this.props.currentLanguage}>
-                          {plan.subscriptionProcess === 'Automatic'
+                    pendingTeams={this.props.pendingSubscriptions.map((s) => s.action.team)}
+                    authorizedTeams={this.props.subscriptions.map((subs) => subs.team)}
+                    withAllTeamSelector={false}
+                    action={(teams) => this.showApiKeySelectModal(teams)}>
+                    <button type="button" className="btn btn-sm btn-access-negative col-12">
+                      <Translation
+                        i18nkey={
+                          plan.subscriptionProcess === 'Automatic'
                             ? 'Get API key'
-                            : 'Request API key'}
-                        </Translation>
-                      </button>
-                    </ActionWithTeamSelector>
-                  )}
+                            : 'Request API key'
+                        }
+                        language={this.props.currentLanguage}>
+                        {plan.subscriptionProcess === 'Automatic'
+                          ? 'Get API key'
+                          : 'Request API key'}
+                      </Translation>
+                    </button>
+                  </ActionWithTeamSelector>
+                )}
               </Can>
             )}
             {this.props.connectedUser.isGuest && (
@@ -302,7 +301,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   openLoginOrRegisterModal: (modalProps) => openLoginOrRegisterModal(modalProps),
-  openApiKeySelectModal: modalProps => openApiKeySelectModal(modalProps)
+  openApiKeySelectModal: (modalProps) => openApiKeySelectModal(modalProps),
 };
 
 export const ApiPricingCard = connect(mapStateToProps, mapDispatchToProps)(ApiPricingCardComponent);

@@ -312,7 +312,10 @@ export const ServicesStep = (props) => {
               Api group
             </Translation>
           </span>{' '}
-          : {props.groups.find((g) => g.id === props.service.groupId) ? props.groups.find((g) => g.id === props.service.groupId).name : ""}
+          :{' '}
+          {props.groups.find((g) => g.id === props.service.groupId)
+            ? props.groups.find((g) => g.id === props.service.groupId).name
+            : ''}
         </div>
       </div>
       <div className="col-6">
@@ -629,16 +632,19 @@ const ApiKey = (props) => {
 
   const getAuthorizedEntitiesFromOtoroshiApiKey = (autorizedOn) => {
     const regex = /(group|service)_(.*)/;
-    return autorizedOn.reduce(({ groups, services }, entitie) => {
-      // eslint-disable-next-line no-unused-vars
-      const [_value, type, id] = entitie.match(regex);
-      switch (type) {
-        case 'group':
-          return { groups: [...groups, id], services };
-        case 'service':
-          return { groups, services: [...services, id] };
-      }
-    }, { groups: [], services: [] });
+    return autorizedOn.reduce(
+      ({ groups, services }, entitie) => {
+        // eslint-disable-next-line no-unused-vars
+        const [_value, type, id] = entitie.match(regex);
+        switch (type) {
+          case 'group':
+            return { groups: [...groups, id], services };
+          case 'service':
+            return { groups, services: [...services, id] };
+        }
+      },
+      { groups: [], services: [] }
+    );
   };
 
   //add new plan effect
@@ -651,7 +657,9 @@ const ApiKey = (props) => {
         otoroshiTarget: {
           ...newPossiblePlan.otoroshiTarget,
           otoroshiSettings: props.otoroshi,
-          authorizedEntities: getAuthorizedEntitiesFromOtoroshiApiKey(props.apikey.authorizedEntities)
+          authorizedEntities: getAuthorizedEntitiesFromOtoroshiApiKey(
+            props.apikey.authorizedEntities
+          ),
         },
       };
       plans.push(plan);
@@ -731,8 +739,9 @@ const ApiKey = (props) => {
       </td>
       <td style={{ width: '10%' }} className="align-middle text-center">
         <button
-          className={`btn btn-outline-${props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
-            } mr-2`}
+          className={`btn btn-outline-${
+            props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
+          } mr-2`}
           disabled={!selectedTeam || error.name || !selectedPlan ? 'disabled' : null}
           onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
           {props.maybeCreatedSub(props.apikey).isDefined

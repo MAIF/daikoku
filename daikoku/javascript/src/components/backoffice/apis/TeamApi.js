@@ -21,25 +21,28 @@ import {
 import { setError, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
 import Select from 'react-select';
 
-const reservedCharacters = [";", "/", "?", ":", "@", "&", "=", "+", "$", ","]
+const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 
 function TeamApiComponent(props) {
-  const location = useLocation()
-  const params = useParams()
-  const history = useHistory()
+  const location = useLocation();
+  const params = useParams();
+  const history = useHistory();
 
   const [state, setState] = useState({
     api: null,
     create: false,
     error: null,
     otoroshiSettings: [],
-    changed: false
+    changed: false,
   });
 
   const [versions, setApiVersions] = useState([]);
-  const [apiVersion, setApiVersion] = useState({ value: params.versionId, label: params.versionId })
+  const [apiVersion, setApiVersion] = useState({
+    value: params.versionId,
+    label: params.versionId,
+  });
 
-  const teamApiDocumentationRef = useRef()
+  const teamApiDocumentationRef = useRef();
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
@@ -51,45 +54,48 @@ function TeamApiComponent(props) {
           create: true,
         })
       );
-    } else
-      reloadState()
+    } else reloadState();
   }, [params.tab, params.versionId]);
 
   useEffect(() => {
     if (state.changed) {
-      setState({ ...state, changed: false })
-      save()
+      setState({ ...state, changed: false });
+      save();
     }
-  }, [state.changed])
+  }, [state.changed]);
 
   function reloadState() {
     Promise.all([
       Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.allSimpleOtoroshis(props.tenant._id),
-      Services.getAllApiVersions(props.currentTeam._id, params.apiId)
+      Services.getAllApiVersions(props.currentTeam._id, params.apiId),
     ]).then(([api, otoroshiSettings, versions]) => {
-      if (!api.error)
-        setState({ ...state, api, otoroshiSettings });
-      else
-        toastr.error(api.error)
-      setApiVersions(versions.map(v => ({ label: v, value: v })));
-      setApiVersion({ value: params.versionId, label: params.versionId })
+      if (!api.error) setState({ ...state, api, otoroshiSettings });
+      else toastr.error(api.error);
+      setApiVersions(versions.map((v) => ({ label: v, value: v })));
+      setApiVersion({ value: params.versionId, label: params.versionId });
     });
   }
 
   function save() {
-    if (params.tab === 'documentation')
-      teamApiDocumentationRef.current.saveCurrentPage()
+    if (params.tab === 'documentation') teamApiDocumentationRef.current.saveCurrentPage();
 
     const editedApi = transformPossiblePlansBack(state.api);
     if (state.create) {
       return Services.createTeamApi(props.currentTeam._id, editedApi)
         .then((api) => {
           if (api.name) {
-            toastr.success(t('api.created.success', props.currentLanguage, false, `Api "${api.name}" created`, api.name));
+            toastr.success(
+              t(
+                'api.created.success',
+                props.currentLanguage,
+                false,
+                `Api "${api.name}" created`,
+                api.name
+              )
+            );
             return api;
-          } else
-            return Promise.reject(api.error);
+          } else return Promise.reject(api.error);
         })
         .then((api) =>
           setState({ ...state, create: false, api }, () =>
@@ -100,46 +106,47 @@ function TeamApiComponent(props) {
         )
         .catch((error) => toastr.error(t(error, props.currentLanguage)));
     } else {
-      return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id)
-        .then(r => {
-          if (!r.exists) {
-            if (editedApi.currentVersion.split("").find(c => reservedCharacters.includes(c))) {
-              toastr.error("Can't set version with special characters : " + reservedCharacters.join(" | "))
-              return Promise.resolve()
-            } else
-              return Services.saveTeamApiWithId(props.currentTeam._id, editedApi, apiVersion.value, editedApi._humanReadableId)
-                .then(res => {
-                  if (res.error)
-                    toastr.error(t(res.error, props.currentLanguage))
-                  else
-                    toastr.success(t('Api saved', props.currentLanguage))
-                  return res;
-                })
-                .then(newApi => {
-                  if (newApi._humanReadableId !== params.apiId || newApi.currentVersion !== params.versionId)
-                    history.push(
-                      `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._humanReadableId}/${newApi.currentVersion}/infos`
-                    )
-                })
-          }
-          else
-            toastr.error(`api with name "${editedApi.name}" already exists`)
-        });
+      return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id).then((r) => {
+        if (!r.exists) {
+          if (editedApi.currentVersion.split('').find((c) => reservedCharacters.includes(c))) {
+            toastr.error(
+              "Can't set version with special characters : " + reservedCharacters.join(' | ')
+            );
+            return Promise.resolve();
+          } else
+            return Services.saveTeamApiWithId(
+              props.currentTeam._id,
+              editedApi,
+              apiVersion.value,
+              editedApi._humanReadableId
+            )
+              .then((res) => {
+                if (res.error) toastr.error(t(res.error, props.currentLanguage));
+                else toastr.success(t('Api saved', props.currentLanguage));
+                return res;
+              })
+              .then((newApi) => {
+                if (
+                  newApi._humanReadableId !== params.apiId ||
+                  newApi.currentVersion !== params.versionId
+                )
+                  history.push(
+                    `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._humanReadableId}/${newApi.currentVersion}/infos`
+                  );
+              });
+        } else toastr.error(`api with name "${editedApi.name}" already exists`);
+      });
     }
   }
 
   function deleteApi() {
-    window
-      .confirm(t('delete.api.confirm', props.currentLanguage))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteTeamApi(props.currentTeam._id, state.api._id)
-            .then(() =>
-              props.history.push(`/${props.currentTeam._humanReadableId}/settings/apis`)
-            )
-            .then(() => toastr.success(t('deletion successful', props.currentLanguage)));
-        }
-      });
+    window.confirm(t('delete.api.confirm', props.currentLanguage)).then((ok) => {
+      if (ok) {
+        Services.deleteTeamApi(props.currentTeam._id, state.api._id)
+          .then(() => props.history.push(`/${props.currentTeam._humanReadableId}/settings/apis`))
+          .then(() => toastr.success(t('deletion successful', props.currentLanguage)));
+      }
+    });
   }
 
   function transformPossiblePlansBack(api) {
@@ -177,7 +184,7 @@ function TeamApiComponent(props) {
       return plan;
     });
     return api;
-  };
+  }
 
   function transformPossiblePlans(api) {
     if (!api) {
@@ -214,34 +221,48 @@ function TeamApiComponent(props) {
       return plan;
     });
     return api;
-  };
+  }
 
   function promptVersion() {
-    const { api } = state
-    window.prompt("Version number", undefined, false, "Create a new version", `Current version : ${api.currentVersion}`)
-      .then(newVersion => {
-        if ((newVersion || "").split("").find(c => reservedCharacters.includes(c)))
-          toastr.error("Can't create version with special characters : " + reservedCharacters.join(" | "))
-        else
-          createNewVersion(newVersion)
-      })
+    const { api } = state;
+    window
+      .prompt(
+        'Version number',
+        undefined,
+        false,
+        'Create a new version',
+        `Current version : ${api.currentVersion}`
+      )
+      .then((newVersion) => {
+        if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
+          toastr.error(
+            "Can't create version with special characters : " + reservedCharacters.join(' | ')
+          );
+        else createNewVersion(newVersion);
+      });
   }
 
   function createNewVersion(newVersion) {
-    Services.createNewApiVersion(state.api._humanReadableId, props.currentTeam._id, newVersion)
-      .then(res => {
-        if (res.error)
-          toastr.error(res.error)
-        else {
-          toastr.success("New version of api created");
-          history.push(`/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab ? params.tab : 'infos'}`)
-        }
-      })
+    Services.createNewApiVersion(
+      state.api._humanReadableId,
+      props.currentTeam._id,
+      newVersion
+    ).then((res) => {
+      if (res.error) toastr.error(res.error);
+      else {
+        toastr.success('New version of api created');
+        history.push(
+          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${
+            params.tab ? params.tab : 'infos'
+          }`
+        );
+      }
+    });
   }
 
   const teamId = props.currentTeam._id;
   const disabled = {}; //TODO: deepEqual(state.originalApi, state.api) ? { disabled: 'disabled' } : {};
-  const tab = params.tab || "infos";
+  const tab = params.tab || 'infos';
   const editedApi = transformPossiblePlans(state.api);
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
@@ -252,8 +273,9 @@ function TeamApiComponent(props) {
     <TeamBackOffice
       tab="Apis"
       isLoading={!editedApi}
-      title={`${props.currentTeam.name} - ${state.api ? state.api.name : t('API', props.currentLanguage)
-        }`}>
+      title={`${props.currentTeam.name} - ${
+        state.api ? state.api.name : t('API', props.currentLanguage)
+      }`}>
       <Can I={manage} a={API} team={props.currentTeam} dispatchError>
         {!editedApi && (
           <h3>
@@ -265,45 +287,52 @@ function TeamApiComponent(props) {
         {editedApi && (
           <>
             <div className="row">
-              {
-                state.create ?
+              {state.create ? (
+                <h1>
+                  <Translation i18nkey="New api" language={props.currentLanguage}>
+                    New api
+                  </Translation>{' '}
+                  - {editedApi.name}
+                </h1>
+              ) : (
+                <div
+                  className="d-flex justify-content-between align-items-center"
+                  style={{ flex: 1 }}>
                   <h1>
-                    <Translation i18nkey="New api" language={props.currentLanguage}>
-                      New api
-                    </Translation>{' '}
-                    - {editedApi.name}
+                    Api - {editedApi.name}{' '}
+                    <Link
+                      to={`/${props.currentTeam._humanReadableId}/${editedApi._humanReadableId}/${editedApi.currentVersion}`}
+                      className="btn btn-sm btn-access-negative"
+                      title={t('View this Api', props.currentLanguage)}>
+                      <i className="fas fa-eye" />
+                    </Link>
                   </h1>
-                  :
-                  <div className="d-flex justify-content-between align-items-center" style={{ flex: 1 }}>
-                    <h1>
-                      Api - {editedApi.name}{' '}
-                      <Link
-                        to={`/${props.currentTeam._humanReadableId}/${editedApi._humanReadableId}/${editedApi.currentVersion}`}
-                        className="btn btn-sm btn-access-negative"
-                        title={t('View this Api', props.currentLanguage)}>
-                        <i className="fas fa-eye" />
-                      </Link>
-                    </h1>
-                    <div className="d-flex align-items-center">
-                      {versions.length > 1 && <div style={{ minWidth: '125px' }}>
+                  <div className="d-flex align-items-center">
+                    {versions.length > 1 && (
+                      <div style={{ minWidth: '125px' }}>
                         <Select
                           name="versions-selector"
                           value={apiVersion}
                           options={versions}
-                          onChange={e => history.push(`/${params.teamId}/settings/apis/${params.apiId}/${e.value}/${params.tab}`)}
+                          onChange={(e) =>
+                            history.push(
+                              `/${params.teamId}/settings/apis/${params.apiId}/${e.value}/${params.tab}`
+                            )
+                          }
                           classNamePrefix="reactSelect"
                           className="mr-2"
                           menuPlacement="auto"
                           menuPosition="fixed"
                         />
-                      </div>}
-                      <button type="button" className="btn btn-outline-info" onClick={promptVersion}>
-                        <i className="fas fa-plus mr-1" />
-                        {t('teamapi.new_version', props.currentLanguage)}
-                      </button>
-                    </div>
+                      </div>
+                    )}
+                    <button type="button" className="btn btn-outline-info" onClick={promptVersion}>
+                      <i className="fas fa-plus mr-1" />
+                      {t('teamapi.new_version', props.currentLanguage)}
+                    </button>
                   </div>
-              }
+                </div>
+              )}
             </div>
             <div className="row">
               <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
@@ -402,12 +431,10 @@ function TeamApiComponent(props) {
                       team={props.currentTeam}
                       currentLanguage={props.currentLanguage}
                       creating={
-                        props.location &&
-                        props.location.state &&
-                        !!props.location.state.newApi
+                        props.location && props.location.state && !!props.location.state.newApi
                       }
                       value={editedApi}
-                      onChange={api => setState({ ...state, api })}
+                      onChange={(api) => setState({ ...state, api })}
                     />
                   )}
                   {editedApi && tab === 'description' && (
@@ -442,8 +469,13 @@ function TeamApiComponent(props) {
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
                       tenant={props.tenant}
-                      reload={() => Services.teamApi(props.currentTeam._id, params.apiId, params.versionId)
-                        .then(api => setState({ ...state, api }))}
+                      reload={() =>
+                        Services.teamApi(
+                          props.currentTeam._id,
+                          params.apiId,
+                          params.versionId
+                        ).then((api) => setState({ ...state, api }))
+                      }
                       params={params}
                     />
                   )}
@@ -461,7 +493,7 @@ function TeamApiComponent(props) {
                       team={props.currentTeam}
                       teamId={teamId}
                       value={editedApi}
-                      onChange={api => setState({ ...state, api })}
+                      onChange={(api) => setState({ ...state, api })}
                       save={save}
                       versionId={props.match.params.versionId}
                       params={params}
@@ -476,8 +508,8 @@ function TeamApiComponent(props) {
                       team={props.currentTeam}
                       teamId={teamId}
                       value={editedApi}
-                      onChange={api => setState({ ...state, api })}
-                      onAction={api => setState({ ...state, api, changed: true })}
+                      onChange={(api) => setState({ ...state, api })}
+                      onAction={(api) => setState({ ...state, api, changed: true })}
                       save={save}
                       otoroshiSettings={state.otoroshiSettings}
                       openSubMetadataModal={props.openSubMetadataModal}
@@ -501,10 +533,7 @@ function TeamApiComponent(props) {
             {!props.location.pathname.includes('/news') && (
               <div className="row form-back-fixedBtns">
                 {!state.create && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-danger ml-1"
-                    onClick={deleteApi}>
+                  <button type="button" className="btn btn-outline-danger ml-1" onClick={deleteApi}>
                     <i className="fas fa-trash mr-1" />
                     <Translation i18nkey="Delete" language={props.currentLanguage}>
                       Delete

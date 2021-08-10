@@ -54,7 +54,9 @@ class Alert extends Component {
                   type="button"
                   className="btn btn-outline-primary"
                   onClick={this.props.close}>
-                  {this.props.closeMessage ? this.props.closeMessage : t('Close', this.props.currentLanguage, null, 'Close')}
+                  {this.props.closeMessage
+                    ? this.props.closeMessage
+                    : t('Close', this.props.currentLanguage, null, 'Close')}
                 </button>
               </div>
             </div>
@@ -153,7 +155,7 @@ class Prompt extends Component {
           <div className="modal-dialog modal-lg" role="document">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">{this.props.title || "Confirm"}</h5>
+                <h5 className="modal-title">{this.props.title || 'Confirm'}</h5>
                 <button type="button" className="close" onClick={this.props.cancel}>
                   <span aria-hidden="true">&times;</span>
                 </button>
@@ -165,7 +167,7 @@ class Prompt extends Component {
                     type={this.props.isPassword ? 'password' : 'text'}
                     className="form-control"
                     value={this.state.text}
-                    placeholder={this.props.placeholder || ""}
+                    placeholder={this.props.placeholder || ''}
                     ref={(r) => (this.ref = r)}
                     onChange={(e) => this.setState({ text: e.target.value })}
                   />

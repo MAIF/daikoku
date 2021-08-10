@@ -586,8 +586,9 @@ class MyProfileComponent extends Component {
               {user && (
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <img
-                    src={`${user.picture}${user.picture.startsWith('http') ? '' : `?${Date.now()}`
-                      }`}
+                    src={`${user.picture}${
+                      user.picture.startsWith('http') ? '' : `?${Date.now()}`
+                    }`}
                     style={{
                       width: 200,
                       borderRadius: '50%',

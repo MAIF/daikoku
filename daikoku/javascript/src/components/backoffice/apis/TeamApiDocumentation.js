@@ -79,13 +79,13 @@ class AssetButton extends Component {
 }
 
 const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
-  const { currentLanguage, team, value, versionId, creationInProgress, params } = props
+  const { currentLanguage, team, value, versionId, creationInProgress, params } = props;
 
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState(undefined);
-  const [error, setError] = useState()
+  const [error, setError] = useState();
 
-  const [deletedPage, setDeletedPage] = useState(false)
+  const [deletedPage, setDeletedPage] = useState(false);
 
   const flow = [
     '_id',
@@ -138,68 +138,60 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   };
 
   function updateDetails() {
-    Services.getDocDetails(params.apiId, versionId)
-      .then(setDetails);
-  };
+    Services.getDocDetails(params.apiId, versionId).then(setDetails);
+  }
 
   useImperativeHandle(ref, () => ({
     saveCurrentPage() {
-      onSave()
-    }
-  }))
+      onSave();
+    },
+  }));
 
   useEffect(() => {
     if (!creationInProgress) {
       updateDetails();
-      setSelected(null)
+      setSelected(null);
     }
-  }, [versionId])
+  }, [versionId]);
 
   useEffect(() => {
     if (selected || deletedPage) {
-      setDeletedPage(false)
+      setDeletedPage(false);
       props.save().then(() => {
         updateDetails();
       });
     }
-  }, [value])
+  }, [value]);
 
   function select(selectedPage) {
     if (selected) {
       onSave(selected)
         .then(updateDetails)
         .then(() => {
-          Services.getDocPage(value._id, selectedPage._id)
-            .then((page) => {
-              if (page.error)
-                setError(page.error);
-              else
-                setSelected(page);
-            });
+          Services.getDocPage(value._id, selectedPage._id).then((page) => {
+            if (page.error) setError(page.error);
+            else setSelected(page);
+          });
         });
     } else {
-      Services.getDocPage(value._id, selectedPage._id)
-        .then(page => {
-          if (page.error)
-            setError(page.error);
-          else
-            setSelected(page);
-        });
+      Services.getDocPage(value._id, selectedPage._id).then((page) => {
+        if (page.error) setError(page.error);
+        else setSelected(page);
+      });
     }
-  };
+  }
 
   function onSave(page) {
     const data = page || selected;
     if (data)
-      return Services.saveDocPage(team._id, value._id, data)
-        .then(() => {
-          updateDetails();
-        });
-  };
+      return Services.saveDocPage(team._id, value._id, data).then(() => {
+        updateDetails();
+      });
+  }
 
   function isSelected(page) {
     return selected && page._id === selected._id;
-  };
+  }
 
   function onUp() {
     let pages = _.cloneDeep(value.documentation.pages);
@@ -215,7 +207,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
         });
       }
     }
-  };
+  }
 
   function onDown() {
     let pages = _.cloneDeep(value.documentation.pages);
@@ -231,7 +223,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
         });
       }
     }
-  };
+  }
 
   function addNewPage() {
     let index = value.documentation.pages.length;
@@ -254,10 +246,10 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       const newValue = _.cloneDeep(value);
       newValue.documentation.pages = pages;
 
-      setSelected(page)
+      setSelected(page);
       props.onChange(newValue);
     });
-  };
+  }
 
   function deletePage() {
     window
@@ -270,23 +262,17 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       )
       .then((ok) => {
         if (ok) {
-          Services.deleteDocPage(
-            team._id,
-            value._id,
-            selected._id
-          ).then(() => {
-            let pages = _.cloneDeep(value.documentation.pages).filter(
-              (p) => p !== selected._id
-            );
+          Services.deleteDocPage(team._id, value._id, selected._id).then(() => {
+            let pages = _.cloneDeep(value.documentation.pages).filter((p) => p !== selected._id);
             const newValue = _.cloneDeep(value);
             newValue.documentation.pages = pages;
-            setDeletedPage(true)
+            setDeletedPage(true);
             setSelected(null);
             props.onChange(newValue);
           });
         }
       });
-  };
+  }
 
   function importPage() {
     props.openApiDocumentationSelectModal({
@@ -294,14 +280,13 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
       api: value,
       teamId: props.teamId,
       onClose: () => {
-        props.reloadState()
-        updateDetails()
-      }
-    })
+        props.reloadState();
+        updateDetails();
+      },
+    });
   }
 
-  if (value === null)
-    return null;
+  if (value === null) return null;
 
   return (
     <div className="row">
@@ -312,16 +297,10 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
               <th scope="col" className="d-flex justify-content-between align-items-center">
                 Plan title{' '}
                 <div className="btn-group">
-                  <button
-                    onClick={onUp}
-                    type="button"
-                    className="btn btn-sm btn-outline-success">
+                  <button onClick={onUp} type="button" className="btn btn-sm btn-outline-success">
                     <i className="fas fa-arrow-up" />
                   </button>
-                  <button
-                    onClick={onDown}
-                    type="button"
-                    className="btn btn-sm btn-outline-success">
+                  <button onClick={onDown} type="button" className="btn btn-sm btn-outline-success">
                     <i className="fas fa-arrow-down" />
                   </button>
                   <button
@@ -379,19 +358,14 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
               </button>
             </div>
             <React.Suspense fallback={<Spinner />}>
-              <LazyForm
-                flow={flow}
-                schema={schema}
-                value={selected}
-                onChange={setSelected}
-              />
+              <LazyForm flow={flow} schema={schema} value={selected} onChange={setSelected} />
             </React.Suspense>
           </div>
         )}
       </div>
     </div>
   );
-})
+});
 
 const mapStateToProps = (state) => ({
   ...state.context,
@@ -402,4 +376,6 @@ const mapDispatchToProps = {
   openApiDocumentationSelectModal: (team) => openApiDocumentationSelectModal(team),
 };
 
-export const TeamApiDocumentation = connect(mapStateToProps, mapDispatchToProps, null, { forwardRef: true })(TeamApiDocumentationComponent);
+export const TeamApiDocumentation = connect(mapStateToProps, mapDispatchToProps, null, {
+  forwardRef: true,
+})(TeamApiDocumentationComponent);

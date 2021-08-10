@@ -68,13 +68,13 @@ object TenantProvider {
     Seq(Local, Header, Hostname)
 
   def apply(name: String): Option[TenantProvider] = name.toLowerCase() match {
-    case "Local" => Some(Local)
-    case "local" => Some(Local)
-    case "Header" => Some(Header)
-    case "header" => Some(Header)
+    case "Local"    => Some(Local)
+    case "local"    => Some(Local)
+    case "Header"   => Some(Header)
+    case "header"   => Some(Header)
     case "Hostname" => Some(Hostname)
     case "hostname" => Some(Hostname)
-    case _ => None
+    case _          => None
   }
 }
 
@@ -118,7 +118,7 @@ sealed trait AdminApiConfig
 case class LocalAdminApiConfig(key: String) extends AdminApiConfig
 
 case class OtoroshiAdminApiConfig(claimsHeaderName: String, algo: Algorithm)
-  extends AdminApiConfig
+    extends AdminApiConfig
 
 object AdminApiConfig {
   def apply(config: Configuration): AdminApiConfig = {
@@ -151,7 +151,7 @@ class Config(val underlying: Configuration) {
   lazy val mode: DaikokuMode =
     underlying.getOptional[String]("daikoku.mode").map(_.toLowerCase) match {
       case Some("dev") => DaikokuMode.Dev
-      case _ => DaikokuMode.Prod
+      case _           => DaikokuMode.Prod
     }
 
   lazy val secret: String = underlying
@@ -269,16 +269,18 @@ class DaikokuEnv(ws: WSClient,
                  context: Context,
                  messagesApi: MessagesApi,
                  translator: Translator)
-  extends Env {
+    extends Env {
 
   val actorSystem: ActorSystem = ActorSystem("daikoku")
-  implicit val materializer: Materializer = Materializer.createMaterializer(actorSystem)
+  implicit val materializer: Materializer =
+    Materializer.createMaterializer(actorSystem)
   val snowflakeSeed: Long =
     configuration.getOptional[Long]("daikoku.snowflake.seed").get
   val snowflakeGenerator: IdGenerator = IdGenerator(snowflakeSeed)
 
   val auditActor: ActorRef =
-    actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi, translator))
+    actorSystem.actorOf(
+      AuditActorSupervizer.props(this, messagesApi, translator))
 
   private val daikokuConfig = new Config(configuration)
 
@@ -331,8 +333,10 @@ class DaikokuEnv(ws: WSClient,
           }).map { _ =>
             config.init.data.from match {
               case Some(path)
-                  if path.startsWith("http://") || path.startsWith("https://") =>
-                AppLogger.warn(s"Main dataStore seems to be empty, importing from $path ...")
+                  if path.startsWith("http://") || path.startsWith(
+                    "https://") =>
+                AppLogger.warn(
+                  s"Main dataStore seems to be empty, importing from $path ...")
                 implicit val ec: ExecutionContext = defaultExecutionContext
                 implicit val env: DaikokuEnv = this
                 val initialDataFu = wsClient

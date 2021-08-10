@@ -3,7 +3,11 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.TeamAccess
@@ -16,7 +20,13 @@ import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Result}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents,
+  Result
+}
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -25,8 +35,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                      DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                      env: Env,
                      cc: ControllerComponents,
-                     translator: Translator
-                    )
+                     translator: Translator)
     extends AbstractController(cc)
     with I18nSupport {
 
@@ -291,16 +300,22 @@ class TeamController(DaikokuAction: DaikokuAction,
                          "_id" -> Json.obj("$in" -> JsArray(
                            team.admins().map(_.asJson).toSeq))))
             _ <- Future.sequence(admins.map(admin => {
-              implicit val language: String = admin.defaultLanguage.getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
+              implicit val language: String = admin.defaultLanguage.getOrElse(
+                ctx.tenant.defaultLanguage.getOrElse("en"))
               (for {
-                title <- translator.translate("mail.team.access.title", ctx.tenant)
-                body <- translator.translate("mail.team.access.body", ctx.tenant, Map(
-                  "user" -> ctx.user.name,
-                  "teamName" -> team.name,
-                  "link" -> s"${ctx.tenant.domain}/notifications"
-                ))
+                title <- translator.translate("mail.team.access.title",
+                                              ctx.tenant)
+                body <- translator.translate(
+                  "mail.team.access.body",
+                  ctx.tenant,
+                  Map(
+                    "user" -> ctx.user.name,
+                    "teamName" -> team.name,
+                    "link" -> s"${ctx.tenant.domain}/notifications"
+                  ))
               } yield {
-                ctx.tenant.mailer.send(title, Seq(admin.email), body, ctx.tenant)
+                ctx.tenant.mailer
+                  .send(title, Seq(admin.email), body, ctx.tenant)
               }).flatten
             }))
           } yield {
@@ -427,15 +442,18 @@ class TeamController(DaikokuAction: DaikokuAction,
         .save(notification)
       _ <- maybeUser.traverse(user => {
         implicit val lang: String = user.defaultLanguage
-            .orElse(ctx.tenant.defaultLanguage)
-            .getOrElse("en")
+          .orElse(ctx.tenant.defaultLanguage)
+          .getOrElse("en")
 
         (for {
-          title <- translator.translate("mail.team.invitation.title", ctx.tenant)
-          body <- translator.translate("mail.team.invitation.body", ctx.tenant, Map(
-            "user" -> ctx.user.name,
-            "teamName" -> team.name,
-            "link" -> s"${ctx.tenant.domain}/notifications"))
+          title <- translator.translate("mail.team.invitation.title",
+                                        ctx.tenant)
+          body <- translator.translate(
+            "mail.team.invitation.body",
+            ctx.tenant,
+            Map("user" -> ctx.user.name,
+                "teamName" -> team.name,
+                "link" -> s"${ctx.tenant.domain}/notifications"))
         } yield {
           ctx.tenant.mailer.send(title, Seq(user.email), body, ctx.tenant)
         }).flatten
@@ -518,7 +536,8 @@ class TeamController(DaikokuAction: DaikokuAction,
                     ))
                   .flatMap {
                     case true =>
-                      implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+                      implicit val language: String =
+                        tenant.defaultLanguage.getOrElse("en")
                       tenant.mailer
                         .send(
                           s"Join ${team.name}",

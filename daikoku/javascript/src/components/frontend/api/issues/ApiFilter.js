@@ -14,13 +14,12 @@ export function ApiFilter({
   team,
   api,
   selectedVersion,
-  setSelectedVersion
+  setSelectedVersion,
 }) {
-  const [availableApiVersions, setApiVersions] = useState([])
+  const [availableApiVersions, setApiVersions] = useState([]);
 
   useEffect(() => {
-    Services.getAllApiVersions(team, api._humanReadableId)
-      .then(setApiVersions)
+    Services.getAllApiVersions(team, api._humanReadableId).then(setApiVersions);
   }, []);
 
   return (
@@ -46,17 +45,20 @@ export function ApiFilter({
         </button>
         <Select
           id="apiVersion"
-          onChange={apiVersion => setSelectedVersion(apiVersion)}
-          options={[...availableApiVersions.map((iss) => ({ value: iss, label: `Version : ${iss}` })), { value: 'all', label: 'All' }]}
+          onChange={(apiVersion) => setSelectedVersion(apiVersion)}
+          options={[
+            ...availableApiVersions.map((iss) => ({ value: iss, label: `Version : ${iss}` })),
+            { value: 'all', label: 'All' },
+          ]}
           value={selectedVersion}
           className="input-select reactSelect ml-1"
           classNamePrefix="reactSelect"
           styles={{
             menu: (provided) => ({ ...provided, zIndex: 9999 }),
-            container: base => ({
+            container: (base) => ({
               ...base,
-              minWidth: '140px'
-            })
+              minWidth: '140px',
+            }),
           }}
         />
       </div>

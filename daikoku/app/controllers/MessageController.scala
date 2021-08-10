@@ -9,8 +9,16 @@ import akka.stream.{CompletionStrategy, OverflowStrategy}
 import akka.util.Timeout
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{PublicUserAccess, TenantAdminOnly}
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Message, MessageType, UserId}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  PublicUserAccess,
+  TenantAdminOnly
+}
+import fr.maif.otoroshi.daikoku.domain.{
+  DatastoreId,
+  Message,
+  MessageType,
+  UserId
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.messages._
 import fr.maif.otoroshi.daikoku.utils.Translator

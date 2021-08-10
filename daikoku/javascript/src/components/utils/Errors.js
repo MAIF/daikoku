@@ -6,7 +6,7 @@ import { t } from '../../locales';
 import { setError } from '../../core';
 
 const getErrorLabel = (status, error) => {
-  console.log(status, error)
+  console.log(status, error);
   if (status === 400) {
     return 'Bad Request';
   } else if (status === 401) {
@@ -25,7 +25,7 @@ const getErrorLabel = (status, error) => {
 };
 
 const ErrorComponent = ({ error, tenant, currentLanguage, setError }) => {
-  const history = useHistory()
+  const history = useHistory();
 
   document.title = `${tenant} - ${t('Error', currentLanguage)}`;
   const label = getErrorLabel(error.status, error);
@@ -46,10 +46,12 @@ const ErrorComponent = ({ error, tenant, currentLanguage, setError }) => {
             <Link className="btn btn-access-negative mr-1" to="/">
               <i className="fas fa-home" /> Go home
             </Link>
-            <button className="btn btn-access-negative" onClick={() => {
-              setError({ error: { status: -1 } })
-              history.goBack()
-            }}>
+            <button
+              className="btn btn-access-negative"
+              onClick={() => {
+                setError({ error: { status: -1 } });
+                history.goBack();
+              }}>
               <i className="fas fa-angle-double-left" /> Go back
             </button>
           </div>
@@ -68,7 +70,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   goBack,
-  setError
+  setError,
 };
 
 export const Error = connect(mapStateToProps, mapDispatchToProps)(ErrorComponent);

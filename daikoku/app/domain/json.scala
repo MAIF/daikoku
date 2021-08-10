@@ -675,7 +675,8 @@ object json {
             id = (json \ "_id").as(UsagePlanIdFormat),
             otoroshiTarget =
               (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
-            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+            aggregationApiKeysSecurity =
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -726,7 +727,8 @@ object json {
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+            aggregationApiKeysSecurity =
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -798,7 +800,8 @@ object json {
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+            aggregationApiKeysSecurity =
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -875,7 +878,8 @@ object json {
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+            aggregationApiKeysSecurity =
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -959,7 +963,8 @@ object json {
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+            aggregationApiKeysSecurity =
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -1040,7 +1045,8 @@ object json {
               (json \ "subscriptionProcess").as(SubscriptionProcessFormat),
             integrationProcess =
               (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+            aggregationApiKeysSecurity =
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -1262,7 +1268,8 @@ object json {
           OtoroshiTarget(
             otoroshiSettings =
               (json \ "otoroshiSettings").as(OtoroshiSettingsIdFormat),
-            authorizedEntities = (json \ "authorizedEntities").asOpt(AuthorizedEntitiesFormat),
+            authorizedEntities =
+              (json \ "authorizedEntities").asOpt(AuthorizedEntitiesFormat),
             apikeyCustomization = (json \ "apikeyCustomization")
               .asOpt(ApikeyCustomizationFormat)
               .getOrElse(ApikeyCustomization())
@@ -2134,7 +2141,8 @@ object json {
         .map(JsBoolean.apply)
         .getOrElse(JsNull)
         .as[JsValue],
-      "parent" -> o.parent.map(ApiSubscriptionIdFormat.writes)
+      "parent" -> o.parent
+        .map(ApiSubscriptionIdFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -2145,20 +2153,30 @@ object json {
     new Format[AuthorizedEntities] {
       override def writes(o: AuthorizedEntities): JsValue = JsArray(
         o.groups.map(g => s"group_${g.value}").map(JsString.apply).toSeq ++
-        o.services.map(g => s"service_${g.value}").map(JsString.apply).toSeq
+          o.services.map(g => s"service_${g.value}").map(JsString.apply).toSeq
       )
 
       override def reads(json: JsValue): JsResult[AuthorizedEntities] =
         Try {
           JsSuccess(
-            json.as[JsArray].value.map(_.as[String]).foldLeft(AuthorizedEntities()){
-              (entities, value) => {
-                value match {
-                  case r"group_.*" => entities.copy(groups = entities.groups + OtoroshiServiceGroupId(value.replace("group_", "")))
-                  case r"service_.*" => entities.copy(services = entities.services + OtoroshiServiceId(value.replace("service_", "")))
+            json
+              .as[JsArray]
+              .value
+              .map(_.as[String])
+              .foldLeft(AuthorizedEntities()) { (entities, value) =>
+                {
+                  value match {
+                    case r"group_.*" =>
+                      entities.copy(
+                        groups = entities.groups + OtoroshiServiceGroupId(
+                          value.replace("group_", "")))
+                    case r"service_.*" =>
+                      entities.copy(
+                        services = entities.services + OtoroshiServiceId(
+                          value.replace("service_", "")))
+                  }
                 }
               }
-            }
           )
         } recover {
           case e => JsError(e.getMessage)
@@ -2191,7 +2209,8 @@ object json {
         "clientId" -> apk.clientId,
         "clientSecret" -> apk.clientSecret,
         "clientName" -> apk.clientName,
-        "authorizedEntities" -> AuthorizedEntitiesOtoroshiFormat.writes(apk.authorizedEntities),
+        "authorizedEntities" -> AuthorizedEntitiesOtoroshiFormat.writes(
+          apk.authorizedEntities),
         "enabled" -> apk.enabled,
         "allowClientIdOnly" -> apk.allowClientIdOnly,
         "constrainedServicesOnly" -> apk.constrainedServicesOnly,
@@ -2215,7 +2234,8 @@ object json {
             clientId = (json \ "clientId").as[String],
             clientSecret = (json \ "clientSecret").as[String],
             clientName = (json \ "clientName").as[String],
-            authorizedEntities = (json \ "authorizedEntities").as(AuthorizedEntitiesOtoroshiFormat),
+            authorizedEntities = (json \ "authorizedEntities").as(
+              AuthorizedEntitiesOtoroshiFormat),
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
             allowClientIdOnly =
               (json \ "allowClientIdOnly").asOpt[Boolean].getOrElse(false),
@@ -2443,7 +2463,8 @@ object json {
             api = (json \ "api").as(ApiIdFormat),
             plan = (json \ "plan").as(UsagePlanIdFormat),
             team = (json \ "team").as(TeamIdFormat),
-            parentSubscriptionId = (json \ "parentSubscriptionId").asOpt(ApiSubscriptionIdFormat)
+            parentSubscriptionId =
+              (json \ "parentSubscriptionId").asOpt(ApiSubscriptionIdFormat)
           )
         )
       } recover {
@@ -2454,7 +2475,8 @@ object json {
       "api" -> ApiIdFormat.writes(o.api),
       "plan" -> UsagePlanIdFormat.writes(o.plan),
       "team" -> TeamIdFormat.writes(o.team),
-      "parentSubscriptionId" -> o.parentSubscriptionId.map(ApiSubscriptionIdFormat.writes)
+      "parentSubscriptionId" -> o.parentSubscriptionId
+        .map(ApiSubscriptionIdFormat.writes)
         .getOrElse(JsNull)
         .as[JsValue]
     )
@@ -2980,7 +3002,8 @@ object json {
             language = (json \ "language").as[String],
             key = (json \ "key").as[String],
             value = (json \ "value").as[String],
-            lastModificationAt = (json \ "lastModificationAt").asOpt(DateTimeFormat)
+            lastModificationAt =
+              (json \ "lastModificationAt").asOpt(DateTimeFormat)
           )
         )
       } recover {
@@ -3233,7 +3256,9 @@ object json {
     override def writes(o: JsObject): JsValue = o
   }
   val SetOtoroshiServicesIdFormat =
-    Format(Reads.set(OtoroshiServiceIdFormat), Writes.set(OtoroshiServiceIdFormat))
+    Format(Reads.set(OtoroshiServiceIdFormat),
+           Writes.set(OtoroshiServiceIdFormat))
   val SetOtoroshiServiceGroupsIdFormat =
-    Format(Reads.set(OtoroshiServiceGroupIdFormat), Writes.set(OtoroshiServiceGroupIdFormat))
+    Format(Reads.set(OtoroshiServiceGroupIdFormat),
+           Writes.set(OtoroshiServiceGroupIdFormat))
 }

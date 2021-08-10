@@ -8,20 +8,26 @@ import play.api.libs.json.Json
 import scala.concurrent.Future
 
 class Translator {
-  def translate(key: String, tenant: Tenant, args: Map[String, String] = Map.empty)(implicit messagesApi: MessagesApi, language: String, env: Env): Future[String] = {
+  def translate(key: String,
+                tenant: Tenant,
+                args: Map[String, String] = Map.empty)(
+      implicit messagesApi: MessagesApi,
+      language: String,
+      env: Env): Future[String] = {
     implicit val ec = env.defaultExecutionContext
     implicit val mat = env.defaultMaterializer
 
-    env.dataStore.translationRepo.forTenant(tenant)
+    env.dataStore.translationRepo
+      .forTenant(tenant)
       .findOne(Json.obj("key" -> key, "language" -> language.toLowerCase))
       .map {
-        case None => messagesApi(key)(lang = Lang(language.toLowerCase))
+        case None              => messagesApi(key)(lang = Lang(language.toLowerCase))
         case Some(translation) => translation.value
       }
       .map { value =>
-          args.foldLeft(value) {
-            (acc, a) => acc.replace(s"[${a._1}]", a._2)
-          }
+        args.foldLeft(value) { (acc, a) =>
+          acc.replace(s"[${a._1}]", a._2)
+        }
       }
   }
 }

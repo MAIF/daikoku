@@ -406,8 +406,7 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
 
   function reset2faAccess() {
     Services.reset2faAccess(backupCode).then((res) => {
-      if (res.error)
-        toastr.error(res.error);
+      if (res.error) toastr.error(res.error);
       else {
         toastr.success(t('2fa.successfully_disabled', currentLanguage));
         window.location.replace('/');

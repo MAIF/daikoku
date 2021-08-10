@@ -260,11 +260,12 @@ trait ApiSubscriptionRepo
     extends TenantCapableRepo[ApiSubscription, ApiSubscriptionId]
 
 trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
-  def findByVersion(tenant: Tenant, id: String, version: Option[String])(implicit env: Env, ec: ExecutionContext):
-  Future[Option[Api]] = {
-    var query =  Json.obj("$or" -> Json.arr(
-      Json.obj("_id" -> id),
-      Json.obj("_humanReadableId" -> id)))
+  def findByVersion(tenant: Tenant, id: String, version: Option[String])(
+      implicit env: Env,
+      ec: ExecutionContext): Future[Option[Api]] = {
+    var query = Json.obj(
+      "$or" -> Json.arr(Json.obj("_id" -> id),
+                        Json.obj("_humanReadableId" -> id)))
 
     if (version.isDefined)
       query = query ++ Json.obj("currentVersion" -> version.get)

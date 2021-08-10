@@ -9,8 +9,18 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, ApiKeyRestrictions, AuthorizedEntities, OtoroshiServiceGroupId, TestingAuth}
-import fr.maif.otoroshi.daikoku.domain.json.{AuthorizedEntitiesOtoroshiFormat, OtoroshiSettingsFormat, OtoroshiSettingsIdFormat}
+import fr.maif.otoroshi.daikoku.domain.{
+  ActualOtoroshiApiKey,
+  ApiKeyRestrictions,
+  AuthorizedEntities,
+  OtoroshiServiceGroupId,
+  TestingAuth
+}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  AuthorizedEntitiesOtoroshiFormat,
+  OtoroshiSettingsFormat,
+  OtoroshiSettingsIdFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
 import org.apache.commons.codec.binary.Base64
@@ -19,7 +29,12 @@ import play.api.http.HttpEntity
 import play.api.libs.json.JsError.toJson
 import play.api.libs.json.{JsArray, JsError, JsObject, JsSuccess, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request}
+import play.api.mvc.{
+  AbstractController,
+  BodyParser,
+  ControllerComponents,
+  Request
+}
 
 import scala.util.Try
 
@@ -144,12 +159,14 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         ctx) { (tenant, _) =>
         OtoroshiSettingsFormat.reads(ctx.request.body) match {
           case JsError(_) =>
-            FastFuture.successful(BadRequest(Json.obj("error" -> "Error while parsing payload")))
+            FastFuture.successful(
+              BadRequest(Json.obj("error" -> "Error while parsing payload")))
           case JsSuccess(settings, _) =>
             def createOtoroshi() = {
               ctx.setCtxValue("otoroshi.id", settings.id)
               env.dataStore.tenantRepo
-                .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings + settings))
+                .save(tenant.copy(
+                  otoroshiSettings = tenant.otoroshiSettings + settings))
                 .map { _ =>
                   Created(settings.asJson)
                 }
@@ -163,7 +180,9 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                   createOtoroshi()
                 }
                 .recover {
-                  case _ => BadRequest(Json.obj("error" -> "Failed to join otoroshi instances"))
+                  case _ =>
+                    BadRequest(
+                      Json.obj("error" -> "Failed to join otoroshi instances"))
                 }
         }
       }
@@ -236,7 +255,7 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
     }
 
-    def otoroshiApiKeysForTenant(tenantId: String, oto: String) =
+  def otoroshiApiKeysForTenant(tenantId: String, oto: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
@@ -316,7 +335,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                           clientId = clientId,
                           clientSecret = clientSecret,
                           clientName = clientName,
-                          authorizedEntities = AuthorizedEntities(groups = Set(OtoroshiServiceGroupId(serviceGroup))),
+                          authorizedEntities = AuthorizedEntities(
+                            groups = Set(OtoroshiServiceGroupId(serviceGroup))),
                           throttlingQuota = 10,
                           dailyQuota = 10000,
                           monthlyQuota = 300000,
@@ -375,7 +395,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         val otoroshiSettingsOpt =
           (ctx.request.body \ "otoroshiSettings")
             .asOpt(OtoroshiSettingsIdFormat)
-        val authorizeEntities = (ctx.request.body \ "authorizeEntities").asOpt(AuthorizedEntitiesOtoroshiFormat)
+        val authorizeEntities = (ctx.request.body \ "authorizeEntities")
+          .asOpt(AuthorizedEntitiesOtoroshiFormat)
         val metadataOpt = (ctx.request.body \ "customMetadata").asOpt[JsObject]
         val readOnlyOpt = (ctx.request.body \ "customReadOnly").asOpt[Boolean]
         val maxPerSecondOpt =
@@ -410,63 +431,68 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                             FastFuture.successful(
                               NotFound(Json.obj("error" -> "Api not found")))
                           case Some(api) =>
-                                otoroshiClient
-                                  .getApikey(api.testing.username.get)(previousSettings)
-                                  .flatMap {
-                                    case Left(error) =>
-                                      FastFuture.successful(BadRequest(AppError.toJson(error)))
-                                    case Right(apiKey) =>
-                                      val lastMetadata: Map[String, String] =
-                                        api.testing.config
-                                          .flatMap(_.customMetadata)
-                                          .flatMap(_.asOpt[Map[String, String]])
-                                          .getOrElse(Map.empty[String, String])
+                            otoroshiClient
+                              .getApikey(api.testing.username.get)(
+                                previousSettings)
+                              .flatMap {
+                                case Left(error) =>
+                                  FastFuture.successful(
+                                    BadRequest(AppError.toJson(error)))
+                                case Right(apiKey) =>
+                                  val lastMetadata: Map[String, String] =
+                                    api.testing.config
+                                      .flatMap(_.customMetadata)
+                                      .flatMap(_.asOpt[Map[String, String]])
+                                      .getOrElse(Map.empty[String, String])
 
-                                      val updatedKey = apiKey.copy(
-                                        authorizedEntities = authorizedEntities,
-                                        metadata = (apiKey.metadata -- lastMetadata.keySet) ++ metadataOpt
-                                          .flatMap(_.asOpt[Map[String, String]])
-                                          .getOrElse(Map.empty[String, String]),
-                                        throttlingQuota = maxPerSecondOpt
-                                          .getOrElse(apiKey.throttlingQuota),
-                                        dailyQuota = maxPerDayOpt.getOrElse(
-                                          apiKey.dailyQuota),
-                                        monthlyQuota = maxPerMonthOpt.getOrElse(
-                                          apiKey.monthlyQuota),
-                                        readOnly =
-                                          readOnlyOpt.getOrElse(apiKey.readOnly)
-                                      )
+                                  val updatedKey = apiKey.copy(
+                                    authorizedEntities = authorizedEntities,
+                                    metadata = (apiKey.metadata -- lastMetadata.keySet) ++ metadataOpt
+                                      .flatMap(_.asOpt[Map[String, String]])
+                                      .getOrElse(Map.empty[String, String]),
+                                    throttlingQuota = maxPerSecondOpt
+                                      .getOrElse(apiKey.throttlingQuota),
+                                    dailyQuota =
+                                      maxPerDayOpt.getOrElse(apiKey.dailyQuota),
+                                    monthlyQuota = maxPerMonthOpt.getOrElse(
+                                      apiKey.monthlyQuota),
+                                    readOnly =
+                                      readOnlyOpt.getOrElse(apiKey.readOnly)
+                                  )
 
-                                      if (maybeLastOtoSettings.exists(
-                                            _ != otoroshiSettings)) {
-                                        ctx.tenant.otoroshiSettings.find(
-                                          _.id == otoroshiSettings) match {
-                                          case Some(newSettings) =>
-                                            for {
-                                              _ <- otoroshiClient.deleteApiKey(apiKey.clientId)(previousSettings)
-                                              newKey <- otoroshiClient.createApiKey(updatedKey)(newSettings)
-                                            } yield {
-                                              newKey match {
-                                                case Left(err) =>
-                                                  AppError.render(err)
-                                                case Right(apiKey) =>
-                                                  Ok(apiKey.asJson)
-                                              }
-                                            }
-                                          case None =>
-                                            FastFuture.successful(
-                                              NotFound(Json.obj(
-                                                "error" -> s"Settings ${otoroshiSettings.value} not found")))
-                                        }
-                                      } else {
-                                        otoroshiClient
-                                          .updateApiKey(updatedKey)(previousSettings)
-                                          .map {
-                                            case Left(e) => BadRequest(AppError.toJson(e))
-                                            case Right(key) => Ok(key.asJson)
+                                  if (maybeLastOtoSettings.exists(
+                                        _ != otoroshiSettings)) {
+                                    ctx.tenant.otoroshiSettings
+                                      .find(_.id == otoroshiSettings) match {
+                                      case Some(newSettings) =>
+                                        for {
+                                          _ <- otoroshiClient.deleteApiKey(
+                                            apiKey.clientId)(previousSettings)
+                                          newKey <- otoroshiClient.createApiKey(
+                                            updatedKey)(newSettings)
+                                        } yield {
+                                          newKey match {
+                                            case Left(err) =>
+                                              AppError.render(err)
+                                            case Right(apiKey) =>
+                                              Ok(apiKey.asJson)
                                           }
+                                        }
+                                      case None =>
+                                        FastFuture.successful(NotFound(Json.obj(
+                                          "error" -> s"Settings ${otoroshiSettings.value} not found")))
+                                    }
+                                  } else {
+                                    otoroshiClient
+                                      .updateApiKey(updatedKey)(
+                                        previousSettings)
+                                      .map {
+                                        case Left(e) =>
+                                          BadRequest(AppError.toJson(e))
+                                        case Right(key) => Ok(key.asJson)
                                       }
                                   }
+                              }
 
                         }
                     }

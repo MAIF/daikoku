@@ -4,7 +4,12 @@ import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.UberPublicUserAccess
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -412,18 +417,26 @@ class LoginController(DaikokuAction: DaikokuAction,
                   .get("Otoroshi-Proxied-Host")
                   .orElse(ctx.request.headers.get("X-Forwarded-Host"))
                   .getOrElse(ctx.request.host)
-                implicit val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
+                implicit val tenantLanguage: String =
+                  ctx.tenant.defaultLanguage.getOrElse("en")
                 (for {
-                  title <- translator.translate("mail.new.user.title", ctx.tenant, Map("tenant" -> ctx.tenant.name))
-                  body <- translator.translate("mail.new.user.body", ctx.tenant, Map(
-                    "tenant" -> ctx.tenant.name,
-                    "link" -> s"${ctx.request.theProtocol}://${host}/account/validate?id=${randomId}"
-                  ))
+                  title <- translator.translate(
+                    "mail.new.user.title",
+                    ctx.tenant,
+                    Map("tenant" -> ctx.tenant.name))
+                  body <- translator.translate(
+                    "mail.new.user.body",
+                    ctx.tenant,
+                    Map(
+                      "tenant" -> ctx.tenant.name,
+                      "link" -> s"${ctx.request.theProtocol}://${host}/account/validate?id=${randomId}"
+                    ))
                 } yield {
-                  ctx.tenant.mailer.send(title, Seq(email), body, ctx.tenant)
-                  .map { _ =>
-                    Ok(Json.obj("done" -> true))
-                  }
+                  ctx.tenant.mailer
+                    .send(title, Seq(email), body, ctx.tenant)
+                    .map { _ =>
+                      Ok(Json.obj("done" -> true))
+                    }
                 }).flatten
               }
           }
@@ -550,8 +563,10 @@ class LoginController(DaikokuAction: DaikokuAction,
               .orElse(ctx.request.headers.get("X-Forwarded-Host"))
               .getOrElse(ctx.request.host)
 
-            val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
-            implicit val language: String = user.defaultLanguage.getOrElse(tenantLanguage)
+            val tenantLanguage: String =
+              ctx.tenant.defaultLanguage.getOrElse("en")
+            implicit val language: String =
+              user.defaultLanguage.getOrElse(tenantLanguage)
             ctx.tenant.mailer
               .send(
                 s"Reset your ${ctx.tenant.name} account password",

@@ -267,8 +267,9 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   otoApiKey.asJson.as[JsObject] ++
-                    Json.obj("id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
-                             "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value)
+                    Json.obj(
+                      "id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
+                      "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value)
                 )
               )
               .withStatus(200)
