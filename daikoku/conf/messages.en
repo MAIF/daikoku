@@ -69,4 +69,4 @@ Please click on the following link to finalize your account creation process\
 [link]\
 <br/>\
 The [tenant] team
-tenant.mail.template={{email}}
+tenant.mail.template=[email]

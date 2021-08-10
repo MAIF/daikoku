@@ -47,7 +47,9 @@ class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
       implicit ec: ExecutionContext, translator: Translator,
       messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
-    translator.translate("tenant.mail.template", tenant)
+    translator.translate("tenant.mail.template", tenant, Map(
+      "email" -> "{{email}}"
+    ))
       .map(templatedBody => {
         logger.info(s"Sent email: ${
           Json.prettyPrint(
@@ -73,7 +75,9 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
       implicit ec: ExecutionContext, translator: Translator,
       messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
-      translator.translate("tenant.mail.template", tenant)
+      translator.translate("tenant.mail.template", tenant, Map(
+        "email" -> "{{email}}"
+      ))
         .map(templatedBody => {
           wsClient
             .url(if (settings.eu) {
@@ -107,7 +111,9 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
       implicit ec: ExecutionContext, translator: Translator,
       messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
-    translator.translate("tenant.mail.template", tenant)
+    translator.translate("tenant.mail.template", tenant, Map(
+      "email" -> "{{email}}"
+    ))
       .map(templatedBody => {
         wsClient
           .url(s"https://api.mailjet.com/v3.1/send")
@@ -161,7 +167,9 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
       implicit ec: ExecutionContext, translator: Translator,
       messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
-    translator.translate("tenant.mail.template", tenant)
+    translator.translate("tenant.mail.template", tenant, Map(
+      "email" -> "{{email}}"
+    ))
       .map(templatedBody => {
 
         val properties = new Properties()
@@ -209,7 +217,9 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
       messagesApi: MessagesApi, env: Env, language: String): Future[Unit] = {
 
 
-    translator.translate("tenant.mail.template", tenant)
+    translator.translate("tenant.mail.template", tenant, Map(
+      "email" -> "{{email}}"
+    ))
       .map(templatedBody => {
         ws.url(s"https://api.sendgrid.com/v3/mail/send")
           .withHttpHeaders(
