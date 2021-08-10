@@ -446,7 +446,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
       case None => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings) =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+        //implicit val language: String = tenant.defaultLanguage.getOrElse("en")
 
         val newClientSecret = IdGenerator.token(64)
         val updatedSubscription = subscription.copy(apiKey = subscription.apiKey.copy(clientSecret = newClientSecret))
@@ -491,12 +491,18 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
               notificationType =
                 NotificationType.AcceptOnly
             )))
-          title <- EitherT.liftF(translator.translate("mail.apikey.refresh.title", tenant))
-          body <- EitherT.liftF(translator.translate("mail.apikey.refresh.body", tenant, Map(
-            "apiName" -> api.name,
-            "planName" -> plan.customName.getOrElse(plan.typeName)
-          )))
-          _ <- EitherT.liftF(tenant.mailer.send(title, admins.map(_.email), body, tenant))
+          _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
+            implicit val language: String = admin.defaultLanguage.getOrElse(tenant.defaultLanguage.getOrElse("en"))
+            (for {
+              title <- translator.translate("mail.apikey.refresh.title", tenant)
+              body <- translator.translate("mail.apikey.refresh.body", tenant, Map(
+                "apiName" -> api.name,
+                "planName" -> plan.customName.getOrElse(plan.typeName)
+              ))
+            } yield {
+              tenant.mailer.send(title, Seq(admin.email), body, tenant)
+            }).flatten
+          })))
         } yield {
           Json.obj("done" -> true,
             "subscription" -> updatedSubscription.asJson)

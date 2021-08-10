@@ -745,18 +745,14 @@ class ApiController(DaikokuAction: DaikokuAction,
       action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id)
     )
 
-    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+    val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
+
     val notificationUrl = env.config.exposedPort match {
       case 80 => s"http://${tenant.domain}/notifications"
       case 443 => s"https://${tenant.domain}/notifications"
       case value => s"http://${tenant.domain}:$value/"
     }
     for {
-      title <- translator.translate("mail.apikey.demand.title", tenant)
-      body <- translator.translate("mail.apikey.demand.body", tenant, Map(
-      "user" -> user.name,
-      "apiName" -> api.name,
-      "link" -> notificationUrl))
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       maybeApiTeam <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
       maybeAdmins <- maybeApiTeam.traverse(
@@ -770,13 +766,18 @@ class ApiController(DaikokuAction: DaikokuAction,
             )
       )
       _ <- maybeAdmins.traverse(
-        admins =>
-          tenant.mailer.send(
-            title,
-            admins.map(admin => admin.email),
-            body,
-            tenant
-          )
+        admins => Future.sequence(admins.map(admin => {
+          implicit val language: String = admin.defaultLanguage.getOrElse(tenantLanguage)
+          (for {
+            title <- translator.translate("mail.apikey.demand.title", tenant)
+            body <- translator.translate("mail.apikey.demand.body", tenant, Map(
+              "user" -> user.name,
+              "apiName" -> api.name,
+              "link" -> notificationUrl))
+          } yield {
+            tenant.mailer.send(title, Seq(admin.email), body, tenant)
+          }).flatten
+        }))
       )
     } yield {
       Right(Json.obj("creation" -> "waiting", "subscription" -> Json.obj("team" -> team.id.asJson, "plan" -> planId)))
@@ -1515,20 +1516,12 @@ class ApiController(DaikokuAction: DaikokuAction,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
 
-    implicit val language: String = ctx.tenant.defaultLanguage.getOrElse("en")
+    val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
 
     for {
-      title <- translator.translate("mail.api.access.title", ctx.tenant)
-      body <- translator.translate("mail.api.access.body", ctx.tenant, Map(
-        "user" -> ctx.user.name,
-        "apiName" -> api.name,
-        "teamName" -> team.name,
-        "link" -> s"${ctx.tenant.domain}/notifications"
-      ))
       notificationRepo <- env.dataStore.notificationRepo.forTenantF(ctx.tenant.id)
       saved <- notificationRepo.save(notification)
       maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(api.team)
-
       maybeAdmins <- maybeOwnerteam.traverse { ownerTeam =>
         env.dataStore.userRepo
           .find(
@@ -1539,15 +1532,23 @@ class ApiController(DaikokuAction: DaikokuAction,
               )
           )
       }
-
       _ <- maybeAdmins.traverse { admins =>
-        ctx.tenant.mailer.send(
-          title,
-          admins.map(admin => admin.email),
-          body,
-          ctx.tenant
-        )
-      }
+        Future.sequence(
+          admins.map { admin =>
+            implicit val language: String = admin.defaultLanguage.getOrElse(tenantLanguage)
+            (for {
+              title <- translator.translate("mail.api.access.title", ctx.tenant)
+              body <- translator.translate("mail.api.access.body", ctx.tenant, Map(
+                "user" -> ctx.user.name,
+                "apiName" -> api.name,
+                "teamName" -> team.name,
+                "link" -> s"${ctx.tenant.domain}/notifications"
+              ))
+            } yield {
+              ctx.tenant.mailer.send(title, Seq(admin.email), body, ctx.tenant)
+            }).flatten
+          })
+        }
     } yield {
       Json.obj(s"${team.id.value}" -> saved)
     }
