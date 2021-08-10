@@ -2212,37 +2212,31 @@ class ApiController(DaikokuAction: DaikokuAction,
       ApiIssueFormat.reads(ctx.request.body) match {
         case JsError(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "Body can't be parse to issue")))
         case JsSuccess(issue, _) =>
-          (for {
-            issues    <- env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).count()
-            newIssue = issue.copy(seqId = issues.toInt)
-            created   <- env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).save(newIssue)
-            optTeam   <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId)
-          } yield {
-            if (created) {
-              env.dataStore.apiRepo
-                .forTenant(ctx.tenant.id)
-                .findOne(Json.obj(
-                  "_humanReadableId" -> apiId,
-                  "parent" -> JsNull
-                ))
+          env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+            "_humanReadableId" -> apiId,
+            "parent" -> JsNull
+          )).flatMap {
+            case None => FastFuture.successful(AppError.render(ApiNotFound))
+            case Some(api) =>
+              env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id)
+                .save(issue.copy(seqId = api.issues.size))
                 .flatMap {
-                  case Some(api) =>
+                  case false => FastFuture.successful(BadRequest(Json.obj("error" -> "failed to create issue")))
+                  case true =>
                     env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-                      .save(api.copy(issues = api.issues ++ Seq(issue.id)))
-                      .flatMap {
-                        case true =>
-                          for {
-                            subs <- env.dataStore.apiSubscriptionRepo
-                              .forTenant(ctx.tenant.id)
-                              .find(Json.obj(
-                                "api" -> api.id.value
-                              ))
-                            api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
-                              "_humanReadableId" -> apiId,
-                              "parent" -> JsNull
-                            ))
-                            _ <- {
-                              Future.sequence(subs.distinctBy(_.team)
+                        .save(api.copy(issues = api.issues ++ Seq(issue.id)))
+                        .flatMap {
+                          case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to save new issue in api issues list")))
+                          case true =>
+                            for {
+                              subs <- env.dataStore.apiSubscriptionRepo
+                                .forTenant(ctx.tenant.id)
+                                .find(Json.obj(
+                                  "api" -> api.id.value
+                                ))
+                              optTeam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId)
+                              _ <- {
+                                Future.sequence(subs.distinctBy(_.team)
                                   .map(sub =>
                                     env.dataStore.notificationRepo
                                       .forTenant(ctx.tenant.id)
@@ -2251,28 +2245,20 @@ class ApiController(DaikokuAction: DaikokuAction,
                                         tenant = ctx.tenant.id,
                                         sender = ctx.user,
                                         action = NotificationAction.NewIssueOpen(teamId,
-                                          api.map(_.name).getOrElse(""),
-                                          s"${optTeam.map(_.humanReadableId).getOrElse("")}/${api.map(_.humanReadableId).getOrElse("")}/issues/${issues.toInt}"
+                                          api.name,
+                                          s"${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/issues/${api.issues.size}"
                                         ),
                                         notificationType = NotificationType.AcceptOnly,
                                         team = Some(sub.team)
                                       ))
                                   ))
+                              }
+                            } yield {
+                              Created(Json.obj("created" -> true))
                             }
-                          } yield {
-                            Created(Json.obj("created" -> true))
-                          }
-                        case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to create issue")))
-                      }
-                  case None =>
-                    AppLogger.error("Api not found after issue creation")
-                    FastFuture.successful(NotFound(Json.obj("error" -> "Failed to create issue : Api not found")))
+                        }
                 }
-            } else {
-              BadRequest(Json.obj("error" -> "Failed to create issue"))
-            }
-          })
-            .flatMap(_.asInstanceOf[Future[Result]])
+          }
       }
     }
   }
@@ -2324,7 +2310,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                   FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not allowed to edit a comment that does not belong to you")))
                 else if (existingIssue.open != issue.open && isTeamMember.isEmpty && !isDaikokuAdmin)
                   FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized to close or re-open an issue")))
-                else if (existingIssue.title != issue.title && (isTeamMember.isEmpty || issue.by != ctx.user.id) && !isDaikokuAdmin)
+                else if (existingIssue.title != issue.title && !isDaikokuAdmin && (issue.by != ctx.user.id || (issue.by != ctx.user.id && isTeamMember.isEmpty)))
                     FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized to edit issue")))
                 else
                   env.dataStore.apiIssueRepo
@@ -2351,7 +2337,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                             }
                           } yield Ok(Json.obj("message" -> "Issue saved"))
                         else
-                          FastFuture.successful(Ok(Json.obj("error" -> "Issue saved")))
+                          FastFuture.successful(Ok(Json.obj("message" -> "Issue saved")))
                       } else
                         FastFuture.successful(BadRequest(Json.obj("error" -> "Something went wrong")))
                     }

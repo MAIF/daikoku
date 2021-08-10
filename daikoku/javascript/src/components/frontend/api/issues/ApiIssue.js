@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Switch, useParams, Route } from 'react-router-dom';
+import { Switch, useParams, Route, Redirect } from 'react-router-dom';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
@@ -8,6 +8,7 @@ import { TeamApiIssueTags } from './TeamApiIssueTags';
 import * as Services from '../../../../services';
 import { toastr } from 'react-redux-toastr';
 import { t } from '../../../../locales';
+import { Can, manage, api as API } from '../../../utils';
 
 export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
   const { issueId, versionId, apiId } = useParams();
@@ -45,7 +46,9 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
             exact
             path={`${basePath}/labels`}
             component={() => (
-              <TeamApiIssueTags value={api} onChange={onChange} currentLanguage={currentLanguage} />
+              <Can I={manage} a={API} team={ownerTeam} orElse={<Redirect to={`${basePath}/issues`}/>}>
+                <TeamApiIssueTags value={api} onChange={onChange} currentLanguage={currentLanguage} />
+              </Can>
             )}
           />
           <Route
@@ -90,6 +93,7 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                   currentLanguage={currentLanguage}
                   api={api}
                   team={ownerTeam._id}
+                  ownerTeam={ownerTeam}
                   selectedVersion={selectedVersion}
                   setSelectedVersion={setSelectedVersion}
                 />
