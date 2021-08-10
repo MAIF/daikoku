@@ -2125,7 +2125,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               ))
               _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(api.copy(stars = newStars))
             } yield {
-              NoContent
+              Ok(Json.obj("done" -> true))
             }
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         }
