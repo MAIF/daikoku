@@ -264,7 +264,7 @@ class TeamController(DaikokuAction: DaikokuAction,
   def askForJoinTeam(teamId: String) = DaikokuAction.async { ctx =>
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has asked to join team @{team.name} - @{team.id}"))(ctx) {
-      implicit val lang: String = ctx.tenant.defaultLanguage.getOrElse("en")
+
       env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId).flatMap {
         case Some(team) if team.`type` == TeamType.Personal =>
           FastFuture.successful(Forbidden(
@@ -290,18 +290,19 @@ class TeamController(DaikokuAction: DaikokuAction,
                 Json.obj("_deleted" -> false,
                          "_id" -> Json.obj("$in" -> JsArray(
                            team.admins().map(_.asJson).toSeq))))
-            title <- translator.translate("mail.team.access.title", ctx.tenant)
-            body <- translator.translate("mail.team.access.body", ctx.tenant, Map(
-              "user" -> ctx.user.name,
-              "teamName" -> team.name,
-              "link" -> s"${ctx.tenant.domain}/notifications"
-            ))
-            _ <- ctx.tenant.mailer.send(
-              title,
-              admins.map(admin => admin.email),
-              body,
-              ctx.tenant
-            )
+            _ <- Future.sequence(admins.map(admin => {
+              implicit val language: String = admin.defaultLanguage.getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
+              (for {
+                title <- translator.translate("mail.team.access.title", ctx.tenant)
+                body <- translator.translate("mail.team.access.body", ctx.tenant, Map(
+                  "user" -> ctx.user.name,
+                  "teamName" -> team.name,
+                  "link" -> s"${ctx.tenant.domain}/notifications"
+                ))
+              } yield {
+                ctx.tenant.mailer.send(title, Seq(admin.email), body, ctx.tenant)
+              }).flatten
+            }))
           } yield {
             Ok(Json.obj("done" -> saved))
           }

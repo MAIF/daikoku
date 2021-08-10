@@ -496,7 +496,6 @@ class NotificationController(
     import cats.data._
     import cats.implicits._
 
-    implicit val lang: String = tenant.defaultLanguage.getOrElse("en")
     val result: EitherT[Future, AppError, Unit] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo
                                    .forTenant(tenant.id)
@@ -523,17 +522,19 @@ class NotificationController(
           .save(api.copy(
             authorizedTeams = api.authorizedTeams ++ Set(teamRequestId)))
       )
-      title <- EitherT.liftF(translator.translate("mail.acceptation.title", tenant))
-      body <- EitherT.liftF(translator.translate("mail.api.access.acceptation.body", tenant, Map(
-        "apiName" -> api.name,
-        "user" -> sender.name)))
       _ <- EitherT.liftF(
-        tenant.mailer.send(
-          title,
-          administrators.map(_.email) ++ Seq(sender.email),
-          body,
-          tenant
-        ))
+        Future.sequence((administrators ++ Seq(sender)).map(admin => {
+          implicit val lang: String = admin.defaultLanguage
+            .getOrElse(tenant.defaultLanguage.getOrElse("en"))
+          (for {
+            title <- translator.translate("mail.acceptation.title", tenant)
+            body <- translator.translate("mail.api.access.acceptation.body", tenant, Map(
+              "apiName" -> api.name,
+              "user" -> sender.name))
+          } yield {
+            tenant.mailer.send(title, Seq(admin.email), body, tenant)
+          }).flatten
+        })))
     } yield ()
 
     result.value
@@ -606,7 +607,7 @@ class NotificationController(
       customReadOnly: Option[Boolean]): Future[Either[AppError, Unit]] = {
     import cats.data._
     import cats.implicits._
-    implicit val lang: String = tenant.defaultLanguage.getOrElse("en")
+
     val r: EitherT[Future, AppError, Unit] = for {
       api <- EitherT.fromOptionF(env.dataStore.apiRepo
                                    .forTenant(tenant.id)
@@ -641,18 +642,17 @@ class NotificationController(
                           customMaxPerDay,
                           customMaxPerMonth,
                           customReadOnly))
-      title <- EitherT.liftF(translator.translate("mail.acceptation.title", tenant))
-      body <- EitherT.liftF(translator.translate("mail.api.subscription.acceptation.body", tenant, Map(
-        "user" -> sender.name,
-        "apiName" -> api.name)))
-      _ <- EitherT.liftF(
-        tenant.mailer.send(
-          title,
-          administrators.map(_.email) ++ Seq(sender.email),
-          body,
-          tenant
-        )
-      )
+      _ <- EitherT.liftF(Future.sequence((administrators ++ Seq(sender)).map(admin => {
+        implicit val language: String = admin.defaultLanguage.getOrElse(tenant.defaultLanguage.getOrElse("en"))
+        (for {
+          title <- translator.translate("mail.acceptation.title", tenant)
+          body <- translator.translate("mail.api.subscription.acceptation.body", tenant, Map(
+            "user" -> sender.name,
+            "apiName" -> api.name))
+        } yield {
+          tenant.mailer.send(title, Seq(admin.email), body, tenant)
+        }).flatten
+      })))
     } yield ()
 
     r.value

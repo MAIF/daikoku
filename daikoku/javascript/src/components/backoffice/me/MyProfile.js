@@ -70,6 +70,7 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
         left: 0,
         width: '100%',
         height: '100%',
+        zIndex: 3,
         backgroundColor: '#f6f7f7',
       }}>
       {backupCodes ? (

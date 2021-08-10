@@ -412,7 +412,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                   .get("Otoroshi-Proxied-Host")
                   .orElse(ctx.request.headers.get("X-Forwarded-Host"))
                   .getOrElse(ctx.request.host)
-                implicit val language: String = ctx.tenant.defaultLanguage.getOrElse("en")
+                implicit val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
                 (for {
                   title <- translator.translate("mail.new.user.title", ctx.tenant, Map("tenant" -> ctx.tenant.name))
                   body <- translator.translate("mail.new.user.body", ctx.tenant, Map(
@@ -550,7 +550,8 @@ class LoginController(DaikokuAction: DaikokuAction,
               .orElse(ctx.request.headers.get("X-Forwarded-Host"))
               .getOrElse(ctx.request.host)
 
-            implicit val language: String = ctx.tenant.defaultLanguage.getOrElse("en")
+            val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
+            implicit val language: String = user.defaultLanguage.getOrElse(tenantLanguage)
             ctx.tenant.mailer
               .send(
                 s"Reset your ${ctx.tenant.name} account password",
