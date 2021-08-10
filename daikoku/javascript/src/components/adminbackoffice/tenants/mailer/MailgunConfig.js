@@ -41,18 +41,20 @@ export function MailgunConfig({ currentLanguage, value, onChange }) {
       },
     },
     template: {
-      type: () => <MailTemplateButton currentLanguage={currentLanguage} />
-    }
+      type: () => <MailTemplateButton currentLanguage={currentLanguage} />,
+    },
   };
 
-  return <React.Suspense fallback={<Spinner />}>
-    <LazyForm
-      currentLanguage={currentLanguage}
-      value={value}
-      onChange={onChange}
-      flow={formFlow}
-      schema={formSchema}
-      style={{ marginTop: 50 }}
-    />
-  </React.Suspense>
+  return (
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
+        currentLanguage={currentLanguage}
+        value={value}
+        onChange={onChange}
+        flow={formFlow}
+        schema={formSchema}
+        style={{ marginTop: 50 }}
+      />
+    </React.Suspense>
+  );
 }

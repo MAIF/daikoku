@@ -76,7 +76,7 @@ class OtoroshiClient(env: Env) {
   }
 
   def getService(serviceId: String)(
-    implicit otoroshiSettings: OtoroshiSettings): Future[JsObject] = {
+      implicit otoroshiSettings: OtoroshiSettings): Future[JsObject] = {
     client(s"/api/services/$serviceId").get().flatMap { resp =>
       if (resp.status == 200) {
         val res = resp.json.as[JsObject]
@@ -157,13 +157,13 @@ class OtoroshiClient(env: Env) {
   }
 
   def getApikey(clientId: String)(
-    implicit otoroshiSettings: OtoroshiSettings
+      implicit otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     client(s"/api/apikeys/$clientId").get().map { resp =>
       if (resp.status == 200) {
         resp.json.validate(ActualOtoroshiApiKeyFormat) match {
           case JsSuccess(k, _) => Right(k)
-          case e: JsError => Left(OtoroshiError(JsError.toJson(e)))
+          case e: JsError      => Left(OtoroshiError(JsError.toJson(e)))
         }
       } else {
         Left(OtoroshiError(Json.obj(
@@ -173,13 +173,13 @@ class OtoroshiClient(env: Env) {
   }
 
   def createApiKey(key: ActualOtoroshiApiKey)(
-    implicit otoroshiSettings: OtoroshiSettings
+      implicit otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     client(s"/api/apikeys").post(key.asJson).map { resp =>
       if (resp.status == 201 || resp.status == 200) {
         resp.json.validate(ActualOtoroshiApiKeyFormat) match {
           case JsSuccess(k, _) => Right(k)
-          case e: JsError => Left(OtoroshiError(JsError.toJson(e)))
+          case e: JsError      => Left(OtoroshiError(JsError.toJson(e)))
         }
       } else {
         Left(OtoroshiError(Json.obj(
@@ -189,7 +189,7 @@ class OtoroshiClient(env: Env) {
   }
 
   def updateApiKey(key: ActualOtoroshiApiKey)(
-    implicit otoroshiSettings: OtoroshiSettings
+      implicit otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     client(s"/api/apikeys/${key.clientId}")
       .put(key.asJson)
@@ -198,10 +198,10 @@ class OtoroshiClient(env: Env) {
           resp.json.validate(ActualOtoroshiApiKeyFormat) match {
             case JsSuccess(k, _) => Right(k)
             case JsError(e) =>
-              Left(OtoroshiError(Json.obj("error" -> s"Error while reading otoroshi apikey $e")))
+              Left(OtoroshiError(
+                Json.obj("error" -> s"Error while reading otoroshi apikey $e")))
           }
-        }
-        else
+        } else
           Left(OtoroshiError(Json.obj(
             "error" -> s"Error while updating otoroshi apikey: ${resp.status} - ${resp.body}")))
       }
@@ -209,15 +209,14 @@ class OtoroshiClient(env: Env) {
 
   def deleteApiKey(clientId: String)(
       implicit otoroshiSettings: OtoroshiSettings): Future[Unit] = {
-      client(s"/api/apikeys/$clientId").delete().flatMap {
-        resp =>
-          if (resp.status == 200) {
-            Future.successful(())
-          } else {
-            Future.failed(new RuntimeException(
-              s"Error while deleting otoroshi apikey: ${resp.status} - ${resp.body}"))
-          }
+    client(s"/api/apikeys/$clientId").delete().flatMap { resp =>
+      if (resp.status == 200) {
+        Future.successful(())
+      } else {
+        Future.failed(new RuntimeException(
+          s"Error while deleting otoroshi apikey: ${resp.status} - ${resp.body}"))
       }
+    }
   }
 
   def getServiceConsumption(service: String, from: String, to: String)(
@@ -247,15 +246,14 @@ class OtoroshiClient(env: Env) {
   }
 
   def getApiKeyQuotas(clientId: String)(
-    implicit otoroshiSettings: OtoroshiSettings): Future[JsObject] = {
-    client(s"/api/apikeys/$clientId/quotas").get().flatMap {
-      resp =>
-        if (resp.status == 200) {
-          Future.successful(resp.json.as[JsObject])
-        } else {
-          Future.failed(new RuntimeException(
-            s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"))
-        }
+      implicit otoroshiSettings: OtoroshiSettings): Future[JsObject] = {
+    client(s"/api/apikeys/$clientId/quotas").get().flatMap { resp =>
+      if (resp.status == 200) {
+        Future.successful(resp.json.as[JsObject])
+      } else {
+        Future.failed(new RuntimeException(
+          s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"))
+      }
     }
   }
 

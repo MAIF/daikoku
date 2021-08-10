@@ -21,28 +21,25 @@ const styles = {
 export function NewIssue({ currentLanguage, user, api, ...props }) {
   const { issuesTags, team, _humanReadableId } = api;
   const [issue, setIssue] = useState(null);
-  const [availableApiVersions, setApiVersions] = useState([])
+  const [availableApiVersions, setApiVersions] = useState([]);
 
   useEffect(() => {
     Services.fetchNewIssue().then((template) => setIssue(template));
 
-    Services.getAllApiVersions(team, api._humanReadableId)
-      .then(setApiVersions)
+    Services.getAllApiVersions(team, api._humanReadableId).then(setApiVersions);
   }, []);
 
   function createIssue() {
     if (issue.title.length === 0 || issue.comments[0].content.length === 0)
       toastr.error('Title or content are too short');
-    else if (!issue.apiVersion)
-      toastr.error("Select a version to continue")
+    else if (!issue.apiVersion) toastr.error('Select a version to continue');
     else {
       Services.createNewIssue(_humanReadableId, team, {
         ...issue,
         apiVersion: issue.apiVersion.value,
         tags: issue.tags.map((tag) => tag.value.id),
-      }).then(res => {
-        if (res.error)
-          toastr.error(res.error);
+      }).then((res) => {
+        if (res.error) toastr.error(res.error);
         else {
           toastr.success('Issue created');
           props.history.push(`${props.basePath}/issues`);
@@ -79,10 +76,11 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
             <label htmlFor="apiVersion">{t('issues.apiVersion', currentLanguage)}</label>
             <Select
               id="apiVersion"
-              onChange={apiVersion => setIssue({
-                ...issue,
-                apiVersion
-              })
+              onChange={(apiVersion) =>
+                setIssue({
+                  ...issue,
+                  apiVersion,
+                })
               }
               options={availableApiVersions.map((iss) => ({ value: iss, label: iss }))}
               value={issue.apiVersion}

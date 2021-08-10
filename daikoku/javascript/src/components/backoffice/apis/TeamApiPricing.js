@@ -39,8 +39,7 @@ const SUBSCRIPTION_PLAN_TYPES = {
 const PUBLIC = 'Public';
 const PRIVATE = 'Private';
 
-
-const OtoroshiServicesAndGroupSelector = props => {
+const OtoroshiServicesAndGroupSelector = (props) => {
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState(undefined);
   const [services, setServices] = useState(undefined);
@@ -50,10 +49,10 @@ const OtoroshiServicesAndGroupSelector = props => {
   useEffect(() => {
     Promise.all([
       Services.getOtoroshiGroups(props.tenant._id, props._found.otoroshiTarget.otoroshiSettings),
-      Services.getOtoroshiServices(props.tenant._id, props._found.otoroshiTarget.otoroshiSettings)
+      Services.getOtoroshiServices(props.tenant._id, props._found.otoroshiTarget.otoroshiSettings),
     ]).then(([groups, services]) => {
-      setGroups(groups.map(g => ({ label: g.name, value: g.id, type: 'group' })));
-      setServices(services.map(g => ({ label: g.name, value: g.id, type: 'service' })));
+      setGroups(groups.map((g) => ({ label: g.name, value: g.id, type: 'group' })));
+      setServices(services.map((g) => ({ label: g.name, value: g.id, type: 'service' })));
     });
   }, []);
 
@@ -65,10 +64,16 @@ const OtoroshiServicesAndGroupSelector = props => {
 
   useEffect(() => {
     if (!!groups && !!services && !!props._found.otoroshiTarget.authorizedEntities) {
-      setValue([
-        ...props._found.otoroshiTarget.authorizedEntities.groups.map(authGroup => groups.find(g => g.value === authGroup)),
-        ...props._found.otoroshiTarget.authorizedEntities.services.map(authService => services.find(g => g.value === authService))
-      ].filter(f => f));
+      setValue(
+        [
+          ...props._found.otoroshiTarget.authorizedEntities.groups.map((authGroup) =>
+            groups.find((g) => g.value === authGroup)
+          ),
+          ...props._found.otoroshiTarget.authorizedEntities.services.map((authService) =>
+            services.find((g) => g.value === authService)
+          ),
+        ].filter((f) => f)
+      );
     }
   }, [props._found, groups, services]);
 
@@ -77,22 +82,32 @@ const OtoroshiServicesAndGroupSelector = props => {
     setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
   }, [props._found.otoroshiTarget, loading]);
 
-  const onChange = v => {
-
+  const onChange = (v) => {
     if (!v) {
       props.onChange(null);
       setValue(undefined);
     } else {
-      const value = v.reduce((acc, entitie) => {
-        switch (entitie.type) {
-          case 'group':
-            return { ...acc, groups: [...acc.groups, groups.find(g => g.value === entitie.value).value] };
-          case 'service':
-            return { ...acc, services: [...acc.services, services.find(s => s.value === entitie.value).value] };
-        }
-      }, { groups: [], services: [] });
-      setValue([...value.groups.map(authGroup => groups.find(g => g.value === authGroup)),
-      ...value.services.map(authService => services.find(g => g.value === authService))]);
+      const value = v.reduce(
+        (acc, entitie) => {
+          switch (entitie.type) {
+            case 'group':
+              return {
+                ...acc,
+                groups: [...acc.groups, groups.find((g) => g.value === entitie.value).value],
+              };
+            case 'service':
+              return {
+                ...acc,
+                services: [...acc.services, services.find((s) => s.value === entitie.value).value],
+              };
+          }
+        },
+        { groups: [], services: [] }
+      );
+      setValue([
+        ...value.groups.map((authGroup) => groups.find((g) => g.value === authGroup)),
+        ...value.services.map((authService) => services.find((g) => g.value === authService)),
+      ]);
       props.onChange(value);
     }
   };
@@ -111,7 +126,10 @@ const OtoroshiServicesAndGroupSelector = props => {
           isDisabled={disabled && !loading}
           placeholder={props.placeholder}
           components={(props) => <components.Group {...props} />}
-          options={[{ label: 'Service groups', options: groups }, { label: 'Services', options: services }]}
+          options={[
+            { label: 'Service groups', options: groups },
+            { label: 'Services', options: services },
+          ]}
           value={value}
           onChange={onChange}
           classNamePrefix="reactSelect"
@@ -124,7 +142,14 @@ const OtoroshiServicesAndGroupSelector = props => {
                 Authorized Groups
               </Translation>
             </strong>
-            {!!value && value.filter(x => x.type === 'group').map((g, idx) => <span className="font-italic" key={idx}>{g.label}</span>)}
+            {!!value &&
+              value
+                .filter((x) => x.type === 'group')
+                .map((g, idx) => (
+                  <span className="font-italic" key={idx}>
+                    {g.label}
+                  </span>
+                ))}
           </div>
           <div className="d-flex flex-column flex-grow-1">
             <strong className="font-italic">
@@ -132,7 +157,14 @@ const OtoroshiServicesAndGroupSelector = props => {
                 Authorized Services
               </Translation>
             </strong>
-            {!!value && value.filter(x => x.type === 'service').map((g, idx) => <span className="font-italic" key={idx}>{g.label}</span>)}
+            {!!value &&
+              value
+                .filter((x) => x.type === 'service')
+                .map((g, idx) => (
+                  <span className="font-italic" key={idx}>
+                    {g.label}
+                  </span>
+                ))}
           </div>
         </div>
       </div>
@@ -142,34 +174,38 @@ const OtoroshiServicesAndGroupSelector = props => {
 
 function usePrevious(value) {
   const ref = useRef();
-  useEffect(() => { ref.current = value }, [value]);
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
   return ref.current;
 }
 
 function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
-  const [selected, setSelected] = useState(value.possibleUsagePlans[0])
+  const [selected, setSelected] = useState(value.possibleUsagePlans[0]);
   const [otoroshiSettings, setOtoroshiSettings] = useState([]);
 
-  const prevValue = usePrevious(value)
+  const prevValue = usePrevious(value);
 
   useEffect(() => {
-    Services.allSimpleOtoroshis(tenant._id)
-      .then(settings => setOtoroshiSettings(settings));
-  }, [])
+    Services.allSimpleOtoroshis(tenant._id).then((settings) => setOtoroshiSettings(settings));
+  }, []);
 
   useEffect(() => {
     if (prevValue) {
       if (prevValue.possibleUsagePlans.length < value.possibleUsagePlans.length)
-        setSelected(value.possibleUsagePlans.slice(-1)[0])
-      else if (!equals(
-        prevValue.possibleUsagePlans.map(p => p._id).sort(),
-        value.possibleUsagePlans.map(p => p._id).sort()))
-        setSelected(value.possibleUsagePlans[0])
+        setSelected(value.possibleUsagePlans.slice(-1)[0]);
+      else if (
+        !equals(
+          prevValue.possibleUsagePlans.map((p) => p._id).sort(),
+          value.possibleUsagePlans.map((p) => p._id).sort()
+        )
+      )
+        setSelected(value.possibleUsagePlans[0]);
     }
-  }, [props.params.versionId, value.possibleUsagePlans])
+  }, [props.params.versionId, value.possibleUsagePlans]);
 
   function equals(a, b) {
-    return a.length === b.length && a.every((v, i) => v === b[i])
+    return a.length === b.length && a.every((v, i) => v === b[i]);
   }
 
   function otoroshiFlow(_found) {
@@ -203,7 +239,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'otoroshiTarget.apikeyCustomization.restrictions.forbidden',
       'otoroshiTarget.apikeyCustomization.restrictions.notFound',
     ];
-  };
+  }
 
   function otoroshiForm(_found) {
     const firstPartOfOtoroshiForm = {
@@ -225,7 +261,6 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           placeholder: t('Authorized.entities.placeholder', currentLanguage),
           tenant: tenant,
           help: t('authorized.entities.help', currentLanguage),
-
         },
       },
     };
@@ -311,11 +346,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'bool',
         props: {
           label: t('Allow at last', currentLanguage),
-          help: t(
-            'allow.least.help',
-            currentLanguage,
-            'Allowed path will be evaluated at last'
-          ),
+          help: t('allow.least.help', currentLanguage, 'Allowed path will be evaluated at last'),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.allowed': {
@@ -337,7 +368,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         },
       },
     };
-  };
+  }
 
   function securityFlow(_found) {
     return [
@@ -346,7 +377,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'subscriptionProcess',
       'integrationProcess',
     ];
-  };
+  }
 
   function securityForm(_found) {
     return {
@@ -386,7 +417,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         },
       },
     };
-  };
+  }
 
   function smartNameAndDescription(newType) {
     let response = {};
@@ -404,7 +435,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       }
     }
     return response;
-  };
+  }
 
   function onChange(v) {
     if (!v.currency) {
@@ -419,7 +450,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
     newValue.possibleUsagePlans = plans;
     props.onChange(newValue);
     setSelected(v);
-  };
+  }
 
   function renderAdmin(plan) {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
@@ -446,12 +477,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           label: t('Type', currentLanguage),
           possibleValues: [
             {
-              label: t(
-                'FreeWithoutQuotas',
-                currentLanguage,
-                false,
-                'Free without quotas'
-              ),
+              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
@@ -463,12 +489,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
               value: 'QuotasWithLimits',
             },
             {
-              label: t(
-                'QuotasWithoutLimits',
-                currentLanguage,
-                false,
-                'Quotas without limits'
-              ),
+              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
@@ -507,7 +528,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         />
       </React.Suspense>
     );
-  };
+  }
 
   function renderFreeWithoutQuotas(plan) {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
@@ -523,13 +544,17 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      found.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : tenant.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${t('Billing', currentLanguage)}`,
       'billingDuration.value',
       'billingDuration.unit',
       ...otoroshiFlow(found),
       ...securityFlow(found),
-    ].filter(f => f);
+    ].filter((f) => f);
     const schema = {
       _id: {
         type: 'string',
@@ -545,12 +570,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           label: t('Type', currentLanguage),
           possibleValues: [
             {
-              label: t(
-                'FreeWithoutQuotas',
-                currentLanguage,
-                false,
-                'Free without quotas'
-              ),
+              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
@@ -562,12 +582,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
               value: 'QuotasWithLimits',
             },
             {
-              label: t(
-                'QuotasWithoutLimits',
-                currentLanguage,
-                false,
-                'Quotas without limits'
-              ),
+              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
@@ -619,10 +634,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'bool',
         props: {
           label: t('aggregation api keys security', currentLanguage),
-          help: t(
-            'aggregation_apikeys.security.help',
-            currentLanguage
-          )
+          help: t('aggregation_apikeys.security.help', currentLanguage),
         },
       },
       ...otoroshiForm(found),
@@ -639,7 +651,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         />
       </React.Suspense>
     );
-  };
+  }
 
   function renderFreeWithQuotas(plan) {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
@@ -655,7 +667,11 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      found.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : tenant.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${t('Quotas', currentLanguage)}`,
       'maxPerSecond',
       'maxPerDay',
@@ -665,7 +681,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'billingDuration.unit',
       ...otoroshiFlow(found),
       ...securityFlow(found),
-    ].filter(f => f);
+    ].filter((f) => f);
     const schema = {
       _id: {
         type: 'string',
@@ -681,12 +697,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           label: t('Type', currentLanguage),
           possibleValues: [
             {
-              label: t(
-                'FreeWithoutQuotas',
-                currentLanguage,
-                false,
-                'Free without quotas'
-              ),
+              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
@@ -698,12 +709,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
               value: 'QuotasWithLimits',
             },
             {
-              label: t(
-                'QuotasWithoutLimits',
-                currentLanguage,
-                false,
-                'Quotas without limits'
-              ),
+              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
@@ -741,10 +747,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'bool',
         props: {
           label: t('aggregation api keys security', currentLanguage),
-          help: t(
-            'aggregation_apikeys.security.help',
-            currentLanguage
-          )
+          help: t('aggregation_apikeys.security.help', currentLanguage),
         },
       },
       maxPerSecond: {
@@ -796,7 +799,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         />
       </React.Suspense>
     );
-  };
+  }
 
   function renderQuotasWithLimits(plan) {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
@@ -812,7 +815,11 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      found.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : tenant.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${t('Quotas', currentLanguage)}`,
       'maxPerSecond',
       'maxPerDay',
@@ -827,7 +834,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'billingDuration.unit',
       ...otoroshiFlow(found),
       ...securityFlow(found),
-    ].filter(f => f);
+    ].filter((f) => f);
     const schema = {
       _id: {
         type: 'string',
@@ -843,12 +850,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           label: t('Type', currentLanguage),
           possibleValues: [
             {
-              label: t(
-                'FreeWithoutQuotas',
-                currentLanguage,
-                false,
-                'Free without quotas'
-              ),
+              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
@@ -860,12 +862,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
               value: 'QuotasWithLimits',
             },
             {
-              label: t(
-                'QuotasWithoutLimits',
-                currentLanguage,
-                false,
-                'Quotas without limits'
-              ),
+              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
@@ -903,10 +900,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'bool',
         props: {
           label: t('aggregation api keys security', currentLanguage),
-          help: t(
-            'aggregation_apikeys.security.help',
-            currentLanguage
-          )
+          help: t('aggregation_apikeys.security.help', currentLanguage),
         },
       },
       'trialPeriod.value': {
@@ -994,7 +988,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         />
       </React.Suspense>
     );
-  };
+  }
 
   function renderQuotasWithoutLimits(plan) {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
@@ -1010,7 +1004,11 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      found.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : tenant.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${t('Quotas', currentLanguage)}`,
       'maxPerSecond',
       'maxPerDay',
@@ -1026,7 +1024,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'billingDuration.unit',
       ...otoroshiFlow(found),
       ...securityFlow(found),
-    ].filter(f => f);
+    ].filter((f) => f);
     const schema = {
       _id: {
         type: 'string',
@@ -1042,12 +1040,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           label: t('Type', currentLanguage),
           possibleValues: [
             {
-              label: t(
-                'FreeWithoutQuotas',
-                currentLanguage,
-                false,
-                'Free without quotas'
-              ),
+              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
@@ -1059,12 +1052,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
               value: 'QuotasWithLimits',
             },
             {
-              label: t(
-                'QuotasWithoutLimits',
-                currentLanguage,
-                false,
-                'Quotas without limits'
-              ),
+              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
@@ -1102,10 +1090,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'bool',
         props: {
           label: t('aggregation api keys security', currentLanguage),
-          help: t(
-            'aggregation_apikeys.security.help',
-            currentLanguage
-          )
+          help: t('aggregation_apikeys.security.help', currentLanguage),
         },
       },
       'trialPeriod.value': {
@@ -1200,7 +1185,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         />
       </React.Suspense>
     );
-  };
+  }
 
   function renderPayPerUse(plan) {
     const found = _.find(value.possibleUsagePlans, (p) => p._id === plan._id);
@@ -1216,7 +1201,11 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'customName',
       'customDescription',
       'allowMultipleKeys',
-      found.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : (tenant.aggregationApiKeysSecurity ? 'aggregationApiKeysSecurity' : undefined),
+      found.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : tenant.aggregationApiKeysSecurity
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${t('Billing', currentLanguage)}`,
       'costPerMonth',
       'costPerRequest',
@@ -1228,7 +1217,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'trialPeriod.unit',
       ...otoroshiFlow(found),
       ...securityFlow(found),
-    ].filter(f => f);
+    ].filter((f) => f);
     const schema = {
       _id: {
         type: 'string',
@@ -1244,12 +1233,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           label: t('Type', currentLanguage),
           possibleValues: [
             {
-              label: t(
-                'FreeWithoutQuotas',
-                currentLanguage,
-                false,
-                'Free without quotas'
-              ),
+              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
@@ -1261,12 +1245,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
               value: 'QuotasWithLimits',
             },
             {
-              label: t(
-                'QuotasWithoutLimits',
-                currentLanguage,
-                false,
-                'Quotas without limits'
-              ),
+              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
@@ -1328,10 +1307,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'bool',
         props: {
           label: t('aggregation api keys security', currentLanguage),
-          help: t(
-            'aggregation_apikeys.security.help',
-            currentLanguage
-          )
+          help: t('aggregation_apikeys.security.help', currentLanguage),
         },
       },
       'trialPeriod.value': {
@@ -1381,7 +1357,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         />
       </React.Suspense>
     );
-  };
+  }
 
   function addNewPlan() {
     let plans = _.cloneDeep(value.possibleUsagePlans);
@@ -1391,7 +1367,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
     newValue.possibleUsagePlans = plans;
     props.onChange(newValue);
     setSelected(newPlan);
-  };
+  }
 
   function importPlan() {
     props.openApiSelectModal({
@@ -1399,9 +1375,9 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       api: value,
       teamId: props.teamId,
       onClose: () => {
-        props.reload()
-        setSelected(value.possibleUsagePlans.slice(-1)[0])
-      }
+        props.reload();
+        setSelected(value.possibleUsagePlans.slice(-1)[0]);
+      },
     });
   }
 
@@ -1417,29 +1393,23 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
     value.possibleUsagePlans = plans;
     props.onChange(value);
     setSelected(clone);
-  };
+  }
 
   function deletePlan() {
     window
       .confirm(
-        t(
-          'delete.plan.confirm',
-          currentLanguage,
-          'Are you sure you want to delete this plan ?'
-        )
+        t('delete.plan.confirm', currentLanguage, 'Are you sure you want to delete this plan ?')
       )
       .then((ok) => {
         if (ok) {
-          let plans = _.cloneDeep(value.possibleUsagePlans).filter(
-            (p) => p._id !== selected._id
-          );
+          let plans = _.cloneDeep(value.possibleUsagePlans).filter((p) => p._id !== selected._id);
           const newValue = _.cloneDeep(value);
           newValue.possibleUsagePlans = plans;
-          setSelected(plans.length ? plans[0] : null)
+          setSelected(plans.length ? plans[0] : null);
           props.onChange(newValue);
         }
       });
-  };
+  }
 
   function makesDefault() {
     if (selected.visibility === PUBLIC) {
@@ -1447,7 +1417,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       newValue.defaultUsagePlan = selected._id;
       props.onChange(newValue);
     }
-  };
+  }
 
   function makePrivate() {
     if (value.defaultUsagePlan !== selected._id) {
@@ -1466,11 +1436,10 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
 
       props.onChange(updatedValue);
     }
-  };
+  }
 
   function planToOption(plan) {
-    if (!plan || value.possibleUsagePlans.length === 0)
-      return null
+    if (!plan || value.possibleUsagePlans.length === 0) return null;
 
     return {
       label:
@@ -1489,10 +1458,9 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       value: plan._id,
       plan,
     };
-  };
+  }
 
-  if (value === null)
-    return null;
+  if (value === null) return null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 100 }}>
@@ -1501,10 +1469,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         style={{ borderBottom: '1px solid #DFDFDF' }}>
         {value.visibility !== 'AdminOnly' && (
           <>
-            <button
-              onClick={addNewPlan}
-              type="button"
-              className="btn btn-outline-primary mr-1">
+            <button onClick={addNewPlan} type="button" className="btn btn-outline-primary mr-1">
               {t('add a new plan', currentLanguage)}
             </button>
             <button
@@ -1521,35 +1486,32 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           value={planToOption(selected)}
           placeholder="Select a plan to edit it"
           options={value.possibleUsagePlans.map(planToOption)}
-          onChange={e => setSelected(e.plan)}
+          onChange={(e) => setSelected(e.plan)}
           classNamePrefix="reactSelect"
           className="reactSelect"
           styles={{
-            container: base => ({
+            container: (base) => ({
               ...base,
-              flex: 1
-            })
+              flex: 1,
+            }),
           }}
         />
       </div>
       <div className="col-12">
-        {!!selected && value.possibleUsagePlans.find(p => p._id === selected._id) && (
+        {!!selected && value.possibleUsagePlans.find((p) => p._id === selected._id) && (
           <div>
             <div className="d-flex justify-content-end">
-              {value.defaultUsagePlan !== selected._id &&
-                selected.visibility !== PRIVATE && (
-                  <button
-                    onClick={makesDefault}
-                    type="button"
-                    className="btn btn-sm btn-outline-primary mr-1 mb-2">
-                    <i className="fas fa-star mr-1" title="Default plan" />
-                    <Translation
-                      i18nkey="Make default plan"
-                      language={currentLanguage}>
-                      Make default plan
-                    </Translation>
-                  </button>
-                )}
+              {value.defaultUsagePlan !== selected._id && selected.visibility !== PRIVATE && (
+                <button
+                  onClick={makesDefault}
+                  type="button"
+                  className="btn btn-sm btn-outline-primary mr-1 mb-2">
+                  <i className="fas fa-star mr-1" title="Default plan" />
+                  <Translation i18nkey="Make default plan" language={currentLanguage}>
+                    Make default plan
+                  </Translation>
+                </button>
+              )}
               {value.defaultUsagePlan !== selected._id && (
                 <button
                   onClick={makePrivate}
@@ -1840,7 +1802,6 @@ const OtoroshiPathInput = (props) => {
     </div>
   );
 };
-
 
 const mapStateToProps = (state) => ({
   ...state.context,

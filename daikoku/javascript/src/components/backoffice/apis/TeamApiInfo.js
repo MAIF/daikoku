@@ -80,8 +80,8 @@ export class TeamApiInfo extends Component {
     isDefault: {
       type: 'bool',
       props: {
-        label: t('team_api_info.isDefault', this.props.currentLanguage)
-      }
+        label: t('team_api_info.isDefault', this.props.currentLanguage),
+      },
     },
     name: {
       type: 'string',
@@ -226,13 +226,15 @@ export class TeamApiInfo extends Component {
   render() {
     const isAdminOnly = this.props.value.visibility === 'AdminOnly';
 
-    return <React.Suspense fallback={<Spinner />}>
-      <LazyForm
-        flow={isAdminOnly ? this.adminFormFlow : this.formFlow}
-        schema={isAdminOnly ? this.adminFormSchema : this.formSchema}
-        value={this.props.value}
-        onChange={this.props.onChange}
-      />
-    </React.Suspense>
+    return (
+      <React.Suspense fallback={<Spinner />}>
+        <LazyForm
+          flow={isAdminOnly ? this.adminFormFlow : this.formFlow}
+          schema={isAdminOnly ? this.adminFormSchema : this.formSchema}
+          value={this.props.value}
+          onChange={this.props.onChange}
+        />
+      </React.Suspense>
+    );
   }
 }

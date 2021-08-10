@@ -11,27 +11,26 @@ import { t } from '../../../../locales';
 
 export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
   const { issueId, versionId, apiId } = useParams();
-  const [api, setRootApi] = useState({})
+  const [api, setRootApi] = useState({});
 
   const [filter, setFilter] = useState('open');
-  const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' })
+  const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
 
   useEffect(() => {
-    Services.getRootApi(apiId)
-      .then(rootApi => {
-        setRootApi(rootApi)
-      })
-  }, [])
+    Services.getRootApi(apiId).then((rootApi) => {
+      setRootApi(rootApi);
+    });
+  }, []);
 
   function onChange(editedApi) {
     Services.saveTeamApi(ownerTeam._id, editedApi)
-      .then(res => {
+      .then((res) => {
         props.onChange({
           ...props.api,
           issues: res.issues,
-          issuesTags: res.issuesTags
-        })
-        setRootApi(res)
+          issuesTags: res.issuesTags,
+        });
+        setRootApi(res);
       })
       .then(() => toastr.success(t('Api saved', currentLanguage)));
   }
@@ -94,7 +93,12 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                   selectedVersion={selectedVersion}
                   setSelectedVersion={setSelectedVersion}
                 />
-                <ApiIssues currentLanguage={currentLanguage} filter={filter} api={api} selectedVersion={selectedVersion} />
+                <ApiIssues
+                  currentLanguage={currentLanguage}
+                  filter={filter}
+                  api={api}
+                  selectedVersion={selectedVersion}
+                />
               </>
             )}
           />

@@ -212,7 +212,7 @@ export const theMachine = Machine({
                     ...pp,
                     otoroshiTarget: {
                       otoroshiSettings: context.otoroshi,
-                      authorizedEntities: {groups: [], services: [api.id]},
+                      authorizedEntities: { groups: [], services: [api.id] },
                       apikeyCustomization,
                     },
                   })),

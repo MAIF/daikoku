@@ -33,18 +33,20 @@ export function MailjetConfig({ currentLanguage, value, onChange }) {
       },
     },
     template: {
-      type: () => <MailTemplateButton currentLanguage={currentLanguage} />
-    }
+      type: () => <MailTemplateButton currentLanguage={currentLanguage} />,
+    },
   };
 
-  return <React.Suspense>
-    <LazyForm
-      currentLanguage={currentLanguage}
-      value={value}
-      onChange={onChange}
-      flow={formFlow}
-      schema={formSchema}
-      style={{ marginTop: 50 }}
-    />
-  </React.Suspense>
+  return (
+    <React.Suspense>
+      <LazyForm
+        currentLanguage={currentLanguage}
+        value={value}
+        onChange={onChange}
+        flow={formFlow}
+        schema={formSchema}
+        style={{ marginTop: 50 }}
+      />
+    </React.Suspense>
+  );
 }

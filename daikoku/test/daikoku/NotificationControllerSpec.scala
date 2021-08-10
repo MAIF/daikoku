@@ -369,7 +369,8 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
+                             Some(AuthorizedEntities(groups =
+                               Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -422,7 +423,8 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
+                             Some(AuthorizedEntities(groups =
+                               Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -643,7 +645,8 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
+                             Some(AuthorizedEntities(groups =
+                               Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -696,7 +699,8 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             Some(AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))))
+                             Some(AuthorizedEntities(groups =
+                               Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,

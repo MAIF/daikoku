@@ -22,52 +22,60 @@ import { SwitchButton } from '../../inputs';
 import { t, Translation } from '../../../locales';
 
 function TeamApiKeysForApiComponent(props) {
-  const [api, setApi] = useState({ name: '--', possibleUsagePlans: [] })
+  const [api, setApi] = useState({ name: '--', possibleUsagePlans: [] });
   const [apiTeam, setApiTeam] = useState();
   const [subscriptions, setSubscriptions] = useState([]);
   const [searched, setSearched] = useState('');
 
-  const location = useLocation()
-  const params = useParams()
+  const location = useLocation();
+  const params = useParams();
 
   useEffect(() => {
     Promise.all([
       Services.getTeamVisibleApi(props.currentTeam._id, props.match.params.apiId, params.versionId),
-      Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId),
+      Services.getTeamSubscriptions(
+        props.match.params.apiId,
+        props.currentTeam._id,
+        params.versionId
+      ),
     ]).then(([api, subscriptions]) => {
-      setSubscriptions(subscriptions)
-      setApi(api)
-      Services
-        .team(api.team)
-        .then(apiTeam => setApiTeam(apiTeam))
+      setSubscriptions(subscriptions);
+      setApi(api);
+      Services.team(api.team).then((apiTeam) => setApiTeam(apiTeam));
     });
-  }, [location])
+  }, [location]);
 
   const updateCustomName = (subscription, customName) => {
     return Services.updateSubscriptionCustomName(props.currentTeam, subscription, customName);
   };
 
   const archiveApiKey = (subscription) => {
-    return Services.archiveApiKey(
-      props.currentTeam._id,
-      subscription._id,
-      !subscription.enabled
-    )
+    return Services.archiveApiKey(props.currentTeam._id, subscription._id, !subscription.enabled)
       .then(() =>
-        Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId)
+        Services.getTeamSubscriptions(
+          props.match.params.apiId,
+          props.currentTeam._id,
+          params.versionId
+        )
       )
-      .then(subs => setSubscriptions(subs));
+      .then((subs) => setSubscriptions(subs));
   };
 
-  const makeUniqueApiKey = subscription => {
-    window.confirm(t('team_apikey_for_api.ask_for_make_unique', props.currentLanguage))
-      .then(ok => {
+  const makeUniqueApiKey = (subscription) => {
+    window
+      .confirm(t('team_apikey_for_api.ask_for_make_unique', props.currentLanguage))
+      .then((ok) => {
         if (ok)
-          Services.makeUniqueApiKey(props.currentTeam._id, subscription._id)
-            .then(() => Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId))
-        then(subs => setSubscriptions(subs));
-      })
-  }
+          Services.makeUniqueApiKey(props.currentTeam._id, subscription._id).then(() =>
+            Services.getTeamSubscriptions(
+              props.match.params.apiId,
+              props.currentTeam._id,
+              params.versionId
+            )
+          );
+        then((subs) => setSubscriptions(subs));
+      });
+  };
 
   const toggleApiKeyRotation = (subscription, plan, rotationEvery, gracePeriod) => {
     if (plan.autoRotation) {
@@ -89,9 +97,13 @@ function TeamApiKeysForApiComponent(props) {
       gracePeriod
     )
       .then(() =>
-        Services.getTeamSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId)
+        Services.getTeamSubscriptions(
+          props.match.params.apiId,
+          props.currentTeam._id,
+          params.versionId
+        )
       )
-      .then(subs => setSubscriptions(subs));
+      .then((subs) => setSubscriptions(subs));
   };
 
   const regenerateApiKeySecret = (subscription) => {
@@ -114,7 +126,7 @@ function TeamApiKeysForApiComponent(props) {
                 params.versionId
               )
             )
-            .then(subs => setSubscriptions(subs))
+            .then((subs) => setSubscriptions(subs))
             .then(() => toastr.success('secret reseted successfully'));
         }
       });
@@ -134,34 +146,32 @@ function TeamApiKeysForApiComponent(props) {
   const filteredApiKeys =
     search === ''
       ? subscriptions
-      : subscriptions.filter(subs => {
-        const plan = currentPlan(subs)
+      : subscriptions.filter((subs) => {
+          const plan = currentPlan(subs);
 
-        if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
-          return true;
-        } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
-          return true;
-        }
-        else {
-          return formatPlanType(currentPlan(subs)).toLowerCase().includes(search);
-        }
-      });
+          if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
+            return true;
+          } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
+            return true;
+          } else {
+            return formatPlanType(currentPlan(subs)).toLowerCase().includes(search);
+          }
+        });
 
-  const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent'])
+  const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
   const sortedApiKeys = sorted
-    .filter(f => f.parent)
-    .reduce((acc, sub) => {
-      return acc.find(a => a._id === sub.parent) ?
-        acc.map(a => {
-          if (a._id === sub.parent)
-            a.children.push(sub)
-          return a
-        })
-        : [...acc, { ...sub, children: [] }]
-    }, sorted
-      .filter(f => !f.parent)
-      .map(sub => ({ ...sub, children: [] }))
-    )
+    .filter((f) => f.parent)
+    .reduce(
+      (acc, sub) => {
+        return acc.find((a) => a._id === sub.parent)
+          ? acc.map((a) => {
+              if (a._id === sub.parent) a.children.push(sub);
+              return a;
+            })
+          : [...acc, { ...sub, children: [] }];
+      },
+      sorted.filter((f) => !f.parent).map((sub) => ({ ...sub, children: [] }))
+    );
 
   return (
     <TeamBackOffice
@@ -170,7 +180,7 @@ function TeamApiKeysForApiComponent(props) {
       apiId={props.match.params.apiId}
       isLoading={!apiTeam}>
       <Can I={read} a={apikey} team={props.currentTeam} dispatchError>
-        {api && apiTeam ?
+        {api && apiTeam ? (
           <div className="row">
             <div className="col-12 d-flex align-items-center">
               <h1>
@@ -192,7 +202,7 @@ function TeamApiKeysForApiComponent(props) {
                 placeholder={t('Search your apiKey...', props.currentLanguage)}
                 aria-label="Search your apikey"
                 value={searched}
-                onChange={e => setSearched(e.target.value)}
+                onChange={(e) => setSearched(e.target.value)}
               />
             </div>
 
@@ -202,7 +212,7 @@ function TeamApiKeysForApiComponent(props) {
                 items={sortedApiKeys}
                 count={5}
                 formatter={(subscription) => {
-                  const plan = currentPlan(subscription)
+                  const plan = currentPlan(subscription);
 
                   return (
                     <ApiKeyCard
@@ -229,7 +239,7 @@ function TeamApiKeysForApiComponent(props) {
               />
             </div>
           </div>
-          : null}
+        ) : null}
       </Can>
     </TeamBackOffice>
   );
@@ -389,17 +399,19 @@ const ApiKeyCard = ({
                   </div>
                 </div>
               ))}
-            {settingMode ?
+            {settingMode ? (
               <h3>
                 <Translation i18nkey="ApiKey rotation" language={currentLanguage}>
                   ApiKey rotation
                 </Translation>
               </h3>
-              :
-              <span className="badge badge-secondary" style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}>
+            ) : (
+              <span
+                className="badge badge-secondary"
+                style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}>
                 {Option(plan.customName).getOrElse(formatPlanType(plan))}
               </span>
-            }
+            )}
           </div>
         </div>
         <div className="card-body" style={{ margin: 0 }}>
@@ -407,15 +419,18 @@ const ApiKeyCard = ({
             <div>
               <div className="d-flex justify-content-end mb-3">
                 <div className="d-flex justify-content-around">
-                  {!subscription.parent && <BeautifulTitle title={t('Reset secret', currentLanguage, false, 'Reset secret')}>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger ml-1"
-                      disabled={!subscription.enabled}
-                      onClick={regenerateSecret}>
-                      <i className="fas fa-sync-alt" />
-                    </button>
-                  </BeautifulTitle>}
+                  {!subscription.parent && (
+                    <BeautifulTitle
+                      title={t('Reset secret', currentLanguage, false, 'Reset secret')}>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger ml-1"
+                        disabled={!subscription.enabled}
+                        onClick={regenerateSecret}>
+                        <i className="fas fa-sync-alt" />
+                      </button>
+                    </BeautifulTitle>
+                  )}
                   <Can I={read} a={stat} team={currentTeam}>
                     <BeautifulTitle
                       title={t(
@@ -460,23 +475,27 @@ const ApiKeyCard = ({
                       type="button"
                       disabled={subscription.parent ? !subscription.parentUp : false}
                       className={classNames('btn btn-sm ml-1', {
-                        'btn-outline-danger': subscription.enabled && (subscription.parent ? subscription.parentUp : true),
-                        'btn-outline-success': !subscription.enabled && (subscription.parent ? subscription.parentUp : true),
+                        'btn-outline-danger':
+                          subscription.enabled &&
+                          (subscription.parent ? subscription.parentUp : true),
+                        'btn-outline-success':
+                          !subscription.enabled &&
+                          (subscription.parent ? subscription.parentUp : true),
                       })}
                       onClick={archiveApiKey}>
                       <i className="fas fa-power-off" />
                     </button>
                   </BeautifulTitle>
-                  {subscription.parent &&
-                    <BeautifulTitle
-                      title={t('team_apikey_for_api.make_unique', currentLanguage)}>
+                  {subscription.parent && (
+                    <BeautifulTitle title={t('team_apikey_for_api.make_unique', currentLanguage)}>
                       <button
                         type="button"
                         className="btn btn-sm ml-1 btn-outline-danger"
                         onClick={makeUniqueApiKey}>
                         <i className="fas fa-share" />
                       </button>
-                    </BeautifulTitle>}
+                    </BeautifulTitle>
+                  )}
                 </div>
               </div>
               {subscription.apiKey && (
@@ -579,28 +598,34 @@ const ApiKeyCard = ({
                 </>
               )}
 
-              {subscription.children.length > 0 &&
+              {subscription.children.length > 0 && (
                 <>
-                  {showAggregatePlan && <div className="text-center">
-                    <h5 className="modal-title">Aggregate plans</h5>
-                    <div>
-                      {subscription.children.map(aggregate => (
-                        <div key={aggregate._id}>
-                          <Link to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}`}>
-                            {`${aggregate.apiName}/${aggregate.customName || aggregate.planType}`}
-                          </Link>
-                        </div>
-                      ))}
+                  {showAggregatePlan && (
+                    <div className="text-center">
+                      <h5 className="modal-title">Aggregate plans</h5>
+                      <div>
+                        {subscription.children.map((aggregate) => (
+                          <div key={aggregate._id}>
+                            <Link
+                              to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}`}>
+                              {`${aggregate.apiName}/${aggregate.customName || aggregate.planType}`}
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>}
-                  <button className={`btn btn-sm btn-outline-info mx-auto d-flex ${showAggregatePlan ? 'mt-3' : ''}`}
+                  )}
+                  <button
+                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${
+                      showAggregatePlan ? 'mt-3' : ''
+                    }`}
                     onClick={() => setAggregatePlan(!showAggregatePlan)}>
-                    {showAggregatePlan ?
-                      t('team_apikey_for_api.hide_aggregate_sub', currentLanguage) :
-                      t('team_apikey_for_api.show_aggregate_sub', currentLanguage)}
+                    {showAggregatePlan
+                      ? t('team_apikey_for_api.hide_aggregate_sub', currentLanguage)
+                      : t('team_apikey_for_api.show_aggregate_sub', currentLanguage)}
                   </button>
                 </>
-              }
+              )}
             </div>
           )}
 

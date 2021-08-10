@@ -1057,8 +1057,7 @@ case class ApiIssue(id: ApiIssueId,
                     by: UserId,
                     comments: Seq[ApiIssueComment],
                     lastModificationAt: DateTime,
-                    apiVersion: Option[String] = Some("1.0.0")
-                   )
+                    apiVersion: Option[String] = Some("1.0.0"))
     extends CanJson[ApiIssue] {
   def humanReadableId: String = seqId.toString
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)
@@ -1386,20 +1385,20 @@ case class Api(
   }
   def asPublicWithAuthorizationsJson(): JsValue = Json.obj(
     "_id" -> id.value,
-      "_humanReadableId" -> name.urlPathSegmentSanitized,
-      "tenant" -> tenant.asJson,
-      "team" -> team.value,
-      "name" -> name,
-      "smallDescription" -> smallDescription,
-      "description" -> description,
-      "currentVersion" -> currentVersion.asJson,
-      "isDefault" -> isDefault,
-      "published" -> published,
-      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
-      "stars" -> stars,
-      "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
+    "_humanReadableId" -> name.urlPathSegmentSanitized,
+    "tenant" -> tenant.asJson,
+    "team" -> team.value,
+    "name" -> name,
+    "smallDescription" -> smallDescription,
+    "description" -> description,
+    "currentVersion" -> currentVersion.asJson,
+    "isDefault" -> isDefault,
+    "published" -> published,
+    "tags" -> JsArray(tags.map(JsString.apply).toSeq),
+    "categories" -> JsArray(categories.map(JsString.apply).toSeq),
+    "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
+    "stars" -> stars,
+    "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
   )
 }
 
@@ -1445,7 +1444,8 @@ case class ApiSubscription(
     (permission, planIntegration) match {
       case (_, _) if isDaikokuAdmin => json.ApiSubscriptionFormat.writes(this)
       case (Administrator, _)       => json.ApiSubscriptionFormat.writes(this)
-      case (_, IntegrationProcess.ApiKey) => json.ApiSubscriptionFormat.writes(this)
+      case (_, IntegrationProcess.ApiKey) =>
+        json.ApiSubscriptionFormat.writes(this)
       case (_, IntegrationProcess.Automatic) =>
         json.ApiSubscriptionFormat.writes(this).as[JsObject] - "apiKey"
     }
@@ -1474,12 +1474,16 @@ object RemainingQuotas {
   val MaxValue: Long = 10000000L
 }
 
-case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty, groups: Set[OtoroshiServiceGroupId] = Set.empty)
-  extends CanJson[AuthorizedEntities] {
+case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
+                              groups: Set[OtoroshiServiceGroupId] = Set.empty)
+    extends CanJson[AuthorizedEntities] {
   def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
-  def asOtoroshiJson: JsValue = json.AuthorizedEntitiesOtoroshiFormat.writes(this)
+  def asOtoroshiJson: JsValue =
+    json.AuthorizedEntitiesOtoroshiFormat.writes(this)
   def isEmpty: Boolean = services.isEmpty && groups.isEmpty
-  def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean = services.forall(s => a.services.contains(s)) && groups.forall(g => a.groups.contains(g))
+  def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean =
+    services.forall(s => a.services.contains(s)) && groups.forall(g =>
+      a.groups.contains(g))
 }
 
 case class ActualOtoroshiApiKey(
@@ -1530,7 +1534,11 @@ object NotificationAction {
   case class TeamInvitation(team: TeamId, user: UserId)
       extends NotificationAction
 
-  case class ApiSubscriptionDemand(api: ApiId, plan: UsagePlanId, team: TeamId, parentSubscriptionId: Option[ApiSubscriptionId] = None)
+  case class ApiSubscriptionDemand(
+      api: ApiId,
+      plan: UsagePlanId,
+      team: TeamId,
+      parentSubscriptionId: Option[ApiSubscriptionId] = None)
       extends NotificationAction
 
   case class OtoroshiSyncSubscriptionError(subscription: ApiSubscription,
@@ -1725,7 +1733,7 @@ case class Evolution(id: DatastoreId,
                      version: String,
                      applied: Boolean,
                      date: DateTime = new DateTime())
-extends CanJson[Evolution] {
+    extends CanJson[Evolution] {
   override def asJson: JsValue = json.EvolutionFormat.writes(this)
 }
 

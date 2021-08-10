@@ -276,7 +276,8 @@ class MongoDataStore(context: Context, env: Env)
   private val _tenantRepo: TenantRepo =
     new MongoTenantRepo(env, reactiveMongoApi)
   private val _userRepo: UserRepo = new MongoUserRepo(env, reactiveMongoApi)
-  private val _evolutionRepo: EvolutionRepo = new MongoEvolutionRepo(env, reactiveMongoApi)
+  private val _evolutionRepo: EvolutionRepo =
+    new MongoEvolutionRepo(env, reactiveMongoApi)
   private val _teamRepo: TeamRepo = MongoTenantCapableTeamRepo(
     () => new MongoTeamRepo(env, reactiveMongoApi),
     t => new MongoTenantTeamRepo(env, reactiveMongoApi, t))

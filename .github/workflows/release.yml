@@ -45,7 +45,7 @@ jobs:
       if: steps.fmt.output.diff != '0'
       uses: ad-m/github-push-action@master
       with:
-        branch: master
+        branch: ${{ github.ref }}
         github_token: ${{ secrets.GITHUB_TOKEN}}
     #Build manual with right version
     - name: build manual
@@ -66,7 +66,7 @@ jobs:
       uses: ad-m/github-push-action@master
       if: steps.manual.outputs.diff != '0'
       with:
-        branch: master
+        branch: ${{ github.ref }}
         github_token: ${{ secrets.GITHUB_TOKEN}}
     # release sbt (with auto commit tag)
     - name: release sbt
@@ -78,7 +78,7 @@ jobs:
     - name: push tag
       uses: ad-m/github-push-action@master
       with:
-        branch: master
+        branch: ${{ github.ref }}
         tags: true
         github_token: ${{ secrets.GITHUB_TOKEN}}
     - name: Get yarn cache directory path

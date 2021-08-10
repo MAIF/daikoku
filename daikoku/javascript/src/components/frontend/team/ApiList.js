@@ -176,30 +176,28 @@ const ApiListComponent = (props) => {
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (teamMatch(api, searchedTrim)) {
-          return true;
-        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-      })
+          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (teamMatch(api, searchedTrim)) {
+            return true;
+          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+        })
   )
-    .groupBy("_humanReadableId")
-    .map(value => {
-      if (value.length === 1)
-        return value[0]
+    .groupBy('_humanReadableId')
+    .map((value) => {
+      if (value.length === 1) return value[0];
 
-      const app = value.find(v => v.isDefault)
+      const app = value.find((v) => v.isDefault);
 
-      if (!app)
-        return value.find(v => v.currentVersion === "1.0.0") || value[0]
+      if (!app) return value.find((v) => v.currentVersion === '1.0.0') || value[0];
 
-      return app
+      return app;
     })
-    .value()
+    .value();
 
   const paginateApis = (() => {
     const starredApis = [],
@@ -210,8 +208,12 @@ const ApiListComponent = (props) => {
     });
 
     return [
-      ...starredApis.sort((a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)),
-      ...unstarredApis.sort((a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)),
+      ...starredApis.sort(
+        (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
+      ),
+      ...unstarredApis.sort(
+        (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
+      ),
     ];
   })().slice(offset, offset + pageNumber);
 

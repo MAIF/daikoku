@@ -49,7 +49,7 @@ export class ImportExportComponent extends Component {
             migration: {
               processing: false,
               error: res.error || '',
-              onSuccessMessage: res.error ? '' : res.message
+              onSuccessMessage: res.error ? '' : res.message,
             },
           });
         });

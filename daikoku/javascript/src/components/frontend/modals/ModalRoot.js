@@ -20,7 +20,7 @@ export const MODAL_TYPES = {
   loginOrRegisterModal: Modals.LoginOrRegisterModal,
   apiKeySelectModal: Modals.ApiKeySelectModal,
   apiSelectModal: Modals.ApiSelectModal,
-  apiDocumentationSelectModal: Modals.ApiDocumentationSelectModal
+  apiDocumentationSelectModal: Modals.ApiDocumentationSelectModal,
 };
 
 const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {

@@ -53,7 +53,7 @@ const ApiHeader = ({
   toggleStar,
   currentLanguage,
   params,
-  tab
+  tab,
 }) => {
   const handleBtnEditClick = () => history.push(editUrl);
 
@@ -70,8 +70,9 @@ const ApiHeader = ({
       };
     }
 
-    Services.getAllApiVersions(ownerTeam._id, params.apiId)
-      .then(versions => setApiVersions(versions.map(v => ({ label: v, value: v }))))
+    Services.getAllApiVersions(ownerTeam._id, params.apiId).then((versions) =>
+      setApiVersions(versions.map((v) => ({ label: v, value: v })))
+    );
   }, []);
 
   const EditButton = () => (
@@ -104,19 +105,25 @@ const ApiHeader = ({
           <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
             {api.name}
             <EditButton />
-            <div style={{ position: 'absolute', right: 0, bottom: 0 }} className="d-flex align-items-center">
-              {versions.length > 1 && tab !== "issues" && <div style={{ minWidth: '125px', fontSize: 'initial' }}>
-                <Select
-                  name="versions-selector"
-                  value={{ label: params.versionId, value: params.versionId }}
-                  options={versions}
-                  onChange={e => history.push(`/${params.teamId}/${params.apiId}/${e.value}/${tab}`)}
-                  classNamePrefix="reactSelect"
-                  className="mr-2"
-                  menuPlacement="auto"
-                  menuPosition="fixed"
-                />
-              </div>}
+            <div
+              style={{ position: 'absolute', right: 0, bottom: 0 }}
+              className="d-flex align-items-center">
+              {versions.length > 1 && tab !== 'issues' && (
+                <div style={{ minWidth: '125px', fontSize: 'initial' }}>
+                  <Select
+                    name="versions-selector"
+                    value={{ label: params.versionId, value: params.versionId }}
+                    options={versions}
+                    onChange={(e) =>
+                      history.push(`/${params.teamId}/${params.apiId}/${e.value}/${tab}`)
+                    }
+                    classNamePrefix="reactSelect"
+                    className="mr-2"
+                    menuPlacement="auto"
+                    menuPosition="fixed"
+                  />
+                </div>
+              )}
               <StarsButton
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
@@ -141,7 +148,7 @@ const ApiHomeComponent = ({
   currentLanguage,
   connectedUser,
   updateUser,
-  tenant
+  tenant,
 }) => {
   const [api, setApi] = useState(undefined);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -151,7 +158,7 @@ const ApiHomeComponent = ({
   const [showAccessModal, setAccessModalError] = useState(false);
   const [showGuestModal, setGuestModal] = useState(false);
 
-  const params = useParams()
+  const params = useParams();
 
   useEffect(() => {
     updateSubscriptions(match.params.apiId);
@@ -170,20 +177,16 @@ const ApiHomeComponent = ({
       Services.myTeams(),
     ]).then(([api, { subscriptions, requests }, teams]) => {
       if (api.error) {
-        if (api.visibility && api.visibility === "PublicWithAuthorizations") {
-          Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId)
-            .then(res => {
-              if (res.error)
-                setGuestModal(true)
-              else
-                setAccessModalError({
-                  error: api.error,
-                  api: res
-                })
-            })
-        }
-        else
-          setError({ error: { status: api.status || 404, message: api.error } });
+        if (api.visibility && api.visibility === 'PublicWithAuthorizations') {
+          Services.getMyTeamsStatusAccess(params.teamId, apiId, params.versionId).then((res) => {
+            if (res.error) setGuestModal(true);
+            else
+              setAccessModalError({
+                error: api.error,
+                api: res,
+              });
+          });
+        } else setError({ error: { status: api.status || 404, message: api.error } });
       } else {
         setApi(api);
         setSubscriptions(subscriptions);
@@ -196,7 +199,10 @@ const ApiHomeComponent = ({
   const askForApikeys = (teams, plan, apiKey) => {
     const planName = formatPlanType(plan, currentLanguage);
 
-    return (apiKey ? Services.extendApiKey(api._id, apiKey._id, teams, plan._id) : Services.askForApiKey(api._id, teams, plan._id))
+    return (apiKey
+      ? Services.extendApiKey(api._id, apiKey._id, teams, plan._id)
+      : Services.askForApiKey(api._id, teams, plan._id)
+    )
       .then((results) => {
         if (results.error) {
           return toastr.error(t('Error', currentLanguage), results.error);
@@ -239,7 +245,8 @@ const ApiHomeComponent = ({
   const editUrl = (api) => {
     return Option(myTeams.find((team) => api.team === team._id)).fold(
       () => '#',
-      (adminTeam) => `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
+      (adminTeam) =>
+        `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
     );
   };
 
@@ -261,39 +268,45 @@ const ApiHomeComponent = ({
   };
 
   if (showGuestModal)
-    return <div className="m-3">
-      <LoginOrRegisterModal
-        tenant={tenant}
-        currentLanguage={currentLanguage}
-        showOnlyMessage={true}
-        asFlatFormat
-        message={t('guest_user_not_allowed', currentLanguage)}
-      />
-    </div>
+    return (
+      <div className="m-3">
+        <LoginOrRegisterModal
+          tenant={tenant}
+          currentLanguage={currentLanguage}
+          showOnlyMessage={true}
+          asFlatFormat
+          message={t('guest_user_not_allowed', currentLanguage)}
+        />
+      </div>
+    );
 
   if (showAccessModal) {
     const teams = showAccessModal.api.myTeams.filter((t) => t.type !== 'Admin');
-    const pendingTeams = showAccessModal.api.authorizations.filter((auth) => auth.pending).map((auth) => auth.team);
+    const pendingTeams = showAccessModal.api.authorizations
+      .filter((auth) => auth.pending)
+      .map((auth) => auth.team);
     const authorizedTeams = showAccessModal.api.authorizations
       .filter((auth) => auth.authorized)
       .map((auth) => auth.team);
 
-    return <div className="mx-auto mt-3 d-flex flex-column justify-content-center">
-      <h1 style={{ margin: 0 }}>{showAccessModal.error}</h1>
-      {
-        (teams.length === 1 && (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
-          (showAccessModal.api.authorizations.every(auth => auth.pending && !auth.authorized))
-          ?
+    return (
+      <div className="mx-auto mt-3 d-flex flex-column justify-content-center">
+        <h1 style={{ margin: 0 }}>{showAccessModal.error}</h1>
+        {(teams.length === 1 &&
+          (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
+        showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
           <>
             <h2 className="text-center my-3">{t('request_already_pending', currentLanguage)}</h2>
-            <button className="btn btn-outline-info mx-auto" style={{ width: 'fit-content' }}
+            <button
+              className="btn btn-outline-info mx-auto"
+              style={{ width: 'fit-content' }}
               onClick={() => history.goBack()}>
               {t('go_back', currentLanguage)}
             </button>
           </>
-          :
+        ) : (
           <>
-            <span className="text-center my-3">{t("request_api_access", currentLanguage)}</span>
+            <span className="text-center my-3">{t('request_api_access', currentLanguage)}</span>
             <ActionWithTeamSelector
               title="Api access"
               description={t(
@@ -307,15 +320,18 @@ const ApiHomeComponent = ({
               authorizedTeams={authorizedTeams}
               teams={teams}
               action={(teams) => {
-                Services.askForApiAccess(teams, showAccessModal.api._id)
-                  .then(_ => updateSubscriptions(showAccessModal.api._id))
+                Services.askForApiAccess(teams, showAccessModal.api._id).then((_) =>
+                  updateSubscriptions(showAccessModal.api._id)
+                );
               }}>
               <button className="btn btn-success mx-auto" style={{ width: 'fit-content' }}>
                 {t('notif.api.access', currentLanguage, null, false, [params.apiId])}
               </button>
             </ActionWithTeamSelector>
-          </>}
-    </div>
+          </>
+        )}
+      </div>
+    );
   }
 
   if (!api || !ownerTeam) {
@@ -369,8 +385,9 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                    }`}
+                  className={`nav-link ${
+                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                  }`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/documentation`}>
                   <Translation i18nkey="Documentation" language={currentLanguage}>
                     Documentation
@@ -542,7 +559,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   setError,
   openContactModal,
-  updateUser
+  updateUser,
 };
 
 export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);

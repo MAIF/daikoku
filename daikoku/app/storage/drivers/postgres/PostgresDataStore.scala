@@ -527,7 +527,7 @@ class PostgresDataStore(configuration: Configuration, env: Env)
           } yield res
       }
       .recover {
-        case e : Exception =>
+        case e: Exception =>
           logger.error(e.getMessage)
           FastFuture.successful(())
       }
@@ -546,16 +546,21 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         s"content JSONB)")
 
     reactivePg
-      .query("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)", Seq(getSchema, table))
-      .map { r => r.asScala.toSeq.head.getBoolean("exists") }
+      .query(
+        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)",
+        Seq(getSchema, table))
+      .map { r =>
+        r.asScala.toSeq.head.getBoolean("exists")
+      }
       .flatMap {
         case java.lang.Boolean.FALSE =>
           AppLogger.info(s"Create missing table : $table")
-          reactivePg.rawQuery(
-            s"CREATE TABLE $getSchema.$table (" +
-              s"_id character varying PRIMARY KEY," +
-              s"${if (allFields) "_deleted BOOLEAN," else ""}" +
-              s"content JSONB)")
+          reactivePg
+            .rawQuery(
+              s"CREATE TABLE $getSchema.$table (" +
+                s"_id character varying PRIMARY KEY," +
+                s"${if (allFields) "_deleted BOOLEAN," else ""}" +
+                s"content JSONB)")
             .map { _ =>
               AppLogger.info(s"Created : $table")
             }
@@ -609,9 +614,10 @@ class PostgresDataStore(configuration: Configuration, env: Env)
   override def importFromStream(source: Source[ByteString, _]): Future[Unit] = {
     logger.debug("importFromStream")
 
-    Future.sequence(TABLES.map {
-      case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key")
-    })
+    Future
+      .sequence(TABLES.map {
+        case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key")
+      })
       .map { _ =>
         source
           .via(Framing.delimiter(ByteString("\n"),
@@ -688,7 +694,8 @@ class PostgresDataStore(configuration: Configuration, env: Env)
         case e: Throwable =>
           AppLogger.info(e.getMessage)
 
-      }.asInstanceOf[Future[Unit]]
+      }
+      .asInstanceOf[Future[Unit]]
   }
 }
 
@@ -887,7 +894,7 @@ class PostgresTeamRepo(env: Env, reactivePg: ReactivePg)
 }
 
 class PostgresEvolutionRepo(env: Env, reactivePg: ReactivePg)
-  extends PostgresRepo[Evolution, DatastoreId](env, reactivePg)
+    extends PostgresRepo[Evolution, DatastoreId](env, reactivePg)
     with EvolutionRepo {
   override def tableName: String = "evolutions"
 
@@ -1175,10 +1182,12 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     sort match {
       case None =>
         if (query.values.isEmpty)
-          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}'") {
+          reactivePg.querySeq(
+            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}'") {
             rowToJson(_, format)
           } else {
-          val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
+          val (sql, params) = convertQuery(
+            query ++ Json.obj("_tenant" -> tenant.value))
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql"
           params.zipWithIndex.reverse.foreach {
@@ -1203,7 +1212,8 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
                 .mkString(",")
             )
           ) { rowToJson(_, format) } else {
-          val (sql, params) = convertQuery(query ++ Json.obj("_tenant" -> tenant.value))
+          val (sql, params) = convertQuery(
+            query ++ Json.obj("_tenant" -> tenant.value))
           reactivePg.querySeq(
             s"SELECT *, ${getParam(params.size + 1)} FROM $tableName WHERE $sql ORDER BY ${getParam(
               params.size)}",

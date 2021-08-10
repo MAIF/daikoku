@@ -283,14 +283,13 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
               if (consumption.from == from) {
                 env.dataStore.consumptionRepo
                   .forTenant(tenant.id)
-                  .findOne(Json.obj(
-                    "clientId" -> subscription.apiKey.clientId,
-                    "from" -> DateTimeFormat.writes(from))
-                  )
+                  .findOne(Json.obj("clientId" -> subscription.apiKey.clientId,
+                                    "from" -> DateTimeFormat.writes(from)))
                   .flatMap {
-                    case Some(con) => env.dataStore.consumptionRepo
-                      .forTenant(tenant.id)
-                      .save(cons.copy(id = con.id))
+                    case Some(con) =>
+                      env.dataStore.consumptionRepo
+                        .forTenant(tenant.id)
+                        .save(cons.copy(id = con.id))
                     case None =>
                       env.dataStore.consumptionRepo
                         .forTenant(tenant.id)

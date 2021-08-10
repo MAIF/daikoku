@@ -5,8 +5,7 @@ import { connect } from 'react-redux';
 
 class ActionWithTeamSelectorComponent extends Component {
   openTeamSelectorModal = () => {
-    if (this.props.teams.length === 1)
-      this.props.action([this.props.teams[0]._id])
+    if (this.props.teams.length === 1) this.props.action([this.props.teams[0]._id]);
     else
       this.props.openTeamSelectorModal({
         allTeamSelector: this.props.withAllTeamSelector,

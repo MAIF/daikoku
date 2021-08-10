@@ -73,13 +73,14 @@ class MyHomeComponent extends Component {
   redirectToApiPage = (api) => {
     const apiOwner = this.state.teams.find((t) => t._id === api.team);
 
-    const route = version => `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}/${version}`
+    const route = (version) =>
+      `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}/${version}`;
 
-    if (api.isDefault)
-      this.props.history.push(route(api.currentVersion));
+    if (api.isDefault) this.props.history.push(route(api.currentVersion));
     else
-      Services.getDefaultApiVersion(api._humanReadableId)
-        .then(res => this.props.history.push(route(res.defaultVersion)))
+      Services.getDefaultApiVersion(api._humanReadableId).then((res) =>
+        this.props.history.push(route(res.defaultVersion))
+      );
   };
 
   redirectToEditPage = (api) => {

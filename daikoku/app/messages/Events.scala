@@ -97,11 +97,14 @@ class MessageActor(
       link = if (message.sender == message.chat) s"$baseLink/settings/messages"
       else baseLink
 
-      title <- translator.translate("mail.new.message.title", tenant, Map(
-        "user" -> sender.get.name
-      ))
+      title <- translator.translate("mail.new.message.title",
+                                    tenant,
+                                    Map(
+                                      "user" -> sender.get.name
+                                    ))
       body <- translator.translate("mail.new.message.body", tenant)
-      _ <- Future.sequence(emails.map(email => tenant.mailer.send(title, Seq(email), body, tenant)))
+      _ <- Future.sequence(emails.map(email =>
+        tenant.mailer.send(title, Seq(email), body, tenant)))
     } yield ()
   }
 

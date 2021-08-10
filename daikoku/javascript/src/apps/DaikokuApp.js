@@ -379,9 +379,14 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
             <RouteWithTitle
               title={`${tenant.name} - ${t('Internalization', currentLanguage)}`}
               exact
-              path={["/settings/internationalization", "/settings/internationalization/:domain"]}
+              path={['/settings/internationalization', '/settings/internationalization/:domain']}
               render={(p) => (
-                <MailingInternalization match={p.match} history={p.history} location={p.location} tenant={tenant} />
+                <MailingInternalization
+                  match={p.match}
+                  history={p.history}
+                  location={p.location}
+                  tenant={tenant}
+                />
               )}
             />
             {!tenant.hideTeamsPage && (
@@ -545,7 +550,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
             />
             <FrontOfficeRoute
               exact
-              path={["/:teamId/:apiId/:versionId", "/:teamId/:apiId/:versionId/description"]}
+              path={['/:teamId/:apiId/:versionId', '/:teamId/:apiId/:versionId/description']}
               render={(p) => <ApiHome match={p.match} history={p.history} tab="description" />}
             />
             <FrontOfficeRoute
@@ -602,7 +607,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   updateTeam: (team) => updateTeamPromise(team),
-  setError: (error) => setError(error)
+  setError: (error) => setError(error),
 };
 
 export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
@@ -636,10 +641,10 @@ const TeamBackOfficeRouteComponent = ({
             rest.setError({
               error: {
                 ...error,
-                message: error.error
-              }
-            })
-            setTeamError(error)
+                message: error.error,
+              },
+            });
+            setTeamError(error);
           });
       } else {
         setNoRender(true);

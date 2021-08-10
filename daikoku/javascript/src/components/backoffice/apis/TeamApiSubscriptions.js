@@ -25,7 +25,7 @@ const TeamApiSubscriptionsComponent = (props) => {
   const [loading, setLoading] = useState(true);
   const [table, setTable] = useState(undefined);
 
-  const params = useParams()
+  const params = useParams();
 
   useEffect(() => {
     Promise.all([
@@ -211,7 +211,11 @@ const TeamApiSubscriptionsComponent = (props) => {
                 itemName="sub"
                 columns={columns}
                 fetchItems={() =>
-                  Services.apiSubscriptions(props.match.params.apiId, props.currentTeam._id, params.versionId)
+                  Services.apiSubscriptions(
+                    props.match.params.apiId,
+                    props.currentTeam._id,
+                    params.versionId
+                  )
                 }
                 showActions={false}
                 showLink={false}

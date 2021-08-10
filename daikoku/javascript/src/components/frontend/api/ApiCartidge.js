@@ -70,8 +70,9 @@ export class ApiCartidge extends Component {
             Visibility
           </Translation>
           <span
-            className={`badge ml-1 ${api.visibility === 'Public' ? 'badge-success' : 'badge-danger'
-              }`}>
+            className={`badge ml-1 ${
+              api.visibility === 'Public' ? 'badge-success' : 'badge-danger'
+            }`}>
             {t(api.visibility, this.props.currentLanguage)}
           </span>
         </span>
@@ -111,8 +112,10 @@ export class ApiCartidge extends Component {
               teams={subscribingTeams.filter((t) =>
                 CanIDoAction(this.props.connectedUser, manage, apikey, t)
               )}
-              action={teams =>
-                this.props.redirectToApiKeysPage(this.props.myTeams.find(t => teams.includes(t._id)))
+              action={(teams) =>
+                this.props.redirectToApiKeysPage(
+                  this.props.myTeams.find((t) => teams.includes(t._id))
+                )
               }
               currentLanguage={this.props.currentLanguage}
               withAllTeamSelector={false}>
