@@ -8,6 +8,7 @@ import * as Services from '../../../services';
 import { ApiList } from '../../frontend';
 import { updateUser } from '../../../core';
 import { api as API, CanIDoAction, manage } from '../../utils';
+import { converter } from '../../../services/showdown';
 
 class MyHomeComponent extends Component {
   state = {
@@ -178,7 +179,8 @@ const Description = (props) => {
     );
   }
 
-  return <p className="lead">{props.description}</p>;
+  return <div dangerouslySetInnerHTML={{ __html: converter.makeHtml(props.description || '') }}>
+  </div>;
 };
 
 const mapStateToProps = (state) => ({
