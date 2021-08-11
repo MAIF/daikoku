@@ -7,7 +7,8 @@ import { converter } from '../../services/showdown';
 import { Option } from '../utils';
 import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
-import { t, Translation } from '../../locales';
+import { Translation } from '../../locales';
+import { I18nContext } from '../../core/context';
 
 const DiscussionComponent = (props) => {
   const {
@@ -29,6 +30,8 @@ const DiscussionComponent = (props) => {
       readMessages(messages[0].chat);
     }
   }, [opened, totalUnread]);
+
+  const { translationMethod } = useContext(I18nContext)
 
   const handleKeyDown = (event) => {
     if (!newMessage.trim()) return;
@@ -114,7 +117,7 @@ const DiscussionComponent = (props) => {
             <input
               disabled={loading ? 'disabled' : null}
               type="text"
-              placeholder={t('Your message', props.currentLanguage)}
+              placeholder={translateMethod('Your message')}
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
               onChange={(e) => setNewMessage(e.target.value)}
