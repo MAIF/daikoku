@@ -511,7 +511,7 @@ export const listTenantAssets = (teamId) => {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
-    }).then((r) => r.json());
+    })
   } else {
     return customFetch('/tenant-assets', {
       credentials: 'include',
@@ -519,7 +519,7 @@ export const listTenantAssets = (teamId) => {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
-    }).then((r) => r.json());
+    })
   }
 };
 

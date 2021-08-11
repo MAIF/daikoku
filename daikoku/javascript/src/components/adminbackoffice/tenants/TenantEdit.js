@@ -409,7 +409,7 @@ export class TenantEditComponent extends Component {
       props: { label: t('Title', this.props.currentLanguage) },
     },
     'style.description': {
-      type: 'string',
+      type: 'markdown',
       props: { label: t('Description', this.props.currentLanguage) },
     },
     'style.unloggedHome': {

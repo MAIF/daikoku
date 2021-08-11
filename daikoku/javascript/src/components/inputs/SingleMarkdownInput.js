@@ -208,20 +208,15 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
   const team = _.isFunction(props.team) ? props.team() : props.team;
 
   return (
-    <div className="d-flex flex-column">
+    <div className="form-group row">
       {props.label && (
         <label
           htmlFor={`input-${props.label}`}
-          className="col-form-label d-flex align-items-center">
+          className="col-xs-12 col-sm-2 col-form-label">
           <Help place="right" text={props.help} label={props.label} />
         </label>
       )}
-      <div
-        style={{
-          marginBottom: 10,
-          flexWrap: 'wrap',
-        }}
-        className="d-flex flex-sm-row flex-column align-items-center">
+      <div className={props.fullWidth ? "col-sm-12" : "col-sm-10"}>
         <div>
           <div className="btn-group">
             <button
@@ -244,7 +239,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
             </button>
           </div>
         </div>
-        <div className="d-flex flex-row">{injectButtons()}</div>
+        <div className="d-flex flex-row mt-1 mb-2">{injectButtons()}</div>
         <div style={{ width: props.fixedWitdh || 250 }}>
           {props.assertChooserActive && (
             <AssetChooserByModal
@@ -259,35 +254,35 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
             />
           )}
         </div>
+        {!preview && (
+          <AceEditor
+            ref={(r) => {
+              if (r && r.editor) {
+                setEditor(r.editor);
+              }
+            }}
+            mode="markdown"
+            theme="monokai"
+            onChange={props.onChange}
+            value={code}
+            name="scriptParam"
+            editorProps={{ $blockScrolling: true }}
+            height={props.height || '300px'}
+            width={props.width || '100%'}
+            showGutter={true}
+            tabSize={2}
+            highlightActiveLine={true}
+            enableBasicAutocompletion={true}
+            enableLiveAutocompletion={true}
+          />
+        )}
+        {preview && (
+          <div
+            className="api-description"
+            dangerouslySetInnerHTML={{ __html: converter.makeHtml(code) }}
+          />
+        )}
       </div>
-      {!preview && (
-        <AceEditor
-          ref={(r) => {
-            if (r && r.editor) {
-              setEditor(r.editor);
-            }
-          }}
-          mode="markdown"
-          theme="monokai"
-          onChange={props.onChange}
-          value={code}
-          name="scriptParam"
-          editorProps={{ $blockScrolling: true }}
-          height={props.height || '300px'}
-          width={props.width || '100%'}
-          showGutter={true}
-          tabSize={2}
-          highlightActiveLine={true}
-          enableBasicAutocompletion={true}
-          enableLiveAutocompletion={true}
-        />
-      )}
-      {preview && (
-        <div
-          className="api-description"
-          dangerouslySetInnerHTML={{ __html: converter.makeHtml(code) }}
-        />
-      )}
     </div>
   );
 };
