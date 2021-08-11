@@ -32,7 +32,7 @@ export class TeamCard extends Component {
                   </Can>
                 </h3>
                 <Translation
-                  language={this.props.currentLanguage}
+                 
                   i18nkey={`${team._id}.description`}
                   extraConf={team.translation}>
                   {team.description}
@@ -44,14 +44,14 @@ export class TeamCard extends Component {
                     <button
                       className="btn btn-sm btn-access-negative mr-2"
                       onClick={this.props.askToJoin}>
-                      <Translation i18nkey="Join" language={this.props.currentLanguage}>
+                      <Translation i18nkey="Join">
                         Join
                       </Translation>
                     </button>
                   )}
                   {team.canJoin && team.alreadyJoin && (
                     <button className="btn btn-sm btn-access-negative mr-2">
-                      <Translation i18nkey="Pending request" language={this.props.currentLanguage}>
+                      <Translation i18nkey="Pending request">
                         Pending request
                       </Translation>
                     </button>

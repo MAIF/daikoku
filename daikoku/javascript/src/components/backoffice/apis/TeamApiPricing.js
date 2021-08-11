@@ -138,7 +138,7 @@ const OtoroshiServicesAndGroupSelector = (props) => {
         <div className="col-12 d-flex flex-row mt-1">
           <div className="d-flex flex-column flex-grow-1">
             <strong className="font-italic">
-              <Translation i18nkey="Authorized Groups" language={props.currentLanguage}>
+              <Translation i18nkey="Authorized Groups">
                 Authorized Groups
               </Translation>
             </strong>
@@ -153,7 +153,7 @@ const OtoroshiServicesAndGroupSelector = (props) => {
           </div>
           <div className="d-flex flex-column flex-grow-1">
             <strong className="font-italic">
-              <Translation i18nkey="Authorized Services" language={props.currentLanguage}>
+              <Translation i18nkey="Authorized Services">
                 Authorized Services
               </Translation>
             </strong>
@@ -1507,7 +1507,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
                   type="button"
                   className="btn btn-sm btn-outline-primary mr-1 mb-2">
                   <i className="fas fa-star mr-1" title="Default plan" />
-                  <Translation i18nkey="Make default plan" language={currentLanguage}>
+                  <Translation i18nkey="Make default plan">
                     Make default plan
                   </Translation>
                 </button>
@@ -1524,12 +1524,12 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
                     })}
                   />
                   {selected.visibility === 'Public' && (
-                    <Translation i18nkey="Make it private" language={currentLanguage}>
+                    <Translation i18nkey="Make it private">
                       Make it private
                     </Translation>
                   )}
                   {selected.visibility === 'Private' && (
-                    <Translation i18nkey="Make it public" language={currentLanguage}>
+                    <Translation i18nkey="Make it public">
                       Make it public
                     </Translation>
                   )}
@@ -1541,7 +1541,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
                   type="button"
                   className="btn btn-sm btn-outline-primary mb-2 mr-1">
                   <i className="fas fa-clone mr-1" />
-                  <Translation i18nkey="Duplicate plan" language={currentLanguage}>
+                  <Translation i18nkey="Duplicate plan">
                     Duplicate plan
                   </Translation>
                 </button>
@@ -1552,7 +1552,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
                   type="button"
                   className="btn btn-sm btn-outline-danger mb-2">
                   <i className="fas fa-trash mr-1" />
-                  <Translation i18nkey="Delete plan" language={currentLanguage}>
+                  <Translation i18nkey="Delete plan">
                     Delete plan
                   </Translation>
                 </button>

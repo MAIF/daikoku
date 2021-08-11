@@ -97,7 +97,7 @@ export const TestingApiKeyModal = (props) => {
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-          <Translation i18nkey="Cancel" language={props.currentLanguage}>
+          <Translation i18nkey="Cancel">
             Cancel
           </Translation>
         </button>
@@ -108,7 +108,7 @@ export const TestingApiKeyModal = (props) => {
           disabled={!config.otoroshiSettings && !config.serviceGroup ? 'disabled' : undefined}>
           <Translation
             i18nkey={props.update ? 'Update' : 'Create'}
-            language={props.currentLanguage}>
+           >
             {props.update ? 'Update' : 'Create'}
           </Translation>
         </button>

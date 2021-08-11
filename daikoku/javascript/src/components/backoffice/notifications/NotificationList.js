@@ -164,7 +164,7 @@ class NotificationListComponent extends Component {
               <a href="#" onClick={() => this.onSelectTab('unread')}>
                 <Translation
                   i18nkey="Untreated"
-                  language={this.props.currentLanguage}
+                 
                   count={this.state.untreatedCount}>
                   Untreated
                 </Translation>
@@ -177,7 +177,7 @@ class NotificationListComponent extends Component {
                 active: this.state.tab === 'all',
               })}>
               <a href="#" onClick={() => this.onSelectTab('all')}>
-                <Translation i18nkey="All notifications" language={this.props.currentLanguage}>
+                <Translation i18nkey="All notifications">
                   All notifications
                 </Translation>
               </a>
@@ -188,7 +188,7 @@ class NotificationListComponent extends Component {
           <h1>
             <Translation
               i18nkey="Notifications"
-              language={this.props.currentLanguage}
+             
               isPlural={true}>
               Notifications
             </Translation>{' '}
@@ -202,7 +202,7 @@ class NotificationListComponent extends Component {
             {this.state.notifications.length === 0 && (
               <div>
                 <h4>
-                  <Translation i18nkey="no notification" language={this.props.currentLanguage}>
+                  <Translation i18nkey="no notification">
                     You have 0 notification
                   </Translation>
                 </h4>
@@ -244,7 +244,7 @@ class NotificationListComponent extends Component {
                 <button
                   className="btn btn-access-negative my-2 ml-2"
                   onClick={() => this.getMoreNotifications()}>
-                  <Translation i18nkey="more" language={this.props.currentLanguage}>
+                  <Translation i18nkey="more">
                     more
                   </Translation>
                 </button>

@@ -276,6 +276,7 @@ object json {
         case Some("maintenance")  => JsSuccess(TenantMode.Maintenance)
         case Some("construction") => JsSuccess(TenantMode.Construction)
         case Some("default")      => JsSuccess(TenantMode.Default)
+        case Some("translation")  => JsSuccess(TenantMode.Translation)
         case None                 => JsSuccess(TenantMode.Default)
         case Some(str)            => JsError(s"Bad value for tenant mode : $str")
       }

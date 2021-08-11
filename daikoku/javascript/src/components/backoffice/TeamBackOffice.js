@@ -83,7 +83,7 @@ class TeamBackOfficeHomeComponent extends Component {
                   <span className="home-tile-text">
                     <Translation
                       i18nkey="apis published"
-                      language={this.props.currentLanguage}
+                     
                       count={this.state.team.apisCount}>
                       apis published
                     </Translation>
@@ -96,7 +96,7 @@ class TeamBackOfficeHomeComponent extends Component {
                   <span className="home-tile-text">
                     <Translation
                       i18nkey="apis subcriptions"
-                      language={this.props.currentLanguage}
+                     
                       count={this.state.team.subscriptionsCount}>
                       apis subcriptions
                     </Translation>
@@ -116,7 +116,7 @@ class TeamBackOfficeHomeComponent extends Component {
                       <span className="home-tile-text">
                         <Translation
                           i18nkey="members"
-                          language={this.props.currentLanguage}
+                         
                           count={this.state.team.users.length}>
                           members
                         </Translation>
@@ -129,7 +129,7 @@ class TeamBackOfficeHomeComponent extends Component {
                   <span className="home-tile-text">
                     <Translation
                       i18nkey="unread notifications"
-                      language={this.props.currentLanguage}
+                     
                       count={this.state.team.notificationCount}>
                       unread notifications
                     </Translation>
@@ -223,7 +223,7 @@ const TeamBackOfficeComponent = ({
                           className={`nav-link ${tab === 'Apis' ? 'active' : ''}`}
                           to={`/${currentTeam._humanReadableId}/settings/apis`}>
                           <i className="fas fa-atlas" />
-                          <Translation i18nkey="Team Apis" language={currentLanguage}>
+                          <Translation i18nkey="Team Apis">
                             Team Apis
                           </Translation>
                         </Link>
@@ -237,7 +237,7 @@ const TeamBackOfficeComponent = ({
                           className={`nav-link ${tab === 'Income' ? 'active' : ''}`}
                           to={`/${currentTeam._humanReadableId}/settings/income`}>
                           <i className="fas fa-file-invoice-dollar" />
-                          <Translation i18nkey="Team Income" language={currentLanguage}>
+                          <Translation i18nkey="Team Income">
                             Team Income
                           </Translation>
                         </Link>
@@ -250,7 +250,7 @@ const TeamBackOfficeComponent = ({
                         className={`nav-link ${tab === 'ApiKeys' ? 'active' : ''}`}
                         to={`/${currentTeam._humanReadableId}/settings/apikeys`}>
                         <i className="fas fa-key" />
-                        <Translation i18nkey="Team api keys" language={currentLanguage}>
+                        <Translation i18nkey="Team api keys">
                           Team api keys
                         </Translation>
                       </Link>
@@ -262,7 +262,7 @@ const TeamBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Billing' ? 'active' : ''}`}
                         to={`/${currentTeam._humanReadableId}/settings/billing`}>
                         <i className="fas fa-file-invoice-dollar" />
-                        <Translation i18nkey="Team billing" language={currentLanguage}>
+                        <Translation i18nkey="Team billing">
                           Team billing
                         </Translation>
                       </Link>
@@ -276,7 +276,7 @@ const TeamBackOfficeComponent = ({
                           className={`nav-link ${tab === 'Members' ? 'active' : ''}`}
                           to={`/${currentTeam._humanReadableId}/settings/members`}>
                           <i className="fas fa-users" />
-                          <Translation i18nkey="Team members" language={currentLanguage}>
+                          <Translation i18nkey="Team members">
                             Team members
                           </Translation>
                         </Link>
@@ -290,7 +290,7 @@ const TeamBackOfficeComponent = ({
                           className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
                           to={`/${currentTeam._humanReadableId}/settings/assets`}>
                           <i className="fas fa-tools" />
-                          <Translation i18nkey="Team assets" language={currentLanguage}>
+                          <Translation i18nkey="Team assets">
                             Team assets
                           </Translation>
                         </Link>
@@ -356,7 +356,7 @@ const UserBackOfficeComponent = ({
                       className={`nav-link ${tab === 'Me' ? 'active' : ''}`}
                       to={'/settings/me'}>
                       <i className="fas fa-user" />
-                      <Translation i18nkey="My profile" language={currentLanguage}>
+                      <Translation i18nkey="My profile">
                         My profile
                       </Translation>
                     </Link>
@@ -366,7 +366,7 @@ const UserBackOfficeComponent = ({
                       className={`nav-link ${tab === 'Notifications' ? 'active' : ''}`}
                       to={'/notifications'}>
                       <i className="fas fa-bell" />
-                      <Translation i18nkey="Notifications" language={currentLanguage}>
+                      <Translation i18nkey="Notifications">
                         Notifications
                       </Translation>
                     </Link>
@@ -376,7 +376,7 @@ const UserBackOfficeComponent = ({
 
                 <Can I={manage} a={TENANT}>
                   <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                    <Translation i18nkey="Tenant administration" language={currentLanguage}>
+                    <Translation i18nkey="Tenant administration">
                       Tenant administration
                     </Translation>
                     <Link
@@ -392,7 +392,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Messages' ? 'active' : ''}`}
                         to={'/settings/messages'}>
                         <i className="fas fa-comment-alt" />
-                        <Translation i18nkey="Message" language={currentLanguage} isPlural>
+                        <Translation i18nkey="Message" isPlural>
                           Messages
                         </Translation>
                       </Link>
@@ -404,7 +404,7 @@ const UserBackOfficeComponent = ({
                         <i className="fas fa-pastafarianism" />
                         <Translation
                           i18nkey="Otoroshi instance"
-                          language={currentLanguage}
+                         
                           isPlural>
                           Otoroshi instances
                         </Translation>
@@ -415,7 +415,7 @@ const UserBackOfficeComponent = ({
                         className={`mr-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
                         to={'/settings/admins'}>
                         <i className="fas fa-user-shield mr-1" />
-                        <Translation i18nkey="Admins" language={currentLanguage}>
+                        <Translation i18nkey="Admins">
                           Admins
                         </Translation>
                       </Link>
@@ -425,7 +425,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Audit trail' ? 'active' : ''}`}
                         to={'/settings/audit'}>
                         <i className="fas fa-book" />
-                        <Translation i18nkey="Audit trail" language={currentLanguage}>
+                        <Translation i18nkey="Audit trail">
                           Audit trail
                         </Translation>
                       </Link>
@@ -435,7 +435,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Teams' ? 'active' : ''}`}
                         to={'/settings/teams'}>
                         <i className="fas fa-user-friends" />
-                        <Translation i18nkey="Teams" language={currentLanguage}>
+                        <Translation i18nkey="Teams">
                           Teams
                         </Translation>
                       </Link>
@@ -445,7 +445,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
                         to={'/settings/assets'}>
                         <i className="fas fa-tools" />
-                        <Translation i18nkey="Tenant assets" language={currentLanguage}>
+                        <Translation i18nkey="Tenant assets">
                           Tenant assets
                         </Translation>
                       </Link>
@@ -455,7 +455,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Initialization' ? 'active' : ''}`}
                         to={'/settings/init'}>
                         <i className="fas fa-cloud-download-alt" />
-                        <Translation i18nkey="Initialization" language={currentLanguage}>
+                        <Translation i18nkey="Initialization">
                           Initalization
                         </Translation>
                       </Link>
@@ -467,7 +467,7 @@ const UserBackOfficeComponent = ({
                         }`}
                         to={'/settings/internationalization/mail'}>
                         <i className="fas fa-language" />
-                        <Translation i18nkey="Internationalization" language={currentLanguage}>
+                        <Translation i18nkey="Internationalization">
                           Internationalization
                         </Translation>
                       </Link>
@@ -478,7 +478,7 @@ const UserBackOfficeComponent = ({
                 <Can I={manage} a={daikoku}>
                   <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                     <span>
-                      <Translation i18nkey="Daikoku administration" language={currentLanguage}>
+                      <Translation i18nkey="Daikoku administration">
                         Daikoku administration
                       </Translation>
                     </span>
@@ -490,7 +490,7 @@ const UserBackOfficeComponent = ({
                         to={'/settings/tenants'}>
                         <i className="fas fa-globe" />
 
-                        <Translation i18nkey="Tenants" language={currentLanguage}>
+                        <Translation i18nkey="Tenants">
                           Tenants
                         </Translation>
                       </Link>
@@ -500,7 +500,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Users' ? 'active' : ''}`}
                         to={'/settings/users'}>
                         <i className="fas fa-users" />
-                        <Translation i18nkey="Users" language={currentLanguage}>
+                        <Translation i18nkey="Users">
                           Users
                         </Translation>
                       </Link>
@@ -510,7 +510,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'User sessions' ? 'active' : ''}`}
                         to={'/settings/sessions'}>
                         <i className="fas fa-address-card" />
-                        <Translation i18nkey="User sessions" language={currentLanguage}>
+                        <Translation i18nkey="User sessions">
                           User sessions
                         </Translation>
                       </Link>
@@ -520,7 +520,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Import / Export' ? 'active' : ''}`}
                         to={'/settings/import-export'}>
                         <i className="fas fa-download" />
-                        <Translation i18nkey="Import / Export" language={currentLanguage}>
+                        <Translation i18nkey="Import / Export">
                           Import / Export
                         </Translation>
                       </Link>

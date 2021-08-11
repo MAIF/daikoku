@@ -52,7 +52,7 @@ export class TenantListComponent extends Component {
             <div className="col">
               <div className="d-flex justify-content-between align-items-center">
                 <h1>
-                  <Translation i18nkey="Tenant" language={this.props.currentLanguage} isPlural>
+                  <Translation i18nkey="Tenant" isPlural>
                     Tenants
                   </Translation>
                   <a

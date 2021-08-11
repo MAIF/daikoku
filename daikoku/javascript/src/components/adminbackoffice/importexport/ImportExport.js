@@ -65,7 +65,7 @@ export class ImportExportComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="Import / Export" language={this.props.currentLanguage}>
+                <Translation i18nkey="Import / Export">
                   Import / Export
                 </Translation>
               </h1>
@@ -76,7 +76,7 @@ export class ImportExportComponent extends Component {
                   target="_blank"
                   className="btn btn-outline-primary">
                   <i className="fas fa-download mr-1" />
-                  <Translation i18nkey="download state" language={this.props.currentLanguage}>
+                  <Translation i18nkey="download state">
                     download state
                   </Translation>
                 </a>
@@ -105,7 +105,7 @@ export class ImportExportComponent extends Component {
                 />
               </div>
               <h2 className="my-2">
-                <Translation i18nkey="Mongo migration" language={this.props.currentLanguage}>
+                <Translation i18nkey="Mongo migration">
                   Mongo migration
                 </Translation>
               </h2>

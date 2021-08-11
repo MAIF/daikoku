@@ -200,7 +200,7 @@ class TeamApisComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="Team apis" language={this.props.currentLanguage}>
+                <Translation i18nkey="Team apis">
                   Team APIs
                 </Translation>
                 {this.props.apiCreationPermitted && this.props.currentTeam.type !== 'Admin' && (

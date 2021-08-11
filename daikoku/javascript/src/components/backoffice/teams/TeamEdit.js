@@ -137,7 +137,7 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
       <div className="row form-back-fixedBtns">
         <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
           <i className="fas fa-chevron-left mr-1" />
-          <Translation i18nkey="Back" language={currentLanguage}>
+          <Translation i18nkey="Back">
             Back
           </Translation>
         </Link>
@@ -148,7 +148,7 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
           onClick={members}>
           <span>
             <i className="fas fa-users mr-1" />
-            <Translation i18nkey="Members" language={currentLanguage}>
+            <Translation i18nkey="Members">
               Members
             </Translation>
           </span>
@@ -160,7 +160,7 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
           onClick={save}>
           <span>
             <i className="fas fa-save mr-1" />
-            <Translation i18nkey="Save" language={currentLanguage}>
+            <Translation i18nkey="Save">
               Save
             </Translation>
           </span>

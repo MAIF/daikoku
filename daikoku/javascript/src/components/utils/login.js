@@ -47,7 +47,7 @@ export class LoginPage extends Component {
             </div>
             <h3>
               <Translation
-                language={this.props.tenant.defaultLanguage}
+               
                 i18nkey="login.to.tenant"
                 replacements={[this.props.tenant.name]}>
                 Login to {this.props.tenant.name}
@@ -63,14 +63,14 @@ export class LoginPage extends Component {
             <input type="hidden" name="token" className="form-control" value={this.props.token} />
             {loginError && (
               <span className="alert alert-danger d-flex justify-content-center">
-                <Translation language={this.props.tenant.defaultLanguage} i18nkey="login.failed">
+                <Translation i18nkey="login.failed">
                   User not found or invalid credentials
                 </Translation>
               </span>
             )}
             <div className="form-group">
               <label className="control-label">
-                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Email address">
+                <Translation i18nkey="Email address">
                   Email address
                 </Translation>
               </label>
@@ -84,7 +84,7 @@ export class LoginPage extends Component {
             </div>
             <div className="form-group">
               <label className="control-label">
-                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Password">
+                <Translation i18nkey="Password">
                   Password
                 </Translation>
               </label>
@@ -98,7 +98,7 @@ export class LoginPage extends Component {
             </div>
             <div className="form-group">
               <button type="submit" className="btn btn-success btn-block">
-                <Translation language={this.props.tenant.defaultLanguage} i18nkey="Login">
+                <Translation i18nkey="Login">
                   Login
                 </Translation>
               </button>
@@ -111,7 +111,7 @@ export class LoginPage extends Component {
                   borderRadius: '6px',
                 }}>
                 <Translation
-                  language={this.props.tenant.defaultLanguage}
+                 
                   i18nkey="login_page.register_message"
                   replacements={[this.props.tenant.name]}
                 />
@@ -121,7 +121,7 @@ export class LoginPage extends Component {
             <div className="form-group">
               <a href="/reset">
                 <Translation
-                  language={this.props.tenant.defaultLanguage}
+                 
                   i18nkey="Forgot your password ?">
                   Forgot your password ?
                 </Translation>

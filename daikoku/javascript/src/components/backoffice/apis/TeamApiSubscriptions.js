@@ -195,7 +195,7 @@ const TeamApiSubscriptionsComponent = (props) => {
           <div className="row">
             <div className="col-12">
               <h1>
-                <Translation i18nkey="Api subscriptions" language={props.currentLanguage}>
+                <Translation i18nkey="Api subscriptions">
                   Api subscriptions
                 </Translation>{' '}
                 - {api.name}

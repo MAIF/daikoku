@@ -39,13 +39,13 @@ class TeamApiKeyConsumptionComponent extends Component {
     return (
       <div>
         <div>
-          <Translation i18nkey="Usage" language={this.props.currentLanguage}>
+          <Translation i18nkey="Usage">
             Usage
           </Translation>
         </div>
         <div>
           {hits.prettify()}{' '}
-          <Translation i18nkey="Hit" language={this.props.currentLanguage} isPlural={hits > 1}>
+          <Translation i18nkey="Hit" isPlural={hits > 1}>
             hits
           </Translation>
         </div>

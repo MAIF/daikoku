@@ -369,7 +369,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'description' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}`}>
-                  <Translation i18nkey="Description" language={currentLanguage}>
+                  <Translation i18nkey="Description">
                     Description
                   </Translation>
                 </Link>
@@ -378,7 +378,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/pricing`}>
-                  <Translation i18nkey="Plan" language={currentLanguage} isPlural={true}>
+                  <Translation i18nkey="Plan" isPlural={true}>
                     Plans
                   </Translation>
                 </Link>
@@ -389,7 +389,7 @@ const ApiHomeComponent = ({
                     tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
                   }`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/documentation`}>
-                  <Translation i18nkey="Documentation" language={currentLanguage}>
+                  <Translation i18nkey="Documentation">
                     Documentation
                   </Translation>
                 </Link>
@@ -398,7 +398,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/redoc`}>
-                  <Translation i18nkey="Api Reference" language={currentLanguage}>
+                  <Translation i18nkey="Api Reference">
                     Api Reference
                   </Translation>
                 </Link>
@@ -407,7 +407,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/swagger`}>
-                  <Translation i18nkey="Try it !" language={currentLanguage}>
+                  <Translation i18nkey="Try it !">
                     Try it !
                   </Translation>
                 </Link>
@@ -417,7 +417,7 @@ const ApiHomeComponent = ({
                   <Link
                     className={`nav-link ${tab === 'news' ? 'active' : ''}`}
                     to={`/${match.params.teamId}/${apiId}/${versionId}/news`}>
-                    <Translation i18nkey="News" language={currentLanguage}>
+                    <Translation i18nkey="News">
                       News
                     </Translation>
                   </Link>
@@ -427,7 +427,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/issues`}>
-                  <Translation i18nkey="issues" language={currentLanguage}>
+                  <Translation i18nkey="issues">
                     Issues
                   </Translation>
                 </Link>

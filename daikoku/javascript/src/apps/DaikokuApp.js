@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, withRouter, Switch, useHistory } from 'react-router-dom';
 import { Redirect } from 'react-router';
 import { ConnectedRouter } from 'connected-react-router';
@@ -9,7 +9,7 @@ import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise, history, setError } from '../core';
-import { t } from '../locales';
+import { languages, t } from '../locales';
 
 import 'react-redux-toastr/src/styles/index.scss';
 
@@ -69,6 +69,7 @@ import {
 
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { MessagesEvents } from '../services/messages';
+import { I18nContext } from '../core/context';
 
 const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, currentLanguage }) => {
   useEffect(() => {
@@ -79,6 +80,13 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
       };
     }
   }, []);
+
+  const { setLanguage, setTranslationMode } = useContext(I18nContext)
+
+  useEffect(() => {
+    setLanguage(currentLanguage)
+    setTranslationMode(tenant.tenantMode && tenant.tenantMode === "Translation")
+  }, [currentLanguage, tenant])
 
   if (!user) {
     return (

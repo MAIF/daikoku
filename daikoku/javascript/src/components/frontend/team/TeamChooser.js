@@ -67,7 +67,7 @@ class TeamChooserComponent extends Component {
               </div>
               <div className="col-sm-8 d-flex flex-column justify-content-center">
                 <h1 className="jumbotron-heading">
-                  <Translation i18nkey="All teams" language={this.props.currentLanguage}>
+                  <Translation i18nkey="All teams">
                     All teams
                   </Translation>
                 </h1>

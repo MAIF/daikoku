@@ -188,7 +188,7 @@ export const Table = ({
     <div className="d-flex flex-row align-items-baseline justify-content-end flex-grow-1">
       <span>
         {rows.length}{' '}
-        <Translation i18nkey="Result" language={currentLanguage} isPlural={rows.length > 1}>
+        <Translation i18nkey="Result" isPlural={rows.length > 1}>
           Results
         </Translation>
       </span>

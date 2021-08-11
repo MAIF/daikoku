@@ -236,7 +236,7 @@ class SetPassword extends Component {
               className="btn btn-outline-primary"
               onClick={this.genAndSetPassword}>
               <i className="fas fa-unlock-alt mr-1" />
-              <Translation i18nkey="Change my password" language={this.props.currentLanguage}>
+              <Translation i18nkey="Change my password">
                 Change my password
               </Translation>
             </button>
@@ -261,7 +261,7 @@ class RefreshToken extends Component {
         <div className="col-sm-10">
           <button type="button" className="btn btn-outline-primary" onClick={this.reloadToken}>
             <i className="fas fa-sync-alt mr-1" />
-            <Translation i18nkey="Reload personal token" language={this.props.currentLanguage}>
+            <Translation i18nkey="Reload personal token">
               Reload personal token
             </Translation>
           </button>
@@ -309,7 +309,7 @@ const Avatar = ({ currentLanguage, value, rawValue, changeValue, label, ...props
       <div className="col-sm-10 offset-sm-2 d-flex mt-1">
         <button type="button" className="btn btn-outline-primary mr-1" onClick={setGravatarLink}>
           <i className="fas fa-user-circle mr-1" />
-          <Translation i18nkey="Set avatar from Gravatar" language={currentLanguage}>
+          <Translation i18nkey="Set avatar from Gravatar">
             Set avatar from Gravatar
           </Translation>
         </button>
@@ -320,7 +320,7 @@ const Avatar = ({ currentLanguage, value, rawValue, changeValue, label, ...props
             onClick={setPictureFromProvider}
             disabled={rawValue.pictureFromProvider ? 'disabled' : null}>
             <i className="fas fa-user-circle mr-1" />
-            <Translation i18nkey="Set avatar from auth. provider" language={currentLanguage}>
+            <Translation i18nkey="Set avatar from auth. provider">
               Set avatar from auth. Provider
             </Translation>
           </button>
@@ -343,7 +343,7 @@ class TenantList extends Component {
     return (
       <div className="form-group row pt-3">
         <label className="col-xs-12 col-sm-2 col-form-label">
-          <Translation i18nkey="Tenants" language={this.props.currentLanguage}>
+          <Translation i18nkey="Tenants">
             Tenants
           </Translation>
         </label>
@@ -389,7 +389,7 @@ class PictureUpload extends Component {
           {this.state.uploading && <i className="fas fa-spinner" />}
           {!this.state.uploading && (
             <div className="text-white">
-              <Translation i18nkey="Change your picture" language={this.props.currentLanguage}>
+              <Translation i18nkey="Change your picture">
                 Change your picture
               </Translation>
             </div>
@@ -417,7 +417,7 @@ class MyProfileComponent extends Component {
       type: ({ value }) => (
         <div className="form-group row">
           <label className="col-xs-12 col-sm-2 col-form-label">
-            <Translation i18nkey="Origins" language={this.props.currentLanguage}>
+            <Translation i18nkey="Origins">
               Origins
             </Translation>
           </label>
@@ -633,7 +633,7 @@ class MyProfileComponent extends Component {
             href="#"
             onClick={() => this.props.history.goBack()}>
             <i className="fas fa-chevron-left mr-1" />
-            <Translation i18nkey="Back" language={this.props.currentLanguage}>
+            <Translation i18nkey="Back">
               Back
             </Translation>
           </a>
@@ -643,7 +643,7 @@ class MyProfileComponent extends Component {
             style={{ marginLeft: 5 }}
             onClick={this.removeUser}>
             <i className="fas fa-trash mr-1" />
-            <Translation i18nkey="Delete my profile" language={this.props.currentLanguage}>
+            <Translation i18nkey="Delete my profile">
               Delete my profile
             </Translation>
           </button>
@@ -654,7 +654,7 @@ class MyProfileComponent extends Component {
             onClick={this.save}>
             <span>
               <i className="fas fa-save mr-1" />
-              <Translation i18nkey="Save" language={this.props.currentLanguage}>
+              <Translation i18nkey="Save">
                 Save
               </Translation>
             </span>

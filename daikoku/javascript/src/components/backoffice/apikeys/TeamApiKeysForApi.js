@@ -184,7 +184,7 @@ function TeamApiKeysForApiComponent(props) {
           <div className="row">
             <div className="col-12 d-flex align-items-center">
               <h1>
-                <Translation i18nkey="Api keys for" language={props.currentLanguage}>
+                <Translation i18nkey="Api keys for">
                   Api keys for
                 </Translation>
                 &nbsp;
@@ -401,7 +401,7 @@ const ApiKeyCard = ({
               ))}
             {settingMode ? (
               <h3>
-                <Translation i18nkey="ApiKey rotation" language={currentLanguage}>
+                <Translation i18nkey="ApiKey rotation">
                   ApiKey rotation
                 </Translation>
               </h3>
@@ -505,7 +505,7 @@ const ApiKeyCard = ({
                       <span
                         className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
                         onClick={() => setActiveTab('apikey')}>
-                        <Translation i18nkey="ApiKey" language={currentLanguage}>
+                        <Translation i18nkey="ApiKey">
                           ApiKey
                         </Translation>
                       </span>
@@ -515,7 +515,7 @@ const ApiKeyCard = ({
                         <span
                           className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
                           onClick={() => setActiveTab('token')}>
-                          <Translation i18nkey="Integration token" language={currentLanguage}>
+                          <Translation i18nkey="Integration token">
                             Integration token
                           </Translation>
                         </span>
@@ -528,7 +528,7 @@ const ApiKeyCard = ({
                 <>
                   <div className="form-group">
                     <label htmlFor={`client-id-${_id}`} className="">
-                      <Translation i18nkey="Client Id" language={currentLanguage}>
+                      <Translation i18nkey="Client Id">
                         Client Id
                       </Translation>
                     </label>
@@ -544,7 +544,7 @@ const ApiKeyCard = ({
                   </div>
                   <div className="form-group">
                     <label htmlFor={`client-secret-${_id}`} className="">
-                      <Translation i18nkey="Client secret" language={currentLanguage}>
+                      <Translation i18nkey="Client secret">
                         Client secret
                       </Translation>
                     </label>
@@ -581,7 +581,7 @@ const ApiKeyCard = ({
                 <>
                   <div className="form-group">
                     <label htmlFor={`token-${_id}`} className="">
-                      <Translation i18nkey="Integration token" language={currentLanguage}>
+                      <Translation i18nkey="Integration token">
                         Integration token
                       </Translation>
                     </label>
@@ -646,7 +646,7 @@ const ApiKeyCard = ({
                 <form>
                   <div className="d-flex flex-row align-items-center mb-3">
                     <div className="col-6">
-                      <Translation i18nkey="Enabled" language={currentLanguage}>
+                      <Translation i18nkey="Enabled">
                         Enabled
                       </Translation>
                       <Help
@@ -668,7 +668,7 @@ const ApiKeyCard = ({
                   </div>
                   <div className="d-flex flex-row align-items-center mb-3">
                     <div className="col-9">
-                      <Translation i18nkey="Rotation Period" language={currentLanguage}>
+                      <Translation i18nkey="Rotation Period">
                         Rotation Every
                       </Translation>
                       <Help
@@ -697,7 +697,7 @@ const ApiKeyCard = ({
                   </div>
                   <div className="d-flex flex-row align-items-center mb-3">
                     <div className="col-9">
-                      <Translation i18nkey="Grace Period" language={currentLanguage}>
+                      <Translation i18nkey="Grace Period">
                         Grace Period
                       </Translation>
                       <Help
@@ -728,7 +728,7 @@ const ApiKeyCard = ({
               )}
               <div className="d-flex justify-content-end">
                 <button className="btn btn-outline-danger" onClick={abort}>
-                  <Translation i18nkey="Back" language={currentLanguage}>
+                  <Translation i18nkey="Back">
                     Back
                   </Translation>
                 </button>
@@ -739,7 +739,7 @@ const ApiKeyCard = ({
                   }
                   onClick={handleChanges}>
                   <i className="fas fa-save mr-1"></i>
-                  <Translation i18nkey="Save" language={currentLanguage}>
+                  <Translation i18nkey="Save">
                     Save
                   </Translation>
                 </button>

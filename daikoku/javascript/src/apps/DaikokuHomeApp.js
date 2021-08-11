@@ -28,7 +28,7 @@ class Gravatar extends Component {
       className={'btn btn-access ' + (this.props.fullWidth ? 'btn-block' : '')}
       onClick={this.setGravatarLink}>
       <i className="fas fa-user-circle mr-1" />
-      <Translation i18nkey="Set avatar from Gravatar" language={this.props.currentLanguage}>
+      <Translation i18nkey="Set avatar from Gravatar">
         Set avatar from Gravatar
       </Translation>
     </button>
@@ -105,7 +105,7 @@ export class SignupComponent extends Component {
       type: () => (
         <div className="my-3">
           <button type="button" className="btn btn-success btn-block" onClick={this.createAccount}>
-            <Translation i18nkey="Create account" language={currentLanguage}>
+            <Translation i18nkey="Create account">
               Create account
             </Translation>
           </button>
@@ -179,14 +179,14 @@ export class SignupComponent extends Component {
       return (
         <div className="col">
           <h1 className="h1-rwd-reduce text-center">
-            <Translation i18nkey="Create account" language={this.props.currentLanguage}>
+            <Translation i18nkey="Create account">
               Create account
             </Translation>
           </h1>
           <p style={{ width: '100%', textAlign: 'center' }}>
             <Translation
               i18nkey="create.account.done"
-              language={this.props.currentLanguage}
+             
               replacements={[this.state.user.email]}>
               You will receive an email at <b>{this.state.user.email}</b> to finish your account
               creation process. You will have 15 minutes from now to finish your account creation
@@ -200,7 +200,7 @@ export class SignupComponent extends Component {
     return (
       <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
         <h1 className="h1-rwd-reduce text-center">
-          <Translation i18nkey="Create account" language={this.props.currentLanguage}>
+          <Translation i18nkey="Create account">
             Create account
           </Translation>
         </h1>
@@ -268,7 +268,7 @@ export class ResetPasswordComponent extends Component {
           <button type="button" className="btn btn-outline-danger m-2" onClick={this.resetPassword}>
             <span>
               <i className="fas fa-bomb mr-1" />
-              <Translation i18nkey="Reset password" language={currentLanguage}>
+              <Translation i18nkey="Reset password">
                 Reset password
               </Translation>
             </span>
@@ -334,14 +334,14 @@ export class ResetPasswordComponent extends Component {
       return (
         <div className="col">
           <h1 className="h1-rwd-reduce text-center mt-2">
-            <Translation i18nkey="Reset password" language={this.props.currentLanguage}>
+            <Translation i18nkey="Reset password">
               Reset password
             </Translation>
           </h1>
           <p className="text-center mt-2">
             <Translation
               i18nkey="password.reset.done"
-              language={this.props.currentLanguage}
+             
               replacements={[this.state.user.email]}>
               You will receive an email at <b>{this.state.user.email}</b> to finish your passsword
               reset process. You will have 15 minutes from now to finish your password reset
@@ -354,7 +354,7 @@ export class ResetPasswordComponent extends Component {
     return (
       <div className="col">
         <h1 className="h1-rwd-reduce text-center mt-2">
-          <Translation i18nkey="Reset password" language={this.props.currentLanguage}>
+          <Translation i18nkey="Reset password">
             Reset password
           </Translation>
         </h1>

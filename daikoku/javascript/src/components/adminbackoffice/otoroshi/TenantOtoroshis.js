@@ -118,7 +118,7 @@ export class TenantOtoroshisComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="Otoroshi settings" language={this.props.currentLanguage}>
+                <Translation i18nkey="Otoroshi settings">
                   Otoroshi settings
                 </Translation>
                 <a

@@ -46,7 +46,7 @@ export class TeamApiKeysComponent extends Component {
                 to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
                 className="btn btn-sm btn-access-negative">
                 <i className="fas fa-eye mr-1" />
-                <Translation i18nkey="Api keys" language={this.props.currentLanguage}>
+                <Translation i18nkey="Api keys">
                   Api keys
                 </Translation>
               </Link>
@@ -89,7 +89,7 @@ export class TeamApiKeysComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="Subscribed Apis" language={this.props.currentLanguage}>
+                <Translation i18nkey="Subscribed Apis">
                   Subscribed Apis
                 </Translation>
               </h1>
@@ -97,7 +97,7 @@ export class TeamApiKeysComponent extends Component {
                 to={`/${this.props.currentTeam._humanReadableId}/settings/consumption`}
                 className="btn btn-sm btn-access-negative mb-2">
                 <i className="fas fa-chart-bar mr-1" />
-                <Translation i18nkey="See Stats" language={this.props.currentLanguage}>
+                <Translation i18nkey="See Stats">
                   See Stats
                 </Translation>
               </Link>
@@ -119,7 +119,7 @@ export class TeamApiKeysComponent extends Component {
                 <button className="btn btn-sm btn-danger-negative mt-1" onClick={this.cleanSubs}>
                   <Translation
                     i18nkey="clean archived apikeys"
-                    language={this.props.currentLanguage}>
+                   >
                     clean archived apikeys
                   </Translation>
                 </button>

@@ -104,7 +104,7 @@ class TeamBillingComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="Billing" language={this.props.currentLanguage}>
+                <Translation i18nkey="Billing">
                   Billing
                 </Translation>
               </h1>
@@ -124,7 +124,7 @@ class TeamBillingComponent extends Component {
                         <i className="ml-1">
                           <Translation
                             i18nkey="date.update"
-                            language={this.props.currentLanguage}
+                           
                             replacements={[lastDate]}>
                             upd. {lastDate}
                           </Translation>
@@ -134,12 +134,12 @@ class TeamBillingComponent extends Component {
                   </div>
                   <div className="row api__billing__card__container section p-2">
                     <TheadBillingContainer
-                      language={this.props.currentLanguage}
+                     
                       label={t('Subscribed Apis', this.props.currentLanguage)}
                       total={formatCurrency(total)}
                     />
                     {!this.state.consumptionsByApi.length && (
-                      <NoData language={this.props.currentLanguage} />
+                      <NoData />
                     )}
                     {this.state.consumptionsByApi
                       .sort((api1, api2) => api2.billing.total - api1.billing.total)
@@ -156,7 +156,7 @@ class TeamBillingComponent extends Component {
                         />
                       ))}
                     <TheadBillingContainer
-                      language={this.props.currentLanguage}
+                     
                       label={t('Subscribed Apis', this.props.currentLanguage)}
                       total={formatCurrency(total)}
                     />

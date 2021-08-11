@@ -137,11 +137,11 @@ const InitializeFromOtoroshiComponent = (props) => {
       <Can I={manage} a={TENANT} dispatchError>
         <div className="d-flex flex-row align-items-center">
           <h1>
-            <Translation i18nkey="Daikoku initialization" language={props.currentLanguage}>
+            <Translation i18nkey="Daikoku initialization">
               Daikoku initialization
             </Translation>
           </h1>
-          {state.matches('completeServices') && <Help language={props.currentLanguage} />}
+          {state.matches('completeServices') && <Help />}
         </div>
         <div className="section py-3 px-2">
           {state.value === 'otoroshiSelection' && (
@@ -254,7 +254,7 @@ const InitializeFromOtoroshiComponent = (props) => {
             />
           )}
           {state.matches('complete') && (
-            <Translation i18nkey="Done" language={props.currentLanguage}>
+            <Translation i18nkey="Done">
               Done
             </Translation>
           )}
@@ -281,23 +281,23 @@ const Help = ({ language }) => {
       title={
         <div className="d-flex flex-column">
           <h4>
-            <Translation i18nkey="Keyboard shortcuts" language={language}>
+            <Translation i18nkey="Keyboard shortcuts">
               Keyboard shortcut
             </Translation>
           </h4>
           <ul>
             <li>
-              <Translation i18nkey="keyboard.shortcuts.arrow.left" language={language}>
+              <Translation i18nkey="keyboard.shortcuts.arrow.left">
                 arrow-left: previous step
               </Translation>
             </li>
             <li>
-              <Translation i18nkey="keyboard.shortcuts.arrow.right" language={language}>
+              <Translation i18nkey="keyboard.shortcuts.arrow.right">
                 arrow-right: next step or import
               </Translation>
             </li>
             <li>
-              <Translation i18nkey="keyboard.shortcuts.tab" language={language}>
+              <Translation i18nkey="keyboard.shortcuts.tab">
                 tab: focus on api name
               </Translation>
             </li>

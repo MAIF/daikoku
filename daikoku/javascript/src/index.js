@@ -24,6 +24,7 @@ import {
 import { customizeFetch } from './services/customize';
 import { Option } from './components/utils';
 import { Translation } from './locales';
+import { I18nProvider } from './core/context';
 
 window.$ = jQuery;
 window.jQuery = jQuery;
@@ -53,13 +54,16 @@ export function init(
 
   ReactDOM.render(
     <Provider store={storeInst}>
-      <DaikokuApp
-        user={user}
-        tenant={tenant}
-        impersonator={impersonator}
-        loginProvider={tenant.authProvider}
-        loginAction={loginCallback}
-      />
+      <I18nProvider>
+        <DaikokuApp
+          user={user}
+          tenant={tenant}
+          impersonator={impersonator}
+          loginProvider={tenant.authProvider}
+          loginAction={loginCallback}
+          currentLanguage={currentLanguage}
+        />
+      </I18nProvider>
     </Provider>,
     document.getElementById('app')
   );
@@ -93,7 +97,7 @@ export function init(
           (close) => (
             <div style={{ width: '100%' }}>
               <p>
-                <Translation i18nkey="session.expire.info" language={language}>
+                <Translation i18nkey="session.expire.info">
                   Your session is about to expire in less than 2 minutes. Do you want to extend it ?
                 </Translation>
               </p>
@@ -108,7 +112,7 @@ export function init(
                   type="button"
                   className="btn btn-success"
                   onClick={() => extendSession(close)}>
-                  <Translation i18nkey="session.extend" language={language}>
+                  <Translation i18nkey="session.extend">
                     Yes, extend my session
                   </Translation>
                 </button>

@@ -129,7 +129,7 @@ export const TeamApiTesting = (props) => {
       {!otoKeyExists && (
         <div className="col-6 d-flex justify-content-center align-items-center">
           <button className="btn btn-outline-success" onClick={handleOtoroshiUsage}>
-            <Translation i18nkey="testing.key.creation" language={lang}>
+            <Translation i18nkey="testing.key.creation">
               Use Otoroshi to create testing ApiKey
             </Translation>
           </button>
@@ -145,7 +145,7 @@ export const TeamApiTesting = (props) => {
               alignItems: 'flex-start',
             }}>
             <p>
-              <Translation i18nkey="otoroshi.test.key.modal.description" language={lang}>
+              <Translation i18nkey="otoroshi.test.key.modal.description">
                 In order to make everything work, you'll have to add a tags match (OneTageIn /
                 AllTagIn) in your service descriptor in the 'Api Keys Constraints' section. Make
                 sure this service descriptor is the right one for testing and not a production
@@ -153,7 +153,7 @@ export const TeamApiTesting = (props) => {
               </Translation>
             </p>
             <p>
-              <Translation i18nkey="otoroshi.test.key.modal.tag.name" language={lang}>
+              <Translation i18nkey="otoroshi.test.key.modal.tag.name">
                 The tag you need to add is the following
               </Translation>
             </p>
@@ -173,12 +173,12 @@ export const TeamApiTesting = (props) => {
           </div>
           <div className="d-flex justify-content-center align-items-center flex-grow-1">
             <button className="btn btn-outline-danger" onClick={deleteOtoroshiKey}>
-              <Translation i18nkey="Delete Testing ApiKey" language={lang}>
+              <Translation i18nkey="Delete Testing ApiKey">
                 Delete Testing ApiKey
               </Translation>
             </button>
             <button className="btn btn-outline-success ml-1" onClick={handleOtoroshiUsage}>
-              <Translation i18nkey="Update Testing ApiKey" language={lang}>
+              <Translation i18nkey="Update Testing ApiKey">
                 Update Testing ApiKey
               </Translation>
             </button>

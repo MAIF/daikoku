@@ -110,7 +110,7 @@ class SessionListComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="User sessions" language={this.props.currentLanguage}>
+                <Translation i18nkey="User sessions">
                   User sessions
                 </Translation>
               </h1>
@@ -137,7 +137,7 @@ class SessionListComponent extends Component {
                       <i className="fas fa-trash mr-1" />
                       <Translation
                         i18nkey="Delete all sessions"
-                        language={this.props.currentLanguage}>
+                       >
                         Delete all sessions
                       </Translation>
                     </button>

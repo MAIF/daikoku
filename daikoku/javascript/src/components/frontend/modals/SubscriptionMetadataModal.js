@@ -197,7 +197,7 @@ export const SubscriptionMetadataModal = (props) => {
       <div className="modal-header">
         {!api && (
           <h5 className="modal-title">
-            <Translation i18nkey="Subscription metadata" language={props.currentLanguage}>
+            <Translation i18nkey="Subscription metadata">
               Subscription metadata
             </Translation>
           </h5>
@@ -206,7 +206,7 @@ export const SubscriptionMetadataModal = (props) => {
           <h5 className="modal-title">
             <Translation
               i18nkey="Subscription metadata title"
-              language={props.currentLanguage}
+             
               replacements={[api.name]}>
               Subscription metadata - {api.name}
             </Translation>
@@ -224,7 +224,7 @@ export const SubscriptionMetadataModal = (props) => {
               <div className="modal-description">
                 <Translation
                   i18nkey="subscription.metadata.modal.creation.description"
-                  language={props.currentLanguage}
+                 
                   replacements={[props.team.name, plan.customName || formatPlanType(plan)]}>
                   {props.team.name} ask you an apikey for plan{' '}
                   {plan.customName || formatPlanType(plan)}
@@ -235,7 +235,7 @@ export const SubscriptionMetadataModal = (props) => {
               <div className="modal-description">
                 <Translation
                   i18nkey="subscription.metadata.modal.update.description"
-                  language={props.currentLanguage}
+                 
                   replacements={[props.team.name, plan.customName || formatPlanType(plan)]}>
                   Team: {props.team.name} - Plan: {plan.customName || formatPlanType(plan)}
                 </Translation>
@@ -314,7 +314,7 @@ export const SubscriptionMetadataModal = (props) => {
             type="button"
             className="btn btn-outline-danger"
             onClick={() => props.closeModal()}>
-            <Translation i18nkey="Cancel" language={props.currentLanguage}>
+            <Translation i18nkey="Cancel">
               Cancel
             </Translation>
           </button>

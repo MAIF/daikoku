@@ -81,7 +81,7 @@ class TeamListComponent extends Component {
             <div className="col">
               <div className="d-flex justify-content-between align-items-center">
                 <h1>
-                  <Translation i18nkey="Teams" language={this.props.currentLanguage}>
+                  <Translation i18nkey="Teams">
                     Teams
                   </Translation>
                   <a

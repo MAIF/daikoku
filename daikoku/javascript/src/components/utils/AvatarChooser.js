@@ -14,7 +14,7 @@ class Gravatar extends Component {
     return (
       <button type="button" className="btn btn-access" onClick={this.setGravatarLink}>
         <i className="fas fa-user-circle mr-1" />
-        <Translation i18nkey="gravatar.btn.label" language={this.props.currentLanguage}>
+        <Translation i18nkey="gravatar.btn.label">
           Set avatar from Gravatar
         </Translation>
       </button>

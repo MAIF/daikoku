@@ -39,7 +39,7 @@ export const TeamSelectorModal = ({
     if (!allowMultipleDemand && pendingTeams.includes(team._id)) {
       return (
         <button type="button" className="btn btn-sm btn-access disabled">
-          <Translation i18nkey="Request in progress" language={currentLanguage} />
+          <Translation i18nkey="Request in progress" />
         </button>
       );
     } else if (allowMultipleDemand || !acceptedTeams.includes(team._id)) {
@@ -101,7 +101,7 @@ export const TeamSelectorModal = ({
               onClick={() => toggleAllTeam()}>
               {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
               <span className="ml-2">
-                <Translation i18nkey="All" language={currentLanguage}>
+                <Translation i18nkey="All">
                   All
                 </Translation>
               </span>

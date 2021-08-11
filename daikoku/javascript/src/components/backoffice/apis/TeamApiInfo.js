@@ -36,7 +36,7 @@ class NameAlreadyExists extends Component {
             <span className="badge badge-danger">
               <Translation
                 i18nkey="api.already.exists"
-                language={this.props.currentLanguage}
+               
                 replacements={[this.props.rawValue.name]}>
                 api with name "{this.props.rawValue.name}" already exists
               </Translation>

@@ -14,12 +14,12 @@ export const SelectionStepStep = (props) => {
   return (
     <div className="d-flex">
       <button className="btn btn-outline-primary mr-2" onClick={() => props.goToServices()}>
-        <Translation i18nkey="Import Otoroshi services" language={props.currentLanguage}>
+        <Translation i18nkey="Import Otoroshi services">
           Import Otoroshi Services
         </Translation>
       </button>
       <button className="btn btn-outline-primary" onClick={() => props.goToApikeys()}>
-        <Translation i18nkey="Import Otoroshi apikeys" language={props.currentLanguage}>
+        <Translation i18nkey="Import Otoroshi apikeys">
           Import Otoroshi Apikeys
         </Translation>
       </button>
@@ -83,7 +83,7 @@ export const RecapServiceStep = (props) => {
   return (
     <div>
       <h2>
-        <Translation i18nkey="Api imported" language={props.currentLanguage}>
+        <Translation i18nkey="Api imported">
           Apis to import
         </Translation>
       </h2>
@@ -110,17 +110,17 @@ export const RecapServiceStep = (props) => {
       <div className="d-flex justify-content-end">
         <button className="btn btn-outline-primary mr-1" onClick={() => props.goBackToServices()}>
           <i className="fas fa-chevron-left mr-1"></i>
-          <Translation i18nkey="Back" language={props.currentLanguage}>
+          <Translation i18nkey="Back">
             Back
           </Translation>
         </button>
         <button className="btn btn-outline-danger mr-1" onClick={props.cancel}>
-          <Translation i18nkey="Cancel" language={props.currentLanguage}>
+          <Translation i18nkey="Cancel">
             Cancel
           </Translation>
         </button>
         <button className="btn btn-outline-success" onClick={() => props.create()}>
-          <Translation i18nkey="Create apis" language={props.currentLanguage}>
+          <Translation i18nkey="Create apis">
             Create APIs
           </Translation>
         </button>
@@ -141,7 +141,7 @@ export const RecapSubsStep = (props) => {
       <h4 className="ml-3">
         <Translation
           i18nkey="initialize_from_otoroshi.api_keys_imported"
-          language={props.currentLanguage}>
+         >
           These api keys will be import
         </Translation>
       </h4>
@@ -173,17 +173,17 @@ export const RecapSubsStep = (props) => {
       <div className="d-flex justify-content-end">
         <button className="btn btn-outline-primary mr-1" onClick={() => props.goBackToServices()}>
           <i className="fas fa-chevron-left mr-1"></i>
-          <Translation i18nkey="Back" language={props.currentLanguage}>
+          <Translation i18nkey="Back">
             Back
           </Translation>
         </button>
         <button className="btn btn-outline-danger mr-1" onClick={reset}>
-          <Translation i18nkey="Reset" language={props.currentLanguage}>
+          <Translation i18nkey="Reset">
             Reset
           </Translation>
         </button>
         <button className="btn btn-outline-success" onClick={() => props.create()}>
-          <Translation i18nkey="Create subscriptions" language={props.currentLanguage}>
+          <Translation i18nkey="Create subscriptions">
             Create subscriptions
           </Translation>
         </button>
@@ -282,7 +282,7 @@ export const ServicesStep = (props) => {
     <div className="d-flex flex-row flex-wrap">
       <div className="col-6">
         <h2>
-          <Translation i18nkey="Otoroshi" language={props.currentLanguage}>
+          <Translation i18nkey="Otoroshi">
             Otoroshi
           </Translation>
         </h2>
@@ -290,7 +290,7 @@ export const ServicesStep = (props) => {
           <span style={{ fontWeight: 'bold' }}>
             <Translation
               i18nkey="init.services.title"
-              language={props.currentLanguage}
+             
               replacements={[props.infos.index + 1, props.infos.total]}>
               Api {props.infos.index + 1}/{props.infos.total}
             </Translation>
@@ -308,7 +308,7 @@ export const ServicesStep = (props) => {
         </div>
         <div className="mt-3">
           <span style={{ fontWeight: 'bold' }}>
-            <Translation i18nkey="api group" language={props.currentLanguage}>
+            <Translation i18nkey="api group">
               Api group
             </Translation>
           </span>{' '}
@@ -323,7 +323,7 @@ export const ServicesStep = (props) => {
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
             <span style={{ fontWeight: 'bold' }}>
-              <Translation i18nkey="Api name" language={props.currentLanguage}>
+              <Translation i18nkey="Api name">
                 Api name
               </Translation>
             </span>
@@ -344,7 +344,7 @@ export const ServicesStep = (props) => {
           <div className="col-4">
             <div>
               <span style={{ fontWeight: 'bold' }}>
-                <Translation i18nkey="Api team" language={props.currentLanguage}>
+                <Translation i18nkey="Api team">
                   Api team
                 </Translation>
               </span>
@@ -386,7 +386,7 @@ export const ServicesStep = (props) => {
           </button>
           {props.maybeCreatedApi.isDefined && (
             <button className="btn btn-outline-success" onClick={reset}>
-              <Translation i18nkey="Reset" language={props.currentLanguage}>
+              <Translation i18nkey="Reset">
                 Reset
               </Translation>
             </button>
@@ -396,7 +396,7 @@ export const ServicesStep = (props) => {
               className="btn btn-outline-success mr-2"
               disabled={!selectedTeam || error.name ? 'disabled' : null}
               onClick={update}>
-              <Translation i18nkey="Update" language={props.currentLanguage}>
+              <Translation i18nkey="Update">
                 Update
               </Translation>
             </button>
@@ -406,7 +406,7 @@ export const ServicesStep = (props) => {
               className="btn btn-outline-success mr-2"
               disabled={!selectedTeam || error.name ? 'disabled' : null}
               onClick={getIt}>
-              <Translation i18nkey="Import" language={props.currentLanguage}>
+              <Translation i18nkey="Import">
                 Import this service
               </Translation>
             </button>
@@ -424,12 +424,12 @@ export const ServicesStep = (props) => {
 
         <div>
           <button className="btn btn-outline-danger mr-2" onClick={props.cancel}>
-            <Translation i18nkey="Cancel" language={props.currentLanguage}>
+            <Translation i18nkey="Cancel">
               Cancel
             </Translation>
           </button>
           <button className="btn btn-outline-success" onClick={props.recap}>
-            <Translation i18nkey="Finish" language={props.currentLanguage}>
+            <Translation i18nkey="Finish">
               Finish
             </Translation>
           </button>
@@ -565,7 +565,7 @@ export const ApiKeyStep = (props) => {
       <div className="ml-auto">
         {props.createdSubs.length <= 0 && (
           <button className="btn btn-outline-danger mr-2" onClick={props.cancel}>
-            <Translation i18nkey="Cancel" language={props.currentLanguage}>
+            <Translation i18nkey="Cancel">
               Cancel
             </Translation>
           </button>

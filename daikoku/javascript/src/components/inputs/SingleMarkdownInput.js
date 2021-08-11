@@ -224,7 +224,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               className="btn btn-secondary"
               style={{ color: !preview ? '#7f96af' : 'white' }}
               onClick={() => setPreview(false)}>
-              <Translation i18nkey="Write" language={props.currentLanguage}>
+              <Translation i18nkey="Write">
                 Write
               </Translation>
             </button>
@@ -233,7 +233,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               className="btn btn-secondary"
               style={{ color: preview ? '#7f96af' : 'white' }}
               onClick={() => setPreview(true)}>
-              <Translation i18nkey="Preview" language={props.currentLanguage}>
+              <Translation i18nkey="Preview">
                 Preview
               </Translation>
             </button>

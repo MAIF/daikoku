@@ -176,7 +176,7 @@ const CheckingAdminConnection = (props) => {
       </label>
       <div className="col-sm-10 pl-3" id="input-Testing buttons">
         <a type="button" className="btn btn-outline-primary mr-1" onClick={props.checkConnection}>
-          <Translation i18nkey="Testing" language={props.currentLanguage}>
+          <Translation i18nkey="Testing">
             Testing
           </Translation>
         </a>
@@ -213,7 +213,7 @@ const CheckingUserConnection = (props) => {
           type="button"
           className="btn btn-outline-primary"
           onClick={() => props.checkConnection(username, password)}>
-          <Translation i18nkey="Testing" language={props.currentLanguage}>
+          <Translation i18nkey="Testing">
             Testing
           </Translation>
         </a>

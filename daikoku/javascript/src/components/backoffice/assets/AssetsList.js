@@ -184,7 +184,7 @@ const FileInput = (props) => {
         onClick={trigger}>
         {uploading && <i className="fas fa-spinner mr-1" />}
         {!uploading && <i className="fas fa-upload mr-1" />}
-        <Translation i18nkey="Select file" language={props.currentLanguage}>
+        <Translation i18nkey="Select file">
           Select file
         </Translation>
       </button>
@@ -204,7 +204,7 @@ const AddAsset = (props) => {
           disabled={props.disabled ? 'disabled' : undefined}
           onClick={() => props.addAsset()}>
           <i className="fas fa-plus mr-1" />
-          <Translation i18nkey="Add asset" language={props.currentLanguage}>
+          <Translation i18nkey="Add asset">
             Add asset
           </Translation>
         </button>

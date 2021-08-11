@@ -21,7 +21,7 @@ export const TeamCreationModal = (props) => {
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">
-          <Translation i18nkey="New team" language={props.currentLanguage}>
+          <Translation i18nkey="New team">
             New team
           </Translation>
         </h5>
@@ -39,7 +39,7 @@ export const TeamCreationModal = (props) => {
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={props.closeModal}>
-          <Translation i18nkey="Close" language={props.currentLanguage}>
+          <Translation i18nkey="Close">
             Close
           </Translation>
         </button>
@@ -62,7 +62,7 @@ export const TeamCreationModal = (props) => {
                   setError(e.error);
                 })
             }>
-            <Translation i18nkey="Create" language={props.currentLanguage}>
+            <Translation i18nkey="Create">
               Create
             </Translation>
           </button>

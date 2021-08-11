@@ -147,7 +147,7 @@ const ApiListComponent = (props) => {
         </div>
         <div className="clear cursor-pointer" onClick={clearFilter}>
           <i className="far fa-times-circle mr-1" />
-          <Translation i18nkey="clear filter" language={props.currentLanguage}>
+          <Translation i18nkey="clear filter">
             clear filter
           </Translation>
         </div>

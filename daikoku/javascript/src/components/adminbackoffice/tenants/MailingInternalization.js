@@ -323,7 +323,7 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
     <UserBackOffice tab="Internalization">
       <Can I={manage} a={TENANT} dispatchError>
         <h1>
-          <Translation i18nkey="internationalization" language={currentLanguage} />
+          <Translation i18nkey="internationalization" />
         </h1>
         <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
           <li className="nav-item">

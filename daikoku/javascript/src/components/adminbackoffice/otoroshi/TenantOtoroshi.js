@@ -138,7 +138,7 @@ class TenantOtoroshiComponent extends Component {
             <div className="row">
               {!this.state.create && (
                 <h1>
-                  <Translation i18nkey="Otoroshi settings" language={this.props.currentLanguage}>
+                  <Translation i18nkey="Otoroshi settings">
                     Otoroshi settings
                   </Translation>
                 </h1>
@@ -147,7 +147,7 @@ class TenantOtoroshiComponent extends Component {
                 <h1>
                   <Translation
                     i18nkey="New otoroshi settings"
-                    language={this.props.currentLanguage}>
+                   >
                     New otoroshi settings
                   </Translation>
                 </h1>
@@ -169,7 +169,7 @@ class TenantOtoroshiComponent extends Component {
             <div className="row justify-content-end">
               <Link className="btn btn-outline-primary" to="/settings/otoroshis">
                 <i className="fas fa-chevron-left mr-1" />
-                <Translation i18nkey="Back" language={this.props.currentLanguage}>
+                <Translation i18nkey="Back">
                   Back
                 </Translation>
               </Link>
@@ -180,7 +180,7 @@ class TenantOtoroshiComponent extends Component {
                   className="btn btn-outline-danger"
                   onClick={this.delete}>
                   <i className="fas fa-trash mr-1" />
-                  <Translation i18nkey="Delete" language={this.props.currentLanguage}>
+                  <Translation i18nkey="Delete">
                     Delete
                   </Translation>
                 </button>
@@ -193,14 +193,14 @@ class TenantOtoroshiComponent extends Component {
                 {!this.state.create && (
                   <span>
                     <i className="fas fa-save mr-1" />
-                    <Translation i18nkey="Save" language={this.props.currentLanguage}>
+                    <Translation i18nkey="Save">
                       Save
                     </Translation>
                   </span>
                 )}
                 {this.state.create && (
                   <span>
-                    <Translation i18nkey="Create" language={this.props.currentLanguage}>
+                    <Translation i18nkey="Create">
                       Create
                     </Translation>
                   </span>

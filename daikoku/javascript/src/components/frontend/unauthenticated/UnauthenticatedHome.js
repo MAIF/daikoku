@@ -63,7 +63,7 @@ export class UnauthenticatedHomeComponent extends Component {
                         <i className="fas fa-plus-square mr-1" />
                         <Translation
                           i18nkey="Create your account"
-                          language={this.props.currentLanguage}>
+                         >
                           Create your account
                         </Translation>
                       </a>
@@ -73,7 +73,7 @@ export class UnauthenticatedHomeComponent extends Component {
                         <i className="fas fa-bomb mr-1" />
                         <Translation
                           i18nkey="Reset your password"
-                          language={this.props.currentLanguage}>
+                         >
                           Reset your password
                         </Translation>
                       </a>
@@ -83,7 +83,7 @@ export class UnauthenticatedHomeComponent extends Component {
                       <i className="fas fa-user mr-1" />
                       <Translation
                         i18nkey="Connect to your account"
-                        language={this.props.currentLanguage}>
+                       >
                         Connect to your account
                       </Translation>
                     </a>
@@ -94,7 +94,7 @@ export class UnauthenticatedHomeComponent extends Component {
                         <i className="fas fa-user mr-1" />
                         <Translation
                           i18nkey="Connect to your thrid party account"
-                          language={this.props.currentLanguage}>
+                         >
                           Connect to your thrid party account
                         </Translation>
                       </a>

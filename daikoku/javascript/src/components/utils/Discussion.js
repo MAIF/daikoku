@@ -103,7 +103,7 @@ const DiscussionComponent = (props) => {
                   disabled={loading ? 'disabled' : null}
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => getPreviousMessages(props.connectedUser._id)}>
-                  <Translation i18nkey="Load previous messages" language={props.currentLanguage}>
+                  <Translation i18nkey="Load previous messages">
                     Load previous messages
                   </Translation>
                 </button>

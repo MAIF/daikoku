@@ -82,7 +82,7 @@ class TeamIncomeComponent extends Component {
           <div className="row">
             <div className="col">
               <h1>
-                <Translation i18nkey="Team Income" language={this.props.currentLanguage}>
+                <Translation i18nkey="Team Income">
                   Income
                 </Translation>
               </h1>
@@ -108,7 +108,7 @@ class TeamIncomeComponent extends Component {
                           <i className="ml-1">
                             <Translation
                               i18nkey="date.update"
-                              language={this.props.currentLanguage}
+                             
                               replacements={[lastDate]}>
                               upd. {lastDate}
                             </Translation>
@@ -118,12 +118,12 @@ class TeamIncomeComponent extends Component {
                     </div>
                     <div className="row api__billing__card__container section p-2">
                       <TheadBillingContainer
-                        language={this.props.currentLanguage}
+                       
                         label={t('Apis', this.props.currentLanguage)}
                         total={formatCurrency(total)}
                       />
                       {!this.state.consumptionsByApi.length && (
-                        <NoData language={this.props.currentLanguage} />
+                        <NoData />
                       )}
                       {this.state.consumptionsByApi
                         .sort((api1, api2) => api2.billing.total - api1.billing.total)
@@ -141,7 +141,7 @@ class TeamIncomeComponent extends Component {
                           />
                         ))}
                       <TheadBillingContainer
-                        language={this.props.currentLanguage}
+                       
                         label={t('Apis', this.props.currentLanguage)}
                         total={formatCurrency(total)}
                       />

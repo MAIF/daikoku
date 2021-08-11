@@ -37,7 +37,7 @@ export const AssetSelectorModal = ({
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">
-          <Translation i18nkey="Select an asset" language={currentLanguage}>
+          <Translation i18nkey="Select an asset">
             Select an asset
           </Translation>
         </h5>
@@ -110,7 +110,7 @@ export const AssetSelectorModal = ({
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          <Translation i18nkey="Close" language={currentLanguage}>
+          <Translation i18nkey="Close">
             Close
           </Translation>
         </button>
@@ -118,7 +118,7 @@ export const AssetSelectorModal = ({
           type="button"
           className="btn btn-outline-success"
           onClick={() => selectAssetAndCloseModal()}>
-          <Translation i18nkey="Select" language={currentLanguage}>
+          <Translation i18nkey="Select">
             Select
           </Translation>
         </button>
@@ -194,7 +194,7 @@ export class AssetChooserComponent extends Component {
     if (this.state.assets && this.state.loading) {
       return (
         <button type="button" className="btn btn-outline-success ml-1" disabled>
-          <Translation i18nkey="loading" language={this.props.currentLanguage}>
+          <Translation i18nkey="loading">
             loading...
           </Translation>
         </button>

@@ -50,7 +50,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
         <h5 className="modal-title text-center">
           <Translation
             i18nkey="team_member.invitation"
-            language={props.currentLanguage}
+           
             replacements={[team]}
           />
           <span style={{ fontWeight: 'bold', display: 'block' }}>{team}</span>

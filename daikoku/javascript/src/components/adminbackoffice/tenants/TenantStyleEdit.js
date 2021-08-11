@@ -88,24 +88,24 @@ export class TenantStyleEditComponent extends Component {
                 <button
                   className="btn btn-access-negative"
                   onClick={() => this.setState({ preview: !this.state.preview })}>
-                  <Translation i18nkey="Preview" language={this.props.currentLanguage}>
+                  <Translation i18nkey="Preview">
                     Preview
                   </Translation>
                 </button>
               </div>
               <div>
                 <button className="btn btn-access-negative" onClick={() => this.goBack()}>
-                  <Translation i18nkey="Cancel" language={this.props.currentLanguage}>
+                  <Translation i18nkey="Cancel">
                     Cancel
                   </Translation>
                 </button>
                 <button className="btn btn-access-negative mx-2" onClick={() => this.reset()}>
-                  <Translation i18nkey="Reset" language={this.props.currentLanguage}>
+                  <Translation i18nkey="Reset">
                     Reset
                   </Translation>
                 </button>
                 <button className="btn btn-outline-success" onClick={() => this.save()}>
-                  <Translation i18nkey="Save" language={this.props.currentLanguage}>
+                  <Translation i18nkey="Save">
                     Save
                   </Translation>
                 </button>

@@ -280,7 +280,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="notif.api.access"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[infos.api.name]}>
                       Request access to {infos.api.name}
                     </Translation>
@@ -290,7 +290,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="notif.membership.team"
-                      language={this.props.currentLanguage}>
+                     >
                       membership request to your team
                     </Translation>
                   </div>
@@ -299,7 +299,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="notif.api.subscription"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[
                         infos.api.name,
                         Option(infos.plan.customName).getOrElse(formatPlanType(infos.plan)),
@@ -312,7 +312,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="notif.apikey.deletion"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[notification.action.clientId, notification.action.api]}>
                       Your apiKey with clientId {notification.action.clientId} for api{' '}
                       {notification.action.api} has been deleted
@@ -329,7 +329,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="notif.apikey.rotation.inprogress"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[
                         notification.action.clientId,
                         notification.action.api,
@@ -345,7 +345,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="notif.apikey.rotation.ended"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[
                         notification.action.clientId,
                         notification.action.api,
@@ -360,7 +360,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="notif.apikey.refresh"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[
                         notification.action.subscription,
                         notification.action.api,
@@ -375,7 +375,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="team.invitation"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[
                         notification.sender.name,
                         this.props.getTeam(notification.action.team).name,
@@ -389,7 +389,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="team.invitation"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[
                         notification.sender.name,
                         this.props.getTeam(notification.action.teamId).name,
@@ -404,7 +404,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="issues.notification"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[notification.action.apiName]}>
                       {notification.sender.name} has published a new issue on{' '}
                       {notification.action.apiName}.
@@ -415,7 +415,7 @@ export class SimpleNotification extends Component {
                   <div>
                     <Translation
                       i18nkey="issues.comment.notification"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[notification.action.apiName]}>
                       {notification.sender.name} has published a new comment on issue of{' '}
                       {notification.action.apiName}.

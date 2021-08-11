@@ -139,7 +139,7 @@ class TeamApiConsumptionComponent extends Component {
                   <h1>
                     <Translation
                       i18nkey="api.consumption.title"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[this.state.api.name]}>
                       Api Consumption - {this.state.api.name}
                     </Translation>

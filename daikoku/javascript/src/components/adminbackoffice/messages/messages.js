@@ -134,7 +134,7 @@ const AdminMessagesComponent = (props) => {
   return (
     <UserBackOffice tab="Messages">
       <h1>
-        <Translation i18nkey="Message" language={props.currentLanguage} isPlural>
+        <Translation i18nkey="Message" isPlural>
           Messages
         </Translation>
       </h1>
@@ -259,7 +259,7 @@ const AdminMessagesComponent = (props) => {
                 className="btn btn-sm btn-outline-primary"
                 disabled={loading ? 'disabled' : null}
                 onClick={() => getPreviousMessages(selectedChat)}>
-                <Translation i18nkey="Load previous messages" language={props.currentLanguage}>
+                <Translation i18nkey="Load previous messages">
                   Load previous messages
                 </Translation>
               </button>

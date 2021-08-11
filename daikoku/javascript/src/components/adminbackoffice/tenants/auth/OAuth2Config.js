@@ -322,7 +322,7 @@ export class OAuth2Config extends Component {
           <label className="col-xs-12 col-sm-2 col-form-label" />
           <div className="col-sm-10">
             <button type="button" className="btn btn-success" onClick={this.fetchConfig}>
-              <Translation i18nkey="Get from OIDC config 2" language={this.props.currentLanguage}>
+              <Translation i18nkey="Get from OIDC config 2">
                 Get from OIDC config 2
               </Translation>
             </button>

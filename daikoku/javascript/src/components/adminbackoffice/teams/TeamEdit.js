@@ -158,7 +158,7 @@ class TeamEditForAdministrationComponent extends Component {
             <div className="row form-back-fixedBtns">
               <Link className="btn btn-outline-primary" to={'/settings/teams'}>
                 <i className="fas fa-chevron-left mr-1" />
-                <Translation i18nkey="Back" language={this.props.currentLanguage}>
+                <Translation i18nkey="Back">
                   Back
                 </Translation>
               </Link>
@@ -170,7 +170,7 @@ class TeamEditForAdministrationComponent extends Component {
                 onClick={this.members}>
                 <span>
                   <i className="fas fa-users mr-1" />
-                  <Translation i18nkey="Members" language={this.props.currentLanguage} isPlural>
+                  <Translation i18nkey="Members" isPlural>
                     Members
                   </Translation>
                 </span>
@@ -183,7 +183,7 @@ class TeamEditForAdministrationComponent extends Component {
                 {!this.state.create && (
                   <span>
                     <i className="fas fa-save mr-1" />
-                    <Translation i18nkey="Save" language={this.props.currentLanguage}>
+                    <Translation i18nkey="Save">
                       Save
                     </Translation>
                   </span>
@@ -191,7 +191,7 @@ class TeamEditForAdministrationComponent extends Component {
                 {this.state.create && (
                   <span>
                     <i className="fas fa-save mr-1" />
-                    <Translation i18nkey="Create" language={this.props.currentLanguage}>
+                    <Translation i18nkey="Create">
                       Create
                     </Translation>
                   </span>

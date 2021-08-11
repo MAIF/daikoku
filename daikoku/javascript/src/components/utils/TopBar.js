@@ -59,7 +59,8 @@ const DarkModeActivator = ({ initialDark }) => {
 const TopBarComponent = (props) => {
   const [teams, setTeams] = useState([]);
   const [daikokuVersion, setVersion] = useState(null);
-  const isMaintenanceMode = props.tenant.tenantMode && props.tenant.tenantMode !== 'Default';
+  const isTranslationMode = props.tenant.tenantMode && props.tenant.tenantMode === "Translation";
+  const isMaintenanceMode = props.tenant.tenantMode && props.tenant.tenantMode !== 'Default' && !isTranslationMode;
 
   useEffect(() => {
     Promise.all([Services.myUnreadNotificationsCount(), Services.teams()]).then(
@@ -157,7 +158,7 @@ const TopBarComponent = (props) => {
   const isDefaultLogo = props.tenant.logo === '/assets/images/daikoku.svg';
   return (
     <header className={impersonator ? 'impersonator-topbar-mb' : ''}>
-      {}
+      { }
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
@@ -227,11 +228,19 @@ const TopBarComponent = (props) => {
             )}
             {!props.connectedUser.isGuest && (
               <div className="d-flex justify-content-end align-items-center mt-1 mt-lg-0">
-                {isMaintenanceMode && (
-                  <span className="badge badge-danger mr-3">
-                    {t('Global maintenance mode enabled', props.currentLanguage)}
-                  </span>
-                )}
+                <Can I={manage} a={tenant} isTenantAdmin={props.connectedUser.isDaikokuAdmin ||
+                  (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1}>
+                  {isMaintenanceMode && (
+                    <span className="badge badge-danger mr-3">
+                      {t('Global maintenance mode enabled', props.currentLanguage)}
+                    </span>
+                  )}
+                  {isTranslationMode && (
+                    <span className="badge badge-warning mr-3">
+                      {t('Translation mode enabled', props.currentLanguage)}
+                    </span>
+                  )}
+                </Can>
                 <DarkModeActivator />
                 <Link
                   className={classNames({
@@ -257,9 +266,9 @@ const TopBarComponent = (props) => {
                     title={
                       impersonator
                         ? `${props.connectedUser.name} (${props.connectedUser.email}) ${t(
-                            'Impersonated by',
-                            props.currentLanguage
-                          )} ${impersonator.name} (${impersonator.email})`
+                          'Impersonated by',
+                          props.currentLanguage
+                        )} ${impersonator.name} (${impersonator.email})`
                         : props.connectedUser.name
                     }
                     alt="user menu"

@@ -37,7 +37,7 @@ export const NoData = ({ language }) => {
   return (
     <div className="col-12 no-data__container">
       <span className="badge badge-secondary no-data">
-        <Translation i18nkey="No datas" language={language}>
+        <Translation i18nkey="No datas">
           No Datas
         </Translation>
       </span>

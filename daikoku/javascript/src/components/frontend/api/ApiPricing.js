@@ -29,7 +29,7 @@ const currency = (plan) => {
 class ApiPricingCardComponent extends Component {
   renderFreeWithoutQuotas = () => (
     <span>
-      <Translation i18nkey="free.without.quotas.desc" language={this.props.currentLanguage}>
+      <Translation i18nkey="free.without.quotas.desc">
         You'll pay nothing and do whatever you want :)
       </Translation>
     </span>
@@ -39,7 +39,7 @@ class ApiPricingCardComponent extends Component {
     <span>
       <Translation
         i18nkey="free.with.quotas.desc"
-        language={this.props.currentLanguage}
+       
         replacements={[this.props.plan.maxPerMonth]}>
         You'll pay nothing but you'll have {this.props.plan.maxPerMonth} authorized requests per
         month
@@ -51,7 +51,7 @@ class ApiPricingCardComponent extends Component {
     <span>
       <Translation
         i18nkey="quotas.with.limits.desc"
-        language={this.props.currentLanguage}
+       
         replacements={[
           this.props.plan.costPerMonth,
           currency(this.props.plan),
@@ -68,7 +68,7 @@ class ApiPricingCardComponent extends Component {
     <span>
       <Translation
         i18nkey="quotas.without.limits.desc"
-        language={this.props.currentLanguage}
+       
         replacements={[
           this.props.plan.costPerMonth,
           currency(this.props.plan),
@@ -90,7 +90,7 @@ class ApiPricingCardComponent extends Component {
         <span>
           <Translation
             i18nkey="pay.per.use.desc.default"
-            language={this.props.currentLanguage}
+           
             replacements={[
               this.props.plan.costPerMonth,
               currency(this.props.plan),
@@ -109,7 +109,7 @@ class ApiPricingCardComponent extends Component {
         <span>
           <Translation
             i18nkey="pay.per.use.desc.default"
-            language={this.props.currentLanguage}
+           
             replacements={[this.props.plan.costPerRequest, currency(this.props.plan)]}>
             You'll be charged {this.props.plan.costPerRequest}
             <Curreny plan={this.props.plan} /> per request
@@ -204,7 +204,7 @@ class ApiPricingCardComponent extends Component {
                   <div>
                     <Translation
                       i18nkey="plan.limits"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[plan.maxPerSecond, plan.maxPerMonth]}>
                       Limits: {plan.maxPerSecond} req./sec, {plan.maxPerMonth} req./month
                     </Translation>
@@ -215,7 +215,7 @@ class ApiPricingCardComponent extends Component {
             <span className="plan-pricing">
               <Translation
                 i18nkey="plan.pricing"
-                language={this.props.currentLanguage}
+               
                 replacements={[pricing]}>
                 pricing: {pricing}
               </Translation>
@@ -224,7 +224,7 @@ class ApiPricingCardComponent extends Component {
           <div className="d-flex justify-content-between align-items-center">
             {plan.otoroshiTarget && !isAccepted && isPending && (
               <button type="button" disabled className="btn btn-sm btn-access-negative col-12">
-                <Translation i18nkey="Request in progress" language={this.props.currentLanguage}>
+                <Translation i18nkey="Request in progress">
                   Request in progress
                 </Translation>
               </button>
@@ -268,7 +268,7 @@ class ApiPricingCardComponent extends Component {
                             ? 'Get API key'
                             : 'Request API key'
                         }
-                        language={this.props.currentLanguage}>
+                       >
                         {plan.subscriptionProcess === 'Automatic'
                           ? 'Get API key'
                           : 'Request API key'}
@@ -283,7 +283,7 @@ class ApiPricingCardComponent extends Component {
                 type="button"
                 className="btn btn-sm btn-access-negative mx-auto mt-3"
                 onClick={() => this.props.openLoginOrRegisterModal({ ...this.props })}>
-                <Translation i18nkey="Get API key" language={this.props.currentLanguage}>
+                <Translation i18nkey="Get API key">
                   Get API key
                 </Translation>
               </button>

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import { Option } from '../components/utils/Option';
 import { configuration } from './';
+import { I18nContext } from '../core/context';
 
-const getTrad = (
+export const getTrad = (
   i18nkey,
   language,
   plural,
@@ -46,7 +47,6 @@ const getTrad = (
 };
 
 export const Translation = ({
-  language,
   i18nkey,
   extraConf,
   children,
@@ -54,6 +54,8 @@ export const Translation = ({
   isPlural,
   replacements,
 }) => {
+  const { language } = useContext(I18nContext);
+
   const pluralOption = Option(count)
     .map((count) => count > 1)
     .getOrElse(!!isPlural);
@@ -66,6 +68,7 @@ Translation.propTypes = {
   i18nkey: PropTypes.string.isRequired,
   extraConf: PropTypes.object,
 };
+
 
 export const t = (key, language, plural = false, defaultResponse = undefined, ...replacements) => {
   if (!language) {

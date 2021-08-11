@@ -117,7 +117,7 @@ export class ApiDocumentation extends Component {
               <Link
                 to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
                 <i className="fas fa-chevron-left mr-1" />
-                <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
+                <Translation i18nkey="Previous page">
                   Previous page
                 </Translation>
               </Link>
@@ -125,7 +125,7 @@ export class ApiDocumentation extends Component {
             {nextId && (
               <Link
                 to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
-                <Translation i18nkey="Next page" language={this.props.currentLanguage}>
+                <Translation i18nkey="Next page">
                   Next page
                 </Translation>
                 <i className="fas fa-chevron-right ml-1" />
@@ -149,7 +149,7 @@ export class ApiDocumentation extends Component {
               <Link
                 to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
                 <i className="fas fa-chevron-left mr-1" />
-                <Translation i18nkey="Previous page" language={this.props.currentLanguage}>
+                <Translation i18nkey="Previous page">
                   Previous page
                 </Translation>
               </Link>
@@ -157,7 +157,7 @@ export class ApiDocumentation extends Component {
             {nextId && (
               <Link
                 to={`/${this.props.match.params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
-                <Translation i18nkey="Next page" language={this.props.currentLanguage}>
+                <Translation i18nkey="Next page">
                   Next page
                 </Translation>
                 <i className="fas fa-chevron-right ml-1" />

@@ -253,7 +253,7 @@ export class TeamMembersSimpleComponent extends Component {
             <h1>
               <Translation
                 i18nkey="team.members.title"
-                language={this.props.currentLanguage}
+               
                 replacements={[this.props.currentTeam.name]}>
                 {this.props.currentTeam.name} members
               </Translation>
@@ -297,7 +297,7 @@ export class TeamMembersSimpleComponent extends Component {
                     onClick={() => this.setState({ tab: TABS.members })}>
                     <Translation
                       i18nkey="Member"
-                      language={this.props.currentLanguage}
+                     
                       isPlural={this.state.members.length > 1}>
                       Member
                     </Translation>
@@ -311,7 +311,7 @@ export class TeamMembersSimpleComponent extends Component {
                     onClick={() => this.setState({ tab: TABS.pending })}>
                     <Translation
                       i18nkey="pending members"
-                      language={this.props.currentLanguage}
+                     
                       replacements={[(this.state.pendingUsers || []).length]}>
                       Pending ({(this.state.pendingUsers || []).length})
                     </Translation>
@@ -330,21 +330,21 @@ export class TeamMembersSimpleComponent extends Component {
                     <i className="fas fa-shield-alt mr-1" />
                     <Translation
                       i18nkey="permission.caption.administrator"
-                      language={this.props.currentLanguage}
+                     
                     />
                   </div>
                   <div>
                     <i className="fas fa-pencil-alt mr-1" />
                     <Translation
                       i18nkey="permission.caption.apiEditor"
-                      language={this.props.currentLanguage}
+                     
                     />
                   </div>
                   <div>
                     <i className="fas fa-user-alt mr-1" />
                     <Translation
                       i18nkey="permission.caption.user"
-                      language={this.props.currentLanguage}
+                     
                     />
                   </div>
                 </div>,
@@ -478,7 +478,7 @@ export class TeamMembersSimpleComponent extends Component {
             <div className="p-3">
               <Translation
                 i18nkey="team_member.no_pending_members"
-                language={this.props.currentLanguage}
+               
               />
             </div>
           ))}

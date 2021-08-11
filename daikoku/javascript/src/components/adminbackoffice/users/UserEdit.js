@@ -45,7 +45,7 @@ class SetPassword extends Component {
             className="btn btn-outline-success"
             onClick={this.genAndSetPassword}>
             <i className="fas fa-unlock-alt mr-1" />
-            <Translation i18nkey="Set password" language={this.props.currentLanguage}>
+            <Translation i18nkey="Set password">
               Set password
             </Translation>
           </button>
@@ -67,7 +67,7 @@ class RefreshToken extends Component {
         <div className="col-sm-10">
           <button type="button" className="btn btn-outline-success" onClick={this.reloadToken}>
             <i className="fas fa-sync-alt mr-1" />
-            <Translation i18nkey="Reload personal token" language={this.props.currentLanguage}>
+            <Translation i18nkey="Reload personal token">
               Reload personal token
             </Translation>
           </button>
@@ -88,7 +88,7 @@ class Gravatar extends Component {
     return (
       <button type="button" className="btn btn-access" onClick={this.setGravatarLink}>
         <i className="fas fa-user-circle mr-1" />
-        <Translation i18nkey="Set avatar from Gravatar" language={this.props.currentLanguage}>
+        <Translation i18nkey="Set avatar from Gravatar">
           Set avatar from Gravatar
         </Translation>
       </button>
@@ -339,7 +339,7 @@ export class UserEditComponent extends Component {
           )}
           <div className="row" style={{ justifyContent: 'flex-end' }}>
             <Link className="btn btn-outline-danger" to={'/settings/users'}>
-              <Translation i18nkey="Cancel" language={this.props.currentLanguage}>
+              <Translation i18nkey="Cancel">
                 Cancel
               </Translation>
             </Link>
@@ -350,7 +350,7 @@ export class UserEditComponent extends Component {
                 className="btn btn-outline-danger"
                 onClick={this.removeUser}>
                 <i className="fas fa-trash mr-1" />
-                <Translation i18nkey="Delete" language={this.props.currentLanguage}>
+                <Translation i18nkey="Delete">
                   Delete
                 </Translation>
               </button>
@@ -363,7 +363,7 @@ export class UserEditComponent extends Component {
               {!this.state.create && (
                 <span>
                   <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Save" language={this.props.currentLanguage}>
+                  <Translation i18nkey="Save">
                     Save
                   </Translation>
                 </span>
@@ -371,7 +371,7 @@ export class UserEditComponent extends Component {
               {this.state.create && (
                 <span>
                   <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Create" language={this.props.currentLanguage}>
+                  <Translation i18nkey="Create">
                     Create
                   </Translation>
                 </span>

@@ -167,11 +167,11 @@ const Description = (props) => {
   if (!props.description) {
     return (
       <p className="lead">
-        <Translation i18nkey="Daikoku description start" language={props.currentLanguage}>
+        <Translation i18nkey="Daikoku description start">
           Daikoku is the perfect
         </Translation>
         <a href="https: //www.otoroshi.io">Otoroshi</a>
-        <Translation i18nkey="Daikoku description end" language={props.currentLanguage}>
+        <Translation i18nkey="Daikoku description end">
           companion to manage, document, and expose your beloved APIs to your developpers community.
           Publish a new API in a few seconds
         </Translation>

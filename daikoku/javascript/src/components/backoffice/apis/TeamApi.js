@@ -279,7 +279,7 @@ function TeamApiComponent(props) {
       <Can I={manage} a={API} team={props.currentTeam} dispatchError>
         {!editedApi && (
           <h3>
-            <Translation i18nkey="No API" language={props.currentLanguage}>
+            <Translation i18nkey="No API">
               No API
             </Translation>
           </h3>
@@ -289,7 +289,7 @@ function TeamApiComponent(props) {
             <div className="row">
               {state.create ? (
                 <h1>
-                  <Translation i18nkey="New api" language={props.currentLanguage}>
+                  <Translation i18nkey="New api">
                     New api
                   </Translation>{' '}
                   - {editedApi.name}
@@ -341,7 +341,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'infos' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/infos`}>
                     <i className="fas fa-info mr-1" />
-                    <Translation i18nkey="Informations" language={props.currentLanguage}>
+                    <Translation i18nkey="Informations">
                       Informations
                     </Translation>
                   </Link>
@@ -351,7 +351,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'description' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/description`}>
                     <i className="fas fa-file-alt mr-1" />
-                    <Translation i18nkey="Description" language={props.currentLanguage}>
+                    <Translation i18nkey="Description">
                       Description
                     </Translation>
                   </Link>
@@ -361,7 +361,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/plans`}>
                     <i className="fas fa-dollar-sign mr-1" />
-                    <Translation i18nkey="Plan" language={props.currentLanguage} isPlural>
+                    <Translation i18nkey="Plan" isPlural>
                       Plans
                     </Translation>
                   </Link>
@@ -372,7 +372,7 @@ function TeamApiComponent(props) {
                       className={`nav-link ${tab === 'otoroshi' ? 'active' : ''}`}
                       to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/otoroshi`}>
                       <i className="fas fa-pastafarianism mr-1" />
-                      <Translation i18nkey="Otoroshi" language={props.currentLanguage}>
+                      <Translation i18nkey="Otoroshi">
                         Otoroshi
                       </Translation>
                     </Link>
@@ -383,7 +383,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/swagger`}>
                     <i className="fas fa-file-code mr-1" />
-                    <Translation i18nkey="Swagger" language={props.currentLanguage}>
+                    <Translation i18nkey="Swagger">
                       Swagger
                     </Translation>
                   </Link>
@@ -394,7 +394,7 @@ function TeamApiComponent(props) {
                       className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
                       to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/testing`}>
                       <i className="fas fa-vial mr-1" />
-                      <Translation i18nkey="Testing" language={props.currentLanguage}>
+                      <Translation i18nkey="Testing">
                         Testing
                       </Translation>
                     </Link>
@@ -405,7 +405,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'documentation' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/documentation`}>
                     <i className="fas fa-book mr-1" />
-                    <Translation i18nkey="Documentation" language={props.currentLanguage}>
+                    <Translation i18nkey="Documentation">
                       Documentation
                     </Translation>
                   </Link>
@@ -415,7 +415,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'news' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/news`}>
                     <i className="fas fa-newspaper mr-1" />
-                    <Translation i18nkey="News" language={props.currentLanguage}>
+                    <Translation i18nkey="News">
                       News
                     </Translation>
                   </Link>
@@ -535,7 +535,7 @@ function TeamApiComponent(props) {
                 {!state.create && (
                   <button type="button" className="btn btn-outline-danger ml-1" onClick={deleteApi}>
                     <i className="fas fa-trash mr-1" />
-                    <Translation i18nkey="Delete" language={props.currentLanguage}>
+                    <Translation i18nkey="Delete">
                       Delete
                     </Translation>
                   </button>
@@ -548,7 +548,7 @@ function TeamApiComponent(props) {
                   {!state.create && (
                     <span>
                       <i className="fas fa-save mr-1" />
-                      <Translation i18nkey="Save" language={props.currentLanguage}>
+                      <Translation i18nkey="Save">
                         Save
                       </Translation>
                     </span>
@@ -556,7 +556,7 @@ function TeamApiComponent(props) {
                   {state.create && (
                     <span>
                       <i className="fas fa-save mr-1" />
-                      <Translation i18nkey="Create" language={props.currentLanguage}>
+                      <Translation i18nkey="Create">
                         Create
                       </Translation>
                     </span>

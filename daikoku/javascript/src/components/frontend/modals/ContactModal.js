@@ -39,7 +39,7 @@ const ContactModalComponent = (props) => {
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">
-          <Translation i18nkey="Contact request" language={props.currentLanguage}>
+          <Translation i18nkey="Contact request">
             Contact request
           </Translation>
         </h5>
@@ -54,7 +54,7 @@ const ContactModalComponent = (props) => {
             {!props.name && (
               <div className="form-group">
                 <label htmlFor="sender-name">
-                  <Translation i18nkey="Name" language={props.currentLanguage}>
+                  <Translation i18nkey="Name">
                     Name
                   </Translation>
                 </label>
@@ -73,7 +73,7 @@ const ContactModalComponent = (props) => {
             {!props.email && (
               <div className="form-group">
                 <label htmlFor="sender-email">
-                  <Translation i18nkey="Email address" language={props.currentLanguage}>
+                  <Translation i18nkey="Email address">
                     Email address
                   </Translation>
                 </label>
@@ -91,7 +91,7 @@ const ContactModalComponent = (props) => {
             )}
             <div className="form-group">
               <label htmlFor="subject">
-                <Translation i18nkey="Subject" language={props.currentLanguage}>
+                <Translation i18nkey="Subject">
                   Subject
                 </Translation>
               </label>
@@ -108,7 +108,7 @@ const ContactModalComponent = (props) => {
             </div>
             <div className="form-group">
               <label htmlFor="message">
-                <Translation i18nkey="Message" language={props.currentLanguage}>
+                <Translation i18nkey="Message">
                   Message
                 </Translation>
               </label>
@@ -128,7 +128,7 @@ const ContactModalComponent = (props) => {
 
             <div className="form-group ohnohoney">
               <label htmlFor="name">
-                <Translation i18nkey="Name" language={props.currentLanguage}>
+                <Translation i18nkey="Name">
                   Name
                 </Translation>
               </label>
@@ -148,7 +148,7 @@ const ContactModalComponent = (props) => {
 
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-          <Translation i18nkey="Cancel" language={props.currentLanguage}>
+          <Translation i18nkey="Cancel">
             Cancel
           </Translation>
         </button>
@@ -158,7 +158,7 @@ const ContactModalComponent = (props) => {
           className="btn btn-outline-success"
           disabled={!validity ? 'disabled' : undefined}
           onClick={() => sendEmail()}>
-          <Translation i18nkey="Send" language={props.currentLanguage}>
+          <Translation i18nkey="Send">
             Send
           </Translation>
         </button>

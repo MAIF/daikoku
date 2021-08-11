@@ -21,7 +21,7 @@ export class ApiCartidge extends Component {
     return (
       <div className="d-flex col-12 col-sm-3 col-md-2 text-muted flex-column p-3 additionalContent">
         <span>
-          <Translation i18nkey="API by" language={this.props.currentLanguage}>
+          <Translation i18nkey="API by">
             API by
           </Translation>
         </span>
@@ -31,21 +31,21 @@ export class ApiCartidge extends Component {
         <div>
           <button className="btn btn-xs btn-access-negative" onClick={this.props.openContactModal}>
             <i className="far fa-envelope mr-1" />
-            <Translation i18nkey="Contact us" language={this.props.currentLanguage}>
+            <Translation i18nkey="Contact us">
               Contact us
             </Translation>
           </button>
         </div>
         <Separator />
         <span>
-          <Translation i18nkey="Version" language={this.props.currentLanguage}>
+          <Translation i18nkey="Version">
             Version
           </Translation>
           <span className="badge badge-info ml-1">{api.currentVersion}</span>
         </span>
         <Separator />
         <span>
-          <Translation i18nkey="Supported versions" language={this.props.currentLanguage}>
+          <Translation i18nkey="Supported versions">
             Supported versions
           </Translation>
           {(api.supportedVersions || []).map((v, idx) => (
@@ -56,7 +56,7 @@ export class ApiCartidge extends Component {
         </span>
         <Separator />
         <span>
-          <Translation i18nkey="Tags" language={this.props.currentLanguage}>
+          <Translation i18nkey="Tags">
             Tags
           </Translation>
           {(api.tags || []).map((a, idx) => (
@@ -67,7 +67,7 @@ export class ApiCartidge extends Component {
         </span>
         <Separator />
         <span>
-          <Translation i18nkey="Visibility" language={this.props.currentLanguage}>
+          <Translation i18nkey="Visibility">
             Visibility
           </Translation>
           <span
@@ -81,7 +81,7 @@ export class ApiCartidge extends Component {
         {defaultPlan && (
           <>
             <span>
-              <Translation i18nkey="Default plan" language={this.props.currentLanguage}>
+              <Translation i18nkey="Default plan">
                 Default plan
               </Translation>
               <span
@@ -94,7 +94,7 @@ export class ApiCartidge extends Component {
           </>
         )}
         <span>
-          <Translation i18nkey="Last modification" language={this.props.currentLanguage}>
+          <Translation i18nkey="Last modification">
             Last modification
           </Translation>
         </span>
@@ -121,7 +121,7 @@ export class ApiCartidge extends Component {
               currentLanguage={this.props.currentLanguage}
               withAllTeamSelector={false}>
               <button className="btn btn-sm btn-access-negative mt-2">
-                <Translation i18nkey="View your api keys" language={this.props.currentLanguage}>
+                <Translation i18nkey="View your api keys">
                   View your api keys
                 </Translation>
               </button>
@@ -131,7 +131,7 @@ export class ApiCartidge extends Component {
 
         {defaultPlan && !defaultPlan.otoroshiTarget && (
           <small className="mt-5">
-            <Translation i18nkey="api not linked" language={this.props.currentLanguage}>
+            <Translation i18nkey="api not linked">
               This api is not linked to an actual Otoroshi service yet
             </Translation>
           </small>
