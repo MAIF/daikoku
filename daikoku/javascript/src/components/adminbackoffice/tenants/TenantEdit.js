@@ -70,7 +70,7 @@ class MailerConfig extends Component {
 }
 
 function StyleLogoAssetButton(props) {
-  const { t } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext)
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
@@ -81,7 +81,7 @@ function StyleLogoAssetButton(props) {
         typeFilter={MimeTypeFilter.image}
         onlyPreview
         tenantMode
-        label={t('Set tenant logo from asset')}
+        label={translateMethod('Set tenant logo from asset')}
         currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.logo', origin + asset.link)}
       />
@@ -90,7 +90,7 @@ function StyleLogoAssetButton(props) {
 }
 
 function StyleJsUrlAssetButton(props) {
-  const { t } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext)
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
@@ -100,7 +100,7 @@ function StyleJsUrlAssetButton(props) {
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.javascript}
         tenantMode
-        label={t('Set js from asset')}
+        label={translateMethod('Set js from asset')}
         currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.jsUrl', origin + asset.link)}
       />
@@ -109,7 +109,7 @@ function StyleJsUrlAssetButton(props) {
 }
 
 function StyleCssUrlAssetButton(props) {
-  const { t } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext)
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
@@ -120,7 +120,7 @@ function StyleCssUrlAssetButton(props) {
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.css}
         tenantMode
-        label={t('Set css from asset')}
+        label={translateMethod('Set css from asset')}
         currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.cssUrl', origin + asset.link)}
       />
@@ -130,7 +130,7 @@ function StyleCssUrlAssetButton(props) {
 
 
 function StyleFaviconUrlAssetButton(props) {
-  const { t } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext)
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
@@ -141,7 +141,7 @@ function StyleFaviconUrlAssetButton(props) {
         typeFilter={MimeTypeFilter.image}
         onlyPreview
         tenantMode
-        label={t('Set favicon from asset')}
+        label={translateMethod('Set favicon from asset')}
         currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.faviconUrl', origin + asset.link)}
       />
@@ -150,7 +150,7 @@ function StyleFaviconUrlAssetButton(props) {
 }
 
 function StyleFontFamilyUrlAssetButton(props) {
-  const { t } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext)
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
@@ -161,7 +161,7 @@ function StyleFontFamilyUrlAssetButton(props) {
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.font}
         tenantMode
-        label={t('Set font family from asset')}
+        label={translateMethod('Set font family from asset')}
         currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.fontFamilyUrl', origin + asset.link)}
       />
@@ -170,7 +170,7 @@ function StyleFontFamilyUrlAssetButton(props) {
 }
 
 function ThemeUpdatorFromUI(props) {
-  const { t } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext)
 
   return (
     <div className="form-group d-flex justify-content-end">
@@ -185,12 +185,12 @@ function ThemeUpdatorFromUI(props) {
               open: true,
               dontsave: () => RedirectToUI(),
               save: () => props.save().then(() => RedirectToUI()),
-              title: t(
+              title: translateMethod(
                 'unsaved.modifications.title',
                 false,
                 'Unsaved modifications'
               ),
-              message: t(
+              message: translateMethod(
                 'unsaved.modifications.message',
                 false,
                 'Your have unsaved modifications, do you want to save it before continue ?'
@@ -224,7 +224,7 @@ function HomePageVisibilitySwitch(props) {
 }
 
 export function TenantEditComponent(props) {
-  const { t } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext)
 
   const [state, setState] = useState({
     tenant: null,
@@ -241,7 +241,7 @@ export function TenantEditComponent(props) {
     'defaultLanguage',
     'contact',
     'tenantMode',
-    `>>> ${t('Tenant Style')}`,
+    `>>> ${translateMethod('Tenant Style')}`,
     'style.logo',
     'style.logoFromAssets',
     'style.title',
@@ -258,33 +258,33 @@ export function TenantEditComponent(props) {
     'style.faviconUrlFromAssets',
     'style.fontFamilyUrl',
     'style.fontFamilyUrlFromAssets',
-    `>>> ${t('Authentication')}`,
+    `>>> ${translateMethod('Authentication')}`,
     'authProvider',
     'authProviderSettings',
-    `>>> ${t('Security')}`,
+    `>>> ${translateMethod('Security')}`,
     'isPrivate',
     'creationSecurity',
     'subscriptionSecurity',
     'aggregationApiKeysSecurity',
     'apiReferenceHideForGuest',
     'hideTeamsPage',
-    `>>> ${t('Audit trail (Elastic)')}`,
+    `>>> ${translateMethod('Audit trail (Elastic)')}`,
     'auditTrailConfig.elasticConfigs',
-    `>>> ${t('Audit trail (Webhooks)')}`,
+    `>>> ${translateMethod('Audit trail (Webhooks)')}`,
     'auditTrailConfig.auditWebhooks',
-    `>>> ${t('Audit trail (Kafka)')}`,
+    `>>> ${translateMethod('Audit trail (Kafka)')}`,
     'auditTrailConfig.kafkaConfig.servers',
     'auditTrailConfig.kafkaConfig.keyPass',
     'auditTrailConfig.kafkaConfig.keystore',
     'auditTrailConfig.kafkaConfig.truststore',
     'auditTrailConfig.kafkaConfig.auditTopic',
     'auditTrailConfig.kafkaConfig.hostValidation',
-    `>>> ${t('Alerting')}`,
+    `>>> ${translateMethod('Alerting')}`,
     'auditTrailConfig.alertsEmails',
-    `>>> ${t('Mailer')}`,
+    `>>> ${translateMethod('Mailer')}`,
     'mailerSettings.type',
     'mailerSettings',
-    `>>> ${t('Bucket')}`,
+    `>>> ${translateMethod('Bucket')}`,
     'bucketSettings.bucket',
     'bucketSettings.endpoint',
     'bucketSettings.region',
@@ -292,11 +292,11 @@ export function TenantEditComponent(props) {
     'bucketSettings.secret',
     'bucketSettings.chunkSize',
     'bucketSettings.v4auth',
-    `>>> ${t('Message', true)}`,
+    `>>> ${translateMethod('Message', true)}`,
     'defaultMessage',
-    `>>> ${t('Footer')}`,
+    `>>> ${translateMethod('Footer')}`,
     'style.footer',
-    `>>> ${t('Unlogged home description')}`,
+    `>>> ${translateMethod('Unlogged home description')}`,
     'style.homePageVisible',
     'style.unloggedHome',
   ];
@@ -307,36 +307,36 @@ export function TenantEditComponent(props) {
     clusterUri: {
       type: 'string',
       props: {
-        label: t('Cluster URI'),
-        placeholder: t('Elastic cluster URI'),
+        label: translateMethod('Cluster URI'),
+        placeholder: translateMethod('Elastic cluster URI'),
       },
     },
     index: {
       type: 'string',
       props: {
-        label: t('Index'),
-        placeholder: t('Elastic index'),
+        label: translateMethod('Index'),
+        placeholder: translateMethod('Elastic index'),
       },
     },
     type: {
       type: 'string',
       props: {
-        label: t('Type'),
-        placeholder: t('Event type'),
+        label: translateMethod('Type'),
+        placeholder: translateMethod('Event type'),
       },
     },
     user: {
       type: 'string',
       props: {
-        label: t('User'),
-        placeholder: t('Elastic User (optional)'),
+        label: translateMethod('User'),
+        placeholder: translateMethod('Elastic User (optional)'),
       },
     },
     password: {
       type: 'string',
       props: {
-        label: t('Password'),
-        placeholder: t('Elastic password (optional)'),
+        label: translateMethod('Password'),
+        placeholder: translateMethod('Elastic password (optional)'),
       },
     },
   };
@@ -345,16 +345,16 @@ export function TenantEditComponent(props) {
     url: {
       type: 'string',
       props: {
-        label: t('Analytics webhook URL'),
-        placeholder: t('URL of the webhook target'),
+        label: translateMethod('Analytics webhook URL'),
+        placeholder: translateMethod('URL of the webhook target'),
       },
     },
     headers: {
       type: 'object',
       props: {
-        label: t('Webhook Headers'),
-        placeholderKey: t('Header name'),
-        placeholderValue: t('Header value'),
+        label: translateMethod('Webhook Headers'),
+        placeholderKey: translateMethod('Header name'),
+        placeholderValue: translateMethod('Header value'),
       },
     },
   };
@@ -364,30 +364,30 @@ export function TenantEditComponent(props) {
   const schema = {
     _id: {
       type: 'string',
-      props: { label: t('Id') },
+      props: { label: translateMethod('Id') },
     },
     enabled: {
       type: 'bool',
-      props: { label: t('Enabled') },
+      props: { label: translateMethod('Enabled') },
     },
     name: {
       type: 'string',
-      props: { label: t('Name') },
+      props: { label: translateMethod('Name') },
     },
     domain: {
       type: 'string',
-      props: { label: t('Domain name') },
+      props: { label: translateMethod('Domain name') },
     },
     exposedPort: {
       type: 'string',
       props: {
-        label: t('Exposed port'),
+        label: translateMethod('Exposed port'),
       },
     },
     defaultLanguage: {
       type: 'select',
       props: {
-        label: t('Default  language'),
+        label: translateMethod('Default  language'),
         possibleValues: Object.keys(configuration).map((key) => ({
           label: key,
           value: key,
@@ -397,33 +397,33 @@ export function TenantEditComponent(props) {
     contact: {
       type: 'string',
       props: {
-        label: t('Contact'),
+        label: translateMethod('Contact'),
       },
     },
     'style.title': {
       type: 'string',
-      props: { label: t('Title') },
+      props: { label: translateMethod('Title') },
     },
     'style.description': {
       type: 'markdown',
-      props: { label: t('Description') },
+      props: { label: translateMethod('Description') },
     },
     'style.unloggedHome': {
       type: 'markdown',
       props: {
         tenantMode: true,
-        label: t('Unlogged description'),
+        label: translateMethod('Unlogged description'),
       },
     },
     'style.homePageVisible': {
       type: HomePageVisibilitySwitch,
       props: {
-        label: t('Enabled'),
+        label: translateMethod('Enabled'),
       },
     },
     'style.logo': {
       type: 'string',
-      props: { label: t('Logo') },
+      props: { label: translateMethod('Logo') },
     },
     'style.logoFromAssets': {
       type: StyleLogoAssetButton,
@@ -467,11 +467,11 @@ export function TenantEditComponent(props) {
     },
     'style.css': {
       type: 'text',
-      props: { label: t('CSS') },
+      props: { label: translateMethod('CSS') },
     },
     'style.colorTheme': {
       type: 'text',
-      props: { label: t('CSS color theme') },
+      props: { label: translateMethod('CSS color theme') },
     },
     'style.colorThemeFromUI': {
       type: ThemeUpdatorFromUI,
@@ -486,23 +486,23 @@ export function TenantEditComponent(props) {
     },
     'style.js': {
       type: 'text',
-      props: { label: t('Javascript') },
+      props: { label: translateMethod('Javascript') },
     },
     'style.jsUrl': {
       type: 'string',
-      props: { label: t('Js URL') },
+      props: { label: translateMethod('Js URL') },
     },
     'style.cssUrl': {
       type: 'string',
-      props: { label: t('CSS URL') },
+      props: { label: translateMethod('CSS URL') },
     },
     'style.faviconUrl': {
       type: 'string',
-      props: { label: t('Favicon URL') },
+      props: { label: translateMethod('Favicon URL') },
     },
     'style.fontFamilyUrl': {
       type: 'string',
-      props: { label: t('Font family') },
+      props: { label: translateMethod('Font family') },
     },
     'style.fontFamilyUrlFromAssets': {
       type: StyleFontFamilyUrlAssetButton,
@@ -516,22 +516,22 @@ export function TenantEditComponent(props) {
     },
     'style.footer': {
       type: 'markdown',
-      props: { label: t('Footer') },
+      props: { label: translateMethod('Footer') },
     },
     defaultMessage: {
       type: 'markdown',
-      props: { label: t('Default message') },
+      props: { label: translateMethod('Default message') },
     },
     isPrivate: {
       type: 'bool',
       props: {
-        label: t('Private tenant'),
+        label: translateMethod('Private tenant'),
       },
     },
     authProvider: {
       type: 'select',
       props: {
-        label: t('Authentication type'),
+        label: translateMethod('Authentication type'),
         possibleValues: [
           { label: 'Local', value: 'Local' },
           { label: 'LDAP', value: 'LDAP' },
@@ -544,15 +544,15 @@ export function TenantEditComponent(props) {
       type: AuthConfig,
       props: {
         currentLanguage: props.currentLanguage,
-        label: t('Settings'),
+        label: translateMethod('Settings'),
       },
     },
     creationSecurity: {
       type: 'bool',
       props: {
         currentLanguage: props.currentLanguage,
-        label: t('creation security'),
-        help: t(
+        label: translateMethod('creation security'),
+        help: translateMethod(
           'creation.security.help',
           false,
           'if enabled, only authorized teams will be able to create APIs'
@@ -563,8 +563,8 @@ export function TenantEditComponent(props) {
       type: 'bool',
       props: {
         currentLanguage: props.currentLanguage,
-        label: t('subscription security'),
-        help: t(
+        label: translateMethod('subscription security'),
+        help: translateMethod(
           'subscription.security.help',
           false,
           'if enabled, personnal teams will not be able to subscribed to an API'
@@ -576,15 +576,15 @@ export function TenantEditComponent(props) {
         <BooleanInput
           key="aggregationApiKeysSecurity"
           value={state.tenant.aggregationApiKeysSecurity}
-          label={t('aggregation api keys security')}
-          help={t('aggregation_apikeys.security.help')}
+          label={translateMethod('aggregation api keys security')}
+          help={translateMethod('aggregation_apikeys.security.help')}
           onChange={(e) => {
             if (e)
               window.alert(
-                t('aggregation.api_key.security.notification'),
+                translateMethod('aggregation.api_key.security.notification'),
                 undefined,
                 undefined,
-                t('I understood'),
+                translateMethod('I understood'),
                 props.currentLanguage
               );
 
@@ -603,8 +603,8 @@ export function TenantEditComponent(props) {
       type: 'bool',
       props: {
         currentLanguage: props.currentLanguage,
-        label: t('Api reference visibility'),
-        help: t(
+        label: translateMethod('Api reference visibility'),
+        help: translateMethod(
           'appi.reference.visibility.help',
           false,
           "if enabled, guest user can't see api reference on public api"
@@ -615,8 +615,8 @@ export function TenantEditComponent(props) {
       type: 'bool',
       props: {
         currentLanguage: props.currentLanguage,
-        label: t('Hide teams page'),
-        help: t(
+        label: translateMethod('Hide teams page'),
+        help: translateMethod(
           'hide.teams.page.help',
           false,
           'if enabled, /teams will be inaccessible'
@@ -626,7 +626,7 @@ export function TenantEditComponent(props) {
     'mailerSettings.type': {
       type: 'select',
       props: {
-        label: t('Mailer type'),
+        label: translateMethod('Mailer type'),
         possibleValues: [
           { label: 'Console', value: 'console' },
           { label: 'SMTP Client', value: 'smtpClient' },
@@ -639,18 +639,18 @@ export function TenantEditComponent(props) {
     mailerSettings: {
       type: MailerConfig,
       props: {
-        label: t('Mailer'),
+        label: translateMethod('Mailer'),
         currentLanguage: props.currentLanguage,
       },
     },
     'daikokuHeader.name': {
       type: 'string',
-      props: { label: t('Header name') },
+      props: { label: translateMethod('Header name') },
       disabled: true,
     },
     'daikokuHeader.value': {
       type: 'string',
-      props: { label: t('Header value') },
+      props: { label: translateMethod('Header value') },
       disabled: true,
     },
     'auditTrailConfig.auditWebhooks': {
@@ -660,9 +660,9 @@ export function TenantEditComponent(props) {
     'auditTrailConfig.alertsEmails': {
       type: 'array',
       props: {
-        label: t('Alert emails'),
-        placeholder: t('Email address to receive alerts'),
-        help: t(
+        label: translateMethod('Alert emails'),
+        placeholder: translateMethod('Email address to receive alerts'),
+        help: translateMethod(
           'Alert.email.help',
           false,
           'Every email address will be notified with a summary of Otoroshi alerts'
@@ -679,9 +679,9 @@ export function TenantEditComponent(props) {
     'auditTrailConfig.kafkaConfig.servers': {
       type: 'array',
       props: {
-        label: t('Kafka Servers'),
+        label: translateMethod('Kafka Servers'),
         placeholder: '127.0.0.1:9092',
-        help: t(
+        help: translateMethod(
           'kafka.servers.help',
           false,
           'The list of servers to contact to connect the Kafka client with the Kafka cluster'
@@ -691,9 +691,9 @@ export function TenantEditComponent(props) {
     'auditTrailConfig.kafkaConfig.keyPass': {
       type: 'string',
       props: {
-        label: t('Kafka keypass'),
-        placeholder: t('Secret'),
-        help: t(
+        label: translateMethod('Kafka keypass'),
+        placeholder: translateMethod('Secret'),
+        help: translateMethod(
           'kafka.secret.help',
           false,
           'The keystore password if you use a keystore/truststore to connect to Kafka cluster'
@@ -703,9 +703,9 @@ export function TenantEditComponent(props) {
     'auditTrailConfig.kafkaConfig.keystore': {
       type: 'string',
       props: {
-        label: t('Kafka keystore path'),
+        label: translateMethod('Kafka keystore path'),
         placeholder: '/home/bas/client.keystore.jks',
-        help: t(
+        help: translateMethod(
           'kafka.keystore.path.help',
           false,
           'The keystore path on the server if you use a keystore/truststore to connect to Kafka cluster'
@@ -715,9 +715,9 @@ export function TenantEditComponent(props) {
     'auditTrailConfig.kafkaConfig.truststore': {
       type: 'string',
       props: {
-        label: t('Kafka truststore path'),
+        label: translateMethod('Kafka truststore path'),
         placeholder: '/home/bas/client.truststore.jks',
-        help: t(
+        help: translateMethod(
           'kafka.truststore.path.help',
           false,
           'The truststore path on the server if you use a keystore/truststore to connect to Kafka cluster'
@@ -727,9 +727,9 @@ export function TenantEditComponent(props) {
     'auditTrailConfig.kafkaConfig.auditTopic': {
       type: 'string',
       props: {
-        label: t('Kafka audits topic'),
-        placeholder: t('daikoku-audit'),
-        help: t(
+        label: translateMethod('Kafka audits topic'),
+        placeholder: translateMethod('daikoku-audit'),
+        help: translateMethod(
           'kafka.audit.topic.help',
           false,
           'The topic on which Otoroshi audits will be sent'
@@ -739,8 +739,8 @@ export function TenantEditComponent(props) {
     'auditTrailConfig.kafkaConfig.hostValidation': {
       type: 'bool',
       props: {
-        label: t('Kafka host validation'),
-        help: t(
+        label: translateMethod('Kafka host validation'),
+        help: translateMethod(
           'kafka.audit.hostValidation.help',
           false,
           'Disable kafka to validate server hostname using server certificate.'
@@ -750,63 +750,63 @@ export function TenantEditComponent(props) {
     'bucketSettings.bucket': {
       type: 'string',
       props: {
-        label: t('Bucket name'),
+        label: translateMethod('Bucket name'),
         placeholder: 'daikoku-tenant-1',
-        help: t('The name of the S3 bucket'),
+        help: translateMethod('The name of the S3 bucket'),
       },
     },
     'bucketSettings.endpoint': {
       type: 'string',
       props: {
-        label: t('Bucket url'),
-        help: t('The url of the bucket'),
+        label: translateMethod('Bucket url'),
+        help: translateMethod('The url of the bucket'),
       },
     },
     'bucketSettings.region': {
       type: 'string',
       props: {
-        label: t('S3 region'),
+        label: translateMethod('S3 region'),
         placeholder: 'us-west-2',
-        help: t('The region of the bucket'),
+        help: translateMethod('The region of the bucket'),
       },
     },
     'bucketSettings.access': {
       type: 'string',
       props: {
-        label: t('Bucket access key'),
-        help: t('The access key to access bucket'),
+        label: translateMethod('Bucket access key'),
+        help: translateMethod('The access key to access bucket'),
       },
     },
     'bucketSettings.secret': {
       type: 'string',
       props: {
-        label: t('Bucket secret'),
-        help: t('The secret to access the bucket'),
+        label: translateMethod('Bucket secret'),
+        help: translateMethod('The secret to access the bucket'),
       },
     },
     'bucketSettings.chunkSize': {
       type: 'number',
       props: {
-        label: t('Chunk size'),
+        label: translateMethod('Chunk size'),
         placeholder: 1024 * 1024 * 8,
-        help: t('The size of each chunk sent'),
+        help: translateMethod('The size of each chunk sent'),
       },
     },
     'bucketSettings.v4auth': {
       type: 'bool',
       props: {
-        label: t('Use V4 auth.'),
+        label: translateMethod('Use V4 auth.'),
       },
     },
     tenantMode: {
       type: 'select',
       props: {
-        label: t('Modes'),
+        label: translateMethod('Modes'),
         possibleValues: [
-          { label: t('Default mode'), value: 'default' },
-          { label: t('Maintenance mode'), value: 'maintenance' },
-          { label: t('Construction mode'), value: 'construction' },
-          { label: t('Translation mode'), value: 'translation' },
+          { label: translateMethod('Default mode'), value: 'default' },
+          { label: translateMethod('Maintenance mode'), value: 'maintenance' },
+          { label: translateMethod('Construction mode'), value: 'construction' },
+          { label: translateMethod('Translation mode'), value: 'translation' },
         ],
       },
     },
@@ -843,7 +843,7 @@ export function TenantEditComponent(props) {
           },
           () =>
             toastr.success(
-              t(
+              translateMethod(
                 'tenant.created.success',
                 false,
                 `Tenant "${tenant.name}" created`,
@@ -856,12 +856,12 @@ export function TenantEditComponent(props) {
       if (state.tenant.tenantMode === "translation")
         window.alert(
           <p>
-            {t('tenant_edit.translation_mode_message')}
+            {translateMethod('tenant_edit.translation_mode_message')}
           </p>
         )
       return Services.saveTenant(state.tenant)
         .then(({ uiPayload }) => props.updateTenant(uiPayload))
-        .then(() => toastr.success(t('Tenant updated successfully')));
+        .then(() => toastr.success(translateMethod('Tenant updated successfully')));
     }
   };
 

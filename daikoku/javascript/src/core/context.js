@@ -7,7 +7,7 @@ export const I18nProvider = ({ children }) => {
     const [language, setLanguage] = useState("en")
     const [isTranslationMode, setTranslationMode] = useState(false);
 
-    const t = (key, plural = false, defaultResponse = undefined, ...replacements) => {
+    const translateMethod = (key, plural = false, defaultResponse = undefined, ...replacements) => {
         if (!language) {
             return defaultResponse || key;
         }
@@ -21,7 +21,7 @@ export const I18nProvider = ({ children }) => {
             setLanguage,
             isTranslationMode,
             setTranslationMode,
-            t
+            translateMethod
         }}>
             {children}
         </I18nContext.Provider>

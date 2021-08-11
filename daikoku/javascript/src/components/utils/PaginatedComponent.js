@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import Pagination from 'react-paginate';
 import classNames from 'classnames';
-import { t } from '../../locales';
+import { I18nContext } from '../../core/context';
 
 export const PaginatedComponent = (props) => {
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
+
+  const { translateMethod } = useContext(I18nContext)
 
   const pageNumber = props.count || 10;
 
@@ -48,8 +50,8 @@ export const PaginatedComponent = (props) => {
         </div>
         <div className="apis__pagination d-flex justify-content-center" style={{ width: '100%' }}>
           <Pagination
-            previousLabel={props.previousLabel || t('Previous', props.currentLanguage)}
-            nextLabel={props.nextLabel || t('Next', props.currentLanguage)}
+            previousLabel={props.previousLabel || translateMethod('Previous')}
+            nextLabel={props.nextLabel || translateMethod('Next')}
             breakLabel={props.breakLabel || '...'}
             breakClassName={'break'}
             pageCount={Math.ceil(props.items.length / pageNumber)}

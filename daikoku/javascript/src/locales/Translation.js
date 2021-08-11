@@ -64,7 +64,6 @@ export const Translation = ({
 };
 
 Translation.propTypes = {
-  language: PropTypes.string.isRequired,
   i18nkey: PropTypes.string.isRequired,
   extraConf: PropTypes.object,
 };

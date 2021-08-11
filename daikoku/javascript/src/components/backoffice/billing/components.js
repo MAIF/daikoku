@@ -53,7 +53,7 @@ export const TheadBillingContainer = (props) => {
       </div>
       <div className="pricing__zone">
         <span className="label">
-          <Translation i18nkey="Total" language={props.language}>
+          <Translation i18nkey="Total">
             Total
           </Translation>
         </span>

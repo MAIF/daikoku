@@ -140,7 +140,9 @@ export function login(provider, callback, tenant) {
   const storeInst = store({ tenant, currentLanguage });
   ReactDOM.render(
     <Provider store={storeInst}>
-      <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
+      <I18nProvider>
+        <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
+      </I18nProvider>
     </Provider>,
     document.getElementById('app')
   );
@@ -155,7 +157,9 @@ export function initNotLogged(tenant) {
   const storeInst = store({ tenant, currentLanguage });
   ReactDOM.render(
     <Provider store={storeInst}>
-      <DaikokuHomeApp tenant={tenant} />
+      <I18nProvider>
+        <DaikokuHomeApp tenant={tenant} />
+      </I18nProvider>
     </Provider>,
     document.getElementById('app')
   );

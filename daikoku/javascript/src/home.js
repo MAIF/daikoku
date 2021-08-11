@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import jQuery from 'jquery';
 import { Provider } from 'react-redux';
 
-import { store } from './core';
+import { I18nProvider, store } from './core';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';
@@ -28,7 +28,9 @@ export function initNotLogged(tenant) {
 
   ReactDOM.render(
     <Provider store={storeInst}>
-      <DaikokuHomeApp tenant={tenant} />
+      <I18nProvider>
+        <DaikokuHomeApp tenant={tenant} />
+      </I18nProvider>
     </Provider>,
     document.getElementById('app')
   );

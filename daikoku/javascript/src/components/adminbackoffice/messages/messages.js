@@ -11,7 +11,8 @@ import * as MessagesEvents from '../../../services/messages';
 import * as Services from '../../../services';
 import { Option, partition, formatMessageDate, BeautifulTitle } from '../../utils';
 import { UserBackOffice } from '../../backoffice';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
+import { I18nContext } from '../../../core/context';
 
 const AdminMessagesComponent = (props) => {
   const {
@@ -63,6 +64,8 @@ const AdminMessagesComponent = (props) => {
   useEffect(() => {
     maybeReadMessage();
   }, [selectedChat]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   const maybeReadMessage = () => {
     if (selectedChat) {
@@ -121,13 +124,13 @@ const AdminMessagesComponent = (props) => {
   moment.locale(props.currentLanguage);
   moment.updateLocale('fr', {
     relativeTime: {
-      s: t('moment.duration.seconds', props.currentLanguage, false, 'few sec'),
-      m: t('moment.duration.minutes', props.currentLanguage, false, '1 min', '1'),
-      mm: t('moment.duration.minutes', props.currentLanguage, false, '%d min', '%d'),
-      h: t('moment.duration.hours', props.currentLanguage, false, '1 h', '1'),
-      hh: t('moment.duration.jours', props.currentLanguage, false, '%d h', '%d'),
-      d: t('moment.duration.days', props.currentLanguage, false, '1 d', '1'),
-      dd: t('moment.duration.days', props.currentLanguage, false, '%d d', '%d'),
+      s: translateMethod('moment.duration.seconds', false, 'few sec'),
+      m: translateMethod('moment.duration.minutes', false, '1 min', '1'),
+      mm: translateMethod('moment.duration.minutes', false, '%d min', '%d'),
+      h: translateMethod('moment.duration.hours', false, '1 h', '1'),
+      hh: translateMethod('moment.duration.jours', false, '%d h', '%d'),
+      d: translateMethod('moment.duration.days', false, '1 d', '1'),
+      dd: translateMethod('moment.duration.days', false, '%d d', '%d'),
     },
   });
 
@@ -141,7 +144,7 @@ const AdminMessagesComponent = (props) => {
       <div className="d-flex flex-row messages-container">
         <div className="d-flex flex-column messages-sender">
           <Select
-            placeholder={t('Start new conversation', props.currentLanguage)}
+            placeholder={translateMethod('Start new conversation')}
             className="mr-2 reactSelect"
             options={possibleNewUsers.map((u) => ({
               label: (
@@ -237,7 +240,7 @@ const AdminMessagesComponent = (props) => {
                 {group.map((m, idx) => {
                   const sender = Option(users.find((u) => u._id === m.sender))
                     .map((u) => u.name)
-                    .getOrElse(t('Unknown user', props.currentLanguage));
+                    .getOrElse(translateMethod('Unknown user'));
                   return (
                     <div
                       key={`discussion-message-${idx}`}
@@ -273,7 +276,7 @@ const AdminMessagesComponent = (props) => {
                 value={loading ? '...' : newMessage}
                 onKeyDown={handleKeyDown}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder={t('Your message', props.currentLanguage)}
+                placeholder={translateMethod('Your message')}
               />
               <button
                 disabled={loading ? 'disabled' : null}
