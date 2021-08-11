@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Select from 'react-select';
 import Creatable from 'react-select/creatable';
 import AsyncSelect from 'react-select/async';
 import classNames from 'classnames';
 import _ from 'lodash';
 
-import { api, apikey, Option } from '../../../utils';
+import { Option } from '../../../utils';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan, BeautifulTitle } from '../../../utils';
-import { t, Translation } from '../../../../locales';
+import { Translation } from '../../../../locales';
+import { I18nContext } from '../../../../core/context';
 
 export const SelectionStepStep = (props) => {
   return (
@@ -48,10 +49,12 @@ export const SelectOtoStep = (props) => {
       });
   }, []);
 
+  const { translateMethod } = useContext(I18nContext);
+
   return (
     <div className="d-flex flex-row">
       <Select
-        placeholder={t('Select an Otoroshi instance', props.currentLanguage)}
+        placeholder={translateMethod('Select an Otoroshi instance')}
         className="add-member-select mr-2 reactSelect"
         isDisabled={!props.otoroshis.length}
         isLoading={!props.otoroshis.length}
@@ -68,7 +71,7 @@ export const SelectOtoStep = (props) => {
         <div className="d-flex flex-column">
           <BeautifulTitle
             placement="bottom"
-            title={t('Load a work in progress', props.currentLanguage)}>
+            title={translateMethod('Load a work in progress')}>
             <button className="btn btn-access" onClick={props.loadPreviousState}>
               <i className="fa fa-download" />
             </button>
@@ -131,7 +134,7 @@ export const RecapServiceStep = (props) => {
 
 export const RecapSubsStep = (props) => {
   const reset = () => {
-    window.confirm(t('initialize_from_otoroshi.confirm', props.currentLanguage)).then((ok) => {
+    window.confirm(translateMethod('initialize_from_otoroshi.confirm')).then((ok) => {
       if (ok) props.cancel();
     });
   };
@@ -141,7 +144,7 @@ export const RecapSubsStep = (props) => {
       <h4 className="ml-3">
         <Translation
           i18nkey="initialize_from_otoroshi.api_keys_imported"
-         >
+        >
           These api keys will be import
         </Translation>
       </h4>
@@ -202,6 +205,8 @@ export const ServicesStep = (props) => {
   const [error, setError] = useState({});
   const [inputRef, setInputRef] = useState(null);
 
+  const { translateMethod } = useContext(I18nContext)
+
   useEffect(() => {
     if (newTeam) {
       setLoading(true);
@@ -221,7 +226,7 @@ export const ServicesStep = (props) => {
     Services.checkIfApiNameIsUnique(service.name).then(({ exists }) => {
       if (exists) {
         setError({
-          name: t('api.unique.name.error', props.currentLanguage, false, 'Api name must be unique'),
+          name: translateMethod('api.unique.name.error', false, 'Api name must be unique'),
         });
       } else {
         setError({});
@@ -290,7 +295,7 @@ export const ServicesStep = (props) => {
           <span style={{ fontWeight: 'bold' }}>
             <Translation
               i18nkey="init.services.title"
-             
+
               replacements={[props.infos.index + 1, props.infos.total]}>
               Api {props.infos.index + 1}/{props.infos.total}
             </Translation>
@@ -299,7 +304,7 @@ export const ServicesStep = (props) => {
           <AsyncSelect
             cacheOptions
             defaultOptions
-            placeholder={t('Jump to specific service', props.currentLanguage)}
+            placeholder={translateMethod('Jump to specific service')}
             className="add-member-select reactSelect"
             loadOptions={props.getFilteredServices}
             onChange={({ value }) => props.goToStep(value)}
@@ -361,9 +366,9 @@ export const ServicesStep = (props) => {
             onCreateOption={setNewTeam}
             options={teams}
             value={teams.find((t) => t.value === selectedTeam)}
-            placeholder={t('Select a team', props.currentLanguage)}
+            placeholder={translateMethod('Select a team')}
             formatCreateLabel={(value) =>
-              t('create.team.label', props.currentLanguage, false, `creer l'équipe ${value}`, value)
+              translateMethod('create.team.label', false, `creer l'équipe ${value}`, value)
             }
             classNamePrefix="reactSelect"
           />
@@ -439,12 +444,12 @@ export const ServicesStep = (props) => {
   );
 };
 
-const SelectApi = ({ apis, currentLanguage, setSelectedApi, selectedApi }) => (
+const SelectApi = ({ apis, setSelectedApi, selectedApi }) => (
   <Select
     options={apis}
     onChange={(slug) => setSelectedApi(slug.value)}
     value={apis.find((a) => !!selectedApi && a.value._id === selectedApi._id)}
-    placeholder={t('Select an API', currentLanguage)}
+    placeholder={translateMethod('Select an API')}
     classNamePrefix="reactSelect"
   />
 );
@@ -454,11 +459,12 @@ const SelectPlan = ({
   selectedApi,
   loadingPlan,
   setNewPlan,
-  currentLanguage,
   selectedPlan,
   setSelectedPlan,
-}) =>
-  possiblePlans.length > 0 ? (
+}) => {
+  const { translateMethod } = useContext(I18nContext);
+
+  return possiblePlans.length > 0 ? (
     <Creatable
       isClearable
       isDisabled={!selectedApi || loadingPlan}
@@ -467,24 +473,26 @@ const SelectPlan = ({
       onCreateOption={setNewPlan}
       options={possiblePlans}
       value={possiblePlans.find((a) => !!selectedPlan && a.value._id === selectedPlan._id)}
-      placeholder={t('Select a plan', currentLanguage)}
+      placeholder={translateMethod('Select a plan')}
       formatCreateLabel={(value) =>
-        t('create.plan.label', currentLanguage, false, `Create plan ${value}`, value)
+        translateMethod('create.plan.label', false, `Create plan ${value}`, value)
       }
       classNamePrefix="reactSelect"
     />
   ) : null;
+}
 
 const SelectTeam = ({
   loading,
   setNewTeam,
   teams,
-  currentLanguage,
   selectedTeam,
   setSelectedTeam,
   selectedApi,
-}) =>
-  selectedApi ? (
+}) => {
+  const { translateMethod } = useContext(I18nContext);
+
+  return selectedApi ? (
     <Creatable
       isClearable
       isDisabled={loading}
@@ -493,13 +501,14 @@ const SelectTeam = ({
       onCreateOption={setNewTeam}
       options={teams}
       value={teams.find((t) => t.value === selectedTeam)}
-      placeholder={t('Select a team', currentLanguage)}
+      placeholder={translateMethod('Select a team')}
       formatCreateLabel={(value) =>
-        t('create.team.label', currentLanguage, false, `creer l'équipe ${value}`, value)
+        translateMethod('create.team.label', false, `creer l'équipe ${value}`, value)
       }
       classNamePrefix="reactSelect"
     />
   ) : null;
+}
 
 export const ApiKeyStep = (props) => {
   const [apikeys, setApikeys] = useState([]);
@@ -517,14 +526,14 @@ export const ApiKeyStep = (props) => {
     <div className="d-flex flex-column">
       <div className="d-flex align-items-center mx-3">
         <span style={{ fontWeight: 'bold' }} className="mr-2">
-          {t('initialize_from_otoroshi.api_keys_of', props.currentLanguage)}
+          {translateMethod('initialize_from_otoroshi.api_keys_of')}
         </span>
         <Select
           className="w-50"
           options={groups}
           onChange={setSelectedGroup}
           value={selectedGroup}
-          placeholder={t('initialize_from_otoroshi.select_group', props.currentLanguage)}
+          placeholder={translateMethod('initialize_from_otoroshi.select_group')}
           classNamePrefix="reactSelect"
         />
       </div>
@@ -538,17 +547,17 @@ export const ApiKeyStep = (props) => {
               <thead>
                 <tr>
                   <th className="text-center">
-                    {t('initialize_from_otoroshi.otoroshi_api_key', props.currentLanguage)}
+                    {translateMethod('initialize_from_otoroshi.otoroshi_api_key')}
                   </th>
-                  <th className="text-center">{t('API.s', props.currentLanguage)}</th>
+                  <th className="text-center">{translateMethod('API.s')}</th>
                   <th className="text-center">
-                    {t('initialize_from_otoroshi.plan', props.currentLanguage)}
-                  </th>
-                  <th className="text-center">
-                    {t('initialize_from_otoroshi.team', props.currentLanguage)}
+                    {translateMethod('initialize_from_otoroshi.plan')}
                   </th>
                   <th className="text-center">
-                    {t('initialize_from_otoroshi.actions', props.currentLanguage)}
+                    {translateMethod('initialize_from_otoroshi.team')}
+                  </th>
+                  <th className="text-center">
+                    {translateMethod('initialize_from_otoroshi.actions')}
                   </th>
                 </tr>
               </thead>
@@ -712,7 +721,6 @@ const ApiKey = (props) => {
           apis={apis}
           setSelectedApi={setSelectedApi}
           selectedApi={selectedApi}
-          currentLanguage={props.currentLanguage}
         />
       </td>
       <td style={{ width: '23%' }} className="align-middle text-center">
@@ -723,7 +731,6 @@ const ApiKey = (props) => {
           setSelectedPlan={setSelectedPlan}
           setNewPlan={setNewPlan}
           selectedApi={selectedApi}
-          currentLanguage={props.currentLanguage}
         />
       </td>
       <td style={{ width: '23%' }} className="align-middle text-center">
@@ -734,19 +741,17 @@ const ApiKey = (props) => {
           teams={teams}
           setSelectedTeam={setSelectedTeam}
           selectedApi={selectedApi}
-          currentLanguage={props.currentLanguage}
         />
       </td>
       <td style={{ width: '10%' }} className="align-middle text-center">
         <button
-          className={`btn btn-outline-${
-            props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
-          } mr-2`}
+          className={`btn btn-outline-${props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
+            } mr-2`}
           disabled={!selectedTeam || error.name || !selectedPlan ? 'disabled' : null}
           onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
           {props.maybeCreatedSub(props.apikey).isDefined
-            ? t('initialize_from_otoroshi.remove', props.currentLanguage)
-            : t('initialize_from_otoroshi.add', props.currentLanguage)}
+            ? translateMethod('initialize_from_otoroshi.remove')
+            : translateMethod('initialize_from_otoroshi.add')}
         </button>
       </td>
     </tr>
