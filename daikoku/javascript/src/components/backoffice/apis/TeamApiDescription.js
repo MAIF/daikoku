@@ -18,6 +18,7 @@ export class TeamApiDescription extends Component {
               newValue.description = code;
               this.props.onChange(newValue);
             }}
+            fullWidth={true}
           />
         </Suspense>
       </div>
