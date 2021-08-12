@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment';
 import _ from 'lodash';
@@ -9,22 +9,25 @@ import { MonthPicker } from '../../inputs/monthPicker';
 import { formatCurrency, formatPlanType, Can, read, stat } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { t, Translation } from '../../../locales';
+import { I18nContext } from '../../../core';
 
-class TeamBillingComponent extends Component {
-  state = {
+function TeamBillingComponent(props) {
+  const [state, setState] = useState({
     consumptions: [],
     consumptionsByApi: [],
     selectedApi: undefined,
     loading: false,
     date: moment(),
-  };
+  });
 
-  componentDidMount() {
-    this.getTeamBilling(this.props.currentTeam);
-  }
+  const { translateMethod } = useContext(I18nContext);
 
-  getTeamBilling(team) {
-    this.setState({ loading: true }, () => {
+  useEffect(() => {
+    getTeamBilling(props.currentTeam);
+  }, []);
+
+  const getTeamBilling = team => {
+    setState({ ...state, loading: true }, () => {
       Promise.all([
         Services.getTeamBillings(
           team._id,
@@ -33,13 +36,13 @@ class TeamBillingComponent extends Component {
         ),
         Services.subscribedApis(team._id),
       ]).then(([consumptions, apis]) => {
-        const consumptionsByApi = this.getConsumptionsByApi(consumptions);
-        this.setState({ consumptions, consumptionsByApi, apis, loading: false });
+        const consumptionsByApi = getConsumptionsByApi(consumptions);
+        setState({ ...state, consumptions, consumptionsByApi, apis, loading: false });
       });
     });
   }
 
-  getConsumptionsByApi = (consumptions) =>
+  const getConsumptionsByApi = (consumptions) =>
     consumptions.reduce((acc, consumption) => {
       const api = acc.find((item) => item.api === consumption.api);
       const { hits, total } = api ? api.billing : { hits: 0, total: 0 };
@@ -52,152 +55,153 @@ class TeamBillingComponent extends Component {
       return [...acc.filter((item) => item.api !== consumption.api), obj];
     }, []);
 
-  getBilling = (date) => {
-    this.setState({ loading: true, selectedApi: undefined }, () => {
+  const getBilling = (date) => {
+    setState({ ...state, loading: true, selectedApi: undefined }, () => {
       Services.getTeamBillings(
-        this.props.currentTeam._id,
+        props.currentTeam._id,
         date.startOf('month').valueOf(),
         date.endOf('month').valueOf()
       ).then((consumptions) =>
-        this.setState({
+        setState({
+          ...state, 
           date,
           consumptions,
-          consumptionsByApi: this.getConsumptionsByApi(consumptions),
+          consumptionsByApi: getConsumptionsByApi(consumptions),
           loading: false,
         })
       );
     });
   };
 
-  sync = () => {
-    this.setState({ loading: true }, () => {
-      Services.syncTeamBilling(this.props.currentTeam._id)
+  const sync = () => {
+    setState({ ...state, loading: true }, () => {
+      Services.syncTeamBilling(props.currentTeam._id)
         .then(() =>
           Services.getTeamBillings(
-            this.props.currentTeam._id,
-            this.state.date.startOf('month').valueOf(),
-            this.state.date.endOf('month').valueOf()
+            props.currentTeam._id,
+            state.date.startOf('month').valueOf(),
+            state.date.endOf('month').valueOf()
           )
         )
         .then((consumptions) =>
-          this.setState({
+          setState({
+            ...state, 
             consumptions,
-            consumptionsByApi: this.getConsumptionsByApi(consumptions),
+            consumptionsByApi: getConsumptionsByApi(consumptions),
             loading: false,
           })
         );
     });
   };
 
-  render() {
-    const total = this.state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
-    const mostRecentConsumption = _.maxBy(this.state.consumptions, (c) => c.to);
-    const lastDate =
-      mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
+  const total = state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
+  const mostRecentConsumption = _.maxBy(state.consumptions, (c) => c.to);
+  const lastDate =
+    mostRecentConsumption && moment(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
 
-    return (
-      <TeamBackOffice
-        tab="Billing"
-        isLoading={this.state.loading}
-        title={`${this.props.currentTeam.name} - ${t('Billing', this.props.currentLanguage)}`}>
-        <Can I={read} a={stat} team={this.props.currentTeam} dispatchError={true}>
-          <div className="row">
-            <div className="col">
-              <h1>
-                <Translation i18nkey="Billing">
-                  Billing
-                </Translation>
-              </h1>
-              <div className="row">
-                <div className="col apis">
-                  <div className="row month__and__total">
-                    <div className="col-12 month__selector d-flex align-items-center">
-                      <MonthPicker
-                        updateDate={this.getBilling}
-                        value={this.state.date}
-                        currentLanguage={this.props.currentLanguage}
-                      />
-                      <button className="btn btn-sm btn-access-negative" onClick={this.sync}>
-                        <i className="fas fa-sync-alt ml-1" />
-                      </button>
-                      {lastDate && (
-                        <i className="ml-1">
-                          <Translation
-                            i18nkey="date.update"
-                           
-                            replacements={[lastDate]}>
-                            upd. {lastDate}
-                          </Translation>
-                        </i>
-                      )}
-                    </div>
-                  </div>
-                  <div className="row api__billing__card__container section p-2">
-                    <TheadBillingContainer
-                     
-                      label={t('Subscribed Apis', this.props.currentLanguage)}
-                      total={formatCurrency(total)}
+  return (
+    <TeamBackOffice
+      tab="Billing"
+      isLoading={state.loading}
+      title={`${props.currentTeam.name} - ${translateMethod('Billing')}`}>
+      <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
+        <div className="row">
+          <div className="col">
+            <h1>
+              <Translation i18nkey="Billing">
+                Billing
+              </Translation>
+            </h1>
+            <div className="row">
+              <div className="col apis">
+                <div className="row month__and__total">
+                  <div className="col-12 month__selector d-flex align-items-center">
+                    <MonthPicker
+                      updateDate={getBilling}
+                      value={state.date}
+                      currentLanguage={props.currentLanguage}
                     />
-                    {!this.state.consumptionsByApi.length && (
-                      <NoData />
+                    <button className="btn btn-sm btn-access-negative" onClick={sync}>
+                      <i className="fas fa-sync-alt ml-1" />
+                    </button>
+                    {lastDate && (
+                      <i className="ml-1">
+                        <Translation
+                          i18nkey="date.update"
+
+                          replacements={[lastDate]}>
+                          upd. {lastDate}
+                        </Translation>
+                      </i>
                     )}
-                    {this.state.consumptionsByApi
-                      .sort((api1, api2) => api2.billing.total - api1.billing.total)
-                      .map(({ api, billing }) => (
-                        <ApiTotal
-                          key={api}
-                          handleClick={() =>
-                            this.setState({
-                              selectedApi: this.state.apis.find((a) => a._id === api),
-                            })
-                          }
-                          api={this.state.apis.find((a) => a._id === api)}
-                          total={billing.total}
-                        />
-                      ))}
-                    <TheadBillingContainer
-                     
-                      label={t('Subscribed Apis', this.props.currentLanguage)}
-                      total={formatCurrency(total)}
-                    />
                   </div>
                 </div>
-                <div className="col apikeys">
-                  {this.state.selectedApi && (
-                    <div className="api-plans-consumptions section p-2">
-                      <div className="api__plans__consumption__header">
-                        <h3 className="api__name">{this.state.selectedApi.name}</h3>
-                        <i
-                          className="far fa-times-circle quit"
-                          onClick={() => this.setState({ selectedApi: undefined })}
-                        />
-                      </div>
-                      {this.state.consumptions
-                        .filter((c) => c.api === this.state.selectedApi._id)
-                        .sort((c1, c2) => c2.billing.total - c1.billing.total)
-                        .map(({ plan, billing }, idx) => {
-                          const usagePlan = this.state.selectedApi.possibleUsagePlans.find(
-                            (pp) => pp._id === plan
-                          );
-                          return (
-                            <PriceCartridge
-                              key={idx}
-                              label={usagePlan.customName || formatPlanType(usagePlan)}
-                              total={billing.total}
-                              currency={usagePlan.currency}
-                            />
-                          );
-                        })}
-                    </div>
+                <div className="row api__billing__card__container section p-2">
+                  <TheadBillingContainer
+
+                    label={translateMethod('Subscribed Apis')}
+                    total={formatCurrency(total)}
+                  />
+                  {!state.consumptionsByApi.length && (
+                    <NoData />
                   )}
+                  {state.consumptionsByApi
+                    .sort((api1, api2) => api2.billing.total - api1.billing.total)
+                    .map(({ api, billing }) => (
+                      <ApiTotal
+                        key={api}
+                        handleClick={() =>
+                          setState({
+                            ...state, 
+                            selectedApi: state.apis.find((a) => a._id === api),
+                          })
+                        }
+                        api={state.apis.find((a) => a._id === api)}
+                        total={billing.total}
+                      />
+                    ))}
+                  <TheadBillingContainer
+
+                    label={translateMethod('Subscribed Apis')}
+                    total={formatCurrency(total)}
+                  />
                 </div>
+              </div>
+              <div className="col apikeys">
+                {state.selectedApi && (
+                  <div className="api-plans-consumptions section p-2">
+                    <div className="api__plans__consumption__header">
+                      <h3 className="api__name">{state.selectedApi.name}</h3>
+                      <i
+                        className="far fa-times-circle quit"
+                        onClick={() => setState({ ...state, selectedApi: undefined })}
+                      />
+                    </div>
+                    {state.consumptions
+                      .filter((c) => c.api === state.selectedApi._id)
+                      .sort((c1, c2) => c2.billing.total - c1.billing.total)
+                      .map(({ plan, billing }, idx) => {
+                        const usagePlan = state.selectedApi.possibleUsagePlans.find(
+                          (pp) => pp._id === plan
+                        );
+                        return (
+                          <PriceCartridge
+                            key={idx}
+                            label={usagePlan.customName || formatPlanType(usagePlan)}
+                            total={billing.total}
+                            currency={usagePlan.currency}
+                          />
+                        );
+                      })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </Can>
-      </TeamBackOffice>
-    );
-  }
+        </div>
+      </Can>
+    </TeamBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

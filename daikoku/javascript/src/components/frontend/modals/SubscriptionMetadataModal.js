@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import Creatable from 'react-select/creatable';
 import { toastr } from 'react-redux-toastr';
@@ -7,7 +7,8 @@ import _ from 'lodash';
 import { Spinner, formatPlanType, Option } from '../../utils';
 import * as Services from '../../../services';
 import { ObjectInput, Collapse, BooleanInput, NumberInput } from '../../inputs';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
+import { I18nContext } from '../../../core';
 
 export const SubscriptionMetadataModal = (props) => {
   const [loading, setLoading] = useState(true);
@@ -21,6 +22,8 @@ export const SubscriptionMetadataModal = (props) => {
   const [customReadOnly, setCustomReadOnly] = useState(undefined);
   const [isValid, setIsValid] = useState(false);
   const [loadingInput, setLoadingInput] = useState(false);
+
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     if (api) {
@@ -178,9 +181,8 @@ export const SubscriptionMetadataModal = (props) => {
           options={possibleValues.sort().map((v) => ({ label: v, value: v }))}
           value={{ label: metadata[key], value: metadata[key] }}
           formatCreateLabel={(value) =>
-            t(
+            translateMethod(
               'create.metadata.option.label',
-              props.currentLanguage,
               false,
               `Create option ${value}`,
               value
@@ -244,9 +246,8 @@ export const SubscriptionMetadataModal = (props) => {
             {props.description && <div className="modal-description">{props.description}</div>}
             {!!plan && (
               <Collapse
-                label={t(
+                label={translateMethod(
                   'mandatory.metadata.label',
-                  props.currentLanguage,
                   false,
                   `Mandatory metadata (${plan.otoroshiTarget.apikeyCustomization.customMetadata.length})`,
                   plan.otoroshiTarget.apikeyCustomization.customMetadata.length
@@ -268,7 +269,7 @@ export const SubscriptionMetadataModal = (props) => {
                 )}
               </Collapse>
             )}
-            <Collapse label={t('Additional metadata', props.currentLanguage)} collapsed={true}>
+            <Collapse label={translateMethod('Additional metadata')} collapsed={true}>
               <ObjectInput
                 value={customMetadata}
                 onChange={(values) => {
@@ -276,32 +277,32 @@ export const SubscriptionMetadataModal = (props) => {
                 }}
               />
             </Collapse>
-            <Collapse label={t('Custom quotas', props.currentLanguage)} collapsed={true}>
+            <Collapse label={translateMethod('Custom quotas')} collapsed={true}>
               <NumberInput
                 step="1"
                 min="0"
-                label={t('Max. requests per second', props.currentLanguage)}
+                label={translateMethod('Max. requests per second')}
                 value={customMaxPerSecond}
                 onChange={(e) => setCustomMaxPerSecond(Number(e.target.value))}
               />
               <NumberInput
                 step="1"
                 min="0"
-                label={t('Max. requests per day', props.currentLanguage)}
+                label={translateMethod('Max. requests per day')}
                 value={customMaxPerDay}
                 onChange={(e) => setCustomMaxPerDay(Number(e.target.value))}
               />
               <NumberInput
                 step="1"
                 min="0"
-                label={t('Max. requests per month', props.currentLanguage)}
+                label={translateMethod('Max. requests per month')}
                 value={customMaxPerMonth}
                 onChange={(e) => setCustomMaxPerMonth(Number(e.target.value))}
               />
             </Collapse>
-            <Collapse label={t('Other custom props', props.currentLanguage)} collapsed={true}>
+            <Collapse label={translateMethod('Other custom props')} collapsed={true}>
               <BooleanInput
-                label={t('Read only apikey', props.currentLanguage)}
+                label={translateMethod('Read only apikey')}
                 value={customReadOnly}
                 onChange={(readOnly) => setCustomReadOnly(readOnly)}
               />
@@ -324,8 +325,8 @@ export const SubscriptionMetadataModal = (props) => {
             disabled={isValid ? undefined : 'disabled'}
             onClick={() => actionAndClose(props.save)}>
             {props.creationMode
-              ? t('Accept', props.currentLanguage)
-              : t('Update', props.currentLanguage)}
+              ? translateMethod('Accept')
+              : translateMethod('Update')}
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Switch, useParams, Route, Redirect } from 'react-router-dom';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
@@ -7,8 +7,8 @@ import { NewIssue } from './NewIssue';
 import { TeamApiIssueTags } from './TeamApiIssueTags';
 import * as Services from '../../../../services';
 import { toastr } from 'react-redux-toastr';
-import { t } from '../../../../locales';
 import { Can, manage, api as API } from '../../../utils';
+import { I18nContext } from '../../../../core';
 
 export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
   const { issueId, versionId, apiId } = useParams();
@@ -16,6 +16,8 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
 
   const [filter, setFilter] = useState('open');
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
+
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getRootApi(apiId).then((rootApi) => {
@@ -33,7 +35,7 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
         });
         setRootApi(res);
       })
-      .then(() => toastr.success(t('Api saved', currentLanguage)));
+      .then(() => toastr.success(translateMethod('Api saved')));
   }
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;

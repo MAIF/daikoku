@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
+import { I18nContext } from '../../../core';
 import { t } from '../../../locales';
 
 export const ApiKeySelectModal = ({
@@ -11,6 +12,8 @@ export const ApiKeySelectModal = ({
 }) => {
   const [showApiKeys, toggleApiKeysView] = useState(false);
   const [showSelectOrCreateApiKey, toggleSelectOrCreateApiKey] = useState(true);
+
+  const { translateMethod } = useContext(I18nContext);
 
   const finalAction = () => {
     closeModal();
@@ -25,7 +28,7 @@ export const ApiKeySelectModal = ({
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{t('apikey_select_modal.title', currentLanguage)}</h5>
+        <h5 className="modal-title">{translateMethod('apikey_select_modal.title')}</h5>
         <button type="button" className="close" aria-label="Close" onClick={closeModal}>
           <span aria-hidden="true">&times;</span>
         </button>
@@ -47,23 +50,22 @@ export const ApiKeySelectModal = ({
         {showApiKeys && (
           <ApiKeysView
             apiKeys={apiKeys}
-            currentLanguage={currentLanguage}
             extendApiKey={extendApiKey}
           />
         )}
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          {t('Close', currentLanguage, 'Close')}
+          {translateMethod('Close', 'Close')}
         </button>
       </div>
     </div>
   );
 };
 
-const ApiKeysView = ({ apiKeys, currentLanguage, extendApiKey }) => (
+const ApiKeysView = ({ apiKeys, extendApiKey }) => (
   <div>
-    <h5 className="modal-title">{t('apikey_select_modal.select_your_api_key', currentLanguage)}</h5>
+    <h5 className="modal-title">{translateMethod('apikey_select_modal.select_your_api_key')}</h5>
     <div className="team-selection__container">
       {apiKeys.map((apiKey) => (
         <div
