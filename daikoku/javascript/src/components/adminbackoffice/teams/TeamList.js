@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import _ from 'lodash';
@@ -6,128 +6,129 @@ import _ from 'lodash';
 import { UserBackOffice } from '../../backoffice';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant } from '../../utils';
 import { t, Translation } from '../../../locales';
+import { I18nContext } from '../../../core';
 
-class TeamListComponent extends Component {
-  state = {
-    teams: [],
-  };
+function TeamListComponent(props) {
+  const [state, setState] = useState({
+    teams: []
+  });
 
-  createNewTeam = () => {
+  const createNewTeam = () => {
     Services.fetchNewTeam().then((newTeam) => {
-      this.props.history.push(`/settings/teams/${newTeam._id}`, { newTeam });
+      props.history.push(`/settings/teams/${newTeam._id}`, { newTeam });
     });
   };
 
-  componentDidMount() {
-    this.updateTeams();
-  }
+  useEffect(() => {
+    updateTeams();
+  }, []);
 
-  deleteTeam = (teamId) => {
+  const { translateMethod } = useContext(I18nContext);
+
+  const deleteTeam = (teamId) => {
     window
       .confirm(
-        t('delete team', this.props.currentLanguage, 'Are you sure you want to delete this team ?')
+        translateMethod('delete team', 'Are you sure you want to delete this team ?')
       )
       .then((ok) => {
         if (ok) {
           Services.deleteTeam(teamId).then(() => {
-            this.updateTeams();
+            updateTeams();
           });
         }
       });
   };
 
-  updateTeams = () => {
-    Services.teams().then((teams) => this.setState({ teams }));
+  const updateTeams = () => {
+    Services.teams().then((teams) => setState({ ...state, teams }));
   };
 
-  render() {
-    const filteredTeams = this.state.search
-      ? this.state.teams.filter(({ name }) => name.toLowerCase().includes(this.state.search))
-      : this.state.teams;
+  const filteredTeams = state.search
+    ? state.teams.filter(({ name }) => name.toLowerCase().includes(state.search))
+    : state.teams;
 
-    const actions = (team) => {
-      const basicActions = [
-        {
-          action: () => this.deleteTeam(team._id),
-          iconClass: 'fas fa-trash delete-icon',
-          tooltip: t('Delete team', this.props.currentLanguage),
-        },
-        {
-          redirect: () => this.props.history.push(`/settings/teams/${team._humanReadableId}`),
-          iconClass: 'fas fa-pen',
-          tooltip: t('Edit team', this.props.currentLanguage),
-        },
-      ];
+  const actions = (team) => {
+    const basicActions = [
+      {
+        action: () => deleteTeam(team._id),
+        iconClass: 'fas fa-trash delete-icon',
+        tooltip: translateMethod('Delete team'),
+      },
+      {
+        redirect: () => props.history.push(`/settings/teams/${team._humanReadableId}`),
+        iconClass: 'fas fa-pen',
+        tooltip: translateMethod('Edit team'),
+      },
+    ];
 
-      if (team.type === 'Personal') {
-        return basicActions;
-      }
+    if (team.type === 'Personal') {
+      return basicActions;
+    }
 
-      return [
-        ...basicActions,
-        {
-          redirect: () =>
-            this.props.history.push(`/settings/teams/${team._humanReadableId}/members`),
-          iconClass: 'fas fa-users',
-          tooltip: t('Team members', this.props.currentLanguage),
-        },
-      ];
-    };
+    return [
+      ...basicActions,
+      {
+        redirect: () =>
+          props.history.push(`/settings/teams/${team._humanReadableId}/members`),
+        iconClass: 'fas fa-users',
+        tooltip: translateMethod('Team members'),
+      },
+    ];
+  };
 
-    return (
-      <UserBackOffice tab="Teams">
-        <Can I={manage} a={tenant} dispatchError>
-          <div className="row">
-            <div className="col">
-              <div className="d-flex justify-content-between align-items-center">
-                <h1>
-                  <Translation i18nkey="Teams">
-                    Teams
-                  </Translation>
-                  <a
-                    className="btn btn-sm btn-access-negative mb-1 ml-1"
-                    title={t('Create a new team', this.props.currentLanguage)}
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      this.createNewTeam();
-                    }}>
-                    <i className="fas fa-plus-circle" />
-                  </a>
-                </h1>
-                <input
-                  placeholder={t('Find a team', this.props.currentLanguage)}
-                  className="form-control col-5"
-                  onChange={(e) => {
-                    this.setState({ search: e.target.value });
-                  }}
-                />
-              </div>
-              <PaginatedComponent
-                items={_.sortBy(filteredTeams, [(team) => team.name.toLowerCase()])}
-                count={8}
-                formatter={(team) => {
-                  return (
-                    <AvatarWithAction
-                      key={team._id}
-                      avatar={team.avatar}
-                      infos={
-                        <>
-                          <span className="team__name text-truncate">{team.name}</span>
-                        </>
-                      }
-                      actions={actions(team)}
-                    />
-                  );
+  return (
+    <UserBackOffice tab="Teams">
+      <Can I={manage} a={tenant} dispatchError>
+        <div className="row">
+          <div className="col">
+            <div className="d-flex justify-content-between align-items-center">
+              <h1>
+                <Translation i18nkey="Teams">
+                  Teams
+                </Translation>
+                <a
+                  className="btn btn-sm btn-access-negative mb-1 ml-1"
+                  title={translateMethod('Create a new team')}
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    createNewTeam();
+                  }}>
+                  <i className="fas fa-plus-circle" />
+                </a>
+              </h1>
+              <input
+                placeholder={translateMethod('Find a team')}
+                className="form-control col-5"
+                onChange={(e) => {
+                  setState({ ...state, search: e.target.value });
                 }}
-                currentLanguage={this.props.currentLanguage}
               />
             </div>
+            <PaginatedComponent
+              items={_.sortBy(filteredTeams, [(team) => team.name.toLowerCase()])}
+              count={8}
+              formatter={(team) => {
+                return (
+                  <AvatarWithAction
+                    key={team._id}
+                    avatar={team.avatar}
+                    infos={
+                      <>
+                        <span className="team__name text-truncate">{team.name}</span>
+                      </>
+                    }
+                    actions={actions(team)}
+                  />
+                );
+              }}
+              currentLanguage={props.currentLanguage}
+            />
           </div>
-        </Can>
-      </UserBackOffice>
-    );
-  }
+        </div>
+      </Can>
+    </UserBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

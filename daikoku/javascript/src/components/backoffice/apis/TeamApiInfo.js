@@ -4,7 +4,7 @@ import { Spinner } from '../../utils';
 import * as Services from '../../../services';
 import { Translation } from '../../../locales';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
-import { I18nContext } from '../../../core/context';
+import { I18nContext } from '../../../core/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 

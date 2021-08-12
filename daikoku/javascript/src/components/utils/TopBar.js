@@ -17,7 +17,7 @@ import {
 import { languages } from '../../locales';
 import { Can, manage, daikoku, tenant } from '../utils';
 import { MessagesTopBarTools } from '../backoffice/messages';
-import { I18nContext } from '../../core/context';
+import { I18nContext } from '../../core/i18n-context';
 
 const GuestUserMenu = ({ loginProvider }) => {
   const { translateMethod } = useContext(I18nContext)
@@ -62,6 +62,7 @@ const DarkModeActivator = ({ initialDark }) => {
 const TopBarComponent = (props) => {
   const [teams, setTeams] = useState([]);
   const [daikokuVersion, setVersion] = useState(null);
+
   const isTranslationMode = props.tenant.tenantMode && props.tenant.tenantMode === "Translation";
   const isMaintenanceMode = props.tenant.tenantMode && props.tenant.tenantMode !== 'Default' && !isTranslationMode;
 
@@ -233,7 +234,7 @@ const TopBarComponent = (props) => {
             {!props.connectedUser.isGuest && (
               <div className="d-flex justify-content-end align-items-center mt-1 mt-lg-0">
                 <Can I={manage} a={tenant} isTenantAdmin={props.connectedUser.isDaikokuAdmin ||
-                  (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1}>
+                  (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1}>
                   {isMaintenanceMode && (
                     <span className="badge badge-danger mr-3">
                       {translateMethod('Global maintenance mode enabled')}

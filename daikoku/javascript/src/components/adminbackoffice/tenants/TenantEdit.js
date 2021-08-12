@@ -19,7 +19,7 @@ import { Can, manage, tenant, Spinner } from '../../utils';
 import { Translation, configuration } from '../../../locales';
 import { BooleanInput } from '../../inputs/BooleanInput';
 import { openSaveOrCancelModal, updateTenant } from '../../../core';
-import { I18nContext } from '../../../core/context';
+import { I18nContext } from '../../../core/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 

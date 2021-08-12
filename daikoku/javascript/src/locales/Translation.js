@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import { Option } from '../components/utils/Option';
 import { configuration } from './';
-import { I18nContext } from '../core/context';
+import { I18nContext } from '../core/i18n-context';
 
 export const getTrad = (
   i18nkey,

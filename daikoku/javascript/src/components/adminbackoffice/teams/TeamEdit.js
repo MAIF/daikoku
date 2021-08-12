@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 
@@ -6,17 +6,18 @@ import * as Services from '../../../services';
 
 import { UserBackOffice } from '../../backoffice';
 import { AvatarChooser, Can, manage, tenant, Spinner } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
+import { I18nContext } from '../../../core/i18n-context';
 
-const LazyForm = React.lazy(() => import('../../inputs/Form'));
+const LazyForm = React.lazy(() => importranslateMethod('../../inputs/Form'));
 
-class TeamEditForAdministrationComponent extends Component {
-  state = {
-    team: null,
-  };
+function TeamEditForAdministrationComponent(props) {
+  const [team, setTeam] = useState(null)
 
-  flow = [
+  const { translateMethod } = useContext(I18nContext);
+
+  const flow = [
     '_id',
     'name',
     'description',
@@ -27,7 +28,7 @@ class TeamEditForAdministrationComponent extends Component {
     'apisCreationPermission',
   ];
 
-  schema = {
+  const schema = {
     _id: {
       type: 'string',
       props: { label: 'Id', disabled: true },
@@ -35,7 +36,7 @@ class TeamEditForAdministrationComponent extends Component {
     type: {
       type: 'select',
       props: {
-        label: t('Type', this.props.currrentLanguage),
+        label: translateMethod('Type'),
         possibleValues: [
           { label: 'Personal', value: 'Personal' },
           { label: 'Organization', value: 'Organization' },
@@ -44,52 +45,52 @@ class TeamEditForAdministrationComponent extends Component {
     },
     name: {
       type: 'string',
-      props: { label: t('Name', this.props.currentLanguage) },
+      props: { label: translateMethod('Name') },
     },
     description: {
       type: 'string',
-      props: { label: t('Description', this.props.currentLanguage) },
+      props: { label: translateMethod('Description') },
     },
     contact: {
       type: 'string',
-      props: { label: t('Team contact', this.props.currentLanguage) },
+      props: { label: translateMethod('Team contact') },
     },
     avatar: {
       type: 'string',
-      props: { label: t('Team avatar', this.props.currentLanguage) },
+      props: { label: translateMethod('Team avatar') },
     },
     avatarFrom: {
       type: AvatarChooser,
       props: {
-        team: () => this.state.team,
-        currentLanguage: this.props.currentLanguage,
+        team: () => team,
+        currentLanguage: props.currentLanguage,
       },
     },
     metadata: {
       type: 'object',
       visible: () => window.location.pathname.indexOf('/edition') === -1,
       props: {
-        label: t('Metadata', this.props.currentLanguage),
+        label: translateMethod('Metadata'),
       },
     },
     apisCreationPermission: {
       type: 'bool',
-      visible: () => this.props.tenant.creationSecurity,
+      visible: () => props.tenant.creationSecurity,
       props: {
-        label: t('APIs creation permission', this.props.currentLanguage),
-        help: t('apisCreationPermission.help', this.props.currentLanguage, false, 'test.help'),
+        label: translateMethod('APIs creation permission'),
+        help: translateMethod('apisCreationPermission.help', false, 'test.help'),
       },
     },
   };
 
-  save = () => {
-    if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
-      Services.createTeam(this.state.team)
+  const save = () => {
+    if (props.location && props.location.state && props.location.state.newTeam) {
+      Services.createTeam(team)
         .then((team) => {
           toastr.success(
             t(
               'team.created',
-              this.props.currentLanguage,
+              props.currentLanguage,
               false,
               `Team ${team.name} successfully created`,
               team.name
@@ -98,111 +99,108 @@ class TeamEditForAdministrationComponent extends Component {
           return team;
         })
         .then((team) => {
-          this.props.history.push(`/settings/teams/${team._humanReadableId}/members`);
+          props.history.push(`/settings/teams/${team._humanReadableId}/members`);
         });
     } else {
-      Services.updateTeam(this.state.team).then((team) => {
-        this.setState({ team }, () => {
-          if (team._humanReadableId !== this.state._humanReadableId) {
-            this.props.history.push(`/settings/teams/${team._humanReadableId}`);
-          }
-          toastr.success(
-            t('team.updated', this.props.currentLanguage, false, 'Team successfully updated')
-          );
-        });
+      Services.updateTeam(team).then((t) => {
+        setTeam(t)
+        if (t._humanReadableId !== state._humanReadableId) {
+          props.history.push(`/settings/teams/${t._humanReadableId}`);
+        }
+        toastr.success(
+          translateMethod('team.updated', false, 'Team successfully updated')
+        );
       });
     }
   };
 
-  members = () => {
-    this.props.history.push(`/settings/teams/${this.state.team._humanReadableId}/members`);
+  const members = () => {
+    props.history.push(`/settings/teams/${team._humanReadableId}/members`);
   };
 
-  componentDidMount() {
-    if (this.props.location && this.props.location.state && this.props.location.state.newTeam) {
-      this.setState({ team: this.props.location.state.newTeam, create: true });
+  useEffect(() => {
+    if (props.location && props.location.state && props.location.state.newTeam) {
+      setTeam({ team: props.location.state.newTeam, create: true });
     } else {
-      Services.teamFull(this.props.match.params.teamSettingId).then((team) =>
-        this.setState({ team })
+      Services.teamFull(props.match.params.teamSettingId).then((team) =>
+        setTeam({ team })
       );
     }
+  }, []);
+
+  if (!team) {
+    return null;
   }
 
-  render() {
-    if (!this.state.team) {
-      return null;
-    }
-
-    return (
-      <UserBackOffice tab="Teams">
-        <Can I={manage} a={tenant} dispatchError>
-          <div className="row d-flex justify-content-start align-items-center mb-2">
-            {this.state.team && (
-              <div className="ml-1 avatar__container">
-                <img src={this.state.team.avatar} className="img-fluid" alt="avatar" />
-              </div>
-            )}
-            <h1 className="h1-rwd-reduce ml-2">Team - {this.state.team.name}</h1>
-          </div>
-          <div className="row">
-            <React.Suspense fallback={<Spinner />}>
-              <LazyForm
-                flow={this.flow}
-                schema={this.schema}
-                value={this.state.team}
-                onChange={(team) => this.setState({ team })}
-                style={{ marginBottom: 100, paddingTop: 20 }}
-              />
-            </React.Suspense>
-            <div style={{ height: 60 }} />
-            <div className="row form-back-fixedBtns">
-              <Link className="btn btn-outline-primary" to={'/settings/teams'}>
-                <i className="fas fa-chevron-left mr-1" />
-                <Translation i18nkey="Back">
-                  Back
+  return (
+    <UserBackOffice tab="Teams">
+      <Can I={manage} a={tenant} dispatchError>
+        <div className="row d-flex justify-content-start align-items-center mb-2">
+          {team && (
+            <div className="ml-1 avatar__container">
+              <img src={team.avatar} className="img-fluid" alt="avatar" />
+            </div>
+          )}
+          <h1 className="h1-rwd-reduce ml-2">Team - {team.name}</h1>
+        </div>
+        <div className="row">
+          <React.Suspense fallback={<Spinner />}>
+            <LazyForm
+              flow={flow}
+              schema={schema}
+              value={team}
+              onChange={setTeam}
+              style={{ marginBottom: 100, paddingTop: 20 }}
+            />
+          </React.Suspense>
+          <div style={{ height: 60 }} />
+          <div className="row form-back-fixedBtns">
+            <Link className="btn btn-outline-primary" to={'/settings/teams'}>
+              <i className="fas fa-chevron-left mr-1" />
+              <Translation i18nkey="Back">
+                Back
+              </Translation>
+            </Link>
+            <button
+              style={{ marginLeft: 5 }}
+              type="button"
+              className="btn btn-outline-primary"
+              disabled={state.create}
+              onClick={members}>
+              <span>
+                <i className="fas fa-users mr-1" />
+                <Translation i18nkey="Members" isPlural>
+                  Members
                 </Translation>
-              </Link>
-              <button
-                style={{ marginLeft: 5 }}
-                type="button"
-                className="btn btn-outline-primary"
-                disabled={this.state.create}
-                onClick={this.members}>
+              </span>
+            </button>
+            <button
+              style={{ marginLeft: 5 }}
+              type="button"
+              className="btn btn-outline-success"
+              onClick={save}>
+              {!state.create && (
                 <span>
-                  <i className="fas fa-users mr-1" />
-                  <Translation i18nkey="Members" isPlural>
-                    Members
+                  <i className="fas fa-save mr-1" />
+                  <Translation i18nkey="Save">
+                    Save
                   </Translation>
                 </span>
-              </button>
-              <button
-                style={{ marginLeft: 5 }}
-                type="button"
-                className="btn btn-outline-success"
-                onClick={this.save}>
-                {!this.state.create && (
-                  <span>
-                    <i className="fas fa-save mr-1" />
-                    <Translation i18nkey="Save">
-                      Save
-                    </Translation>
-                  </span>
-                )}
-                {this.state.create && (
-                  <span>
-                    <i className="fas fa-save mr-1" />
-                    <Translation i18nkey="Create">
-                      Create
-                    </Translation>
-                  </span>
-                )}
-              </button>
-            </div>
+              )}
+              {state.create && (
+                <span>
+                  <i className="fas fa-save mr-1" />
+                  <Translation i18nkey="Create">
+                    Create
+                  </Translation>
+                </span>
+              )}
+            </button>
           </div>
-        </Can>
-      </UserBackOffice>
-    );
-  }
+        </div>
+      </Can>
+    </UserBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

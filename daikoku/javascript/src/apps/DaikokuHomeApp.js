@@ -12,7 +12,7 @@ import { Spinner } from '../components/utils/Spinner';
 import { validatePassword, ValidateEmail } from '../components/utils/validation';
 import * as Services from '../services';
 import { toastr } from 'react-redux-toastr';
-import { I18nContext } from '../core/context';
+import { I18nContext } from '../core/i18n-context';
 
 const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 

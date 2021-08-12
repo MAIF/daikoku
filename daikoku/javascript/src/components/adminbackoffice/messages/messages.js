@@ -12,7 +12,7 @@ import * as Services from '../../../services';
 import { Option, partition, formatMessageDate, BeautifulTitle } from '../../utils';
 import { UserBackOffice } from '../../backoffice';
 import { Translation } from '../../../locales';
-import { I18nContext } from '../../../core/context';
+import { I18nContext } from '../../../core/i18n-context';
 
 const AdminMessagesComponent = (props) => {
   const {

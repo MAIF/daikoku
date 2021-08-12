@@ -6,7 +6,7 @@ import { connect } from 'react-redux';
 import { Can, manage, daikoku } from '../../utils';
 import { Translation } from '../../../locales';
 import { SwitchButton } from '../../inputs';
-import { I18nContext } from '../../../core/context';
+import { I18nContext } from '../../../core/i18n-context';
 
 export function ImportExportComponent(props) {
   const { translateMethod } = useContext(I18nContext)

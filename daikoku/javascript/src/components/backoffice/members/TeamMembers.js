@@ -7,7 +7,7 @@ import classnames from 'classnames';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
-import { updateTeamPromise } from '../../../core/context';
+import { updateTeamPromise } from '../../../core/i18n-context';
 import { openInvitationTeamModal } from '../../../core';
 import {
   Option,

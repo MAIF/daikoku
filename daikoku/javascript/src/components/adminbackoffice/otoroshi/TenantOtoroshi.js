@@ -7,7 +7,7 @@ import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant, Spinner } from '../../utils';
 import { t, Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
-import { I18nContext } from '../../../core/context';
+import { I18nContext } from '../../../core/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 

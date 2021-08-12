@@ -9,7 +9,7 @@ import { Option } from '../../../utils';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan, BeautifulTitle } from '../../../utils';
 import { Translation } from '../../../../locales';
-import { I18nContext } from '../../../../core/context';
+import { I18nContext } from '../../../../core/i18n-context';
 
 export const SelectionStepStep = (props) => {
   return (

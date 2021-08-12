@@ -24,7 +24,7 @@ import {
 import { customizeFetch } from './services/customize';
 import { Option } from './components/utils';
 import { Translation } from './locales';
-import { I18nProvider } from './core/context';
+import { I18nProvider } from './core/i18n-context';
 
 window.$ = jQuery;
 window.jQuery = jQuery;

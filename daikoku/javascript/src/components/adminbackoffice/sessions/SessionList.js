@@ -8,7 +8,7 @@ import { Translation } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
 import { Table } from '../../inputs';
 import { Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../core/i18n-context';
 
 function SessionListComponent(props) {
   const { translateMethod } = useContext(I18nContext);

@@ -10,7 +10,7 @@ import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 import { Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
-import { I18nContext } from '../../../core/context';
+import { I18nContext } from '../../../core/i18n-context';
 
 export function TenantOtoroshisComponent(props) {
   const { translateMethod } = useContext(I18nContext);

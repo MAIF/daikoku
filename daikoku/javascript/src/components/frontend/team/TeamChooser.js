@@ -5,7 +5,7 @@ import Pagination from 'react-paginate';
 import * as Services from '../../../services';
 
 import { TeamCard } from '.';
-import { updateTeamPromise } from '../../../core/context';
+import { updateTeamPromise } from '../../../core/i18n-context';
 import { t, Translation } from '../../../locales';
 
 class TeamChooserComponent extends Component {
