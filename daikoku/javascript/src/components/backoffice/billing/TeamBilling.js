@@ -187,7 +187,7 @@ function TeamBillingComponent(props) {
                         return (
                           <PriceCartridge
                             key={idx}
-                            label={usagePlan.customName || formatPlanType(usagePlan)}
+                            label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)}
                             total={billing.total}
                             currency={usagePlan.currency}
                           />

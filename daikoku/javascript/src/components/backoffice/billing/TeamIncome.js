@@ -186,7 +186,7 @@ function TeamIncomeComponent(props) {
                           return (
                             <PriceCartridge
                               key={idx}
-                              label={usagePlan.customName || formatPlanType(usagePlan)}
+                              label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)}
                               total={billing.total}
                               currency={usagePlan.currency}
                               handleClick={() => setState({ ...state, selectedPlan: usagePlan })}
@@ -201,7 +201,7 @@ function TeamIncomeComponent(props) {
                         <h3 className="api__name">
                           {state.selectedApi.name} -{' '}
                           {state.selectedPlan.customName ||
-                            formatPlanType(state.selectedPlan)}
+                            formatPlanType(state.selectedPlan, translateMethod)}
                         </h3>
                         <i
                           className="far fa-arrow-alt-circle-left quit"

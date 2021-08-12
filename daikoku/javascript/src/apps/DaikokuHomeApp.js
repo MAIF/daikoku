@@ -130,9 +130,9 @@ export function SignupComponent(props) {
       const validationPassword = validatePassword(
         state.user.password1,
         state.user.password2,
-        props.currentLanguage
+        translateMethod
       );
-      const validationEmail = ValidateEmail(state.user.email, props.currentLanguage);
+      const validationEmail = ValidateEmail(state.user.email, translateMethod);
       if (validationPassword.ok && validationEmail.ok) {
         return fetch('/account', {
           method: 'POST',
@@ -288,7 +288,7 @@ export function ResetPasswordComponent(props) {
       const validation = validatePassword(
         state.user.password1,
         state.user.password2,
-        props.currentLanguage
+        translateMethod
       );
       if (validation.ok) {
         return fetch('/account/reset', {

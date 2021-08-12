@@ -26,7 +26,7 @@ function SetPassword(props) {
           window
             .prompt(translateMethod('Re-type the password'), undefined, true)
             .then((pw2) => {
-              const validation = validatePassword(pw1, pw2);
+              const validation = validatePassword(pw1, pw2, translateMethod);
               if (validation.ok) {
                 const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
                 props.changeValue('password', hashed);
@@ -251,8 +251,8 @@ export function UserEditComponent(props) {
       });
   };
 
-  save = () => {
-    const validation = validateUser(state.user);
+  const save = () => {
+    const validation = validateUser(state.user, translateMethod);
     if (validation.ok) {
       if (state.create) {
         Services.createUser(state.user).then(() => {

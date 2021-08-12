@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PropTypes } from 'prop-types';
 import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 
 export const TeamSelectorModal = ({
   closeModal,
@@ -20,6 +20,8 @@ export const TeamSelectorModal = ({
   const allTeams = teams.filter(
     (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
   );
+
+  const { translateMethod } = useContext(I18nContext);
 
   const finalAction = () => {
     if (selectedTeams.length) {
@@ -132,7 +134,7 @@ export const TeamSelectorModal = ({
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          {t('Close', currentLanguage, 'Close')}
+          {translateMethod('Close')}
         </button>
         {!!allTeamSelector && (
           <button
@@ -141,7 +143,7 @@ export const TeamSelectorModal = ({
               disabled: !selectedTeams.length,
             })}
             onClick={() => finalAction()}>
-            {t('Subscribe', currentLanguage, 'Subscribe')}
+            {translateMethod('Subscribe')}
           </button>
         )}
       </div>

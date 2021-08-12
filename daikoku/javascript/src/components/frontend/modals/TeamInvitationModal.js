@@ -12,7 +12,7 @@ export const TeamInvitationModal = (props) => {
   function invitUser() {
     const { members, pendingUsers } = props;
 
-    const validator = ValidateEmail(email);
+    const validator = ValidateEmail(email, translateMethod);
     if (validator.ok) {
       if (members.find((f) => f.email === email))
         setError(translateMethod('User already in team'));

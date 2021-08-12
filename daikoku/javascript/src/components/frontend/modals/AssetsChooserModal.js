@@ -1,11 +1,12 @@
-import React, { Component, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
 
 import * as Services from '../../../services';
 import { openAssetSelectorModal } from '../../../core/modal/actions';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import { BeautifulTitle } from '../../utils';
+import { I18nContext } from '../../../core';
 
 export const MimeTypeFilter = {
   image: (value) => value.startsWith('image'),
@@ -23,6 +24,8 @@ export const AssetSelectorModal = ({
 }) => {
   const [selectedAsset, setSelectedAsset] = useState({});
   const [search, setSearch] = useState();
+
+  const { translateMethod } = useContext(I18nContext);
 
   const selectAssetAndCloseModal = () => {
     onSelect(selectedAsset);
@@ -48,7 +51,7 @@ export const AssetSelectorModal = ({
       <div className="modal-body">
         <div className="asset-selection-body">
           <input
-            placeholder={t('Find an assets', currentLanguage)}
+            placeholder={translateMethode('Find an assets')}
             className="form-control"
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -77,7 +80,7 @@ export const AssetSelectorModal = ({
                           ? asset.link
                           : `/asset-thumbnails/${asset.value}`
                       }
-                      alt={t('Thumbnail', currentLanguage)}
+                      alt={translateMethode('Thumbnail')}
                     />
                   </div>
                 );
@@ -127,15 +130,15 @@ export const AssetSelectorModal = ({
   );
 };
 
-export class AssetChooserComponent extends Component {
-  state = {
+export function AssetChooserComponent(props) {
+  const [state, setState] = useState({
     loading: true,
     assets: [],
     error: false,
-  };
+  });
 
-  getTenantAssets = () =>
-    Services.listTenantAssets(this.props.teamId).then((assets) =>
+  const getTenantAssets = () =>
+    Services.listTenantAssets(props.teamId).then((assets) =>
       assets.error ? [] :
         assets.map((asset) => ({
           label: asset.meta.filename + ' - ' + asset.meta.title,
@@ -149,7 +152,7 @@ export class AssetChooserComponent extends Component {
         }))
     );
 
-  getTeamAssets = (team) =>
+  const getTeamAssets = (team) =>
     Services.listAssets(team._id).then((assets) =>
       assets.error ? [] :
         assets.map((asset) => ({
@@ -164,103 +167,102 @@ export class AssetChooserComponent extends Component {
         }))
     );
 
-  componentDidMount() {
-    this.getAssets(this.props.team);
-  }
+  useEffect(() => {
+    getAssets(props.team);
+  }, []);
 
-  getAssets(team) {
+  const getAssets = (team) => {
     let fetchAssets = () => new Promise((resolve) => resolve([]));
-    if (this.props.tenantMode) {
-      fetchAssets = () => this.getTenantAssets();
-    } else if (!this.props.tenantMode && team._id) {
-      fetchAssets = () => this.getTeamAssets(team);
+    if (props.tenantMode) {
+      fetchAssets = () => getTenantAssets();
+    } else if (!props.tenantMode && team._id) {
+      fetchAssets = () => getTeamAssets(team);
     }
 
     fetchAssets()
       .then((assets) => {
-        if (this.props.typeFilter) {
-          this.setState({
-            assets: assets.filter((asset) => this.props.typeFilter(asset.contentType)),
+        if (props.typeFilter) {
+          setState({
+            ...state,
+            assets: assets.filter((asset) => props.typeFilter(asset.contentType)),
             loading: false,
           });
         } else {
-          this.setState({ assets, loading: false });
+          setState({ ...state, assets, loading: false });
         }
       })
-      .catch((error) => this.setState({ error, loading: false }));
+      .catch((error) => setState({ ...state, error, loading: false }));
   }
 
-  render() {
-    if (this.state.assets && this.state.loading) {
-      return (
-        <button type="button" className="btn btn-outline-success ml-1" disabled>
-          <Translation i18nkey="loading">
-            loading...
-          </Translation>
-        </button>
-      );
-    }
-
-    if (this.state.error) {
-      return (
-        <BeautifulTitle title={this.state.error.message}>
-          <button type="button" className="btn btn-outline-primary ml-1 cursor-help" disabled>
-            <i
-              className={classNames('fas', {
-                'fa-user-circle mr-1': !!this.props.onlyPreview,
-                'fa-file mr-1': !this.props.onlyPreview,
-              })}
-            />
-            {this.props.label}
-          </button>
-        </BeautifulTitle>
-      );
-    }
-
-    if (!this.state.assets.length) {
-      return (
-        <BeautifulTitle title={t('No assets found', this.props.currentLanguage)}>
-          <button type="button" className="btn btn-sm btn-access-negative ml-1 cursor-help" disabled>
-            <i
-              className={classNames('fas mr-1', {
-                'fa-user-circle': !!this.props.onlyPreview,
-                'fa-file': !this.props.onlyPreview,
-              })}
-            />
-            {this.props.label}
-          </button>
-        </BeautifulTitle>
-      );
-    }
-
+  if (state.assets && state.loading) {
     return (
-      <button
-        type="button"
-        className={this.props.classNames ? this.props.classNames : 'btn btn-access-negative ml-1'}
-        onClick={() =>
-          this.props.openAssetSelectorModal({
-            open: true,
-            assets: this.state.assets,
-            onSelect: (asset) => this.props.onSelect(asset),
-            onlyPreview: this.props.onlyPreview,
-            panelView: true,
-            currentLanguage: this.props.currentLanguage,
-          })
-        }>
-        <i
-          className={
-            this.props.icon
-              ? this.props.icon
-              : classNames('fas mr-1', {
-                'fa-user-circle': !!this.props.onlyPreview,
-                'fa-file': !this.props.onlyPreview,
-              })
-          }
-        />{' '}
-        {this.props.label}
+      <button type="button" className="btn btn-outline-success ml-1" disabled>
+        <Translation i18nkey="loading">
+          loading...
+        </Translation>
       </button>
     );
   }
+
+  if (state.error) {
+    return (
+      <BeautifulTitle title={state.error.message}>
+        <button type="button" className="btn btn-outline-primary ml-1 cursor-help" disabled>
+          <i
+            className={classNames('fas', {
+              'fa-user-circle mr-1': !!props.onlyPreview,
+              'fa-file mr-1': !props.onlyPreview,
+            })}
+          />
+          {props.label}
+        </button>
+      </BeautifulTitle>
+    );
+  }
+
+  if (!state.assets.length) {
+    return (
+      <BeautifulTitle title={translateMethode('No assets found')}>
+        <button type="button" className="btn btn-sm btn-access-negative ml-1 cursor-help" disabled>
+          <i
+            className={classNames('fas mr-1', {
+              'fa-user-circle': !!props.onlyPreview,
+              'fa-file': !props.onlyPreview,
+            })}
+          />
+          {props.label}
+        </button>
+      </BeautifulTitle>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={props.classNames ? props.classNames : 'btn btn-access-negative ml-1'}
+      onClick={() =>
+        props.openAssetSelectorModal({
+          open: true,
+          assets: state.assets,
+          onSelect: (asset) => props.onSelect(asset),
+          onlyPreview: props.onlyPreview,
+          panelView: true,
+          currentLanguage: props.currentLanguage,
+        })
+      }>
+      <i
+        className={
+          props.icon
+            ? props.icon
+            : classNames('fas mr-1', {
+              'fa-user-circle': !!props.onlyPreview,
+              'fa-file': !props.onlyPreview,
+            })
+        }
+      />{' '}
+      {props.label}
+    </button>
+  );
 }
 
 const mapStateToProps = (state) => ({

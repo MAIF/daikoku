@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import * as Services from '../../../services';
+import { I18nContext } from '../../../core';
 
 const ContactModalComponent = (props) => {
   const [email, setEmail] = useState(props.email);
@@ -13,6 +14,8 @@ const ContactModalComponent = (props) => {
   const [body, setBody] = useState('');
   const [formRef, setFormRef] = useState(undefined);
   const [validity, setValidity] = useState(false);
+
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     if (formRef) {
@@ -65,8 +68,8 @@ const ContactModalComponent = (props) => {
                   type="text"
                   className="form-control"
                   id="sender-name"
-                  aria-describedby={t('Enter your name', props.currentLanguage)}
-                  placeholder={t('Enter your name', props.currentLanguage)}
+                  aria-describedby={translateMethod('Enter your name')}
+                  placeholder={translateMethod('Enter your name')}
                 />
               </div>
             )}
@@ -84,8 +87,8 @@ const ContactModalComponent = (props) => {
                   type="email"
                   className="form-control"
                   id="sender-email"
-                  aria-describedby={t('Enter email', props.currentLanguage)}
-                  placeholder={t('Enter email', props.currentLanguage)}
+                  aria-describedby={translateMethod('Enter email')}
+                  placeholder={translateMethod('Enter email')}
                 />
               </div>
             )}
@@ -102,8 +105,8 @@ const ContactModalComponent = (props) => {
                 type="text"
                 className="form-control"
                 id="subject"
-                aria-describedby={t('subject', props.currentLanguage)}
-                placeholder={t('Subject', props.currentLanguage)}
+                aria-describedby={translateMethod('subject')}
+                placeholder={translateMethod('Subject')}
               />
             </div>
             <div className="form-group">
@@ -121,8 +124,8 @@ const ContactModalComponent = (props) => {
                 cols="30"
                 rows="7"
                 className="form-control"
-                aria-describedby={t('Your message', props.currentLanguage)}
-                placeholder={t('Your message', props.currentLanguage)}
+                aria-describedby={translateMethod('Your message')}
+                placeholder={translateMethod('Your message')}
               />
             </div>
 
@@ -138,8 +141,8 @@ const ContactModalComponent = (props) => {
                 type="text"
                 className="form-control"
                 id="name"
-                aria-describedby={t('Enter your name', props.currentLanguage)}
-                placeholder={t('Enter your name', props.currentLanguage)}
+                aria-describedby={translateMethod('Enter your name')}
+                placeholder={translateMethod('Enter your name')}
               />
             </div>
           </form>

@@ -304,7 +304,7 @@ export function SimpleNotification(props) {
 
                     replacements={[
                       infos.api.name,
-                      Option(infos.plan.customName).getOrElse(formatPlanType(infos.plan)),
+                      Option(infos.plan.customName).getOrElse(formatPlanType(infos.plan, translateMethod)),
                     ]}>
                     Request subscription to {infos.api.name} for plan {infos.plan.type}
                   </Translation>

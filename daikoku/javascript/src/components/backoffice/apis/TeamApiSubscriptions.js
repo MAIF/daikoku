@@ -58,7 +58,7 @@ const TeamApiSubscriptionsComponent = (props) => {
           style: { textAlign: 'left' },
           accessor: (sub) =>
             Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
-              .map((p) => p.customName || formatPlanType(p))
+              .map((p) => p.customName || formatPlanType(p, translateMethod))
               .getOrNull(),
         },
         {

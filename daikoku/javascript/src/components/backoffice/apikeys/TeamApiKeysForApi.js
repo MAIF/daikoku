@@ -155,7 +155,7 @@ function TeamApiKeysForApiComponent(props) {
         } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
           return true;
         } else {
-          return formatPlanType(currentPlan(subs)).toLowerCase().includes(search);
+          return formatPlanType(currentPlan(subs), translateMethod).toLowerCase().includes(search);
         }
       });
 
@@ -410,7 +410,7 @@ const ApiKeyCard = ({
               <span
                 className="badge badge-secondary"
                 style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}>
-                {Option(plan.customName).getOrElse(formatPlanType(plan))}
+                {Option(plan.customName).getOrElse(formatPlanType(plan, translateMethod))}
               </span>
             )}
           </div>

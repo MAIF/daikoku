@@ -1,71 +1,73 @@
-import React, { Component } from 'react';
+import React, { Component, useContext, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import _ from 'lodash';
 
-import { closeModal, OPEN_MODAL } from '../../core/modal';
-import { t } from '../../locales';
+import { OPEN_MODAL } from '../../core/modal';
+import { I18nContext } from '../../core';
 
-class Alert extends Component {
-  defaultButton = (e) => {
+function Alert(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  const defaultButton = (e) => {
     if (e.keyCode === 13) {
-      this.props.close();
+      props.close();
     }
   };
-  componentDidMount() {
-    document.body.addEventListener('keydown', this.defaultButton);
-  }
-  componentWillUnmount() {
-    document.body.removeEventListener('keydown', this.defaultButton);
-  }
-  render() {
-    const res = _.isFunction(this.props.message)
-      ? this.props.message(this.props.close)
-      : this.props.message;
-    return (
-      <div>
-        <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-lg" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{this.props.title ? this.props.title : 'Alert'}</h5>
-                <button type="button" className="close" onClick={this.props.close}>
-                  <span aria-hidden="true">&times;</span>
-                </button>
+
+  useEffect(() => {
+    document.body.addEventListener('keydown', defaultButton);
+
+    return document.body.removeEventListener('keydown', defaultButton)
+  }, []);
+
+  const res = _.isFunction(props.message)
+    ? props.message(props.close)
+    : props.message;
+
+  return (
+    <div>
+      <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
+        <div className="modal-dialog modal-lg" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">{props.title ? props.title : 'Alert'}</h5>
+              <button type="button" className="close" onClick={props.close}>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-description">
+                {_.isString(res) && <p>{res}</p>}
+                {!_.isString(res) && !_.isFunction(res) && res}
+                {!_.isString(res) && _.isFunction(res) && res(props.close)}
               </div>
-              <div className="modal-body">
-                <div className="modal-description">
-                  {_.isString(res) && <p>{res}</p>}
-                  {!_.isString(res) && !_.isFunction(res) && res}
-                  {!_.isString(res) && _.isFunction(res) && res(this.props.close)}
-                </div>
-              </div>
-              <div className="modal-footer">
-                {this.props.linkOpt && (
-                  <a
-                    href={this.props.linkOpt.to}
-                    className="btn btn-secondary"
-                    onClick={this.props.close}>
-                    {this.props.linkOpt.title}
-                  </a>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-outline-primary"
-                  onClick={this.props.close}>
-                  {this.props.closeMessage
-                    ? this.props.closeMessage
-                    : t('Close', this.props.currentLanguage, null, 'Close')}
-                </button>
-              </div>
+            </div>
+            <div className="modal-footer">
+              {props.linkOpt && (
+                <a
+                  href={props.linkOpt.to}
+                  className="btn btn-secondary"
+                  onClick={props.close}>
+                  {props.linkOpt.title}
+                </a>
+              )}
+              <button
+                type="button"
+                className="btn btn-outline-primary"
+                onClick={props.close}>
+                {props.closeMessage
+                  ? props.closeMessage
+                  : translateMethod('Close')}
+              </button>
             </div>
           </div>
         </div>
-        <div className="modal-backdrop show" />
       </div>
-    );
-  }
+      <div className="modal-backdrop show" />
+    </div>
+  );
 }
 
 Alert.propTypes = {
@@ -78,14 +80,14 @@ Alert.propTypes = {
 class Confirm extends Component {
   defaultButton = (e) => {
     if (e.keyCode === 13) {
-      this.props.ok();
+      props.ok();
     }
   };
   componentDidMount() {
-    document.body.addEventListener('keydown', this.defaultButton);
+    document.body.addEventListener('keydown', defaultButton);
   }
   componentWillUnmount() {
-    document.body.removeEventListener('keydown', this.defaultButton);
+    document.body.removeEventListener('keydown', defaultButton);
   }
   render() {
     return (
@@ -95,23 +97,23 @@ class Confirm extends Component {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Confirm</h5>
-                <button type="button" className="close" onClick={this.props.cancel}>
+                <button type="button" className="close" onClick={props.cancel}>
                   <span aria-hidden="true">&times;</span>
                 </button>
               </div>
               <div className="modal-body">
                 <div className="modal-description">
-                  <p>{this.props.message}</p>
+                  <p>{props.message}</p>
                 </div>
               </div>
               <div className="modal-footer">
                 <button
                   type="button"
                   className="btn btn-outline-danger"
-                  onClick={this.props.cancel}>
+                  onClick={props.cancel}>
                   Cancel
                 </button>
-                <button type="button" className="btn btn-outline-success" onClick={this.props.ok}>
+                <button type="button" className="btn btn-outline-success" onClick={props.ok}>
                   Ok
                 </button>
               </div>
@@ -132,21 +134,21 @@ Confirm.propTypes = {
 
 class Prompt extends Component {
   state = {
-    text: this.props.value || '',
+    text: props.value || '',
   };
   defaultButton = (e) => {
     if (e.keyCode === 13) {
-      this.props.ok(this.state.text);
+      props.ok(state.text);
     }
   };
   componentDidMount() {
-    document.body.addEventListener('keydown', this.defaultButton);
-    if (this.ref) {
-      this.ref.focus();
+    document.body.addEventListener('keydown', defaultButton);
+    if (ref) {
+      ref.focus();
     }
   }
   componentWillUnmount() {
-    document.body.removeEventListener('keydown', this.defaultButton);
+    document.body.removeEventListener('keydown', defaultButton);
   }
   render() {
     return (
@@ -155,21 +157,21 @@ class Prompt extends Component {
           <div className="modal-dialog modal-lg" role="document">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">{this.props.title || 'Confirm'}</h5>
-                <button type="button" className="close" onClick={this.props.cancel}>
+                <h5 className="modal-title">{props.title || 'Confirm'}</h5>
+                <button type="button" className="close" onClick={props.cancel}>
                   <span aria-hidden="true">&times;</span>
                 </button>
               </div>
               <div className="modal-body">
                 <div className="modal-description">
-                  <p>{this.props.message}</p>
+                  <p>{props.message}</p>
                   <input
-                    type={this.props.isPassword ? 'password' : 'text'}
+                    type={props.isPassword ? 'password' : 'text'}
                     className="form-control"
-                    value={this.state.text}
-                    placeholder={this.props.placeholder || ''}
-                    ref={(r) => (this.ref = r)}
-                    onChange={(e) => this.setState({ text: e.target.value })}
+                    value={state.text}
+                    placeholder={props.placeholder || ''}
+                    ref={(r) => (ref = r)}
+                    onChange={(e) => setState({ text: e.target.value })}
                   />
                 </div>
               </div>
@@ -177,13 +179,13 @@ class Prompt extends Component {
                 <button
                   type="button"
                   className="btn btn-outline-danger"
-                  onClick={this.props.cancel}>
+                  onClick={props.cancel}>
                   Cancel
                 </button>
                 <button
                   type="button"
                   className="btn btn-outline-success"
-                  onClick={() => this.props.ok(this.state.text)}>
+                  onClick={() => props.ok(state.text)}>
                   Ok
                 </button>
               </div>

@@ -178,6 +178,8 @@ const mapStateToProps = (state) => ({
 export const TeamApiConsumption = connect(mapStateToProps)(TeamApiConsumptionComponent);
 
 function PlanLightConsumption(props) {
+  const { translateMethod } = useContext(I18nContext);
+  
   renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
 
   renderFreeWithQuotas = () => (
@@ -236,7 +238,7 @@ function PlanLightConsumption(props) {
       </div>
       <div className="card-body">
         {customName && <h3>{customName}</h3>}
-        {!customName && <h3>{formatPlanType(plan, props.currentLanguage)}</h3>}
+        {!customName && <h3>{formatPlanType(plan, translateMethod)}</h3>}
         <p className="card-text text-justify">
           {customDescription && <span>{customDescription}</span>}
           {!customDescription && type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas()}

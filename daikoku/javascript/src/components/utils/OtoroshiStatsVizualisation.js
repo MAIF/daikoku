@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import { Histogram, RoundChart } from './Recharts';
 import { converterBase2 } from 'byte-converter';
@@ -7,19 +7,19 @@ import Select from 'react-select';
 import _ from 'lodash';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Spinner } from './Spinner';
-import { t } from '../../locales';
+import { I18nContext } from '../../core';
 
 Number.prototype.prettify = function () {
-  return this.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ');
+  return toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ');
 };
 
 class Period {
   constructor({ from, to, unitTime, label, value }) {
-    this.from = from;
-    this.to = to;
-    this.unitTime = unitTime;
-    this.label = label;
-    this.value = value;
+    from = from;
+    to = to;
+    unitTime = unitTime;
+    label = label;
+    value = value;
   }
 
   format = (consumptions) => {
@@ -30,62 +30,64 @@ class Period {
         time = moment(maxDate.to).format('HH:mm');
       }
     }
-    if (this.unitTime === 'day') {
-      if (this.value === 'TODAY') {
-        return `${this.from.format('D MMM. YYYY')} ${time}`;
+    if (unitTime === 'day') {
+      if (value === 'TODAY') {
+        return `${from.format('D MMM. YYYY')} ${time}`;
       }
-      return `${this.from.format('D MMM. YYYY')}`;
+      return `${from.format('D MMM. YYYY')}`;
     }
-    return `${this.from.format('D MMM.')} - ${this.to().format('D MMM. YYYY')}`;
+    return `${from.format('D MMM.')} - ${to().format('D MMM. YYYY')}`;
   };
 }
 
-const periods = (currentLanguage) => ({
+const periods = (translateMethod) => ({
   today: new Period({
     from: moment().startOf('day'),
     to: () => moment().add(1, 'day').startOf('day'),
     unitTime: 'day',
-    label: t('Today', currentLanguage),
+    label: translateMethod('Today'),
     value: 'TODAY',
   }),
   yesterday: new Period({
     from: moment().subtract(1, 'day').startOf('day'),
     to: () => moment().startOf('day'),
     unitTime: 'day',
-    label: t('Yesterday', currentLanguage),
+    label: translateMethod('Yesterday'),
     value: 'YESTERDAY',
   }),
   last7days: new Period({
     from: moment().subtract(7, 'days').startOf('day'),
     to: () => moment(),
-    label: t('Last 7 days', currentLanguage),
+    label: translateMethod('Last 7 days'),
     value: 'LAST7',
   }),
   last30days: new Period({
     from: moment().subtract(30, 'days').startOf('day'),
     to: () => moment(),
-    label: t('Last 30 days', currentLanguage),
+    label: translateMethod('Last 30 days'),
     value: 'LAST30',
   }),
   billingPeriod: new Period({
     from: moment().startOf('month'),
     to: () => moment().endOf('month'),
     unitTime: 'month',
-    label: t('Billing period', currentLanguage),
+    label: translateMethod('Billing period'),
     value: 'BILLING',
   }),
 });
 
-export class OtoroshiStatsVizualization extends Component {
-  state = {
+export function OtoroshiStatsVizualization(props) {
+
+  const { translateMethod } = useContext(I18nContext);
+  const [state, setState] = useState({
     tab: 0,
     consumptions: null,
-    period: { ...periods(this.props.currentLanguage).today },
+    period: { ...periods(translateMethod).today },
     loading: true,
     error: false,
-  };
+  });
 
-  getMaxCall = (unitTime, plan) => {
+  const getMaxCall = (unitTime, plan) => {
     if (!plan) {
       return undefined;
     }
@@ -100,38 +102,38 @@ export class OtoroshiStatsVizualization extends Component {
     }
   };
 
-  tab = (value, label) => {
+  const tab = (value, label) => {
     const realLabel =
       label instanceof Function
         ? label(
-            this.state.consumptions,
-            this.getMaxCall(this.state.period.unitTime, this.state.consumptions.plan)
-          )
+          state.consumptions,
+          getMaxCall(state.period.unitTime, state.consumptions.plan)
+        )
         : label;
     return (
       <a
         key={`tab-${value}`}
         className={classNames('data__navbar__tab', {
-          'data__navbar__tab--active': this.state.tab === value,
+          'data__navbar__tab--active': state.tab === value,
         })}
-        onClick={() => this.setState({ tab: value })}>
+        onClick={() => setState({ ...state, tab: value })}>
         {realLabel}
       </a>
     );
   };
 
-  formatValue = ({ type, formatter, formatter2, title, xAxis, yAxis, dataKey, parentKey }) => {
+  const formatValue = ({ type, formatter, formatter2, title, xAxis, yAxis, dataKey, parentKey }) => {
     switch (type) {
       case 'Histogram':
         return (
-          <Histogram series={formatter(this.state.consumptions)} title={title} unit=" bytes" />
+          <Histogram series={formatter(state.consumptions)} title={title} unit=" bytes" />
         );
       case 'LineChart':
         return (
           <div style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer>
               <LineChart
-                data={formatter(this.state.consumptions)}
+                data={formatter(state.consumptions)}
                 margin={{
                   top: 5,
                   right: 30,
@@ -149,7 +151,7 @@ export class OtoroshiStatsVizualization extends Component {
       case 'RoundChart':
         return (
           <RoundChart
-            series={formatter(this.state.consumptions)}
+            series={formatter(state.consumptions)}
             title={title}
             dataKey={dataKey}
             unit=" hits"
@@ -159,8 +161,8 @@ export class OtoroshiStatsVizualization extends Component {
       case 'DoubleRoundChart':
         return (
           <RoundChart
-            series={formatter(this.state.consumptions)}
-            series2={formatter2(this.state.consumptions)}
+            series={formatter(state.consumptions)}
+            series2={formatter2(state.consumptions)}
             title={title}
             dataKey={dataKey}
             unit=" hits"
@@ -171,105 +173,101 @@ export class OtoroshiStatsVizualization extends Component {
       case 'Global':
         return (
           <GlobalDataConsumption
-            currentLanguage={this.props.currentLanguage}
-            data={formatter ? formatter(this.state.consumptions) : this.state.consumptions}
+            currentLanguage={props.currentLanguage}
+            data={formatter ? formatter(state.consumptions) : state.consumptions}
           />
         );
       default:
-        return formatter(this.state.consumptions);
+        return formatter(state.consumptions);
     }
   };
 
-  componentDidMount() {
-    this.updateConsumption(this.state.period.from, this.state.period.to());
-  }
-  UNSAFE_componentWillReceiveProps() {
-    this.updateConsumption(this.state.period.from, this.state.period.to());
-  }
+  useEffect(() => {
+    updateConsumption(state.period.from, state.period.to());
+  }, [state.period]);
 
-  updateConsumption = (from, to) => {
-    this.setState({ loading: true }, () => {
-      this.props
+  const updateConsumption = (from, to) => {
+    setState({ ...state, loading: true }, () => {
+      props
         .fetchData(from, to)
         .then((consumptions) => {
           if (consumptions.error) {
-            this.setState({ error: true, loading: false });
+            setState({ ...state, error: true, loading: false });
           } else {
-            this.setState({ consumptions, loading: false });
+            setState({ ...state, consumptions, loading: false });
           }
         })
-        .catch(() => this.setState({ error: true, loading: false }));
+        .catch(() => setState({ ...state, error: true, loading: false }));
     });
   };
 
-  sync = () => {
-    const { from, to } = this.state.period;
-    this.setState({ loading: true }, () => {
-      this.props
+  const sync = () => {
+    const { from, to } = state.period;
+    setState({ ...state, loading: true }, () => {
+      props
         .sync()
-        .then(() => this.props.fetchData(from, to()))
+        .then(() => props.fetchData(from, to()))
         .then((consumptions) => {
           if (consumptions.error) {
-            this.setState({ error: true, loading: false });
+            setState({ ...state, error: true, loading: false });
           } else {
-            this.setState({ consumptions, loading: false });
+            setState({ ...state, consumptions, loading: false });
           }
         })
-        .catch(() => this.setState({ error: true, loading: false }));
+        .catch(() => setState({ ...state, error: true, loading: false }));
     });
   };
 
-  render() {
-    return (
-      <div>
-        <div className="d-flex justify-content-start align-items-center">
-          <Select
-            name="period-select"
-            className="col col-sm-3 reactSelect period-select"
-            value={{ value: this.state.period.value, label: this.state.period.label }}
-            clearable={false}
-            options={Object.values(periods(this.props.currentLanguage))}
-            onChange={(period) => {
-              this.setState({ period }, () => {
-                this.updateConsumption(period.from, period.to());
-              });
-            }}
-            classNamePrefix="reactSelect"
-          />
-          <span className="col period-display">
-            {this.state.period.format(this.state.consumptions)}
-          </span>
-          {this.props.sync && (
-            <button className="btn btn-access-negative" onClick={this.sync}>
-              <i className="fas fa-sync-alt" />
-            </button>
-          )}
-        </div>
+  return (
+    <div>
+      <div className="d-flex justify-content-start align-items-center">
+        <Select
+          name="period-select"
+          className="col col-sm-3 reactSelect period-select"
+          value={{ value: state.period.value, label: state.period.label }}
+          clearable={false}
+          options={Object.values(periods(props.currentLanguage))}
+          onChange={(period) => {
+            setState({ ...state, period })
+            updateConsumption(period.from, period.to());
+          }}
+          classNamePrefix="reactSelect"
+        />
+        <span className="col period-display">
+          {state.period.format(state.consumptions)}
+        </span>
+        {props.sync && (
+          <button className="btn btn-access-negative" onClick={sync}>
+            <i className="fas fa-sync-alt" />
+          </button>
+        )}
+      </div>
 
-        <div className="row mt-4">
-          <div className="col">
-            <div className="data-vizualisation">
-              {this.state.loading && <Spinner />}
-              {this.state.error && <div>Oops...</div>}
-              {!this.state.loading &&
-                !this.state.error && [
-                  <div key="navbar" className="data__navbar">
-                    {this.props.mappers.map((tab, idx) => this.tab(idx, tab.label))}
-                  </div>,
-                  <div key="content" className="data__content">
-                    {this.formatValue(this.props.mappers[this.state.tab])}
-                  </div>,
-                ]}
-            </div>
+      <div className="row mt-4">
+        <div className="col">
+          <div className="data-vizualisation">
+            {state.loading && <Spinner />}
+            {state.error && <div>Oops...</div>}
+            {!state.loading &&
+              !state.error && [
+                <div key="navbar" className="data__navbar">
+                  {props.mappers.map((tab, idx) => tab(idx, tab.label))}
+                </div>,
+                <div key="content" className="data__content">
+                  {formatValue(props.mappers[state.tab])}
+                </div>,
+              ]}
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
-export class GlobalDataConsumption extends Component {
-  computeValue = (value) => {
+export function GlobalDataConsumption(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  const computeValue = (value) => {
     let unit = 'Mb';
     let computedValue = parseFloat((converterBase2(value, 'B', 'MB') || 0).toFixed(3));
     if (computedValue > 1024.0) {
@@ -287,7 +285,7 @@ export class GlobalDataConsumption extends Component {
     return `${computedValue.prettify()} ${unit}`;
   };
 
-  row = (value, label) => {
+  const row = (value, label) => {
     return (
       <div className="global-data__row" key={label}>
         <span>{value}</span>
@@ -296,24 +294,22 @@ export class GlobalDataConsumption extends Component {
     );
   };
 
-  render() {
-    if (!this.props.data) {
-      return null;
-    }
-
-    const { data } = this.props;
-    const hits = data.hits ? data.hits.prettify() : 0;
-    const totalDataIn = this.computeValue(data.dataIn);
-    const totalDataOut = this.computeValue(data.dataOut);
-    const avgDuration = data.avgDuration ? data.avgDuration.toFixed(3) : 0;
-    const avgOverhead = data.avgOverhead ? data.avgOverhead.toFixed(3) : 0;
-
-    return [
-      this.row(hits, ' ' + t('Hit', this.props.currentLanguage, data.hits > 1)),
-      this.row(totalDataIn, ' ' + t('in', this.props.currentLanguage)),
-      this.row(totalDataOut, ' ' + t('out', this.props.currentLanguage)),
-      this.row(avgDuration, ' ' + t('ms. average duration', this.props.currentLanguage)),
-      this.row(avgOverhead, ' ' + t('ms. average overhead', this.props.currentLanguage)),
-    ];
+  if (!props.data) {
+    return null;
   }
+
+  const { data } = props;
+  const hits = data.hits ? data.hits.prettify() : 0;
+  const totalDataIn = computeValue(data.dataIn);
+  const totalDataOut = computeValue(data.dataOut);
+  const avgDuration = data.avgDuration ? data.avgDuration.toFixed(3) : 0;
+  const avgOverhead = data.avgOverhead ? data.avgOverhead.toFixed(3) : 0;
+
+  return [
+    row(hits, ' ' + translateMethod('Hit', data.hits > 1)),
+    row(totalDataIn, ' ' + translateMethod('in')),
+    row(totalDataOut, ' ' + translateMethod('out')),
+    row(avgDuration, ' ' + translateMethod('ms. average duration')),
+    row(avgOverhead, ' ' + translateMethod('ms. average overhead')),
+  ];
 }

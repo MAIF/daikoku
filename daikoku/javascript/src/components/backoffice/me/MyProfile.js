@@ -214,7 +214,7 @@ function SetPassword(props) {
           window
             .prompt(translateMethod('Re-type the password'), undefined, true)
             .then((pw2) => {
-              const validation = validatePassword(pw1, pw2);
+              const validation = validatePassword(pw1, pw2, translateMethod);
               if (validation.ok) {
                 const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
                 props.changeValue('password', hashed);
@@ -523,7 +523,7 @@ function MyProfileComponent(props) {
 
   const save = () => {
     if (user.name && user.email && user.picture) {
-      const emailValidation = ValidateEmail(user.email);
+      const emailValidation = ValidateEmail(user.email, translateMethod);
       if (emailValidation.ok) {
         Services.updateUserById(user).then((user) => {
           setUser(user, () => {

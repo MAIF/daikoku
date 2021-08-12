@@ -199,7 +199,7 @@ const ApiHomeComponent = ({
   };
 
   const askForApikeys = (teams, plan, apiKey) => {
-    const planName = formatPlanType(plan);
+    const planName = formatPlanType(plan, translateMethod);
 
     return (apiKey
       ? Services.extendApiKey(api._id, apiKey._id, teams, plan._id)

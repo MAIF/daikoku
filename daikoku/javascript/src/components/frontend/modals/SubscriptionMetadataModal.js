@@ -227,9 +227,9 @@ export const SubscriptionMetadataModal = (props) => {
                 <Translation
                   i18nkey="subscription.metadata.modal.creation.description"
                  
-                  replacements={[props.team.name, plan.customName || formatPlanType(plan)]}>
+                  replacements={[props.team.name, plan.customName || formatPlanType(plan, translateMethod)]}>
                   {props.team.name} ask you an apikey for plan{' '}
-                  {plan.customName || formatPlanType(plan)}
+                  {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
               </div>
             )}
@@ -238,8 +238,8 @@ export const SubscriptionMetadataModal = (props) => {
                 <Translation
                   i18nkey="subscription.metadata.modal.update.description"
                  
-                  replacements={[props.team.name, plan.customName || formatPlanType(plan)]}>
-                  Team: {props.team.name} - Plan: {plan.customName || formatPlanType(plan)}
+                  replacements={[props.team.name, plan.customName || formatPlanType(plan, translateMethod)]}>
+                  Team: {props.team.name} - Plan: {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
               </div>
             )}
