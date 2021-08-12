@@ -5,7 +5,7 @@ import _ from 'lodash';
 
 import { UserBackOffice } from '../../backoffice';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 function TeamListComponent(props) {

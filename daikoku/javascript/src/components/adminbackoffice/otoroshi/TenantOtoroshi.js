@@ -51,12 +51,6 @@ function TenantOtoroshiComponent(props) {
 
   const { translateMethod } = useContext(I18nContext);
 
-  const isTeamAdmin = () => {
-    if (props.connectedUser.isDaikokuAdmin) {
-      return true;
-    }
-  };
-
   useEffect(() => {
     if (props.location && props.location.state && props.location.state.newSettings) {
       setState({ ...state, otoroshi: props.location.state.newSettings, create: true });

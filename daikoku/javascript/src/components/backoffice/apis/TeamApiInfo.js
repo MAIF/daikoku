@@ -11,14 +11,14 @@ const LazyForm = React.lazy(() => import('../../inputs/Form'));
 function NameAlreadyExists(props) {
   const [exists, setExists] = useState(false);
 
-  const update = (props) => {
+  const update = () => {
     Services.checkIfApiNameIsUnique(props.rawValue.name, props.rawValue._id).then((r) =>
       setExists(r.exists)
     );
   };
 
   useEffect(() => {
-    update(props.rawValue.name);
+    update(props);
   }, [props.rawValue.name])
 
   if (!exists)

@@ -1,41 +1,42 @@
 import React from 'react';
 
 import { Spinner } from '../../../utils';
-import { t } from '../../../../locales';
 import { MailTemplateButton } from './MailTemplateButton';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export function SmtpClientConfig({ currentLanguage, value, onChange }) {
+  const { translateMethod } = useContext(I18nContext);
+
   const formFlow = ['host', 'port', 'fromTitle', 'fromEmail', 'template'];
 
   const formSchema = {
     host: {
       type: 'string',
       props: {
-        label: t('smtp_client.host', currentLanguage),
+        label: translateMethod('smtp_client.host'),
       },
     },
     port: {
       type: 'string',
       props: {
-        label: t('smtp_client.port', currentLanguage),
+        label: translateMethod('smtp_client.port'),
       },
     },
     fromTitle: {
       type: 'string',
       props: {
-        label: t('Email title', currentLanguage),
+        label: translateMethod('Email title'),
       },
     },
     fromEmail: {
       type: 'string',
       props: {
-        label: t('Email from', currentLanguage),
+        label: translateMethod('Email from'),
       },
     },
     template: {
-      type: () => <MailTemplateButton currentLanguage={currentLanguage} />,
+      type: () => <MailTemplateButton />,
     },
   };
 

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
@@ -10,205 +10,196 @@ import { toastr } from 'react-redux-toastr';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, daikoku, Spinner, validatePassword, validateUser } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
+import { I18nContext } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-class SetPassword extends Component {
-  genAndSetPassword = () => {
+function SetPassword(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  const genAndSetPassword = () => {
     window
-      .prompt(t('Type the password', this.props.currentLanguage), undefined, true)
+      .prompt(translateMethod('Type the password'), undefined, true)
       .then((pw1) => {
         if (pw1) {
           window
-            .prompt(t('Re-type the password', this.props.currentLanguage), undefined, true)
+            .prompt(translateMethod('Re-type the password'), undefined, true)
             .then((pw2) => {
-              const validation = validatePassword(pw1, pw2, this.props.currentLanguage);
+              const validation = validatePassword(pw1, pw2);
               if (validation.ok) {
                 const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-                this.props.changeValue('password', hashed);
+                props.changeValue('password', hashed);
               } else {
-                this.props.displayError(validation.error);
+                props.displayError(validation.error);
               }
             });
         }
       });
   };
 
-  render() {
-    return (
-      <div className="form-group row">
-        <label className="col-xs-12 col-sm-2 col-form-label" />
-        <div className="col-sm-10">
-          <button
-            type="button"
-            className="btn btn-outline-success"
-            onClick={this.genAndSetPassword}>
-            <i className="fas fa-unlock-alt mr-1" />
-            <Translation i18nkey="Set password">
-              Set password
-            </Translation>
-          </button>
-        </div>
+  return (
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label" />
+      <div className="col-sm-10">
+        <button
+          type="button"
+          className="btn btn-outline-success"
+          onClick={genAndSetPassword}>
+          <i className="fas fa-unlock-alt mr-1" />
+          <Translation i18nkey="Set password">
+            Set password
+          </Translation>
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
-class RefreshToken extends Component {
-  reloadToken = () => {
-    this.props.changeValue('personalToken', faker.random.alphaNumeric(32));
+function RefreshToken(props) {
+  const reloadToken = () => {
+    props.changeValue('personalToken', faker.random.alphaNumeric(32));
   };
 
-  render() {
-    return (
-      <div className="form-group row">
-        <label className="col-xs-12 col-sm-2 col-form-label" />
-        <div className="col-sm-10">
-          <button type="button" className="btn btn-outline-success" onClick={this.reloadToken}>
-            <i className="fas fa-sync-alt mr-1" />
-            <Translation i18nkey="Reload personal token">
-              Reload personal token
-            </Translation>
-          </button>
-        </div>
+  return (
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label" />
+      <div className="col-sm-10">
+        <button type="button" className="btn btn-outline-success" onClick={reloadToken}>
+          <i className="fas fa-sync-alt mr-1" />
+          <Translation i18nkey="Reload personal token">
+            Reload personal token
+          </Translation>
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
-class Gravatar extends Component {
-  setGravatarLink = () => {
-    const email = this.props.rawValue.email.toLowerCase().trim();
+function Gravatar(props) {
+  const setGravatarLink = () => {
+    const email = props.rawValue.email.toLowerCase().trim();
     const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
-    this.props.changeValue('picture', url);
+    props.changeValue('picture', url);
   };
 
-  render() {
-    return (
-      <button type="button" className="btn btn-access" onClick={this.setGravatarLink}>
-        <i className="fas fa-user-circle mr-1" />
-        <Translation i18nkey="Set avatar from Gravatar">
-          Set avatar from Gravatar
-        </Translation>
-      </button>
-    );
-  }
+  return (
+    <button type="button" className="btn btn-access" onClick={setGravatarLink}>
+      <i className="fas fa-user-circle mr-1" />
+      <Translation i18nkey="Set avatar from Gravatar">
+        Set avatar from Gravatar
+      </Translation>
+    </button>
+  );
 }
 
-class AssetButton extends Component {
-  render() {
-    return (
-      <AssetChooserByModal
-        currentLanguage={this.props.currentLanguage}
-        typeFilter={MimeTypeFilter.image}
-        onlyPreview
-        tenantMode
-        label={t('Set avatar from asset', this.props.currentLanguage)}
-        onSelect={(asset) => this.props.changeValue('picture', asset.link)}
-      />
-    );
-  }
+function AssetButton(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  return (
+    <AssetChooserByModal
+      typeFilter={MimeTypeFilter.image}
+      onlyPreview
+      tenantMode
+      label={translateMethod('Set avatar from asset')}
+      onSelect={(asset) => props.changeValue('picture', asset.link)}
+    />
+  );
 }
-class AvatarChooser extends Component {
-  render() {
-    return (
-      <div className="form-group row">
-        <div className="col-12  d-flex justify-content-end">
-          <Gravatar {...this.props} />
-          <AssetButton {...this.props} />
-        </div>
+
+function AvatarChooser(props) {
+  return (
+    <div className="form-group row">
+      <div className="col-12  d-flex justify-content-end">
+        <Gravatar {...props} />
+        <AssetButton {...props} />
       </div>
-    );
-  }
+    </div>
+  );
 }
 
-export class UserEditComponent extends Component {
-  state = {
-    user: null,
-  };
-  formSchema = {
+export function UserEditComponent(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  const [state, setState] = useState({
+    user: null
+  });
+
+  const formSchema = {
     _id: { type: 'string', disabled: true, props: { label: 'Id', placeholder: '---' } },
     tenants: {
       type: 'array',
       disabled: true,
       props: {
-        label: t('Tenant', this.props.currentLanguage, true, 'Tenants'),
+        label: translateMethod('Tenant', true, 'Tenants'),
       },
     },
     origins: {
       type: 'array',
       disabled: true,
       props: {
-        label: t('Origins', this.props.currentLanguage),
+        label: translateMethod('Origins'),
       },
     },
     name: {
       type: 'string',
       props: {
-        label: t('Name', this.props.currentLanguage),
+        label: translateMethod('Name'),
       },
     },
     email: {
       type: 'string',
       props: {
-        label: t('Email address', this.props.currentLanguage),
+        label: translateMethod('Email address'),
       },
     },
     picture: {
       type: 'string',
       props: {
-        label: t('Avatar', this.props.currentLanguage),
+        label: translateMethod('Avatar'),
       },
     },
     isDaikokuAdmin: {
       type: 'bool',
       props: {
-        label: t('Daikoku admin.', this.props.currentLanguage),
+        label: translateMethod('Daikoku admin.'),
       },
     },
     personalToken: {
       type: 'string',
       props: {
-        label: t('Personal Token', this.props.currentLanguage),
+        label: translateMethod('Personal Token'),
         disabled: true,
       },
     },
     refreshToken: {
-      type: RefreshToken,
-      props: {
-        currentLanguage: this.props.currentLanguage,
-      },
+      type: RefreshToken
     },
     password: {
       type: 'string',
       disabled: true,
       props: {
-        label: t('Password', this.props.currentLanguage),
+        label: translateMethod('Password'),
       },
     },
     metadata: {
       type: 'object',
       props: {
-        label: t('Metadata', this.props.currentLanguage),
+        label: translateMethod('Metadata'),
       },
     },
     setPassword: {
       type: SetPassword,
       props: {
-        currentLanguage: this.props.currentLanguage,
         displayError: (error) => toastr.error(error),
       },
     },
     avatarFromAsset: {
-      type: AvatarChooser,
-      props: {
-        currentLanguage: this.props.currentLanguage,
-      },
+      type: AvatarChooser
     },
   };
 
-  formFlow = [
+  const formFlow = [
     'name',
     'email',
     'picture',
@@ -223,76 +214,70 @@ export class UserEditComponent extends Component {
     'metadata',
   ];
 
-  componentDidMount() {
-    if (this.props.location && this.props.location.state && this.props.location.state.newUser) {
-      this.setState({
+  useEffect(() => {
+    if (props.location && props.location.state && props.location.state.newUser) {
+      setState({
+        ...state,
         user: {
-          ...this.props.location.state.newUser,
+          ...props.location.state.newUser,
           personalToken: faker.random.alphaNumeric(32),
         },
         create: true,
       });
     } else {
-      Services.findUserById(this.props.match.params.userId).then((user) => this.setState({ user }));
+      Services.findUserById(props.match.params.userId).then((user) => setState({ ...state, user }));
     }
-  }
+  }, []);
 
-  removeUser = () => {
+  const removeUser = () => {
     window
       .confirm(
-        t(
-          'remove.user.confirm',
-          this.props.currentLanguage,
-          'Are you sure you want to delete this user ?'
-        )
+        translateMethod('remove.user.confirm')
       )
       .then((ok) => {
         if (ok) {
-          Services.deleteUserById(this.state.user._id).then(() => {
+          Services.deleteUserById(state.user._id).then(() => {
             toastr.info(
-              t(
+              translateMethod(
                 'remove.user.success',
-                this.props.currentLanguage,
                 false,
-                `user ${this.state.user.name} is successfully deleted`,
-                this.state.user.name
+                `user ${state.user.name} is successfully deleted`,
+                state.user.name
               )
             );
-            this.props.history.push('/settings/users');
+            props.history.push('/settings/users');
           });
         }
       });
   };
 
   save = () => {
-    const validation = validateUser(this.state.user, this.props.currentLanguage);
+    const validation = validateUser(state.user);
     if (validation.ok) {
-      if (this.state.create) {
-        Services.createUser(this.state.user).then(() => {
+      if (state.create) {
+        Services.createUser(state.user).then(() => {
           toastr.success(
-            t(
+            translateMethod(
               'user.created.success',
-              this.props.currentLanguage,
               false,
-              `user ${this.state.user.name} successfully created`,
-              this.state.user.name
+              `user ${state.user.name} successfully created`,
+              state.user.name
             )
           );
-          this.props.history.push('/settings/users');
+          props.history.push('/settings/users');
         });
       } else {
-        Services.updateUserById(this.state.user).then((user) => {
-          this.setState({ user, create: false }, () => {
+        Services.updateUserById(state.user).then((user) => {
+          setState({ ...state, user, create: false }, () => {
             toastr.success(
-              t(
+              translateMethod(
                 'user.updated.success',
-                this.props.currentLanguage,
                 false,
-                `user ${this.state.user.name} successfully updated`,
-                this.state.user.name
+                `user ${state.user.name} successfully updated`,
+                state.user.name
               )
             );
-            this.props.history.push('/settings/users');
+            props.history.push('/settings/users');
           });
         });
       }
@@ -301,87 +286,85 @@ export class UserEditComponent extends Component {
     }
   };
 
-  render() {
-    return (
-      <UserBackOffice tab="Users">
-        <Can I={manage} a={daikoku} dispatchError>
-          <div className="row d-flex justify-content-start align-items-center mb-2">
-            {this.state.user && (
-              <div className="ml-1 avatar__container">
-                <img
-                  src={this.state.user.picture}
-                  className="img-fluid"
-                  alt="avatar"
-                  style={{ minWidth: '100px' }}
-                />
-              </div>
-            )}
-            {!this.state.user && <h1>User</h1>}
-            {this.state.user && (
-              <h1 className="h1-rwd-reduce ml-2">
-                {this.state.user.name} - {this.state.user.email}
-              </h1>
-            )}
-          </div>
-          {this.state.user && (
-            <div className="row">
-              <React.Suspense fallback={<Spinner />}>
-                <LazyForm
-                  flow={this.formFlow}
-                  schema={this.formSchema}
-                  value={this.state.user}
-                  onChange={(user) => {
-                    this.setState({ user });
-                  }}
-                />
-              </React.Suspense>
+  return (
+    <UserBackOffice tab="Users">
+      <Can I={manage} a={daikoku} dispatchError>
+        <div className="row d-flex justify-content-start align-items-center mb-2">
+          {state.user && (
+            <div className="ml-1 avatar__container">
+              <img
+                src={state.user.picture}
+                className="img-fluid"
+                alt="avatar"
+                style={{ minWidth: '100px' }}
+              />
             </div>
           )}
-          <div className="row" style={{ justifyContent: 'flex-end' }}>
-            <Link className="btn btn-outline-danger" to={'/settings/users'}>
-              <Translation i18nkey="Cancel">
-                Cancel
-              </Translation>
-            </Link>
-            {!this.state.create && (
-              <button
-                style={{ marginLeft: 5 }}
-                type="button"
-                className="btn btn-outline-danger"
-                onClick={this.removeUser}>
-                <i className="fas fa-trash mr-1" />
-                <Translation i18nkey="Delete">
-                  Delete
-                </Translation>
-              </button>
-            )}
+          {!state.user && <h1>User</h1>}
+          {state.user && (
+            <h1 className="h1-rwd-reduce ml-2">
+              {state.user.name} - {state.user.email}
+            </h1>
+          )}
+        </div>
+        {state.user && (
+          <div className="row">
+            <React.Suspense fallback={<Spinner />}>
+              <LazyForm
+                flow={formFlow}
+                schema={formSchema}
+                value={state.user}
+                onChange={(user) => {
+                  setState({ ...state, user });
+                }}
+              />
+            </React.Suspense>
+          </div>
+        )}
+        <div className="row" style={{ justifyContent: 'flex-end' }}>
+          <Link className="btn btn-outline-danger" to={'/settings/users'}>
+            <Translation i18nkey="Cancel">
+              Cancel
+            </Translation>
+          </Link>
+          {!state.create && (
             <button
               style={{ marginLeft: 5 }}
               type="button"
-              className="btn btn-outline-success"
-              onClick={this.save}>
-              {!this.state.create && (
-                <span>
-                  <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Save">
-                    Save
-                  </Translation>
-                </span>
-              )}
-              {this.state.create && (
-                <span>
-                  <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Create">
-                    Create
-                  </Translation>
-                </span>
-              )}
+              className="btn btn-outline-danger"
+              onClick={removeUser}>
+              <i className="fas fa-trash mr-1" />
+              <Translation i18nkey="Delete">
+                Delete
+              </Translation>
             </button>
-          </div>
-        </Can>
-      </UserBackOffice>
-    );
-  }
+          )}
+          <button
+            style={{ marginLeft: 5 }}
+            type="button"
+            className="btn btn-outline-success"
+            onClick={save}>
+            {!state.create && (
+              <span>
+                <i className="fas fa-save mr-1" />
+                <Translation i18nkey="Save">
+                  Save
+                </Translation>
+              </span>
+            )}
+            {state.create && (
+              <span>
+                <i className="fas fa-save mr-1" />
+                <Translation i18nkey="Create">
+                  Create
+                </Translation>
+              </span>
+            )}
+          </button>
+        </div>
+      </Can>
+    </UserBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

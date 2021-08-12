@@ -1,47 +1,50 @@
-import React from 'react';
+import React, { useContext } from 'react';
 
 import { Spinner } from '../../../utils';
 import { t } from '../../../../locales';
 import { MailTemplateButton } from './MailTemplateButton';
+import { I18nContext } from '../../../../core';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export function MailgunConfig({ currentLanguage, value, onChange }) {
+  const { translateMethod } = useContext(I18nContext);
+
   const formFlow = ['domain', 'eu', 'key', 'fromTitle', 'fromEmail', 'template'];
 
   const formSchema = {
     domain: {
       type: 'string',
       props: {
-        label: t('Mailgun domain', currentLanguage),
+        label: translateMethod('Mailgun domain'),
       },
     },
     eu: {
       type: 'bool',
       props: {
-        label: t('European server', currentLanguage),
+        label: translateMethod('European server'),
       },
     },
     key: {
       type: 'string',
       props: {
-        label: t('Mailgun key', currentLanguage),
+        label: translateMethod('Mailgun key'),
       },
     },
     fromTitle: {
       type: 'string',
       props: {
-        label: t('Email title', currentLanguage),
+        label: translateMethod('Email title'),
       },
     },
     fromEmail: {
       type: 'string',
       props: {
-        label: t('Email from', currentLanguage),
+        label: translateMethod('Email from'),
       },
     },
     template: {
-      type: () => <MailTemplateButton currentLanguage={currentLanguage} />,
+      type: () => <MailTemplateButton />,
     },
   };
 

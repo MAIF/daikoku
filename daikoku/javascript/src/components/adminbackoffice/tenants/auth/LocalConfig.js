@@ -1,41 +1,41 @@
-import React, { Component } from 'react';
-import { t } from '../../../../locales';
+import React, { useContext, useEffect } from 'react';
+import { I18nContext } from '../../../../core';
 import { Spinner } from '../../../utils';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export class LocalConfig extends Component {
-  formFlow = ['sessionMaxAge'];
+export function LocalConfig(props) {
+  const formFlow = ['sessionMaxAge'];
 
-  formSchema = {
+  const { translateMethod } = useContext(I18nContext);
+
+  const formSchema = {
     sessionMaxAge: {
       type: 'number',
       props: {
-        suffix: t('Second', this.props.currentLanguage, true),
-        label: t('Session max. age', this.props.currentLanguage),
+        suffix: translateMethod('Second', props.currentLanguage, true),
+        label: translateMethod('Session max. age', props.currentLanguage),
       },
     },
   };
 
-  componentDidMount() {
-    if (this.props.rawValue.authProvider === 'Local') {
-      this.props.onChange({
-        sessionMaxAge: this.props.value.sessionMaxAge || 86400,
+  useEffect(() => {
+    if (props.rawValue.authProvider === 'Local') {
+      props.onChange({
+        sessionMaxAge: props.value.sessionMaxAge || 86400,
       });
     }
-  }
+  }, [])
 
-  render() {
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          value={this.props.value}
-          onChange={this.props.onChange}
-          flow={this.formFlow}
-          schema={this.formSchema}
-          style={{ marginTop: 50 }}
-        />
-      </React.Suspense>
-    );
-  }
+  return (
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
+        value={props.value}
+        onChange={props.onChange}
+        flow={formFlow}
+        schema={formSchema}
+        style={{ marginTop: 50 }}
+      />
+    </React.Suspense>
+  );
 }
