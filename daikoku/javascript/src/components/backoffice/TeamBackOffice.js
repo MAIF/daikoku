@@ -302,7 +302,6 @@ const TeamBackOfficeComponent = ({
 const UserBackOfficeComponent = ({
   tab,
   title,
-  currentLanguage,
   notificationSubMenu,
   tenant,
   isLoading,
@@ -314,6 +313,8 @@ const UserBackOfficeComponent = ({
       document.title = title;
     }
   }, [title]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   return (
     <>

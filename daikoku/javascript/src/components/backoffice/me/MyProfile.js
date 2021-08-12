@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import * as Services from '../../../services';
 import faker from 'faker';
 import bcrypt from 'bcryptjs';
@@ -9,16 +9,18 @@ import { toastr } from 'react-redux-toastr';
 import { configuration } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
 import { Spinner, validatePassword, ValidateEmail } from '../../utils';
-import { t, Translation } from '../../../locales';
-import { updateUser } from '../../../core';
+import { Translation } from '../../../locales';
+import { I18nContext, updateUser } from '../../../core';
 import { udpateLanguage } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
-function TwoFactorAuthentication({ currentLanguage, rawValue }) {
+function TwoFactorAuthentication({ rawValue }) {
   const [modal, setModal] = useState(false);
   const [error, setError] = useState();
   const [backupCodes, setBackupCodes] = useState('');
+
+  const { translateMethod } = useContext(I18nContext);
 
   const getQRCode = () => {
     Services.getQRCode().then((res) =>
@@ -30,10 +32,10 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
   };
 
   const disable2FA = () => {
-    window.confirm(t('2fa.disable_confirm_message', currentLanguage)).then((ok) => {
+    window.confirm(translateMethod('2fa.disable_confirm_message')).then((ok) => {
       if (ok) {
         Services.disable2FA().then(() => {
-          toastr.success(t('2fa.successfully_disabled_from_pr', currentLanguage));
+          toastr.success(translateMethod('2fa.successfully_disabled_from_pr'));
           window.location.reload();
         });
       }
@@ -42,17 +44,17 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
 
   function copyToClipboard() {
     navigator.clipboard.writeText(rawValue.twoFactorAuthentication.backupCodes);
-    toastr.success(t('2fa.copied', currentLanguage));
+    toastr.success(translateMethod('2fa.copied'));
   }
 
   function verify() {
     if (!modal.code || modal.code.length !== 6) {
-      setError(t('2fa.code_error', currentLanguage));
+      setError(translateMethod('2fa.code_error'));
       setModal({ ...modal, code: '' });
     } else {
       Services.selfVerify2faCode(modal.code).then((res) => {
         if (res.error) {
-          setError(t('2fa.wrong_code', currentLanguage));
+          setError(translateMethod('2fa.wrong_code'));
           setModal({ ...modal, code: '' });
         } else {
           toastr.success(res.message);
@@ -75,7 +77,7 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
       }}>
       {backupCodes ? (
         <div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
-          <span className="my-3">{t('2fa.backup_codes_message', currentLanguage)}</span>
+          <span className="my-3">{translateMethod('2fa.backup_codes_message')}</span>
           <div className="d-flex w-100 mb-3">
             <input type="text" disabled={true} value={backupCodes} className="form-control" />
             <button
@@ -92,7 +94,7 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
             className="btn btn-outline-success"
             type="button"
             onClick={() => window.location.reload()}>
-            {t('2fa.confirm', currentLanguage)}
+            {translateMethod('2fa.confirm')}
           </button>
         </div>
       ) : (
@@ -100,7 +102,7 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
           <div className="d-flex justify-content-center align-items-center p-3">
             <div className="d-flex flex-column justify-content-center align-items-center">
               <span className="my-3 text-center w-75 mx-auto">
-                {t('2fa.advice_scan', currentLanguage)}
+                {translateMethod('2fa.advice_scan')}
               </span>
               <img
                 src={`data:image/svg+xml;utf8,${encodeURIComponent(modal.qrcode)}`}
@@ -112,7 +114,7 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
             </div>
             <div className="w-75">
               <span className="my-3 text-center">
-                {t('2fa.advice_enter_manually', currentLanguage)}
+                {translateMethod('2fa.advice_enter_manually')}
               </span>
               <textarea
                 type="text"
@@ -131,8 +133,8 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
             </div>
           </div>
           <div className="w-75 mx-auto">
-            <span className="mt-3">{t('2fa.enter_6_digits', currentLanguage)}</span>
-            <span className="mb-3">{t('2fa.enter_a_code', currentLanguage)}</span>
+            <span className="mt-3">{translateMethod('2fa.enter_6_digits')}</span>
+            <span className="mb-3">{translateMethod('2fa.enter_a_code')}</span>
             {error && (
               <div className="alert alert-danger" role="alert">
                 {error}
@@ -141,7 +143,7 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
             <input
               type="number"
               value={modal.code}
-              placeholder={t('2fa.insert_code', currentLanguage)}
+              placeholder={translateMethod('2fa.insert_code')}
               onChange={(e) => {
                 if (e.target.value.length < 7) {
                   setError(null);
@@ -152,7 +154,7 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
             />
 
             <button className="btn btn-outline-success" type="button" onClick={verify}>
-              {t('2fa.complete_registration', currentLanguage)}
+              {translateMethod('2fa.complete_registration')}
             </button>
           </div>
         </div>
@@ -161,15 +163,15 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
   ) : (
     <>
       <div className="form-group row">
-        <label className="col-xs-12 col-sm-2 col-form-label">{t('2fa', currentLanguage)}</label>
+        <label className="col-xs-12 col-sm-2 col-form-label">{translateMethod('2fa')}</label>
         <div className="col-sm-10">
           {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled ? (
             <button onClick={disable2FA} className="btn btn-outline-danger" type="button">
-              {t('2fa.disable_action', currentLanguage)}
+              {translateMethod('2fa.disable_action')}
             </button>
           ) : (
             <button onClick={getQRCode} className="btn btn-outline-success" type="button">
-              {t('2fa.enable_action', currentLanguage)}
+              {translateMethod('2fa.enable_action')}
             </button>
           )}
         </div>
@@ -177,7 +179,7 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
       {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled && (
         <div className="form-group row">
           <label className="col-xs-12 col-sm-2 col-form-label">
-            {t('2fa.backup_codes', currentLanguage)}
+            {translateMethod('2fa.backup_codes')}
           </label>
           <div className="col-sm-10">
             <div className="d-flex">
@@ -201,74 +203,72 @@ function TwoFactorAuthentication({ currentLanguage, rawValue }) {
   );
 }
 
-class SetPassword extends Component {
-  genAndSetPassword = () => {
+function SetPassword(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  const genAndSetPassword = () => {
     window
-      .prompt(t('Type the password', this.props.currentLanguage), undefined, true)
+      .prompt(translateMethod('Type the password'), undefined, true)
       .then((pw1) => {
         if (pw1) {
           window
-            .prompt(t('Re-type the password', this.props.currentLanguage), undefined, true)
+            .prompt(translateMethod('Re-type the password'), undefined, true)
             .then((pw2) => {
-              const validation = validatePassword(pw1, pw2, this.props.currentLanguage);
+              const validation = validatePassword(pw1, pw2);
               if (validation.ok) {
                 const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-                this.props.changeValue('password', hashed);
+                props.changeValue('password', hashed);
               } else {
-                this.props.displayError(validation.error);
+                props.displayError(validation.error);
               }
             });
         }
       });
   };
 
-  render() {
-    if (
-      this.props.rawValue.origins.length === 1 &&
-      this.props.rawValue.origins[0].toLowerCase() === 'local'
-    ) {
-      return (
-        <div className="form-group row">
-          <label className="col-xs-12 col-sm-2 col-form-label" />
-          <div className="col-sm-10">
-            <button
-              type="button"
-              className="btn btn-outline-primary"
-              onClick={this.genAndSetPassword}>
-              <i className="fas fa-unlock-alt mr-1" />
-              <Translation i18nkey="Change my password">
-                Change my password
-              </Translation>
-            </button>
-          </div>
-        </div>
-      );
-    } else {
-      return null;
-    }
-  }
-}
-
-class RefreshToken extends Component {
-  reloadToken = () => {
-    this.props.changeValue('personalToken', faker.random.alphaNumeric(32));
-  };
-
-  render() {
+  if (
+    props.rawValue.origins.length === 1 &&
+    props.rawValue.origins[0].toLowerCase() === 'local'
+  ) {
     return (
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2 col-form-label" />
         <div className="col-sm-10">
-          <button type="button" className="btn btn-outline-primary" onClick={this.reloadToken}>
-            <i className="fas fa-sync-alt mr-1" />
-            <Translation i18nkey="Reload personal token">
-              Reload personal token
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={genAndSetPassword}>
+            <i className="fas fa-unlock-alt mr-1" />
+            <Translation i18nkey="Change my password">
+              Change my password
             </Translation>
           </button>
         </div>
       </div>
     );
+  } else {
+    return null;
   }
+}
+
+function RefreshToken(props) {
+  const reloadToken = () => {
+    props.changeValue('personalToken', faker.random.alphaNumeric(32));
+  };
+
+  return (
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label" />
+      <div className="col-sm-10">
+        <button type="button" className="btn btn-outline-primary" onClick={reloadToken}>
+          <i className="fas fa-sync-alt mr-1" />
+          <Translation i18nkey="Reload personal token">
+            Reload personal token
+          </Translation>
+        </button>
+      </div>
+    </div>
+  );
 }
 
 const Avatar = ({ currentLanguage, value, rawValue, changeValue, label, ...props }) => {
@@ -330,88 +330,80 @@ const Avatar = ({ currentLanguage, value, rawValue, changeValue, label, ...props
   );
 };
 
-class TenantList extends Component {
-  state = {
-    tenants: [],
-  };
+function TenantList(props) {
+  const [tenants, setTenants] = useState([]);
 
-  componentDidMount() {
-    Services.getTenantNames(this.props.value).then((tenants) => this.setState({ tenants }));
-  }
+  useEffect(() => {
+    Services.getTenantNames(props.value)
+      .then(setTenants);
+  }, []);
 
-  render() {
-    return (
-      <div className="form-group row pt-3">
-        <label className="col-xs-12 col-sm-2 col-form-label">
-          <Translation i18nkey="Tenants">
-            Tenants
-          </Translation>
-        </label>
-        <div className="col-sm-10">
-          <p className="fake-form-control">{this.state.tenants.join(', ')}</p>
-        </div>
+  return (
+    <div className="form-group row pt-3">
+      <label className="col-xs-12 col-sm-2 col-form-label">
+        <Translation i18nkey="Tenants">
+          Tenants
+        </Translation>
+      </label>
+      <div className="col-sm-10">
+        <p className="fake-form-control">{tenants.join(', ')}</p>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
-class PictureUpload extends Component {
-  state = { uploading: false };
+function PictureUpload(props) {
+  const [uploading, setUploading] = useState(false)
 
-  setFiles = (e) => {
+  const setFiles = (e) => {
     const files = e.target.files;
-    this.setState({ uploading: true }, () => {
-      this.props.setFiles(files).then(() => {
-        this.setState({ uploading: false });
-      });
-    });
+    setUploading(true);
+    props.setFiles(files)
+    setUploading(false);
   };
 
-  trigger = () => {
-    this.input.click();
+  const trigger = () => {
+    input.click();
   };
 
-  render() {
-    return (
-      <div className="changePicture">
-        <input
-          ref={(r) => (this.input = r)}
-          type="file"
-          className="form-control hide"
-          onChange={this.setFiles}
-        />
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          disabled={this.state.uploading}
-          onClick={this.trigger}
-          style={{ width: 200, height: 200, borderRadius: '50%' }}>
-          {this.state.uploading && <i className="fas fa-spinner" />}
-          {!this.state.uploading && (
-            <div className="text-white">
-              <Translation i18nkey="Change your picture">
-                Change your picture
-              </Translation>
-            </div>
-          )}
-        </button>
-      </div>
-    );
-  }
+  let input;
+
+  return (
+    <div className="changePicture">
+      <input
+        ref={(r) => (input = r)}
+        type="file"
+        className="form-control hide"
+        onChange={setFiles}
+      />
+      <button
+        type="button"
+        className="btn btn-outline-secondary"
+        disabled={uploading}
+        onClick={trigger}
+        style={{ width: 200, height: 200, borderRadius: '50%' }}>
+        {uploading && <i className="fas fa-spinner" />}
+        {!uploading && (
+          <div className="text-white">
+            <Translation i18nkey="Change your picture">
+              Change your picture
+            </Translation>
+          </div>
+        )}
+      </button>
+    </div>
+  );
 }
 
-class MyProfileComponent extends Component {
-  state = {
-    user: null,
-  };
+function MyProfileComponent(props) {
+  const [user, setUser] = useState()
 
-  formSchema = {
+  const { translateMethod } = useContext(I18nContext);
+
+  const formSchema = {
     _id: { type: 'string', disabled: true, props: { label: 'Id', placeholder: '---' } },
     tenants: {
-      type: TenantList,
-      props: {
-        currentLanguage: this.props.currentLanguage,
-      },
+      type: TenantList
     },
     origins: {
       type: ({ value }) => (
@@ -430,52 +422,50 @@ class MyProfileComponent extends Component {
     name: {
       type: 'string',
       props: {
-        label: t('Name', this.props.currentLanguage),
+        label: translateMethod('Name'),
       },
     },
     email: {
       type: 'string',
       props: {
-        label: t('Email address', this.props.currentLanguage),
+        label: translateMethod('Email address'),
       },
     },
     personalToken: {
       type: 'string',
       props: {
-        label: t('Personal Token', this.props.currentLanguage),
+        label: translateMethod('Personal Token'),
         disabled: true,
       },
     },
     refreshToken: {
       type: RefreshToken,
       props: {
-        currentLanguage: this.props.currentLanguage,
+        currentLanguage: props.currentLanguage,
       },
     },
     isDaikokuAdmin: {
       type: 'bool',
       props: {
-        label: t('Daikoku admin.', this.props.currentLanguage),
+        label: translateMethod('Daikoku admin.'),
       },
     },
     setPassword: {
       type: SetPassword,
       props: {
-        currentLanguage: this.props.currentLanguage,
         displayError: (error) => toastr.error(error),
       },
     },
     picture: {
       type: Avatar,
       props: {
-        currentLanguage: this.props.currentLanguage,
-        label: t('Avatar', this.props.currentLanguage),
+        label: translateMethod('Avatar'),
       },
     },
     defaultLanguage: {
       type: 'select',
       props: {
-        label: t('Default language', this.props.currentLanguage),
+        label: translateMethod('Default language'),
         possibleValues: Object.keys(configuration).map((key) => ({
           label: key,
           value: key,
@@ -485,12 +475,12 @@ class MyProfileComponent extends Component {
     enable2FA: {
       type: TwoFactorAuthentication,
       props: {
-        ...this.props,
+        ...props,
       },
     },
   };
 
-  formFlow = [
+  const formFlow = [
     'name',
     'email',
     'setPassword',
@@ -503,7 +493,7 @@ class MyProfileComponent extends Component {
     'origins',
   ];
 
-  setFiles = (files) => {
+  const setFiles = (files) => {
     const file = files[0];
     const filename = file.name;
     const contentType = file.type;
@@ -511,38 +501,39 @@ class MyProfileComponent extends Component {
       if (res.error) {
         toastr.error(res.error);
       } else {
-        this.setState(
+        setUser(
           {
+            ...user,
             user: {
-              ...this.state.user,
-              picture: `/user-avatar/${this.props.tenant._humanReadableId}/${res.id}`,
+              ...user,
+              picture: `/user-avatar/${props.tenant._humanReadableId}/${res.id}`,
               pictureFromProvider: false,
             },
           },
-          () => this.forceUpdate()
+          () => forceUpdate()
         );
       }
     });
   };
 
-  componentDidMount() {
-    Services.me(this.props.connectedUser._id).then((user) => this.setState({ user }));
-  }
+  useEffect(() => {
+    Services.me(props.connectedUser._id)
+      .then(setUser);
+  }, [])
 
-  save = () => {
-    if (this.state.user.name && this.state.user.email && this.state.user.picture) {
-      const emailValidation = ValidateEmail(this.state.user.email);
+  const save = () => {
+    if (user.name && user.email && user.picture) {
+      const emailValidation = ValidateEmail(user.email);
       if (emailValidation.ok) {
-        Services.updateUserById(this.state.user).then((user) => {
-          this.setState({ user }, () => {
-            this.props.updateUser(user);
-            if (this.props.currentLanguage !== user.defaultLanguage) {
-              this.props.updateLanguage(user.defaultLanguage);
+        Services.updateUserById(user).then((user) => {
+          setUser(user, () => {
+            props.updateUser(user);
+            if (props.currentLanguage !== user.defaultLanguage) {
+              props.updateLanguage(user.defaultLanguage);
             }
             toastr.success(
-              t(
+              translateMethod(
                 'user.updated.success',
-                this.props.currentLanguage,
                 false,
                 'user successfully updated',
                 user.name
@@ -554,115 +545,111 @@ class MyProfileComponent extends Component {
         toastr.error(emailValidation.error);
       }
     } else {
-      toastr.error(t('Missing informations ...', this.props.currentLanguage));
+      toastr.error(translateMethod('Missing informations ...'));
     }
   };
 
-  removeUser = () => {
+  const removeUser = () => {
     window
       .confirm(
-        t(
+        translateMethod(
           'delete account',
-          this.props.currentLanguage,
+          false,
           'Are you sure you want to delete your account ? This action cannot be undone ...'
         )
       )
       .then((ok) => {
         if (ok) {
           Services.deleteSelfUserById().then(() => {
-            this.props.history.push('/logout');
+            props.history.push('/logout');
           });
         }
       });
   };
 
-  render() {
-    const user = this.state.user;
-    return (
-      <UserBackOffice tab="Me">
-        <div className="row">
-          <div className="col">
-            <div className="d-flex mb-3">
-              {user && (
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <img
-                    src={`${user.picture}${
-                      user.picture.startsWith('http') ? '' : `?${Date.now()}`
+  return (
+    <UserBackOffice tab="Me">
+      <div className="row">
+        <div className="col">
+          <div className="d-flex mb-3">
+            {user && (
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <img
+                  src={`${user.picture}${user.picture.startsWith('http') ? '' : `?${Date.now()}`
                     }`}
-                    style={{
-                      width: 200,
-                      borderRadius: '50%',
-                      backgroundColor: 'white',
-                      position: 'relative',
-                    }}
-                    alt="avatar"
-                    className="mr-3"
-                  />
-                  <PictureUpload
-                    setFiles={this.setFiles}
-                    currentLanguage={this.props.currentLanguage}
-                  />
-                </div>
-              )}
-              {user ? (
-                <div className="mt-3">
-                  <h1 className="my-0">{user.name}</h1>
-                  <span id="my_profile_email">{user.email}</span>
-                </div>
-              ) : (
-                <h1>Me</h1>
-              )}
-            </div>
-            {this.state.user && (
-              <React.Suspense fallback={<Spinner />}>
-                <LazyForm
-                  flow={this.formFlow}
-                  schema={this.formSchema}
-                  value={this.state.user}
-                  onChange={(user) => {
-                    this.setState({ user });
+                  style={{
+                    width: 200,
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
+                    position: 'relative',
                   }}
+                  alt="avatar"
+                  className="mr-3"
                 />
-              </React.Suspense>
+                <PictureUpload
+                  setFiles={setFiles}
+                  currentLanguage={props.currentLanguage}
+                />
+              </div>
+            )}
+            {user ? (
+              <div className="mt-3">
+                <h1 className="my-0">{user.name}</h1>
+                <span id="my_profile_email">{user.email}</span>
+              </div>
+            ) : (
+              <h1>Me</h1>
             )}
           </div>
+          {user && (
+            <React.Suspense fallback={<Spinner />}>
+              <LazyForm
+                flow={formFlow}
+                schema={formSchema}
+                value={user}
+                onChange={(user) => {
+                  setUser(user);
+                }}
+              />
+            </React.Suspense>
+          )}
         </div>
-        <div className="row" style={{ justifyContent: 'flex-end' }}>
-          <a
-            className="btn btn-outline-primary"
-            href="#"
-            onClick={() => this.props.history.goBack()}>
-            <i className="fas fa-chevron-left mr-1" />
-            <Translation i18nkey="Back">
-              Back
+      </div>
+      <div className="row" style={{ justifyContent: 'flex-end' }}>
+        <a
+          className="btn btn-outline-primary"
+          href="#"
+          onClick={() => props.history.goBack()}>
+          <i className="fas fa-chevron-left mr-1" />
+          <Translation i18nkey="Back">
+            Back
+          </Translation>
+        </a>
+        <button
+          type="button"
+          className="btn btn-outline-danger"
+          style={{ marginLeft: 5 }}
+          onClick={removeUser}>
+          <i className="fas fa-trash mr-1" />
+          <Translation i18nkey="Delete my profile">
+            Delete my profile
+          </Translation>
+        </button>
+        <button
+          style={{ marginLeft: 5 }}
+          type="button"
+          className="btn btn-outline-success"
+          onClick={save}>
+          <span>
+            <i className="fas fa-save mr-1" />
+            <Translation i18nkey="Save">
+              Save
             </Translation>
-          </a>
-          <button
-            type="button"
-            className="btn btn-outline-danger"
-            style={{ marginLeft: 5 }}
-            onClick={this.removeUser}>
-            <i className="fas fa-trash mr-1" />
-            <Translation i18nkey="Delete my profile">
-              Delete my profile
-            </Translation>
-          </button>
-          <button
-            style={{ marginLeft: 5 }}
-            type="button"
-            className="btn btn-outline-success"
-            onClick={this.save}>
-            <span>
-              <i className="fas fa-save mr-1" />
-              <Translation i18nkey="Save">
-                Save
-              </Translation>
-            </span>
-          </button>
-        </div>
-      </UserBackOffice>
-    );
-  }
+          </span>
+        </button>
+      </div>
+    </UserBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

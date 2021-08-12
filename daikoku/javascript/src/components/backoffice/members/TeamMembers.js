@@ -37,6 +37,8 @@ export function TeamMembersSimpleComponent(props) {
     tab: TABS.members,
   });
 
+  const { translateMethod } = useContext(I18nContext);
+
   useEffect(() => {
     updateMembers(props.currentTeam);
   }, [])

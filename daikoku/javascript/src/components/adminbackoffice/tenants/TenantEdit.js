@@ -53,20 +53,18 @@ function AuthConfig(props) {
   }
 }
 
-class MailerConfig extends Component {
-  render() {
-    const { rawValue } = props;
-    const mailerSettings = rawValue.mailerSettings;
+function MailerConfig(props) {
+  const { rawValue } = props;
+  const mailerSettings = rawValue.mailerSettings;
 
-    if (!mailerSettings) return null;
+  if (!mailerSettings) return null;
 
-    if (mailerSettings.type === 'console') return <ConsoleConfig {...props} />;
-    else if (mailerSettings.type === 'mailgun') return <MailgunConfig {...props} />;
-    else if (mailerSettings.type === 'mailjet') return <MailjetConfig {...props} />;
-    else if (mailerSettings.type === 'smtpClient') return <SmtpClientConfig {...props} />;
-    else if (mailerSettings.type === 'sendgrid') return <SendGridConfig {...props} />;
-    else return null;
-  }
+  if (mailerSettings.type === 'console') return <ConsoleConfig {...props} />;
+  else if (mailerSettings.type === 'mailgun') return <MailgunConfig {...props} />;
+  else if (mailerSettings.type === 'mailjet') return <MailjetConfig {...props} />;
+  else if (mailerSettings.type === 'smtpClient') return <SmtpClientConfig {...props} />;
+  else if (mailerSettings.type === 'sendgrid') return <SendGridConfig {...props} />;
+  else return null;
 }
 
 function StyleLogoAssetButton(props) {
