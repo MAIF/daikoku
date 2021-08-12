@@ -8,7 +8,6 @@ import { Translation, t } from '../../../locales';
 const Separator = () => <hr className="hr-apidescription" />;
 
 export class ApiCartidge extends Component {
-  
   render() {
     const { api, ownerTeam } = this.props;
     const defaultPlan = api.possibleUsagePlans.filter((p) => p._id === api.defaultUsagePlan)[0];

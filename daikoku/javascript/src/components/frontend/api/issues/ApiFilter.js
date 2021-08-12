@@ -68,11 +68,11 @@ export function ApiFilter({
       {connectedUser && !connectedUser.isGuest && (
         <div>
           <Can I={manage} a={api} team={ownerTeam}>
-          <Link to={`${pathname}/labels`} className="btn btn-outline-primary">
-            <i className="fa fa-tag mr-1" />
-            {t('issues.tags', currentLanguage)}
-            <span className="badge badge-secondary ml-2">{tags.length || 0}</span>
-          </Link>
+            <Link to={`${pathname}/labels`} className="btn btn-outline-primary">
+              <i className="fa fa-tag mr-1" />
+              {t('issues.tags', currentLanguage)}
+              <span className="badge badge-secondary ml-2">{tags.length || 0}</span>
+            </Link>
           </Can>
           <Link to={`${pathname}/issues/new`} className="btn btn-outline-success ml-1">
             {t('issues.new_issue', currentLanguage)}

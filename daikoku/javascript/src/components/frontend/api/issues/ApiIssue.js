@@ -46,8 +46,16 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
             exact
             path={`${basePath}/labels`}
             component={() => (
-              <Can I={manage} a={API} team={ownerTeam} orElse={<Redirect to={`${basePath}/issues`}/>}>
-                <TeamApiIssueTags value={api} onChange={onChange} currentLanguage={currentLanguage} />
+              <Can
+                I={manage}
+                a={API}
+                team={ownerTeam}
+                orElse={<Redirect to={`${basePath}/issues`} />}>
+                <TeamApiIssueTags
+                  value={api}
+                  onChange={onChange}
+                  currentLanguage={currentLanguage}
+                />
               </Can>
             )}
           />

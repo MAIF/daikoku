@@ -217,7 +217,8 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
                   message.setSentDate(new Date())
                   message.setSubject(title)
-                  message.setContent(templatedBody.replace("{{email}}", body), "text/html; charset=utf-8")
+                  message.setContent(templatedBody.replace("{{email}}", body),
+                                     "text/html; charset=utf-8")
 
                   Try {
                     Transport.send(message)

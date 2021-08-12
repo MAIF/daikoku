@@ -179,8 +179,9 @@ const Description = (props) => {
     );
   }
 
-  return <div dangerouslySetInnerHTML={{ __html: converter.makeHtml(props.description || '') }}>
-  </div>;
+  return (
+    <div dangerouslySetInnerHTML={{ __html: converter.makeHtml(props.description || '') }}></div>
+  );
 };
 
 const mapStateToProps = (state) => ({

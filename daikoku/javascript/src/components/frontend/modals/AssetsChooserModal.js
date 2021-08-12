@@ -136,32 +136,34 @@ export class AssetChooserComponent extends Component {
 
   getTenantAssets = () =>
     Services.listTenantAssets(this.props.teamId).then((assets) =>
-      assets.error ? [] :
-        assets.map((asset) => ({
-          label: asset.meta.filename + ' - ' + asset.meta.title,
-          value: asset.meta.asset,
-          filename: asset.meta.filename,
-          title: asset.meta.title,
-          desc: asset.meta.desc,
-          contentType: asset.meta['content-type'],
-          meta: asset.meta,
-          link: `/tenant-assets/${asset.meta.asset}`,
-        }))
+      assets.error
+        ? []
+        : assets.map((asset) => ({
+            label: asset.meta.filename + ' - ' + asset.meta.title,
+            value: asset.meta.asset,
+            filename: asset.meta.filename,
+            title: asset.meta.title,
+            desc: asset.meta.desc,
+            contentType: asset.meta['content-type'],
+            meta: asset.meta,
+            link: `/tenant-assets/${asset.meta.asset}`,
+          }))
     );
 
   getTeamAssets = (team) =>
     Services.listAssets(team._id).then((assets) =>
-      assets.error ? [] :
-        assets.map((asset) => ({
-          label: asset.meta.filename + ' - ' + asset.meta.title,
-          value: asset.meta.asset,
-          filename: asset.meta.filename,
-          title: asset.meta.title,
-          desc: asset.meta.desc,
-          contentType: asset.meta['content-type'],
-          meta: asset.meta,
-          link: `/team-assets/${team._id}/${asset.meta.asset}`,
-        }))
+      assets.error
+        ? []
+        : assets.map((asset) => ({
+            label: asset.meta.filename + ' - ' + asset.meta.title,
+            value: asset.meta.asset,
+            filename: asset.meta.filename,
+            title: asset.meta.title,
+            desc: asset.meta.desc,
+            contentType: asset.meta['content-type'],
+            meta: asset.meta,
+            link: `/team-assets/${team._id}/${asset.meta.asset}`,
+          }))
     );
 
   componentDidMount() {
@@ -220,7 +222,10 @@ export class AssetChooserComponent extends Component {
     if (!this.state.assets.length) {
       return (
         <BeautifulTitle title={t('No assets found', this.props.currentLanguage)}>
-          <button type="button" className="btn btn-sm btn-access-negative ml-1 cursor-help" disabled>
+          <button
+            type="button"
+            className="btn btn-sm btn-access-negative ml-1 cursor-help"
+            disabled>
             <i
               className={classNames('fas mr-1', {
                 'fa-user-circle': !!this.props.onlyPreview,
@@ -252,9 +257,9 @@ export class AssetChooserComponent extends Component {
             this.props.icon
               ? this.props.icon
               : classNames('fas mr-1', {
-                'fa-user-circle': !!this.props.onlyPreview,
-                'fa-file': !this.props.onlyPreview,
-              })
+                  'fa-user-circle': !!this.props.onlyPreview,
+                  'fa-file': !this.props.onlyPreview,
+                })
           }
         />{' '}
         {this.props.label}
