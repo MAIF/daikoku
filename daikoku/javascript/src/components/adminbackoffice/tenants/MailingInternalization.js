@@ -2,7 +2,7 @@ import React, { Suspense, useContext, useEffect, useState } from 'react';
 import { Can, manage, Spinner, tenant as TENANT } from '../../utils';
 import { connect } from 'react-redux';
 import { UserBackOffice } from '../../backoffice';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { toastr } from 'react-redux-toastr';
 import { Link, Route, Switch, useParams } from 'react-router-dom';

@@ -122,7 +122,7 @@ function TeamApiComponent(props) {
               editedApi._humanReadableId
             )
               .then((res) => {
-                if (res.error) toastr.error(t(res.error));
+                if (res.error) toastr.error(translateMethod(res.error));
                 else toastr.success(translateMethod('Api saved'));
                 return res;
               })

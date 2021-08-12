@@ -55,8 +55,7 @@ function UserListComponent(props) {
         if (ok) {
           Services.deleteUserById(user._id).then(() => {
             toastr.info(
-              t(
-                'remove.user.success',
+              translateMethod('remove.user.success',
                 false,
                 `user ${user.name} is successfully deleted`,
                 user.name
@@ -70,13 +69,7 @@ function UserListComponent(props) {
 
   const toggleAdmin = (member) => {
     if (member._id === props.connectedUser._id) {
-      alert(
-        t(
-          'toggle.admin.alert',
-          false,
-          "You can't remove your admin status, ask another admin."
-        )
-      );
+      alert(translateMethod('toggle.admin.alert'));
     } else {
       Services.setAdminStatus(member, !member.isDaikokuAdmin).then(() => updateUsers());
     }

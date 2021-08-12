@@ -259,7 +259,7 @@ const AssetsListComponent = ({
     },
     input: {
       type: FileInput,
-      props: { setFiles: (f) => setFiles(f): currentLanguage },
+      props: { setFiles: (f) => setFiles(f) },
     },
     add: {
       type: AddAsset,
@@ -542,9 +542,8 @@ const AssetsListComponent = ({
     <BackOffice
       tab="Assets"
       apiId={match.params.apiId}
-      title={`${tenantMode ? tenant.name : currentTeam.name} - ${t(
+      title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod(
         'Asset',
-        currentLanguage,
         true
       )}`}>
       <Can I={manage} a={tenantMode ? tenant : asset} team={currentTeam} dispatchError>

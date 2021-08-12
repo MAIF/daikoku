@@ -76,23 +76,11 @@ export function TenantOtoroshisComponent(props) {
 
   const onDelete = (id) => {
     window
-      .confirm(
-        t(
-          'otoroshi.settings.delete.confirm',
-          false,
-          'Are you sure you want to delete those otoroshi settings ?'
-        )
-      )
+      .confirm(translateMethod('otoroshi.settings.delete.confirm'))
       .then((ok) => {
         if (ok) {
           Services.deleteOtoroshiSettings(props.tenant._id, id).then(() => {
-            toastr.success(
-              t(
-                'otoroshi.settings.deleted.success',
-                false,
-                'Otoroshi settings successfuly deleted'
-              )
-            );
+            toastr.success(translateMethod('otoroshi.settings.deleted.success'));
             table.update();
           });
         }

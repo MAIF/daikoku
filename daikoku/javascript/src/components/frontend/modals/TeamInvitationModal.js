@@ -49,7 +49,7 @@ export const TeamInvitationModal = (props) => {
       <div className="modal-body">
         {error && (
           <div className="alert alert-danger" role="alert">
-            {t(error)}
+            {translateMethod(error)}
           </div>
         )}
         <input

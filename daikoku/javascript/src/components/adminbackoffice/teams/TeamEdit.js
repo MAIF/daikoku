@@ -87,15 +87,12 @@ function TeamEditForAdministrationComponent(props) {
     if (props.location && props.location.state && props.location.state.newTeam) {
       Services.createTeam(team)
         .then((team) => {
-          toastr.success(
-            t(
-              'team.created',
-              props.currentLanguage,
-              false,
-              `Team ${team.name} successfully created`,
-              team.name
-            )
-          );
+          toastr.success(translateMethod(
+            'team.created',
+            false,
+            `Team ${team.name} successfully created`,
+            team.name
+          ));
           return team;
         })
         .then((team) => {

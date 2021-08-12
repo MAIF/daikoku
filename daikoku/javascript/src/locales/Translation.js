@@ -67,12 +67,3 @@ Translation.propTypes = {
   i18nkey: PropTypes.string.isRequired,
   extraConf: PropTypes.object,
 };
-
-
-export const t = (key, language, plural = false, defaultResponse = undefined, ...replacements) => {
-  if (!language) {
-    return defaultResponse || key;
-  }
-
-  return getTrad(key, language, plural, defaultResponse, undefined, replacements);
-};

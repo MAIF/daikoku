@@ -9,7 +9,7 @@ import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
 import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 const Currency = ({ plan }) => {
@@ -179,7 +179,7 @@ export const TeamApiConsumption = connect(mapStateToProps)(TeamApiConsumptionCom
 
 function PlanLightConsumption(props) {
   const { translateMethod } = useContext(I18nContext);
-  
+
   renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
 
   renderFreeWithQuotas = () => (

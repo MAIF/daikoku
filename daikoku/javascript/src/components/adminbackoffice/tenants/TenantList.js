@@ -28,13 +28,7 @@ export function TenantListComponent(props) {
 
   const removeTenant = (tenantId) => {
     window
-      .confirm(
-        t(
-          'delete.tenant.confirm',
-          false,
-          'Are you sure you want to delete this tenant ?'
-        )
-      )
+      .confirm(translateMethod('delete.tenant.confirm'))
       .then((ok) => {
         if (ok) {
           Services.deleteTenant(tenantId).then(() => getTenants());

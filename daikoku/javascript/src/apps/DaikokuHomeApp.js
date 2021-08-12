@@ -169,10 +169,7 @@ export function SignupComponent(props) {
       setState({
         ...state,
         state: 'error',
-        error: t(
-          'account.creation.error',
-          "Your account creation request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
-        ),
+        error: translateMethod('account.creation.error'),
       });
     }
   }, [])
@@ -302,7 +299,7 @@ export function ResetPasswordComponent(props) {
           .then((r) => r.json())
           .then((res) => {
             if (res.error) {
-              setState({ ...state, state: 'error', error: t(res.error, props.currentLanguage) });
+              setState({ ...state, state: 'error', error: translateMethod(res.error) });
             } else {
               setState({ ...state, state: 'done' });
             }
@@ -314,7 +311,7 @@ export function ResetPasswordComponent(props) {
       setState({
         ...state,
         state: 'error',
-        error: translateMethod('Missing informations ...', props.currentLanguage),
+        error: translateMethod('Missing informations ...'),
       });
     }
   };
@@ -325,11 +322,7 @@ export function ResetPasswordComponent(props) {
       setState({
         ...state,
         state: 'error',
-        error: t(
-          'account.reset.error',
-          false,
-          "Your password reset request is not valid anymore (it's only valid for 15 minutes). Please creates a new request."
-        ),
+        error: translateMethod('account.reset.error'),
       });
     }
   }, []);

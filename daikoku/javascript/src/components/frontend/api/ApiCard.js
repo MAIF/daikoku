@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import classNames from 'classnames';
 
 import { Can, manage, api as API } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
-import { Translation, t } from '../../../locales';
+import { Translation } from '../../../locales';
 import StarsButton from './StarsButton';
+import { I18nContext } from '../../../core';
 
 export const ApiCard = (props) => {
   const allTeamsAreAuthorized =
@@ -13,6 +14,8 @@ export const ApiCard = (props) => {
     props.api.authorizations && props.api.authorizations.some((a) => a.pending && !a.authorized);
   const api = props.api;
   const team = props.team || { name: '--', avatar: '#', _id: api.team };
+
+  const { translateMethod } = useContext(I18nContext);
 
   const accessButton = () => {
     if (
@@ -23,9 +26,8 @@ export const ApiCard = (props) => {
       return (
         <ActionWithTeamSelector
           title="Api access"
-          description={t(
+          description={translateMethod(
             'api.access.request',
-            props.currentLanguage,
             false,
             `You will send an access request to the API "${api.name}". For which team do you want to send the request ?`,
             [api.name]

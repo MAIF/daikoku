@@ -276,18 +276,8 @@ const ApiListComponent = (props) => {
         )}
         {props.apiCreationPermitted && !props.team && !props.connectedUser.isGuest && (
           <ActionWithTeamSelector
-            title={t(
-              'api.creation.title.modal',
-              props.currentLanguage,
-              false,
-              'Select the team for which to create new api'
-            )}
-            description={t(
-              'api.creation.description.modal',
-              props.currentLanguage,
-              false,
-              'You are going to create an api. For which team do you want to create it ?'
-            )}
+            title={translateMethod('api.creation.title.modal')}
+            description={translateMethod('api.creation.description.modal')}
             teams={props.myTeams
               .filter((t) => t.type !== 'Admin')
               .filter((t) => !props.tenant.creationSecurity || t.apisCreationPermission)

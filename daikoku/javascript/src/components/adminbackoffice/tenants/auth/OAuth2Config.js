@@ -83,11 +83,7 @@ export function AlgoSettings(props) {
         <SelectInput
           key="sha-size"
           label={translateMethod('SHA Size')}
-          help={t(
-            'sha.size.help',
-            props.currentLanguage,
-            'Word size for the SHA-2 hash function used'
-          )}
+          help={translateMethod('sha.size.help')}
           value={algo.size}
           onChange={(v) => changeTheValue(path + '.size', v)}
           possibleValues={[
@@ -109,11 +105,7 @@ export function AlgoSettings(props) {
         <SelectInput
           key="sha-size"
           label={translateMethod('SHA Size')}
-          help={t(
-            'sha.size.help',
-            props.currentLanguage,
-            'Word size for the SHA-2 hash function used'
-          )}
+          help={translateMethod('sha.size.help')}
           value={algo.size}
           onChange={(v) => changeTheValue(path + '.size', v)}
           possibleValues={[
@@ -133,11 +125,7 @@ export function AlgoSettings(props) {
           key="private-key"
           label={translateMethod('Private key')}
           value={algo.privateKey}
-          help={t(
-            'private.key.help',
-            props.currentLanguage,
-            'The RSA private key, private key can be empty if not used for JWT token signing'
-          )}
+          help={translateMethod('private.key.help')}
           onChange={(e) => changeTheValue(path + '.privateKey', e)}
         />,
       ]}
@@ -145,11 +133,7 @@ export function AlgoSettings(props) {
         <SelectInput
           key="sha-size"
           label={translateMethod('SHA Size')}
-          help={t(
-            'sha.size.help',
-            props.currentLanguage,
-            'Word size for the SHA-2 hash function used'
-          )}
+          help={translateMethod('sha.size.help')}
           value={algo.size}
           onChange={(v) => changeTheValue(path + '.size', v)}
           possibleValues={[
@@ -169,11 +153,7 @@ export function AlgoSettings(props) {
           key="private-key"
           label={translateMethod('Private key')}
           value={algo.privateKey}
-          help={t(
-            'ecdsa.private.key.help',
-            props.currentLanguage,
-            'The ECDSA private key, private key can be empty if not used for JWT token signing'
-          )}
+          help={translateMethodt('ecdsa.private.key.help')}
           onChange={(e) => changeTheValue(path + '.privateKey', e)}
         />,
       ]}

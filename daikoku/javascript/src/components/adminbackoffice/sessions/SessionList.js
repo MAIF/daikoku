@@ -66,13 +66,7 @@ function SessionListComponent(props) {
 
   const deleteSession = (session) => {
     window
-      .confirm(
-        t(
-          'destroy.session.confirm',
-          props.currentLanguage,
-          'Are you sure you want to destroy this session ?'
-        )
-      )
+      .confirm(translateMethod('destroy.session.confirm'))
       .then((ok) => {
         if (ok) {
           Services.deleteSession(session._id).then(() => {
@@ -89,13 +83,7 @@ function SessionListComponent(props) {
 
   const deleteSessions = () => {
     window
-      .confirm(
-        t(
-          'destroy.all.sessions.confirm',
-          props.currentLanguage,
-          'Are you sure you want to destroy all sessions including yours ?'
-        )
-      )
+      .confirm(translateMethod('destroy.all.sessions.confirm'))
       .then((ok) => {
         if (ok) {
           Services.deleteSessions().then(() => {

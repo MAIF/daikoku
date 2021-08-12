@@ -241,11 +241,11 @@ function ApiPricingCardComponent(props) {
                 (plan.otoroshiTarget && !isAccepted && !isPending)) && (
                   <ActionWithTeamSelector
                     title={translateMethod('team.selection.title', 'Select teams')}
-                    description={t(
+                    description={translateMethod(
                       plan.subscriptionProcess === 'Automatic'
                         ? 'team.selection.desc.get'
                         : 'team.selection.desc.request',
-                      props.currentLanguage,
+                      false,
                       'You are going to get or request API keys. On which team do you want them for?'
                     )}
                     currentLanguage={props.currentLanguage}

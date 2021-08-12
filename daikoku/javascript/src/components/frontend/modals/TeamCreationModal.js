@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { PropTypes } from 'prop-types';
 
 import { TeamEditForm } from '../../backoffice/teams/TeamEdit';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import * as Services from '../../../services';
+import { I18nContext } from '../../../core';
 
 export const TeamCreationModal = (props) => {
   const [team, setTeam] = useState(props.team);
   const [created, setCreated] = useState(false);
   const [error, setError] = useState(undefined);
+
+  const { translateMethod } = useContext(I18nContext)
 
   useEffect(() => {
     if (created) {
@@ -32,7 +35,7 @@ export const TeamCreationModal = (props) => {
       <div className="modal-body">
         {!!error && (
           <div className="alert alert-danger" role="alert">
-            {t(error, props.currentLanguage)}
+            {translateMethod(error)}
           </div>
         )}
         <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={props.currentLanguage} />

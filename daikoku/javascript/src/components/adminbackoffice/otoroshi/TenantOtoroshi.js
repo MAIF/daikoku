@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant, Spinner } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../core/i18n-context';
 
@@ -69,12 +69,7 @@ function TenantOtoroshiComponent(props) {
           toastr.error('Failure', result.error);
         } else {
           toastr.success(
-            t(
-              'otoroshi.settings.created.success',
-              props.currentLanguage,
-              false,
-              'Otoroshi settings successfuly created'
-            )
+            translateMethod('otoroshi.settings.created.success')
           );
           setState({ ...state, create: false });
         }
@@ -85,11 +80,7 @@ function TenantOtoroshiComponent(props) {
           toastr.error('Failure', result.error);
         } else {
           toastr.success(
-            t(
-              'otoroshi.settings.updated.success',
-              false,
-              'Otoroshi settings successfuly updated'
-            )
+            translateMethod('otoroshi.settings.updated.success')
           );
           setState({ ...state, create: false });
         }
@@ -100,23 +91,13 @@ function TenantOtoroshiComponent(props) {
   const onDelete = () => {
     window
       .confirm(
-        t(
-          'otoroshi.settings.delete.confirm',
-          false,
-          'Are you sure you want to delete those otoroshi settings ?'
-        )
+        translateMethod('otoroshi.settings.delete.confirm')
       )
       .then((ok) => {
         if (ok) {
           Services.deleteOtoroshiSettings(props.tenant._id, state.otoroshi._id).then(
             () => {
-              toastr.success(
-                t(
-                  'otoroshi.settings.deleted.success',
-                  false,
-                  'Otoroshi settings successfuly deleted'
-                )
-              );
+              toastr.success(translateMethod('otoroshi.settings.deleted.success'));
               props.history.push('/settings/otoroshis');
             }
           );

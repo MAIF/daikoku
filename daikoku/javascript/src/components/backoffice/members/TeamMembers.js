@@ -20,7 +20,7 @@ import {
   apiEditor,
   user,
 } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 
 import 'antd/lib/tooltip/style/index.css';
 

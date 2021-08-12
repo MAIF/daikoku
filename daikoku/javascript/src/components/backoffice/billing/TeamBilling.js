@@ -8,7 +8,7 @@ import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { formatCurrency, formatPlanType, Can, read, stat } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 function TeamBillingComponent(props) {
