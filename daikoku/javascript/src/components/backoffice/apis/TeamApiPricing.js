@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import _ from 'lodash';
 import { currencies } from '../../../services/currencies';
 import faker from 'faker';
@@ -7,12 +7,12 @@ import CreatableSelect from 'react-select/creatable';
 import classNames from 'classnames';
 
 import { Spinner, newPossibleUsagePlan, Option } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { Help } from '../../inputs';
 import { toastr } from 'react-redux-toastr';
 import { connect } from 'react-redux';
-import { openApiSelectModal } from '../../../core';
+import { I18nContext, openApiSelectModal } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -180,9 +180,11 @@ function usePrevious(value) {
   return ref.current;
 }
 
-function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
+function TeamApiPricingComponent({ value, tenant, ...props }) {
   const [selected, setSelected] = useState(value.possibleUsagePlans[0]);
   const [otoroshiSettings, setOtoroshiSettings] = useState([]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   const prevValue = usePrevious(value);
 
@@ -217,13 +219,13 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       )
     ) {
       return [
-        `>>> ${t('Otoroshi', currentLanguage)}`,
+        `>>> ${translateMethod('Otoroshi')}`,
         'otoroshiTarget.otoroshiSettings',
         'otoroshiTarget.authorizedEntities',
       ];
     }
     return [
-      `>>> ${t('Otoroshi', currentLanguage)}`,
+      `>>> ${translateMethod('Otoroshi')}`,
       'otoroshiTarget.otoroshiSettings',
       'otoroshiTarget.authorizedEntities',
       'otoroshiTarget.apikeyCustomization.clientIdOnly',
@@ -246,7 +248,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'otoroshiTarget.otoroshiSettings': {
         type: 'select',
         props: {
-          label: t('Otoroshi instance', currentLanguage),
+          label: translateMethod('Otoroshi instance'),
           possibleValues: otoroshiSettings.map((s) => ({
             label: s.url,
             value: s._id,
@@ -256,11 +258,11 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'otoroshiTarget.authorizedEntities': {
         type: OtoroshiServicesAndGroupSelector,
         props: {
-          label: t('Authorized entities', currentLanguage),
+          label: translateMethod('Authorized entities'),
           _found,
-          placeholder: t('Authorized.entities.placeholder', currentLanguage),
+          placeholder: translateMethod('Authorized.entities.placeholder'),
           tenant: tenant,
-          help: t('authorized.entities.help', currentLanguage),
+          help: translateMethod('authorized.entities.help'),
         },
       },
     };
@@ -278,28 +280,27 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'otoroshiTarget.apikeyCustomization.clientIdOnly': {
         type: 'bool',
         props: {
-          label: t('Apikey with clientId only', currentLanguage),
+          label: translateMethod('Apikey with clientId only'),
         },
       },
       'otoroshiTarget.apikeyCustomization.readOnly': {
         type: 'bool',
         props: {
-          label: t('Read only apikey', currentLanguage),
+          label: translateMethod('Read only apikey'),
         },
       },
       'otoroshiTarget.apikeyCustomization.constrainedServicesOnly': {
         type: 'bool',
         props: {
-          label: t('Constrained services only', currentLanguage),
+          label: translateMethod('Constrained services only'),
         },
       },
       'otoroshiTarget.apikeyCustomization.dynamicPrefix': {
         type: 'string',
         props: {
-          label: t('Dynamic prefix', currentLanguage),
-          help: t(
+          label: translateMethod('Dynamic prefix'),
+          help: translateMethod(
             'dynamic.prefix.help',
-            currentLanguage,
             false,
             'the prefix used in tags and metadata used to target dynamic values that will be updated if the value change in the original plan'
           ),
@@ -308,10 +309,9 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'otoroshiTarget.apikeyCustomization.metadata': {
         type: 'object',
         props: {
-          label: t('Automatic API key metadata', currentLanguage),
-          help: t(
+          label: translateMethod('Automatic API key metadata'),
+          help: translateMethod(
             'automatic.metadata.help',
-            currentLanguage,
             false,
             'Automatic metadata will be calculated on subscription acceptation'
           ),
@@ -320,11 +320,10 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'otoroshiTarget.apikeyCustomization.customMetadata': {
         type: CustomMetadataInput,
         props: {
-          label: t('Custom Apikey metadata', currentLanguage),
-          toastr: () => toastr.info(t('sub.process.update.to.manual', currentLanguage)),
-          help: t(
+          label: translateMethod('Custom Apikey metadata'),
+          toastr: () => toastr.info(translateMethod('sub.process.update.to.manual')),
+          help: translateMethod(
             'custom.metadata.help',
-            currentLanguage,
             false,
             'custom metadata will have to be filled during subscription validation. Subscripption process will be switched to manual'
           ),
@@ -333,38 +332,38 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'otoroshiTarget.apikeyCustomization.tags': {
         type: 'array',
         props: {
-          label: t('Apikey tags', currentLanguage),
+          label: translateMethod('Apikey tags'),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.enabled': {
         type: 'bool',
         props: {
-          label: t('Enable restrictions', currentLanguage),
+          label: translateMethod('Enable restrictions'),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.allowLast': {
         type: 'bool',
         props: {
-          label: t('Allow at last', currentLanguage),
-          help: t('allow.least.help', currentLanguage, 'Allowed path will be evaluated at last'),
+          label: translateMethod('Allow at last'),
+          help: translateMethod('allow.least.help', 'Allowed path will be evaluated at last'),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.allowed': {
         type: OtoroshiPathInput,
         props: {
-          label: t('Allowed pathes', currentLanguage),
+          label: translateMethod('Allowed pathes'),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.forbidden': {
         type: OtoroshiPathInput,
         props: {
-          label: t('Forbidden pathes', currentLanguage),
+          label: translateMethod('Forbidden pathes'),
         },
       },
       'otoroshiTarget.apikeyCustomization.restrictions.notFound': {
         type: OtoroshiPathInput,
         props: {
-          label: t('Not found pathes', currentLanguage),
+          label: translateMethod('Not found pathes'),
         },
       },
     };
@@ -372,7 +371,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
 
   function securityFlow(_found) {
     return [
-      `>>> ${t('Security', currentLanguage)}`,
+      `>>> ${translateMethod('Security')}`,
       'autoRotation',
       'subscriptionProcess',
       'integrationProcess',
@@ -384,7 +383,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       autoRotation: {
         type: 'bool',
         props: {
-          label: t('Force apikey auto-rotation', currentLanguage),
+          label: translateMethod('Force apikey auto-rotation'),
         },
       },
       subscriptionProcess: {
@@ -393,26 +392,26 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           _found.otoroshiTarget.apikeyCustomization.customMetadata &&
           !!_found.otoroshiTarget.apikeyCustomization.customMetadata.length,
         props: {
-          label: t('Subscription', currentLanguage),
+          label: translateMethod('Subscription'),
           possibleValues: [
             {
-              label: t('Automatic', currentLanguage),
+              label: translateMethod('Automatic'),
               value: 'Automatic',
             },
-            { label: t('Manual', currentLanguage), value: 'Manual' },
+            { label: translateMethod('Manual'), value: 'Manual' },
           ],
         },
       },
       integrationProcess: {
         type: 'select',
         props: {
-          label: t('Integration', currentLanguage),
+          label: translateMethod('Integration'),
           possibleValues: [
             {
-              label: t('Automatic', currentLanguage),
+              label: translateMethod('Automatic'),
               value: 'Automatic',
             },
-            { label: t('ApiKey', currentLanguage), value: 'ApiKey' },
+            { label: translateMethod('ApiKey'), value: 'ApiKey' },
           ],
         },
       },
@@ -466,7 +465,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', currentLanguage),
+          label: translateMethod('Id'),
           placeholder: '---',
         },
       },
@@ -474,26 +473,26 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'select',
         disabled: true,
         props: {
-          label: t('Type', currentLanguage),
+          label: translateMethod('Type'),
           possibleValues: [
             {
-              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
+              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
+              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
+              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
-              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
+              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
+              label: translateMethod('PayPerUse', false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -503,16 +502,16 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Name', currentLanguage),
-          placeholder: t('Plan name', currentLanguage),
+          label: translateMethod('Name'),
+          placeholder: translateMethod('Plan name'),
         },
       },
       customDescription: {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Description', currentLanguage),
-          placeholder: t('Plan description', currentLanguage),
+          label: translateMethod('Description'),
+          placeholder: translateMethod('Plan description'),
         },
       },
       ...otoroshiForm(found),
@@ -524,7 +523,6 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           schema={schema}
           value={found}
           onChange={onChange}
-          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
@@ -549,7 +547,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         : tenant.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : undefined,
-      `>>> ${t('Billing', currentLanguage)}`,
+      `>>> ${translateMethod('Billing')}`,
       'billingDuration.value',
       'billingDuration.unit',
       ...otoroshiFlow(found),
@@ -560,33 +558,33 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', currentLanguage),
+          label: translateMethod('Id'),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', currentLanguage),
+          label: translateMethod('Type'),
           possibleValues: [
             {
-              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
+              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
+              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
+              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
-              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
+              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
+              label: translateMethod('PayPerUse', false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -595,46 +593,46 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
           possibleValues: [
-            { label: t('Hours', currentLanguage), value: 'Hour' },
-            { label: t('Days', currentLanguage), value: 'Day' },
-            { label: t('Months', currentLanguage), value: 'Month' },
-            { label: t('Years', currentLanguage), value: 'Year' },
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
           ],
         },
       },
       customName: {
         type: 'string',
         props: {
-          label: t('Name', currentLanguage),
-          placeholder: t('Plan name', currentLanguage),
+          label: translateMethod('Name'),
+          placeholder: translateMethod('Plan name'),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', currentLanguage),
-          placeholder: t('Plan description', currentLanguage),
+          label: translateMethod('Description'),
+          placeholder: translateMethod('Plan description'),
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', currentLanguage),
+          label: translateMethod('Allow multiple apiKey demands'),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', currentLanguage),
-          help: t('aggregation_apikeys.security.help', currentLanguage),
+          label: translateMethod('aggregation api keys security'),
+          help: translateMethod('aggregation_apikeys.security.help'),
         },
       },
       ...otoroshiForm(found),
@@ -647,7 +645,6 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           schema={schema}
           value={found}
           onChange={onChange}
-          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
@@ -672,11 +669,11 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         : tenant.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : undefined,
-      `>>> ${t('Quotas', currentLanguage)}`,
+      `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
       'maxPerMonth',
-      `>>> ${t('Billing', currentLanguage)}`,
+      `>>> ${translateMethod('Billing')}`,
       'billingDuration.value',
       'billingDuration.unit',
       ...otoroshiFlow(found),
@@ -687,33 +684,33 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', currentLanguage),
+          label: translateMethod('Id'),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', currentLanguage),
+          label: translateMethod('Type'),
           possibleValues: [
             {
-              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
+              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
+              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
+              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
-              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
+              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
+              label: translateMethod('PayPerUse', false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -722,67 +719,67 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
           possibleValues: [
-            { label: t('Hours', currentLanguage), value: 'Hour' },
-            { label: t('Days', currentLanguage), value: 'Day' },
-            { label: t('Months', currentLanguage), value: 'Month' },
-            { label: t('Years', currentLanguage), value: 'Year' },
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
           ],
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', currentLanguage),
+          label: translateMethod('Allow multiple apiKey demands'),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', currentLanguage),
-          help: t('aggregation_apikeys.security.help', currentLanguage),
+          label: translateMethod('aggregation api keys security'),
+          help: translateMethod('aggregation_apikeys.security.help'),
         },
       },
       maxPerSecond: {
         type: 'number',
         props: {
-          label: t('Max. per second', currentLanguage),
-          placeholder: t('Max. requests per second', currentLanguage),
+          label: translateMethod('Max. per second'),
+          placeholder: translateMethod('Max. requests per second'),
         },
       },
       maxPerDay: {
         type: 'number',
         props: {
-          label: t('Max. per day', currentLanguage),
-          placeholder: t('Max. requests per day', currentLanguage),
+          label: translateMethod('Max. per day'),
+          placeholder: translateMethod('Max. requests per day'),
         },
       },
       maxPerMonth: {
         type: 'number',
         props: {
-          label: t('Max. per month', currentLanguage),
-          placeholder: t('Max. requests per month', currentLanguage),
+          label: translateMethod('Max. per month'),
+          placeholder: translateMethod('Max. requests per month'),
         },
       },
       customName: {
         type: 'string',
         props: {
-          label: t('Name', currentLanguage),
-          placeholder: t('Plan name', currentLanguage),
+          label: translateMethod('Name'),
+          placeholder: translateMethod('Plan name'),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', currentLanguage),
-          placeholder: t('Plan description', currentLanguage),
+          label: translateMethod('Description'),
+          placeholder: translateMethod('Plan description'),
         },
       },
       ...otoroshiForm(found),
@@ -795,7 +792,6 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           schema={schema}
           value={found}
           onChange={onChange}
-          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
@@ -820,14 +816,14 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         : tenant.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : undefined,
-      `>>> ${t('Quotas', currentLanguage)}`,
+      `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
       'maxPerMonth',
-      `>>> ${t('Trial', currentLanguage)}`,
+      `>>> ${translateMethod('Trial')}`,
       'trialPeriod.value',
       'trialPeriod.unit',
-      `>>> ${t('Billing', currentLanguage)}`,
+      `>>> ${translateMethod('Billing')}`,
       'costPerMonth',
       'currency.code',
       'billingDuration.value',
@@ -840,33 +836,33 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', currentLanguage),
+          label: translateMethod('Id'),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', currentLanguage),
+          label: translateMethod('Type'),
           possibleValues: [
             {
-              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
+              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
+              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
+              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
-              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
+              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
+              label: translateMethod('PayPerUse', false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -875,85 +871,85 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
           possibleValues: [
-            { label: t('Hours', currentLanguage), value: 'Hour' },
-            { label: t('Days', currentLanguage), value: 'Day' },
-            { label: t('Months', currentLanguage), value: 'Month' },
-            { label: t('Years', currentLanguage), value: 'Year' },
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
           ],
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', currentLanguage),
+          label: translateMethod('Allow multiple apiKey demands'),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', currentLanguage),
-          help: t('aggregation_apikeys.security.help', currentLanguage),
+          label: translateMethod('aggregation api keys security'),
+          help: translateMethod('aggregation_apikeys.security.help'),
         },
       },
       'trialPeriod.value': {
         type: 'number',
         props: {
-          label: t('Trial period', currentLanguage),
-          placeholder: t('The trial period', currentLanguage),
+          label: translateMethod('Trial period'),
+          placeholder: translateMethod('The trial period'),
         },
       },
       'trialPeriod.unit': {
         type: 'select',
         props: {
-          label: t('Trial period unit', currentLanguage),
+          label: translateMethod('Trial period unit'),
           possibleValues: [
-            { label: t('Hours', currentLanguage), value: 'Hour' },
-            { label: t('Days', currentLanguage), value: 'Day' },
-            { label: t('Months', currentLanguage), value: 'Month' },
-            { label: t('Years', currentLanguage), value: 'Year' },
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
           ],
         },
       },
       maxPerSecond: {
         type: 'number',
         props: {
-          label: t('Max. per second', currentLanguage),
-          placeholder: t('Max. requests per second', currentLanguage),
+          label: translateMethod('Max. per second'),
+          placeholder: translateMethod('Max. requests per second'),
         },
       },
       maxPerDay: {
         type: 'number',
         props: {
-          label: t('Max. per day', currentLanguage),
-          placeholder: t('Max. requests per day', currentLanguage),
+          label: translateMethod('Max. per day'),
+          placeholder: translateMethod('Max. requests per day'),
         },
       },
       maxPerMonth: {
         type: 'number',
         props: {
-          label: t('Max. per month', currentLanguage),
-          placeholder: t('Max. requests per month', currentLanguage),
+          label: translateMethod('Max. per month'),
+          placeholder: translateMethod('Max. requests per month'),
         },
       },
       costPerMonth: {
         type: 'number',
         props: {
-          label: t('Cost per month', currentLanguage),
-          placeholder: t('Cost per month', currentLanguage),
+          label: translateMethod('Cost per month'),
+          placeholder: translateMethod('Cost per month'),
         },
       },
       'currency.code': {
         type: 'select',
         props: {
-          label: t('Currency', currentLanguage),
+          label: translateMethod('Currency'),
           possibleValues: currencies.map((c) => ({
             label: `${c.name} (${c.symbol})`,
             value: c.code,
@@ -963,15 +959,15 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       customName: {
         type: 'string',
         props: {
-          label: t('Name', currentLanguage),
-          placeholder: t('Plan name', currentLanguage),
+          label: translateMethod('Name'),
+          placeholder: translateMethod('Plan name'),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', currentLanguage),
-          placeholder: t('Plan description', currentLanguage),
+          label: translateMethod('Description'),
+          placeholder: translateMethod('Plan description'),
         },
       },
       ...otoroshiForm(found),
@@ -984,7 +980,6 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           schema={schema}
           value={found}
           onChange={onChange}
-          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
@@ -1009,14 +1004,14 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         : tenant.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : undefined,
-      `>>> ${t('Quotas', currentLanguage)}`,
+      `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
       'maxPerMonth',
-      `>>> ${t('Trial', currentLanguage)}`,
+      `>>> ${translateMethod('Trial')}`,
       'trialPeriod.value',
       'trialPeriod.unit',
-      `>>> ${t('Billing', currentLanguage)}`,
+      `>>> ${translateMethod('Billing')}`,
       'costPerMonth',
       'costPerAdditionalRequest',
       'currency.code',
@@ -1030,33 +1025,33 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', currentLanguage),
+          label: translateMethod('Id'),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', currentLanguage),
+          label: translateMethod('Type'),
           possibleValues: [
             {
-              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
+              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
+              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
+              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
-              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
+              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
+              label: translateMethod('PayPerUse', false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -1065,92 +1060,92 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
           possibleValues: [
-            { label: t('Hours', currentLanguage), value: 'Hour' },
-            { label: t('Days', currentLanguage), value: 'Day' },
-            { label: t('Months', currentLanguage), value: 'Month' },
-            { label: t('Years', currentLanguage), value: 'Year' },
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
           ],
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', currentLanguage),
+          label: translateMethod('Allow multiple apiKey demands'),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', currentLanguage),
-          help: t('aggregation_apikeys.security.help', currentLanguage),
+          label: translateMethod('aggregation api keys security'),
+          help: translateMethod('aggregation_apikeys.security.help'),
         },
       },
       'trialPeriod.value': {
         type: 'number',
         props: {
-          label: t('Trial period', currentLanguage),
-          placeholder: t('The trial period', currentLanguage),
+          label: translateMethod('Trial period'),
+          placeholder: translateMethod('The trial period'),
         },
       },
       'trialPeriod.unit': {
         type: 'select',
         props: {
-          label: t('Trial period unit', currentLanguage),
+          label: translateMethod('Trial period unit'),
           possibleValues: [
-            { label: t('Hours', currentLanguage), value: 'Hour' },
-            { label: t('Days', currentLanguage), value: 'Day' },
-            { label: t('Months', currentLanguage), value: 'Month' },
-            { label: t('Years', currentLanguage), value: 'Year' },
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
           ],
         },
       },
       maxPerSecond: {
         type: 'number',
         props: {
-          label: t('Max. per second', currentLanguage),
-          placeholder: t('Max. requests per second', currentLanguage),
+          label: translateMethod('Max. per second'),
+          placeholder: translateMethod('Max. requests per second'),
         },
       },
       maxPerDay: {
         type: 'number',
         props: {
-          label: t('Max. per day', currentLanguage),
-          placeholder: t('Max. requests per day', currentLanguage),
+          label: translateMethod('Max. per day'),
+          placeholder: translateMethod('Max. requests per day'),
         },
       },
       maxPerMonth: {
         type: 'number',
         props: {
-          label: t('Max. per month', currentLanguage),
-          placeholder: t('Max. requests per month', currentLanguage),
+          label: translateMethod('Max. per month'),
+          placeholder: translateMethod('Max. requests per month'),
         },
       },
       costPerMonth: {
         type: 'number',
         props: {
-          label: t('Cost per month', currentLanguage),
-          placeholder: t('Cost per month', currentLanguage),
+          label: translateMethod('Cost per month'),
+          placeholder: translateMethod('Cost per month'),
         },
       },
       costPerAdditionalRequest: {
         type: 'number',
         props: {
-          label: t('Cost per add. req.', currentLanguage),
-          placeholder: t('Cost per additionnal request', currentLanguage),
+          label: translateMethod('Cost per add. req.'),
+          placeholder: translateMethod('Cost per additionnal request'),
         },
       },
       'currency.code': {
         type: 'select',
         props: {
-          label: t('Currency', currentLanguage),
+          label: translateMethod('Currency'),
           possibleValues: currencies.map((c) => ({
             label: `${c.name} (${c.symbol})`,
             value: c.code,
@@ -1160,15 +1155,15 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       customName: {
         type: 'string',
         props: {
-          label: t('Name', currentLanguage),
-          placeholder: t('Plan name', currentLanguage),
+          label: translateMethod('Name'),
+          placeholder: translateMethod('Plan name'),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', currentLanguage),
-          placeholder: t('Plan description', currentLanguage),
+          label: translateMethod('Description'),
+          placeholder: translateMethod('Plan description'),
         },
       },
       ...otoroshiForm(found),
@@ -1181,7 +1176,6 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           schema={schema}
           value={found}
           onChange={onChange}
-          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
@@ -1206,13 +1200,13 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         : tenant.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : undefined,
-      `>>> ${t('Billing', currentLanguage)}`,
+      `>>> ${translateMethod('Billing')}`,
       'costPerMonth',
       'costPerRequest',
       'currency.code',
       'billingDuration.value',
       'billingDuration.unit',
-      `>>> ${t('Trial', currentLanguage)}`,
+      `>>> ${translateMethod('Trial')}`,
       'trialPeriod.value',
       'trialPeriod.unit',
       ...otoroshiFlow(found),
@@ -1223,33 +1217,33 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         type: 'string',
         disabled: true,
         props: {
-          label: t('Id', currentLanguage),
+          label: translateMethod('Id'),
           placeholder: '---',
         },
       },
       type: {
         type: 'select',
         props: {
-          label: t('Type', currentLanguage),
+          label: translateMethod('Type'),
           possibleValues: [
             {
-              label: t('FreeWithoutQuotas', currentLanguage, false, 'Free without quotas'),
+              label: translateMethod('FreeWithoutQuotas', false, 'Free without quotas'),
               value: 'FreeWithoutQuotas',
             },
             {
-              label: t('FreeWithQuotas', currentLanguage, false, 'Free with quotas'),
+              label: translateMethod('FreeWithQuotas', false, 'Free with quotas'),
               value: 'FreeWithQuotas',
             },
             {
-              label: t('QuotasWithLimits', currentLanguage, false, 'Quotas with limits'),
+              label: translateMethod('QuotasWithLimits', false, 'Quotas with limits'),
               value: 'QuotasWithLimits',
             },
             {
-              label: t('QuotasWithoutLimits', currentLanguage, false, 'Quotas without limits'),
+              label: translateMethod('QuotasWithoutLimits', false, 'Quotas without limits'),
               value: 'QuotasWithoutLimits',
             },
             {
-              label: t('PayPerUse', currentLanguage, false, 'Pay per use'),
+              label: translateMethod('PayPerUse', false, 'Pay per use'),
               value: 'PayPerUse',
             },
           ],
@@ -1258,21 +1252,21 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       costPerMonth: {
         type: 'number',
         props: {
-          label: t('Cost per month', currentLanguage),
-          placeholder: t('Cost per month', currentLanguage),
+          label: translateMethod('Cost per month'),
+          placeholder: translateMethod('Cost per month'),
         },
       },
       costPerRequest: {
         type: 'number',
         props: {
-          label: t('Cost per req.', currentLanguage),
-          placeholder: t('Cost per request', currentLanguage),
+          label: translateMethod('Cost per req.'),
+          placeholder: translateMethod('Cost per request'),
         },
       },
       'currency.code': {
         type: 'select',
         props: {
-          label: t('Currency', currentLanguage),
+          label: translateMethod('Currency'),
           possibleValues: currencies.map((c) => ({
             label: `${c.name} (${c.symbol})`,
             value: c.code,
@@ -1282,65 +1276,65 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
       'billingDuration.value': {
         type: 'number',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
         },
       },
       'billingDuration.unit': {
         type: 'select',
         props: {
-          label: t('Billing every', currentLanguage),
+          label: translateMethod('Billing every'),
           possibleValues: [
-            { label: t('Hours', currentLanguage), value: 'Hour' },
-            { label: t('Days', currentLanguage), value: 'Day' },
-            { label: t('Months', currentLanguage), value: 'Month' },
-            { label: t('Years', currentLanguage), value: 'Year' },
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
           ],
         },
       },
       allowMultipleKeys: {
         type: 'bool',
         props: {
-          label: t('Allow multiple apiKey demands', currentLanguage),
+          label: translateMethod('Allow multiple apiKey demands'),
         },
       },
       aggregationApiKeysSecurity: {
         type: 'bool',
         props: {
-          label: t('aggregation api keys security', currentLanguage),
-          help: t('aggregation_apikeys.security.help', currentLanguage),
+          label: translateMethod('aggregation api keys security'),
+          help: translateMethod('aggregation_apikeys.security.help'),
         },
       },
       'trialPeriod.value': {
         type: 'number',
         props: {
-          label: t('Trial period', currentLanguage),
-          placeholder: t('The trial period', currentLanguage),
+          label: translateMethod('Trial period'),
+          placeholder: translateMethod('The trial period'),
         },
       },
       'trialPeriod.unit': {
         type: 'select',
         props: {
-          label: t('Trial period unit', currentLanguage),
+          label: translateMethod('Trial period unit'),
           possibleValues: [
-            { label: t('Hours', currentLanguage), value: 'Hour' },
-            { label: t('Days', currentLanguage), value: 'Day' },
-            { label: t('Months', currentLanguage), value: 'Month' },
-            { label: t('Years', currentLanguage), value: 'Year' },
+            { label: translateMethod('Hours'), value: 'Hour' },
+            { label: translateMethod('Days'), value: 'Day' },
+            { label: translateMethod('Months'), value: 'Month' },
+            { label: translateMethod('Years'), value: 'Year' },
           ],
         },
       },
       customName: {
         type: 'string',
         props: {
-          label: t('Name', currentLanguage),
-          placeholder: t('Plan name', currentLanguage),
+          label: translateMethod('Name'),
+          placeholder: translateMethod('Plan name'),
         },
       },
       customDescription: {
         type: 'string',
         props: {
-          label: t('Description', currentLanguage),
-          placeholder: t('Plan description', currentLanguage),
+          label: translateMethod('Description'),
+          placeholder: translateMethod('Plan description'),
         },
       },
       ...otoroshiForm(found),
@@ -1353,7 +1347,6 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
           schema={schema}
           value={found}
           onChange={onChange}
-          currentLanguage={currentLanguage}
         />
       </React.Suspense>
     );
@@ -1371,7 +1364,6 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
 
   function importPlan() {
     props.openApiSelectModal({
-      currentLanguage,
       api: value,
       teamId: props.teamId,
       onClose: () => {
@@ -1398,7 +1390,7 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
   function deletePlan() {
     window
       .confirm(
-        t('delete.plan.confirm', currentLanguage, 'Are you sure you want to delete this plan ?')
+        translateMethod('delete.plan.confirm', 'Are you sure you want to delete this plan ?')
       )
       .then((ok) => {
         if (ok) {
@@ -1470,14 +1462,14 @@ function TeamApiPricingComponent({ value, tenant, currentLanguage, ...props }) {
         {value.visibility !== 'AdminOnly' && (
           <>
             <button onClick={addNewPlan} type="button" className="btn btn-outline-primary mr-1">
-              {t('add a new plan', currentLanguage)}
+              {translateMethod('add a new plan')}
             </button>
             <button
               onClick={importPlan}
               type="button"
               className="btn btn-outline-primary mr-1"
               style={{ marginTop: 0 }}>
-              {t('import a plan', currentLanguage)}
+              {translateMethod('import a plan')}
             </button>
           </>
         )}

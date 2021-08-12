@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
@@ -6,7 +6,7 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { TeamBackOffice } from '../..';
 import { Can, manage, api as API } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import {
   TeamApiDescription,
   TeamApiDocumentation,
@@ -18,7 +18,7 @@ import {
   TeamApiPost,
 } from '.';
 
-import { setError, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
+import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext } from '../../../core';
 import Select from 'react-select';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
@@ -43,6 +43,8 @@ function TeamApiComponent(props) {
   });
 
   const teamApiDocumentationRef = useRef();
+
+  const { translateMethod} = useContext(I18nContext);
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
@@ -86,9 +88,8 @@ function TeamApiComponent(props) {
         .then((api) => {
           if (api.name) {
             toastr.success(
-              t(
+              translateMethod(
                 'api.created.success',
-                props.currentLanguage,
                 false,
                 `Api "${api.name}" created`,
                 api.name
@@ -104,7 +105,7 @@ function TeamApiComponent(props) {
             )
           )
         )
-        .catch((error) => toastr.error(t(error, props.currentLanguage)));
+        .catch((error) => toastr.error(translateMethod(error)));
     } else {
       return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id).then((r) => {
         if (!r.exists) {
@@ -121,8 +122,8 @@ function TeamApiComponent(props) {
               editedApi._humanReadableId
             )
               .then((res) => {
-                if (res.error) toastr.error(t(res.error, props.currentLanguage));
-                else toastr.success(t('Api saved', props.currentLanguage));
+                if (res.error) toastr.error(t(res.error));
+                else toastr.success(translateMethod('Api saved'));
                 return res;
               })
               .then((newApi) => {
@@ -140,11 +141,11 @@ function TeamApiComponent(props) {
   }
 
   function deleteApi() {
-    window.confirm(t('delete.api.confirm', props.currentLanguage)).then((ok) => {
+    window.confirm(translateMethod('delete.api.confirm')).then((ok) => {
       if (ok) {
         Services.deleteTeamApi(props.currentTeam._id, state.api._id)
           .then(() => props.history.push(`/${props.currentTeam._humanReadableId}/settings/apis`))
-          .then(() => toastr.success(t('deletion successful', props.currentLanguage)));
+          .then(() => toastr.success(translateMethod('deletion successful')));
       }
     });
   }
@@ -274,7 +275,7 @@ function TeamApiComponent(props) {
       tab="Apis"
       isLoading={!editedApi}
       title={`${props.currentTeam.name} - ${
-        state.api ? state.api.name : t('API', props.currentLanguage)
+        state.api ? state.api.name : translateMethod('API')
       }`}>
       <Can I={manage} a={API} team={props.currentTeam} dispatchError>
         {!editedApi && (
@@ -303,7 +304,7 @@ function TeamApiComponent(props) {
                     <Link
                       to={`/${props.currentTeam._humanReadableId}/${editedApi._humanReadableId}/${editedApi.currentVersion}`}
                       className="btn btn-sm btn-access-negative"
-                      title={t('View this Api', props.currentLanguage)}>
+                      title={translateMethod('View this Api')}>
                       <i className="fas fa-eye" />
                     </Link>
                   </h1>
@@ -328,7 +329,7 @@ function TeamApiComponent(props) {
                     )}
                     <button type="button" className="btn btn-outline-info" onClick={promptVersion}>
                       <i className="fas fa-plus mr-1" />
-                      {t('teamapi.new_version', props.currentLanguage)}
+                      {translateMethod('teamapi.new_version')}
                     </button>
                   </div>
                 </div>

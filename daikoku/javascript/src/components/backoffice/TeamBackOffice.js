@@ -1,4 +1,4 @@
-import React, { Component, useEffect } from 'react';
+import React, { Component, useContext, useEffect } from 'react';
 import { Link, Route } from 'react-router-dom';
 import classNames from 'classnames';
 import { connect } from 'react-redux';
@@ -17,7 +17,8 @@ import {
   daikoku,
   tenant as TENANT,
 } from '../utils';
-import { t, Translation } from '../../locales';
+import { Translation } from '../../locales';
+import { I18nContext } from '../../core';
 
 function elvis(value, f) {
   if (value) {
@@ -83,7 +84,7 @@ class TeamBackOfficeHomeComponent extends Component {
                   <span className="home-tile-text">
                     <Translation
                       i18nkey="apis published"
-                     
+
                       count={this.state.team.apisCount}>
                       apis published
                     </Translation>
@@ -96,7 +97,7 @@ class TeamBackOfficeHomeComponent extends Component {
                   <span className="home-tile-text">
                     <Translation
                       i18nkey="apis subcriptions"
-                     
+
                       count={this.state.team.subscriptionsCount}>
                       apis subcriptions
                     </Translation>
@@ -116,7 +117,7 @@ class TeamBackOfficeHomeComponent extends Component {
                       <span className="home-tile-text">
                         <Translation
                           i18nkey="members"
-                         
+
                           count={this.state.team.users.length}>
                           members
                         </Translation>
@@ -129,7 +130,7 @@ class TeamBackOfficeHomeComponent extends Component {
                   <span className="home-tile-text">
                     <Translation
                       i18nkey="unread notifications"
-                     
+
                       count={this.state.team.notificationCount}>
                       unread notifications
                     </Translation>
@@ -154,30 +155,13 @@ const TeamBackOfficeComponent = ({
   title,
   children,
 }) => {
-  // UNSAFE_componentWillMount() {
-  //   if (!this.props.currentTeam || (this.props.currentTeam && !this.props.currentTeam._id)) {
-  //     console.warn(
-  //       'The <TeamBackOffice /> component does not have a team id props. Everything will fail !'
-  //     );
-  //   }
-  // }
-
-  // __componentWillReceiveProps(nextProps) {
-  //   if (
-  //     this.props.currentTeam &&
-  //     nextProps.team &&
-  //     nextProps.team._id !== this.props.currentTeam._id
-  //   ) {
-  //     console.log('force');
-  //     this.forceUpdate();
-  //   }
-  // }
-
   useEffect(() => {
     if (title) {
       document.title = title;
     }
   }, [title]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   if (!currentTeam) {
     return null;
@@ -209,7 +193,7 @@ const TeamBackOfficeComponent = ({
                       <Link
                         to={`/${currentTeam._humanReadableId}/settings/edition`}
                         className=""
-                        title={t('Update team', currentLanguage)}>
+                        title={translateMethod('Update team')}>
                         <i className="fas fa-pen" />
                       </Link>
                     </Can>
@@ -382,7 +366,7 @@ const UserBackOfficeComponent = ({
                     <Link
                       to={`/settings/tenants/${tenant._humanReadableId}`}
                       className=""
-                      title={t('Update tenant', currentLanguage)}>
+                      title={translateMethod('Update tenant')}>
                       <i className="fas fa-pen" />
                     </Link>
                   </h6>
@@ -404,7 +388,7 @@ const UserBackOfficeComponent = ({
                         <i className="fas fa-pastafarianism" />
                         <Translation
                           i18nkey="Otoroshi instance"
-                         
+
                           isPlural>
                           Otoroshi instances
                         </Translation>
@@ -462,9 +446,8 @@ const UserBackOfficeComponent = ({
                     </li>
                     <li className="nav-item">
                       <Link
-                        className={`nav-link ${
-                          tab === 'Email internationalization' ? 'active' : ''
-                        }`}
+                        className={`nav-link ${tab === 'Email internationalization' ? 'active' : ''
+                          }`}
                         to={'/settings/internationalization/mail'}>
                         <i className="fas fa-language" />
                         <Translation i18nkey="Internationalization">

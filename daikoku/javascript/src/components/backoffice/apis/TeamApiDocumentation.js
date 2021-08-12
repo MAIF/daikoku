@@ -1,15 +1,14 @@
-import React, { Component, useEffect, useState, useImperativeHandle } from 'react';
+import React, { Component, useEffect, useState, useImperativeHandle, useContext } from 'react';
 import _ from 'lodash';
 import * as Services from '../../../services';
 import faker from 'faker';
-import { toastr } from 'react-redux-toastr';
 
 import { Spinner } from '../../utils';
 
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import { AssetChooserByModal } from '../../frontend';
 import { connect } from 'react-redux';
-import { openApiDocumentationSelectModal } from '../../../core';
+import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -63,7 +62,7 @@ class AssetButton extends Component {
             currentLanguage={this.props.currentLanguage}
             team={team}
             teamId={team._id}
-            label={t('Set from asset', this.props.currentLanguage)}
+            label={translateMethod('Set from asset', this.props.currentLanguage)}
             onSelect={(asset) => {
               this.props.onRawChange({
                 ...this.props.rawValue,
@@ -87,12 +86,14 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   const [deletedPage, setDeletedPage] = useState(false);
 
+  const { translateMethod } = useContext(I18nContext);
+
   const flow = [
     '_id',
     'title',
     'level',
     'contentType',
-    `>>> ${t('Remote content', currentLanguage)}`,
+    `>>> ${translateMethod('Remote content')}`,
     'remoteContentEnabled',
     'remoteContentUrl',
     'assetButton',
@@ -102,10 +103,10 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   ];
 
   const schema = {
-    _id: { type: 'string', disabled: true, props: { label: t('Id', currentLanguage) } },
-    title: { type: 'string', props: { label: t('Page title', currentLanguage) } },
+    _id: { type: 'string', disabled: true, props: { label: translateMethod('Id') } },
+    title: { type: 'string', props: { label: translateMethod('Page title') } },
     //index: { type: 'number', props: { label: 'Page index' } },
-    level: { type: 'number', props: { label: t('Page level', currentLanguage) } },
+    level: { type: 'number', props: { label: translateMethod('Page level') } },
     content: {
       type: 'markdown',
       props: {
@@ -117,15 +118,15 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     },
     remoteContentEnabled: {
       type: 'bool',
-      props: { label: t('Remote content', currentLanguage) },
+      props: { label: translateMethod('Remote content') },
     },
     contentType: {
       type: 'select',
-      props: { label: t('Content type', currentLanguage), possibleValues: mimeTypes },
+      props: { label: translateMethod('Content type'), possibleValues: mimeTypes },
     },
     remoteContentUrl: {
       type: 'string',
-      props: { label: t('Content URL', currentLanguage) },
+      props: { label: translateMethod('Content URL') },
     },
     assetButton: {
       type: AssetButton,
@@ -133,7 +134,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     },
     remoteContentHeaders: {
       type: 'object',
-      props: { label: t('Content headers', currentLanguage) },
+      props: { label: translateMethod('Content headers') },
     },
   };
 
@@ -254,9 +255,9 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   function deletePage() {
     window
       .confirm(
-        t(
+        translateMethod(
           'delete.documentation.page.confirm',
-          currentLanguage,
+          false,
           'Are you sure you want to delete this page ?'
         )
       )

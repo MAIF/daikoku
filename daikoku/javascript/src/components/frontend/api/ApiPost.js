@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { t } from '../../../locales';
+import React, { useState, useEffect, useContext } from 'react';
+import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
 import { converter } from '../../../services/showdown';
 
-export function ApiPost({ api, currentLanguage, versionId }) {
+export function ApiPost({ api, versionId }) {
   const [posts, setPosts] = useState([]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   const [pagination, setPagination] = useState({
     limit: 1,
@@ -55,7 +57,7 @@ export function ApiPost({ api, currentLanguage, versionId }) {
               offset: pagination.offset + 1,
             });
           }}>
-          {t('Load older posts', currentLanguage)}
+          {translateMethod('Load older posts')}
         </button>
       )}
     </div>

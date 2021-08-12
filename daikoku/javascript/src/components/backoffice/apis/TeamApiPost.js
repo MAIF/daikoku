@@ -2,13 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 import { Route, Link, Switch, useLocation, useHistory } from 'react-router-dom';
 import { Spinner } from '../..';
-import { t } from '../../../locales';
+import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 const LazyForm = React.lazy(() => import('../../../components/inputs/Form'));
 
 const ApiPost = ({ currentLanguage, publishPost, params, team }) => {
+  const { translateMethod } = useContext(I18nContext);
+
   const [selected, setSelected] = useState({
     title: '',
     content: '',
@@ -19,13 +21,13 @@ const ApiPost = ({ currentLanguage, publishPost, params, team }) => {
   const schema = {
     title: {
       type: 'string',
-      props: { label: t('team_api_post.title', currentLanguage) },
+      props: { label: translateMethod('team_api_post.title') },
     },
     content: {
       type: 'markdown',
       props: {
         currentLanguage,
-        label: t('team_api_post.content', currentLanguage),
+        label: translateMethod('team_api_post.content'),
         height: '320px',
         team,
       },
@@ -41,10 +43,10 @@ const ApiPost = ({ currentLanguage, publishPost, params, team }) => {
         <Link
           className="btn btn-outline-danger mr-1"
           to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}>
-          {t('Cancel', currentLanguage)}
+          {translateMethod('Cancel')}
         </Link>
         <button className="btn btn-outline-success" onClick={() => publishPost(selected)}>
-          {t('team_api_post.publish', currentLanguage)}
+          {translateMethod('team_api_post.publish')}
         </button>
       </div>
     </div>
@@ -54,6 +56,7 @@ const ApiPost = ({ currentLanguage, publishPost, params, team }) => {
 export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
   const history = useHistory();
   const location = useLocation();
+  const { translateMethod } = useContext(I18nContext);
 
   const [state, setState] = useState({
     posts: [],
@@ -126,8 +129,8 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
   function savePost(i) {
     const post = state.posts.find((_, j) => j === i);
     Services.savePost(api._id, team._id, post._id, post).then((res) => {
-      if (res.error) toastr.error(t('team_api_post.failed', currentLanguage));
-      else toastr.success(t('team_api_post.saved', currentLanguage));
+      if (res.error) toastr.error(translateMethod('team_api_post.failed'));
+      else toastr.success(translateMethod('team_api_post.saved'));
     });
   }
 
@@ -136,21 +139,21 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
       ...selected,
       _id: '',
     }).then((res) => {
-      if (res.error) toastr.error(t('team_api_post.failed', currentLanguage));
+      if (res.error) toastr.error(translateMethod('team_api_post.failed'));
       else {
-        toastr.success(t('team_api_post.saved', currentLanguage));
+        toastr.success(translateMethod('team_api_post.saved'));
         history.push(`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`);
       }
     });
   }
 
   function removePost(postId, i) {
-    window.confirm(t('team_api_post.delete.confirm', currentLanguage)).then((ok) => {
+    window.confirm(translateMethod('team_api_post.delete.confirm')).then((ok) => {
       if (ok)
         Services.removePost(api._id, team._id, postId).then((res) => {
-          if (res.error) toastr.error(t('team_api_post.failed', currentLanguage));
+          if (res.error) toastr.error(translateMethod('team_api_post.failed'));
           else {
-            toastr.success(t('team_api_post.saved', currentLanguage));
+            toastr.success(translateMethod('team_api_post.saved'));
             setState({
               ...state,
               posts: state.posts.filter((p) => p._id !== postId),
@@ -172,7 +175,6 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
           render={(props) => (
             <ApiPost
               {...props}
-              currentLanguage={currentLanguage}
               publishPost={publishPost}
               params={params}
             />
@@ -183,16 +185,16 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
           render={() => (
             <div className="p-3">
               <div className="d-flex align-items-center justify-content-between">
-                <h2>{t('News', currentLanguage)}</h2>
+                <h2>{translateMethod('News')}</h2>
                 <Link
                   className="btn btn-outline-success"
                   to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news/new`}>
-                  {t('team_api_post.new', currentLanguage)}
+                  {translateMethod('team_api_post.new')}
                 </Link>
               </div>
               <div>
                 {posts.length === 0 && (
-                  <p>{t('team_api_post.empty_posts_list', currentLanguage)}</p>
+                  <p>{translateMethod('team_api_post.empty_posts_list')}</p>
                 )}
                 {posts.map((post, i) => (
                   <div key={i}>
@@ -242,7 +244,7 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
               </div>
               {posts.length > 0 && posts.length < pagination.total && (
                 <button className="btn btn-outline-info" onClick={loadOldPosts}>
-                  {t('team_api_post.load_old_posts', currentLanguage)}
+                  {translateMethod('team_api_post.load_old_posts')}
                 </button>
               )}
             </div>

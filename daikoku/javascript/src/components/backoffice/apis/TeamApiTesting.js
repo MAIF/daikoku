@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import faker from 'faker';
 import _ from 'lodash';
 
 import { Option } from '../../utils';
 import * as Services from '../../../services';
-import { t, Translation } from '../../../locales';
+import { Translation } from '../../../locales';
 import { BooleanInput, TextInput, SelectInput } from '../../inputs';
+import { I18nContext } from '../../../core';
 
 export const TeamApiTesting = (props) => {
   const testing = props.value.testing;
+
+  const { translateMethod } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {
     const random = faker.random.alphaNumeric(16);
@@ -33,7 +36,7 @@ export const TeamApiTesting = (props) => {
           teamId: props.teamId,
           config: newConfig,
           update: testing.config && testing.config.otoroshiSettings,
-          title: t('Otoroshi settings', props.currentLanguage),
+          title: translateMethod('Otoroshi settings'),
           onChange: (apiKey, config) => {
             props.onAction({
               ...props.value,
@@ -56,7 +59,7 @@ export const TeamApiTesting = (props) => {
   };
 
   const deleteOtoroshiKey = () => {
-    window.confirm(t('otoroshi.testing.delete.confirm', props.currentLanguage)).then((ok) => {
+    window.confirm(translateMethod('otoroshi.testing.delete.confirm')).then((ok) => {
       if (ok)
         Services.deleteTestingApiKey(props.team._id, {
           otoroshiSettings: testing.config.otoroshiSettings,
@@ -93,14 +96,14 @@ export const TeamApiTesting = (props) => {
       <form className="col-6 section pt-2 pr-2">
         <BooleanInput
           value={testing.enabled}
-          label={t('Enabled', lang)}
+          label={translateMethod('Enabled', lang)}
           onChange={(enabled) => setTesting({ ...testing, enabled })}
         />
         <SelectInput
           clearable={false}
           value={{ label: testing.auth, value: testing.auth }}
-          placeholder={t('Select a auth type', lang)}
-          label={t('Auth. type', lang)}
+          placeholder={translateMethod('Select a auth type', lang)}
+          label={translateMethod('Auth. type', lang)}
           possibleValues={[
             { label: 'ApiKey', value: 'ApiKey' },
             { label: 'Basic', value: 'Basic' },
@@ -111,17 +114,17 @@ export const TeamApiTesting = (props) => {
         />
         <TextInput
           value={testing.name}
-          label={t('Auth. name', lang)}
+          label={translateMethod('Auth. name', lang)}
           onChange={(name) => setTesting({ ...testing, name })}
         />
         <TextInput
           value={testing.username}
-          label={t('Client Id', lang)}
+          label={translateMethod('Client Id', lang)}
           onChange={(username) => setTesting({ ...testing, username })}
         />
         <TextInput
           value={testing.password}
-          label={t('Client secret', lang)}
+          label={translateMethod('Client secret', lang)}
           type="password"
           onChange={(password) => setTesting({ ...testing, password })}
         />

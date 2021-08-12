@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
@@ -15,7 +15,7 @@ import {
 import * as Services from '../../../services';
 import { Translation, t } from '../../../locales';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
-import { openSubMetadataModal } from '../../../core';
+import { I18nContext, openSubMetadataModal } from '../../../core';
 import { useParams } from 'react-router-dom';
 
 const TeamApiSubscriptionsComponent = (props) => {
@@ -26,6 +26,8 @@ const TeamApiSubscriptionsComponent = (props) => {
   const [table, setTable] = useState(undefined);
 
   const params = useParams();
+
+  const { translateMethod } = useContext(I18nContext)
 
   useEffect(() => {
     Promise.all([
@@ -43,7 +45,7 @@ const TeamApiSubscriptionsComponent = (props) => {
       setColumns([
         {
           id: 'name',
-          Header: t('Name', props.currentLanguage),
+          Header: translateMethod('Name'),
           style: { textAlign: 'left' },
           accessor: (sub) =>
             sub.team === props.currentTeam._id
@@ -52,15 +54,15 @@ const TeamApiSubscriptionsComponent = (props) => {
           sortType: 'basic',
         },
         {
-          Header: t('Plan', props.currentLanguage),
+          Header: translateMethod('Plan'),
           style: { textAlign: 'left' },
           accessor: (sub) =>
             Option(api.possibleUsagePlans.find((pp) => pp._id === sub.plan))
-              .map((p) => p.customName || formatPlanType(p, props.currentLanguage))
+              .map((p) => p.customName || formatPlanType(p))
               .getOrNull(),
         },
         {
-          Header: t('Team', props.currentLanguage),
+          Header: translateMethod('Team'),
           style: { textAlign: 'left' },
           accessor: (sub) =>
             Option(teams.find((t) => t._id === sub.team))
@@ -68,7 +70,7 @@ const TeamApiSubscriptionsComponent = (props) => {
               .getOrElse('unknown team'),
         },
         {
-          Header: t('Enabled', props.currentLanguage),
+          Header: translateMethod('Enabled'),
           style: { textAlign: 'center' },
           accessor: (api) => api.enabled,
           disableSortBy: true,
@@ -98,12 +100,12 @@ const TeamApiSubscriptionsComponent = (props) => {
           },
         },
         {
-          Header: t('Created at', props.currentLanguage),
+          Header: translateMethod('Created at'),
           style: { textAlign: 'left' },
-          accessor: (sub) => formatDate(sub.createdAt, props.currentLanguage),
+          accessor: (sub) => formatDate(sub.createdAt),
         },
         {
-          Header: t('Actions', props.currentLanguage),
+          Header: translateMethod('Actions'),
           style: { textAlign: 'center' },
           disableSortBy: true,
           disableFilters: true,
@@ -117,7 +119,7 @@ const TeamApiSubscriptionsComponent = (props) => {
             const sub = original;
             return (
               <div className="btn-group">
-                <BeautifulTitle title={t('Update metadata', props.currentLanguage)}>
+                <BeautifulTitle title={translateMethod('Update metadata')}>
                   <button
                     key={`edit-meta-${sub._humanReadableId}`}
                     type="button"
@@ -126,7 +128,7 @@ const TeamApiSubscriptionsComponent = (props) => {
                     <i className="fas fa-edit" />
                   </button>
                 </BeautifulTitle>
-                <BeautifulTitle title={t('Refresh secret', props.currentLanguage)}>
+                <BeautifulTitle title={translateMethod('Refresh secret')}>
                   <button
                     key={`edit-meta-${sub._humanReadableId}`}
                     type="button"
@@ -160,9 +162,8 @@ const TeamApiSubscriptionsComponent = (props) => {
   const regenerateSecret = (sub) => {
     window
       .confirm(
-        t(
+        translateMethod(
           'secret.refresh.confirm',
-          props.currentLanguage,
           false,
           'Are you sure you want to refresh secret for this subscription ?'
         )
@@ -171,9 +172,8 @@ const TeamApiSubscriptionsComponent = (props) => {
         if (ok) {
           Services.regenerateApiKeySecret(props.currentTeam._id, sub._id).then(() => {
             toastr.success(
-              t(
+              translateMethod(
                 'secret.refresh.success',
-                props.currentLanguage,
                 false,
                 'Secret is successfuly refreshed'
               )
@@ -189,7 +189,7 @@ const TeamApiSubscriptionsComponent = (props) => {
       tab="Apis"
       apiId={props.match.params.apiId}
       isLoading={loading}
-      title={`${props.currentTeam.name} - ${t('Subscriptions', props.currentLanguage)}`}>
+      title={`${props.currentTeam.name} - ${translateMethod('Subscriptions')}`}>
       <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
         {!loading && (
           <div className="row">

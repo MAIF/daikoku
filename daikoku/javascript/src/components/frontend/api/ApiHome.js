@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import hljs from 'highlight.js';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
@@ -18,10 +18,10 @@ import {
 import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, Option, ActionWithTeamSelector } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
-import { setError, openContactModal, updateUser } from '../../../core';
+import { setError, openContactModal, updateUser, I18nContext } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
-import { Translation, t } from '../../../locales';
+import { Translation } from '../../../locales';
 import StarsButton from './StarsButton';
 import Select from 'react-select';
 import { LoginOrRegisterModal } from '../modals';
@@ -160,6 +160,8 @@ const ApiHomeComponent = ({
 
   const params = useParams();
 
+  const { translateMethod } = useContext(I18nContext);
+
   useEffect(() => {
     updateSubscriptions(match.params.apiId);
   }, [match.params.apiId, match.params.versionId]);
@@ -197,7 +199,7 @@ const ApiHomeComponent = ({
   };
 
   const askForApikeys = (teams, plan, apiKey) => {
-    const planName = formatPlanType(plan, currentLanguage);
+    const planName = formatPlanType(plan);
 
     return (apiKey
       ? Services.extendApiKey(api._id, apiKey._id, teams, plan._id)
@@ -205,19 +207,18 @@ const ApiHomeComponent = ({
     )
       .then((results) => {
         if (results.error) {
-          return toastr.error(t('Error', currentLanguage), results.error);
+          return toastr.error(translateMethod('Error'), results.error);
         }
         return results.forEach((result) => {
           const team = myTeams.find((t) => t._id === result.subscription.team);
 
           if (result.error) {
-            return toastr.error(t('Error', currentLanguage), result.error);
+            return toastr.error(translateMethod('Error'), result.error);
           } else if (result.creation === 'done') {
             return toastr.success(
-              t('Done', currentLanguage),
-              t(
+              translateMethod('Done'),
+              translateMethod(
                 'subscription.plan.accepted',
-                currentLanguage,
                 false,
                 `API key for ${planName} plan and the team ${team.name} is available`,
                 planName,
@@ -226,10 +227,9 @@ const ApiHomeComponent = ({
             );
           } else if (result.creation === 'waiting') {
             return toastr.info(
-              t('Pending request', currentLanguage),
-              t(
+              translateMethod('Pending request'),
+              translateMethod(
                 'subscription.plan.waiting',
-                currentLanguage,
                 false,
                 `The API key request for ${planName} plan and the team ${team.name} is pending acceptance`,
                 planName,
@@ -275,7 +275,7 @@ const ApiHomeComponent = ({
           currentLanguage={currentLanguage}
           showOnlyMessage={true}
           asFlatFormat
-          message={t('guest_user_not_allowed', currentLanguage)}
+          message={translateMethod('guest_user_not_allowed')}
         />
       </div>
     );
@@ -296,22 +296,21 @@ const ApiHomeComponent = ({
           (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
         showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
           <>
-            <h2 className="text-center my-3">{t('request_already_pending', currentLanguage)}</h2>
+            <h2 className="text-center my-3">{translateMethod('request_already_pending')}</h2>
             <button
               className="btn btn-outline-info mx-auto"
               style={{ width: 'fit-content' }}
               onClick={() => history.goBack()}>
-              {t('go_back', currentLanguage)}
+              {translateMethod('go_back')}
             </button>
           </>
         ) : (
           <>
-            <span className="text-center my-3">{t('request_api_access', currentLanguage)}</span>
+            <span className="text-center my-3">{translateMethod('request_api_access')}</span>
             <ActionWithTeamSelector
               title="Api access"
-              description={t(
+              description={translateMethod(
                 'api.access.request',
-                currentLanguage,
                 false,
                 `You will send an access request to the API "${params.apIid}". For which team do you want to send the request ?`,
                 [params.apIid]
@@ -325,7 +324,7 @@ const ApiHomeComponent = ({
                 );
               }}>
               <button className="btn btn-success mx-auto" style={{ width: 'fit-content' }}>
-                {t('notif.api.access', currentLanguage, null, false, [params.apiId])}
+                {translateMethod('notif.api.access', null, false, [params.apiId])}
               </button>
             </ActionWithTeamSelector>
           </>
@@ -531,7 +530,6 @@ const ApiHomeComponent = ({
                 ownerTeam={ownerTeam}
                 match={match}
                 versionId={match.params.versionId}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'issues' && (

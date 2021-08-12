@@ -1,18 +1,20 @@
-import React, { Component } from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import faker from 'faker';
 
 import * as Services from '../../../services';
-import { Can, read, manage, stat, api as API, administrator } from '../../utils';
+import { Can, read, manage, stat, api as API } from '../../utils';
 import { TeamBackOffice } from '../..';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { Translation } from '../../../locales';
-import { setError } from '../../../core';
+import { I18nContext, setError } from '../../../core';
 
 function TeamApisComponent(props) {
   const { translateMethod } = useContext(I18nContext);
+
+  let table;
 
   const columns = [
     {
