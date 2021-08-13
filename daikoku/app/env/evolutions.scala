@@ -23,19 +23,23 @@ import scala.util.Success
 
 sealed trait EvolutionScript {
   def version: String
-  def script
-  : (Option[DatastoreId], DataStore, Materializer, ExecutionContext) => Future[Done]
+  def script: (Option[DatastoreId],
+               DataStore,
+               Materializer,
+               ExecutionContext) => Future[Done]
   def run(maybeId: Option[DatastoreId], dataStore: DataStore)(
-    implicit mat: Materializer,
-    ec: ExecutionContext): Future[Done] =
+      implicit mat: Materializer,
+      ec: ExecutionContext): Future[Done] =
     script(maybeId, dataStore, mat, ec)
 }
 
 object evolution_102 extends EvolutionScript {
   override def version: String = "1.0.2"
 
-  override def script
-  : (Option[DatastoreId], DataStore, Materializer, ExecutionContext) => Future[Done] =
+  override def script: (Option[DatastoreId],
+                        DataStore,
+                        Materializer,
+                        ExecutionContext) => Future[Done] =
     (maybeId: Option[DatastoreId],
      dataStore: DataStore,
      mat: Materializer,
@@ -87,8 +91,10 @@ object evolution_102 extends EvolutionScript {
 object evolution_150 extends EvolutionScript {
   override def version: String = "1.5.0"
 
-  override def script
-  : (Option[DatastoreId], DataStore, Materializer, ExecutionContext) => Future[Done] =
+  override def script: (Option[DatastoreId],
+                        DataStore,
+                        Materializer,
+                        ExecutionContext) => Future[Done] =
     (maybeId: Option[DatastoreId],
      dataStore: DataStore,
      mat: Materializer,
@@ -126,7 +132,11 @@ object evolutions {
             case None =>
               evolution.run(None, dataStore).flatMap { _ =>
                 dataStore.evolutionRepo
-                  .save(Evolution(id = DatastoreId(BSONObjectID.generate().stringify), version = evolution.version, applied = true))
+                  .save(
+                    Evolution(id =
+                                DatastoreId(BSONObjectID.generate().stringify),
+                              version = evolution.version,
+                              applied = true))
                   .map(f => {
                     AppLogger.info(s"Evolution ${evolution.version} done")
                     f
@@ -134,10 +144,13 @@ object evolutions {
               }
 
             case Some(e) if !e.applied =>
-              evolution.run(Some(e.id), dataStore)
+              evolution
+                .run(Some(e.id), dataStore)
                 .flatMap { _ =>
                   dataStore.evolutionRepo
-                    .save(Evolution(id = e.id, version = evolution.version, applied = true))(ec)
+                    .save(Evolution(id = e.id,
+                                    version = evolution.version,
+                                    applied = true))(ec)
                     .map(f => {
                       AppLogger.info(s"Evolution ${evolution.version} done")
                       f
