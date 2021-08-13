@@ -37,12 +37,17 @@ function NotificationListComponent(props) {
         notifications: notifications.notifications,
         count: notifications.count,
         untreatedCount: notifications.count,
-        page: state.page + 1,
+        // page: state.page + 1,
         teams,
         apis,
       })
     );
   }, []);
+
+  useEffect(() => {
+    if (state.untreatedNotifications)
+      props.updateNotifications(state.untreatedNotifications.length)
+  }, [state.untreatedNotifications])
 
   const acceptNotification = (notificationId, values) => {
     setState({
@@ -55,16 +60,13 @@ function NotificationListComponent(props) {
     Services.acceptNotificationOfTeam(notificationId, values)
       .then(() => Services.myNotifications(0, state.notifications.length))
       .then(({ notifications, count }) =>
-        setState(
-          {
-            ...state,
-            notifications,
-            count,
-            untreatedCount: count,
-            untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
-          },
-          () => props.updateNotifications(state.untreatedNotifications.length)
-        )
+        setState({
+          ...state,
+          notifications,
+          count,
+          untreatedCount: count,
+          untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
+        })
       );
   }
 
@@ -92,14 +94,14 @@ function NotificationListComponent(props) {
       );
   }
 
-  const onSelectTab = (tab) => {
-    setState({ ...state, tab, loading: true, page: 0 }, () => {
-      if (tab === 'all') {
+  useEffect(() => {
+    if (state.loading)
+      if (state.tab === 'all') {
         Services.myAllNotifications(
           state.page,
           state.pageSize
         ).then(({ notifications, count }) =>
-          setState({ ...state, notifications, count, page: state.page + 1, loading: false })
+          setState({ ...state, notifications, count, loading: false })
         );
       } else {
         Services.myNotifications(state.page, state.pageSize).then(
@@ -109,44 +111,44 @@ function NotificationListComponent(props) {
               notifications,
               count,
               untreatedCount: count,
-              page: state.page + 1,
               loading: false,
             })
         );
       }
-    });
+  }, [state.tab, state.page, state.loading])
+
+  const onSelectTab = (tab) => {
+    setState({ ...state, tab, loading: true, page: 0 })
   };
 
   const moreBtnIsDisplay = () => !!state.count && state.count > state.notifications.length;
 
   const getMoreNotifications = () => {
     if (state.tab === 'unread') {
-      setState({ ...state, nextIsPending: true }, () => {
-        Services.myNotifications(state.page, state.pageSize).then(
-          ({ notifications, count }) =>
-            setState({
-              ...state,
-              notifications: [...state.notifications, ...notifications],
-              count,
-              untreatedCount: count,
-              page: state.page + 1,
-              nextIsPending: false,
-            })
-        );
-      });
+      setState({ ...state, nextIsPending: true })
+      Services.myNotifications(state.page, state.pageSize).then(
+        ({ notifications, count }) =>
+          setState({
+            ...state,
+            notifications: [...state.notifications, ...notifications],
+            count,
+            untreatedCount: count,
+            page: state.page + 1,
+            nextIsPending: false,
+          })
+      );
     } else if (state.tab === 'all') {
-      setState({ ...state, nextIsPending: true }, () => {
-        Services.myAllNotifications(state.page, state.pageSize).then(
-          ({ notifications, count }) =>
-            setState({
-              ...state,
-              notifications: [...state.notifications, ...notifications],
-              count,
-              page: state.page + 1,
-              nextIsPending: false,
-            })
-        );
-      });
+      setState({ ...state, nextIsPending: true })
+      Services.myAllNotifications(state.page, state.pageSize).then(
+        ({ notifications, count }) =>
+          setState({
+            ...state,
+            notifications: [...state.notifications, ...notifications],
+            count,
+            page: state.page + 1,
+            nextIsPending: false,
+          })
+      );
     }
   };
 

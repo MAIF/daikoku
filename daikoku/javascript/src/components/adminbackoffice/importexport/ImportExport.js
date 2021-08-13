@@ -29,11 +29,10 @@ export function ImportExportComponent(props) {
 
   const actuallyImportState = (e) => {
     const files = e.target.files;
-    setState({ ...state, uploading: true }, () => {
-      Services.uploadExportFile(files[0]).then(() => {
-        setState({ ...state, uploading: false });
-        window.location.reload();
-      });
+    setState({ ...state, uploading: true })
+    Services.uploadExportFile(files[0]).then(() => {
+      setState({ ...state, uploading: false });
+      window.location.reload();
     });
   };
 

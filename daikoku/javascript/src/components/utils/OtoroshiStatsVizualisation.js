@@ -187,35 +187,33 @@ export function OtoroshiStatsVizualization(props) {
   }, [state.period]);
 
   const updateConsumption = (from, to) => {
-    setState({ ...state, loading: true }, () => {
-      props
-        .fetchData(from, to)
-        .then((consumptions) => {
-          if (consumptions.error) {
-            setState({ ...state, error: true, loading: false });
-          } else {
-            setState({ ...state, consumptions, loading: false });
-          }
-        })
-        .catch(() => setState({ ...state, error: true, loading: false }));
-    });
+    setState({ ...state, loading: true })
+    props
+      .fetchData(from, to)
+      .then((consumptions) => {
+        if (consumptions.error) {
+          setState({ ...state, error: true, loading: false });
+        } else {
+          setState({ ...state, consumptions, loading: false });
+        }
+      })
+      .catch(() => setState({ ...state, error: true, loading: false }));
   };
 
   const sync = () => {
     const { from, to } = state.period;
-    setState({ ...state, loading: true }, () => {
-      props
-        .sync()
-        .then(() => props.fetchData(from, to()))
-        .then((consumptions) => {
-          if (consumptions.error) {
-            setState({ ...state, error: true, loading: false });
-          } else {
-            setState({ ...state, consumptions, loading: false });
-          }
-        })
-        .catch(() => setState({ ...state, error: true, loading: false }));
-    });
+    setState({ ...state, loading: true })
+    props
+      .sync()
+      .then(() => props.fetchData(from, to()))
+      .then((consumptions) => {
+        if (consumptions.error) {
+          setState({ ...state, error: true, loading: false });
+        } else {
+          setState({ ...state, consumptions, loading: false });
+        }
+      })
+      .catch(() => setState({ ...state, error: true, loading: false }));
   };
 
   return (

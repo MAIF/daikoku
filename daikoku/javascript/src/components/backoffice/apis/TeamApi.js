@@ -44,7 +44,7 @@ function TeamApiComponent(props) {
 
   const teamApiDocumentationRef = useRef();
 
-  const { translateMethod} = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
@@ -98,13 +98,12 @@ function TeamApiComponent(props) {
             return api;
           } else return Promise.reject(api.error);
         })
-        .then((api) =>
-          setState({ ...state, create: false, api }, () =>
-            props.history.push(
-              `/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
-            )
+        .then((api) => {
+          setState({ ...state, create: false, api })
+          props.history.push(
+            `/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
           )
-        )
+        })
         .catch((error) => toastr.error(translateMethod(error)));
     } else {
       return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id).then((r) => {
@@ -253,8 +252,7 @@ function TeamApiComponent(props) {
       else {
         toastr.success('New version of api created');
         history.push(
-          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${
-            params.tab ? params.tab : 'infos'
+          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab ? params.tab : 'infos'
           }`
         );
       }
@@ -274,9 +272,8 @@ function TeamApiComponent(props) {
     <TeamBackOffice
       tab="Apis"
       isLoading={!editedApi}
-      title={`${props.currentTeam.name} - ${
-        state.api ? state.api.name : translateMethod('API')
-      }`}>
+      title={`${props.currentTeam.name} - ${state.api ? state.api.name : translateMethod('API')
+        }`}>
       <Can I={manage} a={API} team={props.currentTeam} dispatchError>
         {!editedApi && (
           <h3>

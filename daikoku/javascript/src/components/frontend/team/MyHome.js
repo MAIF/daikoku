@@ -20,13 +20,12 @@ function MyHomeComponent(props) {
   const { translateMethod } = useContext(I18nContext);
 
   const fetchData = () => {
-    setState({ ...state, loading: true }, () => {
-      Promise.all([Services.myVisibleApis(), Services.teams(), Services.myTeams()]).then(
-        ([apis, teams, myTeams]) => {
-          setState({ ...state, apis, teams, myTeams, loading: false });
-        }
-      );
-    });
+    setState({ ...state, loading: true })
+    Promise.all([Services.myVisibleApis(), Services.teams(), Services.myTeams()]).then(
+      ([apis, teams, myTeams]) => {
+        setState({ ...state, apis, teams, myTeams, loading: false });
+      }
+    );
   };
 
   useEffect(() => {

@@ -27,18 +27,17 @@ function TeamBillingComponent(props) {
   }, []);
 
   const getTeamBilling = team => {
-    setState({ ...state, loading: true }, () => {
-      Promise.all([
-        Services.getTeamBillings(
-          team._id,
-          moment().startOf('month').valueOf(),
-          moment().endOf('month').valueOf()
-        ),
-        Services.subscribedApis(team._id),
-      ]).then(([consumptions, apis]) => {
-        const consumptionsByApi = getConsumptionsByApi(consumptions);
-        setState({ ...state, consumptions, consumptionsByApi, apis, loading: false });
-      });
+    setState({ ...state, loading: true });
+    Promise.all([
+      Services.getTeamBillings(
+        team._id,
+        moment().startOf('month').valueOf(),
+        moment().endOf('month').valueOf()
+      ),
+      Services.subscribedApis(team._id),
+    ]).then(([consumptions, apis]) => {
+      const consumptionsByApi = getConsumptionsByApi(consumptions);
+      setState({ ...state, consumptions, consumptionsByApi, apis, loading: false });
     });
   }
 
@@ -56,42 +55,40 @@ function TeamBillingComponent(props) {
     }, []);
 
   const getBilling = (date) => {
-    setState({ ...state, loading: true, selectedApi: undefined }, () => {
-      Services.getTeamBillings(
-        props.currentTeam._id,
-        date.startOf('month').valueOf(),
-        date.endOf('month').valueOf()
-      ).then((consumptions) =>
+    setState({ ...state, loading: true, selectedApi: undefined })
+    Services.getTeamBillings(
+      props.currentTeam._id,
+      date.startOf('month').valueOf(),
+      date.endOf('month').valueOf()
+    ).then((consumptions) =>
+      setState({
+        ...state,
+        date,
+        consumptions,
+        consumptionsByApi: getConsumptionsByApi(consumptions),
+        loading: false,
+      })
+    );
+  };
+
+  const sync = () => {
+    setState({ ...state, loading: true });
+    Services.syncTeamBilling(props.currentTeam._id)
+      .then(() =>
+        Services.getTeamBillings(
+          props.currentTeam._id,
+          state.date.startOf('month').valueOf(),
+          state.date.endOf('month').valueOf()
+        )
+      )
+      .then((consumptions) =>
         setState({
-          ...state, 
-          date,
+          ...state,
           consumptions,
           consumptionsByApi: getConsumptionsByApi(consumptions),
           loading: false,
         })
       );
-    });
-  };
-
-  const sync = () => {
-    setState({ ...state, loading: true }, () => {
-      Services.syncTeamBilling(props.currentTeam._id)
-        .then(() =>
-          Services.getTeamBillings(
-            props.currentTeam._id,
-            state.date.startOf('month').valueOf(),
-            state.date.endOf('month').valueOf()
-          )
-        )
-        .then((consumptions) =>
-          setState({
-            ...state, 
-            consumptions,
-            consumptionsByApi: getConsumptionsByApi(consumptions),
-            loading: false,
-          })
-        );
-    });
   };
 
   const total = state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);
@@ -152,7 +149,7 @@ function TeamBillingComponent(props) {
                         key={api}
                         handleClick={() =>
                           setState({
-                            ...state, 
+                            ...state,
                             selectedApi: state.apis.find((a) => a._id === api),
                           })
                         }

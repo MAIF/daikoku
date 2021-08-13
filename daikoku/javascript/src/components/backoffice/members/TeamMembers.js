@@ -129,19 +129,18 @@ export function TeamMembersSimpleComponent(props) {
     const teamId = props.currentTeam._id;
     Services.addMembersToTeam(teamId, [member._id])
       .then(({ done }) => {
-        setState({ ...state, selectedMember: null }, () => {
-          done
-            ? toastr.success(
-              'Success',
-              translateMethod(
-                'member.now.invited',
-                false,
-                `${member.name} has been invited as new member of your team`,
-                member.name
-              )
+        setState({ ...state, selectedMember: null });
+        done
+          ? toastr.success(
+            'Success',
+            translateMethod(
+              'member.now.invited',
+              false,
+              `${member.name} has been invited as new member of your team`,
+              member.name
             )
-            : toastr.error('Failure');
-        });
+          )
+          : toastr.error('Failure');
       })
       .then(() => updateMembers(props.currentTeam));
   };

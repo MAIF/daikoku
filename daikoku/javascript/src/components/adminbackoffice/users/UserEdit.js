@@ -268,17 +268,16 @@ export function UserEditComponent(props) {
         });
       } else {
         Services.updateUserById(state.user).then((user) => {
-          setState({ ...state, user, create: false }, () => {
-            toastr.success(
-              translateMethod(
-                'user.updated.success',
-                false,
-                `user ${state.user.name} successfully updated`,
-                state.user.name
-              )
-            );
-            props.history.push('/settings/users');
-          });
+          setState({ ...state, user, create: false })
+          toastr.success(
+            translateMethod(
+              'user.updated.success',
+              false,
+              `user ${state.user.name} successfully updated`,
+              state.user.name
+            )
+          );
+          props.history.push('/settings/users');
         });
       }
     } else {

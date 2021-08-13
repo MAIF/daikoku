@@ -1513,7 +1513,23 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
 
     for {
-      count <- count(query)
+      count <- {
+        if (query.values.isEmpty)
+          reactivePg.queryOne(s"SELECT COUNT(*) as count FROM $tableName") { _.optLong("count") }
+            .map(_.getOrElse(0L))
+        else {
+          val (sql, params) = convertQuery(query)
+
+          var out: String = s"SELECT COUNT(*) as count FROM $tableName WHERE $sql"
+          params.zipWithIndex.reverse.foreach {
+            case (param, i) =>
+              out = out.replace("$" + (i + 1), s"'$param'")
+          }
+
+          reactivePg.queryOne(out)  { _.optLong("count") }
+            .map(_.getOrElse(0L))
+        }
+      }
       queryRes <- {
         if (query.values.isEmpty)
           reactivePg.querySeq(
@@ -1524,9 +1540,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           } else {
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE $sql ORDER BY _id DESC LIMIT $$${params.size + 1} OFFSET $$${params.size + 2}",
-            params ++ Seq(Integer.valueOf(pageSize),
-                          Integer.valueOf(page * pageSize))
+            s"SELECT * FROM $tableName WHERE $sql ORDER BY _id DESC LIMIT ${Integer.valueOf(pageSize)} OFFSET ${Integer.valueOf(page * pageSize)}",
+            params
           ) { row =>
             rowToJson(row, format)
           }

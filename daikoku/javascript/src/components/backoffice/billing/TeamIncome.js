@@ -29,19 +29,18 @@ function TeamIncomeComponent(props) {
   }, []);
 
   const getBillingData = (team) => {
-    setState({ ...state, loading: true }, () => {
-      Promise.all([
-        Services.getTeamIncome(
-          team._id,
-          state.date.startOf('month').valueOf(),
-          state.date.endOf('month').valueOf()
-        ),
-        Services.myVisibleApis(team._id),
-        Services.teams(),
-      ]).then(([consumptions, apis, teams]) => {
-        const consumptionsByApi = getConsumptionsByApi(consumptions);
-        setState({ ...state, consumptions, consumptionsByApi, apis, teams, loading: false });
-      });
+    setState({ ...state, loading: true })
+    Promise.all([
+      Services.getTeamIncome(
+        team._id,
+        state.date.startOf('month').valueOf(),
+        state.date.endOf('month').valueOf()
+      ),
+      Services.myVisibleApis(team._id),
+      Services.teams(),
+    ]).then(([consumptions, apis, teams]) => {
+      const consumptionsByApi = getConsumptionsByApi(consumptions);
+      setState({ ...state, consumptions, consumptionsByApi, apis, teams, loading: false });
     });
   };
 
@@ -59,11 +58,10 @@ function TeamIncomeComponent(props) {
     }, []);
 
   const sync = () => {
-    setState({ ...state, loading: true }, () => {
-      Services.syncTeamIncome(props.currentTeam._id).then(() =>
-        getBillingData(props.currentTeam)
-      );
-    });
+    setState({ ...state, loading: true })
+    Services.syncTeamIncome(props.currentTeam._id).then(() =>
+      getBillingData(props.currentTeam)
+    );
   };
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
@@ -94,11 +92,10 @@ function TeamIncomeComponent(props) {
                   <div className="row month__and__total">
                     <div className="col-12 month__selector d-flex align-items-center">
                       <MonthPicker
-                        updateDate={(date) =>
-                          setState({ ...state, date }, () =>
-                            getBillingData(props.currentTeam)
-                          )
-                        }
+                        updateDate={(date) => {
+                          setState({ ...state, date })
+                          getBillingData(props.currentTeam)
+                        }}
                         value={state.date}
                         currentLanguage={props.currentLanguage}
                       />
