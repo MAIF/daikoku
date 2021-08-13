@@ -2186,10 +2186,11 @@ object json {
 
   val AuthorizedEntitiesFormat: Format[AuthorizedEntities] =
     new Format[AuthorizedEntities] {
-      override def writes(o: AuthorizedEntities): JsValue = Json.obj(
-        "groups" -> SetOtoroshiServiceGroupsIdFormat.writes(o.groups),
-        "services" -> SetOtoroshiServicesIdFormat.writes(o.services)
-      )
+      override def writes(o: AuthorizedEntities): JsValue =
+        Json.obj(
+          "groups" -> SetOtoroshiServiceGroupsIdFormat.writes(o.groups),
+          "services" -> SetOtoroshiServicesIdFormat.writes(o.services)
+        )
 
       override def reads(json: JsValue): JsResult[AuthorizedEntities] =
         Try {
