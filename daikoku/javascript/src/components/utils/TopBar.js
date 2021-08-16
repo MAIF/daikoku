@@ -11,7 +11,6 @@ import * as Services from '../../services';
 import {
   logout,
   updateNotications,
-  udpateLanguage,
   updateTenant,
 } from '../../core/context/actions';
 import { languages } from '../../locales';
@@ -75,7 +74,7 @@ const TopBarComponent = (props) => {
     );
   }, []);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, setLanguage } = useContext(I18nContext);
 
   const selectSearchedItem = (item) => {
     const team = teams.find((t) => t._id === item.team);
@@ -219,10 +218,10 @@ const TopBarComponent = (props) => {
             {!props.connectedUser._humanReadableId && (
               <Select
                 className="language-selector"
-                value={languages.find((l) => l.value === props.currentLanguage)}
+                value={languages.find((l) => l.value === language)}
                 placeholder="Select a language"
                 options={languages}
-                onChange={(e) => props.udpateLanguageProp(e.value)}
+                onChange={(e) => setLanguage(e.value)}
                 classNamePrefix="reactSelect"
               />
             )}
@@ -356,7 +355,6 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   logout: () => logout(),
   updateNotificationsCount: (count) => updateNotications(count),
-  udpateLanguageProp: (l) => udpateLanguage(l),
   updateTenant: (t) => updateTenant(t),
 };
 

@@ -23,12 +23,11 @@ window.$ = jQuery;
 window.jQuery = jQuery;
 
 export function initNotLogged(tenant) {
-  const currentLanguage = tenant.defaultLanguage || 'En';
-  const storeInst = store({ tenant, currentLanguage });
+  const storeInst = store({ tenant });
 
   ReactDOM.render(
     <Provider store={storeInst}>
-      <I18nProvider>
+      <I18nProvider tenant={tenant}>
         <DaikokuHomeApp tenant={tenant} />
       </I18nProvider>
     </Provider>,

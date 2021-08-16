@@ -29,7 +29,6 @@ export const Table = ({
   search,
   pageSizee = 15,
   mobileSize = 767,
-  currentLanguage,
 }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);

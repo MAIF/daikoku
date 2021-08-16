@@ -110,7 +110,6 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     content: {
       type: 'markdown',
       props: {
-        currentLanguage: currentLanguage,
         label: 'Page content',
         height: '800px',
         team: team,

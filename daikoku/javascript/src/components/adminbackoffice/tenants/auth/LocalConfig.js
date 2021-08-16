@@ -13,8 +13,8 @@ export function LocalConfig(props) {
     sessionMaxAge: {
       type: 'number',
       props: {
-        suffix: translateMethod('Second', props.currentLanguage, true),
-        label: translateMethod('Session max. age', props.currentLanguage),
+        suffix: translateMethod('Second', true),
+        label: translateMethod('Session max. age'),
       },
     },
   };

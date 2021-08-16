@@ -114,7 +114,8 @@ function MyHomeComponent(props) {
               </h1>
               <Description
                 description={props.tenant.description}
-                currentLanguage={props.currentLanguage}
+  
+              
               />
             </div>
             {props.connectedUser.isDaikokuAdmin && (
@@ -142,7 +143,6 @@ function MyHomeComponent(props) {
         redirectToApiPage={redirectToApiPage}
         redirectToEditPage={redirectToEditPage}
         redirectToTeamPage={redirectToTeamPage}
-        refreshTeams={() => Services.myTeams().then((myTeams) => setState({ ...state, myTeams }))}
         showTeam={true}
       />
     </main>

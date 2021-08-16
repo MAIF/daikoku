@@ -237,7 +237,8 @@ function NotificationListComponent(props) {
                           reject={() => rejectNotification(notification._id)}
                           getTeam={(id) => state.teams.find((team) => team._id === id)}
                           getApi={(id) => state.apis.find((a) => a._id === id)}
-                          currentLanguage={props.currentLanguage}
+            
+              
                           openSubMetadataModal={props.openSubMetadataModal}
                           history={props.history}
                         />

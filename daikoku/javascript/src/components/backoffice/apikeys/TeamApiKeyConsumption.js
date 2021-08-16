@@ -97,7 +97,8 @@ function TeamApiKeyConsumptionComponent(props) {
                   ).then((c) => c.consumptions)
                 }
                 mappers={mappers}
-                currentLanguage={props.currentLanguage}
+  
+              
                 forConsumer={true}
               />
             </div>

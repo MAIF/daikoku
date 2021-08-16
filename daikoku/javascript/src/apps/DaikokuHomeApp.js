@@ -7,7 +7,6 @@ import { BrowserRouter as Router, Route } from 'react-router-dom';
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
 
 import { Translation } from '../locales/Translation';
-import { udpateLanguage } from '../core/context/actions';
 import { Spinner } from '../components/utils/Spinner';
 import { validatePassword, ValidateEmail } from '../components/utils/validation';
 import * as Services from '../services';
@@ -100,8 +99,7 @@ export function SignupComponent(props) {
     gravatar: {
       type: Gravatar,
       props: {
-        currentLanguage: currentLanguage,
-        fullWidth: true,
+        fullWidth: true
       },
     },
     createAccount: {
@@ -221,7 +219,7 @@ export function SignupComponent(props) {
         <React.Suspense fallback={<Spinner />}>
           <LazyForm
             flow={formFlow}
-            schema={formSchema(props.currentLanguage)}
+            schema={formSchema}
             value={state.user}
             onChange={(user) => {
               setState({ ...state, user, error: undefined });
@@ -365,7 +363,7 @@ export function ResetPasswordComponent(props) {
           <div className="row">
             <LazyForm
               flow={formFlow}
-              schema={formSchema(props.currentLanguage)}
+              schema={formSchema}
               value={state.user}
               onChange={(user) => {
                 setState({ ...state, user });
@@ -378,7 +376,7 @@ export function ResetPasswordComponent(props) {
   );
 }
 
-export function TwoFactorAuthentication({ title, currentLanguage }) {
+export function TwoFactorAuthentication({ title }) {
   const [code, setCode] = useState('');
   const [token, setToken] = useState('');
   const [error, setError] = useState();
@@ -386,7 +384,7 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
   const [showBackupCodes, toggleBackupCodesInput] = useState(false);
   const [backupCode, setBackupCode] = useState('');
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod, language } = useContext(I18nContext)
 
   function verify() {
     if (!code || code.length !== 6) {
@@ -419,8 +417,9 @@ export function TwoFactorAuthentication({ title, currentLanguage }) {
   }, []);
 
   useEffect(() => {
-    if (error) setError(translateMethod('2fa.code_error'));
-  }, [currentLanguage]);
+    if (error)
+      setError(translateMethod('2fa.code_error'));
+  }, [language]);
 
   return (
     <div className="d-flex flex-column mx-auto my-3" style={{ maxWidth: '350px' }}>
@@ -511,7 +510,6 @@ export function DaikokuHomeApp(props) {
             <TwoFactorAuthentication
               match={p.match}
               history={p.history}
-              currentLanguage={'En'}
               title={`${tenant.name} - ${translateMethod('Verification code')}`}
             />
           )}
@@ -525,9 +523,5 @@ const mapStateToProps = (state) => ({
   ...state.context,
 });
 
-const mapDispatchToProps = {
-  updateContextLanguage: (team) => udpateLanguage(team),
-};
-
-export const Signup = connect(mapStateToProps, mapDispatchToProps)(SignupComponent);
-export const ResetPassword = connect(mapStateToProps, mapDispatchToProps)(ResetPasswordComponent);
+export const Signup = connect(mapStateToProps)(SignupComponent);
+export const ResetPassword = connect(mapStateToProps)(ResetPasswordComponent);

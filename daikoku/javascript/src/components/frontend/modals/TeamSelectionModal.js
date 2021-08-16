@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { PropTypes } from 'prop-types';
 import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
 import { Translation } from '../../../locales';
+import { I18nContext } from '../../../core';
 
 export const TeamSelectorModal = ({
   closeModal,
   title,
   description,
-  currentLanguage,
   teams,
   pendingTeams = [],
   acceptedTeams = [],
@@ -155,7 +155,6 @@ TeamSelectorModal.propTypes = {
   closeModal: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   description: PropTypes.string,
-  currentLanguage: PropTypes.string,
   teams: PropTypes.array.isRequired,
   pendingTeams: PropTypes.array,
   acceptedTeams: PropTypes.array,

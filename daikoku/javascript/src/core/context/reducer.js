@@ -4,7 +4,6 @@ import {
   IMPERSONATE,
   UPDATE_TEAM,
   UPDATE_NOTIFS,
-  UPDATE_LANGUAGE,
   UPDATE_TENANT,
   UPDATE_USER,
 } from './action-types';
@@ -16,7 +15,6 @@ const initialState = {
   unreadNotificationsCount: 0,
   tenant: null,
   history: null,
-  currentLanguage: 'En',
   isTenantAdmin: false,
 };
 
@@ -28,7 +26,6 @@ export function contextReducer(state = initialState, action) {
         connectedUser: action.user,
         currentTeam: action.team,
         tenant: action.tenant,
-        currentLanguage: action.language,
       };
 
     case LOGOUT:
@@ -47,17 +44,13 @@ export function contextReducer(state = initialState, action) {
     case UPDATE_NOTIFS:
       return { ...state, unreadNotificationsCount: action.unreadNotificationsCount };
 
-    case UPDATE_LANGUAGE:
-      return { ...state, currentLanguage: action.language };
-
     case UPDATE_TENANT:
       return { ...state, tenant: action.tenant };
 
     case UPDATE_USER:
       return {
         ...state,
-        connectedUser: action.user,
-        currentLanguage: action.user.defaultLanguage || state.currentLanguage,
+        connectedUser: action.user
       };
 
     default:

@@ -216,7 +216,8 @@ function TeamApiKeysForApiComponent(props) {
 
                   return (
                     <ApiKeyCard
-                      currentLanguage={props.currentLanguage}
+        
+              
                       currentTeam={props.currentTeam}
                       openInfoNotif={(message) => toastr.info(message)}
                       statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${props.match.params.apiId}/subscription/${subscription._id}/consumptions`}

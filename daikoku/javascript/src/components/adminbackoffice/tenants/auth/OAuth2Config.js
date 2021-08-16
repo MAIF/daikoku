@@ -399,10 +399,7 @@ export function OAuth2Config(props) {
       },
     },
     jwtVerifier: {
-      type: AlgoSettings,
-      props: {
-        currentLanguage: props.currentLanguage,
-      },
+      type: AlgoSettings
     },
   };
 

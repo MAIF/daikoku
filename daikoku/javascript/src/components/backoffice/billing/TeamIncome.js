@@ -97,7 +97,8 @@ function TeamIncomeComponent(props) {
                           getBillingData(props.currentTeam)
                         }}
                         value={state.date}
-                        currentLanguage={props.currentLanguage}
+          
+              
                       />
                       <button className="btn btn-sm btn-access-negative" onClick={sync}>
                         <i className="fas fa-sync-alt" />

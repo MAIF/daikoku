@@ -11,7 +11,6 @@ import { UserBackOffice } from '../../backoffice';
 import { Spinner, validatePassword, ValidateEmail } from '../../utils';
 import { Translation } from '../../../locales';
 import { I18nContext, updateUser } from '../../../core';
-import { udpateLanguage } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -398,7 +397,7 @@ function PictureUpload(props) {
 function MyProfileComponent(props) {
   const [user, setUser] = useState()
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, setLanguage, language } = useContext(I18nContext);
 
   const formSchema = {
     _id: { type: 'string', disabled: true, props: { label: 'Id', placeholder: '---' } },
@@ -439,10 +438,7 @@ function MyProfileComponent(props) {
       },
     },
     refreshToken: {
-      type: RefreshToken,
-      props: {
-        currentLanguage: props.currentLanguage,
-      },
+      type: RefreshToken
     },
     isDaikokuAdmin: {
       type: 'bool',
@@ -501,24 +497,22 @@ function MyProfileComponent(props) {
       if (res.error) {
         toastr.error(res.error);
       } else {
-        setUser(
-          {
-            ...user,
-            user: {
-              ...user,
-              picture: `/user-avatar/${props.tenant._humanReadableId}/${res.id}`,
-              pictureFromProvider: false,
-            },
-          },
-          () => forceUpdate()
-        );
+        setUser({
+          ...user,
+          picture: `/user-avatar/${props.tenant._humanReadableId}/${res.id}`,
+          pictureFromProvider: false,
+        });
       }
     });
   };
 
   useEffect(() => {
     Services.me(props.connectedUser._id)
-      .then(setUser);
+      .then(user => {
+        setUser(user);
+        if (user.defaultLanguage && user.defaultLanguage !== language)
+          setLanguage(user.defaultLanguage);
+      });
   }, [])
 
   const save = () => {
@@ -526,20 +520,14 @@ function MyProfileComponent(props) {
       const emailValidation = ValidateEmail(user.email, translateMethod);
       if (emailValidation.ok) {
         Services.updateUserById(user).then((user) => {
-          setUser(user, () => {
-            props.updateUser(user);
-            if (props.currentLanguage !== user.defaultLanguage) {
-              props.updateLanguage(user.defaultLanguage);
-            }
-            toastr.success(
-              translateMethod(
-                'user.updated.success',
-                false,
-                'user successfully updated',
-                user.name
-              )
-            );
-          });
+          setUser(user)
+          props.updateUser(user);
+
+          if (language !== user.defaultLanguage)
+            setLanguage(user.defaultLanguage);
+
+          toastr.success(translateMethod('user.updated.success', false, 'user successfully updated', user.name)
+          );
         });
       } else {
         toastr.error(emailValidation.error);
@@ -588,7 +576,6 @@ function MyProfileComponent(props) {
                 />
                 <PictureUpload
                   setFiles={setFiles}
-                  currentLanguage={props.currentLanguage}
                 />
               </div>
             )}
@@ -657,8 +644,7 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = {
-  updateUser: (u) => updateUser(u),
-  updateLanguage: (l) => udpateLanguage(l),
+  updateUser: (u) => updateUser(u)
 };
 
 export const MyProfile = connect(mapStateToProps, mapDispatchToProps)(MyProfileComponent);

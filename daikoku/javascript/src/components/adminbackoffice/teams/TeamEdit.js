@@ -62,8 +62,7 @@ function TeamEditForAdministrationComponent(props) {
     avatarFrom: {
       type: AvatarChooser,
       props: {
-        team: () => team,
-        currentLanguage: props.currentLanguage,
+        team: () => team
       },
     },
     metadata: {

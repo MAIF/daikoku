@@ -122,7 +122,6 @@ function TeamListComponent(props) {
                   />
                 );
               }}
-              currentLanguage={props.currentLanguage}
             />
           </div>
         </div>

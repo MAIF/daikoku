@@ -70,7 +70,7 @@ import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp
 import { MessagesEvents } from '../services/messages';
 import { I18nContext } from '../core/i18n-context';
 
-const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, currentLanguage }) => {
+const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
   useEffect(() => {
     if (!user.isGuest) {
       MessagesEvents.start();
@@ -80,12 +80,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
     }
   }, []);
 
-  const { setLanguage, setTranslationMode, translateMethod } = useContext(I18nContext)
-
-  useEffect(() => {
-    setLanguage(currentLanguage)
-    setTranslationMode(tenant.tenantMode && tenant.tenantMode === "Translation")
-  }, [currentLanguage, tenant])
+  const { translateMethod } = useContext(I18nContext);
 
   if (!user) {
     return (
@@ -172,7 +167,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
                 <TwoFactorAuthentication
                   match={p.match}
                   history={p.history}
-                  currentLanguage={currentLanguage}
                   title={`${tenant.name} - ${translateMethod('Verification code')}`}
                 />
               )}

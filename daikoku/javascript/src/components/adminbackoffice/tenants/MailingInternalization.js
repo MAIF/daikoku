@@ -24,7 +24,7 @@ const MarkdownComponent = ({
   <Suspense fallback={<div>loading ...</div>}>
     <div style={{ position: 'relative' }} className="my-2">
       <LazySingleMarkdownInput
-        currentLanguage={currentLanguage}
+        fullWidth
         team={team}
         value={value}
         onChange={(code) => handleInputChange(translationKey, language, code)}
@@ -190,7 +190,6 @@ const EditMailtemplate = ({ tenantId, team }) => {
           <span className="h5">Default mail template</span>
           <div className="mt-3">
             <MarkdownComponent
-              currentLanguage={currentLanguage}
               team={team}
               value={tenant.mailerSettings.template}
               language="en"
@@ -224,7 +223,6 @@ const EditMailtemplate = ({ tenantId, team }) => {
               <span className="h5">Translation : {language}</span>
               <div className="mt-3">
                 <MarkdownComponent
-                  currentLanguage={currentLanguage}
                   team={team}
                   value={value}
                   language={language}
@@ -242,7 +240,7 @@ const EditMailtemplate = ({ tenantId, team }) => {
   );
 };
 
-function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
+function MailingInternalizationComponent({ team, tenant }) {
   const [translations, setTranslations] = useState([]);
   const params = useParams();
 
@@ -380,7 +378,6 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
                       <MarkdownComponent
                         {...v}
                         key={`${key}-${v.language}-${i}`}
-                        currentLanguage={currentLanguage}
                         team={team}
                         translationKey={key}
                         saveTranslation={saveTranslation}
@@ -398,7 +395,6 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
             render={() => (
               <EditMailtemplate
                 tenantId={tenant._id}
-                currentLanguage={currentLanguage}
                 team={team}
               />
             )}

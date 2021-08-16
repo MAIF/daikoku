@@ -65,7 +65,7 @@ const AdminMessagesComponent = (props) => {
     maybeReadMessage();
   }, [selectedChat]);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, language } = useContext(I18nContext);
 
   const maybeReadMessage = () => {
     if (selectedChat) {
@@ -121,7 +121,7 @@ const AdminMessagesComponent = (props) => {
     .map((g) => MessagesEvents.fromMessagesToDialog(g.messages))
     .getOrElse([]);
 
-  moment.locale(props.currentLanguage);
+  moment.locale(language);
   moment.updateLocale('fr', {
     relativeTime: {
       s: translateMethod('moment.duration.seconds', false, 'few sec'),

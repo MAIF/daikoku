@@ -244,7 +244,8 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
         <div style={{ width: props.fixedWitdh || 250 }}>
           {props.assertChooserActive && (
             <AssetChooserByModal
-              currentLanguage={props.currentLanguage}
+
+              
               tenantMode={props.tenantMode}
               team={team}
               label={translateMethod('Set from asset')}

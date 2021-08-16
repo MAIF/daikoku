@@ -108,7 +108,6 @@ function SessionListComponent(props) {
             </h1>
             <div className="section p-2">
               <Table
-                currentLanguage={props.currentLanguage}
                 selfUrl="sessions"
                 defaultTitle="User sessions"
                 defaultValue={() => ({})}

@@ -120,7 +120,6 @@ export function TenantOtoroshisComponent(props) {
             </h1>
             <div className="section p-2">
               <Table
-                currentLanguage={props.currentLanguage}
                 selfUrl="otoroshis"
                 defaultTitle="Otoroshi instances"
                 defaultValue={() => ({})}

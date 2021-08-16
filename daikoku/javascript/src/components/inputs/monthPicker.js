@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 
 import DatePicker from 'antd/lib/date-picker';
+import { I18nContext } from '../../core';
 
 const getDateFormat = (language) => {
   switch (language.toUpperCase()) {
@@ -16,8 +17,10 @@ const getDateFormat = (language) => {
   }
 };
 
-export const MonthPicker = ({ currentLanguage, updateDate, value }) => {
-  const dateFormat = getDateFormat(currentLanguage);
+export const MonthPicker = ({ updateDate, value }) => {
+  const { language } = useContext(I18nContext);
+
+  const dateFormat = getDateFormat(language);
 
   const onChange = (value) => {
     const date = value;

@@ -80,7 +80,6 @@ function StyleLogoAssetButton(props) {
         onlyPreview
         tenantMode
         label={translateMethod('Set tenant logo from asset')}
-        currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.logo', origin + asset.link)}
       />
     </div>
@@ -99,7 +98,6 @@ function StyleJsUrlAssetButton(props) {
         typeFilter={MimeTypeFilter.javascript}
         tenantMode
         label={translateMethod('Set js from asset')}
-        currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.jsUrl', origin + asset.link)}
       />
     </div>
@@ -119,7 +117,6 @@ function StyleCssUrlAssetButton(props) {
         typeFilter={MimeTypeFilter.css}
         tenantMode
         label={translateMethod('Set css from asset')}
-        currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.cssUrl', origin + asset.link)}
       />
     </div>
@@ -140,7 +137,6 @@ function StyleFaviconUrlAssetButton(props) {
         onlyPreview
         tenantMode
         label={translateMethod('Set favicon from asset')}
-        currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.faviconUrl', origin + asset.link)}
       />
     </div>
@@ -160,7 +156,6 @@ function StyleFontFamilyUrlAssetButton(props) {
         typeFilter={MimeTypeFilter.font}
         tenantMode
         label={translateMethod('Set font family from asset')}
-        currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('style.fontFamilyUrl', origin + asset.link)}
       />
     </div>
@@ -222,7 +217,7 @@ function HomePageVisibilitySwitch(props) {
 }
 
 export function TenantEditComponent(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod, language } = useContext(I18nContext)
 
   const [state, setState] = useState({
     tenant: null,
@@ -385,7 +380,7 @@ export function TenantEditComponent(props) {
     defaultLanguage: {
       type: 'select',
       props: {
-        label: translateMethod('Default  language'),
+        label: translateMethod('Default language'),
         possibleValues: Object.keys(configuration).map((key) => ({
           label: key,
           value: key,
@@ -427,7 +422,6 @@ export function TenantEditComponent(props) {
       type: StyleLogoAssetButton,
       props: {
         tenant: () => state.tenant,
-        currentLanguage: props.currentLanguage,
         onChangeLogo: (obj) => {
           console.log(obj);
         },
@@ -437,7 +431,6 @@ export function TenantEditComponent(props) {
       type: StyleCssUrlAssetButton,
       props: {
         tenant: () => state.tenant,
-        currentLanguage: props.currentLanguage,
         onChangeLogo: (obj) => {
           console.log(obj);
         },
@@ -447,7 +440,6 @@ export function TenantEditComponent(props) {
       type: StyleJsUrlAssetButton,
       props: {
         tenant: () => state.tenant,
-        currentLanguage: props.currentLanguage,
         onChangeLogo: (obj) => {
           console.log(obj);
         },
@@ -457,7 +449,6 @@ export function TenantEditComponent(props) {
       type: StyleFaviconUrlAssetButton,
       props: {
         tenant: () => state.tenant,
-        currentLanguage: props.currentLanguage,
         onChangeLogo: (obj) => {
           console.log(obj);
         },
@@ -477,7 +468,6 @@ export function TenantEditComponent(props) {
         tenant: () => state.tenant,
         save: () => save(),
         history: props.history,
-        currentLanguage: props.currentLanguage,
         isTenantUpdated: () => !!state.updated,
         openModal: (props) => props.openSaveOrCancelModal({ ...props }),
       },
@@ -506,7 +496,6 @@ export function TenantEditComponent(props) {
       type: StyleFontFamilyUrlAssetButton,
       props: {
         tenant: () => state.tenant,
-        currentLanguage: props.currentLanguage,
         onChangeFont: (obj) => {
           console.log(obj);
         },
@@ -541,14 +530,12 @@ export function TenantEditComponent(props) {
     authProviderSettings: {
       type: AuthConfig,
       props: {
-        currentLanguage: props.currentLanguage,
         label: translateMethod('Settings'),
       },
     },
     creationSecurity: {
       type: 'bool',
       props: {
-        currentLanguage: props.currentLanguage,
         label: translateMethod('creation security'),
         help: translateMethod(
           'creation.security.help',
@@ -560,7 +547,6 @@ export function TenantEditComponent(props) {
     subscriptionSecurity: {
       type: 'bool',
       props: {
-        currentLanguage: props.currentLanguage,
         label: translateMethod('subscription security'),
         help: translateMethod(
           'subscription.security.help',
@@ -583,7 +569,7 @@ export function TenantEditComponent(props) {
                 undefined,
                 undefined,
                 translateMethod('I understood'),
-                props.currentLanguage
+                language
               );
 
             setState({
@@ -600,7 +586,6 @@ export function TenantEditComponent(props) {
     apiReferenceHideForGuest: {
       type: 'bool',
       props: {
-        currentLanguage: props.currentLanguage,
         label: translateMethod('Api reference visibility'),
         help: translateMethod(
           'appi.reference.visibility.help',
@@ -612,7 +597,6 @@ export function TenantEditComponent(props) {
     hideTeamsPage: {
       type: 'bool',
       props: {
-        currentLanguage: props.currentLanguage,
         label: translateMethod('Hide teams page'),
         help: translateMethod(
           'hide.teams.page.help',
@@ -637,8 +621,7 @@ export function TenantEditComponent(props) {
     mailerSettings: {
       type: MailerConfig,
       props: {
-        label: translateMethod('Mailer'),
-        currentLanguage: props.currentLanguage,
+        label: translateMethod('Mailer')
       },
     },
     'daikokuHeader.name': {
@@ -881,7 +864,7 @@ export function TenantEditComponent(props) {
             </div>
             <React.Suspense fallback={<Spinner />}>
               <LazyForm
-                currentLanguage={props.currentLanguage}
+        
                 flow={flow}
                 schema={schema}
                 value={state.tenant}

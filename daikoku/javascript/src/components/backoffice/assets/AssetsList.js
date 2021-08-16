@@ -265,8 +265,7 @@ const AssetsListComponent = ({
       type: AddAsset,
       disabled: Object.keys(newAsset).length === 0,
       props: {
-        addAsset: () => addAsset(),
-        currentLanguage: currentLanguage,
+        addAsset: () => addAsset()
       },
     },
   };
@@ -412,8 +411,7 @@ const AssetsListComponent = ({
           },
           title: asset.meta.filename,
           value,
-          team: currentTeam,
-          currentLanguage: currentLanguage,
+          team: currentTeam
         })
       );
   };

@@ -248,7 +248,8 @@ function ApiPricingCardComponent(props) {
                       false,
                       'You are going to get or request API keys. On which team do you want them for?'
                     )}
-                    currentLanguage={props.currentLanguage}
+      
+              
                     teams={authorizedTeams
                       .filter((t) => t.type !== 'Admin')
                       .filter(
@@ -352,7 +353,8 @@ export function ApiPricing(props) {
                   )}
                   askForApikeys={props.askForApikeys}
                   updateSubscriptions={props.updateSubscriptions}
-                  currentLanguage={props.currentLanguage}
+    
+              
                   tenant={props.tenant}
                   connectedUser={props.connectedUser}
                 />

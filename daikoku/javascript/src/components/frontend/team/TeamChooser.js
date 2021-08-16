@@ -5,7 +5,8 @@ import Pagination from 'react-paginate';
 import * as Services from '../../../services';
 
 import { TeamCard } from '.';
-import { I18nContext, updateTeamPromise } from '../../../core/i18n-context';
+import { updateTeamPromise } from '../../../core';
+import { I18nContext } from '../../../core/i18n-context';
 import { Translation } from '../../../locales';
 
 function TeamChooserComponent(props) {
@@ -96,7 +97,8 @@ function TeamChooserComponent(props) {
                 key={team._id}
                 user={props.connectedUser}
                 team={team}
-                currentLanguage={props.currentLanguage}
+  
+              
                 askToJoin={(e) => askToJoin(e, team)}
                 redirectToTeamPage={() => props.history.push(`/${team._humanReadableId}`)}
                 redirectToTeamSettings={() => redirectToTeamSettings(team)}

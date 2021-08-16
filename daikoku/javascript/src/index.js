@@ -38,13 +38,10 @@ export function init(
   isTenantAdmin,
   apiCreationPermitted
 ) {
-  const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse('En');
-  const currentLanguage = Option(user.defaultLanguage).getOrElse(tenantDefaultLanguage);
   const storeInst = store({
     connectedUser: user,
     tenant,
     impersonator,
-    currentLanguage,
     isTenantAdmin,
     apiCreationPermitted,
   });
@@ -54,14 +51,13 @@ export function init(
 
   ReactDOM.render(
     <Provider store={storeInst}>
-      <I18nProvider>
+      <I18nProvider tenant={tenant}>
         <DaikokuApp
           user={user}
           tenant={tenant}
           impersonator={impersonator}
           loginProvider={tenant.authProvider}
           loginAction={loginCallback}
-          currentLanguage={currentLanguage}
         />
       </I18nProvider>
     </Provider>,
@@ -92,7 +88,6 @@ export function init(
       const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
       const secondPing = _session.expires - Date.now() + 2000;
       setTimeout(() => {
-        const language = storeInst.getState().context.currentLanguage;
         window.alert(
           (close) => (
             <div style={{ width: '100%' }}>
@@ -136,11 +131,10 @@ export function init(
 }
 
 export function login(provider, callback, tenant) {
-  const currentLanguage = Option(tenant.defaultLanguage).getOrElse('En');
-  const storeInst = store({ tenant, currentLanguage });
+  const storeInst = store({ tenant });
   ReactDOM.render(
     <Provider store={storeInst}>
-      <I18nProvider>
+      <I18nProvider tenant={tenant}>
         <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
       </I18nProvider>
     </Provider>,
@@ -153,11 +147,10 @@ export function login(provider, callback, tenant) {
 }
 
 export function initNotLogged(tenant) {
-  const currentLanguage = Option(tenant.defaultLanguage).getOrElse('En');
-  const storeInst = store({ tenant, currentLanguage });
+  const storeInst = store({ tenant });
   ReactDOM.render(
     <Provider store={storeInst}>
-      <I18nProvider>
+      <I18nProvider tenant={tenant}>
         <DaikokuHomeApp tenant={tenant} />
       </I18nProvider>
     </Provider>,

@@ -89,7 +89,6 @@ const InitializeFromOtoroshiComponent = (props) => {
       }
       resetService={() => setCreatedApis([...createdApis.filter((a) => a.id !== s.id)])}
       getFilteredServices={filterServices}
-      currentLanguage={props.currentLanguage}
       tenant={props.tenant}
       cancel={() => send('CANCEL')}
     />
@@ -152,7 +151,6 @@ const InitializeFromOtoroshiComponent = (props) => {
                 send('LOAD', { otoroshi: oto.value, tenant: props.tenant._id })
               }
               otoroshis={otoroshis}
-              currentLanguage={props.currentLanguage}
             />
           )}
           {(state.matches('loadingOtoroshiGroups') ||
@@ -160,7 +158,6 @@ const InitializeFromOtoroshiComponent = (props) => {
             state.matches('loadingApikeys')) && <Spinner />}
           {state.value === 'stepSelection' && (
             <SelectionStepStep
-              currentLanguage={props.currentLanguage}
               goToServices={() => send('LOAD_SERVICE', { up: true })}
               goToApikeys={() => send('LOAD_APIKEY')}
             />
@@ -176,7 +173,6 @@ const InitializeFromOtoroshiComponent = (props) => {
           )}
           {state.matches('recap') && (
             <RecapServiceStep
-              currentLanguage={props.currentLanguage}
               cancel={() => send('CANCEL')}
               createdApis={createdApis}
               groups={state.context.groups}
@@ -214,7 +210,6 @@ const InitializeFromOtoroshiComponent = (props) => {
                   setCreatedSubs([...createdSubs.filter((s) => s.clientId !== apikey.clientId)])
                 }
                 getFilteredApikeys={filterApikeys}
-                currentLanguage={props.currentLanguage}
                 tenant={props.tenant}
                 cancel={() => send('CANCEL')}
                 createdSubs={createdSubs}
@@ -235,7 +230,6 @@ const InitializeFromOtoroshiComponent = (props) => {
                       callBackCreation: () => afterSubCreation(),
                     })
                   }
-                  currentLanguage={props.currentLanguage}
                 />
               )}
             </>
@@ -250,7 +244,6 @@ const InitializeFromOtoroshiComponent = (props) => {
               create={() =>
                 send('CREATE_APIKEYS', { createdSubs, callBackCreation: () => afterSubCreation() })
               }
-              currentLanguage={props.currentLanguage}
             />
           )}
           {state.matches('complete') && (

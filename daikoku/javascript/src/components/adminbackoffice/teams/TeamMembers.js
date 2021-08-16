@@ -32,7 +32,6 @@ class TeamMembersComponent extends Component {
       <UserBackOffice tab="Teams">
         <Can I={manage} a={tenant} dispatchError>
           <TeamMembersSimpleComponent
-            currentLanguage={this.props.currentLanguage}
             currentTeam={this.state.team}
             connectedUser={this.props.connectedUser}
             updateTeam={(team) => Promise.resolve(this.setState({ team }))}

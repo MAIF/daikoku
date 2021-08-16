@@ -333,7 +333,8 @@ const ApiListComponent = (props) => {
                 handleCategorySelect={(category) =>
                   setSelectedCategory(categories.find((c) => c.value === category))
                 }
-                currentLanguage={props.currentLanguage}
+  
+              
                 view={view}
                 connectedUser={props.connectedUser}
               />
@@ -409,8 +410,6 @@ ApiListComponent.propTypes = {
   teams: PropTypes.array.isRequired,
   teamVisible: PropTypes.bool,
   team: PropTypes.object,
-  refreshTeams: PropTypes.func.isRequired,
-
   askForApiAccess: PropTypes.func.isRequired,
   redirectToTeamPage: PropTypes.func.isRequired,
   redirectToApiPage: PropTypes.func.isRequired,

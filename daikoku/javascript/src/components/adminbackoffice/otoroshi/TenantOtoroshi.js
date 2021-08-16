@@ -12,6 +12,8 @@ import { I18nContext } from '../../../core/i18n-context';
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 function TenantOtoroshiComponent(props) {
+  const { translateMethod } = useContext(I18nContext);
+
   const [state, setState] = useState({
     otoroshi: null,
     create: false
@@ -21,35 +23,33 @@ function TenantOtoroshiComponent(props) {
     _id: {
       type: 'string',
       disabled: true,
-      props: { label: translateMethod('Id', props.currentLanguage), placeholder: '---' },
+      props: { label: translateMethod('Id'), placeholder: '---' },
     },
     url: {
       type: 'string',
       props: {
-        label: translateMethod('Otoroshi Url', props.currentLanguage),
+        label: translateMethod('Otoroshi Url'),
         placeholder: 'https://otoroshi-api.foo.bar',
       },
     },
     host: {
       type: 'string',
       props: {
-        label: translateMethod('Otoroshi Host', props.currentLanguage),
+        label: translateMethod('Otoroshi Host'),
         placeholder: 'otoroshi-api.foo.bar',
       },
     },
     clientId: {
       type: 'string',
-      props: { label: translateMethod('Otoroshi client id', props.currentLanguage) },
+      props: { label: translateMethod('Otoroshi client id') },
     },
     clientSecret: {
       type: 'string',
-      props: { label: translateMethod('Otoroshi client secret', props.currentLanguage) },
+      props: { label: translateMethod('Otoroshi client secret') },
     },
   };
 
   const formFlow = ['_id', 'url', 'host', 'clientId', 'clientSecret'];
-
-  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     if (props.location && props.location.state && props.location.state.newSettings) {
