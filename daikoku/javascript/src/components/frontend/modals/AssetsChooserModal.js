@@ -51,7 +51,7 @@ export const AssetSelectorModal = ({
       <div className="modal-body">
         <div className="asset-selection-body">
           <input
-            placeholder={translateMethode('Find an assets')}
+            placeholder={translateMethod('Find an assets')}
             className="form-control"
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -80,7 +80,7 @@ export const AssetSelectorModal = ({
                           ? asset.link
                           : `/asset-thumbnails/${asset.value}`
                       }
-                      alt={translateMethode('Thumbnail')}
+                      alt={translateMethod('Thumbnail')}
                     />
                   </div>
                 );
@@ -131,6 +131,8 @@ export const AssetSelectorModal = ({
 };
 
 export function AssetChooserComponent(props) {
+  const { translateMethod } = useContext(I18nContext);
+  
   const [state, setState] = useState({
     loading: true,
     assets: [],
@@ -223,7 +225,7 @@ export function AssetChooserComponent(props) {
 
   if (!state.assets.length) {
     return (
-      <BeautifulTitle title={translateMethode('No assets found')}>
+      <BeautifulTitle title={translateMethod('No assets found')}>
         <button type="button" className="btn btn-sm btn-access-negative ml-1 cursor-help" disabled>
           <i
             className={classNames('fas mr-1', {

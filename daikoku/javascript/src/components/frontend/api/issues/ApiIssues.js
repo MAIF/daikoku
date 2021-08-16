@@ -29,7 +29,7 @@ export function ApiIssues({ filter, api, selectedVersion }) {
   return (
     <div className="d-flex flex-column pt-3">
       {filteredIssues.map(
-        ({ seqId, title, tags, by, createdDate, closedDate, open, apiVersion }) => (
+        ({ seqId, title, tags, by, createdDate, closedDate, open, apiVersion, _id }) => (
           <div
             className="border-bottom py-3 d-flex align-items-center justify-content-between"
             key={`issue-${seqId}`}
@@ -40,7 +40,7 @@ export function ApiIssues({ filter, api, selectedVersion }) {
                 style={{ color: open ? 'inherit' : 'red' }}></i>
               <div>
                 <div>
-                  <Link to={`issues/${seqId}`} className="mr-2">
+                  <Link to={`issues/${_id}`} className="mr-2">
                     {title}
                   </Link>
                   {tags

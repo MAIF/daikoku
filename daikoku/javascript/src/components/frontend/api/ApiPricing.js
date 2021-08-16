@@ -1,4 +1,4 @@
-import React, { Component, useContext } from 'react';
+import React, { useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import _ from 'lodash';
 import { currencies } from '../../../services/currencies';
@@ -317,54 +317,52 @@ ApiPricingCard.propTypes = {
   ownerTeam: PropTypes.object.isRequired,
 };
 
-export class ApiPricing extends Component {
-  render() {
-    const api = props.api;
-    if (!api) {
-      return null;
-    }
+export function ApiPricing(props) {
+  const api = props.api;
+  if (!api) {
+    return null;
+  }
 
-    const possibleUsagePlans = api.possibleUsagePlans.filter((plan) => {
-      return (
-        plan.visibility === 'Public' ||
-        props.myTeams.some((team) => team._id === props.ownerTeam._id) ||
-        props.myTeams.some((team) => plan.authorizedTeams.includes(team._id))
-      );
-    });
-
+  const possibleUsagePlans = api.possibleUsagePlans.filter((plan) => {
     return (
-      <div className="d-flex col flex-column pricing-content">
-        <div className="album">
-          <div className="container">
-            <div className="row">
-              {possibleUsagePlans.map((plan) => (
-                <div key={plan._id} className="col-md-4">
-                  <ApiPricingCard
-                    api={api}
-                    key={plan._id}
-                    plan={plan}
-                    myTeams={props.myTeams}
-                    ownerTeam={props.ownerTeam}
-                    subscriptions={props.subscriptions.filter(
-                      (subs) => subs.api === api._id && subs.plan === plan._id
-                    )}
-                    pendingSubscriptions={props.pendingSubscriptions.filter(
-                      (subs) => subs.action.api === api._id && subs.action.plan === plan._id
-                    )}
-                    askForApikeys={props.askForApikeys}
-                    updateSubscriptions={props.updateSubscriptions}
-                    currentLanguage={props.currentLanguage}
-                    tenant={props.tenant}
-                    connectedUser={props.connectedUser}
-                  />
-                </div>
-              ))}
-            </div>
+      plan.visibility === 'Public' ||
+      props.myTeams.some((team) => team._id === props.ownerTeam._id) ||
+      props.myTeams.some((team) => plan.authorizedTeams.includes(team._id))
+    );
+  });
+
+  return (
+    <div className="d-flex col flex-column pricing-content">
+      <div className="album">
+        <div className="container">
+          <div className="row">
+            {possibleUsagePlans.map((plan) => (
+              <div key={plan._id} className="col-md-4">
+                <ApiPricingCard
+                  api={api}
+                  key={plan._id}
+                  plan={plan}
+                  myTeams={props.myTeams}
+                  ownerTeam={props.ownerTeam}
+                  subscriptions={props.subscriptions.filter(
+                    (subs) => subs.api === api._id && subs.plan === plan._id
+                  )}
+                  pendingSubscriptions={props.pendingSubscriptions.filter(
+                    (subs) => subs.action.api === api._id && subs.action.plan === plan._id
+                  )}
+                  askForApikeys={props.askForApikeys}
+                  updateSubscriptions={props.updateSubscriptions}
+                  currentLanguage={props.currentLanguage}
+                  tenant={props.tenant}
+                  connectedUser={props.connectedUser}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 ApiPricing.propTypes = {

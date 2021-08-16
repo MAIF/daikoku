@@ -24,10 +24,6 @@ import Select from 'react-select';
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 
 function TeamApiComponent(props) {
-  const location = useLocation();
-  const params = useParams();
-  const history = useHistory();
-
   const [state, setState] = useState({
     api: null,
     create: false,
@@ -35,6 +31,8 @@ function TeamApiComponent(props) {
     otoroshiSettings: [],
     changed: false,
   });
+
+  const params = useParams();
 
   const [versions, setApiVersions] = useState([]);
   const [apiVersion, setApiVersion] = useState({
@@ -45,6 +43,8 @@ function TeamApiComponent(props) {
   const teamApiDocumentationRef = useRef();
 
   const { translateMethod } = useContext(I18nContext);
+  const location = useLocation();
+  const history = useHistory();
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
@@ -56,7 +56,10 @@ function TeamApiComponent(props) {
           create: true,
         })
       );
-    } else reloadState();
+    }
+    else {
+      reloadState();
+    }
   }, [params.tab, params.versionId]);
 
   useEffect(() => {

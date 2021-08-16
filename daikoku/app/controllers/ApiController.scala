@@ -2137,7 +2137,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       ctx.setCtxValue("api.id", apiId)
 
       env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
-        "seqId" -> issueId
+        "_id" -> issueId
       )).flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Issue not found")))
         case Some(issue) =>
@@ -2153,14 +2153,16 @@ class ApiController(DaikokuAction: DaikokuAction,
               .map { creator =>
                 val issuesTags = api.map(_.issuesTags).getOrElse(Set.empty)
                 Ok(
-                  (issue.asJson.as[JsObject] +
-                    ("tags" -> Json.toJson(issue.tags
-                      .map(tagId => issuesTags.find(_.id == tagId).map(tag => ApiTagFormat.writes(tag)).getOrElse(Json.obj())))) +
-                    ("comments" -> JsArray(issue.comments.zipWithIndex.map { case (comment, i) =>
-                    ApiIssueCommentFormat.writes(comment) + ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj()))
-                  })))
-                    +
-                    ("by" -> creator.asSimpleJson))
+                  (issue.asJson.as[JsObject] ++
+                    Json.obj(
+                      "by" -> creator.asSimpleJson,
+                      "tags" -> Json.toJson(issue.tags
+                      .map(tagId => issuesTags.find(_.id == tagId).map(tag => ApiTagFormat.writes(tag)))),
+                      "comments" -> Json.toJson(issue.comments.zipWithIndex
+                        .map { case (comment, i) =>
+                          ApiIssueCommentFormat.writes(comment) + ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj()))
+                        }))
+                  ))
               }
               .getOrElse(BadRequest(Json.obj("error" -> "The issue creator is missing")))
           }
@@ -2291,7 +2293,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         case JsError(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "Body can't be parse to issue")))
         case JsSuccess(issue, _) =>
           (for {
-            optIssue  <- env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).findOne(Json.obj("seqId" -> issueId))
+            optIssue  <- env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).findOne(Json.obj("_id" -> issueId))
             optTeam   <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId)
           } yield {
             (optIssue, optTeam) match {

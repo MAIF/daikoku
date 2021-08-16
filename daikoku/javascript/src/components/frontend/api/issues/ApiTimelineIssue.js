@@ -192,12 +192,12 @@ export function ApiTimelineIssue({
       comments:
         newComment.length > 0
           ? [
-              ...issue.comments,
-              {
-                by: connectedUser,
-                content: newComment,
-              },
-            ]
+            ...issue.comments,
+            {
+              by: connectedUser,
+              content: newComment,
+            },
+          ]
           : issue.comments,
     };
     Services.updateIssue(api._humanReadableId, team._id, id, {
@@ -399,6 +399,8 @@ function Comment({
 }) {
   const [showActions, toggleActions] = useState(false);
 
+  const { translateMethod } = useContext(I18nContext)
+
   return (
     <div className="d-flex pb-4">
       <div className="dropdown pr-2">
@@ -444,6 +446,7 @@ function Comment({
           <div className="p-3" style={styles.commentBody}>
             <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
               <LazySingleMarkdownInput
+                fullWidth
                 currentLanguage={currentLanguage}
                 height="300px"
                 value={content}
@@ -483,6 +486,7 @@ function NewComment({
   openIssue,
   team,
 }) {
+  const { translateMethod } = useContext(I18nContext)
   return (
     <div className="d-flex pb-4">
       <div className="dropdown pr-2">
@@ -508,6 +512,7 @@ function NewComment({
           }}>
           <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
+              fullWidth={true}
               currentLanguage={currentLanguage}
               height="300px"
               value={content}

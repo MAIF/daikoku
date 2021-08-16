@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Services from '../../../../services';
 import Select from 'react-select';
-import { Can, manage } from '../../../utils';
+import { Can, manage, api as API } from '../../../utils';
 import { I18nContext } from '../../../../core';
 
 export function ApiFilter({
@@ -69,12 +69,12 @@ export function ApiFilter({
 
       {connectedUser && !connectedUser.isGuest && (
         <div>
-          <Can I={manage} a={api} team={ownerTeam}>
-          <Link to={`${pathname}/labels`} className="btn btn-outline-primary">
-            <i className="fa fa-tag mr-1" />
-            {translateMethod('issues.tags')}
-            <span className="badge badge-secondary ml-2">{tags.length || 0}</span>
-          </Link>
+          <Can I={manage} a={API} team={ownerTeam}>
+            <Link to={`${pathname}/labels`} className="btn btn-outline-primary">
+              <i className="fa fa-tag mr-1" />
+              {translateMethod('issues.tags')}
+              <span className="badge badge-secondary ml-2">{tags.length || 0}</span>
+            </Link>
           </Can>
           <Link to={`${pathname}/issues/new`} className="btn btn-outline-success ml-1">
             {translateMethod('issues.new_issue')}

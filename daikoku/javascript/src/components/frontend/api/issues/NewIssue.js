@@ -126,6 +126,7 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
           }}>
           <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
+              fullWidth
               currentLanguage={currentLanguage}
               height="300px"
               value={issue.comments[0].content}

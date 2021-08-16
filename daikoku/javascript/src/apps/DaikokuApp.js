@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, withRouter, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, withRouter, Switch, useParams } from 'react-router-dom';
 import { Redirect } from 'react-router';
 import { ConnectedRouter } from 'connected-react-router';
-import { connect } from 'react-redux';
+import { connect, useDispatch, useSelector } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
@@ -517,7 +517,9 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
               path="/:teamId/settings/apis/:apiId/:versionId"
               render={(p) => <TeamApi match={p.match} history={p.history} location={p.location} />}
             />
+
             <TeamBackOfficeRoute
+              exact
               title={`${tenant.name} - ${translateMethod('API')}`}
               path="/:teamId/settings/apis/:apiId/:versionId/:tab"
               render={(p) => <TeamApi match={p.match} history={p.history} location={p.location} />}
@@ -613,7 +615,7 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = {
-  updateTeam: (team) => updateTeamPromise(team),
+  // updateTeam: (team) => updateTeamPromise(team),
   setError: (error) => setError(error),
 };
 
@@ -621,77 +623,61 @@ export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
 
 //custom component route to get team object if it's not present in  redux store...
 
-const TeamBackOfficeRouteComponent = ({
-  component: ComponentToRender,
-  render,
-  currentTeam,
-  updateTeam,
-  ...rest
-}) => {
-  const [loading, setLoading] = useState(false);
-  const [match, setMatch] = useState();
-  const [noRender, setNoRender] = useState(false);
-  const [teamError, setTeamError] = useState(null);
+const TeamBackOfficeRouteComponent = (p) => {
+  const RouteTeam = (props) => {
+    const { component: ComponentToRender, render } = props;
 
-  useEffect(() => {
-    if (loading && match && rest.path.includes(match.path)) {
-      if (match.params.teamId !== 'settings') {
-        Services.oneOfMyTeam(match.params.teamId)
-          .then((team) => {
-            if (team.error) {
-              return Promise.reject(team);
-            }
-            return updateTeam(team);
-          })
-          .then(() => setLoading(false))
-          .catch((error) => {
-            rest.setError({
-              error: {
-                ...error,
-                message: error.error,
-              },
-            });
-            setTeamError(error);
-          });
-      } else {
-        setNoRender(true);
+    const { currentTeam } = useSelector(state => state.context)
+    const dispatch = useDispatch()
+
+    const params = useParams()
+
+    const needReloading = !currentTeam || params.teamId !== currentTeam._humanReadableId
+
+    const [loading, setLoading] = useState(needReloading);
+    const [teamError, setTeamError] = useState(null);
+
+    useEffect(() => {
+      if (needReloading)
+        getMyTeam()
+    }, [params.teamId]);
+
+    useEffect(() => {
+      if (teamError) {
+        setLoading(false);
       }
-    }
-  }, [loading]);
+    }, [teamError]);
 
-  useEffect(() => {
-    if (teamError) {
-      setLoading(false);
-    }
-  }, [teamError]);
+    function getMyTeam() {
+      console.log("getMyTeam")
+      Services.oneOfMyTeam(params.teamId)
+        .then((team) => {
+          if (team.error)
+            setTeamError(team.error);
+          else
+            dispatch(updateTeamPromise(team));
 
-  if (noRender) {
-    return null;
+          setLoading(false)
+        })
+    }
+
+    if (loading) {
+      return <Spinner />;
+    } else if (teamError) {
+      return <Error error={{ status: 404 }} />;
+    } else {
+      console.log("Render team api")
+      return ComponentToRender ? <ComponentToRender {...props} /> : render(props);
+    }
   }
 
-  return (
-    <Route
-      {...rest}
-      render={(props) => {
-        //todo: if error => show error page
-        if (loading) {
-          return <Spinner />;
-        } else if (teamError) {
-          return <Error error={{ status: 404 }} />;
-        } else if (!currentTeam || props.match.params.teamId !== currentTeam._humanReadableId) {
-          setLoading(true);
-          setMatch(props.match);
-        } else {
-          return ComponentToRender ? <ComponentToRender {...props} /> : render(props);
-        }
-      }}
-    />
-  );
+  return <Route {...p} render={(props) => <RouteTeam {...p} {...props} />} />
 };
 
-const TeamBackOfficeRoute = withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(TeamBackOfficeRouteComponent)
-);
+const TeamBackOfficeRoute = TeamBackOfficeRouteComponent;
+// withRouter(
+//   connect(mapStateToProps, mapDispatchToProps)(TeamBackOfficeRouteComponent)
+// );
 
 const FrontOfficeRoute = (props) => {
   return <RouteWithTitle {...props} render={(p) => <FrontOffice>{props.render(p)}</FrontOffice>} />;

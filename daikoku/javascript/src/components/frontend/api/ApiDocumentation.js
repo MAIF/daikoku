@@ -53,20 +53,19 @@ export function ApiDocumentation(props) {
 
 
   useEffect(() => {
-    if (props.api)
-      fetchPage();
+    fetchPage();
   }, [props.api, params.pageId]);
 
   const fetchPage = () => {
     Services.getDocDetails(props.api._humanReadableId, params.versionId).then(
       (details) => {
-        setState({ ...state, details });
         const pageId = params.pageId || details.pages[0];
-        if (pageId)
+        if (pageId) {
           Services.getDocPage(props.api._id, pageId).then((page) => {
             if (page.remoteContentEnabled) {
               setState({
                 ...state,
+                details,
                 content: null,
                 contentType: page.contentType,
                 remoteContent: {
@@ -76,11 +75,15 @@ export function ApiDocumentation(props) {
             } else
               setState({
                 ...state,
+                details,
                 content: page.content,
                 contentType: page.contentType,
                 remoteContent: null,
               });
           });
+        } else {
+          setState({ ...state, details });
+        }
       }
     );
   };
@@ -107,11 +110,7 @@ export function ApiDocumentation(props) {
 
   return (
     <>
-      {details && <ApiDocumentationCartidge
-        details={details}
-        fetchPage={fetchPage}
-      />
-      }
+      {details && <ApiDocumentationCartidge details={details} />}
       <div className="col p-3">
         <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
           {prevId && (
