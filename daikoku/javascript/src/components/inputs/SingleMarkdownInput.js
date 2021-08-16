@@ -213,13 +213,11 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
   return (
     <div className="form-group row">
       {props.label && (
-        <label
-          htmlFor={`input-${props.label}`}
-          className="col-xs-12 col-sm-2 col-form-label">
+        <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
           <Help place="right" text={props.help} label={props.label} />
         </label>
       )}
-      <div className={props.fullWidth ? "col-sm-12" : "col-sm-10"}>
+      <div className={props.fullWidth ? 'col-sm-12' : 'col-sm-10'}>
         <div>
           <div className="btn-group">
             <button

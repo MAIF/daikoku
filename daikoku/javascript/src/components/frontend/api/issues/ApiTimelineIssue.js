@@ -60,8 +60,7 @@ export function ApiTimelineIssue({
 
   useEffect(() => {
     Services.getAPIIssue(api._humanReadableId, id).then((res) => {
-      if (res.error)
-        history.push(`${basePath}/issues`)
+      if (res.error) history.push(`${basePath}/issues`);
       else {
         const entryTags = res.tags.map((tag) => ({ value: tag.id, label: tag.name }));
         setIssue({ ...res, tags: entryTags });
@@ -193,12 +192,12 @@ export function ApiTimelineIssue({
       comments:
         newComment.length > 0
           ? [
-            ...issue.comments,
-            {
-              by: connectedUser,
-              content: newComment,
-            },
-          ]
+              ...issue.comments,
+              {
+                by: connectedUser,
+                content: newComment,
+              },
+            ]
           : issue.comments,
     };
     Services.updateIssue(api._humanReadableId, team._id, id, {

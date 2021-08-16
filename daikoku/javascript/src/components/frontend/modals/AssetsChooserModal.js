@@ -154,17 +154,18 @@ export function AssetChooserComponent(props) {
 
   const getTeamAssets = (team) =>
     Services.listAssets(team._id).then((assets) =>
-      assets.error ? [] :
-        assets.map((asset) => ({
-          label: asset.meta.filename + ' - ' + asset.meta.title,
-          value: asset.meta.asset,
-          filename: asset.meta.filename,
-          title: asset.meta.title,
-          desc: asset.meta.desc,
-          contentType: asset.meta['content-type'],
-          meta: asset.meta,
-          link: `/team-assets/${team._id}/${asset.meta.asset}`,
-        }))
+      assets.error
+        ? []
+        : assets.map((asset) => ({
+            label: asset.meta.filename + ' - ' + asset.meta.title,
+            value: asset.meta.asset,
+            filename: asset.meta.filename,
+            title: asset.meta.title,
+            desc: asset.meta.desc,
+            contentType: asset.meta['content-type'],
+            meta: asset.meta,
+            link: `/team-assets/${team._id}/${asset.meta.asset}`,
+          }))
     );
 
   useEffect(() => {
