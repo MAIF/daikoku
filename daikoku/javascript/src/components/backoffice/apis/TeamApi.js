@@ -275,8 +275,7 @@ function TeamApiComponent(props) {
     <TeamBackOffice
       tab="Apis"
       isLoading={!editedApi}
-      title={`${props.currentTeam.name} - ${state.api ? state.api.name : translateMethod('API')
-        }`}>
+      title={`${props.currentTeam.name} - ${state.api ? state.api.name : translateMethod('API')}`}>
       <Can I={manage} a={API} team={props.currentTeam} dispatchError>
         {!editedApi && (
           <h3>

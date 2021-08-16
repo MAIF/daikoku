@@ -411,118 +411,9 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
             {/* NEW ROUTING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */}
             {/* NEW ROUTING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */}
 
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/edition"
-              render={(p) => <TeamEdit match={p.match} history={p.history} location={p.location} />}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/consumption"
-              render={(p) => (
-                <TeamConsumption match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/billing"
-              render={(p) => (
-                <TeamBilling match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/income"
-              render={(p) => (
-                <TeamIncome match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apikeys/:apiId/:versionId"
-              render={(p) => (
-                <TeamApiKeysForApi match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/subscriptions/apis/:apiId/:versionId"
-              render={(p) => (
-                <TeamApiSubscriptions match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apikeys/:apiId/:versionId/subscription/:subscription/consumptions"
-              render={(p) => (
-                <TeamApiKeyConsumption match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apikeys"
-              render={(p) => (
-                <TeamApiKeys match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apis"
-              render={(p) => <TeamApis match={p.match} history={p.history} location={p.location} />}
-            />
-
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/consumptions/apis/:apiId/:versionId"
-              render={(p) => (
-                <TeamApiConsumption match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/consumptions/apis/:apiId/:versionId/plan/:planId"
-              render={(p) => (
-                <TeamPlanConsumption match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              title={`${tenant.name} - ${translateMethod('member', true)}`}
-              exact
-              path="/:teamId/settings/members"
-              render={(p) => (
-                <TeamMembers match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/assets"
-              render={(p) => (
-                <AssetsList
-                  match={p.match}
-                  history={p.history}
-                  location={p.location}
-                  tenantMode={false}
-                />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
+            <Route
               path="/:teamId/settings"
-              render={(p) => (
-                <TeamBackOfficeHome match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apis/:apiId/:versionId"
-              render={(p) => <TeamApi match={p.match} history={p.history} location={p.location} />}
-            />
-
-            <TeamBackOfficeRoute
-              exact
-              title={`${tenant.name} - ${translateMethod('API')}`}
-              path="/:teamId/settings/apis/:apiId/:versionId/:tab"
-              render={(p) => <TeamApi match={p.match} history={p.history} location={p.location} />}
+              render={(props) => <TeamBackOfficeRouter tenant={tenant} {...props} />}
             />
 
             <FrontOfficeRoute
@@ -623,61 +514,152 @@ export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
 
 //custom component route to get team object if it's not present in  redux store...
 
-const TeamBackOfficeRouteComponent = (p) => {
-  const RouteTeam = (props) => {
-    const { component: ComponentToRender, render } = props;
+const TeamBackOfficeRouter = ({ tenant }) => {
+  const { translateMethod } = useContext(I18nContext);
 
-    const { currentTeam } = useSelector(state => state.context)
-    const dispatch = useDispatch()
+  const basePath = `/:teamId/settings`;
 
-    const params = useParams()
+  const { currentTeam } = useSelector(state => state.context)
 
-    const needReloading = !currentTeam || params.teamId !== currentTeam._humanReadableId
+  const dispatch = useDispatch()
+  const params = useParams()
+  const [teamError, setTeamError] = useState();
 
-    const [loading, setLoading] = useState(needReloading);
-    const [teamError, setTeamError] = useState(null);
+  useEffect(() => {
+    if (!currentTeam || params.teamId !== currentTeam._humanReadableId)
+      getMyTeam()
+  }, [params.teamId]);
 
-    useEffect(() => {
-      if (needReloading)
-        getMyTeam()
-    }, [params.teamId]);
-
-    useEffect(() => {
-      if (teamError) {
-        setLoading(false);
-      }
-    }, [teamError]);
-
-    function getMyTeam() {
-      console.log("getMyTeam")
-      Services.oneOfMyTeam(params.teamId)
-        .then((team) => {
-          if (team.error)
-            setTeamError(team.error);
-          else
-            dispatch(updateTeamPromise(team));
-
-          setLoading(false)
-        })
-    }
-
-    if (loading) {
-      return <Spinner />;
-    } else if (teamError) {
-      return <Error error={{ status: 404 }} />;
-    } else {
-      console.log("Render team api")
-      return ComponentToRender ? <ComponentToRender {...props} /> : render(props);
-    }
+  function getMyTeam() {
+    console.log("getMyTeam")
+    Services.oneOfMyTeam(params.teamId)
+      .then((team) => {
+        if (team.error)
+          setTeamError(team.error);
+        else
+          dispatch(updateTeamPromise(team));
+      })
   }
 
-  return <Route {...p} render={(props) => <RouteTeam {...p} {...props} />} />
-};
+  if (teamError)
+    return <Error error={{ status: 404 }} />
 
-const TeamBackOfficeRoute = TeamBackOfficeRouteComponent;
-// withRouter(
-//   connect(mapStateToProps, mapDispatchToProps)(TeamBackOfficeRouteComponent)
-// );
+  if (!currentTeam)
+    return <Spinner />
+  else
+    return <Switch>
+      <Route
+        exact
+        path={`${basePath}/edition`}
+        render={(p) => <TeamEdit {...p} />}
+      />
+      <Route
+        exact
+        path={`${basePath}/consumption`}
+        render={(p) => <TeamConsumption {...p} />}
+      />
+      <Route
+        exact
+        path={`${basePath}/billing`}
+        render={(p) => <TeamBilling {...p} />}
+      />
+      <Route
+        exact
+        path={`${basePath}/income`}
+        render={(p) => (
+          <TeamIncome {...p} />
+        )}
+      />
+      <Route
+        exact
+        path={`${basePath}/apikeys/:apiId/:versionId`}
+        render={(p) => (
+          <TeamApiKeysForApi {...p} />
+        )}
+      />
+      <Route
+        exact
+        path={`${basePath}/subscriptions/apis/:apiId/:versionId`}
+        render={(p) => (
+          <TeamApiSubscriptions {...p} />
+        )}
+      />
+      <Route
+        exact
+        path={`${basePath}/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`}
+        render={(p) => (
+          <TeamApiKeyConsumption {...p} />
+        )}
+      />
+      <Route
+        exact
+        path={`${basePath}/apikeys`}
+        render={(p) => (
+          <TeamApiKeys {...p} />
+        )}
+      />
+      <Route
+        exact
+        path={`${basePath}/apis`}
+        render={(p) => <TeamApis {...p} />}
+      />
+
+      <Route
+        exact
+        path={`${basePath}/consumptions/apis/:apiId/:versionId`}
+        render={(p) => (
+          <TeamApiConsumption {...p} />
+        )}
+      />
+      <Route
+        exact
+        path={`${basePath}/consumptions/apis/:apiId/:versionId/plan/:planId`}
+        render={(p) => (
+          <TeamPlanConsumption {...p} />
+        )}
+      />
+      <Route
+        title={`${tenant.name} - ${translateMethod('member', true)}`}
+        exact
+        path={`${basePath}/members`}
+        render={(p) => (
+          <TeamMembers {...p} />
+        )}
+      />
+      <Route
+        exact
+        path={`${basePath}/assets`}
+        render={(p) => (
+          <AssetsList
+            match={p.match}
+            history={p.history}
+            location={p.location}
+            tenantMode={false}
+          />
+        )}
+      />
+      <Route
+        exact
+        path={`${basePath}`}
+        render={(p) => (
+          <TeamBackOfficeHome {...p} />
+        )}
+      />
+      <Route
+        exact
+        path={`${basePath}/apis/:apiId/:versionId`}
+        render={(p) => <TeamApi {...p} />}
+      />
+
+      <Route
+        exact
+        title={`${tenant.name} - ${translateMethod('API')}`}
+        path={`${basePath}/apis/:apiId/:versionId/:tab`}
+        render={(p) => <TeamApi {...p} />}
+      />
+    </Switch>
+}
+
 
 const FrontOfficeRoute = (props) => {
   return <RouteWithTitle {...props} render={(p) => <FrontOffice>{props.render(p)}</FrontOffice>} />;
