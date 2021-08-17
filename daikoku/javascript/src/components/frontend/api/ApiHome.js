@@ -51,7 +51,6 @@ const ApiHeader = ({
   history,
   connectedUser,
   toggleStar,
-  currentLanguage,
   params,
   tab,
 }) => {
@@ -128,7 +127,6 @@ const ApiHeader = ({
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
                 toggleStar={toggleStar}
-                currentLanguage={currentLanguage}
               />
             </div>
           </h1>
@@ -145,7 +143,6 @@ const ApiHomeComponent = ({
   match,
   history,
   setError,
-  currentLanguage,
   connectedUser,
   updateUser,
   tenant,
@@ -272,7 +269,6 @@ const ApiHomeComponent = ({
       <div className="m-3">
         <LoginOrRegisterModal
           tenant={tenant}
-          currentLanguage={currentLanguage}
           showOnlyMessage={true}
           asFlatFormat
           message={translateMethod('guest_user_not_allowed')}
@@ -356,7 +352,6 @@ const ApiHomeComponent = ({
         history={history}
         connectedUser={connectedUser}
         toggleStar={toggleStar}
-        currentLanguage={currentLanguage}
         params={match.params}
         tab={tab}
       />
@@ -446,7 +441,6 @@ const ApiHomeComponent = ({
                 api={api}
                 subscriptions={subscriptions}
                 askForApikeys={(teams, plan) => askForApikeys(teams, plan)}
-                currentLanguage={currentLanguage}
                 tenant={tenant}
                 openContactModal={() =>
                   openContactModal(userName, userEmail, tenant._id, api.team, api._id)
@@ -471,7 +465,6 @@ const ApiHomeComponent = ({
                 askForApikeys={askForApikeys}
                 pendingSubscriptions={pendingSubscriptions}
                 updateSubscriptions={updateSubscriptions}
-                currentLanguage={currentLanguage}
                 tenant={tenant}
               />
             )}
@@ -480,7 +473,6 @@ const ApiHomeComponent = ({
                 api={api}
                 ownerTeam={ownerTeam}
                 match={match}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'documentation-page' && (
@@ -488,7 +480,6 @@ const ApiHomeComponent = ({
                 api={api}
                 ownerTeam={ownerTeam}
                 match={match}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'swagger' && (
@@ -500,7 +491,6 @@ const ApiHomeComponent = ({
                 testing={api.testing}
                 tenant={tenant}
                 connectedUser={connectedUser}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'redoc' && (
@@ -511,7 +501,6 @@ const ApiHomeComponent = ({
                 match={match}
                 tenant={tenant}
                 connectedUser={connectedUser}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'console' && (
@@ -540,7 +529,6 @@ const ApiHomeComponent = ({
                 ownerTeam={ownerTeam}
                 connectedUser={connectedUser}
                 match={match}
-                currentLanguage={currentLanguage}
               />
             )}
           </div>

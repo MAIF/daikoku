@@ -118,7 +118,6 @@ export function ApiCartidge(props) {
                 props.myTeams.find((t) => teams.includes(t._id))
               )
             }
-            currentLanguage={props.currentLanguage}
             withAllTeamSelector={false}>
             <button className="btn btn-sm btn-access-negative mt-2">
               <Translation i18nkey="View your api keys">

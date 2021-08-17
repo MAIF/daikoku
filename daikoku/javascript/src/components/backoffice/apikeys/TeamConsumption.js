@@ -7,7 +7,7 @@ import { TeamBackOffice } from '../TeamBackOffice';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 
-const TeamConsumptionComponent = ({ currentTeam, currentLanguage }) => {
+const TeamConsumptionComponent = ({ currentTeam }) => {
   const { translateMethod } = useContext(I18nContext);
 
   const mappers = [
@@ -56,7 +56,6 @@ const TeamConsumptionComponent = ({ currentTeam, currentLanguage }) => {
               Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
             }
             mappers={mappers}
-            currentLanguage={currentLanguage}
           />
         </div>
       </div>

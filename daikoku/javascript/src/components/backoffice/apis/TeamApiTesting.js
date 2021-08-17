@@ -30,7 +30,6 @@ export const TeamApiTesting = (props) => {
     props.openSubMetadataModal({
       save: (metadata) =>
         props.openTestingApiKeyModal({
-          currentLanguage: props.currentLanguage,
           metadata,
           otoroshiSettings: props.otoroshiSettings,
           teamId: props.teamId,
@@ -53,7 +52,6 @@ export const TeamApiTesting = (props) => {
         }),
       config: testing.config,
       api: props.value._id,
-      currentLanguage: props.currentLanguage,
       description: <div>Description</div>,
     });
   };
@@ -89,21 +87,19 @@ export const TeamApiTesting = (props) => {
     .map((t) => t.config)
     .exists((c) => c.otoroshiSettings);
 
-  const lang = props.currentLanguage;
-
   return (
     <div className="d-flex">
       <form className="col-6 section pt-2 pr-2">
         <BooleanInput
           value={testing.enabled}
-          label={translateMethod('Enabled', lang)}
+          label={translateMethod('Enabled')}
           onChange={(enabled) => setTesting({ ...testing, enabled })}
         />
         <SelectInput
           clearable={false}
           value={{ label: testing.auth, value: testing.auth }}
-          placeholder={translateMethod('Select a auth type', lang)}
-          label={translateMethod('Auth. type', lang)}
+          placeholder={translateMethod('Select a auth type')}
+          label={translateMethod('Auth. type')}
           possibleValues={[
             { label: 'ApiKey', value: 'ApiKey' },
             { label: 'Basic', value: 'Basic' },
@@ -114,17 +110,17 @@ export const TeamApiTesting = (props) => {
         />
         <TextInput
           value={testing.name}
-          label={translateMethod('Auth. name', lang)}
+          label={translateMethod('Auth. name')}
           onChange={(name) => setTesting({ ...testing, name })}
         />
         <TextInput
           value={testing.username}
-          label={translateMethod('Client Id', lang)}
+          label={translateMethod('Client Id')}
           onChange={(username) => setTesting({ ...testing, username })}
         />
         <TextInput
           value={testing.password}
-          label={translateMethod('Client secret', lang)}
+          label={translateMethod('Client secret')}
           type="password"
           onChange={(password) => setTesting({ ...testing, password })}
         />

@@ -69,7 +69,6 @@ export class TeamCard extends Component {
 TeamCard.propTypes = {
   user: PropTypes.object,
   team: PropTypes.object.isRequired,
-  currentLanguage: PropTypes.string,
   askToJoin: PropTypes.func,
   redirectToTeamPage: PropTypes.func,
   redirectToTeamSettings: PropTypes.func,

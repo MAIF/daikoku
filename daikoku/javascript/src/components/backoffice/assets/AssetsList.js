@@ -6,7 +6,7 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { TeamBackOffice, UserBackOffice } from '..';
 import { Table } from '../../inputs';
-import { Can, manage, asset, Spinner } from '../../utils';
+import { Can, manage, asset, Spinner, tenant as TENANT } from '../../utils';
 import { Translation } from '../../../locales';
 import { openWysywygModal } from '../../../core/modal';
 import { I18nContext } from '../../../core';
@@ -224,7 +224,6 @@ const AssetsListComponent = ({
   tenant,
   tenantMode,
   openWysywygModal,
-  currentLanguage,
 }) => {
   const [assets, setAssets] = useState([]);
   const [newAsset, setNewAsset] = useState({});
@@ -353,7 +352,6 @@ const AssetsListComponent = ({
               tenantMode={tenantMode}
               teamId={currentTeam ? currentTeam._id : undefined}
               displayError={(error) => toastr.error(error)}
-              currentLanguage={currentLanguage}
               postAction={() => {
                 fetchAssets();
               }}
@@ -506,7 +504,7 @@ const AssetsListComponent = ({
         }
       } else {
         toastr.error(
-          translateMethod('Upload error', this.props.currentLanguage),
+          translateMethod('Upload error'),
           'You have to provide at least a title and a filename for a file.'
         );
         return Promise.resolve('');
@@ -544,7 +542,7 @@ const AssetsListComponent = ({
         'Asset',
         true
       )}`}>
-      <Can I={manage} a={tenantMode ? tenant : asset} team={currentTeam} dispatchError>
+      <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
         <div className="row">
           <div className="col">
             <h1>
@@ -581,7 +579,6 @@ const AssetsListComponent = ({
                   showActions={false}
                   showLink={false}
                   extractKey={(item) => item.key}
-                  currentLanguage={currentLanguage}
                 />
               </div>
             </div>

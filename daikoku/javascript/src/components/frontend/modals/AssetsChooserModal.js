@@ -19,8 +19,7 @@ export const AssetSelectorModal = ({
   closeModal,
   assets,
   onSelect,
-  onlyPreview,
-  currentLanguage,
+  onlyPreview
 }) => {
   const [selectedAsset, setSelectedAsset] = useState({});
   const [search, setSearch] = useState();
@@ -249,8 +248,7 @@ export function AssetChooserComponent(props) {
           assets: state.assets,
           onSelect: (asset) => props.onSelect(asset),
           onlyPreview: props.onlyPreview,
-          panelView: true,
-          currentLanguage: props.currentLanguage,
+          panelView: true
         })
       }>
       <i

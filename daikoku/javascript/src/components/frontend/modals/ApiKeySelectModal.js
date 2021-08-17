@@ -1,10 +1,8 @@
 import React, { useContext, useState } from 'react';
 import { I18nContext } from '../../../core';
-import { t } from '../../../locales';
 
 export const ApiKeySelectModal = ({
   closeModal,
-  currentLanguage,
   onSubscribe,
   plan,
   apiKeys,

@@ -8,7 +8,7 @@ import * as Services from '../../../services/index';
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 const LazyForm = React.lazy(() => import('../../../components/inputs/Form'));
 
-const ApiPost = ({ currentLanguage, publishPost, params, team }) => {
+const ApiPost = ({ publishPost, params, team }) => {
   const { translateMethod } = useContext(I18nContext);
 
   const [selected, setSelected] = useState({
@@ -26,7 +26,6 @@ const ApiPost = ({ currentLanguage, publishPost, params, team }) => {
     content: {
       type: 'markdown',
       props: {
-        currentLanguage,
         label: translateMethod('team_api_post.content'),
         height: '320px',
         team,
@@ -53,7 +52,7 @@ const ApiPost = ({ currentLanguage, publishPost, params, team }) => {
   );
 };
 
-export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
+export function TeamApiPost({ team, params, api, ...props }) {
   const history = useHistory();
   const location = useLocation();
   const { translateMethod } = useContext(I18nContext);
@@ -231,7 +230,6 @@ export function TeamApiPost({ currentLanguage, team, params, api, ...props }) {
                     {post.isOpen && (
                       <React.Suspense fallback={<div>loading ...</div>}>
                         <LazySingleMarkdownInput
-                          currentLanguage={currentLanguage}
                           team={team}
                           height={window.innerHeight - 300 + 'px'}
                           value={post.content}

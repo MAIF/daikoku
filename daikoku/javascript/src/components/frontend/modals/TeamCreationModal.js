@@ -38,7 +38,7 @@ export const TeamCreationModal = (props) => {
             {translateMethod(error)}
           </div>
         )}
-        <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={props.currentLanguage} />
+        <TeamEditForm team={team} updateTeam={setTeam} />
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={props.closeModal}>
@@ -77,6 +77,5 @@ export const TeamCreationModal = (props) => {
 
 TeamCreationModal.propTypes = {
   closeModal: PropTypes.func.isRequired,
-  team: PropTypes.object.isRequired,
-  currentLanguage: PropTypes.string,
+  team: PropTypes.object.isRequired
 };

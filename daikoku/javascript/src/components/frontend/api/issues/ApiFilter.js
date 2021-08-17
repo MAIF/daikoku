@@ -11,7 +11,6 @@ export function ApiFilter({
   filter,
   pathname,
   connectedUser,
-  currentLanguage,
   team,
   ownerTeam,
   api,

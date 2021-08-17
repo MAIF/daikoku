@@ -130,7 +130,6 @@ function TeamPlanConsumptionComponent(props) {
             )
           }
           mappers={mappers}
-          currentLanguage={props.currentLanguage}
         />
       </div>
     </TeamBackOffice>

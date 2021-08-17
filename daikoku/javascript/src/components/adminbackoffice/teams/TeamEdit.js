@@ -10,10 +10,11 @@ import { Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../core/i18n-context';
 
-const LazyForm = React.lazy(() => importranslateMethod('../../inputs/Form'));
+const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 function TeamEditForAdministrationComponent(props) {
   const [team, setTeam] = useState(null)
+  const [create, setCreate] = useState(false);
 
   const { translateMethod } = useContext(I18nContext);
 
@@ -86,26 +87,22 @@ function TeamEditForAdministrationComponent(props) {
     if (props.location && props.location.state && props.location.state.newTeam) {
       Services.createTeam(team)
         .then((team) => {
-          toastr.success(translateMethod(
-            'team.created',
-            false,
-            `Team ${team.name} successfully created`,
-            team.name
-          ));
-          return team;
+          if (team.error)
+            toastr.error(translateMethod("team_api_post.failed"));
+          else {
+            toastr.success(translateMethod(
+              'team.created',
+              false,
+              `Team ${team.name} successfully created`,
+              team.name
+            ));
+            props.history.push(`/settings/teams/${team._humanReadableId}/members`);
+          }
         })
-        .then((team) => {
-          props.history.push(`/settings/teams/${team._humanReadableId}/members`);
-        });
     } else {
       Services.updateTeam(team).then((t) => {
         setTeam(t)
-        if (t._humanReadableId !== state._humanReadableId) {
-          props.history.push(`/settings/teams/${t._humanReadableId}`);
-        }
-        toastr.success(
-          translateMethod('team.updated', false, 'Team successfully updated')
-        );
+        toastr.success(translateMethod('team.updated'));
       });
     }
   };
@@ -116,12 +113,10 @@ function TeamEditForAdministrationComponent(props) {
 
   useEffect(() => {
     if (props.location && props.location.state && props.location.state.newTeam) {
-      setTeam({ team: props.location.state.newTeam, create: true });
-    } else {
-      Services.teamFull(props.match.params.teamSettingId).then((team) =>
-        setTeam({ team })
-      );
-    }
+      setTeam(props.location.state.newTeam);
+      setCreate(true)
+    } else
+      Services.teamFull(props.match.params.teamSettingId).then(setTeam);
   }, []);
 
   if (!team) {
@@ -161,7 +156,7 @@ function TeamEditForAdministrationComponent(props) {
               style={{ marginLeft: 5 }}
               type="button"
               className="btn btn-outline-primary"
-              disabled={state.create}
+              disabled={create}
               onClick={members}>
               <span>
                 <i className="fas fa-users mr-1" />
@@ -175,7 +170,7 @@ function TeamEditForAdministrationComponent(props) {
               type="button"
               className="btn btn-outline-success"
               onClick={save}>
-              {!state.create && (
+              {!create && (
                 <span>
                   <i className="fas fa-save mr-1" />
                   <Translation i18nkey="Save">
@@ -183,7 +178,7 @@ function TeamEditForAdministrationComponent(props) {
                   </Translation>
                 </span>
               )}
-              {state.create && (
+              {create && (
                 <span>
                   <i className="fas fa-save mr-1" />
                   <Translation i18nkey="Create">

@@ -158,7 +158,6 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               .getOrNull()}
             icon="fas fa-file-image"
             classNames="btn-for-descriptionToolbar"
-            currentLanguage={props.currentLanguage}
             onSelect={(asset) =>
               editor.session.insert(editor.getCursorPosition(), origin + asset.link)
             }

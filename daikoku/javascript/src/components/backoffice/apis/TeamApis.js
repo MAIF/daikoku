@@ -213,7 +213,6 @@ function TeamApisComponent(props) {
             </h1>
             <div className="p-2">
               <Table
-                currentLanguage={props.currentLanguage}
                 selfUrl="apis"
                 defaultTitle="Team Apis"
                 defaultValue={() => ({})}

@@ -59,10 +59,9 @@ class AssetButton extends Component {
           className="col-sm-10"
           style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}>
           <AssetChooserByModal
-            currentLanguage={this.props.currentLanguage}
             team={team}
             teamId={team._id}
-            label={translateMethod('Set from asset', this.props.currentLanguage)}
+            label={translateMethod('Set from asset')}
             onSelect={(asset) => {
               this.props.onRawChange({
                 ...this.props.rawValue,
@@ -78,7 +77,7 @@ class AssetButton extends Component {
 }
 
 const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
-  const { currentLanguage, team, value, versionId, creationInProgress, params } = props;
+  const { team, value, versionId, creationInProgress, params } = props;
 
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState(undefined);
@@ -276,7 +275,6 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   function importPage() {
     props.openApiDocumentationSelectModal({
-      currentLanguage,
       api: value,
       teamId: props.teamId,
       onClose: () => {

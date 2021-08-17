@@ -9,7 +9,6 @@ export class TeamApiDescription extends Component {
       <div>
         <Suspense fallback={<div>loading ...</div>}>
           <LazySingleMarkdownInput
-            currentLanguage={this.props.currentLanguage}
             team={this.props.team}
             height={window.innerHeight - 300 + 'px'}
             value={this.props.value.description}

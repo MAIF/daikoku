@@ -262,7 +262,6 @@ export function TeamMembersSimpleComponent(props) {
           type="button"
           onClick={() => {
             const {
-              currentLanguage,
               history,
               currentTeam,
               tenant,
@@ -270,7 +269,6 @@ export function TeamMembersSimpleComponent(props) {
             } = props;
 
             openInvitationModal({
-              currentLanguage,
               history,
               team: currentTeam,
               tenant,
@@ -346,7 +344,6 @@ export function TeamMembersSimpleComponent(props) {
               translateMethod('Permission', true)
             );
           }}
-          currentLanguage={props.currentLanguage}
           items={_.sortBy(filteredMembers, [(member) => member.name.toLowerCase()])}
           count={15}
           formatter={(member) => {
@@ -421,7 +418,6 @@ export function TeamMembersSimpleComponent(props) {
       {state.tab === TABS.pending &&
         (filteredPending.length > 0 ? (
           <PaginatedComponent
-            currentLanguage={props.currentLanguage}
             items={_.sortBy(filteredPending, [(member) => member.name.toLowerCase()])}
             count={15}
             formatter={(member) => {

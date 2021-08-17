@@ -22,7 +22,6 @@ export function TeamApiIssueTags({ value, onChange }) {
       {showTagForm ? (
         <NewTag
           issuesTags={api.issuesTags}
-          currentLanguage={currentLanguage}
           handleCreate={(newTag) => {
             setApi({ ...api, issuesTags: [...api.issuesTags, newTag] });
             showNewTagForm(false);

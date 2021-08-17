@@ -1,4 +1,4 @@
-import React, { Component, useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
@@ -77,53 +77,51 @@ Alert.propTypes = {
   linkOpt: PropTypes.object,
 };
 
-class Confirm extends Component {
-  defaultButton = (e) => {
+function Confirm(props) {
+  const defaultButton = (e) => {
     if (e.keyCode === 13) {
       props.ok();
     }
   };
-  componentDidMount() {
+  useEffect(() => {
     document.body.addEventListener('keydown', defaultButton);
-  }
-  componentWillUnmount() {
-    document.body.removeEventListener('keydown', defaultButton);
-  }
-  render() {
-    return (
-      <div>
-        <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-lg" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Confirm</h5>
-                <button type="button" className="close" onClick={props.cancel}>
-                  <span aria-hidden="true">&times;</span>
-                </button>
+
+    return () => document.body.removeEventListener('keydown', defaultButton);
+  }, []);
+
+  return (
+    <div>
+      <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
+        <div className="modal-dialog modal-lg" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Confirm</h5>
+              <button type="button" className="close" onClick={props.cancel}>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-description">
+                <p>{props.message}</p>
               </div>
-              <div className="modal-body">
-                <div className="modal-description">
-                  <p>{props.message}</p>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-outline-danger"
-                  onClick={props.cancel}>
-                  Cancel
-                </button>
-                <button type="button" className="btn btn-outline-success" onClick={props.ok}>
-                  Ok
-                </button>
-              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-outline-danger"
+                onClick={props.cancel}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-outline-success" onClick={props.ok}>
+                Ok
+              </button>
             </div>
           </div>
         </div>
-        <div className="modal-backdrop show" />
       </div>
-    );
-  }
+      <div className="modal-backdrop show" />
+    </div>
+  );
 }
 
 Confirm.propTypes = {
@@ -132,70 +130,70 @@ Confirm.propTypes = {
   message: PropTypes.string,
 };
 
-class Prompt extends Component {
-  state = {
-    text: props.value || '',
-  };
-  defaultButton = (e) => {
+function Prompt(props) {
+  const [text, setText] = useState(props.value || '')
+
+  let ref;
+
+  const defaultButton = (e) => {
     if (e.keyCode === 13) {
       props.ok(state.text);
     }
   };
-  componentDidMount() {
+
+  useEffect(() => {
     document.body.addEventListener('keydown', defaultButton);
     if (ref) {
       ref.focus();
     }
-  }
-  componentWillUnmount() {
-    document.body.removeEventListener('keydown', defaultButton);
-  }
-  render() {
-    return (
-      <div>
-        <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-lg" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{props.title || 'Confirm'}</h5>
-                <button type="button" className="close" onClick={props.cancel}>
-                  <span aria-hidden="true">&times;</span>
-                </button>
+
+    return () => document.body.removeEventListener('keydown', defaultButton);
+  }, []);
+
+  return (
+    <div>
+      <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
+        <div className="modal-dialog modal-lg" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">{props.title || 'Confirm'}</h5>
+              <button type="button" className="close" onClick={props.cancel}>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-description">
+                <p>{props.message}</p>
+                <input
+                  type={props.isPassword ? 'password' : 'text'}
+                  className="form-control"
+                  value={text}
+                  placeholder={props.placeholder || ''}
+                  ref={(r) => (ref = r)}
+                  onChange={(e) => setText(e.target.value)}
+                />
               </div>
-              <div className="modal-body">
-                <div className="modal-description">
-                  <p>{props.message}</p>
-                  <input
-                    type={props.isPassword ? 'password' : 'text'}
-                    className="form-control"
-                    value={state.text}
-                    placeholder={props.placeholder || ''}
-                    ref={(r) => (ref = r)}
-                    onChange={(e) => setState({ text: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-outline-danger"
-                  onClick={props.cancel}>
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline-success"
-                  onClick={() => props.ok(state.text)}>
-                  Ok
-                </button>
-              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-outline-danger"
+                onClick={props.cancel}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-success"
+                onClick={() => props.ok(text)}>
+                Ok
+              </button>
             </div>
           </div>
         </div>
-        <div className="modal-backdrop show" />
       </div>
-    );
-  }
+      <div className="modal-backdrop show" />
+    </div>
+  );
 }
 
 Prompt.propTypes = {
@@ -212,7 +210,7 @@ export function registerAlert(store) {
     div.setAttribute('id', 'daikoku-alerts-container');
     document.body.appendChild(div);
   }
-  window.alert = (message, title, linkOpt, closeMessage, currentLanguage) => {
+  window.alert = (message, title, linkOpt, closeMessage) => {
     return new Promise((success) => {
       ReactDOM.render(
         <Provider store={store}>
@@ -221,7 +219,6 @@ export function registerAlert(store) {
             title={title}
             linkOpt={linkOpt}
             closeMessage={closeMessage}
-            currentLanguage={currentLanguage}
             close={() => {
               ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
               success();

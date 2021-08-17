@@ -377,10 +377,22 @@ class DaikokuEnv(ws: WSClient,
                 val userId = UserId(BSONObjectID.generate().stringify)
                 val adminApiDefaultTenantId =
                   ApiId(s"admin-api-tenant-${Tenant.Default.value}")
+                val defaultAdminTeam = Team(
+                  id = TeamId(IdGenerator.token),
+                  tenant = Tenant.Default,
+                  `type` = TeamType.Admin,
+                  name = s"default-admin-team",
+                  description = s"The admin team for the default tenant",
+                  avatar = Some(
+                    s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
+                  users = Set(UserWithPermission(userId, Administrator)),
+                  subscriptions = Seq.empty,
+                  authorizedOtoroshiGroups = Set.empty
+                )
                 val adminApiDefaultTenant = Api(
                   id = adminApiDefaultTenantId,
                   tenant = Tenant.Default,
-                  team = TeamId("administration"),
+                  team = defaultAdminTeam.id,
                   name = s"admin-api-tenant-${Tenant.Default.value}",
                   lastUpdate = DateTime.now(),
                   smallDescription = "admin api",
@@ -431,18 +443,6 @@ class DaikokuEnv(ws: WSClient,
                   bucketSettings = None,
                   otoroshiSettings = Set(),
                   adminApi = adminApiDefaultTenantId
-                )
-                val defaultAdminTeam = Team(
-                  id = TeamId(IdGenerator.token),
-                  tenant = Tenant.Default,
-                  `type` = TeamType.Admin,
-                  name = s"default-admin-team",
-                  description = s"The admin team for the default tenant",
-                  avatar = Some(
-                    s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
-                  users = Set(UserWithPermission(userId, Administrator)),
-                  subscriptions = Seq.empty,
-                  authorizedOtoroshiGroups = Set.empty
                 )
                 val team = Team(
                   id = TeamId(BSONObjectID.generate().stringify),

@@ -57,7 +57,6 @@ const StyleLogoAssetButton = (props) => {
         team={props.team}
         teamId={props.team._id}
         label={translateMethod('Set api image from asset')}
-        currentLanguage={props.currentLanguage}
         onSelect={(asset) => props.changeValue('image', origin + asset.link)}
       />
     </div>
@@ -81,8 +80,7 @@ export function TeamApiInfo(props) {
     nameAlreadyExists: {
       type: NameAlreadyExists,
       props: {
-        creating: props.creating,
-        currentLanguage: props.currentLanguage,
+        creating: props.creating
       },
     },
     smallDescription: {
@@ -109,8 +107,7 @@ export function TeamApiInfo(props) {
       type: StyleLogoAssetButton,
       props: {
         tenant: props.tenant,
-        team: props.team,
-        currentLanguage: props.currentLanguage,
+        team: props.team
       },
     },
     currentVersion: {

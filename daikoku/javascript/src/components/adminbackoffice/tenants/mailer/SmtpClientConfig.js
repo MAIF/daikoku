@@ -5,7 +5,7 @@ import { MailTemplateButton } from './MailTemplateButton';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export function SmtpClientConfig({ currentLanguage, value, onChange }) {
+export function SmtpClientConfig({ value, onChange }) {
   const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['host', 'port', 'fromTitle', 'fromEmail', 'template'];
@@ -43,7 +43,6 @@ export function SmtpClientConfig({ currentLanguage, value, onChange }) {
   return (
     <React.Suspense fallback={<Spinner />}>
       <LazyForm
-        currentLanguage={currentLanguage}
         value={value}
         onChange={onChange}
         flow={formFlow}

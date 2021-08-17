@@ -270,7 +270,7 @@ function RefreshToken(props) {
   );
 }
 
-const Avatar = ({ currentLanguage, value, rawValue, changeValue, label, ...props }) => {
+const Avatar = ({ value, rawValue, changeValue, label, ...props }) => {
   const setPictureFromProvider = () => {
     changeValue('pictureFromProvider', true);
   };

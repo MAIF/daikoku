@@ -10,7 +10,7 @@ import { toastr } from 'react-redux-toastr';
 import { Can, manage, api as API } from '../../../utils';
 import { I18nContext } from '../../../../core';
 
-export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
+export function ApiIssue({ ownerTeam, ...props }) {
   const { issueId, versionId, apiId } = useParams();
   const [api, setRootApi] = useState({});
 
@@ -56,7 +56,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                 <TeamApiIssueTags
                   value={api}
                   onChange={onChange}
-                  currentLanguage={currentLanguage}
                 />
               </Can>
             )}
@@ -68,7 +67,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
               <NewIssue
                 api={api}
                 user={props.connectedUser}
-                currentLanguage={currentLanguage}
                 basePath={basePath}
                 {...props}
               />
@@ -82,7 +80,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                 issueId={issueId}
                 team={ownerTeam}
                 api={api}
-                currentLanguage={currentLanguage}
                 connectedUser={props.connectedUser}
                 basePath={basePath}
                 history={props.history}
@@ -100,7 +97,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                   handleFilter={(value) => setFilter(value)}
                   filter={filter}
                   connectedUser={props.connectedUser}
-                  currentLanguage={currentLanguage}
                   api={api}
                   team={ownerTeam._id}
                   ownerTeam={ownerTeam}
@@ -108,7 +104,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                   setSelectedVersion={setSelectedVersion}
                 />
                 <ApiIssues
-                  currentLanguage={currentLanguage}
                   filter={filter}
                   api={api}
                   selectedVersion={selectedVersion}

@@ -77,6 +77,5 @@ PaginatedComponent.propTypes = {
   reverse: PropTypes.bool,
   previousLabel: PropTypes.string,
   nextLabel: PropTypes.string,
-  breakLabel: PropTypes.string,
-  currentLanguage: PropTypes.string,
+  breakLabel: PropTypes.string
 };

@@ -27,7 +27,7 @@ const TeamApiSubscriptionsComponent = (props) => {
 
   const params = useParams();
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod, language } = useContext(I18nContext)
 
   useEffect(() => {
     Promise.all([
@@ -102,7 +102,7 @@ const TeamApiSubscriptionsComponent = (props) => {
         {
           Header: translateMethod('Created at'),
           style: { textAlign: 'left' },
-          accessor: (sub) => formatDate(sub.createdAt),
+          accessor: (sub) => formatDate(sub.createdAt, language),
         },
         {
           Header: translateMethod('Actions'),
@@ -155,8 +155,7 @@ const TeamApiSubscriptionsComponent = (props) => {
       api: sub.api,
       plan: sub.plan,
       team: teams.find((t) => t._id === sub.team),
-      subscription: sub,
-      currentLanguage: props.currentLanguage,
+      subscription: sub
     });
 
   const regenerateSecret = (sub) => {
@@ -203,7 +202,6 @@ const TeamApiSubscriptionsComponent = (props) => {
             </div>
             <div className="col-12">
               <Table
-                currentLanguage={props.currentLanguage}
                 selfUrl="apis"
                 defaultTitle="Ai subscriptions"
                 defaultValue={() => ({})}

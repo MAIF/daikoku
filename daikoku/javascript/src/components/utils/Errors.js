@@ -65,7 +65,6 @@ const ErrorComponent = ({ error, tenant, setError }) => {
 
 const mapStateToProps = (state) => ({
   tenant: state.context.tenant.name,
-  currentLanguage: state.context.currentLanguage,
   error: state.error,
   router: state.router,
 });

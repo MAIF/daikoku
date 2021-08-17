@@ -6,7 +6,7 @@ import { formatPlanType, Option } from '../../utils';
 import { I18nContext } from '../../../core';
 
 export function SimpleNotification(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, language } = useContext(I18nContext);
 
   const typeFormatter = (type) => {
     switch (type) {
@@ -164,7 +164,6 @@ export function SimpleNotification(props) {
                         team: props.getTeam(props.notification.action.team),
                         notification: props.notification,
                         creationMode: true,
-                        currentLanguage: props.currentLanguage,
                       })
                     }>
                     <i className="fas fa-check" />
@@ -269,7 +268,7 @@ export function SimpleNotification(props) {
     style = { opacity: 0.3 };
   }
 
-  moment.locale(props.currentLanguage);
+  moment.locale(language);
 
   return (
     <div style={style}>

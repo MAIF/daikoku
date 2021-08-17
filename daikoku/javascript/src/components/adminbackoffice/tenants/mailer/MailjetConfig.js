@@ -3,7 +3,7 @@ import { I18nContext } from '../../../../core';
 import { MailTemplateButton } from './MailTemplateButton';
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export function MailjetConfig({ currentLanguage, value, onChange }) {
+export function MailjetConfig({ value, onChange }) {
   const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['apiKeyPublic', 'apiKeyPrivate', 'fromTitle', 'fromEmail', 'template'];
@@ -41,7 +41,6 @@ export function MailjetConfig({ currentLanguage, value, onChange }) {
   return (
     <React.Suspense>
       <LazyForm
-        currentLanguage={currentLanguage}
         value={value}
         onChange={onChange}
         flow={formFlow}

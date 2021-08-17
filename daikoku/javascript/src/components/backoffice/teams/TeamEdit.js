@@ -106,7 +106,7 @@ export function TeamEditForm(props) {
   );
 }
 
-const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
+const TeamEditComponent = ({ history, currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
 
   const { translateMethod } = useContext(I18nContext);
@@ -133,7 +133,7 @@ const TeamEditComponent = ({ currentLanguage, history, currentTeam }) => {
 
   return (
     <TeamBackOffice title={`${team.name} - ${translateMethod('Edition')}`}>
-      <TeamEditForm team={team} updateTeam={setTeam} currentLanguage={currentLanguage} />
+      <TeamEditForm team={team} updateTeam={setTeam} />
       <div className="row form-back-fixedBtns">
         <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
           <i className="fas fa-chevron-left mr-1" />

@@ -173,7 +173,6 @@ export function OtoroshiStatsVizualization(props) {
       case 'Global':
         return (
           <GlobalDataConsumption
-            currentLanguage={props.currentLanguage}
             data={formatter ? formatter(state.consumptions) : state.consumptions}
           />
         );
@@ -224,7 +223,7 @@ export function OtoroshiStatsVizualization(props) {
           className="col col-sm-3 reactSelect period-select"
           value={{ value: state.period.value, label: state.period.label }}
           clearable={false}
-          options={Object.values(periods(props.currentLanguage))}
+          options={Object.values(periods(translateMethod))}
           onChange={(period) => {
             setState({ ...state, period })
             updateConsumption(period.from, period.to());

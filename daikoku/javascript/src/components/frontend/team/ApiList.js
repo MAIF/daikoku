@@ -86,7 +86,6 @@ const ApiListComponent = (props) => {
   const createNewteam = () => {
     Services.fetchNewTeam().then((team) =>
       props.openCreationTeamModal({
-        currentLanguage: props.currentLanguage,
         history: props.history,
         team,
       })
@@ -362,7 +361,6 @@ const ApiListComponent = (props) => {
             <YourTeams
               teams={props.myTeams}
               redirectToTeam={redirectToTeam}
-              currentlanguage={props.currentLanguage}
               createNewTeam={createNewteam}
             />
           )}

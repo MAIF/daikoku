@@ -120,14 +120,13 @@ function ApiPricingCardComponent(props) {
   };
 
   const showApiKeySelectModal = (team) => {
-    const { api, currentLanguage, plan } = props;
+    const { api, plan } = props;
 
     Services.getAllTeamSubscriptions(team).then((apiKeys) => {
       if (!plan.aggregationApiKeysSecurity || apiKeys.length <= 0)
         props.askForApikeys(team, plan);
       else
         props.openApiKeySelectModal({
-          currentLanguage,
           plan,
           apiKeys,
           onSubscribe: () => props.askForApikeys(team, plan),

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import { connect } from 'react-redux';
 import * as _ from 'lodash';
@@ -7,10 +7,12 @@ import * as Services from '../../../services';
 import { UserBackOffice } from '../';
 import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
-import { updateNotications, openSubMetadataModal } from '../../../core';
+import { updateNotications, openSubMetadataModal, I18nContext } from '../../../core';
 import { Translation } from '../../../locales';
 
 function NotificationListComponent(props) {
+  const { translateMethod } = useContext(I18nContext);
+  
   const [state, setState] = useState({
     notifications: [],
     teams: [],

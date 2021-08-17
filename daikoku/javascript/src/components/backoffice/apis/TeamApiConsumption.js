@@ -108,7 +108,6 @@ function TeamApiConsumptionComponent(props) {
                     `/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${state.api._humanReadableId}/${state.api.currentVersion}/plan/${plan._id}`
                   )
                 }
-                currentLanguage={props.currentLanguage}
               />
             </div>
           ))}
@@ -159,7 +158,6 @@ function TeamApiConsumptionComponent(props) {
                       to.valueOf()
                     )
                   }
-                  currentLanguage={props.currentLanguage}
                   mappers={mappers}
                 />
               </div>

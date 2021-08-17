@@ -7,7 +7,7 @@ import { I18nContext } from '../../../../core';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export function MailgunConfig({ currentLanguage, value, onChange }) {
+export function MailgunConfig({ value, onChange }) {
   const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['domain', 'eu', 'key', 'fromTitle', 'fromEmail', 'template'];
@@ -51,7 +51,6 @@ export function MailgunConfig({ currentLanguage, value, onChange }) {
   return (
     <React.Suspense fallback={<Spinner />}>
       <LazyForm
-        currentLanguage={currentLanguage}
         value={value}
         onChange={onChange}
         flow={formFlow}

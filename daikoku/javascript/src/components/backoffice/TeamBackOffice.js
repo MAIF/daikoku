@@ -148,7 +148,6 @@ class TeamBackOfficeHomeComponent extends Component {
 const TeamBackOfficeComponent = ({
   tab,
   currentTeam,
-  currentLanguage,
   tenant,
   isLoading,
   error,

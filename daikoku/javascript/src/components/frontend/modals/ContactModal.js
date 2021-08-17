@@ -32,8 +32,7 @@ const ContactModalComponent = (props) => {
         body,
         props.tenant._id,
         props.team,
-        props.api,
-        props.currentLanguage
+        props.api
       ).then(() => props.closeModal());
     }
   };

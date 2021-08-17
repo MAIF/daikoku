@@ -429,7 +429,6 @@ function TeamApiComponent(props) {
                     <TeamApiInfo
                       tenant={props.tenant}
                       team={props.currentTeam}
-                      currentLanguage={props.currentLanguage}
                       creating={
                         props.location && props.location.state && !!props.location.state.newApi
                       }
@@ -439,7 +438,6 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'description' && (
                     <TeamApiDescription
-                      currentLanguage={props.currentLanguage}
                       value={editedApi}
                       team={props.currentTeam}
                       onChange={(api) => setState({ ...state, api })}
@@ -447,14 +445,12 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'swagger' && (
                     <TeamApiSwagger
-                      currentLanguage={props.currentLanguage}
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
                     />
                   )}
                   {editedApi && tab === 'pricing' && (
                     <TeamApiPricing
-                      currentLanguage={props.currentLanguage}
                       teamId={teamId}
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
@@ -464,7 +460,6 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'plans' && (
                     <TeamApiPricing
-                      currentLanguage={props.currentLanguage}
                       teamId={teamId}
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
@@ -481,14 +476,12 @@ function TeamApiComponent(props) {
                   )}
                   {false && editedApi && tab === 'otoroshi' && (
                     <TeamApiOtoroshiPlaceholder
-                      currentLanguage={props.currentLanguage}
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
                     />
                   )}
                   {editedApi && tab === 'documentation' && (
                     <TeamApiDocumentation
-                      currentLanguage={props.currentLanguage}
                       creationInProgress={state.create}
                       team={props.currentTeam}
                       teamId={teamId}
@@ -503,7 +496,6 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'testing' && (
                     <TeamApiTesting
-                      currentLanguage={props.currentLanguage}
                       creationInProgress={state.create}
                       team={props.currentTeam}
                       teamId={teamId}
@@ -519,7 +511,6 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'news' && (
                     <TeamApiPost
-                      currentLanguage={props.currentLanguage}
                       value={editedApi}
                       team={props.currentTeam}
                       api={state.api}

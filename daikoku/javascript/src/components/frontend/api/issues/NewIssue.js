@@ -18,7 +18,7 @@ const styles = {
   },
 };
 
-export function NewIssue({ currentLanguage, user, api, ...props }) {
+export function NewIssue({ user, api, ...props }) {
   const { issuesTags, team, _humanReadableId } = api;
   const [issue, setIssue] = useState(null);
   const [availableApiVersions, setApiVersions] = useState([]);
@@ -127,7 +127,6 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
           <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
               fullWidth
-              currentLanguage={currentLanguage}
               height="300px"
               value={issue.comments[0].content}
               fixedWitdh="0px"

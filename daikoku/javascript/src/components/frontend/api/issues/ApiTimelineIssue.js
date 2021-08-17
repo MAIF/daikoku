@@ -40,7 +40,6 @@ const styles = {
 
 export function ApiTimelineIssue({
   issueId,
-  currentLanguage,
   connectedUser,
   team,
   api,
@@ -276,7 +275,6 @@ export function ApiTimelineIssue({
               {...comment}
               key={`comment${i}`}
               i={i}
-              currentLanguage={currentLanguage}
               editComment={() => editComment(i)}
               removeComment={() => removeComment(i)}
               handleEditCommentContent={(e) => handleEditCommentContent(e, i)}
@@ -286,7 +284,6 @@ export function ApiTimelineIssue({
           ))}
           {connectedUser && !connectedUser.isGuest && (
             <NewComment
-              currentLanguage={currentLanguage}
               content={newComment}
               picture={connectedUser.picture}
               open={issue.open}
@@ -388,7 +385,6 @@ function Comment({
   by,
   createdDate,
   content,
-  currentLanguage,
   editing,
   editComment,
   removeComment,
@@ -447,7 +443,6 @@ function Comment({
             <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
               <LazySingleMarkdownInput
                 fullWidth
-                currentLanguage={currentLanguage}
                 height="300px"
                 value={content}
                 fixedWitdh="0px"
@@ -479,7 +474,6 @@ function NewComment({
   handleContent,
   content,
   picture,
-  currentLanguage,
   createComment,
   closeIssue,
   open,
@@ -513,7 +507,6 @@ function NewComment({
           <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
               fullWidth={true}
-              currentLanguage={currentLanguage}
               height="300px"
               value={content}
               fixedWitdh="0px"

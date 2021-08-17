@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { I18nContext } from '../../../../core';
 
-export function MailTemplateButton(props) {
+export function MailTemplateButton() {
   const { translateMethod } = useContext(I18nContext);
 
   return (
