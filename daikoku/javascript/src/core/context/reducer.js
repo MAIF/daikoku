@@ -35,6 +35,7 @@ export function contextReducer(state = initialState, action) {
       return { ...state, impersonator: action.impersonator };
 
     case UPDATE_TEAM:
+      console.log(action.team)
       return {
         ...state,
         currentTeam: action.team,

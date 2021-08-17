@@ -1,15 +1,12 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import _ from 'lodash';
 
 import { OPEN_MODAL } from '../../core/modal';
-import { I18nContext } from '../../core';
 
 function Alert(props) {
-  const { translateMethod } = useContext(I18nContext);
-
   const defaultButton = (e) => {
     if (e.keyCode === 13) {
       props.close();
@@ -59,7 +56,7 @@ function Alert(props) {
                 onClick={props.close}>
                 {props.closeMessage
                   ? props.closeMessage
-                  : translateMethod('Close')}
+                  : "Close"}
               </button>
             </div>
           </div>

@@ -74,7 +74,7 @@ const TopBarComponent = (props) => {
     );
   }, []);
 
-  const { translateMethod, setLanguage } = useContext(I18nContext);
+  const { translateMethod, setLanguage, language } = useContext(I18nContext);
 
   const selectSearchedItem = (item) => {
     const team = teams.find((t) => t._id === item.team);

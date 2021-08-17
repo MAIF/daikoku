@@ -98,7 +98,7 @@ export function ArrayInput(props) {
     setState({ ...state, inputValue });
   };
 
-  handleKeyDown = (event) => {
+  const handleKeyDown = (event) => {
     const { inputValue, value } = state;
     if (!inputValue) return;
 

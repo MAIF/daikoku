@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-target-blank */
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { connect } from 'react-redux';
@@ -10,6 +10,8 @@ import { I18nContext } from '../../../core/i18n-context';
 
 export function ImportExportComponent(props) {
   const { translateMethod } = useContext(I18nContext)
+
+  let input;
 
   const [state, setState] = useState({
     exportAuditTrail: true,
@@ -37,28 +39,24 @@ export function ImportExportComponent(props) {
   };
 
   const migrate = () => {
-    setState(
+    setState({
       ...state,
-      {
-        migration: {
-          processing: true,
-          error: '',
-          onSuccessMessage: '',
-        },
-      },
-      () => {
-        Services.migrateMongoToPostgres().then(async (res) => {
-          setState({
-            ...state,
-            migration: {
-              processing: false,
-              error: res.error || '',
-              onSuccessMessage: res.error ? '' : res.message,
-            },
-          });
-        });
+      migration: {
+        processing: true,
+        error: '',
+        onSuccessMessage: '',
       }
-    );
+    })
+    Services.migrateMongoToPostgres().then(async (res) => {
+      setState({
+        ...state,
+        migration: {
+          processing: false,
+          error: res.error || '',
+          onSuccessMessage: res.error ? '' : res.message,
+        },
+      });
+    });
   };
 
   const { processing, error, onSuccessMessage } = state.migration;
@@ -95,7 +93,7 @@ export function ImportExportComponent(props) {
               </button>
               <div className="d-flex justify-content-start">
                 <SwitchButton
-                  onSwitch={(enabled) => setState({ exportAuditTrail: enabled })}
+                  onSwitch={(enabled) => setState({ ...state, exportAuditTrail: enabled })}
                   checked={state.exportAuditTrail}
                   label={translateMethod('audittrail.export.label')}
                 />

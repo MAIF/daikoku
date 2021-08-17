@@ -241,7 +241,6 @@ export const theMachine = Machine({
         id: 'otoroshiServicesLoader',
         src: (context, _event) => {
           return (callBack, _onEvent) => {
-            console.log(context);
             Services.getOtoroshiApiKeys(context.tenant, context.otoroshi)
               .then((newApikeys) => {
                 if (newApikeys.error) callBack({ type: 'FAILURE', error: { ...newApikeys } });

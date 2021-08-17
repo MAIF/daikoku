@@ -26,9 +26,7 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
   
   const [modalIsOpen, setModalIsOpen] = useState(open);
   const SpecifiedModal = MODAL_TYPES[modalType];
-
-  console.log(MODAL_TYPES)
-
+  
   useEffect(() => {
     setModalIsOpen(open);
   }, [open]);

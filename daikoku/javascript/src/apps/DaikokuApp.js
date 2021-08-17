@@ -499,11 +499,6 @@ const mapStateToProps = (state) => ({
   error: state.error,
 });
 
-const mapDispatchToProps = {
-  // updateTeam: (team) => updateTeamPromise(team),
-  setError: (error) => setError(error),
-};
-
 export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
 
 //custom component route to get team object if it's not present in  redux store...
@@ -519,26 +514,31 @@ const TeamBackOfficeRouter = ({ tenant }) => {
   const params = useParams()
   const [teamError, setTeamError] = useState();
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    if (!currentTeam || params.teamId !== currentTeam._humanReadableId)
+    if (!currentTeam || params.teamId !== currentTeam._humanReadableId) {
+      setLoading(true)
       getMyTeam()
+    } else
+      setLoading(false) 
   }, [params.teamId]);
 
   function getMyTeam() {
-    console.log("getMyTeam")
     Services.oneOfMyTeam(params.teamId)
       .then((team) => {
         if (team.error)
           setTeamError(team.error);
         else
           dispatch(updateTeamPromise(team));
+        setLoading(false)
       })
   }
 
   if (teamError)
     return <Error error={{ status: 404 }} />
 
-  if (!currentTeam)
+  if (!currentTeam || loading)
     return <Spinner />
   else
     return <Switch>

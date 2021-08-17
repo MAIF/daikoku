@@ -15,11 +15,11 @@ Number.prototype.prettify = function () {
 
 class Period {
   constructor({ from, to, unitTime, label, value }) {
-    from = from;
-    to = to;
-    unitTime = unitTime;
-    label = label;
-    value = value;
+    this.from = from;
+    this.to = to;
+    this.unitTime = unitTime;
+    this.label = label;
+    this.value = value;
   }
 
   format = (consumptions) => {
@@ -30,13 +30,14 @@ class Period {
         time = moment(maxDate.to).format('HH:mm');
       }
     }
-    if (unitTime === 'day') {
-      if (value === 'TODAY') {
-        return `${from.format('D MMM. YYYY')} ${time}`;
+
+    if (this.unitTime === 'day') {
+      if (this.value === 'TODAY') {
+        return `${this.from.format('D MMM. YYYY')} ${time}`;
       }
-      return `${from.format('D MMM. YYYY')}`;
+      return `${this.from.format('D MMM. YYYY')}`;
     }
-    return `${from.format('D MMM.')} - ${to().format('D MMM. YYYY')}`;
+    return `${this.from.format('D MMM.')} - ${this.to().format('D MMM. YYYY')}`;
   };
 }
 
@@ -58,12 +59,14 @@ const periods = (translateMethod) => ({
   last7days: new Period({
     from: moment().subtract(7, 'days').startOf('day'),
     to: () => moment(),
+    unitTime: 'day',
     label: translateMethod('Last 7 days'),
     value: 'LAST7',
   }),
   last30days: new Period({
     from: moment().subtract(30, 'days').startOf('day'),
     to: () => moment(),
+    unitTime: 'day',
     label: translateMethod('Last 30 days'),
     value: 'LAST30',
   }),
@@ -102,7 +105,7 @@ export function OtoroshiStatsVizualization(props) {
     }
   };
 
-  const tab = (value, label) => {
+  const tabs = (value, label) => {
     const realLabel =
       label instanceof Function
         ? label(
@@ -224,10 +227,7 @@ export function OtoroshiStatsVizualization(props) {
           value={{ value: state.period.value, label: state.period.label }}
           clearable={false}
           options={Object.values(periods(translateMethod))}
-          onChange={(period) => {
-            setState({ ...state, period })
-            updateConsumption(period.from, period.to());
-          }}
+          onChange={(period) => setState({ ...state, period })}
           classNamePrefix="reactSelect"
         />
         <span className="col period-display">
@@ -248,7 +248,7 @@ export function OtoroshiStatsVizualization(props) {
             {!state.loading &&
               !state.error && [
                 <div key="navbar" className="data__navbar">
-                  {props.mappers.map((tab, idx) => tab(idx, tab.label))}
+                  {props.mappers.map((tab, idx) => tabs(idx, tab.label))}
                 </div>,
                 <div key="content" className="data__content">
                   {formatValue(props.mappers[state.tab])}

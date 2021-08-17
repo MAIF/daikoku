@@ -22,19 +22,15 @@ export const MonthPicker = ({ updateDate, value }) => {
 
   const dateFormat = getDateFormat(language);
 
-  const onChange = (value) => {
-    const date = value;
-    if (date && updateDate && !value.isSame(date)) {
-      updateDate(date.endOf('month'));
-    }
+  const onChange = newMonth => {
+    if (newMonth && updateDate && !value.isSame(newMonth))
+      updateDate(newMonth.endOf('month'));
   };
 
-  return (
-    <DatePicker.MonthPicker
-      defaultValue={value}
-      onChange={(v) => onChange(v)}
-      format={dateFormat.format}
-      onOk={(value) => value}
-    />
-  );
+  return <DatePicker.MonthPicker
+    defaultValue={value}
+    onChange={onChange}
+    format={dateFormat.format}
+    onOk={(value) => value}
+  />
 };

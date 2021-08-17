@@ -2391,6 +2391,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         case Some(newVersion) if newVersion.isEmpty => FastFuture.successful(BadRequest(Json.obj("error" -> "Version number is too short")))
         case Some(newVersion) =>
           val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+          val generatedApiId = ApiId(BSONObjectID.generate().stringify)
           apiRepo
             .findOne(Json.obj("$or" -> Json.arr(Json.obj("_humanReadableId" -> apiId), Json.obj("_id" -> apiId)), "parent" -> JsNull))
             .flatMap {
@@ -2402,11 +2403,11 @@ class ApiController(DaikokuAction: DaikokuAction,
                     case true => FastFuture.successful(AppError.render(ApiVersionConflict))
                     case false =>
                       apiRepo.save(api.copy(
-                        id = ApiId(BSONObjectID.generate().stringify),
+                        id = generatedApiId,
                         parent = Some(api.id),
                         currentVersion = Version(newVersion),
                         published = false,
-                        isDefault = false,
+                        isDefault = true,
                         testing = Testing(),
                         documentation = ApiDocumentation(
                           id = ApiDocumentationId(BSONObjectID.generate().stringify),
@@ -2421,7 +2422,15 @@ class ApiController(DaikokuAction: DaikokuAction,
                         issues = Seq.empty
                       ))
                         .flatMap {
-                          case true   => FastFuture.successful(Created(Json.obj("created" -> true)))
+                          case true   =>
+                            apiRepo.updateManyByQuery(
+                              Json.obj(
+                                "_humanReadableId" -> api.humanReadableId,
+                                "_id" -> Json.obj("$ne" -> generatedApiId.value)
+                              ),
+                              Json.obj("$push" -> Json.obj("isDefault" -> false))
+                            )
+                              .map(_ => Created(Json.obj("created" -> true)))
                           case false  => FastFuture.successful(BadRequest(Json.obj("error" -> "The creation of api has failed")))
                         }
                   }
@@ -2439,7 +2448,8 @@ class ApiController(DaikokuAction: DaikokuAction,
         .map { apis =>
           Ok(SeqVersionFormat.writes(apis
             .filter(api => !ctx.user.isGuest || api.visibility.name == ApiVisibility.Public.name)
-            .map(_.currentVersion)))
+            .map(_.currentVersion)
+            .sortWith((a, b) => a.value.compareToIgnoreCase(b.value) < 0)))
         }
     }
   }

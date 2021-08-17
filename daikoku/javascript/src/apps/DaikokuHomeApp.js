@@ -172,7 +172,7 @@ export function SignupComponent(props) {
     }
   }, [])
 
-  if (this.state.state === 'done') {
+  if (state.state === 'done') {
     return (
       <div className="col">
         <h1 className="h1-rwd-reduce text-center">
@@ -184,8 +184,8 @@ export function SignupComponent(props) {
           <Translation
             i18nkey="create.account.done"
 
-            replacements={[this.state.user.email]}>
-            You will receive an email at <b>{this.state.user.email}</b> to finish your account
+            replacements={[state.user.email]}>
+            You will receive an email at <b>{state.user.email}</b> to finish your account
             creation process. You will have 15 minutes from now to finish your account creation
             process.
           </Translation>
@@ -195,7 +195,7 @@ export function SignupComponent(props) {
   }
 
   return (
-    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
+    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px', minWidth: '448px' }}>
       <h1 className="h1-rwd-reduce text-center">
         <Translation i18nkey="Create account">
           Create account

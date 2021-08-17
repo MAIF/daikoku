@@ -45,8 +45,6 @@ export const ApiDocumentationSelectModal = ({
       .then(() => closeModal());
   }
 
-  console.log(apis);
-
   return (
     <div className="modal-content">
       <div className="modal-header">

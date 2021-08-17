@@ -514,6 +514,8 @@ export const ApiKeyStep = (props) => {
   const [apikeys, setApikeys] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState();
 
+  const { translateMethod } = useContext(I18nContext);
+
   useEffect(() => {
     if (selectedGroup) setApikeys(props.getFilteredApikeys(selectedGroup));
   }, [selectedGroup]);

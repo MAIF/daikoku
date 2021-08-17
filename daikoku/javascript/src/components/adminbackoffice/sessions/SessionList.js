@@ -30,12 +30,12 @@ function SessionListComponent(props) {
     {
       Header: translateMethod('Created at'),
       style: { textAlign: 'left' },
-      accessor: (item) => moment(item.created).formatranslateMethod('YYYY-MM-DD HH:mm:ss.SSS'),
+      accessor: (item) => moment(item.created).format('YYYY-MM-DD HH:mm:ss.SSS'),
     },
     {
       Header: translateMethod('Expires'),
       style: { textAlign: 'left' },
-      accessor: (item) => moment(item.expires).formatranslateMethod('YYYY-MM-DD HH:mm:ss.SSS'),
+      accessor: (item) => moment(item.expires).format('YYYY-MM-DD HH:mm:ss.SSS'),
     },
     {
       Header: translateMethod('Actions'),

@@ -2,8 +2,8 @@ import React, { useContext } from 'react';
 import { connect } from 'react-redux';
 import { Link, useHistory } from 'react-router-dom';
 import { goBack } from 'connected-react-router';
-import { t } from '../../locales';
-import { I18nContext, setError } from '../../core';
+import { I18nContext } from '../../core/context';
+import { setError } from '../../core';
 
 const getErrorLabel = (status, error) => {
   console.log(status, error);

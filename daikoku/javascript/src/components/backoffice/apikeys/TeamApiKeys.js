@@ -104,8 +104,6 @@ export function TeamApiKeysComponent(props) {
             </Link>
             <div className="section p-2">
               <Table
-  
-              
                 selfUrl="apikeys"
                 defaultTitle="Apikeys"
                 defaultValue={() => ({})}

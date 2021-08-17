@@ -5,7 +5,7 @@ import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '../..';
-import { Can, manage, api as API } from '../../utils';
+import { Can, manage, api as API, Spinner } from '../../utils';
 import { Translation } from '../../../locales';
 import {
   TeamApiDescription,
@@ -124,20 +124,21 @@ function TeamApiComponent(props) {
               editedApi._humanReadableId
             )
               .then((res) => {
-                if (res.error) toastr.error(translateMethod(res.error));
-                else toastr.success(translateMethod('Api saved'));
-                return res;
+                if (res.error)
+                  toastr.error(translateMethod(res.error));
+                else {
+                  toastr.success(translateMethod('Api saved'));
+                  if (
+                    res._humanReadableId !== params.apiId ||
+                    res.currentVersion !== params.versionId
+                  )
+                    history.push(
+                      `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
+                    );
+                }
               })
-              .then((newApi) => {
-                if (
-                  newApi._humanReadableId !== params.apiId ||
-                  newApi.currentVersion !== params.versionId
-                )
-                  history.push(
-                    `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._humanReadableId}/${newApi.currentVersion}/infos`
-                  );
-              });
-        } else toastr.error(`api with name "${editedApi.name}" already exists`);
+        } else
+          toastr.error(`api with name "${editedApi.name}" already exists`);
       });
     }
   }
@@ -277,13 +278,7 @@ function TeamApiComponent(props) {
       isLoading={!editedApi}
       title={`${props.currentTeam.name} - ${state.api ? state.api.name : translateMethod('API')}`}>
       <Can I={manage} a={API} team={props.currentTeam} dispatchError>
-        {!editedApi && (
-          <h3>
-            <Translation i18nkey="No API">
-              No API
-            </Translation>
-          </h3>
-        )}
+        {!editedApi && <Spinner />}
         {editedApi && (
           <>
             <div className="row">

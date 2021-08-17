@@ -116,8 +116,6 @@ function TeamBillingComponent(props) {
                     <MonthPicker
                       updateDate={getBilling}
                       value={state.date}
-        
-              
                     />
                     <button className="btn btn-sm btn-access-negative" onClick={sync}>
                       <i className="fas fa-sync-alt ml-1" />

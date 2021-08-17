@@ -690,12 +690,6 @@ class PostgresDataStore(configuration: Configuration, env: Env)
           .toMat(Sink.ignore)(Keep.right)
           .run()(env.defaultMaterializer)
       }
-      .recover {
-        case e: Throwable =>
-          AppLogger.info(e.getMessage)
-
-      }
-      .asInstanceOf[Future[Unit]]
   }
 }
 
