@@ -1826,7 +1826,7 @@ class ApiControllerSpec()
         method = "PUT"
       )(tenant, session)
 
-      resp.status mustBe 204
+      resp.status mustBe 200
 
       apiResp = httpJsonCallBlocking(
         path = s"/api/me/visible-apis/${defaultApi.id.value}"
@@ -1839,7 +1839,7 @@ class ApiControllerSpec()
         method = "PUT"
       )(tenant, session)
 
-      resp.status mustBe 204
+      resp.status mustBe 200
 
       apiResp = httpJsonCallBlocking(
         path = s"/api/me/visible-apis/${defaultApi.id.value}"
