@@ -1,4 +1,4 @@
-import React, { Component, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
@@ -217,7 +217,7 @@ function HomePageVisibilitySwitch(props) {
 }
 
 export function TenantEditComponent(props) {
-  const { translateMethod, language, Translation, configuration } = useContext(I18nContext)
+  const { translateMethod, language, Translation, languages, setTranslationMode } = useContext(I18nContext)
 
   const [state, setState] = useState({
     tenant: null,
@@ -381,10 +381,7 @@ export function TenantEditComponent(props) {
       type: 'select',
       props: {
         label: translateMethod('Default language'),
-        possibleValues: Object.keys(configuration).map((key) => ({
-          label: key,
-          value: key,
-        })),
+        possibleValues: languages
       },
     },
     contact: {
@@ -834,12 +831,14 @@ export function TenantEditComponent(props) {
         );
       });
     } else {
-      if (state.tenant.tenantMode === "translation")
+      if (state.tenant.tenantMode === "translation") {
         window.alert(
           <p>
             {translateMethod('tenant_edit.translation_mode_message')}
           </p>
         )
+        setTranslationMode(true)
+      }
       return Services.saveTenant(state.tenant)
         .then(({ uiPayload }) => props.updateTenant(uiPayload))
         .then(() => toastr.success(translateMethod('Tenant updated successfully')));
@@ -864,7 +863,7 @@ export function TenantEditComponent(props) {
             </div>
             <React.Suspense fallback={<Spinner />}>
               <LazyForm
-        
+
                 flow={flow}
                 schema={schema}
                 value={state.tenant}

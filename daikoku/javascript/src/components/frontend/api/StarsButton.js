@@ -1,5 +1,4 @@
 import React from 'react';
-import { t } from '../../../locales';
 
 const StarsButton = ({ stars, toggleStar, starred, connectedUser }) => (
   <div

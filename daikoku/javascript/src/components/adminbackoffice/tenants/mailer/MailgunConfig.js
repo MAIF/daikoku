@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
 
 import { Spinner } from '../../../utils';
-import { t } from '../../../../locales';
 import { MailTemplateButton } from './MailTemplateButton';
 import { I18nContext } from '../../../../core';
 

@@ -13,7 +13,6 @@ import {
   updateNotications,
   updateTenant,
 } from '../../core/context/actions';
-import { languages } from '../../locales';
 import { Can, manage, daikoku, tenant } from '../utils';
 import { MessagesTopBarTools } from '../backoffice/messages';
 import { I18nContext } from '../../locales/i18n-context';
@@ -62,7 +61,8 @@ const TopBarComponent = (props) => {
   const [teams, setTeams] = useState([]);
   const [daikokuVersion, setVersion] = useState(null);
 
-  const isTranslationMode = props.tenant.tenantMode && props.tenant.tenantMode === "Translation";
+  const { translateMethod, setLanguage, language, isTranslationMode, languages } = useContext(I18nContext);
+
   const isMaintenanceMode = props.tenant.tenantMode && props.tenant.tenantMode !== 'Default' && !isTranslationMode;
 
   useEffect(() => {
@@ -73,8 +73,6 @@ const TopBarComponent = (props) => {
       }
     );
   }, []);
-
-  const { translateMethod, setLanguage, language } = useContext(I18nContext);
 
   const selectSearchedItem = (item) => {
     const team = teams.find((t) => t._id === item.team);

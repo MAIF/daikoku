@@ -7,6 +7,7 @@ import { toastr } from 'react-redux-toastr';
 import { Link, Route, Switch, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import { I18nContext } from '../../../core';
+import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
@@ -400,11 +401,7 @@ function MailingInternalizationComponent({ team, tenant }) {
           />
           <Route
             path={`${basePath}/front`}
-            render={() => (
-              <p style={{ fontStyle: 'italic' }} className="text-center w-100">
-                {translateMethod('mailing_internalization.missing_translations')}
-              </p>
-            )}
+            render={() => <EditFrontOfficeTranslations tenantId={tenant._id} team={team} />}
           />
         </Switch>
       </Can>

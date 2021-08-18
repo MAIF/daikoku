@@ -6,7 +6,6 @@ import md5 from 'js-md5';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
-import { configuration } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
 import { Spinner, validatePassword, ValidateEmail } from '../../utils';
 import { I18nContext, updateUser } from '../../../core';
@@ -404,7 +403,7 @@ function PictureUpload(props) {
 function MyProfileComponent(props) {
   const [user, setUser] = useState()
 
-  const { translateMethod, setLanguage, language, Translation } = useContext(I18nContext);
+  const { translateMethod, setLanguage, language, Translation, languages } = useContext(I18nContext);
 
   const formSchema = {
     _id: { type: 'string', disabled: true, props: { label: 'Id', placeholder: '---' } },
@@ -469,10 +468,7 @@ function MyProfileComponent(props) {
       type: 'select',
       props: {
         label: translateMethod('Default language'),
-        possibleValues: Object.keys(configuration).map((key) => ({
-          label: key,
-          value: key,
-        })),
+        possibleValues: languages,
       },
     },
     enable2FA: {

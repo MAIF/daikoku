@@ -43,7 +43,7 @@ class TranslationController(DaikokuAction: DaikokuAction,
             .find(Json.obj(
               "key" -> Json.obj("$regex" -> s".*$prefix", "$options" -> "-i")))
             .map(translations => {
-              val defaultTranslations = messagesApi.messages
+              val defaultTranslations = if(prefix == "mail") messagesApi.messages
                 .map(v => (v._1, v._2.filter(k => k._1.startsWith(prefix))))
                 .flatMap { v =>
                   v._2
@@ -58,10 +58,11 @@ class TranslationController(DaikokuAction: DaikokuAction,
                         )
                     }
                     .filter(t => languages.contains(t.language))
-                }
+                } else Seq.empty
 
               Ok(
-                Json.obj(
+                if(prefix == "mail")
+                  Json.obj(
                   "translations" -> defaultTranslations
                     .map { translation =>
                       translations.find(t =>
@@ -72,7 +73,10 @@ class TranslationController(DaikokuAction: DaikokuAction,
                     }
                     .groupBy(_.key)
                     .map(v => (v._1, v._2.map(TranslationFormat.writes)))
-                ))
+                )
+                else
+                  Json.obj("translations" -> translations.map(TranslationFormat.writes))
+              )
             })
       }
     }

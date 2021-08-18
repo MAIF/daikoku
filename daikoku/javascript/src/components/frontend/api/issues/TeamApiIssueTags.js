@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../../core';
-import { t } from '../../../../locales';
 
 export function TeamApiIssueTags({ value, onChange }) {
   const [showTagForm, showNewTagForm] = useState(false);
