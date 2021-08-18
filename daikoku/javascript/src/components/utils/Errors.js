@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { connect } from 'react-redux';
 import { Link, useHistory } from 'react-router-dom';
 import { goBack } from 'connected-react-router';
-import { I18nContext } from '../../core/context';
+import { I18nContext } from '../../locales/i18n-context';
 import { setError } from '../../core';
 
 const getErrorLabel = (status, error) => {
