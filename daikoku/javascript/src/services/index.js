@@ -614,6 +614,14 @@ export const saveTranslation = (translation) =>
     }),
   });
 
+export const deleteTranslation = translation =>
+  customFetch(`/api/translations`, {
+    method: 'DELETE',
+    body: JSON.stringify({
+      translation,
+    }),
+  });
+
 export const resetTranslation = (translation) =>
   customFetch(`/api/translations/${translation._id}/_reset`, {
     method: 'POST',
@@ -710,9 +718,9 @@ export const checkConnection = (config, user) =>
     method: 'POST',
     body: user
       ? JSON.stringify({
-          config,
-          user,
-        })
+        config,
+        user,
+      })
       : JSON.stringify(config),
   });
 
@@ -759,8 +767,7 @@ export const createUserFromLDAP = (teamId, email) =>
 
 export const getAPIPosts = (apiId, offset = 0, limit = 1, version) =>
   customFetch(
-    `/api/apis/${apiId}/posts?offset=${offset}&limit=${limit}${
-      version ? `&version=${version}` : ''
+    `/api/apis/${apiId}/posts?offset=${offset}&limit=${limit}${version ? `&version=${version}` : ''
     }`
   );
 

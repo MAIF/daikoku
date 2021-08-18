@@ -399,6 +399,8 @@ GET     /api/translations                               fr.maif.otoroshi.daikoku
 PUT     /api/translations                               fr.maif.otoroshi.daikoku.ctrls.TranslationController.saveTranslation()
 ### NoDocs ###
 POST    /api/translations/:translationId/_reset         fr.maif.otoroshi.daikoku.ctrls.TranslationController.resetTranslation(translationId: String)
+### NoDocs ###
+DELETE /api/translations                                fr.maif.otoroshi.daikoku.ctrls.TranslationController.deleteTranslation()
 
 ### NoDocs ###
 GET     /api/admin/users/:id/_impersonate               fr.maif.otoroshi.daikoku.ctrls.UsersController.impersonate(id)

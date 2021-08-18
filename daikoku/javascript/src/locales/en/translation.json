@@ -960,5 +960,6 @@
     "mailing_internalization.front_office_tab": "Front office",
     "mailing_internalization.go_to_edit_template": "Edit mail template",
     "tenant_edit.translation_mode_message": "You can now navigate and edit all elements just by hovering it",
-    "Translation mode enabled": "Translation mode enabled"
+    "Translation mode enabled": "Translation mode enabled",
+    "Search translation": "Search translation"
 }

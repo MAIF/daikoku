@@ -22,6 +22,19 @@ export const I18nProvider = ({ tenant, children }) => {
     const [isTranslationMode, setTranslationMode] = useState(tenant.tenantMode && tenant.tenantMode === "Translation");
     const [translations, setTranslations] = useState(configuration)
 
+    useEffect(() => {
+        Services.getTranslations("all")
+            .then(store => {
+                const tmp = translations;
+                store.translations.forEach(translation => {
+                    tmp[capitalize(translation.language)].translations[translation.key] = translation.value
+                });
+                setTranslations(tmp)
+            })
+    })
+
+    const capitalize = l => l.charAt(0).toUpperCase() + l.slice(1)
+
     const translate = (
         i18nkey,
         language,
@@ -30,7 +43,7 @@ export const I18nProvider = ({ tenant, children }) => {
         extraConf = undefined,
         replacements
     ) => {
-        const maybeTranslationFromConf = Option(translations[language])
+        const maybeTranslationFromConf = Option(translations[capitalize(language)])
             .map((lng) => lng.translations)
             .map((t) => t[i18nkey]);
         const maybeExtraTranslation = Option(extraConf)
@@ -117,21 +130,26 @@ export const I18nProvider = ({ tenant, children }) => {
         return <>{translatedMessage}</>;
     };
 
-    return (
-        <I18nContext.Provider value={{
-            language,
-            setLanguage,
-            isTranslationMode,
-            setTranslationMode,
-            translateMethod,
-            Translation,
-            languages: Object.keys(translations).map((value) => ({
-                value,
-                label: translations[value].label,
-            })),
-            translations
-        }}>
-            {children}
-        </I18nContext.Provider>
-    )
+    const updateTranslation = translation => {
+        if (translate(translation.key, translation.language) === translation.value)
+            return Services.deleteTranslation(translation)
+        return Services.saveTranslation(translation)
+    }
+
+    return <I18nContext.Provider value={{
+        language,
+        setLanguage,
+        isTranslationMode,
+        setTranslationMode,
+        translateMethod,
+        Translation,
+        updateTranslation,
+        languages: Object.keys(translations).map((value) => ({
+            value,
+            label: translations[value].label,
+        })),
+        translations
+    }}>
+        {children}
+    </I18nContext.Provider>
 }

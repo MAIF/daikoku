@@ -3,6 +3,7 @@ import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { v4 as uuid } from 'uuid';
 import { PaginatedComponent } from '../../utils';
+import { toastr } from 'react-redux-toastr';
 
 const TranslationInput = ({ key, tsl, save }) => {
     const [edited, setEdited] = useState(false);
@@ -68,21 +69,25 @@ const TranslationInput = ({ key, tsl, save }) => {
 export function EditFrontOfficeTranslations(props) {
     const [translations, setTranslations] = useState({})
     const [filteredTranslations, setFilteredTranslations] = useState([])
-
     const [searched, setSearched] = useState("");
-    const globalTranslations = useContext(I18nContext).translations
+
+    const { updateTranslation, translations: globalTranslations, translateMethod } = useContext(I18nContext);
 
     useEffect(() => {
-        Services.getTranslations("global")
+        loadTranslations()
+    }, []);
+
+    const loadTranslations = () => {
+        Services.getTranslations("all")
             .then(store => {
                 setTranslations(
-                    Object.entries(globalTranslations)
+                    Object.entries({ ...globalTranslations })
                         .map(([language, { _, translations: t }]) => Object.entries(t).map(([key, value]) => {
                             const existingTranslation = store.translations
-                                .find(f => f.key.replace('global.', '') === key && f.language === language.toLowerCase())
+                                .find(f => f.key === key && f.language === language.toLowerCase())
                             return {
                                 _id: uuid(),
-                                key: `global.${key.replace('global.', '')}`,
+                                key,
                                 language: language.toLowerCase(),
                                 value: existingTranslation ? existingTranslation.value : value,
                                 _tenant: props.tenantId,
@@ -98,13 +103,18 @@ export function EditFrontOfficeTranslations(props) {
                         }), {})
                 )
             });
-    }, []);
+    }
 
     useEffect(() => {
         if (!searched || searched.length === 0)
             setFilteredTranslations(Object.entries(translations))
-        else
-            setFilteredTranslations(Object.entries(translations).filter(([key]) => key.includes(searched)))
+        else {
+            let filtered = Object.entries(translations).filter(([key]) => key.toLowerCase().includes(searched))
+            if (filtered.length === 0)
+                filtered = Object.entries(translations).filter(([_, tsl]) => tsl.find(t => t.value.toLowerCase().includes(searched)))
+
+            setFilteredTranslations(filtered)
+        }
     }, [translations, searched])
 
     return (
@@ -112,18 +122,22 @@ export function EditFrontOfficeTranslations(props) {
             <input
                 type="text"
                 className="form-control my-3"
-                placeholder="Search translation"
+                placeholder={translateMethod('Search translation')}
                 value={searched}
-                onChange={(e) => setSearched(e.target.value)}
+                onChange={(e) => setSearched(e.target.value.toLowerCase())}
             />
             <PaginatedComponent
-                items={_.sortBy(filteredTranslations, [([key]) => key.replace('global.')])}
+                items={_.sortBy(filteredTranslations, [([key]) => key])}
                 count={8}
                 columnMode
                 formatter={([key, tsl]) => {
                     return (
                         <TranslationInput key={key} tsl={tsl} save={values => {
-                            console.log(values)
+                            Promise.all(values.map(value => updateTranslation(value)))
+                                .then(() => {
+                                    toastr.success(translateMethod('mailing_internalization.translation_updated'))
+                                    loadTranslations()
+                                })
                         }} />
                     );
                 }}
