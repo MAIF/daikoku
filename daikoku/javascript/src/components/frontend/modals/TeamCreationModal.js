@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import { PropTypes } from 'prop-types';
 
 import { TeamEditForm } from '../../backoffice/teams/TeamEdit';
-import { Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 
@@ -11,7 +10,7 @@ export const TeamCreationModal = (props) => {
   const [created, setCreated] = useState(false);
   const [error, setError] = useState(undefined);
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext)
 
   useEffect(() => {
     if (created) {

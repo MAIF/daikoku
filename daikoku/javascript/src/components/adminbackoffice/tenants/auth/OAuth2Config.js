@@ -3,7 +3,6 @@ import { SelectInput, TextInput, TextareaInput, ObjectInput, NumberInput } from 
 import { Spinner } from '../../../utils';
 
 import set from 'set-value';
-import { Translation } from '../../../../locales';
 import { I18nContext } from '../../../../core';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
@@ -231,7 +230,7 @@ const defaultConfig = {
 }
 
 export function OAuth2Config(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const fetchConfig = () => {
     window.prompt(translateMethod('URL of the OIDC config')).then((url) => {

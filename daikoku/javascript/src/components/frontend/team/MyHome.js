@@ -3,7 +3,6 @@ import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 
 import { I18nContext, openContactModal, updateTeamPromise } from '../../../core';
-import { Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { ApiList } from '../../frontend';
 import { updateUser } from '../../../core';
@@ -150,6 +149,8 @@ function MyHomeComponent(props) {
 }
 
 const Description = (props) => {
+  const { Translation } = useContext(I18nContext);
+  
   if (!props.description) {
     return (
       <p className="lead">

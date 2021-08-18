@@ -14,7 +14,6 @@ import {
   AvatarWithAction,
   Option,
 } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 const TenantAdminListComponent = (props) => {
@@ -27,7 +26,7 @@ const TenantAdminListComponent = (props) => {
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [selectedAdmin, setSelectedAdmin] = useState(undefined);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     const tenantId = props.match.params.tenantId || props.tenant._id;

@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 
-import { Translation } from '../../../../locales';
 import { Spinner } from '../../../utils';
 import { Help } from '../../../inputs';
 import * as Services from '../../../../services';
@@ -170,6 +169,8 @@ export function LDAPConfig(props) {
 }
 
 const CheckingAdminConnection = (props) => {
+  const { Translation } = useContext(I18nContext);
+
   return (
     <div className="form-group row">
       <label className="col-xs-12 col-sm-2 col-form-label">
@@ -189,6 +190,8 @@ const CheckingAdminConnection = (props) => {
 const CheckingUserConnection = (props) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  const { Translation } = useContext(I18nContext);
 
   return (
     <div className="form-group row">

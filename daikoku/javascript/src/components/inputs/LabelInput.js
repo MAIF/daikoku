@@ -1,34 +1,26 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Help } from './Help';
 
-export class LabelInput extends Component {
-  state = {
-    value: this.props.value,
-    loading: false,
-  };
+export function LabelInput(props) {
+  const [value, setValue] = useState(props.value);
 
-  identity(v) {
-    return v;
-  }
+  const identity = (v) => v
 
-  componentDidMount() {
-    const transform = this.props.transform || this.identity;
-    if (this.props.from) {
-      this.props.from().then((value) => this.setState({ value: transform(value) }));
+  useEffect(() => {
+    const transform = props.transform || identity;
+    if (props.from) {
+      props.from().then((value) => setValue({ value: transform(value) }));
     }
-  }
+  }, []);
 
-  render() {
-    return (
-      <div className="form-group row">
-        <label className="col-sm-2 control-label">
-          {this.props.label} <Help text={this.props.help} />
-        </label>
-        <div className="col-sm-10">
-          {!this.state.loading && <span className="form-control">Loading ...</span>}
-          {this.state.loading && <span className="form-control">{this.state.value}</span>}
-        </div>
+  return (
+    <div className="form-group row">
+      <label className="col-sm-2 control-label">
+        {props.label} <Help text={props.help} />
+      </label>
+      <div className="col-sm-10">
+        <span className="form-control">{value}</span>
       </div>
-    );
-  }
+    </div>
+  );
 }

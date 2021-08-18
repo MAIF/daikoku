@@ -1,10 +1,9 @@
-import React, { Component, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 
 import { Spinner } from '../../utils';
 import * as Services from '../../../services';
-import { Translation } from '../../../locales';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
-import { I18nContext } from '../../../core/i18n-context';
+import { I18nContext } from '../../../locales/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -16,6 +15,8 @@ function NameAlreadyExists(props) {
       setExists(r.exists)
     );
   };
+
+  const { Translation } = useContext(I18nContext);
 
   useEffect(() => {
     update(props);

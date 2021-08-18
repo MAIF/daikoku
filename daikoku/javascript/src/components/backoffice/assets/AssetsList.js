@@ -7,7 +7,6 @@ import * as Services from '../../../services';
 import { TeamBackOffice, UserBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, asset, Spinner, tenant as TENANT } from '../../utils';
-import { Translation } from '../../../locales';
 import { openWysywygModal } from '../../../core/modal';
 import { I18nContext } from '../../../core';
 
@@ -162,6 +161,8 @@ const FileInput = (props) => {
   const [uploading, setUploading] = useState(false);
   const [input, setInput] = useState(undefined);
 
+  const { Translation } = useContext(I18nContext);
+
   const setFiles = (e) => {
     const files = e.target.files;
     setUploading(true);
@@ -197,7 +198,7 @@ const FileInput = (props) => {
 };
 
 const AddAsset = (props) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
   return (
     <div className="form-group row">
       <label className="col-xs-12 col-sm-2 col-form-label" />

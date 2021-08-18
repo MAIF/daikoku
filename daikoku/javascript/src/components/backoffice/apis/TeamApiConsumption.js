@@ -9,7 +9,6 @@ import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
 import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 const Currency = ({ plan }) => {
@@ -41,7 +40,7 @@ function TeamApiConsumptionComponent(props) {
     viewByPlan: true,
   });
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const mappers = [
     {

@@ -11,7 +11,6 @@ import classNames from 'classnames';
 import { ApiCard } from '../api';
 import { ActionWithTeamSelector, Can, CanIDoAction, manage, api } from '../../utils';
 import { updateTeamPromise, openCreationTeamModal, I18nContext } from '../../../core';
-import { Translation, t } from '../../../locales';
 
 import * as Services from '../../../services';
 
@@ -36,7 +35,7 @@ const computeTop = (arrayOfArray) => {
 };
 
 const ApiListComponent = (props) => {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const allCategories = () => ({ value: 'All', label: translateMethod('All categories') });
   const allTags = () => ({ value: 'All', label: translateMethod('All tags') });

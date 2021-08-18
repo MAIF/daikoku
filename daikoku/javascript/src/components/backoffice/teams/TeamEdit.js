@@ -3,9 +3,8 @@ import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { Link } from 'react-router-dom';
 
-import { I18nContext, updateTeamPromise } from '../../../core/i18n-context';
+import { I18nContext, updateTeamPromise } from '../../../locales/i18n-context';
 import * as Services from '../../../services';
-import { Translation } from '../../../locales';
 
 import { TeamBackOffice } from '..';
 import { AvatarChooser, Spinner } from '../../utils';
@@ -109,7 +108,7 @@ export function TeamEditForm(props) {
 const TeamEditComponent = ({ history, currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const members = () => {
     history.push(`/${team._humanReadableId}/settings/members`);

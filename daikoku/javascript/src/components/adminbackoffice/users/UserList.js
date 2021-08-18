@@ -7,7 +7,7 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../core/i18n-context';
+import { I18nContext } from '../../../locales/i18n-context';
 
 function UserListComponent(props) {
   const [state, setState] = useState({

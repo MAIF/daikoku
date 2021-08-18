@@ -5,7 +5,6 @@ import faker from 'faker';
 
 import { Spinner } from '../../utils';
 
-import { Translation } from '../../../locales';
 import { AssetChooserByModal } from '../../frontend';
 import { connect } from 'react-redux';
 import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
@@ -85,7 +84,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   const [deletedPage, setDeletedPage] = useState(false);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const flow = [
     '_id',

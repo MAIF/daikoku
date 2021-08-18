@@ -2,7 +2,6 @@ import React, { useContext, useState } from 'react';
 import { PropTypes } from 'prop-types';
 import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 export const TeamSelectorModal = ({
@@ -21,7 +20,7 @@ export const TeamSelectorModal = ({
     (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
   );
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const finalAction = () => {
     if (selectedTeams.length) {

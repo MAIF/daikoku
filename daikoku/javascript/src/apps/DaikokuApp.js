@@ -68,7 +68,7 @@ import {
 
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { MessagesEvents } from '../services/messages';
-import { I18nContext } from '../core/i18n-context';
+import { I18nContext } from '../locales/i18n-context';
 
 const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
   useEffect(() => {

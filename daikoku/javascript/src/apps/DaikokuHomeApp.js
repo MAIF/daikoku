@@ -6,27 +6,28 @@ import queryString from 'query-string';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
 
-import { Translation } from '../locales/Translation';
 import { Spinner } from '../components/utils/Spinner';
 import { validatePassword, ValidateEmail } from '../components/utils/validation';
 import * as Services from '../services';
 import { toastr } from 'react-redux-toastr';
-import { I18nContext } from '../core/i18n-context';
+import { I18nContext } from '../locales/i18n-context';
 
 const LazyForm = React.lazy(() => import('../components/inputs/Form'));
 
-class Gravatar extends Component {
-  setGravatarLink = () => {
-    const email = (this.props.rawValue.email || Date.now().toString()).toLowerCase().trim();
+function Gravatar(props) {
+  const { Translation } = useContext(I18nContext);
+
+  const setGravatarLink = () => {
+    const email = (props.rawValue.email || Date.now().toString()).toLowerCase().trim();
     const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
-    this.props.changeValue('avatar', url);
+    props.changeValue('avatar', url);
   };
 
-  gravatarButton = () => (
+  const gravatarButton = () => (
     <button
       type="button"
-      className={'btn btn-access ' + (this.props.fullWidth ? 'btn-block' : '')}
-      onClick={this.setGravatarLink}>
+      className={'btn btn-access ' + (props.fullWidth ? 'btn-block' : '')}
+      onClick={setGravatarLink}>
       <i className="fas fa-user-circle mr-1" />
       <Translation i18nkey="Set avatar from Gravatar">
         Set avatar from Gravatar
@@ -34,22 +35,20 @@ class Gravatar extends Component {
     </button>
   );
 
-  render() {
-    const { fullWidth } = this.props;
+  const { fullWidth } = props;
 
-    if (fullWidth) return this.gravatarButton();
-    else
-      return (
-        <div className="form-group row">
-          <label className="col-xs-12 col-sm-2 col-form-label" />
-          <div className="col-sm-10">{this.gravatarButton()}</div>
-        </div>
-      );
-  }
+  if (fullWidth) return gravatarButton();
+  else
+    return (
+      <div className="form-group row">
+        <label className="col-xs-12 col-sm-2 col-form-label" />
+        <div className="col-sm-10">{gravatarButton()}</div>
+      </div>
+    );
 }
 
 export function SignupComponent(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext)
 
   const [state, setState] = useState({
     user: {
@@ -232,7 +231,7 @@ export function SignupComponent(props) {
 }
 
 export function ResetPasswordComponent(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = {
     user: {}

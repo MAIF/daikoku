@@ -4,7 +4,6 @@ import _ from 'lodash';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 export function TenantListComponent(props) {
@@ -16,7 +15,7 @@ export function TenantListComponent(props) {
     getTenants();
   }, [])
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const getTenants = _ => Services.allTenants().then((tenants) => setState({ ...state, tenants }));
 

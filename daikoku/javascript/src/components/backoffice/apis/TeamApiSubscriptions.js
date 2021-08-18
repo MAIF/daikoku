@@ -13,7 +13,6 @@ import {
   formatDate,
 } from '../../utils';
 import * as Services from '../../../services';
-import { Translation, t } from '../../../locales';
 import { Table, BooleanColumnFilter, SwitchButton } from '../../inputs';
 import { I18nContext, openSubMetadataModal } from '../../../core';
 import { useParams } from 'react-router-dom';
@@ -27,7 +26,7 @@ const TeamApiSubscriptionsComponent = (props) => {
 
   const params = useParams();
 
-  const { translateMethod, language } = useContext(I18nContext)
+  const { translateMethod, language, Translation } = useContext(I18nContext)
 
   useEffect(() => {
     Promise.all([

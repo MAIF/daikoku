@@ -22,9 +22,7 @@ import {
   registerContact,
 } from './components/utils/window';
 import { customizeFetch } from './services/customize';
-import { Option } from './components/utils';
-import { Translation } from './locales';
-import { I18nProvider } from './core/i18n-context';
+import { I18nProvider } from './locales/i18n-context';
 
 window.$ = jQuery;
 window.jQuery = jQuery;

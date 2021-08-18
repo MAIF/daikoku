@@ -1,12 +1,11 @@
 import React, { useContext } from 'react';
 import moment from 'moment';
 
-import { Translation } from '../../../locales';
 import { formatPlanType, Option } from '../../utils';
 import { I18nContext } from '../../../core';
 
 export function SimpleNotification(props) {
-  const { translateMethod, language } = useContext(I18nContext);
+  const { translateMethod, language, Translation } = useContext(I18nContext);
 
   const typeFormatter = (type) => {
     switch (type) {

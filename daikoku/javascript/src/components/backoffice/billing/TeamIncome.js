@@ -8,11 +8,10 @@ import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { formatCurrency, formatPlanType, Spinner, Can, read, api } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext, setError } from '../../../core';
 
 function TeamIncomeComponent(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState({
     consumptions: [],

@@ -3,13 +3,12 @@ import moment from 'moment';
 
 import { Link } from 'react-router-dom';
 import { ActionWithTeamSelector, Can, manage, apikey, CanIDoAction } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 const Separator = () => <hr className="hr-apidescription" />;
 
 export function ApiCartidge(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const { api, ownerTeam } = props;
   const defaultPlan = api.possibleUsagePlans.filter((p) => p._id === api.defaultUsagePlan)[0];

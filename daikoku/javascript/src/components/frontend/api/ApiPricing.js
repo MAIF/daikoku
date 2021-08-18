@@ -5,7 +5,6 @@ import { currencies } from '../../../services/currencies';
 
 import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
-import { Translation } from '../../../locales';
 import { Can, access, apikey, getCurrencySymbol, formatCurrency } from '../../utils';
 import { openLoginOrRegisterModal, openApiKeySelectModal, I18nContext } from '../../../core';
 import { connect } from 'react-redux';
@@ -27,6 +26,8 @@ const currency = (plan) => {
 };
 
 function ApiPricingCardComponent(props) {
+  const { Translation } = useContext(I18nContext);
+  
   const renderFreeWithoutQuotas = () => (
     <span>
       <Translation i18nkey="free.without.quotas.desc">

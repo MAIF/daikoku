@@ -6,11 +6,10 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 function TeamApiKeyConsumptionComponent(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const mappers = [
     {

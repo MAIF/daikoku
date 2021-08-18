@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 
 import { Spinner } from '../../utils';
 import * as Services from '../../../services';
-import { Translation } from '../../../locales';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 export const TestingApiKeyModal = (props) => {
   const [config, setConfig] = useState({ ...props.config });
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const otoroshiFlow = ['otoroshiSettings', 'serviceGroup'];
   const otoroshiForm = (_found) => {

@@ -7,7 +7,6 @@ import { SketchPicker } from 'react-color';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { Can, daikoku, manage, Option } from '../../utils';
-import { Translation } from '../../../locales';
 
 import styleVariables from '!!raw-loader!../../../style/variables.scss';
 import { I18nContext } from '../../../core';
@@ -15,7 +14,7 @@ import { I18nContext } from '../../../core';
 const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 
 export function TenantStyleEditComponent(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState({
     tenant: null,

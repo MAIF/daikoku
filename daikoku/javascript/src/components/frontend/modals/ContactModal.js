@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 
-import { Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 
@@ -15,7 +14,7 @@ const ContactModalComponent = (props) => {
   const [formRef, setFormRef] = useState(undefined);
   const [validity, setValidity] = useState(false);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation} = useContext(I18nContext);
 
   useEffect(() => {
     if (formRef) {

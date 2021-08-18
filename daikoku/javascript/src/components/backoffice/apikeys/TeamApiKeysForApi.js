@@ -19,7 +19,6 @@ import {
   Option,
 } from '../../utils';
 import { SwitchButton } from '../../inputs';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 function TeamApiKeysForApiComponent(props) {
@@ -31,7 +30,7 @@ function TeamApiKeysForApiComponent(props) {
   const location = useLocation();
   const params = useParams();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     Promise.all([
@@ -296,7 +295,7 @@ const ApiKeyCard = ({
 
   const { _id, integrationToken } = subscription;
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   let inputRef = React.createRef();
   let clipboard = React.createRef();

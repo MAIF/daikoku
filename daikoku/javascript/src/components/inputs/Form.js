@@ -127,6 +127,7 @@ class FormComponent extends Component {
               value={this.getValue(name, [])}
               {...props}
               onChange={(v) => this.changeValue(name, v)}
+              currentLanguage={this.props.currentLanguage}
             />
           );
         } else if (type === 'object') {
@@ -195,6 +196,7 @@ class FormComponent extends Component {
           component = (
             <React.Suspense key={name} fallback={<div>loading...</div>}>
               <LazySingleMarkdownInput
+                currentLanguage={this.props.currentLanguage}
                 disabled={disabled}
                 key={name}
                 value={this.getValue(name, '')}

@@ -6,11 +6,10 @@ import * as Services from '../../../services';
 
 import { TeamCard } from '.';
 import { updateTeamPromise } from '../../../core';
-import { I18nContext } from '../../../core/i18n-context';
-import { Translation } from '../../../locales';
+import { I18nContext } from '../../../locales/i18n-context';
 
 function TeamChooserComponent(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState({
     teams: [],

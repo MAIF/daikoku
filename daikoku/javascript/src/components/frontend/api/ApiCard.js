@@ -3,7 +3,6 @@ import classNames from 'classnames';
 
 import { Can, manage, api as API } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
-import { Translation } from '../../../locales';
 import StarsButton from './StarsButton';
 import { I18nContext } from '../../../core';
 
@@ -15,7 +14,7 @@ export const ApiCard = (props) => {
   const api = props.api;
   const team = props.team || { name: '--', avatar: '#', _id: api.team };
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const accessButton = () => {
     if (

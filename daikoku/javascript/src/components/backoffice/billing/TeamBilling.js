@@ -8,7 +8,6 @@ import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { formatCurrency, formatPlanType, Can, read, stat } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 function TeamBillingComponent(props) {
@@ -20,7 +19,7 @@ function TeamBillingComponent(props) {
     date: moment(),
   });
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     getTeamBilling(props.currentTeam);

@@ -7,7 +7,6 @@ import asciidoctor from 'asciidoctor';
 
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { Translation } from '../../../locales';
 
 import 'highlight.js/styles/monokai.css';
 import { I18nContext } from '../../../core';
@@ -35,7 +34,7 @@ export function ApiDocumentationCartidge({ details }) {
 }
 
 export function ApiDocumentation(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const params = useParams()
 

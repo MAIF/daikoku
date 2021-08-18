@@ -8,11 +8,10 @@ import * as Services from '../../../services';
 import { Can, read, manage, stat, api as API } from '../../utils';
 import { TeamBackOffice } from '../..';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
-import { Translation } from '../../../locales';
 import { I18nContext, setError } from '../../../core';
 
 function TeamApisComponent(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   let table;
 

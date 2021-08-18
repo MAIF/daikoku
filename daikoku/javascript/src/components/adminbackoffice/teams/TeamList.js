@@ -5,7 +5,6 @@ import _ from 'lodash';
 
 import { UserBackOffice } from '../../backoffice';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 function TeamListComponent(props) {
@@ -23,7 +22,7 @@ function TeamListComponent(props) {
     updateTeams();
   }, []);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const deleteTeam = (teamId) => {
     window

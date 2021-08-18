@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { withRouter } from 'react-router-dom';
 import * as Services from '../../../services';
-import { Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
 import { I18nContext } from '../../../core';
 
@@ -10,7 +9,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
   const [team, setTeam] = useState('');
   const [notificationId, setNotificationId] = useState('');
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

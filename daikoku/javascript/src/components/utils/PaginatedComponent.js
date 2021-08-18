@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import Pagination from 'react-paginate';
 import classNames from 'classnames';
-import { I18nContext } from '../../core/i18n-context';
+import { I18nContext } from '../../locales/i18n-context';
 
 export const PaginatedComponent = (props) => {
   const [selectedPage, setSelectedPage] = useState(0);

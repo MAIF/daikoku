@@ -16,7 +16,7 @@ import {
 import { languages } from '../../locales';
 import { Can, manage, daikoku, tenant } from '../utils';
 import { MessagesTopBarTools } from '../backoffice/messages';
-import { I18nContext } from '../../core/i18n-context';
+import { I18nContext } from '../../locales/i18n-context';
 
 const GuestUserMenu = ({ loginProvider }) => {
   const { translateMethod } = useContext(I18nContext)

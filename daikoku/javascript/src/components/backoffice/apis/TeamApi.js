@@ -6,7 +6,6 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { TeamBackOffice } from '../..';
 import { Can, manage, api as API, Spinner } from '../../utils';
-import { Translation } from '../../../locales';
 import {
   TeamApiDescription,
   TeamApiDocumentation,
@@ -42,7 +41,7 @@ function TeamApiComponent(props) {
 
   const teamApiDocumentationRef = useRef();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
   const location = useLocation();
   const history = useHistory();
 

@@ -7,7 +7,6 @@ import CreatableSelect from 'react-select/creatable';
 import classNames from 'classnames';
 
 import { Spinner, newPossibleUsagePlan, Option } from '../../utils';
-import { Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { Help } from '../../inputs';
 import { toastr } from 'react-redux-toastr';
@@ -45,6 +44,8 @@ const OtoroshiServicesAndGroupSelector = (props) => {
   const [services, setServices] = useState(undefined);
   const [disabled, setDisabled] = useState(true);
   const [value, setValue] = useState(undefined);
+
+  const { Translation } = useContext(I18nContext);
 
   useEffect(() => {
     Promise.all([
@@ -184,7 +185,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
   const [selected, setSelected] = useState(value.possibleUsagePlans[0]);
   const [otoroshiSettings, setOtoroshiSettings] = useState([]);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const prevValue = usePrevious(value);
 

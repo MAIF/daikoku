@@ -10,13 +10,12 @@ import { toastr } from 'react-redux-toastr';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, daikoku, Spinner, validatePassword, validateUser } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 function SetPassword(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const genAndSetPassword = () => {
     window
@@ -57,6 +56,8 @@ function SetPassword(props) {
 }
 
 function RefreshToken(props) {
+  const { Translation } = useContext(I18nContext);
+
   const reloadToken = () => {
     props.changeValue('personalToken', faker.random.alphaNumeric(32));
   };
@@ -77,6 +78,8 @@ function RefreshToken(props) {
 }
 
 function Gravatar(props) {
+  const { Translation } = useContext(I18nContext);
+
   const setGravatarLink = () => {
     const email = props.rawValue.email.toLowerCase().trim();
     const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
@@ -119,7 +122,7 @@ function AvatarChooser(props) {
 }
 
 export function UserEditComponent(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState({
     user: null

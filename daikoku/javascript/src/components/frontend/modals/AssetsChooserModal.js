@@ -4,7 +4,6 @@ import classNames from 'classnames';
 
 import * as Services from '../../../services';
 import { openAssetSelectorModal } from '../../../core/modal/actions';
-import { Translation } from '../../../locales';
 import { BeautifulTitle } from '../../utils';
 import { I18nContext } from '../../../core';
 
@@ -24,7 +23,7 @@ export const AssetSelectorModal = ({
   const [selectedAsset, setSelectedAsset] = useState({});
   const [search, setSearch] = useState();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const selectAssetAndCloseModal = () => {
     onSelect(selectedAsset);
@@ -130,7 +129,7 @@ export const AssetSelectorModal = ({
 };
 
 export function AssetChooserComponent(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
   
   const [state, setState] = useState({
     loading: true,

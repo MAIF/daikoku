@@ -8,10 +8,10 @@ import _ from 'lodash';
 import { Option } from '../../../utils';
 import * as Services from '../../../../services';
 import { newPossibleUsagePlan, BeautifulTitle } from '../../../utils';
-import { Translation } from '../../../../locales';
-import { I18nContext } from '../../../../core/i18n-context';
+import { I18nContext } from '../../../../locales/i18n-context';
 
 export const SelectionStepStep = (props) => {
+  const { Translation } = useContext(I18nContext);
   return (
     <div className="d-flex">
       <button className="btn btn-outline-primary mr-2" onClick={() => props.goToServices()}>
@@ -83,6 +83,8 @@ export const SelectOtoStep = (props) => {
 };
 
 export const RecapServiceStep = (props) => {
+  const { Translation } = useContext(I18nContext);
+
   return (
     <div>
       <h2>
@@ -133,6 +135,8 @@ export const RecapServiceStep = (props) => {
 };
 
 export const RecapSubsStep = (props) => {
+  const { Translation } = useContext(I18nContext);
+
   const reset = () => {
     window.confirm(translateMethod('initialize_from_otoroshi.confirm')).then((ok) => {
       if (ok) props.cancel();
@@ -205,7 +209,7 @@ export const ServicesStep = (props) => {
   const [error, setError] = useState({});
   const [inputRef, setInputRef] = useState(null);
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext)
 
   useEffect(() => {
     if (newTeam) {
@@ -444,15 +448,16 @@ export const ServicesStep = (props) => {
   );
 };
 
-const SelectApi = ({ apis, setSelectedApi, selectedApi }) => (
-  <Select
+const SelectApi = ({ apis, setSelectedApi, selectedApi }) => {
+  const { translateMethod } = useContext(I18nContext);
+  return <Select
     options={apis}
     onChange={(slug) => setSelectedApi(slug.value)}
     value={apis.find((a) => !!selectedApi && a.value._id === selectedApi._id)}
     placeholder={translateMethod('Select an API')}
     classNamePrefix="reactSelect"
   />
-);
+}
 
 const SelectPlan = ({
   possiblePlans,
@@ -514,7 +519,7 @@ export const ApiKeyStep = (props) => {
   const [apikeys, setApikeys] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (selectedGroup) setApikeys(props.getFilteredApikeys(selectedGroup));

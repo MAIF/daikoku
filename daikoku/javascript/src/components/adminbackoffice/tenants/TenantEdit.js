@@ -16,10 +16,9 @@ import {
   SendGridConfig,
 } from './mailer';
 import { Can, manage, tenant, Spinner } from '../../utils';
-import { Translation, configuration } from '../../../locales';
 import { BooleanInput } from '../../inputs/BooleanInput';
 import { openSaveOrCancelModal, updateTenant } from '../../../core';
-import { I18nContext } from '../../../core/i18n-context';
+import { I18nContext } from '../../../locales/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -32,6 +31,7 @@ function LazyFormInput(props) {
 }
 
 function AuthConfig(props) {
+  const { Translation } = useContext(I18nContext);
 
   if (props.rawValue.authProvider === 'Local') {
     return <LocalConfig {...props} />;
@@ -163,7 +163,7 @@ function StyleFontFamilyUrlAssetButton(props) {
 }
 
 function ThemeUpdatorFromUI(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext)
 
   return (
     <div className="form-group d-flex justify-content-end">
@@ -217,7 +217,7 @@ function HomePageVisibilitySwitch(props) {
 }
 
 export function TenantEditComponent(props) {
-  const { translateMethod, language } = useContext(I18nContext)
+  const { translateMethod, language, Translation, configuration } = useContext(I18nContext)
 
   const [state, setState] = useState({
     tenant: null,

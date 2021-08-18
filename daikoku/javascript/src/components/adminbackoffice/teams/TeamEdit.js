@@ -6,9 +6,8 @@ import * as Services from '../../../services';
 
 import { UserBackOffice } from '../../backoffice';
 import { AvatarChooser, Can, manage, tenant, Spinner } from '../../utils';
-import { Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
-import { I18nContext } from '../../../core/i18n-context';
+import { I18nContext } from '../../../locales/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -16,7 +15,7 @@ function TeamEditForAdministrationComponent(props) {
   const [team, setTeam] = useState(null)
   const [create, setCreate] = useState(false);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const flow = [
     '_id',

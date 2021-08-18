@@ -1,4 +1,4 @@
-import React, { Component, useContext, useEffect } from 'react';
+import React, { Component, useContext, useEffect, useState } from 'react';
 import { Link, Route } from 'react-router-dom';
 import classNames from 'classnames';
 import { connect } from 'react-redux';
@@ -17,7 +17,7 @@ import {
   daikoku,
   tenant as TENANT,
 } from '../utils';
-import { Translation } from '../../locales';
+
 import { I18nContext } from '../../core';
 
 function elvis(value, f) {
@@ -37,13 +37,13 @@ const BackOfficeContent = (props) => {
   );
 };
 
-class TeamBackOfficeHomeComponent extends Component {
-  state = {
-    team: undefined,
-  };
+function TeamBackOfficeHomeComponent(props) {
+  const { Translation } = useContext(I18nContext);
 
-  componentDidMount() {
-    this.props.history.listen(() => {
+  const [team, setTeam] = useState();
+
+  useEffect(() => {
+    props.history.listen(() => {
       elvis(document.getElementById('sidebar'), (e) =>
         e.setAttribute('class', 'col-md-2 d-md-block sidebar collapse')
       );
@@ -54,95 +54,93 @@ class TeamBackOfficeHomeComponent extends Component {
       // document.getElementById('toggle-navigation').setAttribute('class', 'navbar-toggle collapsed');
     });
 
-    Services.teamHome(this.props.currentTeam._id).then((team) => this.setState({ team }));
+    Services.teamHome(props.currentTeam._id).then(setTeam);
+  }, []);
+
+  if (!team) {
+    return null;
   }
 
-  render() {
-    if (!this.state.team) {
-      return null;
-    }
+  return (
+    <TeamBackOffice tab="Home" title={`${props.currentTeam.name}`}>
+      <div className="row">
+        <div className="col">
+          <h1>
+            {props.currentTeam.name}
+            <a
+              className="ml-1 btn btn-sm btn-access-negative"
+              title="View this Team"
+              href={`/${props.currentTeam._humanReadableId}`}>
+              <i className="fas fa-eye"></i>
+            </a>
+          </h1>
+          <div className="d-flex justify-content-center align-items-center col-12 mt-5">
+            <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
+              <Link
+                to={`/${props.currentTeam._humanReadableId}/settings/apis`}
+                className="home-tile">
+                <span className="home-tile-number">{team.apisCount}</span>
+                <span className="home-tile-text">
+                  <Translation
+                    i18nkey="apis published"
 
-    return (
-      <TeamBackOffice tab="Home" title={`${this.props.currentTeam.name}`}>
-        <div className="row">
-          <div className="col">
-            <h1>
-              {this.props.currentTeam.name}
-              <a
-                className="ml-1 btn btn-sm btn-access-negative"
-                title="View this Team"
-                href={`/${this.props.currentTeam._humanReadableId}`}>
-                <i className="fas fa-eye"></i>
-              </a>
-            </h1>
-            <div className="d-flex justify-content-center align-items-center col-12 mt-5">
-              <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
-                <Link
-                  to={`/${this.props.currentTeam._humanReadableId}/settings/apis`}
-                  className="home-tile">
-                  <span className="home-tile-number">{this.state.team.apisCount}</span>
-                  <span className="home-tile-text">
-                    <Translation
-                      i18nkey="apis published"
+                    count={team.apisCount}>
+                    apis published
+                  </Translation>
+                </span>
+              </Link>
+              <Link
+                to={`/${props.currentTeam._humanReadableId}/settings/apikeys`}
+                className="home-tile">
+                <span className="home-tile-number">{team.subscriptionsCount}</span>
+                <span className="home-tile-text">
+                  <Translation
+                    i18nkey="apis subcriptions"
 
-                      count={this.state.team.apisCount}>
-                      apis published
-                    </Translation>
-                  </span>
-                </Link>
-                <Link
-                  to={`/${this.props.currentTeam._humanReadableId}/settings/apikeys`}
-                  className="home-tile">
-                  <span className="home-tile-number">{this.state.team.subscriptionsCount}</span>
-                  <span className="home-tile-text">
-                    <Translation
-                      i18nkey="apis subcriptions"
+                    count={team.subscriptionsCount}>
+                    apis subcriptions
+                  </Translation>
+                </span>
+              </Link>
+              <Link
+                to={
+                  props.currentTeam.type === 'Personal'
+                    ? '#'
+                    : `/${props.currentTeam._humanReadableId}/settings/members`
+                }
+                className="home-tile"
+                disabled={props.currentTeam.type === 'Personal' ? 'disabled' : null}>
+                {props.currentTeam.type !== 'Personal' && (
+                  <>
+                    <span className="home-tile-number">{team.users.length}</span>
+                    <span className="home-tile-text">
+                      <Translation
+                        i18nkey="members"
 
-                      count={this.state.team.subscriptionsCount}>
-                      apis subcriptions
-                    </Translation>
-                  </span>
-                </Link>
-                <Link
-                  to={
-                    this.props.currentTeam.type === 'Personal'
-                      ? '#'
-                      : `/${this.props.currentTeam._humanReadableId}/settings/members`
-                  }
-                  className="home-tile"
-                  disabled={this.props.currentTeam.type === 'Personal' ? 'disabled' : null}>
-                  {this.props.currentTeam.type !== 'Personal' && (
-                    <>
-                      <span className="home-tile-number">{this.state.team.users.length}</span>
-                      <span className="home-tile-text">
-                        <Translation
-                          i18nkey="members"
+                        count={team.users.length}>
+                        members
+                      </Translation>
+                    </span>
+                  </>
+                )}
+              </Link>
+              <Link to={'/notifications'} className="home-tile">
+                <span className="home-tile-number">{team.notificationCount}</span>
+                <span className="home-tile-text">
+                  <Translation
+                    i18nkey="unread notifications"
 
-                          count={this.state.team.users.length}>
-                          members
-                        </Translation>
-                      </span>
-                    </>
-                  )}
-                </Link>
-                <Link to={'/notifications'} className="home-tile">
-                  <span className="home-tile-number">{this.state.team.notificationCount}</span>
-                  <span className="home-tile-text">
-                    <Translation
-                      i18nkey="unread notifications"
-
-                      count={this.state.team.notificationCount}>
-                      unread notifications
-                    </Translation>
-                  </span>
-                </Link>
-              </div>
+                    count={team.notificationCount}>
+                    unread notifications
+                  </Translation>
+                </span>
+              </Link>
             </div>
           </div>
         </div>
-      </TeamBackOffice>
-    );
-  }
+      </div>
+    </TeamBackOffice>
+  );
 }
 
 const TeamBackOfficeComponent = ({
@@ -160,7 +158,7 @@ const TeamBackOfficeComponent = ({
     }
   }, [title]);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   if (!currentTeam) {
     return null;
@@ -313,7 +311,7 @@ const UserBackOfficeComponent = ({
     }
   }, [title]);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   return (
     <>

@@ -11,8 +11,7 @@ import * as MessagesEvents from '../../../services/messages';
 import * as Services from '../../../services';
 import { Option, partition, formatMessageDate, BeautifulTitle } from '../../utils';
 import { UserBackOffice } from '../../backoffice';
-import { Translation } from '../../../locales';
-import { I18nContext } from '../../../core/i18n-context';
+import { I18nContext } from '../../../locales/i18n-context';
 
 const AdminMessagesComponent = (props) => {
   const {
@@ -65,7 +64,7 @@ const AdminMessagesComponent = (props) => {
     maybeReadMessage();
   }, [selectedChat]);
 
-  const { translateMethod, language } = useContext(I18nContext);
+  const { translateMethod, language, Translation } = useContext(I18nContext);
 
   const maybeReadMessage = () => {
     if (selectedChat) {

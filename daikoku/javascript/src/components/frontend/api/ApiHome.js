@@ -21,7 +21,6 @@ import { formatPlanType } from '../../utils/formatters';
 import { setError, openContactModal, updateUser, I18nContext } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
-import { Translation } from '../../../locales';
 import StarsButton from './StarsButton';
 import Select from 'react-select';
 import { LoginOrRegisterModal } from '../modals';
@@ -157,7 +156,7 @@ const ApiHomeComponent = ({
 
   const params = useParams();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     updateSubscriptions(match.params.apiId);

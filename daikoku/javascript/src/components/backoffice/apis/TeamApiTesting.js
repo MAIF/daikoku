@@ -4,14 +4,13 @@ import _ from 'lodash';
 
 import { Option } from '../../utils';
 import * as Services from '../../../services';
-import { Translation } from '../../../locales';
 import { BooleanInput, TextInput, SelectInput } from '../../inputs';
 import { I18nContext } from '../../../core';
 
 export const TeamApiTesting = (props) => {
   const testing = props.value.testing;
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {
     const random = faker.random.alphaNumeric(16);

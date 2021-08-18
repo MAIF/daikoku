@@ -5,14 +5,13 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { Can, manage, tenant, Spinner } from '../../utils';
-import { Translation } from '../../../locales';
 import { toastr } from 'react-redux-toastr';
-import { I18nContext } from '../../../core/i18n-context';
+import { I18nContext } from '../../../locales/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 function TenantOtoroshiComponent(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState({
     otoroshi: null,

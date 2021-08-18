@@ -6,13 +6,12 @@ import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext } from '../../../core';
 
 export function TeamApiKeysComponent(props) {
   const [showApiKey, setShowApiKey] = useState(false);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   let table;
 

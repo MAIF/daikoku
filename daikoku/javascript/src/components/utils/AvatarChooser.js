@@ -1,8 +1,7 @@
 import React, { useContext } from 'react';
 import { AssetChooserByModal, MimeTypeFilter } from '../frontend';
 import md5 from 'js-md5';
-import { Translation } from '../../locales';
-import { I18nContext } from '../../core/i18n-context';
+import { I18nContext } from '../../locales/i18n-context';
 
 function Gravatar(props) {
   const setGravatarLink = () => {

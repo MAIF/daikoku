@@ -9,7 +9,6 @@ import { toastr } from 'react-redux-toastr';
 import { configuration } from '../../../locales';
 import { UserBackOffice } from '../../backoffice';
 import { Spinner, validatePassword, ValidateEmail } from '../../utils';
-import { Translation } from '../../../locales';
 import { I18nContext, updateUser } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -203,7 +202,7 @@ function TwoFactorAuthentication({ rawValue }) {
 }
 
 function SetPassword(props) {
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const genAndSetPassword = () => {
     window
@@ -251,6 +250,8 @@ function SetPassword(props) {
 }
 
 function RefreshToken(props) {
+  const { Translation } = useContext(I18nContext);
+
   const reloadToken = () => {
     props.changeValue('personalToken', faker.random.alphaNumeric(32));
   };
@@ -271,6 +272,8 @@ function RefreshToken(props) {
 }
 
 const Avatar = ({ value, rawValue, changeValue, label, ...props }) => {
+  const { Translation } = useContext(I18nContext);
+
   const setPictureFromProvider = () => {
     changeValue('pictureFromProvider', true);
   };
@@ -332,6 +335,8 @@ const Avatar = ({ value, rawValue, changeValue, label, ...props }) => {
 function TenantList(props) {
   const [tenants, setTenants] = useState([]);
 
+  const { Translation } = useContext(I18nContext);
+
   useEffect(() => {
     Services.getTenantNames(props.value)
       .then(setTenants);
@@ -353,6 +358,8 @@ function TenantList(props) {
 
 function PictureUpload(props) {
   const [uploading, setUploading] = useState(false)
+
+  const { Translation } = useContext(I18nContext)
 
   const setFiles = (e) => {
     const files = e.target.files;
@@ -397,7 +404,7 @@ function PictureUpload(props) {
 function MyProfileComponent(props) {
   const [user, setUser] = useState()
 
-  const { translateMethod, setLanguage, language } = useContext(I18nContext);
+  const { translateMethod, setLanguage, language, Translation } = useContext(I18nContext);
 
   const formSchema = {
     _id: { type: 'string', disabled: true, props: { label: 'Id', placeholder: '---' } },

@@ -7,8 +7,7 @@ import { converter } from '../../services/showdown';
 import { Option } from '../utils';
 import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
-import { Translation } from '../../locales';
-import { I18nContext } from '../../core/i18n-context';
+import { I18nContext } from '../../locales/i18n-context';
 
 const DiscussionComponent = (props) => {
   const {

@@ -7,7 +7,7 @@ import classnames from 'classnames';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '..';
-import { I18nContext, updateTeamPromise } from '../../../core/i18n-context';
+import { I18nContext, updateTeamPromise } from '../../../locales/i18n-context';
 import { openInvitationTeamModal } from '../../../core';
 import {
   Option,
@@ -20,7 +20,6 @@ import {
   apiEditor,
   user,
 } from '../../utils';
-import { Translation } from '../../../locales';
 
 import 'antd/lib/tooltip/style/index.css';
 
@@ -37,7 +36,7 @@ export function TeamMembersSimpleComponent(props) {
     tab: TABS.members,
   });
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     updateMembers(props.currentTeam);

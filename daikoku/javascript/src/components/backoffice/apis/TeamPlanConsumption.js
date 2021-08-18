@@ -1,4 +1,4 @@
-import React, { Component, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import moment from 'moment';
 import { connect } from 'react-redux';
@@ -142,30 +142,29 @@ const mapStateToProps = (state) => ({
 
 export const TeamPlanConsumption = connect(mapStateToProps)(TeamPlanConsumptionComponent);
 
-class PlanInformations extends Component {
-  state = {
-    loading: true,
-    informations: null,
-  };
+function PlanInformations(props) {
+  const [loading, setLoading] = useState(true)
+  const [informations, setInformations] = useState()
 
-  componentDidMount() {
-    props.fetchData().then((informations) => setState({ informations, loading: false }));
+  useEffect(() => {
+    props.fetchData()
+      .then(informations => {
+        setInformations(informations)
+        setLoading(false)
+      })
+  }, []);
+
+  if (loading)
+    return <Spinner width="50" height="50" />;
+
+  if (!informations) {
+    return null;
   }
 
-  render() {
-    if (state.loading) {
-      return <Spinner width="50" height="50" />;
-    }
-
-    if (!state.informations) {
-      return null;
-    }
-
-    return (
-      <h3>
-        {state.informations.api.name} -{' '}
-        {state.informations.plan.customName || state.informations.plan.type}
-      </h3>
-    );
-  }
+  return (
+    <h3>
+      {informations.api.name} -{' '}
+      {informations.plan.customName || informations.plan.type}
+    </h3>
+  );
 }

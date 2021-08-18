@@ -13,7 +13,6 @@ import 'brace/ext/language_tools';
 import { Help } from './Help';
 import { BeautifulTitle, Option } from '../utils';
 import { AssetChooserByModal, MimeTypeFilter } from '../frontend';
-import { Translation } from '../../locales';
 
 import hljs from 'highlight.js';
 import { I18nContext } from '../../core';
@@ -24,7 +23,7 @@ const SingleMardownInput = (props) => {
   const [preview, setPreview] = useState(false);
   const [editor, setEditor] = useState(undefined);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (preview) {

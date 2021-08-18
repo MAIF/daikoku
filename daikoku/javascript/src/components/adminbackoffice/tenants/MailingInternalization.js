@@ -2,7 +2,6 @@ import React, { Suspense, useContext, useEffect, useState } from 'react';
 import { Can, manage, Spinner, tenant as TENANT } from '../../utils';
 import { connect } from 'react-redux';
 import { UserBackOffice } from '../../backoffice';
-import { Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { toastr } from 'react-redux-toastr';
 import { Link, Route, Switch, useParams } from 'react-router-dom';
@@ -248,7 +247,7 @@ function MailingInternalizationComponent({ team, tenant }) {
     Services.getTranslations('mail').then((res) => setTranslations(res.translations));
   }, []);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   function saveTranslation(key, language) {
     Services.saveTranslation(

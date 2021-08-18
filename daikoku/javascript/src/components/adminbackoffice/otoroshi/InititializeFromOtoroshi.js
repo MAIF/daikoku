@@ -1,9 +1,10 @@
 import { useMachine } from '@xstate/react';
 import _ from 'lodash';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import StepWizard from 'react-step-wizard';
+import { I18nContext } from '../../../core';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
@@ -17,10 +18,11 @@ import {
   RecapServiceStep,
   RecapSubsStep,
 } from './initialization';
-import { Translation } from '../../../locales';
 
 const InitializeFromOtoroshiComponent = (props) => {
   const [state, send] = useMachine(theMachine);
+
+  const { Translation } = useContext(I18nContext);
 
   const [otoroshis, setOtoroshis] = useState([]);
   const [teams, setTeams] = useState([]);

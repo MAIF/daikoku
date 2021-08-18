@@ -6,7 +6,6 @@ import PropTypes from 'prop-types';
 import Pagination from 'react-paginate';
 import Select from 'react-select';
 
-import { Translation } from '../../locales';
 import { Spinner } from '../utils';
 import { DefaultColumnFilter } from '.';
 import { I18nContext } from '../../core';
@@ -35,7 +34,7 @@ export const Table = ({
   const [error, setError] = useState(undefined);
   const forceUpdate = useForceUpdate();
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const filterTypes = React.useMemo(
     () => ({
