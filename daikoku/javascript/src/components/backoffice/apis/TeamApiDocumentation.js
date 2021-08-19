@@ -48,31 +48,31 @@ const mimeTypes = [
   { label: '.css fichier css', value: 'text/css' },
 ];
 
-class AssetButton extends Component {
-  render() {
-    const team = this.props.parentProps().team;
-    return (
-      <div className="form-group row">
-        <label className="col-xs-12 col-sm-2 col-form-label" />
-        <div
-          className="col-sm-10"
-          style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}>
-          <AssetChooserByModal
-            team={team}
-            teamId={team._id}
-            label={translateMethod('Set from asset')}
-            onSelect={(asset) => {
-              this.props.onRawChange({
-                ...this.props.rawValue,
-                contentType: asset.contentType,
-                remoteContentUrl: asset.link,
-              });
-            }}
-          />
-        </div>
+function AssetButton(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  const team = props.parentProps().team;
+  return (
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label" />
+      <div
+        className="col-sm-10"
+        style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}>
+        <AssetChooserByModal
+          team={team}
+          teamId={team._id}
+          label={translateMethod('Set from asset')}
+          onSelect={(asset) => {
+            props.onRawChange({
+              ...props.rawValue,
+              contentType: asset.contentType,
+              remoteContentUrl: asset.link,
+            });
+          }}
+        />
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
