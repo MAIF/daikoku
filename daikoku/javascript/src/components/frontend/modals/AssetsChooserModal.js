@@ -130,7 +130,7 @@ export const AssetSelectorModal = ({
 
 export function AssetChooserComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
-  
+
   const [state, setState] = useState({
     loading: true,
     assets: [],
@@ -157,19 +157,24 @@ export function AssetChooserComponent(props) {
       assets.error
         ? []
         : assets.map((asset) => ({
-            label: asset.meta.filename + ' - ' + asset.meta.title,
-            value: asset.meta.asset,
-            filename: asset.meta.filename,
-            title: asset.meta.title,
-            desc: asset.meta.desc,
-            contentType: asset.meta['content-type'],
-            meta: asset.meta,
-            link: `/team-assets/${team._id}/${asset.meta.asset}`,
-          }))
+          label: asset.meta.filename + ' - ' + asset.meta.title,
+          value: asset.meta.asset,
+          filename: asset.meta.filename,
+          title: asset.meta.title,
+          desc: asset.meta.desc,
+          contentType: asset.meta['content-type'],
+          meta: asset.meta,
+          link: `/team-assets/${team._id}/${asset.meta.asset}`,
+        }))
     );
 
+  let mounted
+
   useEffect(() => {
+    mounted = true
     getAssets(props.team);
+
+    return () => mounted = false
   }, []);
 
   const getAssets = (team) => {
@@ -182,17 +187,22 @@ export function AssetChooserComponent(props) {
 
     fetchAssets()
       .then((assets) => {
-        if (props.typeFilter) {
-          setState({
-            ...state,
-            assets: assets.filter((asset) => props.typeFilter(asset.contentType)),
-            loading: false,
-          });
-        } else {
-          setState({ ...state, assets, loading: false });
+        if (mounted) {
+          if (props.typeFilter) {
+            setState({
+              ...state,
+              assets: assets.filter((asset) => props.typeFilter(asset.contentType)),
+              loading: false,
+            });
+          } else {
+            setState({ ...state, assets, loading: false });
+          }
         }
       })
-      .catch((error) => setState({ ...state, error, loading: false }));
+      .catch((error) => {
+        if (mounted)
+          setState({ ...state, error, loading: false })
+      });
   }
 
   if (state.assets && state.loading) {

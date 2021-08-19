@@ -63,7 +63,7 @@ function TeamPlanConsumptionComponent(props) {
   ];
 
   const getPlanInformation = () => {
-    return Services.teamApi(props.currentTeam._id, props.match.params.apiId).then(
+    return Services.teamApi(props.currentTeam._id, props.match.params.apiId, props.match.params.versionId).then(
       (api) => {
         if (api.error) {
           return null;

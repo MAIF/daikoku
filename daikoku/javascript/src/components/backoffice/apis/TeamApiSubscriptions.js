@@ -30,7 +30,7 @@ const TeamApiSubscriptionsComponent = (props) => {
 
   useEffect(() => {
     Promise.all([
-      Services.teamApi(props.currentTeam._id, props.match.params.apiId),
+      Services.teamApi(props.currentTeam._id, props.match.params.apiId, props.match.params.versionId),
       Services.teams(),
     ]).then(([api, teams]) => {
       setApi(api);

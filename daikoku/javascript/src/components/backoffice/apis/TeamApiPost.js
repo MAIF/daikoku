@@ -71,7 +71,7 @@ export function TeamApiPost({ team, params, api, ...props }) {
   }, [params.versionId, location.pathname]);
 
   function loadPosts(offset = 0, limit = 1, reset = false) {
-    Services.getAPIPosts(api._humanReadableId, offset, limit, params.versionId).then((data) => {
+    Services.getAPIPosts(api._humanReadableId, params.versionId, offset, limit).then((data) => {
       setState({
         posts: [
           ...(reset ? [] : state.posts),

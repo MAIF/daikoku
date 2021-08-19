@@ -1,4 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import 'swagger-ui-dist/swagger-ui.css';
@@ -13,9 +14,11 @@ export function ApiSwagger(props) {
     info: undefined,
   })
 
+  const params = useParams()
+
   useEffect(() => {
     if (props.api.testing.enabled)
-      fetch(`/api/teams/${props.teamId}/apis/${props.api._id}/swagger.json`).then(
+      fetch(`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger.json`).then(
         (res) => {
           if (res.status > 300)
             setState({
@@ -42,7 +45,7 @@ export function ApiSwagger(props) {
     if (props.api.swagger) {
       window.ui = SwaggerUIBundle({
         // TODO: this current team is actually needed by the api
-        url: `/api/teams/${props.teamId}/apis/${props.api._id}/swagger`,
+        url: `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`,
         dom_id: '#swagger-ui',
         deepLinking: true,
         docExpansion: 'list',

@@ -6,9 +6,11 @@ import { v4 as uuidv4 } from 'uuid';
 export function SwitchButton(props) {
   const [loading, setLoading] = useState(false);
 
+  let switchRef;
+
   useEffect(() => {
     if (loading) {
-      const action = props.onSwitch(checked);
+      const action = props.onSwitch(switchRef.checked);
       if (action instanceof Promise) {
         Promise.resolve(action).then(() => setLoading(false));
       } else {
@@ -16,8 +18,6 @@ export function SwitchButton(props) {
       }
     }
   }, [loading])
-
-  let switchRef;
 
   const notifySwitch = () => {
     if (props.onSwitch) {
@@ -30,8 +30,8 @@ export function SwitchButton(props) {
   return (
     <div
       className={classNames('d-flex justify-content-center ', {
-        'switch--loading': state.loading,
-        'switch--loaded': !state.loading,
+        'switch--loading': loading,
+        'switch--loaded': !loading,
         'switch--disabled': props.disabled,
       })}>
       <label className="switch--item" htmlFor={id}>

@@ -12,10 +12,9 @@ export const me = () => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
 export const oneOfMyTeam = (id) => customFetch(`/api/me/teams/${id}`);
 
-export const getVisibleApi = (id, version) =>
-  customFetch(`/api/me/visible-apis/${id}${version ? `?version=${version}` : ''}`);
-export const getTeamVisibleApi = (teamId, apiId, version) =>
-  customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}?version=${version}`);
+export const getVisibleApiWithId = id => customFetch(`/api/me/visible-apis/${id}`)
+export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/${id}/${version}`);
+export const getTeamVisibleApi = (teamId, apiId, version) => customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const myTeams = () => customFetch('/api/me/teams');
 export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 export const myVisibleApis = () => customFetch('/api/me/visible-apis');
@@ -54,20 +53,13 @@ export const rejectNotificationOfTeam = (notificationId) =>
 
 export const subscribedApis = (team) => customFetch(`/api/teams/${team}/subscribed-apis`);
 export const getDocPage = (api, id) => customFetch(`/api/apis/${api}/pages/${id}`);
-export const getDocDetails = (api, version) =>
-  customFetch(`/api/apis/${api}/doc${version ? `?version=${version}` : ''}`);
-
-export const reorderDoc = (team, api) =>
-  customFetch(`/api/teams/${team}/apis/${api}/pages/_reorder`, {
-    method: 'POST',
-    body: '{}',
-  });
+export const getDocDetails = (api, version) => customFetch(`/api/apis/${api}/${version}/doc`);
 
 export const getTeamSubscriptions = (api, team, version) =>
-  customFetch(`/api/apis/${api}/subscriptions/teams/${team}?version=${version}`);
+  customFetch(`/api/apis/${api}/${version}/subscriptions/teams/${team}`);
 
 export const getMySubscriptions = (apiId, version) =>
-  customFetch(`/api/me/subscriptions/${apiId}${version ? `?version=${version}` : ''}`);
+  customFetch(`/api/me/subscriptions/${apiId}/${version}`);
 
 export const askForApiKey = (api, teams, plan) =>
   customFetch(`/api/apis/${api}/subscriptions`, {
@@ -134,8 +126,7 @@ export const member = (teamId, userId) => customFetch(`/api/teams/${teamId}/memb
 export const members = (teamId) => customFetch(`/api/teams/${teamId}/members`);
 export const teamHome = (teamId) => customFetch(`/api/teams/${teamId}/home`);
 
-export const teamApi = (teamId, apiId, version) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}${version ? `?version=${version}` : ''}`);
+export const teamApi = (teamId, apiId, version) => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
 
 export const teamApis = (teamId) => customFetch(`/api/teams/${teamId}/apis`);
 export const team = (teamId) => customFetch(`/api/teams/${teamId}`);
@@ -203,13 +194,13 @@ export const deleteTeamApi = (teamId, id) =>
   });
 
 export const saveTeamApiWithId = (teamId, api, version, apiId) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}${version ? `?version=${version}` : ''}`, {
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`, {
     method: 'PUT',
     body: JSON.stringify(api),
   });
 
 export const saveTeamApi = (teamId, api, version) =>
-  saveTeamApiWithId(teamId, api, version, api._id);
+  saveTeamApiWithId(teamId, api, version, api._humanReadableId);
 
 export const createTeamApi = (teamId, api) =>
   customFetch(`/api/teams/${teamId}/apis`, {
@@ -416,7 +407,7 @@ export const apiGlobalConsumption = (apiId, teamId, from, to) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/consumption?from=${from}&to=${to}`);
 
 export const apiSubscriptions = (apiId, teamId, version) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/subscriptions?version=${version}`);
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/subscriptions`);
 
 export const archiveSubscriptionByOwner = (ownerId, subscriptionId, enabled) =>
   customFetch(
@@ -765,11 +756,8 @@ export const createUserFromLDAP = (teamId, email) =>
     }),
   });
 
-export const getAPIPosts = (apiId, offset = 0, limit = 1, version) =>
-  customFetch(
-    `/api/apis/${apiId}/posts?offset=${offset}&limit=${limit}${version ? `&version=${version}` : ''
-    }`
-  );
+export const getAPIPosts = (apiId, version, offset = 0, limit = 1) =>
+  customFetch(`/api/apis/${apiId}/${version}/posts?offset=${offset}&limit=${limit}`);
 
 export const publishNewPost = (apiId, teamId, post) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/posts`, {
@@ -861,8 +849,7 @@ export const getAllApiVersions = (teamId, apiId) =>
 
 export const getDefaultApiVersion = (apiId) => customFetch(`/api/apis/${apiId}/default_version`);
 
-export const getAllPlanOfApi = (teamId, apiId, version) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/plans${version ? `?version=${version}` : ''}`);
+export const getAllPlanOfApi = (teamId, apiId, version) => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
 
 export const cloneApiPlan = (teamId, apiId, fromApi, plan) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/plans`, {
@@ -876,7 +863,7 @@ export const cloneApiPlan = (teamId, apiId, fromApi, plan) =>
 export const getRootApi = (apiId) => customFetch(`/api/apis/${apiId}/_root`);
 
 export const importApiPages = (teamId, apiId, pages, version) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`, {
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`, {
     method: 'PUT',
     body: JSON.stringify({
       pages,
@@ -884,7 +871,7 @@ export const importApiPages = (teamId, apiId, pages, version) =>
   });
 
 export const getAllApiDocumentation = (teamId, apiId, version) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/pages?version=${version}`);
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/pages`);
 
 export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
-  customFetch(`/api/teams/${teamId}/apis/${apiId}/access?version=${version}`);
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);

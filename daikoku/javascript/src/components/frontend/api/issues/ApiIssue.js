@@ -26,7 +26,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
   }, []);
 
   function onChange(editedApi) {
-    Services.saveTeamApi(ownerTeam._id, editedApi)
+    Services.saveTeamApi(ownerTeam._id, editedApi, versionId)
       .then((res) => {
         props.onChange({
           ...props.api,

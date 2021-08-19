@@ -97,7 +97,7 @@ export const SubscriptionMetadataModal = (props) => {
   }, [metadata, customMetadata]);
 
   useEffect(() => {
-    Services.getVisibleApi(props.api).then((api) => {
+    Services.getVisibleApiWithId(props.api).then((api) => {
       if (api.error) {
         toastr.error(api.error);
         props.closeModal();
@@ -152,7 +152,7 @@ export const SubscriptionMetadataModal = (props) => {
             },
           },
         ],
-      }).then((api) => {
+      }, api.currentVersion).then((api) => {
         setMetadata({ ...metadata, [key]: newValue });
         setLoadingInput(false);
         setApi(api);

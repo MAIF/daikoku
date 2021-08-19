@@ -126,7 +126,7 @@ function TeamApisComponent(props) {
     Services.saveTeamApi(props.currentTeam._id, {
       ...api,
       published: !api.published,
-    }).then(() => table.update());
+    }, api.currentVersion).then(() => table.update());
   };
 
   const deleteApi = (api) => {

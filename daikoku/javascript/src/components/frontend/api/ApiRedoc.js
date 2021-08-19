@@ -12,7 +12,7 @@ export function ApiRedoc(props) {
     const showSwagger = !(connectedUser.isGuest && tenant.apiReferenceHideForGuest);
 
     if (showSwagger) {
-      const url = `${window.location.origin}/api/teams/${props.teamId}/apis/${props.api._id}/swagger.json?version=${props.match.params.versionId}`;
+      const url = `${window.location.origin}/api/teams/${props.teamId}/apis/${props.api._id}/${props.match.params.versionId}/swagger.json`;
 
       fetch(url).then((res) => {
         if (res.status > 300)

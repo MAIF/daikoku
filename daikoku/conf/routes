@@ -71,13 +71,15 @@ GET     /api/me/notifications/all                       fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/me/notifications/unread-count              fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUnreadNotificationsCount()
 ### NoDocs ###
-GET     /api/me/visible-apis/:id                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApi(id, version: Option[String])
+GET     /api/me/visible-apis/:humanReadableId/:version  fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApi(humanReadableId, version)
+### NoDocs ###
+GET     /api/me/visible-apis/:id                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApiWithId(id)
 ### NoDocs ###
 GET     /api/me/visible-apis                            fr.maif.otoroshi.daikoku.ctrls.ApiController.myVisibleApis()
 ### NoDocs ###
-GET     /api/me/teams/:teamId/visible-apis/:apiId       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId, version: Option[String] ?= None)
+GET     /api/me/teams/:teamId/visible-apis/:apiId/:version       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId, version)
 ### NoDocs ###
-GET     /api/me/subscriptions/:apiId                    fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId, version: Option[String] ?= None)
+GET     /api/me/subscriptions/:apiId/:version           fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId, version)
 ### NoDocs ###
 GET     /api/me                                         fr.maif.otoroshi.daikoku.ctrls.ApiController.me()
 ### NoDocs ###
@@ -98,7 +100,7 @@ PUT     /api/apis/:apiId/subscriptions/:apiKeyId        fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/apis/:apiId/subscriptions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiKey(apiId)
 ### NoDocs ###
-GET     /api/apis/:apiId/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version: Option[String] ?= None)
+GET     /api/apis/:apiId/:version/subscriptions/teams/:teamId    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptionsForTeam(apiId, teamId, version)
 ### NoDocs ###
 GET     /api/subscriptions/teams/:teamId                fr.maif.otoroshi.daikoku.ctrls.ApiController.getSubscriptionsOfTeam(teamId)
 ### NoDocs ###
@@ -131,7 +133,7 @@ POST    /api/apis/_init                                 fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/apis/:apiId/_root                          fr.maif.otoroshi.daikoku.ctrls.ApiController.getRootApi(apiId)
 ### NoDocs ###
-GET     /api/apis/:apiId/doc                            fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId, version: Option[String] ?= None)
+GET     /api/apis/:apiId/:version/doc                   fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId, version)
 ### NoDocs ###
 POST    /api/apis/:apiId/access                         fr.maif.otoroshi.daikoku.ctrls.ApiController.askForApiAccess(apiId)
 ### NoDocs ###
@@ -139,7 +141,7 @@ PUT     /api/apis/:apiId/stars                          fr.maif.otoroshi.daikoku
 ### NoDocs ###
 POST    /api/apis/_names                                fr.maif.otoroshi.daikoku.ctrls.ApiController.verifyNameUniqueness()
 ### NoDocs ###
-GET     /api/apis/:apiId/posts                          fr.maif.otoroshi.daikoku.ctrls.ApiController.getPosts(apiId, offset: Option[Int], limit: Option[Int], version: Option[String] ?= None)
+GET     /api/apis/:apiId/:version/posts                 fr.maif.otoroshi.daikoku.ctrls.ApiController.getPosts(apiId, version, offset: Option[Int], limit: Option[Int])
 ### NoDocs ###
 GET     /api/apis/:apiId/issues                         fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssues(apiId)
 ### NoDocs ###
@@ -173,7 +175,7 @@ GET     /api/teams/:teamId/billings                              fr.maif.otorosh
 ### NoDocs ###
 GET     /api/teams/:teamId/income                                fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.income(teamId, from: Option[Long] ?= None, to: Option[Long] ?= None)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId/subscriptions             fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(teamId, apiId, version: Option[String] ?= None)
+GET     /api/teams/:teamId/apis/:apiId/:version/subscriptions    fr.maif.otoroshi.daikoku.ctrls.ApiController.getApiSubscriptions(teamId, apiId, version)
 ### NoDocs ###
 GET     /api/teams/:teamId/ldap/users/:email                     fr.maif.otoroshi.daikoku.ctrls.TeamController.checkUser(teamId, email)
 ### NoDocs ###
@@ -195,22 +197,22 @@ POST        /api/teams/:teamId/apis/:apiId/versions                  fr.maif.oto
 ### NoDocs ###
 GET         /api/teams/:teamId/apis/:apiId/versions                  fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApiVersions(teamId, apiId)
 ### NoDocs ###
-GET         /api/teams/:teamId/apis/:apiId/plans                     fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllPlan(teamId, apiId, version: Option[String] ?= None)
+GET         /api/teams/:teamId/apis/:apiId/:version/plans            fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllPlan(teamId, apiId, version)
 ### NoDocs ###
 POST        /api/teams/:teamId/apis/:apiId/plans                     fr.maif.otoroshi.daikoku.ctrls.ApiController.clonePlan(teamId, apiId)
 ### NoDocs ###
-GET         /api/teams/:teamId/apis/:apiId/access                    fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsStatusAccess(teamId, apiId, version: Option[String] ?= None)
+GET         /api/teams/:teamId/apis/:apiId/:version/access           fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsStatusAccess(teamId, apiId, version)
 
 ### NoDocs ###
 GET     /api/teams/:teamId/subscribed-apis              fr.maif.otoroshi.daikoku.ctrls.ApiController.subscribedApis(teamId)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId/swagger.json     fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId, version: Option[String] ?= None)
+GET     /api/teams/:teamId/apis/:apiId/:version/swagger.json     fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId, version)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId/swagger          fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId, version: Option[String] ?= None)
+GET     /api/teams/:teamId/apis/:apiId/:version/swagger          fr.maif.otoroshi.daikoku.ctrls.ApiController.apiSwagger(teamId, apiId, version)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId                  fr.maif.otoroshi.daikoku.ctrls.ApiController.apiOfTeam(teamId, apiId, version: Option[String] ?= None)
+GET     /api/teams/:teamId/apis/:apiId/:version                  fr.maif.otoroshi.daikoku.ctrls.ApiController.apiOfTeam(teamId, apiId, version)
 ### NoDocs ###
-PUT     /api/teams/:teamId/apis/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiOfTeam(teamId, id, version: Option[String] ?= None)
+PUT     /api/teams/:teamId/apis/:id/:version                     fr.maif.otoroshi.daikoku.ctrls.ApiController.updateApiOfTeam(teamId, id, version)
 ### NoDocs ###
 DELETE  /api/teams/:teamId/apis/:id                     fr.maif.otoroshi.daikoku.ctrls.ApiController.deleteApiOfTeam(teamId, id)
 ### NoDocs ###
@@ -220,9 +222,9 @@ GET     /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/teams/:teamId/visible-apis                 fr.maif.otoroshi.daikoku.ctrls.ApiController.visibleApisOfTeam(teamId)
 ### NoDocs ###
-GET     /api/teams/:teamId/apis/:apiId/pages            fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApiDocumentation(teamId, apiId, version: Option[String] ?= None)
+GET     /api/teams/:teamId/apis/:apiId/:version/pages            fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApiDocumentation(teamId, apiId, version)
 ### NoDocs ###
-PUT     /api/teams/:teamId/apis/:apiId/pages            fr.maif.otoroshi.daikoku.ctrls.ApiController.cloneDocumentation(teamId, apiId, version: Option[String] ?= None)
+PUT     /api/teams/:teamId/apis/:apiId/:version/pages            fr.maif.otoroshi.daikoku.ctrls.ApiController.cloneDocumentation(teamId, apiId, version)
 ### NoDocs ###
 GET     /api/categories                                 fr.maif.otoroshi.daikoku.ctrls.ApiController.categories()
 
@@ -232,8 +234,6 @@ DELETE  /api/teams/:teamId/pages/:pageId                fr.maif.otoroshi.daikoku
 PUT     /api/teams/:teamId/pages/:pageId                fr.maif.otoroshi.daikoku.ctrls.ApiController.saveDocPage(teamId, pageId)
 ### NoDocs ###
 POST    /api/teams/:teamId/pages                        fr.maif.otoroshi.daikoku.ctrls.ApiController.createDocPage(teamId)
-### NoDocs ###
-POST    /api/teams/:teamId/apis/:apiId/pages/_reorder   fr.maif.otoroshi.daikoku.ctrls.ApiController.reorderApiDocPagesIndex(teamId, apiId)
 
 ### NoDocs ###
 GET  /api/me/messages/admin                             fr.maif.otoroshi.daikoku.ctrls.MessageController.myAdminMessages(date: Option[Long] ?= None)

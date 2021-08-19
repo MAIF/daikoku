@@ -118,7 +118,7 @@ function TeamApiConsumptionComponent(props) {
   useEffect(() => {
     Promise.all([
       Services.teams(),
-      Services.teamApi(props.currentTeam._id, props.match.params.apiId),
+      Services.teamApi(props.currentTeam._id, props.match.params.apiId, props.match.params.versionId),
     ]).then(([teams, api]) => setState({ ...state, teams, api }));
   }, []);
 

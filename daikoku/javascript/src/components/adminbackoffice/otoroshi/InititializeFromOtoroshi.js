@@ -60,8 +60,8 @@ const InitializeFromOtoroshiComponent = (props) => {
   }, [props.tenant]);
 
   const updateApi = (api) => {
-    return Services.teamApi(api.team, api._id)
-      .then((oldApi) => Services.saveTeamApi(api.team, { ...oldApi, ...api }))
+    return Services.teamApi(api.team, api._humanReadableId, api.currentVersion)
+      .then((oldApi) => Services.saveTeamApi(api.team, { ...oldApi, ...api }, oldApi.currentVersion))
       .then((updatedApi) => {
         const filteredApis = apis.filter((a) => a._id !== updatedApi._id);
         setApis([...filteredApis, updatedApi]);
