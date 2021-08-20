@@ -13,6 +13,7 @@ import play.api.mvc._
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.marshalling.playJson._
+import sangria.renderer.SchemaRenderer
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -31,10 +32,12 @@ class GraphQLController(DaikokuAction: DaikokuAction,
 
   val logger = Logger("GraphQLController")
 
-  def isTracingEnabled(request: Request[_]) = request.headers.get("X-Apollo-Tracing").isDefined
-
   def search(query: String, variables: Option[String], operation: Option[String]) = DaikokuAction.async { ctx =>
     executeQuery(query, variables map parseVariables, operation)
+  }
+
+  def renderSchema = DaikokuAction {
+    Ok(SchemaRenderer.renderSchema(schema))
   }
 
   private def parseVariables(variables: String) =

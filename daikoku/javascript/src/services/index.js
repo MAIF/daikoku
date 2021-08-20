@@ -876,4 +876,6 @@ export const getAllApiDocumentation = (teamId, apiId, version) =>
 export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
 
-export const graphQLSearch = (search) => customFetch(`/api/search?query={users{name}}`)
+export const graphQLSearch = query => customFetch(`/api/search?query=${query.replace(/\s/g, "")}`)
+
+export const schema = () => fetch(`/api/render-schema`).then(r => r.text())

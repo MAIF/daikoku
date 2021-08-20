@@ -26,7 +26,13 @@ function MyHomeComponent(props) {
       }
     );
 
-    Services.graphQLSearch()
+    Services.graphQLSearch(`
+        query {
+          users {
+            name
+          }
+        }
+      `)
       .then(res => console.log(res))
 
   };
