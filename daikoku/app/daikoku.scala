@@ -4,23 +4,13 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
-import fr.maif.otoroshi.daikoku.utils.{
-  ApiService,
-  Errors,
-  OtoroshiClient,
-  Translator
-}
+import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, OtoroshiClient, Translator}
 import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, OtoroshiVerifierJob}
 import play.api.ApplicationLoader.Context
 import play.api._
@@ -123,6 +113,7 @@ package object modules {
     lazy val issuesAdminApiController = wire[IssuesAdminApiController]
     lazy val translationsAdminApiController =
       wire[TranslationsAdminApiController]
+    lazy val graphQLController = wire[GraphQLController]
 
     override lazy val assets: Assets = wire[Assets]
     lazy val router: Router = {

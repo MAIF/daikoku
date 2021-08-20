@@ -77,7 +77,10 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-core" % "1.11.779",
   "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1",
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.893",
-  "commons-logging" % "commons-logging" % "1.1.1"
+  "commons-logging" % "commons-logging" % "1.1.1",
+  "org.sangria-graphql" % "sangria_2.13" % "2.1.3",
+  "org.sangria-graphql" % "sangria-play-json_2.13" % "2.0.2",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2"
 )
 
 dependencyOverrides += "io.netty" % "netty-handler" % "4.1.58.Final"

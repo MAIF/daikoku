@@ -296,7 +296,7 @@ const mimeTypes = [
   {
     label: '.html HyperText Markup Language file',
     value: 'text/html',
-    render: (url) => <Html url={url} />,
+    render: (url, content) => url ? <Html url={url} /> : <Markdown url={url} content={content} />
   },
   { label: '.jpg JPEG image', value: 'image/jpeg', render: (url) => <Image url={url} /> },
   {
@@ -334,6 +334,7 @@ const mimeTypes = [
 ];
 
 const AwesomeContentViewer = (props) => {
+  
   const mimeType = mimeTypes.filter((t) => t.value === props.contentType)[0] || {
     render: () => <TypeNotSupportedYet />,
   };

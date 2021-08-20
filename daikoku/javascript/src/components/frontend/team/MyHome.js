@@ -25,6 +25,10 @@ function MyHomeComponent(props) {
         setState({ ...state, apis, teams, myTeams, loading: false });
       }
     );
+
+    Services.graphQLSearch()
+      .then(res => console.log(res))
+
   };
 
   useEffect(() => {
@@ -113,8 +117,8 @@ function MyHomeComponent(props) {
               </h1>
               <Description
                 description={props.tenant.description}
-  
-              
+
+
               />
             </div>
             {props.connectedUser.isDaikokuAdmin && (
@@ -150,7 +154,7 @@ function MyHomeComponent(props) {
 
 const Description = (props) => {
   const { Translation } = useContext(I18nContext);
-  
+
   if (!props.description) {
     return (
       <p className="lead">
