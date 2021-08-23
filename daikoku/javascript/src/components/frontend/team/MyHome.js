@@ -28,7 +28,7 @@ function MyHomeComponent(props) {
 
     Services.graphQLSearch(`
         query {
-          users {
+          apis {
             name
           }
         }

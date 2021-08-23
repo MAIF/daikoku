@@ -2,20 +2,22 @@ package domain
 
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.env.{DaikokuEnv, Env}
+import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
 import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.ISODateTimeFormat
 import play.api.libs.json._
-import sangria.ast.{IntValue, ObjectField, ObjectValue, StringValue}
-import sangria.macros.derive._
+import sangria.ast.{ObjectValue, StringValue}
+import sangria.macros.derive.{ReplaceField, _}
 import sangria.schema._
 import sangria.validation.ValueCoercionViolation
-import storage.{DataStore, Repo, UserRepo}
+import storage.DataStore
 
-import scala.concurrent.Future
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
 object SchemaDefinition {
@@ -23,6 +25,18 @@ object SchemaDefinition {
   case object JsonCoercionViolation extends ValueCoercionViolation("Not valid JSON")
   case object DateCoercionViolation extends ValueCoercionViolation("Date value expected")
   case object MapCoercionViolation extends ValueCoercionViolation("Map value can't be parsed")
+
+  implicit val TimeUnitType = ScalarType[TimeUnit]("TimeUnit",
+    description = Some("TimeUnit type"),
+    coerceOutput = (value, _) => value,
+    coerceUserInput = {
+      case s: String => Right(TimeUnit.valueOf(s))
+      case _ => Left(JsArrayCoercionViolation)
+    },
+    coerceInput = {
+      case StringValue(s, _, _, _, _) => Right(TimeUnit.valueOf(s))
+      case _ => Left(JsArrayCoercionViolation)
+    })
 
   implicit val JsArrayType = ScalarType[JsArray]("JsArray",
     description = Some("JsArray type"),
@@ -557,7 +571,7 @@ object SchemaDefinition {
   )
 
   val ApiType = deriveObjectType[Unit, Api](
-    ReplaceField("api", Field("api", ApiIdType, resolve = _.value.id)),
+    ReplaceField("id", Field("id", ApiIdType, resolve = _.value.id)),
     ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
     ReplaceField("team", Field("team", TeamIdType, resolve = _.value.team)),
     ReplaceField("currentVersion", Field("currentVersion", VersionType, resolve = _.value.currentVersion)),
@@ -567,13 +581,15 @@ object SchemaDefinition {
     ReplaceField("documentation", Field("documentation", ApiDocumentationType, resolve = _.value.documentation)),
     ReplaceField("swagger", Field("swagger", OptionType(SwaggerAccessType), resolve = _.value.swagger)),
     ReplaceField("visibility", Field("visibility", ApiVisibilityType, resolve = _.value.visibility)),
-    ReplaceField("possibleUsagePlans", Field("possibleUsagePlans", UsagePlanInterfaceType, resolve = _.value.possibleUsagePlans)),
+    ReplaceField("possibleUsagePlans", Field("possibleUsagePlans", ListType(UsagePlanInterfaceType), resolve = _.value.possibleUsagePlans)),
     ReplaceField("defaultUsagePlan", Field("defaultUsagePlan", UsagePlanIdType, resolve = _.value.defaultUsagePlan)),
     ReplaceField("authorizedTeams", Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams)),
     ReplaceField("posts", Field("posts", ListType(ApiPostIdType), resolve = _.value.posts)),
     ReplaceField("issues", Field("issues", ListType(ApiIssueIdType), resolve = _.value.issues)),
-    ReplaceField("issuesTags", Field("issuesTags", ListType(ApiIssueTagType), resolve = _.value.issuesTags)),
-    ReplaceField("parent", Field("parent", OptionType(ApiIdType), resolve = _.value.parent))
+    ReplaceField("issuesTags", Field("issuesTags", ListType(ApiIssueTagType), resolve = _.value.issuesTags.toSeq)),
+    ReplaceField("parent", Field("parent", OptionType(ApiIdType), resolve = _.value.parent)),
+    ReplaceField("tags", Field("tags", ListType(StringType), resolve = _.value.tags.toSeq)),
+    ReplaceField("categories", Field("categories", ListType(StringType), resolve = _.value.categories.toSeq))
   )
 
   val ApiKeyRotationType = deriveObjectType[Unit, ApiKeyRotation]()
@@ -582,7 +598,7 @@ object SchemaDefinition {
     ReplaceField("id", Field("id", ApiSubscriptionIdType, resolve = _.value.id)),
     ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
     ReplaceField("apiKey", Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey)),
-    ReplaceField("plan", Field("plan", UsagePlanInterfaceType, resolve = _.value.plan)),
+    ReplaceField("plan", Field("plan", UsagePlanIdType, resolve = _.value.plan)),
     ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
     ReplaceField("team", Field("team", TeamIdType, resolve = _.value.team)),
     ReplaceField("api", Field("api", ApiIdType, resolve = _.value.api)),
@@ -592,13 +608,227 @@ object SchemaDefinition {
     ReplaceField("parent", Field("parent", OptionType(ApiSubscriptionIdType), resolve = _.value.parent)),
   )
 
+  val ActualOtoroshiApiKey = deriveObjectType[Unit, ActualOtoroshiApiKey](
+    ReplaceField("authorizedEntities", Field("authorizedEntities", AuthorizedEntitiesType, resolve = _.value.authorizedEntities)),
+    ReplaceField("tags", Field("tags", ListType(StringType), resolve = _.value.tags)),
+    ReplaceField("metadata", Field("metadata", MapType, resolve = _.value.metadata)),
+    ReplaceField("restrictions", Field("restrictions", ApiKeyRestrictionsType, resolve = _.value.restrictions)),
+    ReplaceField("rotation", Field("rotation", OptionType(ApiKeyRotationType), resolve = _.value.rotation))
+  )
+
+  val NotificationStatusType: InterfaceType[Unit, NotificationStatus] = InterfaceType(
+    "NotificationStatus",
+    "NotificationStatus description",
+    () => fields[Unit, NotificationStatus]()
+  )
+
+  val NotificationStatusAcceptedType = deriveObjectType[Unit, NotificationStatus.Accepted](
+    Interfaces(NotificationStatusType),
+    ReplaceField("date",
+      Field("date", DateTimeType, resolve = _.value.date)
+    )
+  )
+
+  val NotificationStatusRejectedType = deriveObjectType[Unit, NotificationStatus.Rejected](
+    Interfaces(NotificationStatusType),
+    ReplaceField("date",
+      Field("date", DateTimeType, resolve = _.value.date)
+    )
+  )
+
+  val NotificationActionType: InterfaceType[Unit, NotificationAction] = InterfaceType(
+    "NotificationAction",
+    "NotificationAction description",
+    () => fields[Unit, NotificationAction]()
+  )
+  val OtoroshiSyncNotificationActionType: InterfaceType[Unit, OtoroshiSyncNotificationAction] = InterfaceType(
+    "OtoroshiSyncNotificationAction",
+    "OtoroshiSyncNotificationAction description",
+    () => fields[Unit, OtoroshiSyncNotificationAction](
+      Field("message", StringType, resolve = _.value.message)
+    )
+  )
+
+  val ApiAccessType = ObjectType(
+    "ApiAccess",
+    "ApiAccess description",
+    interfaces[Unit, ApiAccess](NotificationActionType),
+    fields[Unit, ApiAccess](
+      Field("api", ApiIdType, resolve = _.value.api),
+      Field("team", TeamIdType, resolve = _.value.team)
+    )
+  )
+  val TeamAccessType = ObjectType(
+    "TeamAccess",
+    "TeamAccess description",
+    interfaces[Unit, TeamAccess](NotificationActionType),
+    fields[Unit, TeamAccess](
+      Field("team", TeamIdType, resolve = _.value.team)
+    )
+  )
+  val TeamInvitationType = ObjectType(
+    "TeamInvitation",
+    "TeamInvitation description",
+    interfaces[Unit, TeamInvitation](NotificationActionType),
+    fields[Unit, TeamInvitation](
+      Field("team", TeamIdType, resolve = _.value.team),
+      Field("user", UserIdType, resolve = _.value.user)
+    )
+  )
+  val ApiSubscriptionDemandType = ObjectType(
+    "ApiSubscriptionDemand",
+    "ApiSubscriptionDemand description",
+    interfaces[Unit, ApiSubscriptionDemand](NotificationActionType),
+    fields[Unit, ApiSubscriptionDemand](
+      Field("api", ApiIdType, resolve = _.value.api),
+      Field("team", TeamIdType, resolve = _.value.team),
+      Field("plan", UsagePlanIdType, resolve = _.value.plan),
+      Field("parentSubscriptionId", OptionType(ApiSubscriptionIdType), resolve = _.value.parentSubscriptionId)
+    )
+  )
+  val OtoroshiSyncSubscriptionErrorType = ObjectType(
+    "OtoroshiSyncSubscriptionError",
+    "OtoroshiSyncSubscriptionError description",
+    interfaces[Unit, OtoroshiSyncSubscriptionError](OtoroshiSyncNotificationActionType),
+    fields[Unit, OtoroshiSyncSubscriptionError](
+      Field("subscription", ApiSubscriptionType, resolve = _.value.subscription),
+      Field("message", StringType, resolve = _.value.message)
+    )
+  )
+  val OtoroshiSyncApiErrorType = ObjectType(
+    "OtoroshiSyncApiError",
+    "OtoroshiSyncApiError description",
+    interfaces[Unit, OtoroshiSyncApiError](OtoroshiSyncNotificationActionType),
+    fields[Unit, OtoroshiSyncApiError](
+      Field("api", ApiType, resolve = _.value.api),
+      Field("message", StringType, resolve = _.value.message)
+    )
+  )
+  val ApiKeyDeletionInformationType = deriveObjectType[Unit, ApiKeyDeletionInformation](
+    Interfaces(NotificationActionType)
+  )
+  val ApiKeyRotationInProgressType = deriveObjectType[Unit, ApiKeyRotationInProgress](
+    Interfaces(NotificationActionType)
+  )
+  val ApiKeyRotationEndedType = deriveObjectType[Unit, ApiKeyRotationEnded](
+    Interfaces(NotificationActionType)
+  )
+  val ApiKeyRefreshType = deriveObjectType[Unit, ApiKeyRefresh](
+    Interfaces(NotificationActionType)
+  )
+  val NewPostPublishedType = deriveObjectType[Unit, NewPostPublished](
+    Interfaces(NotificationActionType)
+  )
+  val NewIssueOpenType = deriveObjectType[Unit, NewIssueOpen](
+    Interfaces(NotificationActionType)
+  )
+  val NewCommentOnIssueType = deriveObjectType[Unit, NewCommentOnIssue](
+    Interfaces(NotificationActionType)
+  )
+
+  val NotificationInterfaceType: InterfaceType[Unit, NotificationType] = InterfaceType(
+    "NotificationType",
+    "NotificationType description",
+    () => fields[Unit, NotificationType](
+      Field("value", StringType, resolve = _.value.value)
+    )
+  )
+
+  val NotificationType = deriveObjectType[Unit, Notification](
+    ReplaceField("id", Field("id", NotificationIdType, resolve = _.value.id)),
+    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
+    ReplaceField("team", Field("team", OptionType(TeamIdType), resolve = _.value.team)),
+    ReplaceField("sender", Field("sender", UserType, resolve = _.value.sender)),
+    ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date)),
+    ReplaceField("notificationType", Field("notificationType", NotificationInterfaceType, resolve = _.value.notificationType)),
+    ReplaceField("status", Field("status", NotificationStatusType, resolve = _.value.status)),
+    ReplaceField("action", Field("action", NotificationActionType, resolve = _.value.action)),
+  )
+
+  val FiniteDurationType = ObjectType(
+    "FiniteDuration",
+    "FiniteDuration description",
+    fields[Unit, FiniteDuration](
+      Field("length", LongType, resolve = _.value.length),
+      Field("unit", TimeUnitType, resolve = _.value.unit),
+    )
+  )
+
+  val UserSessionType = deriveObjectType[Unit, UserSession](
+    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
+    ReplaceField("userId", Field("userId", UserIdType, resolve = _.value.userId)),
+    ReplaceField("sessionId", Field("sessionId", UserSessionIdType, resolve = _.value.sessionId)),
+    ReplaceField("impersonatorId", Field("impersonatorId", OptionType(UserIdType), resolve = _.value.impersonatorId)),
+    ReplaceField("impersonatorSessionId", Field("impersonatorSessionId", OptionType(UserSessionIdType), resolve = _.value.impersonatorSessionId)),
+    ReplaceField("created", Field("created", DateTimeType, resolve = _.value.created)),
+    ReplaceField("ttl", Field("ttl", FiniteDurationType, resolve = _.value.ttl)),
+    ReplaceField("expires", Field("expires", DateTimeType, resolve = _.value.expires))
+  )
+
+  val ApiKeyConsumptionUserSessionType = deriveObjectType[Unit, ApiKeyConsumption](
+    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
+    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
+    ReplaceField("team", Field("team", TeamIdType, resolve = _.value.team)),
+    ReplaceField("api", Field("api", ApiIdType, resolve = _.value.api)),
+    ReplaceField("plan", Field("plan", UsagePlanIdType, resolve = _.value.plan)),
+    ReplaceField("globalInformations", Field("globalInformations", ApiKeyGlobalConsumptionInformationsType, resolve = _.value.globalInformations)),
+    ReplaceField("quotas", Field("quotas", ApiKeyQuotasType, resolve = _.value.quotas)),
+    ReplaceField("billing", Field("billing", ApiKeyBillingType, resolve = _.value.billing)),
+    ReplaceField("from", Field("from", DateTimeType, resolve = _.value.from)),
+    ReplaceField("to", Field("to", DateTimeType, resolve = _.value.to))
+  )
+
+  val ApiKeyGlobalConsumptionInformationsType = deriveObjectType[Unit, ApiKeyGlobalConsumptionInformations]()
+  val ApiKeyQuotasType = deriveObjectType[Unit, ApiKeyQuotas]()
+  val ApiKeyBillingType = deriveObjectType[Unit, ApiKeyBilling]()
+
+  val PasswordResetType = deriveObjectType[Unit, PasswordReset](
+    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
+    ReplaceField("user", Field("user", UserIdType, resolve = _.value.user)),
+    ReplaceField("creationDate", Field("creationDate", DateTimeType, resolve = _.value.creationDate)),
+    ReplaceField("validUntil", Field("validUntil", DateTimeType, resolve = _.value.validUntil))
+  )
+  val AccountCreationType = deriveObjectType[Unit, AccountCreation](
+    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
+    ReplaceField("creationDate", Field("creationDate", DateTimeType, resolve = _.value.creationDate)),
+    ReplaceField("validUntil", Field("validUntil", DateTimeType, resolve = _.value.validUntil))
+  )
+  val TranslationnType = deriveObjectType[Unit, Translation](
+    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
+    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
+    ReplaceField("lastModificationAt", Field("lastModificationAt", OptionType(DateTimeType), resolve = _.value.lastModificationAt))
+  )
+  val EvolutionType = deriveObjectType[Unit, Evolution](
+    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
+    ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date))
+  )
+
+  val MessageIntefaceType: InterfaceType[Unit, MessageType] = InterfaceType(
+    "MessageType",
+    "MessageType description",
+    () => fields[Unit, MessageType](
+      Field("name", StringType, resolve = _.value.value.value)
+    ))
+
+  val MessageType = deriveObjectType[Unit, Message](
+    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
+    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
+    ReplaceField("messageType", Field("messageType", MessageIntefaceType, resolve = _.value.messageType)),
+    ReplaceField("participants", Field("participants", ListType(UserIdType), resolve = _.value.participants.toSeq)),
+    ReplaceField("readBy", Field("readBy", ListType(UserIdType), resolve = _.value.readBy.toSeq)),
+    ReplaceField("chat", Field("chat", UserIdType, resolve = _.value.chat)),
+    ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date)),
+    ReplaceField("sender", Field("sender", UserIdType, resolve = _.value.sender)),
+    ReplaceField("closed", Field("closed", OptionType(DateTimeType), resolve = _.value.closed)),
+  )
+
+
   val AuthProviderType: InterfaceType[Unit, AuthProvider] = InterfaceType(
     "AuthProvider",
     "Auth provider description",
     () => fields[Unit, AuthProvider](
       Field("name", StringType, Some("The name of auth provider"), resolve = _.value.name),
-      Field("asJson", JsonType, resolve = _.value.asJson)
-    )
+      Field("asJson", JsonType, resolve = _.value.asJson))
   )
 
   val ID: Argument[String] = Argument("id", StringType, description = "id of the character")
