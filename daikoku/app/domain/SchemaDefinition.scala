@@ -1,5 +1,6 @@
 package domain
 
+import domain.SchemaDefinition.UserType
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -14,7 +15,7 @@ import sangria.ast.{ObjectValue, StringValue}
 import sangria.macros.derive.{ReplaceField, _}
 import sangria.schema._
 import sangria.validation.ValueCoercionViolation
-import storage.DataStore
+import storage.{DataStore, Repo, TenantRepo, UserRepo}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
@@ -324,7 +325,7 @@ object SchemaDefinition {
   val CurrencyType = deriveObjectType[Unit, Currency]()
 
   val UsagePlanInterfaceType = InterfaceType(
-    "UsagePlan trait",
+    "UsagePlan_trait",
     "UsagePlan description",
     () => fields[Unit, UsagePlan](
       Field("id",           UsagePlanIdType, resolve = _.value.id),
@@ -471,7 +472,7 @@ object SchemaDefinition {
     ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
     ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt))
   )
-  val ApiIssue = deriveObjectType[Unit, ApiIssue](
+  val ApiIssueType = deriveObjectType[Unit, ApiIssue](
     ReplaceField("id", Field("id", ApiIssueIdType, resolve = _.value.id)),
     ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
     ReplaceField("tags", Field("tags", ListType(ApiIssueTagIdType), resolve = _.value.tags.toSeq)),
@@ -539,7 +540,7 @@ object SchemaDefinition {
     )
   )
 
-  val teamType = deriveObjectType[Unit, Team](
+  val TeamObjectType = deriveObjectType[Unit, Team](
     ReplaceField("id", Field("id", TeamIdType, resolve = _.value.id)),
     ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
     ReplaceField("type", Field("type", TeamInterfaceType, resolve = _.value.`type`)),
@@ -765,7 +766,7 @@ object SchemaDefinition {
     ReplaceField("expires", Field("expires", DateTimeType, resolve = _.value.expires))
   )
 
-  val ApiKeyConsumptionUserSessionType = deriveObjectType[Unit, ApiKeyConsumption](
+  val ApiKeyConsumptionType = deriveObjectType[Unit, ApiKeyConsumption](
     ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
     ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
     ReplaceField("team", Field("team", TeamIdType, resolve = _.value.team)),
@@ -793,7 +794,7 @@ object SchemaDefinition {
     ReplaceField("creationDate", Field("creationDate", DateTimeType, resolve = _.value.creationDate)),
     ReplaceField("validUntil", Field("validUntil", DateTimeType, resolve = _.value.validUntil))
   )
-  val TranslationnType = deriveObjectType[Unit, Translation](
+  val TranslationType = deriveObjectType[Unit, Translation](
     ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
     ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
     ReplaceField("lastModificationAt", Field("lastModificationAt", OptionType(DateTimeType), resolve = _.value.lastModificationAt))
@@ -831,19 +832,61 @@ object SchemaDefinition {
       Field("asJson", JsonType, resolve = _.value.asJson))
   )
 
-  val ID: Argument[String] = Argument("id", StringType, description = "id of the character")
+  val ID: Argument[String] = Argument("id", StringType, description = "id of element")
+  val TENANT: Argument[String] = Argument("tenant", StringType, description = "tenant")
 
   def getSchema(env: Env): Schema[DataStore, Unit] = {
     implicit val e = env.defaultExecutionContext
 
     val Query: ObjectType[DataStore, Unit] = ObjectType(
       "Query", fields[DataStore, Unit](
-        Field("user", OptionType(UserType),
-          arguments = ID :: Nil,
-          resolve = ctx => ctx.ctx.userRepo.findById(ctx arg ID)
-        ),
-        Field("users", ListType(UserType),
-          resolve = ctx => ctx.ctx.userRepo.findAll())
+        Field("user", OptionType(UserType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.userRepo.findById(ctx arg ID)),
+        Field("users", ListType(UserType), resolve = ctx => ctx.ctx.userRepo.findAll()),
+
+        Field("userSession", OptionType(UserSessionType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.userSessionRepo.findById(ctx arg ID)),
+        Field("userSessions", ListType(UserSessionType), resolve = ctx => ctx.ctx.userSessionRepo.findAll()),
+
+        Field("tenant", OptionType(TenantType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.tenantRepo.findById(ctx arg ID)),
+        Field("tenants", ListType(TenantType), resolve = ctx => ctx.ctx.tenantRepo.findAll()),
+
+        Field("passwordReset", OptionType(PasswordResetType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.passwordResetRepo.findById(ctx arg ID)),
+        Field("passwordResets", ListType(PasswordResetType), resolve = ctx => ctx.ctx.passwordResetRepo.findAll()),
+
+        Field("accountCreation", OptionType(AccountCreationType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.accountCreationRepo.findById(ctx arg ID)),
+        Field("accountCreations", ListType(AccountCreationType), resolve = ctx => ctx.ctx.accountCreationRepo.findAll()),
+
+        Field("teams", OptionType(TeamObjectType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.teamRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("teams", ListType(TeamObjectType), arguments = List(TENANT), resolve = ctx => ctx.ctx.teamRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("api", OptionType(ApiType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("apis", ListType(ApiType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("translation", OptionType(TranslationType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.translationRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("translations", ListType(TranslationType), arguments = List(TENANT), resolve = ctx => ctx.ctx.translationRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("message", OptionType(MessageType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.messageRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("messages", ListType(MessageType), arguments = List(TENANT), resolve = ctx => ctx.ctx.messageRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("apiSubscription", OptionType(ApiSubscriptionType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiSubscriptionRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("apiSubscriptions", ListType(ApiSubscriptionType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiSubscriptionRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("apiDocumentationPage", OptionType(ApiDocumentationPageType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiDocumentationPageRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("apiDocumentationPages", ListType(ApiDocumentationPageType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiDocumentationPageRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("notification", OptionType(NotificationType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.notificationRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("notifications", ListType(NotificationType), arguments = List(TENANT), resolve = ctx => ctx.ctx.notificationRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("consumption", OptionType(ApiKeyConsumptionType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.consumptionRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("consumptions", ListType(ApiKeyConsumptionType), arguments = List(TENANT), resolve = ctx => ctx.ctx.consumptionRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("apiPost", OptionType(ApiPostType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiPostRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("apiPosts", ListType(ApiPostType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiPostRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("apiIssue", OptionType(ApiIssueType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiIssueRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("apiIssues", ListType(ApiIssueType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiIssueRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
+
+        Field("evolution", OptionType(EvolutionType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.evolutionRepo.findById(ctx arg ID)),
+        Field("evolutions", ListType(EvolutionType), resolve = ctx => ctx.ctx.evolutionRepo.findAll())
       )
     )
 

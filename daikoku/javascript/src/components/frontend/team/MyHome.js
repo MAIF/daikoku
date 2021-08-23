@@ -28,7 +28,7 @@ function MyHomeComponent(props) {
 
     Services.graphQLSearch(`
         query {
-          apis {
+          apis(tenant: "default") {
             name
           }
         }
