@@ -7,8 +7,7 @@ import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsObject, Json}
 import sangria.execution.{ExceptionHandler, Executor, HandledException, MaxQueryDepthReachedError, QueryReducer}
-import storage.UserRepo
-
+import storage.{DataStore, Repo, UserRepo}
 import play.api.mvc._
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
@@ -53,13 +52,13 @@ class GraphQLController(DaikokuAction: DaikokuAction,
   private def executeQuery(query: String, variables: Option[JsObject], operation: Option[String]) =
     QueryParser.parse(query) match {
       case Success(queryAst) =>
-        Executor.execute(schema, queryAst, env.dataStore.userRepo,
+        Executor.execute(schema, queryAst, env.dataStore,
           operationName = operation,
           variables = variables getOrElse Json.obj(),
           exceptionHandler = exceptionHandler,
           queryReducers = List(
-            QueryReducer.rejectMaxDepth[UserRepo](15),
-            QueryReducer.rejectComplexQueries[UserRepo](4000, (_, _) => TooComplexQueryError)))
+            QueryReducer.rejectMaxDepth[DataStore](15),
+            QueryReducer.rejectComplexQueries[DataStore](4000, (_, _) => TooComplexQueryError)))
           .map(Ok(_))
           .recover {
             case error: QueryAnalysisError => BadRequest(error.resolveError)
