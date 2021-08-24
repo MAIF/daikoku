@@ -1231,7 +1231,7 @@ class MockController(DaikokuAction: DaikokuAction,
               team1Id,
               sender,
               DateTime.now().minusDays(3),
-              NotificationStatus.Pending,
+              NotificationStatus.Pending(),
               NotificationAction.ApiAccess(ApiId(notifApiId), TeamId(team2Id))
             )
           )

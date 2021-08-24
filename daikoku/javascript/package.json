@@ -18,6 +18,7 @@
     "cypress:start:backend": "cd .. && sbt  'run -Dhttp.port=9000 -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson'"
   },
   "dependencies": {
+    "@apollo/client": "^3.4.8",
     "@fortawesome/fontawesome-free": "5.15.4",
     "@xstate/react": "1.5.1",
     "antd": "4.16.12",
@@ -30,6 +31,7 @@
     "es6-shim": "0.35.6",
     "faker": "5.5.3",
     "get-value": "3.0.1",
+    "graphql": "^15.5.1",
     "highlight.js": "10.5.0",
     "jquery": "3.6.0",
     "js-md5": "0.7.3",

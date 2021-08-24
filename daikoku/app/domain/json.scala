@@ -2626,14 +2626,14 @@ object json {
     new Format[NotificationStatus] {
       override def reads(json: JsValue): JsResult[NotificationStatus] =
         (json \ "status").as[String] match {
-          case "Pending"  => JsSuccess(Pending)
+          case "Pending"  => JsSuccess(Pending())
           case "Accepted" => NotificationStatusAcceptedFormat.reads(json)
           case "Rejected" => NotificationStatusRejectedFormat.reads(json)
           case str        => JsError(s"Bad notification status value: $str")
         }
 
       override def writes(o: NotificationStatus): JsValue = o match {
-        case Pending => Json.obj("status" -> "Pending")
+        case status: Pending => Json.obj("status" -> "Pending")
         case status: Accepted =>
           NotificationStatusAcceptedFormat.writes(status).as[JsObject] ++ Json
             .obj("status" -> "Accepted")

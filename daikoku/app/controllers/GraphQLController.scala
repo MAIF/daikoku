@@ -31,7 +31,11 @@ class GraphQLController(DaikokuAction: DaikokuAction,
 
   val logger = Logger("GraphQLController")
 
-  def search(query: String, variables: Option[String], operation: Option[String]) = DaikokuAction.async { ctx =>
+  def search() = DaikokuAction.async(parse.json) { ctx =>
+  // query: String, variables: Option[String], operation: Option[String]
+    val query = (ctx.request.body \ "query").as[String]
+    val variables = (ctx.request.body \ "variables").asOpt[String]
+    val operation = (ctx.request.body \ "operation").asOpt[String]
     executeQuery(query, variables map parseVariables, operation)
   }
 

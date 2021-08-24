@@ -468,7 +468,7 @@ POST    /api/state/unlock                               fr.maif.otoroshi.daikoku
 GET    /api/state/lock                                  fr.maif.otoroshi.daikoku.ctrls.StateController.isMaintenanceMode()
 
 ### NoDocs ###
-GET     /api/search                                     fr.maif.otoroshi.daikoku.ctrls.GraphQLController.search(query: String, variables: Option[String], operation: Option[String])
+POST     /api/search                                    fr.maif.otoroshi.daikoku.ctrls.GraphQLController.search()
 ### NoDocs ###
 GET     /api/render-schema                              fr.maif.otoroshi.daikoku.ctrls.GraphQLController.renderSchema()
 

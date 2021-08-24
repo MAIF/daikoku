@@ -85,7 +85,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
         sender = jobUser,
         date = DateTime.now(),
         notificationType = NotificationType.AcceptOnly,
-        status = NotificationStatus.Pending,
+        status = NotificationStatus.Pending(),
         action = err.asInstanceOf[NotificationAction]
       ))
     env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).andThen {

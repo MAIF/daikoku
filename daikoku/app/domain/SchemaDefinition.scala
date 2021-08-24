@@ -325,9 +325,9 @@ object SchemaDefinition {
   val CurrencyType = deriveObjectType[Unit, Currency]()
 
   val UsagePlanInterfaceType = InterfaceType(
-    "UsagePlan_trait",
-    "UsagePlan description",
-    () => fields[Unit, UsagePlan](
+    name = "UsagePlan",
+    description = "Usage Plan description",
+    fields = fields[Unit, UsagePlan](
       Field("id",           UsagePlanIdType, resolve = _.value.id),
       Field("costPerMonth", BigDecimalType, resolve = _.value.costPerMonth),
       Field("maxRequestPerSecond", OptionType(LongType), resolve = _.value.maxRequestPerSecond),
@@ -335,13 +335,17 @@ object SchemaDefinition {
       Field("maxRequestPerMonth", OptionType(LongType), resolve = _.value.maxRequestPerMonth),
       Field("allowMultipleKeys", OptionType(BooleanType), resolve = _.value.allowMultipleKeys),
       Field("autoRotation", OptionType(BooleanType), resolve = _.value.autoRotation),
+      Field("currency", CurrencyType, resolve = _.value.currency),
       Field("customName", OptionType(StringType), resolve = _.value.customName),
       Field("customDescription", OptionType(StringType), resolve = _.value.customDescription),
       Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget),
       Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod),
+      Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration),
       Field("typeName", StringType, resolve = _.value.typeName),
       Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility),
       Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams),
+      Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess),
+      Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess),
       Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity)
     )
   )
@@ -582,7 +586,10 @@ object SchemaDefinition {
     ReplaceField("documentation", Field("documentation", ApiDocumentationType, resolve = _.value.documentation)),
     ReplaceField("swagger", Field("swagger", OptionType(SwaggerAccessType), resolve = _.value.swagger)),
     ReplaceField("visibility", Field("visibility", ApiVisibilityType, resolve = _.value.visibility)),
-    ReplaceField("possibleUsagePlans", Field("possibleUsagePlans", ListType(UsagePlanInterfaceType), resolve = _.value.possibleUsagePlans)),
+    ReplaceField("possibleUsagePlans",
+      Field("possibleUsagePlans", ListType(UsagePlanInterfaceType), resolve = _.value.possibleUsagePlans,
+        possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
+          PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType))),
     ReplaceField("defaultUsagePlan", Field("defaultUsagePlan", UsagePlanIdType, resolve = _.value.defaultUsagePlan)),
     ReplaceField("authorizedTeams", Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams)),
     ReplaceField("posts", Field("posts", ListType(ApiPostIdType), resolve = _.value.posts)),
@@ -620,7 +627,9 @@ object SchemaDefinition {
   val NotificationStatusType: InterfaceType[Unit, NotificationStatus] = InterfaceType(
     "NotificationStatus",
     "NotificationStatus description",
-    () => fields[Unit, NotificationStatus]()
+    () => fields[Unit, NotificationStatus](
+      Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
+    )
   )
 
   val NotificationStatusAcceptedType = deriveObjectType[Unit, NotificationStatus.Accepted](
@@ -637,10 +646,19 @@ object SchemaDefinition {
     )
   )
 
+  val NotificationStatusPendingType = deriveObjectType[Unit, NotificationStatus.Pending](
+    Interfaces(NotificationStatusType),
+    AddFields(
+      Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
+    )
+  )
+
   val NotificationActionType: InterfaceType[Unit, NotificationAction] = InterfaceType(
     "NotificationAction",
     "NotificationAction description",
-    () => fields[Unit, NotificationAction]()
+    () => fields[Unit, NotificationAction](
+      Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
+    )
   )
   val OtoroshiSyncNotificationActionType: InterfaceType[Unit, OtoroshiSyncNotificationAction] = InterfaceType(
     "OtoroshiSyncNotificationAction",
@@ -742,8 +760,10 @@ object SchemaDefinition {
     ReplaceField("sender", Field("sender", UserType, resolve = _.value.sender)),
     ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date)),
     ReplaceField("notificationType", Field("notificationType", NotificationInterfaceType, resolve = _.value.notificationType)),
-    ReplaceField("status", Field("status", NotificationStatusType, resolve = _.value.status)),
-    ReplaceField("action", Field("action", NotificationActionType, resolve = _.value.action)),
+    ReplaceField("status", Field("status", NotificationStatusType, resolve = _.value.status, possibleTypes = List(NotificationStatusAcceptedType, NotificationStatusRejectedType, NotificationStatusPendingType))),
+    ReplaceField("action", Field("action", NotificationActionType, resolve = _.value.action, possibleTypes = List(ApiAccessType, TeamAccessType, TeamInvitationType, ApiSubscriptionDemandType, OtoroshiSyncSubscriptionErrorType, OtoroshiSyncApiErrorType,
+      ApiKeyDeletionInformationType, ApiKeyRotationInProgressType, ApiKeyRotationEndedType, ApiKeyRefreshType, NewPostPublishedType, NewIssueOpenType, NewCommentOnIssueType
+    ))),
   )
 
   val FiniteDurationType = ObjectType(
@@ -837,7 +857,6 @@ object SchemaDefinition {
 
   def getSchema(env: Env): Schema[DataStore, Unit] = {
     implicit val e = env.defaultExecutionContext
-
     val Query: ObjectType[DataStore, Unit] = ObjectType(
       "Query", fields[DataStore, Unit](
         Field("user", OptionType(UserType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.userRepo.findById(ctx arg ID)),
@@ -855,7 +874,7 @@ object SchemaDefinition {
         Field("accountCreation", OptionType(AccountCreationType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.accountCreationRepo.findById(ctx arg ID)),
         Field("accountCreations", ListType(AccountCreationType), resolve = ctx => ctx.ctx.accountCreationRepo.findAll()),
 
-        Field("teams", OptionType(TeamObjectType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.teamRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
+        Field("team", OptionType(TeamObjectType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.teamRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
         Field("teams", ListType(TeamObjectType), arguments = List(TENANT), resolve = ctx => ctx.ctx.teamRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
 
         Field("api", OptionType(ApiType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),

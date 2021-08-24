@@ -24,6 +24,19 @@ import {
 import { customizeFetch } from './services/customize';
 import { I18nProvider } from './locales/i18n-context';
 
+import {
+  ApolloClient,
+  InMemoryCache,
+  ApolloProvider,
+  useQuery,
+  gql
+} from "@apollo/client";
+
+const client = new ApolloClient({
+  uri: '/api/search',
+  cache: new InMemoryCache()
+});
+
 window.$ = jQuery;
 window.jQuery = jQuery;
 
@@ -49,15 +62,17 @@ export function init(
 
   ReactDOM.render(
     <Provider store={storeInst}>
-      <I18nProvider tenant={tenant}>
-        <DaikokuApp
-          user={user}
-          tenant={tenant}
-          impersonator={impersonator}
-          loginProvider={tenant.authProvider}
-          loginAction={loginCallback}
-        />
-      </I18nProvider>
+      <ApolloProvider client={client}>
+        <I18nProvider tenant={tenant}>
+          <DaikokuApp
+            user={user}
+            tenant={tenant}
+            impersonator={impersonator}
+            loginProvider={tenant.authProvider}
+            loginAction={loginCallback}
+          />
+        </I18nProvider>
+      </ApolloProvider>
     </Provider>,
     document.getElementById('app')
   );

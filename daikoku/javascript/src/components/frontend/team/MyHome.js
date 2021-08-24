@@ -8,6 +8,7 @@ import { ApiList } from '../../frontend';
 import { updateUser } from '../../../core';
 import { api as API, CanIDoAction, manage } from '../../utils';
 import { converter } from '../../../services/showdown';
+import { gql, useQuery } from '@apollo/client';
 
 function MyHomeComponent(props) {
   const [state, setState] = useState({
@@ -18,6 +19,16 @@ function MyHomeComponent(props) {
 
   const { translateMethod } = useContext(I18nContext);
 
+  console.log(useQuery(gql`
+  query GetApis {
+    notifications(tenant: "default") {
+      status {
+        __typename
+      }
+    }
+  }
+  `))
+
   const fetchData = () => {
     setState({ ...state, loading: true })
     Promise.all([Services.myVisibleApis(), Services.teams(), Services.myTeams()]).then(
@@ -25,16 +36,6 @@ function MyHomeComponent(props) {
         setState({ ...state, apis, teams, myTeams, loading: false });
       }
     );
-
-    Services.graphQLSearch(`
-        query {
-          apis(tenant: "default") {
-            name
-          }
-        }
-      `)
-      .then(res => console.log(res))
-
   };
 
   useEffect(() => {
