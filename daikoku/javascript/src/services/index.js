@@ -1,3 +1,5 @@
+import { gql } from "@apollo/client";
+
 const HEADERS = {
   Accept: 'application/json',
   'Content-Type': 'application/json',
@@ -15,7 +17,6 @@ export const oneOfMyTeam = (id) => customFetch(`/api/me/teams/${id}`);
 export const getVisibleApiWithId = id => customFetch(`/api/me/visible-apis/${id}`)
 export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/${id}/${version}`);
 export const getTeamVisibleApi = (teamId, apiId, version) => customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
-export const myTeams = () => customFetch('/api/me/teams');
 export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 export const myVisibleApis = () => customFetch('/api/me/visible-apis');
 export const myVisibleApisOfTeam = (currentTeam) =>
@@ -879,3 +880,16 @@ export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
 export const graphQLSearch = query => customFetch(`/api/search?query=${query.replace(/\s/g, "")}`)
 
 export const schema = () => fetch(`/api/render-schema`).then(r => r.text())
+
+export const graphql = {
+  myTeams: gql`
+  query MyTeams {
+    myTeams {
+      name
+      _humanReadableId
+      _id
+      type
+    }
+  }
+  `
+}

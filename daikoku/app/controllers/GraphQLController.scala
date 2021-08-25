@@ -1,11 +1,11 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import domain.SchemaDefinition
-import fr.maif.otoroshi.daikoku.actions.DaikokuAction
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.Logger
 import play.api.i18n.I18nSupport
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import sangria.execution.{ExceptionHandler, Executor, HandledException, MaxQueryDepthReachedError, QueryReducer}
 import storage.{DataStore, Repo, UserRepo}
 import play.api.mvc._
@@ -36,7 +36,7 @@ class GraphQLController(DaikokuAction: DaikokuAction,
     val query = (ctx.request.body \ "query").as[String]
     val variables = (ctx.request.body \ "variables").asOpt[String]
     val operation = (ctx.request.body \ "operation").asOpt[String]
-    executeQuery(query, variables map parseVariables, operation)
+    executeQuery(ctx, query, variables map parseVariables, operation)
   }
 
   def renderSchema = DaikokuAction {
@@ -53,16 +53,16 @@ class GraphQLController(DaikokuAction: DaikokuAction,
     case (_, error @ MaxQueryDepthReachedError(_)) => HandledException(error.getMessage)
   }
 
-  private def executeQuery(query: String, variables: Option[JsObject], operation: Option[String]) =
+  private def executeQuery(ctx: DaikokuActionContext[JsValue], query: String, variables: Option[JsObject], operation: Option[String]) =
     QueryParser.parse(query) match {
       case Success(queryAst) =>
-        Executor.execute(schema, queryAst, env.dataStore,
+        Executor.execute(schema, queryAst, (env.dataStore, ctx),
           operationName = operation,
           variables = variables getOrElse Json.obj(),
           exceptionHandler = exceptionHandler,
           queryReducers = List(
-            QueryReducer.rejectMaxDepth[DataStore](15),
-            QueryReducer.rejectComplexQueries[DataStore](4000, (_, _) => TooComplexQueryError)))
+            QueryReducer.rejectMaxDepth[(DataStore,DaikokuActionContext[JsValue])](15),
+            QueryReducer.rejectComplexQueries[(DataStore,DaikokuActionContext[JsValue])](4000, (_, _) => TooComplexQueryError)))
           .map(Ok(_))
           .recover {
             case error: QueryAnalysisError => BadRequest(error.resolveError)

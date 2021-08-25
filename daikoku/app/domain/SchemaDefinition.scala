@@ -1,23 +1,26 @@
 package domain
 
-import domain.SchemaDefinition.UserType
-import fr.maif.otoroshi.daikoku.audit.KafkaConfig
-import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
+import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
+import fr.maif.otoroshi.daikoku.audit._
+import fr.maif.otoroshi.daikoku.audit.config._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.{TenantFormat, TenantIdFormat, UserFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
+import io.vertx.core.json.JsonObject
 import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.ISODateTimeFormat
 import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
-import sangria.macros.derive.{ReplaceField, _}
+import sangria.macros.derive._
 import sangria.schema._
 import sangria.validation.ValueCoercionViolation
-import storage.{DataStore, Repo, TenantRepo, UserRepo}
+import storage._
 
 import java.util.concurrent.TimeUnit
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
@@ -102,7 +105,7 @@ object SchemaDefinition {
       case _ => Left(MapCoercionViolation)
     })
 
-  val OtoroshiServiceIdType   = deriveObjectType[Unit, OtoroshiServiceId]()
+  /*val OtoroshiServiceIdType   = deriveObjectType[Unit, OtoroshiServiceId]()
   val OtoroshiSettingsIdType  = deriveObjectType[Unit, OtoroshiSettingsId]()
   val UsagePlanIdType         = deriveObjectType[Unit, UsagePlanId]()
   val UserIdType          = deriveObjectType[Unit, UserId]()
@@ -122,7 +125,7 @@ object SchemaDefinition {
   val ChatIdType                    = deriveObjectType[Unit, ChatId]()
   val ApiPostIdType                 = deriveObjectType[Unit, ApiPostId]()
   val ApiIssueIdType                = deriveObjectType[Unit, ApiIssueId]()
-  val ApiIssueTagIdType             = deriveObjectType[Unit, ApiIssueTagId]()
+  val ApiIssueTagIdType             = deriveObjectType[Unit, ApiIssueTagId]()*/
 
   val DaikokuStyleType = deriveObjectType[Unit, DaikokuStyle]()
 
@@ -151,7 +154,7 @@ object SchemaDefinition {
 
   val OtoroshiSettingsType = deriveObjectType[Unit, OtoroshiSettings](
     ReplaceField("id",
-      Field("id", OtoroshiSettingsIdType, resolve = _.value.id)
+      Field("id", StringType /*OtoroshiSettingsIdType*/, resolve = _.value.id.value)
     )
   )
   val MailerSettingsType: InterfaceType[Unit, MailerSettings] = InterfaceType(
@@ -171,7 +174,7 @@ object SchemaDefinition {
   )
   val TenantType = deriveObjectType[Unit, Tenant](
     ReplaceField("id",
-      Field("id", TenantIdType, resolve = _.value.id)
+      Field("id", StringType /*TenantIdType*/, resolve = _.value.id.value)
     ),
     ReplaceField("style",
       Field("style", OptionType(DaikokuStyleType), resolve = _.value.style)
@@ -189,10 +192,10 @@ object SchemaDefinition {
       Field("authProvider", AuthProviderType, resolve = _.value.authProvider)
     ),
     ReplaceField("adminApi",
-      Field("adminApi", ApiIdType, resolve = _.value.adminApi)
+      Field("adminApi", StringType /*ApiIdType*/, resolve = _.value.adminApi.value)
     ),
     ReplaceField("adminSubscriptions",
-      Field("adminSubscriptions", ListType(ApiSubscriptionIdType), resolve = _.value.adminSubscriptions)
+      Field("adminSubscriptions", ListType(StringType /*ApiSubscriptionIdType*/), resolve = _.value.adminSubscriptions.map(_.value))
     ),
     ReplaceField("tenantMode",
       Field("tenantMode", OptionType(TenantModeType), resolve = _.value.tenantMode)
@@ -240,16 +243,16 @@ object SchemaDefinition {
 
   val AuthorizedEntitiesType = deriveObjectType[Unit, AuthorizedEntities](
     ReplaceField("services",
-      Field("services", ListType(OtoroshiServiceIdType), resolve = _.value.services.toSeq)
+      Field("services", ListType(StringType /*OtoroshiServiceIdType*/), resolve = _.value.services.toSeq.map(_.value))
     ),
     ReplaceField("groups",
-      Field("groups", ListType(OtoroshiServiceGroupIdType), resolve = _.value.groups.toSeq)
+      Field("groups", ListType(StringType /*OtoroshiServiceGroupIdType*/), resolve = _.value.groups.toSeq.map(_.value))
     )
   )
 
   val OtoroshiTargetType = deriveObjectType[Unit, OtoroshiTarget](
     ReplaceField("otoroshiSettings",
-      Field("otoroshiSettings", OtoroshiSettingsIdType, resolve = _.value.otoroshiSettings)
+      Field("otoroshiSettings", StringType /*OtoroshiSettingsIdType*/, resolve = _.value.otoroshiSettings.value)
     ),
     ReplaceField("authorizedEntities",
       Field("authorizedEntities", OptionType(AuthorizedEntitiesType), resolve = _.value.authorizedEntities)
@@ -261,10 +264,10 @@ object SchemaDefinition {
 
   val OtoroshiServiceType = deriveObjectType[Unit, OtoroshiService](
     ReplaceField("otoroshiSettings",
-      Field("otoroshiSettings", OtoroshiSettingsIdType, resolve = _.value.otoroshiSettings)
+      Field("otoroshiSettings", StringType /*OtoroshiSettingsIdType*/, resolve = _.value.otoroshiSettings.value)
     ),
     ReplaceField("service",
-      Field("service", OtoroshiServiceIdType, resolve = _.value.service)
+      Field("service", StringType /*OtoroshiServiceIdType*/, resolve = _.value.service.value)
     )
   )
 
@@ -282,13 +285,13 @@ object SchemaDefinition {
     )
   )
 
-  val TeamInterfaceType = InterfaceType(
+  /*val TeamInterfaceType = InterfaceType(
     "TeamType",
     "TeamType description",
     () => fields[Unit, TeamType](
       Field("name", StringType, resolve = _.value.name)
     )
-  )
+  )*/
 
   val ApiVisibilityType = InterfaceType(
     "ApiVisibility",
@@ -328,7 +331,7 @@ object SchemaDefinition {
     name = "UsagePlan",
     description = "Usage Plan description",
     fields = fields[Unit, UsagePlan](
-      Field("id",           UsagePlanIdType, resolve = _.value.id),
+      Field("id",           StringType /*UsagePlanIdType*/, resolve = _.value.id.value),
       Field("costPerMonth", BigDecimalType, resolve = _.value.costPerMonth),
       Field("maxRequestPerSecond", OptionType(LongType), resolve = _.value.maxRequestPerSecond),
       Field("maxRequestPerDay", OptionType(LongType), resolve = _.value.maxRequestPerDay),
@@ -343,7 +346,7 @@ object SchemaDefinition {
       Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration),
       Field("typeName", StringType, resolve = _.value.typeName),
       Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility),
-      Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams),
+      Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)),
       Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess),
       Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess),
       Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity)
@@ -353,20 +356,20 @@ object SchemaDefinition {
   val AdminUsagePlanType = deriveObjectType[Unit, UsagePlan.Admin](
     Interfaces(UsagePlanInterfaceType),
     ReplaceField("id",
-      Field("id", UsagePlanIdType, resolve = _.value.id)
+      Field("id",StringType /*UsagePlanIdType*/, resolve = _.value.id.value)
     ),
     ReplaceField("otoroshiTarget",
       Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)
     ),
     ReplaceField("authorizedTeams",
-      Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams)
+      Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value))
     )
   )
 
   val FreeWithoutQuotasUsagePlanType = deriveObjectType[Unit, UsagePlan.FreeWithoutQuotas](
     Interfaces(UsagePlanInterfaceType),
     ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
-    ReplaceField("id", Field("id", UsagePlanIdType, resolve = _.value.id)),
+    ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
     ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
     ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
     ReplaceField("integrationProcess", Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess)),
@@ -375,13 +378,13 @@ object SchemaDefinition {
     ReplaceField("visibility",
       Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
     ReplaceField("authorizedTeams",
-      Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams))
+      Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
   )
 
   val FreeWithQuotasUsagePlanType = deriveObjectType[Unit, UsagePlan.FreeWithQuotas](
     Interfaces(UsagePlanInterfaceType),
     ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
-    ReplaceField("id", Field("id", UsagePlanIdType, resolve = _.value.id)),
+    ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
     ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
     ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
     ReplaceField("integrationProcess", Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess)),
@@ -390,13 +393,13 @@ object SchemaDefinition {
     ReplaceField("visibility",
       Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
     ReplaceField("authorizedTeams",
-      Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams))
+      Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
   )
 
   val QuotasWithLimitsType = deriveObjectType[Unit, UsagePlan.QuotasWithLimits](
     Interfaces(UsagePlanInterfaceType),
     ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
-    ReplaceField("id", Field("id", UsagePlanIdType, resolve = _.value.id)),
+    ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
     ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
     ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
     ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
@@ -406,13 +409,13 @@ object SchemaDefinition {
     ReplaceField("visibility",
       Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
     ReplaceField("authorizedTeams",
-      Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams))
+      Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
   )
 
   val QuotasWithoutLimitsType = deriveObjectType[Unit, UsagePlan.QuotasWithoutLimits](
     Interfaces(UsagePlanInterfaceType),
     ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
-    ReplaceField("id", Field("id", UsagePlanIdType, resolve = _.value.id)),
+    ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
     ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
     ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
     ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
@@ -422,13 +425,13 @@ object SchemaDefinition {
     ReplaceField("visibility",
       Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
     ReplaceField("authorizedTeams",
-      Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams))
+      Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
   )
 
   val PayPerUseType = deriveObjectType[Unit, UsagePlan.PayPerUse](
     Interfaces(UsagePlanInterfaceType),
     ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
-    ReplaceField("id", Field("id", UsagePlanIdType, resolve = _.value.id)),
+    ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
     ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
     ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
     ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
@@ -438,7 +441,7 @@ object SchemaDefinition {
     ReplaceField("visibility",
       Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
     ReplaceField("authorizedTeams",
-      Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams))
+      Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
   )
 
   val OtoroshiApiKeyType = deriveObjectType[Unit, OtoroshiApiKey]()
@@ -450,41 +453,50 @@ object SchemaDefinition {
     "ApiDocumentation",
     "ApiDocumentation description",
     fields[Unit, ApiDocumentation](
-      Field("id", ApiDocumentationIdType, resolve = _.value.id),
-      Field("tenant", TenantIdType, resolve = _.value.tenant),
-      Field("pages", ListType(ApiDocumentationPageIdType), resolve = _.value.pages),
+      Field("id", StringType /*ApiDocumentationIdType*/, resolve = _.value.id.value),
+      Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value),
+      Field("pages", ListType(StringType /*ApiDocumentationPageIdType*/), resolve = _.value.pages.map(_.value)),
       Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt)
     )
   )
   val ApiDocumentationPageType = deriveObjectType[Unit, ApiDocumentationPage](
-    ReplaceField("id", Field("id", ApiDocumentationPageIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
+    ReplaceField("id", Field("_id", StringType /*ApiDocumentationPageIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
     ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt)),
     ReplaceField("remoteContentHeaders", Field("remoteContentHeaders", MapType, resolve = _.value.remoteContentHeaders)),
+    AddFields(
+      Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
+    )
   )
   val ApiPostType = deriveObjectType[Unit, ApiPost](
-    ReplaceField("id", Field("id", ApiPostIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
+    ReplaceField("id", Field("_id", StringType /*ApiPostIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
     ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt)),
+    AddFields(
+      Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
+    )
   )
   val TwoFactorAuthenticationType = deriveObjectType[Unit, TwoFactorAuthentication]()
   val ApiIssueTagType = deriveObjectType[Unit, ApiIssueTag](
-    ReplaceField("id", Field("id", ApiIssueTagIdType, resolve = _.value.id))
+    ReplaceField("id", Field("_id", StringType /*ApiIssueTagIdType*/, resolve = _.value.id.value))
   )
   val ApiIssueCommentType = deriveObjectType[Unit, ApiIssueComment](
-    ReplaceField("by", Field("by", UserIdType, resolve = _.value.by)),
+    ReplaceField("by", Field("by", StringType /*UserIdType*/, resolve = _.value.by.value)),
     ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
     ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt))
   )
   val ApiIssueType = deriveObjectType[Unit, ApiIssue](
-    ReplaceField("id", Field("id", ApiIssueIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
-    ReplaceField("tags", Field("tags", ListType(ApiIssueTagIdType), resolve = _.value.tags.toSeq)),
+    ReplaceField("id", Field("_id", StringType /*ApiIssueIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
+    ReplaceField("tags", Field("tags", ListType(StringType /*ApiIssueTagIdType*/), resolve = _.value.tags.toSeq.map(_.value))),
     ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
     ReplaceField("closedAt", Field("closedAt", OptionType(DateTimeType), resolve = _.value.closedAt)),
-    ReplaceField("by", Field("by", UserIdType, resolve = _.value.by)),
+    ReplaceField("by", Field("by", StringType /*UserIdType*/, resolve = _.value.by.value)),
     ReplaceField("comments", Field("comments", ListType(ApiIssueCommentType), resolve = _.value.comments)),
-    ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt))
+    ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt)),
+    AddFields(
+      Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
+    )
   )
   val UserInvitationType = deriveObjectType[Unit, UserInvitation](
     ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
@@ -494,28 +506,25 @@ object SchemaDefinition {
       ObjectTypeName("User"),
       ObjectTypeDescription("A user of daikoku"),
       ReplaceField("id",
-        Field("id", UserIdType, resolve = _.value.id)),
+        Field("id", StringType /*UserIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenants",
-        Field("tenants", ListType(TenantIdType), resolve = ctx => ctx.value.tenants.toSeq)),
+        Field("tenants", ListType(StringType /*TenantIdType*/), resolve = ctx => ctx.value.tenants.toSeq.map(_.value))),
       ReplaceField("origins",
         Field("origins", ListType(AuthProviderType), resolve = _.value.origins.toSeq)),
       ReplaceField("lastTenant",
-        Field("lastTenant", OptionType(TenantIdType), resolve = _.value.lastTenant)
-      ),
+        Field("lastTenant", OptionType(StringType /*TenantIdType*/), resolve = _.value.lastTenant.map(_.value))),
       ReplaceField("hardwareKeyRegistrations",
-        Field("hardwareKeyRegistrations", ListType(JsonType), resolve = _.value.hardwareKeyRegistrations)
-      ),
+        Field("hardwareKeyRegistrations", ListType(JsonType), resolve = _.value.hardwareKeyRegistrations)),
       ReplaceField("starredApis",
-        Field("starredApis", ListType(ApiIdType), resolve = _.value.starredApis.toSeq)
-      ),
+        Field("starredApis", ListType(StringType /*ApiIdType*/), resolve = _.value.starredApis.toSeq.map(_.value))),
       ReplaceField("twoFactorAuthentication",
-        Field("twoFactorAuthentication", OptionType(TwoFactorAuthenticationType), resolve = _.value.twoFactorAuthentication)
-      ),
+        Field("twoFactorAuthentication", OptionType(TwoFactorAuthenticationType), resolve = _.value.twoFactorAuthentication)),
       ReplaceField("invitation",
-        Field("invitation", OptionType(UserInvitationType), resolve = _.value.invitation)
-      ),
+        Field("invitation", OptionType(UserInvitationType), resolve = _.value.invitation)),
       ReplaceField("metadata",
-        Field("metadata", MapType, resolve = _.value.metadata)
+        Field("metadata", MapType, resolve = _.value.metadata)),
+      AddFields(
+        Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
       )
     )
 
@@ -531,7 +540,7 @@ object SchemaDefinition {
     "UserWithPermission",
     "UserWithPermission description",
     fields[Unit, UserWithPermission](
-      Field("userId", UserIdType, resolve = _.value.userId),
+      Field("userId", StringType /*UserIdType*/, resolve = _.value.userId.value),
       Field("teamPermission", TeamPermissionType, resolve = _.value.teamPermission)
     )
   )
@@ -545,14 +554,17 @@ object SchemaDefinition {
   )
 
   val TeamObjectType = deriveObjectType[Unit, Team](
-    ReplaceField("id", Field("id", TeamIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
-    ReplaceField("type", Field("type", TeamInterfaceType, resolve = _.value.`type`)),
+    ReplaceField("id", Field("_id", StringType /*TeamIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
     ReplaceField("users", Field("users", ListType(UserWithPermissionType), resolve = _.value.users.toSeq)),
-    ReplaceField("subscriptions", Field("subscriptions", ListType(ApiSubscriptionIdType), resolve = _.value.subscriptions)),
-    ReplaceField("authorizedOtoroshiGroups", Field("authorizedOtoroshiGroups", ListType(OtoroshiGroupType), resolve = _.value.authorizedOtoroshiGroups.toSeq)),
+    ReplaceField("subscriptions", Field("subscriptions", ListType(StringType /*ApiSubscriptionIdType*/), resolve = _.value.subscriptions.map(_.value))),
+    ReplaceField("authorizedOtoroshiGroups", Field("authorizedOtoroshiGroups", ListType(StringType /*OtoroshiGroupType*/), resolve = _.value.authorizedOtoroshiGroups.toSeq.map(_.value))),
     ReplaceField("apiKeyVisibility", Field("apiKeyVisibility", OptionType(TeamApiKeyVisibilityType), resolve = _.value.apiKeyVisibility)),
     ReplaceField("metadata", Field("metadata", MapType, resolve = _.value.metadata)),
+    ReplaceField("type", Field("type", StringType, resolve = _.value.`type`.name)),
+    AddFields(
+      Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
+    )
   )
 
   val TestingAuthType = InterfaceType(
@@ -564,9 +576,9 @@ object SchemaDefinition {
   )
 
   val TestingConfigType = deriveObjectType[Unit, TestingConfig](
-    ReplaceField("otoroshiSettings", Field("otoroshiSettings", OtoroshiSettingsIdType, resolve = _.value.otoroshiSettings)),
-    ReplaceField("serviceGroup", Field("serviceGroup", OtoroshiServiceGroupIdType, resolve = _.value.serviceGroup)),
-    ReplaceField("api", Field("api", ApiIdType, resolve = _.value.api)),
+    ReplaceField("otoroshiSettings", Field("otoroshiSettings", StringType /*OtoroshiSettingsIdType*/, resolve = _.value.otoroshiSettings.value)),
+    ReplaceField("serviceGroup", Field("serviceGroup", StringType /*OtoroshiServiceGroupIdType*/, resolve = _.value.serviceGroup.value)),
+    ReplaceField("api", Field("api", StringType /*ApiIdType*/, resolve = _.value.api.value)),
     ReplaceField("customMetadata", Field("customMetadata", OptionType(JsonType), resolve = _.value.customMetadata))
   )
 
@@ -576,11 +588,11 @@ object SchemaDefinition {
   )
 
   val ApiType = deriveObjectType[Unit, Api](
-    ReplaceField("id", Field("id", ApiIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
-    ReplaceField("team", Field("team", TeamIdType, resolve = _.value.team)),
-    ReplaceField("currentVersion", Field("currentVersion", VersionType, resolve = _.value.currentVersion)),
-    ReplaceField("supportedVersions", Field("supportedVersions", ListType(VersionType), resolve = _.value.supportedVersions.toSeq)),
+    ReplaceField("id", Field("_id", StringType /*ApiIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
+    ReplaceField("team", Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value)),
+    ReplaceField("currentVersion", Field("currentVersion", StringType /*VersionType*/, resolve = _.value.currentVersion.value)),
+    ReplaceField("supportedVersions", Field("supportedVersions", ListType(StringType /*VersionType*/), resolve = _.value.supportedVersions.toSeq.map(_.value))),
     ReplaceField("lastUpdate", Field("lastUpdate", DateTimeType, resolve = _.value.lastUpdate)),
     ReplaceField("testing", Field("testing", TestingType, resolve = _.value.testing)),
     ReplaceField("documentation", Field("documentation", ApiDocumentationType, resolve = _.value.documentation)),
@@ -590,30 +602,33 @@ object SchemaDefinition {
       Field("possibleUsagePlans", ListType(UsagePlanInterfaceType), resolve = _.value.possibleUsagePlans,
         possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
           PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType))),
-    ReplaceField("defaultUsagePlan", Field("defaultUsagePlan", UsagePlanIdType, resolve = _.value.defaultUsagePlan)),
-    ReplaceField("authorizedTeams", Field("authorizedTeams", ListType(TeamIdType), resolve = _.value.authorizedTeams)),
-    ReplaceField("posts", Field("posts", ListType(ApiPostIdType), resolve = _.value.posts)),
-    ReplaceField("issues", Field("issues", ListType(ApiIssueIdType), resolve = _.value.issues)),
+    ReplaceField("defaultUsagePlan", Field("defaultUsagePlan", StringType /*UsagePlanIdType*/, resolve = _.value.defaultUsagePlan.value)),
+    ReplaceField("authorizedTeams", Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value))),
+    ReplaceField("posts", Field("posts", ListType(StringType /*ApiPostIdType*/), resolve = _.value.posts.map(_.value))),
+    ReplaceField("issues", Field("issues", ListType(StringType /*ApiIssueIdType*/), resolve = _.value.issues.map(_.value))),
     ReplaceField("issuesTags", Field("issuesTags", ListType(ApiIssueTagType), resolve = _.value.issuesTags.toSeq)),
-    ReplaceField("parent", Field("parent", OptionType(ApiIdType), resolve = _.value.parent)),
+    ReplaceField("parent", Field("parent", OptionType(StringType /*ApiIdType*/), resolve = _.value.parent.map(_.value))),
     ReplaceField("tags", Field("tags", ListType(StringType), resolve = _.value.tags.toSeq)),
-    ReplaceField("categories", Field("categories", ListType(StringType), resolve = _.value.categories.toSeq))
+    ReplaceField("categories", Field("categories", ListType(StringType), resolve = _.value.categories.toSeq)),
+    AddFields(
+      Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
+    )
   )
 
   val ApiKeyRotationType = deriveObjectType[Unit, ApiKeyRotation]()
   val ApiSubscriptionRotationType = deriveObjectType[Unit, ApiSubscriptionRotation]()
   val ApiSubscriptionType = deriveObjectType[Unit, ApiSubscription](
-    ReplaceField("id", Field("id", ApiSubscriptionIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
+    ReplaceField("id", Field("_id", StringType /*ApiSubscriptionIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
     ReplaceField("apiKey", Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey)),
-    ReplaceField("plan", Field("plan", UsagePlanIdType, resolve = _.value.plan)),
+    ReplaceField("plan", Field("plan", StringType /*UsagePlanIdType*/, resolve = _.value.plan.value)),
     ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
-    ReplaceField("team", Field("team", TeamIdType, resolve = _.value.team)),
-    ReplaceField("api", Field("api", ApiIdType, resolve = _.value.api)),
-    ReplaceField("by", Field("by", UserIdType, resolve = _.value.by)),
+    ReplaceField("team", Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value)),
+    ReplaceField("api", Field("api", StringType /*ApiIdType*/, resolve = _.value.api.value)),
+    ReplaceField("by", Field("by", StringType /*UserIdType*/, resolve = _.value.by.value)),
     ReplaceField("rotation", Field("rotation", OptionType(ApiSubscriptionRotationType), resolve = _.value.rotation)),
     ReplaceField("customMetadata", Field("customMetadata", OptionType(JsonType), resolve = _.value.customMetadata)),
-    ReplaceField("parent", Field("parent", OptionType(ApiSubscriptionIdType), resolve = _.value.parent)),
+    ReplaceField("parent", Field("parent", OptionType(StringType /*ApiSubscriptionIdType*/), resolve = _.value.parent.map(_.value))),
   )
 
   val ActualOtoroshiApiKey = deriveObjectType[Unit, ActualOtoroshiApiKey](
@@ -673,8 +688,8 @@ object SchemaDefinition {
     "ApiAccess description",
     interfaces[Unit, ApiAccess](NotificationActionType),
     fields[Unit, ApiAccess](
-      Field("api", ApiIdType, resolve = _.value.api),
-      Field("team", TeamIdType, resolve = _.value.team)
+      Field("api", StringType /*ApiIdType*/, resolve = _.value.api.value),
+      Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value)
     )
   )
   val TeamAccessType = ObjectType(
@@ -682,7 +697,7 @@ object SchemaDefinition {
     "TeamAccess description",
     interfaces[Unit, TeamAccess](NotificationActionType),
     fields[Unit, TeamAccess](
-      Field("team", TeamIdType, resolve = _.value.team)
+      Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value)
     )
   )
   val TeamInvitationType = ObjectType(
@@ -690,8 +705,8 @@ object SchemaDefinition {
     "TeamInvitation description",
     interfaces[Unit, TeamInvitation](NotificationActionType),
     fields[Unit, TeamInvitation](
-      Field("team", TeamIdType, resolve = _.value.team),
-      Field("user", UserIdType, resolve = _.value.user)
+      Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value),
+      Field("user", StringType /*UserIdType*/, resolve = _.value.user.value)
     )
   )
   val ApiSubscriptionDemandType = ObjectType(
@@ -699,10 +714,10 @@ object SchemaDefinition {
     "ApiSubscriptionDemand description",
     interfaces[Unit, ApiSubscriptionDemand](NotificationActionType),
     fields[Unit, ApiSubscriptionDemand](
-      Field("api", ApiIdType, resolve = _.value.api),
-      Field("team", TeamIdType, resolve = _.value.team),
-      Field("plan", UsagePlanIdType, resolve = _.value.plan),
-      Field("parentSubscriptionId", OptionType(ApiSubscriptionIdType), resolve = _.value.parentSubscriptionId)
+      Field("api", StringType /*ApiIdType*/, resolve = _.value.api.value),
+      Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value),
+      Field("plan", StringType /*UsagePlanIdType*/, resolve = _.value.plan.value),
+      Field("parentSubscriptionId", OptionType(StringType /*ApiSubscriptionIdType*/), resolve = _.value.parentSubscriptionId.map(_.value))
     )
   )
   val OtoroshiSyncSubscriptionErrorType = ObjectType(
@@ -754,9 +769,9 @@ object SchemaDefinition {
   )
 
   val NotificationType = deriveObjectType[Unit, Notification](
-    ReplaceField("id", Field("id", NotificationIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
-    ReplaceField("team", Field("team", OptionType(TeamIdType), resolve = _.value.team)),
+    ReplaceField("id", Field("_id", StringType /*NotificationIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
+    ReplaceField("team", Field("team", OptionType(StringType /*TeamIdType*/), resolve = _.value.team.map(_.value))),
     ReplaceField("sender", Field("sender", UserType, resolve = _.value.sender)),
     ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date)),
     ReplaceField("notificationType", Field("notificationType", NotificationInterfaceType, resolve = _.value.notificationType)),
@@ -776,22 +791,22 @@ object SchemaDefinition {
   )
 
   val UserSessionType = deriveObjectType[Unit, UserSession](
-    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
-    ReplaceField("userId", Field("userId", UserIdType, resolve = _.value.userId)),
-    ReplaceField("sessionId", Field("sessionId", UserSessionIdType, resolve = _.value.sessionId)),
-    ReplaceField("impersonatorId", Field("impersonatorId", OptionType(UserIdType), resolve = _.value.impersonatorId)),
-    ReplaceField("impersonatorSessionId", Field("impersonatorSessionId", OptionType(UserSessionIdType), resolve = _.value.impersonatorSessionId)),
+    ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
+    ReplaceField("userId", Field("userId", StringType /*UserIdType*/, resolve = _.value.userId.value)),
+    ReplaceField("sessionId", Field("sessionId", StringType /*UserSessionIdType*/, resolve = _.value.sessionId.value)),
+    ReplaceField("impersonatorId", Field("impersonatorId", OptionType(StringType /*UserIdType*/), resolve = _.value.impersonatorId.map(_.value))),
+    ReplaceField("impersonatorSessionId", Field("impersonatorSessionId", OptionType(StringType /*UserSessionIdType*/), resolve = _.value.impersonatorSessionId.map(_.value))),
     ReplaceField("created", Field("created", DateTimeType, resolve = _.value.created)),
     ReplaceField("ttl", Field("ttl", FiniteDurationType, resolve = _.value.ttl)),
     ReplaceField("expires", Field("expires", DateTimeType, resolve = _.value.expires))
   )
 
   val ApiKeyConsumptionType = deriveObjectType[Unit, ApiKeyConsumption](
-    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
-    ReplaceField("team", Field("team", TeamIdType, resolve = _.value.team)),
-    ReplaceField("api", Field("api", ApiIdType, resolve = _.value.api)),
-    ReplaceField("plan", Field("plan", UsagePlanIdType, resolve = _.value.plan)),
+    ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
+    ReplaceField("team", Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value)),
+    ReplaceField("api", Field("api", StringType /*ApiIdType*/, resolve = _.value.api.value)),
+    ReplaceField("plan", Field("plan", StringType /*UsagePlanIdType*/, resolve = _.value.plan.value)),
     ReplaceField("globalInformations", Field("globalInformations", ApiKeyGlobalConsumptionInformationsType, resolve = _.value.globalInformations)),
     ReplaceField("quotas", Field("quotas", ApiKeyQuotasType, resolve = _.value.quotas)),
     ReplaceField("billing", Field("billing", ApiKeyBillingType, resolve = _.value.billing)),
@@ -804,23 +819,23 @@ object SchemaDefinition {
   val ApiKeyBillingType = deriveObjectType[Unit, ApiKeyBilling]()
 
   val PasswordResetType = deriveObjectType[Unit, PasswordReset](
-    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
-    ReplaceField("user", Field("user", UserIdType, resolve = _.value.user)),
+    ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
+    ReplaceField("user", Field("user", StringType /*UserIdType*/, resolve = _.value.user.value)),
     ReplaceField("creationDate", Field("creationDate", DateTimeType, resolve = _.value.creationDate)),
     ReplaceField("validUntil", Field("validUntil", DateTimeType, resolve = _.value.validUntil))
   )
   val AccountCreationType = deriveObjectType[Unit, AccountCreation](
-    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
+    ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
     ReplaceField("creationDate", Field("creationDate", DateTimeType, resolve = _.value.creationDate)),
     ReplaceField("validUntil", Field("validUntil", DateTimeType, resolve = _.value.validUntil))
   )
   val TranslationType = deriveObjectType[Unit, Translation](
-    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
+    ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
     ReplaceField("lastModificationAt", Field("lastModificationAt", OptionType(DateTimeType), resolve = _.value.lastModificationAt))
   )
   val EvolutionType = deriveObjectType[Unit, Evolution](
-    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
+    ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
     ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date))
   )
 
@@ -832,17 +847,123 @@ object SchemaDefinition {
     ))
 
   val MessageType = deriveObjectType[Unit, Message](
-    ReplaceField("id", Field("id", DatastoreIdType, resolve = _.value.id)),
-    ReplaceField("tenant", Field("tenant", TenantIdType, resolve = _.value.tenant)),
+    ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
+    ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
     ReplaceField("messageType", Field("messageType", MessageIntefaceType, resolve = _.value.messageType)),
-    ReplaceField("participants", Field("participants", ListType(UserIdType), resolve = _.value.participants.toSeq)),
-    ReplaceField("readBy", Field("readBy", ListType(UserIdType), resolve = _.value.readBy.toSeq)),
-    ReplaceField("chat", Field("chat", UserIdType, resolve = _.value.chat)),
+    ReplaceField("participants", Field("participants", ListType(StringType /*UserIdType*/), resolve = _.value.participants.toSeq.map(_.value))),
+    ReplaceField("readBy", Field("readBy", ListType(StringType /*UserIdType*/), resolve = _.value.readBy.toSeq.map(_.value))),
+    ReplaceField("chat", Field("chat", StringType /*UserIdType*/, resolve = _.value.chat.value)),
     ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date)),
-    ReplaceField("sender", Field("sender", UserIdType, resolve = _.value.sender)),
+    ReplaceField("sender", Field("sender", StringType /*UserIdType*/, resolve = _.value.sender.value)),
     ReplaceField("closed", Field("closed", OptionType(DateTimeType), resolve = _.value.closed)),
   )
 
+  val AuthorizationLevelType: InterfaceType[Unit, AuthorizationLevel] = InterfaceType(
+    "AuthorizationLevel",
+    "AuthorizationLevel description",
+    () => fields[Unit, AuthorizationLevel](
+      Field("value", StringType, resolve = _.value.value)
+    )
+  )
+
+  /*val AuthorizationLevelEnum = EnumType(
+    "AuthorizationLevelEnum",
+    Some("AuthorizationLevel enum description"),
+    List(
+      EnumValue(AuthorizationLevel.NotAuthorized.value, value = AuthorizationLevel.NotAuthorized.value),
+      EnumValue(AuthorizationLevel.AuthorizedUberPublic.value, value = AuthorizationLevel.AuthorizedUberPublic.value),
+      EnumValue(AuthorizationLevel.AuthorizedPublic.value, value = AuthorizationLevel.AuthorizedPublic.value),
+      EnumValue(AuthorizationLevel.AuthorizedTeamMember.value, value = AuthorizationLevel.AuthorizedTeamMember.value),
+      EnumValue(AuthorizationLevel.AuthorizedTeamApiEditor.value, value = AuthorizationLevel.AuthorizedTeamApiEditor.value),
+      EnumValue(AuthorizationLevel.AuthorizedTeamAdmin.value, value = AuthorizationLevel.AuthorizedTeamAdmin.value),
+      EnumValue(AuthorizationLevel.AuthorizedTenantAdmin.value, value = AuthorizationLevel.AuthorizedTenantAdmin.value),
+      EnumValue(AuthorizationLevel.AuthorizedDaikokuAdmin.value, value = AuthorizationLevel.AuthorizedDaikokuAdmin.value),
+      EnumValue(AuthorizationLevel.AuthorizedSelf.value, value = AuthorizationLevel.AuthorizedSelf.value),
+      EnumValue(AuthorizationLevel.AuthorizedJob.value, value = AuthorizationLevel.AuthorizedJob.value)
+    ))
+
+  val AuditEventType: InterfaceType[Unit, AuditEvent] = InterfaceType(
+    "AuditEvent",
+    "AuditEvent description",
+    () => fields[Unit, AuditEvent](
+      Field("message", StringType, resolve = _.value.message)
+    )
+  )
+  val AuditTrailEventType = deriveObjectType[Unit, AuditTrailEvent](
+    Interfaces(AuditEventType)
+  )
+  val JobEventType = deriveObjectType[Unit, JobEvent](
+    Interfaces(AuditEventType)
+  )
+  val AlertEventType = deriveObjectType[Unit, AlertEvent](
+    Interfaces(AuditEventType)
+  )
+  val ApiKeyRotationEventType = deriveObjectType[Unit, ApiKeyRotationEvent](
+    Interfaces(AuditEventType),
+    ReplaceField("subscription",
+      Field("subscription", ApiSubscriptionIdType, resolve = _.value.subscription)
+    )
+  )
+  val TenantAuditEventType = deriveObjectType[Unit, TenantAuditEvent](
+    ReplaceField("evt", Field("evt", AuditEventType, resolve = _.value.evt, possibleTypes = List(
+      AuditTrailEventType, JobEventType, AlertEventType, ApiKeyRotationEventType
+    ))),
+    ReplaceField("tenant", Field("tenant", TenantType, resolve = _.value.tenant)),
+    ReplaceField("user", Field("user", UserType, resolve = _.value.user)),
+    ReplaceField("impersonator", Field("impersonator", OptionType(UserType), resolve = _.value.impersonator)),
+    ReplaceField("ctx", Field("ctx", MapType, resolve = _.value.ctx.toMap.asInstanceOf[Map[String, String]])),
+    ReplaceField("authorized", Field("authorized", AuthorizationLevelType, resolve = _.value.authorized)),
+    ReplaceField("details", Field("details", JsonType, resolve = _.value.details))
+  )*/
+
+  case class UserAuditEvent(id: UserId, name: String, email: String, isDaikokuAdmin: Boolean)
+  val UserAuditEventType = deriveObjectType[Unit, UserAuditEvent](
+    ReplaceField("id", Field("_id", StringType /*UserIdType*/, resolve = _.value.id.value))
+  )
+
+  val UserAuditEventTypeReader = new Format[UserAuditEvent] {
+    override def reads(json: JsValue): JsResult[UserAuditEvent] = JsSuccess(
+          UserAuditEvent(
+            id = (json \ "id").as(UserIdFormat),
+            name = (json \ "name").as[String],
+            email = (json \ "email").as[String],
+            isDaikokuAdmin = (json \ "isDaikokuAdmin").asOpt[Boolean].getOrElse(false)
+          ))
+    override def writes(o: UserAuditEvent): JsValue = Json.obj()
+  }
+
+  case class TenantAuditEvent(id: TenantId, name: String)
+  val TenantAuditEventType = deriveObjectType[Unit, TenantAuditEvent](
+    ReplaceField("id", Field("_id", StringType /*TenantIdType*/, resolve = _.value.id.value))
+  )
+
+  val TenantAuditEventTypeReader = new Format[TenantAuditEvent] {
+    override def reads(json: JsValue): JsResult[TenantAuditEvent] = JsSuccess(
+      TenantAuditEvent(
+        id = (json \ "id").as(TenantIdFormat),
+        name = (json \ "name").as[String]
+      ))
+    override def writes(o: TenantAuditEvent): JsValue = Json.obj()
+  }
+
+  val AuditEventType = ObjectType[Unit, JsObject](
+    "AuditEvent",
+    () => fields[Unit, JsObject](
+      Field("event_id", OptionType(StringType), resolve = ctx => (ctx.value \ "@id").asOpt[String]),
+      Field("event_type", OptionType(StringType), resolve = ctx => (ctx.value \ "@type").asOpt[String]),
+      Field("event_userId", OptionType(StringType), resolve = ctx => (ctx.value \ "@userId").asOpt[String]),
+      Field("event_tenantId", OptionType(StringType), resolve = ctx => (ctx.value \ "@tenantId").asOpt[String]),
+      Field("event_timestamp", OptionType(StringType), resolve = ctx => (ctx.value \ "@timestamp").asOpt[String]),
+      Field("id", OptionType(StringType), resolve = ctx => (ctx.value \ "_id").asOpt[String]),
+      Field("url", OptionType(StringType), resolve = ctx => (ctx.value \ "url").asOpt[String]),
+      Field("user", OptionType(UserAuditEventType), resolve = ctx => (ctx.value \ "user").asOpt(UserAuditEventTypeReader)),
+      Field("verb", OptionType(StringType), resolve = ctx => (ctx.value \ "verb").asOpt[String]),
+      Field("tenant", OptionType(TenantAuditEventType), resolve = ctx => (ctx.value \ "tenant").asOpt(TenantAuditEventTypeReader)),
+      Field("_tenant", OptionType(StringType), resolve = ctx => (ctx.value \ "_tenant").asOpt[String]),
+      Field("message", OptionType(StringType), resolve = ctx => (ctx.value \ "message").asOpt[String]),
+      Field("authorized", OptionType(StringType), resolve = ctx => (ctx.value \ "authorized").asOpt[String])
+    )
+  )
 
   val AuthProviderType: InterfaceType[Unit, AuthProvider] = InterfaceType(
     "AuthProvider",
@@ -853,59 +974,74 @@ object SchemaDefinition {
   )
 
   val ID: Argument[String] = Argument("id", StringType, description = "id of element")
-  val TENANT: Argument[String] = Argument("tenant", StringType, description = "tenant")
 
-  def getSchema(env: Env): Schema[DataStore, Unit] = {
+  def teamFields()(implicit e: ExecutionContext): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+    Field("team", OptionType(TeamObjectType), arguments = List(ID),
+      resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("teams", ListType(TeamObjectType), resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+    Field("myTeams", ListType(TeamObjectType),
+      resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findNotDeleted(
+      Json.obj("users.userId" -> (ctx.ctx._2.user.id.value))
+    )),
+  )
+
+  def allFields()(implicit e: ExecutionContext): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+    Field("user", OptionType(UserType), arguments = List(ID), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx arg ID)),
+    Field("users", ListType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findAll()),
+
+    Field("userSession", OptionType(UserSessionType), arguments = List(ID), resolve = ctx => ctx.ctx._1.userSessionRepo.findById(ctx arg ID)),
+    Field("userSessions", ListType(UserSessionType), resolve = ctx => ctx.ctx._1.userSessionRepo.findAll()),
+
+    Field("tenant", OptionType(TenantType), arguments = List(ID), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx arg ID)),
+    Field("tenants", ListType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findAll()),
+
+    Field("passwordReset", OptionType(PasswordResetType), arguments = List(ID), resolve = ctx => ctx.ctx._1.passwordResetRepo.findById(ctx arg ID)),
+    Field("passwordResets", ListType(PasswordResetType), resolve = ctx => ctx.ctx._1.passwordResetRepo.findAll()),
+
+    Field("accountCreation", OptionType(AccountCreationType), arguments = List(ID), resolve = ctx => ctx.ctx._1.accountCreationRepo.findById(ctx arg ID)),
+    Field("accountCreations", ListType(AccountCreationType), resolve = ctx => ctx.ctx._1.accountCreationRepo.findAll()),
+
+    Field("api", OptionType(ApiType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("apis", ListType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+    Field("translation", OptionType(TranslationType), arguments = List(ID), resolve = ctx => ctx.ctx._1.translationRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("translations", ListType(TranslationType), resolve = ctx => ctx.ctx._1.translationRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+    Field("message", OptionType(MessageType), arguments = List(ID), resolve = ctx => ctx.ctx._1.messageRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("messages", ListType(MessageType), resolve = ctx => ctx.ctx._1.messageRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+    Field("apiSubscription", OptionType(ApiSubscriptionType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiSubscriptionRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("apiSubscriptions", ListType(ApiSubscriptionType), resolve = ctx => ctx.ctx._1.apiSubscriptionRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+    Field("apiDocumentationPage", OptionType(ApiDocumentationPageType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiDocumentationPageRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("apiDocumentationPages", ListType(ApiDocumentationPageType), resolve = ctx => ctx.ctx._1.apiDocumentationPageRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+    Field("notification", OptionType(NotificationType), arguments = List(ID), resolve = ctx => ctx.ctx._1.notificationRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("notifications", ListType(NotificationType), resolve = ctx => ctx.ctx._1.notificationRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+    Field("consumption", OptionType(ApiKeyConsumptionType), arguments = List(ID), resolve = ctx => ctx.ctx._1.consumptionRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("consumptions", ListType(ApiKeyConsumptionType), resolve = ctx => ctx.ctx._1.consumptionRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+    Field("apiPost", OptionType(ApiPostType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiPostRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("apiPosts", ListType(ApiPostType), resolve = ctx => ctx.ctx._1.apiPostRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+    Field("apiIssue", OptionType(ApiIssueType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiIssueRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("apiIssues", ListType(ApiIssueType), resolve = ctx => ctx.ctx._1.apiIssueRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+    Field("evolution", OptionType(EvolutionType), arguments = List(ID), resolve = ctx => ctx.ctx._1.evolutionRepo.findById(ctx arg ID)),
+    Field("evolutions", ListType(EvolutionType), resolve = ctx => ctx.ctx._1.evolutionRepo.findAll()),
+
+    Field("auditEvent", OptionType(AuditEventType), arguments = List(ID),
+      resolve = ctx => ctx.ctx._1.auditTrailRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+    Field("auditEvents", ListType(AuditEventType),
+      resolve = ctx => ctx.ctx._1.auditTrailRepo.forTenant(ctx.ctx._2.tenant).findAll())
+  )
+
+  def getSchema(env: Env): Schema[(DataStore, DaikokuActionContext[JsValue]), Unit] = {
     implicit val e = env.defaultExecutionContext
-    val Query: ObjectType[DataStore, Unit] = ObjectType(
-      "Query", fields[DataStore, Unit](
-        Field("user", OptionType(UserType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.userRepo.findById(ctx arg ID)),
-        Field("users", ListType(UserType), resolve = ctx => ctx.ctx.userRepo.findAll()),
-
-        Field("userSession", OptionType(UserSessionType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.userSessionRepo.findById(ctx arg ID)),
-        Field("userSessions", ListType(UserSessionType), resolve = ctx => ctx.ctx.userSessionRepo.findAll()),
-
-        Field("tenant", OptionType(TenantType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.tenantRepo.findById(ctx arg ID)),
-        Field("tenants", ListType(TenantType), resolve = ctx => ctx.ctx.tenantRepo.findAll()),
-
-        Field("passwordReset", OptionType(PasswordResetType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.passwordResetRepo.findById(ctx arg ID)),
-        Field("passwordResets", ListType(PasswordResetType), resolve = ctx => ctx.ctx.passwordResetRepo.findAll()),
-
-        Field("accountCreation", OptionType(AccountCreationType), arguments = ID :: Nil, resolve = ctx => ctx.ctx.accountCreationRepo.findById(ctx arg ID)),
-        Field("accountCreations", ListType(AccountCreationType), resolve = ctx => ctx.ctx.accountCreationRepo.findAll()),
-
-        Field("team", OptionType(TeamObjectType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.teamRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("teams", ListType(TeamObjectType), arguments = List(TENANT), resolve = ctx => ctx.ctx.teamRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("api", OptionType(ApiType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("apis", ListType(ApiType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("translation", OptionType(TranslationType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.translationRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("translations", ListType(TranslationType), arguments = List(TENANT), resolve = ctx => ctx.ctx.translationRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("message", OptionType(MessageType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.messageRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("messages", ListType(MessageType), arguments = List(TENANT), resolve = ctx => ctx.ctx.messageRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("apiSubscription", OptionType(ApiSubscriptionType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiSubscriptionRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("apiSubscriptions", ListType(ApiSubscriptionType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiSubscriptionRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("apiDocumentationPage", OptionType(ApiDocumentationPageType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiDocumentationPageRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("apiDocumentationPages", ListType(ApiDocumentationPageType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiDocumentationPageRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("notification", OptionType(NotificationType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.notificationRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("notifications", ListType(NotificationType), arguments = List(TENANT), resolve = ctx => ctx.ctx.notificationRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("consumption", OptionType(ApiKeyConsumptionType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.consumptionRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("consumptions", ListType(ApiKeyConsumptionType), arguments = List(TENANT), resolve = ctx => ctx.ctx.consumptionRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("apiPost", OptionType(ApiPostType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiPostRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("apiPosts", ListType(ApiPostType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiPostRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("apiIssue", OptionType(ApiIssueType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.apiIssueRepo.forTenant(TenantId(ctx arg TENANT)).findById(ctx arg ID)),
-        Field("apiIssues", ListType(ApiIssueType), arguments = List(TENANT), resolve = ctx => ctx.ctx.apiIssueRepo.forTenant(TenantId(ctx arg TENANT)).findAll()),
-
-        Field("evolution", OptionType(EvolutionType), arguments = List(TENANT, ID), resolve = ctx => ctx.ctx.evolutionRepo.findById(ctx arg ID)),
-        Field("evolutions", ListType(EvolutionType), resolve = ctx => ctx.ctx.evolutionRepo.findAll())
+    val Query: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Unit] = ObjectType(
+      "Query", fields[(DataStore, DaikokuActionContext[JsValue]), Unit](
+        (allFields() ++ teamFields()):_*
       )
     )
 
