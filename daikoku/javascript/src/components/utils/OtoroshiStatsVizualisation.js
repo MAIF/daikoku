@@ -296,7 +296,7 @@ export function GlobalDataConsumption(props) {
   }
 
   const { data } = props;
-  const hits = data.hits ? data.hits.prettify() : 0;
+  const hits = data.hits ? data.hits /*.prettify()*/ : 0;
   const totalDataIn = computeValue(data.dataIn);
   const totalDataOut = computeValue(data.dataOut);
   const avgDuration = data.avgDuration ? data.avgDuration.toFixed(3) : 0;
