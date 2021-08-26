@@ -10,8 +10,8 @@ export const LoginOrRegisterModal = (props) => {
   return asFlatFormat ? (
     <div className="mx-auto" style={{ maxWidth: '448px', color: '#000' }}>
       <p className="font-weight-bold text-center">{props.message}</p>
-      <div className="m-2 d-flex align-items-center justify-content-center login-button">
-        <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1">
+      <div className="m-2 d-flex align-items-center justify-content-center">
+        <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1 login-button">
           {translateMethod('Login')}
         </a>
         <a
@@ -39,9 +39,9 @@ export const LoginOrRegisterModal = (props) => {
         </div>
       </div>
       <div
-        className="p-2 d-flex align-items-center justify-content-end login-button"
+        className="p-2 d-flex align-items-center justify-content-end"
         style={{ borderTop: '1px solid #dee2e6' }}>
-        <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1">
+        <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1 login-button">
           {translateMethod('Login')}
         </a>
         <a
