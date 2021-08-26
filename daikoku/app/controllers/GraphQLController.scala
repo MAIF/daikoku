@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import domain.SchemaDefinition
+import domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.Logger
@@ -13,10 +14,35 @@ import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.marshalling.playJson._
 import sangria.renderer.SchemaRenderer
+import sangria.schema.Context
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+object AuthMiddleware extends Middleware[(DataStore,DaikokuActionContext[JsValue])] with MiddlewareBeforeField[(DataStore,DaikokuActionContext[JsValue])] {
+  override type QueryVal = Unit
+  override type FieldVal = Unit
+
+  override def beforeQuery(context: MiddlewareQueryContext[(DataStore,DaikokuActionContext[JsValue]), _, _]) = ()
+
+  override def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[(DataStore,DaikokuActionContext[JsValue]), _, _]) = ()
+
+  override def beforeField(queryVal: QueryVal,
+                           mctx: MiddlewareQueryContext[(DataStore,DaikokuActionContext[JsValue]), _, _],
+                           ctx: Context[(DataStore,DaikokuActionContext[JsValue]), _]) = {
+
+    /*ctx.field.tags match {
+      case tags if (tags contains SchemaDefinition.UberPublicUserAccessTag) &&
+    }*/
+
+   /* if(requireAuth) {
+      println(ctx.field.tags)
+      throw NotAuthorizedError("coucou")
+    }*/
+
+    continue
+  }
+}
 
 class GraphQLController(DaikokuAction: DaikokuAction,
                         env: Env,
@@ -49,6 +75,7 @@ class GraphQLController(DaikokuAction: DaikokuAction,
   case object TooComplexQueryError extends Exception("Query is too expensive.")
 
   lazy val exceptionHandler = ExceptionHandler {
+    case (_, error @ NotAuthorizedError(_)) => HandledException(error.getMessage)
     case (_, error @ TooComplexQueryError) => HandledException(error.getMessage)
     case (_, error @ MaxQueryDepthReachedError(_)) => HandledException(error.getMessage)
   }
@@ -60,6 +87,7 @@ class GraphQLController(DaikokuAction: DaikokuAction,
           operationName = operation,
           variables = variables getOrElse Json.obj(),
           exceptionHandler = exceptionHandler,
+          middleware = AuthMiddleware :: Nil,
           queryReducers = List(
             QueryReducer.rejectMaxDepth[(DataStore,DaikokuActionContext[JsValue])](15),
             QueryReducer.rejectComplexQueries[(DataStore,DaikokuActionContext[JsValue])](4000, (_, _) => TooComplexQueryError)))

@@ -3,6 +3,7 @@ package domain
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{UberPublicUserAccess, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantFormat, TenantIdFormat, UserFormat, UserIdFormat}
@@ -14,6 +15,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.ISODateTimeFormat
 import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
+import sangria.execution.FieldTag
 import sangria.macros.derive._
 import sangria.schema._
 import sangria.validation.ValueCoercionViolation
@@ -975,14 +977,24 @@ object SchemaDefinition {
 
   val ID: Argument[String] = Argument("id", StringType, description = "id of element")
 
-  def teamFields()(implicit e: ExecutionContext): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
+  case object UberPublicUserAccessTag extends FieldTag
+  case class NotAuthorizedError(message: String) extends Exception(message)
+
+  def teamFields()(implicit e: ExecutionContext, env: Env): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
     Field("team", OptionType(TeamObjectType), arguments = List(ID),
       resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
     Field("teams", ListType(TeamObjectType), resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findAll()),
     Field("myTeams", ListType(TeamObjectType),
-      resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findNotDeleted(
-      Json.obj("users.userId" -> (ctx.ctx._2.user.id.value))
-    )),
+      //tags = UberPublicUserAccessTag :: Nil,
+      resolve = ctx =>
+        _UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed his team list"))(ctx.ctx._2) {
+          ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant)
+            .findNotDeleted(Json.obj("users.userId" -> (ctx.ctx._2.user.id.value)))
+            .map(teams => teams.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0))
+        }.map {
+          case Left(value) => value
+          case Right(r) => throw NotAuthorizedError(r.toString)
+        })
   )
 
   def allFields()(implicit e: ExecutionContext): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
@@ -1039,6 +1051,7 @@ object SchemaDefinition {
 
   def getSchema(env: Env): Schema[(DataStore, DaikokuActionContext[JsValue]), Unit] = {
     implicit val e = env.defaultExecutionContext
+    implicit val en = env
     val Query: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Unit] = ObjectType(
       "Query", fields[(DataStore, DaikokuActionContext[JsValue]), Unit](
         (allFields() ++ teamFields()):_*

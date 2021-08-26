@@ -63,8 +63,6 @@ GET     /api/me/teams/own                               fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/me/teams/:id                               fr.maif.otoroshi.daikoku.ctrls.ApiController.oneOfMyTeam(id)
 ### NoDocs ###
-GET     /api/me/teams                                   fr.maif.otoroshi.daikoku.ctrls.ApiController.myTeams()
-### NoDocs ###
 GET     /api/me/notifications                           fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUntreatedNotifications(page: Int ?= 0, pageSize: Int ?= 10)
 ### NoDocs ###
 GET     /api/me/notifications/all                       fr.maif.otoroshi.daikoku.ctrls.NotificationController.myNotifications(page: Int ?= 0, pageSize: Int ?= 10)
