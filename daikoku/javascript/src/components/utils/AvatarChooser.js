@@ -4,6 +4,7 @@ import md5 from 'js-md5';
 import { I18nContext } from '../../locales/i18n-context';
 
 function Gravatar(props) {
+  const { Translation } = useContext(I18nContext)
   const setGravatarLink = () => {
     const email = props.rawValue.contact.toLowerCase().trim();
     const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;

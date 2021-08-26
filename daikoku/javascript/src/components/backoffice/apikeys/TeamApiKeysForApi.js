@@ -215,11 +215,9 @@ function TeamApiKeysForApiComponent(props) {
 
                   return (
                     <ApiKeyCard
-        
-              
                       currentTeam={props.currentTeam}
                       openInfoNotif={(message) => toastr.info(message)}
-                      statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${props.match.params.apiId}/subscription/${subscription._id}/consumptions`}
+                      statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${props.match.params.apiId}/${props.match.params.versionId}/subscription/${subscription._id}/consumptions`}
                       key={subscription._id}
                       subscription={subscription}
                       showApiKey={showApiKey}

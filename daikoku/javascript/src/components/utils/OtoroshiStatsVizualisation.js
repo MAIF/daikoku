@@ -279,7 +279,7 @@ export function GlobalDataConsumption(props) {
       computedValue = parseFloat((converterBase2(value, 'B', 'PB') || 0).toFixed(3));
       unit = 'Pb';
     }
-    return `${computedValue.prettify()} ${unit}`;
+    return `${computedValue ? computedValue.prettify() : 0} ${unit}`;
   };
 
   const row = (value, label) => {

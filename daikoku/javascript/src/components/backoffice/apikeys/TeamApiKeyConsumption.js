@@ -42,7 +42,7 @@ function TeamApiKeyConsumptionComponent(props) {
           </Translation>
         </div>
         <div>
-          {hits.prettify()}{' '}
+          {hits !== 0 ? hits.prettify() : 0}{' '}
           <Translation i18nkey="Hit" isPlural={hits > 1}>
             hits
           </Translation>
