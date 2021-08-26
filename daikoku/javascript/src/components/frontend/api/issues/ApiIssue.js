@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Switch, useParams, Route, Redirect } from 'react-router-dom';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
@@ -7,15 +7,17 @@ import { NewIssue } from './NewIssue';
 import { TeamApiIssueTags } from './TeamApiIssueTags';
 import * as Services from '../../../../services';
 import { toastr } from 'react-redux-toastr';
-import { t } from '../../../../locales';
 import { Can, manage, api as API } from '../../../utils';
+import { I18nContext } from '../../../../core';
 
-export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
+export function ApiIssue({ ownerTeam, ...props }) {
   const { issueId, versionId, apiId } = useParams();
   const [api, setRootApi] = useState({});
 
   const [filter, setFilter] = useState('open');
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
+
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getRootApi(apiId).then((rootApi) => {
@@ -24,7 +26,7 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
   }, []);
 
   function onChange(editedApi) {
-    Services.saveTeamApi(ownerTeam._id, editedApi)
+    Services.saveTeamApi(ownerTeam._id, editedApi, versionId)
       .then((res) => {
         props.onChange({
           ...props.api,
@@ -33,7 +35,7 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
         });
         setRootApi(res);
       })
-      .then(() => toastr.success(t('Api saved', currentLanguage)));
+      .then(() => toastr.success(translateMethod('Api saved')));
   }
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;
@@ -54,7 +56,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                 <TeamApiIssueTags
                   value={api}
                   onChange={onChange}
-                  currentLanguage={currentLanguage}
                 />
               </Can>
             )}
@@ -66,7 +67,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
               <NewIssue
                 api={api}
                 user={props.connectedUser}
-                currentLanguage={currentLanguage}
                 basePath={basePath}
                 {...props}
               />
@@ -80,7 +80,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                 issueId={issueId}
                 team={ownerTeam}
                 api={api}
-                currentLanguage={currentLanguage}
                 connectedUser={props.connectedUser}
                 basePath={basePath}
                 history={props.history}
@@ -98,7 +97,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                   handleFilter={(value) => setFilter(value)}
                   filter={filter}
                   connectedUser={props.connectedUser}
-                  currentLanguage={currentLanguage}
                   api={api}
                   team={ownerTeam._id}
                   ownerTeam={ownerTeam}
@@ -106,7 +104,6 @@ export function ApiIssue({ currentLanguage, ownerTeam, ...props }) {
                   setSelectedVersion={setSelectedVersion}
                 />
                 <ApiIssues
-                  currentLanguage={currentLanguage}
                   filter={filter}
                   api={api}
                   selectedVersion={selectedVersion}

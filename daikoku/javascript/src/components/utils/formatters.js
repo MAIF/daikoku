@@ -1,7 +1,6 @@
 import moment from 'moment';
 
 import { currencies } from '../../services/currencies';
-import { t } from '../../locales';
 
 export const formatCurrency = (number) => {
   return new Intl.NumberFormat('fr-FR', {
@@ -15,18 +14,18 @@ export const getCurrencySymbol = (code) => {
   return currency ? currency.symbol : undefined;
 };
 
-export const formatPlanType = (plan, language) => {
+export const formatPlanType = (plan, translateMethod) => {
   switch (plan.type) {
     case 'FreeWithoutQuotas':
-      return t('FreeWithoutQuotas', language);
+      return translateMethod('FreeWithoutQuotas');
     case 'FreeWithQuotas':
-      return t('FreeWithQuotas', language);
+      return translateMethod('FreeWithQuotas');
     case 'QuotasWithLimits':
-      return t('QuotasWithLimits', language);
+      return translateMethod('QuotasWithLimits');
     case 'QuotasWithoutLimits':
-      return t('Quotas / pay per use', language);
+      return translateMethod('Quotas / pay per use');
     case 'PayPerUse':
-      return t('Pay per use', language);
+      return translateMethod('Pay per use');
   }
 };
 
@@ -36,8 +35,8 @@ export const teamPermissions = {
   user: 'User',
 };
 
-export const formatDate = (date, currentLanguage, format = 'l LT') => {
-  moment.locale(currentLanguage);
+export const formatDate = (date, language, format = 'l LT') => {
+  moment.locale(language);
   return moment(date).format(format);
 };
 

@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { connect } from 'react-redux';
 import { Link, useHistory } from 'react-router-dom';
 import { goBack } from 'connected-react-router';
-import { t } from '../../locales';
+import { I18nContext } from '../../locales/i18n-context';
 import { setError } from '../../core';
 
 const getErrorLabel = (status, error) => {
@@ -24,10 +24,12 @@ const getErrorLabel = (status, error) => {
   }
 };
 
-const ErrorComponent = ({ error, tenant, currentLanguage, setError }) => {
+const ErrorComponent = ({ error, tenant, setError }) => {
   const history = useHistory();
 
-  document.title = `${tenant} - ${t('Error', currentLanguage)}`;
+  const { translateMethod } = useContext(I18nContext);
+
+  document.title = `${tenant} - ${translateMethod('Error')}`;
   const label = getErrorLabel(error.status, error);
 
   if (!label) {
@@ -63,7 +65,6 @@ const ErrorComponent = ({ error, tenant, currentLanguage, setError }) => {
 
 const mapStateToProps = (state) => ({
   tenant: state.context.tenant.name,
-  currentLanguage: state.context.currentLanguage,
   error: state.error,
   router: state.router,
 });

@@ -276,6 +276,7 @@ object json {
         case Some("maintenance")  => JsSuccess(TenantMode.Maintenance)
         case Some("construction") => JsSuccess(TenantMode.Construction)
         case Some("default")      => JsSuccess(TenantMode.Default)
+        case Some("translation")  => JsSuccess(TenantMode.Translation)
         case None                 => JsSuccess(TenantMode.Default)
         case Some(str)            => JsError(s"Bad value for tenant mode : $str")
       }
@@ -2185,10 +2186,11 @@ object json {
 
   val AuthorizedEntitiesFormat: Format[AuthorizedEntities] =
     new Format[AuthorizedEntities] {
-      override def writes(o: AuthorizedEntities): JsValue = Json.obj(
-        "groups" -> SetOtoroshiServiceGroupsIdFormat.writes(o.groups),
-        "services" -> SetOtoroshiServicesIdFormat.writes(o.services)
-      )
+      override def writes(o: AuthorizedEntities): JsValue =
+        Json.obj(
+          "groups" -> SetOtoroshiServiceGroupsIdFormat.writes(o.groups),
+          "services" -> SetOtoroshiServicesIdFormat.writes(o.services)
+        )
 
       override def reads(json: JsValue): JsResult[AuthorizedEntities] =
         Try {

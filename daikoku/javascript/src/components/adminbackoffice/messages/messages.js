@@ -11,7 +11,7 @@ import * as MessagesEvents from '../../../services/messages';
 import * as Services from '../../../services';
 import { Option, partition, formatMessageDate, BeautifulTitle } from '../../utils';
 import { UserBackOffice } from '../../backoffice';
-import { t, Translation } from '../../../locales';
+import { I18nContext } from '../../../locales/i18n-context';
 
 const AdminMessagesComponent = (props) => {
   const {
@@ -63,6 +63,8 @@ const AdminMessagesComponent = (props) => {
   useEffect(() => {
     maybeReadMessage();
   }, [selectedChat]);
+
+  const { translateMethod, language, Translation } = useContext(I18nContext);
 
   const maybeReadMessage = () => {
     if (selectedChat) {
@@ -118,30 +120,30 @@ const AdminMessagesComponent = (props) => {
     .map((g) => MessagesEvents.fromMessagesToDialog(g.messages))
     .getOrElse([]);
 
-  moment.locale(props.currentLanguage);
+  moment.locale(language);
   moment.updateLocale('fr', {
     relativeTime: {
-      s: t('moment.duration.seconds', props.currentLanguage, false, 'few sec'),
-      m: t('moment.duration.minutes', props.currentLanguage, false, '1 min', '1'),
-      mm: t('moment.duration.minutes', props.currentLanguage, false, '%d min', '%d'),
-      h: t('moment.duration.hours', props.currentLanguage, false, '1 h', '1'),
-      hh: t('moment.duration.jours', props.currentLanguage, false, '%d h', '%d'),
-      d: t('moment.duration.days', props.currentLanguage, false, '1 d', '1'),
-      dd: t('moment.duration.days', props.currentLanguage, false, '%d d', '%d'),
+      s: translateMethod('moment.duration.seconds', false, 'few sec'),
+      m: translateMethod('moment.duration.minutes', false, '1 min', '1'),
+      mm: translateMethod('moment.duration.minutes', false, '%d min', '%d'),
+      h: translateMethod('moment.duration.hours', false, '1 h', '1'),
+      hh: translateMethod('moment.duration.jours', false, '%d h', '%d'),
+      d: translateMethod('moment.duration.days', false, '1 d', '1'),
+      dd: translateMethod('moment.duration.days', false, '%d d', '%d'),
     },
   });
 
   return (
     <UserBackOffice tab="Messages">
       <h1>
-        <Translation i18nkey="Message" language={props.currentLanguage} isPlural>
+        <Translation i18nkey="Message" isPlural>
           Messages
         </Translation>
       </h1>
       <div className="d-flex flex-row messages-container">
         <div className="d-flex flex-column messages-sender">
           <Select
-            placeholder={t('Start new conversation', props.currentLanguage)}
+            placeholder={translateMethod('Start new conversation')}
             className="mr-2 reactSelect"
             options={possibleNewUsers.map((u) => ({
               label: (
@@ -237,7 +239,7 @@ const AdminMessagesComponent = (props) => {
                 {group.map((m, idx) => {
                   const sender = Option(users.find((u) => u._id === m.sender))
                     .map((u) => u.name)
-                    .getOrElse(t('Unknown user', props.currentLanguage));
+                    .getOrElse(translateMethod('Unknown user'));
                   return (
                     <div
                       key={`discussion-message-${idx}`}
@@ -259,7 +261,7 @@ const AdminMessagesComponent = (props) => {
                 className="btn btn-sm btn-outline-primary"
                 disabled={loading ? 'disabled' : null}
                 onClick={() => getPreviousMessages(selectedChat)}>
-                <Translation i18nkey="Load previous messages" language={props.currentLanguage}>
+                <Translation i18nkey="Load previous messages">
                   Load previous messages
                 </Translation>
               </button>
@@ -273,7 +275,7 @@ const AdminMessagesComponent = (props) => {
                 value={loading ? '...' : newMessage}
                 onKeyDown={handleKeyDown}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder={t('Your message', props.currentLanguage)}
+                placeholder={translateMethod('Your message')}
               />
               <button
                 disabled={loading ? 'disabled' : null}

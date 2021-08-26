@@ -22,8 +22,7 @@ import {
   registerContact,
 } from './components/utils/window';
 import { customizeFetch } from './services/customize';
-import { Option } from './components/utils';
-import { Translation } from './locales';
+import { I18nProvider } from './locales/i18n-context';
 
 window.$ = jQuery;
 window.jQuery = jQuery;
@@ -37,13 +36,10 @@ export function init(
   isTenantAdmin,
   apiCreationPermitted
 ) {
-  const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse('En');
-  const currentLanguage = Option(user.defaultLanguage).getOrElse(tenantDefaultLanguage);
   const storeInst = store({
     connectedUser: user,
     tenant,
     impersonator,
-    currentLanguage,
     isTenantAdmin,
     apiCreationPermitted,
   });
@@ -53,13 +49,15 @@ export function init(
 
   ReactDOM.render(
     <Provider store={storeInst}>
-      <DaikokuApp
-        user={user}
-        tenant={tenant}
-        impersonator={impersonator}
-        loginProvider={tenant.authProvider}
-        loginAction={loginCallback}
-      />
+      <I18nProvider tenant={tenant}>
+        <DaikokuApp
+          user={user}
+          tenant={tenant}
+          impersonator={impersonator}
+          loginProvider={tenant.authProvider}
+          loginAction={loginCallback}
+        />
+      </I18nProvider>
     </Provider>,
     document.getElementById('app')
   );
@@ -88,12 +86,11 @@ export function init(
       const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
       const secondPing = _session.expires - Date.now() + 2000;
       setTimeout(() => {
-        const language = storeInst.getState().context.currentLanguage;
         window.alert(
           (close) => (
             <div style={{ width: '100%' }}>
               <p>
-                <Translation i18nkey="session.expire.info" language={language}>
+                <Translation i18nkey="session.expire.info">
                   Your session is about to expire in less than 2 minutes. Do you want to extend it ?
                 </Translation>
               </p>
@@ -108,7 +105,7 @@ export function init(
                   type="button"
                   className="btn btn-success"
                   onClick={() => extendSession(close)}>
-                  <Translation i18nkey="session.extend" language={language}>
+                  <Translation i18nkey="session.extend">
                     Yes, extend my session
                   </Translation>
                 </button>
@@ -132,11 +129,12 @@ export function init(
 }
 
 export function login(provider, callback, tenant) {
-  const currentLanguage = Option(tenant.defaultLanguage).getOrElse('En');
-  const storeInst = store({ tenant, currentLanguage });
+  const storeInst = store({ tenant });
   ReactDOM.render(
     <Provider store={storeInst}>
-      <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
+      <I18nProvider tenant={tenant}>
+        <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
+      </I18nProvider>
     </Provider>,
     document.getElementById('app')
   );
@@ -147,11 +145,12 @@ export function login(provider, callback, tenant) {
 }
 
 export function initNotLogged(tenant) {
-  const currentLanguage = Option(tenant.defaultLanguage).getOrElse('En');
-  const storeInst = store({ tenant, currentLanguage });
+  const storeInst = store({ tenant });
   ReactDOM.render(
     <Provider store={storeInst}>
-      <DaikokuHomeApp tenant={tenant} />
+      <I18nProvider tenant={tenant}>
+        <DaikokuHomeApp tenant={tenant} />
+      </I18nProvider>
     </Provider>,
     document.getElementById('app')
   );

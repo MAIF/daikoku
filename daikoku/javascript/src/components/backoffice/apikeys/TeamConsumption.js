@@ -1,18 +1,20 @@
-import React, { Component } from 'react';
+import React, { useContext } from 'react';
 import { connect } from 'react-redux';
 import * as _ from 'lodash';
 
 import { OtoroshiStatsVizualization } from '../../utils';
 import { TeamBackOffice } from '../TeamBackOffice';
 import * as Services from '../../../services';
-import { t } from '../../../locales';
+import { I18nContext } from '../../../core';
 
-const TeamConsumptionComponent = ({ currentTeam, currentLanguage }) => {
+const TeamConsumptionComponent = ({ currentTeam }) => {
+  const { translateMethod } = useContext(I18nContext);
+
   const mappers = [
     {
       type: 'DoubleRoundChart',
-      label: t('Hits by api/plan', currentLanguage),
-      title: t('Hits by api/plan', currentLanguage),
+      label: translateMethod('Hits by api/plan'),
+      title: translateMethod('Hits by api/plan'),
       formatter: (data) =>
         _.sortBy(
           data.reduce((acc, item) => {
@@ -44,7 +46,7 @@ const TeamConsumptionComponent = ({ currentTeam, currentLanguage }) => {
   return (
     <TeamBackOffice
       tab="ApiKeys"
-      title={`${currentTeam.name} - ${t('Consumption', currentLanguage)}`}>
+      title={`${currentTeam.name} - ${translateMethod('Consumption')}`}>
       <div className="row">
         <div className="col">
           <h1>Consumption</h1>
@@ -54,7 +56,6 @@ const TeamConsumptionComponent = ({ currentTeam, currentLanguage }) => {
               Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
             }
             mappers={mappers}
-            currentLanguage={currentLanguage}
           />
         </div>
       </div>

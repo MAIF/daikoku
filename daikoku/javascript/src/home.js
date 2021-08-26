@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import jQuery from 'jquery';
 import { Provider } from 'react-redux';
 
-import { store } from './core';
+import { I18nProvider, store } from './core';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import './style/main.scss';
@@ -23,12 +23,13 @@ window.$ = jQuery;
 window.jQuery = jQuery;
 
 export function initNotLogged(tenant) {
-  const currentLanguage = tenant.defaultLanguage || 'En';
-  const storeInst = store({ tenant, currentLanguage });
+  const storeInst = store({ tenant });
 
   ReactDOM.render(
     <Provider store={storeInst}>
-      <DaikokuHomeApp tenant={tenant} />
+      <I18nProvider tenant={tenant}>
+        <DaikokuHomeApp tenant={tenant} />
+      </I18nProvider>
     </Provider>,
     document.getElementById('app')
   );

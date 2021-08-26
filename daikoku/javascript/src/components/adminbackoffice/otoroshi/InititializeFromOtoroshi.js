@@ -1,9 +1,10 @@
 import { useMachine } from '@xstate/react';
 import _ from 'lodash';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import StepWizard from 'react-step-wizard';
+import { I18nContext } from '../../../core';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
@@ -17,10 +18,11 @@ import {
   RecapServiceStep,
   RecapSubsStep,
 } from './initialization';
-import { Translation } from '../../../locales';
 
 const InitializeFromOtoroshiComponent = (props) => {
   const [state, send] = useMachine(theMachine);
+
+  const { Translation } = useContext(I18nContext);
 
   const [otoroshis, setOtoroshis] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -58,8 +60,8 @@ const InitializeFromOtoroshiComponent = (props) => {
   }, [props.tenant]);
 
   const updateApi = (api) => {
-    return Services.teamApi(api.team, api._id)
-      .then((oldApi) => Services.saveTeamApi(api.team, { ...oldApi, ...api }))
+    return Services.teamApi(api.team, api._humanReadableId, api.currentVersion)
+      .then((oldApi) => Services.saveTeamApi(api.team, { ...oldApi, ...api }, oldApi.currentVersion))
       .then((updatedApi) => {
         const filteredApis = apis.filter((a) => a._id !== updatedApi._id);
         setApis([...filteredApis, updatedApi]);
@@ -89,7 +91,6 @@ const InitializeFromOtoroshiComponent = (props) => {
       }
       resetService={() => setCreatedApis([...createdApis.filter((a) => a.id !== s.id)])}
       getFilteredServices={filterServices}
-      currentLanguage={props.currentLanguage}
       tenant={props.tenant}
       cancel={() => send('CANCEL')}
     />
@@ -137,11 +138,11 @@ const InitializeFromOtoroshiComponent = (props) => {
       <Can I={manage} a={TENANT} dispatchError>
         <div className="d-flex flex-row align-items-center">
           <h1>
-            <Translation i18nkey="Daikoku initialization" language={props.currentLanguage}>
+            <Translation i18nkey="Daikoku initialization">
               Daikoku initialization
             </Translation>
           </h1>
-          {state.matches('completeServices') && <Help language={props.currentLanguage} />}
+          {state.matches('completeServices') && <Help />}
         </div>
         <div className="section py-3 px-2">
           {state.value === 'otoroshiSelection' && (
@@ -152,7 +153,6 @@ const InitializeFromOtoroshiComponent = (props) => {
                 send('LOAD', { otoroshi: oto.value, tenant: props.tenant._id })
               }
               otoroshis={otoroshis}
-              currentLanguage={props.currentLanguage}
             />
           )}
           {(state.matches('loadingOtoroshiGroups') ||
@@ -160,7 +160,6 @@ const InitializeFromOtoroshiComponent = (props) => {
             state.matches('loadingApikeys')) && <Spinner />}
           {state.value === 'stepSelection' && (
             <SelectionStepStep
-              currentLanguage={props.currentLanguage}
               goToServices={() => send('LOAD_SERVICE', { up: true })}
               goToApikeys={() => send('LOAD_APIKEY')}
             />
@@ -176,7 +175,6 @@ const InitializeFromOtoroshiComponent = (props) => {
           )}
           {state.matches('recap') && (
             <RecapServiceStep
-              currentLanguage={props.currentLanguage}
               cancel={() => send('CANCEL')}
               createdApis={createdApis}
               groups={state.context.groups}
@@ -214,7 +212,6 @@ const InitializeFromOtoroshiComponent = (props) => {
                   setCreatedSubs([...createdSubs.filter((s) => s.clientId !== apikey.clientId)])
                 }
                 getFilteredApikeys={filterApikeys}
-                currentLanguage={props.currentLanguage}
                 tenant={props.tenant}
                 cancel={() => send('CANCEL')}
                 createdSubs={createdSubs}
@@ -235,7 +232,6 @@ const InitializeFromOtoroshiComponent = (props) => {
                       callBackCreation: () => afterSubCreation(),
                     })
                   }
-                  currentLanguage={props.currentLanguage}
                 />
               )}
             </>
@@ -250,11 +246,10 @@ const InitializeFromOtoroshiComponent = (props) => {
               create={() =>
                 send('CREATE_APIKEYS', { createdSubs, callBackCreation: () => afterSubCreation() })
               }
-              currentLanguage={props.currentLanguage}
             />
           )}
           {state.matches('complete') && (
-            <Translation i18nkey="Done" language={props.currentLanguage}>
+            <Translation i18nkey="Done">
               Done
             </Translation>
           )}
@@ -281,23 +276,23 @@ const Help = ({ language }) => {
       title={
         <div className="d-flex flex-column">
           <h4>
-            <Translation i18nkey="Keyboard shortcuts" language={language}>
+            <Translation i18nkey="Keyboard shortcuts">
               Keyboard shortcut
             </Translation>
           </h4>
           <ul>
             <li>
-              <Translation i18nkey="keyboard.shortcuts.arrow.left" language={language}>
+              <Translation i18nkey="keyboard.shortcuts.arrow.left">
                 arrow-left: previous step
               </Translation>
             </li>
             <li>
-              <Translation i18nkey="keyboard.shortcuts.arrow.right" language={language}>
+              <Translation i18nkey="keyboard.shortcuts.arrow.right">
                 arrow-right: next step or import
               </Translation>
             </li>
             <li>
-              <Translation i18nkey="keyboard.shortcuts.tab" language={language}>
+              <Translation i18nkey="keyboard.shortcuts.tab">
                 tab: focus on api name
               </Translation>
             </li>

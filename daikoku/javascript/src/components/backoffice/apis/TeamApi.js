@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { TeamBackOffice } from '../..';
-import { Can, manage, api as API } from '../../utils';
-import { t, Translation } from '../../../locales';
+import { Can, manage, api as API, Spinner } from '../../utils';
 import {
   TeamApiDescription,
   TeamApiDocumentation,
@@ -18,16 +17,12 @@ import {
   TeamApiPost,
 } from '.';
 
-import { setError, openSubMetadataModal, openTestingApiKeyModal } from '../../../core';
+import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext } from '../../../core';
 import Select from 'react-select';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 
 function TeamApiComponent(props) {
-  const location = useLocation();
-  const params = useParams();
-  const history = useHistory();
-
   const [state, setState] = useState({
     api: null,
     create: false,
@@ -36,6 +31,8 @@ function TeamApiComponent(props) {
     changed: false,
   });
 
+  const params = useParams();
+
   const [versions, setApiVersions] = useState([]);
   const [apiVersion, setApiVersion] = useState({
     value: params.versionId,
@@ -43,6 +40,10 @@ function TeamApiComponent(props) {
   });
 
   const teamApiDocumentationRef = useRef();
+
+  const { translateMethod, Translation } = useContext(I18nContext);
+  const location = useLocation();
+  const history = useHistory();
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
@@ -54,7 +55,10 @@ function TeamApiComponent(props) {
           create: true,
         })
       );
-    } else reloadState();
+    }
+    else {
+      reloadState();
+    }
   }, [params.tab, params.versionId]);
 
   useEffect(() => {
@@ -86,9 +90,8 @@ function TeamApiComponent(props) {
         .then((api) => {
           if (api.name) {
             toastr.success(
-              t(
+              translateMethod(
                 'api.created.success',
-                props.currentLanguage,
                 false,
                 `Api "${api.name}" created`,
                 api.name
@@ -97,14 +100,13 @@ function TeamApiComponent(props) {
             return api;
           } else return Promise.reject(api.error);
         })
-        .then((api) =>
-          setState({ ...state, create: false, api }, () =>
-            props.history.push(
-              `/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
-            )
+        .then((api) => {
+          setState({ ...state, create: false, api })
+          props.history.push(
+            `/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
           )
-        )
-        .catch((error) => toastr.error(t(error, props.currentLanguage)));
+        })
+        .catch((error) => toastr.error(translateMethod(error)));
     } else {
       return Services.checkIfApiNameIsUnique(editedApi.name, editedApi._id).then((r) => {
         if (!r.exists) {
@@ -121,30 +123,31 @@ function TeamApiComponent(props) {
               editedApi._humanReadableId
             )
               .then((res) => {
-                if (res.error) toastr.error(t(res.error, props.currentLanguage));
-                else toastr.success(t('Api saved', props.currentLanguage));
-                return res;
+                if (res.error)
+                  toastr.error(translateMethod(res.error));
+                else {
+                  toastr.success(translateMethod('Api saved'));
+                  if (
+                    res._humanReadableId !== params.apiId ||
+                    res.currentVersion !== params.versionId
+                  )
+                    history.push(
+                      `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
+                    );
+                }
               })
-              .then((newApi) => {
-                if (
-                  newApi._humanReadableId !== params.apiId ||
-                  newApi.currentVersion !== params.versionId
-                )
-                  history.push(
-                    `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._humanReadableId}/${newApi.currentVersion}/infos`
-                  );
-              });
-        } else toastr.error(`api with name "${editedApi.name}" already exists`);
+        } else
+          toastr.error(`api with name "${editedApi.name}" already exists`);
       });
     }
   }
 
   function deleteApi() {
-    window.confirm(t('delete.api.confirm', props.currentLanguage)).then((ok) => {
+    window.confirm(translateMethod('delete.api.confirm')).then((ok) => {
       if (ok) {
         Services.deleteTeamApi(props.currentTeam._id, state.api._id)
           .then(() => props.history.push(`/${props.currentTeam._humanReadableId}/settings/apis`))
-          .then(() => toastr.success(t('deletion successful', props.currentLanguage)));
+          .then(() => toastr.success(translateMethod('deletion successful')));
       }
     });
   }
@@ -252,8 +255,7 @@ function TeamApiComponent(props) {
       else {
         toastr.success('New version of api created');
         history.push(
-          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${
-            params.tab ? params.tab : 'infos'
+          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab ? params.tab : 'infos'
           }`
         );
       }
@@ -273,23 +275,15 @@ function TeamApiComponent(props) {
     <TeamBackOffice
       tab="Apis"
       isLoading={!editedApi}
-      title={`${props.currentTeam.name} - ${
-        state.api ? state.api.name : t('API', props.currentLanguage)
-      }`}>
+      title={`${props.currentTeam.name} - ${state.api ? state.api.name : translateMethod('API')}`}>
       <Can I={manage} a={API} team={props.currentTeam} dispatchError>
-        {!editedApi && (
-          <h3>
-            <Translation i18nkey="No API" language={props.currentLanguage}>
-              No API
-            </Translation>
-          </h3>
-        )}
+        {!editedApi && <Spinner />}
         {editedApi && (
           <>
             <div className="row">
               {state.create ? (
                 <h1>
-                  <Translation i18nkey="New api" language={props.currentLanguage}>
+                  <Translation i18nkey="New api">
                     New api
                   </Translation>{' '}
                   - {editedApi.name}
@@ -303,7 +297,7 @@ function TeamApiComponent(props) {
                     <Link
                       to={`/${props.currentTeam._humanReadableId}/${editedApi._humanReadableId}/${editedApi.currentVersion}`}
                       className="btn btn-sm btn-access-negative"
-                      title={t('View this Api', props.currentLanguage)}>
+                      title={translateMethod('View this Api')}>
                       <i className="fas fa-eye" />
                     </Link>
                   </h1>
@@ -328,7 +322,7 @@ function TeamApiComponent(props) {
                     )}
                     <button type="button" className="btn btn-outline-info" onClick={promptVersion}>
                       <i className="fas fa-plus mr-1" />
-                      {t('teamapi.new_version', props.currentLanguage)}
+                      {translateMethod('teamapi.new_version')}
                     </button>
                   </div>
                 </div>
@@ -341,7 +335,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'infos' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/infos`}>
                     <i className="fas fa-info mr-1" />
-                    <Translation i18nkey="Informations" language={props.currentLanguage}>
+                    <Translation i18nkey="Informations">
                       Informations
                     </Translation>
                   </Link>
@@ -351,7 +345,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'description' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/description`}>
                     <i className="fas fa-file-alt mr-1" />
-                    <Translation i18nkey="Description" language={props.currentLanguage}>
+                    <Translation i18nkey="Description">
                       Description
                     </Translation>
                   </Link>
@@ -361,7 +355,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/plans`}>
                     <i className="fas fa-dollar-sign mr-1" />
-                    <Translation i18nkey="Plan" language={props.currentLanguage} isPlural>
+                    <Translation i18nkey="Plan" isPlural>
                       Plans
                     </Translation>
                   </Link>
@@ -372,7 +366,7 @@ function TeamApiComponent(props) {
                       className={`nav-link ${tab === 'otoroshi' ? 'active' : ''}`}
                       to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/otoroshi`}>
                       <i className="fas fa-pastafarianism mr-1" />
-                      <Translation i18nkey="Otoroshi" language={props.currentLanguage}>
+                      <Translation i18nkey="Otoroshi">
                         Otoroshi
                       </Translation>
                     </Link>
@@ -383,7 +377,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/swagger`}>
                     <i className="fas fa-file-code mr-1" />
-                    <Translation i18nkey="Swagger" language={props.currentLanguage}>
+                    <Translation i18nkey="Swagger">
                       Swagger
                     </Translation>
                   </Link>
@@ -394,7 +388,7 @@ function TeamApiComponent(props) {
                       className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
                       to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/testing`}>
                       <i className="fas fa-vial mr-1" />
-                      <Translation i18nkey="Testing" language={props.currentLanguage}>
+                      <Translation i18nkey="Testing">
                         Testing
                       </Translation>
                     </Link>
@@ -405,7 +399,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'documentation' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/documentation`}>
                     <i className="fas fa-book mr-1" />
-                    <Translation i18nkey="Documentation" language={props.currentLanguage}>
+                    <Translation i18nkey="Documentation">
                       Documentation
                     </Translation>
                   </Link>
@@ -415,7 +409,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'news' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/news`}>
                     <i className="fas fa-newspaper mr-1" />
-                    <Translation i18nkey="News" language={props.currentLanguage}>
+                    <Translation i18nkey="News">
                       News
                     </Translation>
                   </Link>
@@ -429,7 +423,6 @@ function TeamApiComponent(props) {
                     <TeamApiInfo
                       tenant={props.tenant}
                       team={props.currentTeam}
-                      currentLanguage={props.currentLanguage}
                       creating={
                         props.location && props.location.state && !!props.location.state.newApi
                       }
@@ -439,7 +432,6 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'description' && (
                     <TeamApiDescription
-                      currentLanguage={props.currentLanguage}
                       value={editedApi}
                       team={props.currentTeam}
                       onChange={(api) => setState({ ...state, api })}
@@ -447,14 +439,12 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'swagger' && (
                     <TeamApiSwagger
-                      currentLanguage={props.currentLanguage}
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
                     />
                   )}
                   {editedApi && tab === 'pricing' && (
                     <TeamApiPricing
-                      currentLanguage={props.currentLanguage}
                       teamId={teamId}
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
@@ -464,7 +454,6 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'plans' && (
                     <TeamApiPricing
-                      currentLanguage={props.currentLanguage}
                       teamId={teamId}
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
@@ -481,14 +470,12 @@ function TeamApiComponent(props) {
                   )}
                   {false && editedApi && tab === 'otoroshi' && (
                     <TeamApiOtoroshiPlaceholder
-                      currentLanguage={props.currentLanguage}
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
                     />
                   )}
                   {editedApi && tab === 'documentation' && (
                     <TeamApiDocumentation
-                      currentLanguage={props.currentLanguage}
                       creationInProgress={state.create}
                       team={props.currentTeam}
                       teamId={teamId}
@@ -503,7 +490,6 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'testing' && (
                     <TeamApiTesting
-                      currentLanguage={props.currentLanguage}
                       creationInProgress={state.create}
                       team={props.currentTeam}
                       teamId={teamId}
@@ -519,7 +505,6 @@ function TeamApiComponent(props) {
                   )}
                   {editedApi && tab === 'news' && (
                     <TeamApiPost
-                      currentLanguage={props.currentLanguage}
                       value={editedApi}
                       team={props.currentTeam}
                       api={state.api}
@@ -535,7 +520,7 @@ function TeamApiComponent(props) {
                 {!state.create && (
                   <button type="button" className="btn btn-outline-danger ml-1" onClick={deleteApi}>
                     <i className="fas fa-trash mr-1" />
-                    <Translation i18nkey="Delete" language={props.currentLanguage}>
+                    <Translation i18nkey="Delete">
                       Delete
                     </Translation>
                   </button>
@@ -548,7 +533,7 @@ function TeamApiComponent(props) {
                   {!state.create && (
                     <span>
                       <i className="fas fa-save mr-1" />
-                      <Translation i18nkey="Save" language={props.currentLanguage}>
+                      <Translation i18nkey="Save">
                         Save
                       </Translation>
                     </span>
@@ -556,7 +541,7 @@ function TeamApiComponent(props) {
                   {state.create && (
                     <span>
                       <i className="fas fa-save mr-1" />
-                      <Translation i18nkey="Create" language={props.currentLanguage}>
+                      <Translation i18nkey="Create">
                         Create
                       </Translation>
                     </span>

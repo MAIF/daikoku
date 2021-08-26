@@ -111,11 +111,14 @@ object TenantMode {
   case object Default extends TenantMode {
     def name: String = "Default"
   }
-
+  case object Translation extends TenantMode {
+    def name: String = "Translation"
+  }
   def apply(name: String): Option[TenantMode] = name.toLowerCase() match {
     case "maintenance"  => Some(Maintenance)
     case "construction" => Some(Construction)
     case "default"      => Some(Default)
+    case "translation"  => Some(Translation)
     case _              => Some(Default)
   }
 }

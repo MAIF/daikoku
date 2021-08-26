@@ -4,7 +4,6 @@ import {
   LOGOUT,
   UPDATE_NOTIFS,
   UPDATE_TEAM,
-  UPDATE_LANGUAGE,
   UPDATE_TENANT,
   UPDATE_USER,
 } from './';
@@ -52,13 +51,6 @@ export const updateNotications = (unreadNotificationsCount) => (dispatch) => {
   return dispatch({
     type: UPDATE_NOTIFS,
     unreadNotificationsCount,
-  });
-};
-
-export const udpateLanguage = (language) => (dispatch) => {
-  return dispatch({
-    type: UPDATE_LANGUAGE,
-    language,
   });
 };
 

@@ -1,17 +1,17 @@
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useContext, useEffect, useState } from 'react';
 import { Can, manage, Spinner, tenant as TENANT } from '../../utils';
 import { connect } from 'react-redux';
 import { UserBackOffice } from '../../backoffice';
-import { t, Translation } from '../../../locales';
 import * as Services from '../../../services';
 import { toastr } from 'react-redux-toastr';
 import { Link, Route, Switch, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
+import { I18nContext } from '../../../core';
+import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
 const MarkdownComponent = ({
-  currentLanguage,
   team,
   value,
   translationKey,
@@ -24,7 +24,7 @@ const MarkdownComponent = ({
   <Suspense fallback={<div>loading ...</div>}>
     <div style={{ position: 'relative' }} className="my-2">
       <LazySingleMarkdownInput
-        currentLanguage={currentLanguage}
+        fullWidth
         team={team}
         value={value}
         onChange={(code) => handleInputChange(translationKey, language, code)}
@@ -93,9 +93,11 @@ const Collapse = ({ label, children, edited, toggleTranslation, translationKey }
   );
 };
 
-const EditMailtemplate = ({ currentLanguage, tenantId, team }) => {
+const EditMailtemplate = ({ tenantId, team }) => {
   const [tenant, setTenant] = useState(undefined);
   const [mailTemplateTranslations, setMailTemplateTranslations] = useState([]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.oneTenant(tenantId).then((tenant) => {
@@ -176,7 +178,7 @@ const EditMailtemplate = ({ currentLanguage, tenantId, team }) => {
 
   const manageError = (res) => {
     if (res.error) toastr.error(res.error);
-    else toastr.success(t('mailing_internalization.translation_updated', currentLanguage));
+    else toastr.success(translateMethod('mailing_internalization.translation_updated'));
   };
 
   if (!tenant) return <Spinner />;
@@ -188,7 +190,6 @@ const EditMailtemplate = ({ currentLanguage, tenantId, team }) => {
           <span className="h5">Default mail template</span>
           <div className="mt-3">
             <MarkdownComponent
-              currentLanguage={currentLanguage}
               team={team}
               value={tenant.mailerSettings.template}
               language="en"
@@ -222,7 +223,6 @@ const EditMailtemplate = ({ currentLanguage, tenantId, team }) => {
               <span className="h5">Translation : {language}</span>
               <div className="mt-3">
                 <MarkdownComponent
-                  currentLanguage={currentLanguage}
                   team={team}
                   value={value}
                   language={language}
@@ -240,13 +240,15 @@ const EditMailtemplate = ({ currentLanguage, tenantId, team }) => {
   );
 };
 
-function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
+function MailingInternalizationComponent({ team, tenant }) {
   const [translations, setTranslations] = useState([]);
   const params = useParams();
 
   useEffect(() => {
     Services.getTranslations('mail').then((res) => setTranslations(res.translations));
   }, []);
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   function saveTranslation(key, language) {
     Services.saveTranslation(
@@ -255,9 +257,9 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
         .find((translation) => translation.key === key && translation.language === language)
     ).then((res) => {
       if (res.error)
-        toastr.error(t('mailing_internalization.failed_translation_update', currentLanguage));
+        toastr.error(translateMethod('mailing_internalization.failed_translation_update'));
       else {
-        toastr.success(t('mailing_internalization.translation_updated', currentLanguage));
+        toastr.success(translateMethod('mailing_internalization.translation_updated'));
         editTranslations(key, language, [
           { action: (_) => res.lastModificationAt, field: 'lastModificationAt' },
           { action: (_) => false, field: 'edited' },
@@ -286,9 +288,9 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
         .find(([k, _]) => k === key)[1]
         .find((translation) => translation.key === key && translation.language === language)
     ).then((res) => {
-      if (res.error) toastr.error(t('Failed to reset translation', currentLanguage));
+      if (res.error) toastr.error(translateMethod('Failed to reset translation'));
       else {
-        toastr.success(t('Translation reset', currentLanguage));
+        toastr.success(translateMethod('Translation reset'));
         editTranslations(key, language, [
           { action: (_) => undefined, field: 'lastModificationAt' },
           { action: (_) => res.value, field: 'value' },
@@ -323,7 +325,7 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
     <UserBackOffice tab="Internalization">
       <Can I={manage} a={TENANT} dispatchError>
         <h1>
-          <Translation i18nkey="internationalization" language={currentLanguage} />
+          <Translation i18nkey="internationalization" />
         </h1>
         <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
           <li className="nav-item">
@@ -331,7 +333,7 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
               className={`nav-link ${params.domain === 'mail' ? 'active' : ''}`}
               to={`/settings/internationalization/mail`}>
               <i className="fas fa-envelope mr-1" />
-              {t('mailing_internalization.mail_tab', currentLanguage)}
+              {translateMethod('mailing_internalization.mail_tab')}
             </Link>
           </li>
           <li className="nav-item">
@@ -339,7 +341,7 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
               className={`nav-link ${params.domain === 'mail-template' ? 'active' : ''}`}
               to={`/settings/internationalization/mail-template`}>
               <i className="fas fa-envelope mr-1" />
-              {t('mailing_internalization.mail_template_tab', currentLanguage)}
+              {translateMethod('mailing_internalization.mail_template_tab')}
             </Link>
           </li>
           <li className="nav-item">
@@ -347,7 +349,7 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
               className={`nav-link ${params.domain === 'front' ? 'active' : ''}`}
               to={`/settings/internationalization/front`}>
               <i className="fas fa-globe mr-1" />
-              {t('mailing_internalization.front_office_tab', currentLanguage)}
+              {translateMethod('mailing_internalization.front_office_tab')}
             </Link>
           </li>
         </ul>
@@ -359,15 +361,15 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
               <div className="col-12 pb-3">
                 <div className="d-flex justify-space-between py-3">
                   <span style={{ flex: 1 }} className="lead">
-                    {t('mailing_internalization.message_text', currentLanguage)}
+                    {translateMethod('mailing_internalization.message_text')}
                   </span>
                   <span style={{ flex: 1 }} className="lead text-center">
-                    {t('mailing_internalization.required_variables', currentLanguage)}
+                    {translateMethod('mailing_internalization.required_variables')}
                   </span>
                 </div>
                 {translations.map(([key, values, edited]) => (
                   <Collapse
-                    label={t(key, currentLanguage)}
+                    label={translateMethod(key)}
                     edited={edited === undefined ? false : edited}
                     translationKey={key}
                     toggleTranslation={toggleTranslation}
@@ -376,7 +378,6 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
                       <MarkdownComponent
                         {...v}
                         key={`${key}-${v.language}-${i}`}
-                        currentLanguage={currentLanguage}
                         team={team}
                         translationKey={key}
                         saveTranslation={saveTranslation}
@@ -394,18 +395,13 @@ function MailingInternalizationComponent({ currentLanguage, team, tenant }) {
             render={() => (
               <EditMailtemplate
                 tenantId={tenant._id}
-                currentLanguage={currentLanguage}
                 team={team}
               />
             )}
           />
           <Route
             path={`${basePath}/front`}
-            render={() => (
-              <p style={{ fontStyle: 'italic' }} className="text-center w-100">
-                {t('mailing_internalization.missing_translations', currentLanguage)}
-              </p>
-            )}
+            render={() => <EditFrontOfficeTranslations tenantId={tenant._id} team={team} />}
           />
         </Switch>
       </Can>

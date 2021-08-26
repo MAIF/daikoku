@@ -7,7 +7,7 @@ import { converter } from '../../services/showdown';
 import { Option } from '../utils';
 import { MessagesContext } from '../backoffice';
 import * as MessageEvents from '../../services/messages';
-import { t, Translation } from '../../locales';
+import { I18nContext } from '../../locales/i18n-context';
 
 const DiscussionComponent = (props) => {
   const {
@@ -29,6 +29,8 @@ const DiscussionComponent = (props) => {
       readMessages(messages[0].chat);
     }
   }, [opened, totalUnread]);
+
+  const { translateMethod } = useContext(I18nContext)
 
   const handleKeyDown = (event) => {
     if (!newMessage.trim()) return;
@@ -103,7 +105,7 @@ const DiscussionComponent = (props) => {
                   disabled={loading ? 'disabled' : null}
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => getPreviousMessages(props.connectedUser._id)}>
-                  <Translation i18nkey="Load previous messages" language={props.currentLanguage}>
+                  <Translation i18nkey="Load previous messages">
                     Load previous messages
                   </Translation>
                 </button>
@@ -114,7 +116,7 @@ const DiscussionComponent = (props) => {
             <input
               disabled={loading ? 'disabled' : null}
               type="text"
-              placeholder={t('Your message', props.currentLanguage)}
+              placeholder={translateMethod('Your message')}
               value={loading ? '...' : newMessage}
               onKeyDown={handleKeyDown}
               onChange={(e) => setNewMessage(e.target.value)}

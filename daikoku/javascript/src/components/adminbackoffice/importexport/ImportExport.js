@@ -1,138 +1,137 @@
 /* eslint-disable react/jsx-no-target-blank */
-import React, { Component } from 'react';
+import React, { useContext, useState } from 'react';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { connect } from 'react-redux';
 import { Can, manage, daikoku } from '../../utils';
-import { t, Translation } from '../../../locales';
 import { SwitchButton } from '../../inputs';
+import { I18nContext } from '../../../locales/i18n-context';
 
-export class ImportExportComponent extends Component {
-  state = {
+export function ImportExportComponent(props) {
+  const { translateMethod, Translation } = useContext(I18nContext)
+
+  let input;
+
+  const [state, setState] = useState({
     exportAuditTrail: true,
     uploading: false,
     migration: {
       processing: false,
       error: '',
       onSuccessMessage: '',
-    },
-  };
+    }
+  });
 
-  importState = () => {
-    if (this.input) {
-      this.input.click();
+  const importState = () => {
+    if (input) {
+      input.click();
     }
   };
 
-  actuallyImportState = (e) => {
+  const actuallyImportState = (e) => {
     const files = e.target.files;
-    this.setState({ uploading: true }, () => {
-      Services.uploadExportFile(files[0]).then(() => {
-        this.setState({ uploading: false });
-        window.location.reload();
+    setState({ ...state, uploading: true })
+    Services.uploadExportFile(files[0]).then(() => {
+      setState({ ...state, uploading: false });
+      window.location.reload();
+    });
+  };
+
+  const migrate = () => {
+    setState({
+      ...state,
+      migration: {
+        processing: true,
+        error: '',
+        onSuccessMessage: '',
+      }
+    })
+    Services.migrateMongoToPostgres().then(async (res) => {
+      setState({
+        ...state,
+        migration: {
+          processing: false,
+          error: res.error || '',
+          onSuccessMessage: res.error ? '' : res.message,
+        },
       });
     });
   };
 
-  migrate = () => {
-    this.setState(
-      {
-        migration: {
-          processing: true,
-          error: '',
-          onSuccessMessage: '',
-        },
-      },
-      () => {
-        Services.migrateMongoToPostgres().then(async (res) => {
-          this.setState({
-            migration: {
-              processing: false,
-              error: res.error || '',
-              onSuccessMessage: res.error ? '' : res.message,
-            },
-          });
-        });
-      }
-    );
-  };
-
-  render() {
-    const { processing, error, onSuccessMessage } = this.state.migration;
-    return (
-      <UserBackOffice tab="Import / Export">
-        <Can I={manage} a={daikoku} dispatchError>
-          <div className="row">
-            <div className="col">
-              <h1>
-                <Translation i18nkey="Import / Export" language={this.props.currentLanguage}>
-                  Import / Export
+  const { processing, error, onSuccessMessage } = state.migration;
+  return (
+    <UserBackOffice tab="Import / Export">
+      <Can I={manage} a={daikoku} dispatchError>
+        <div className="row">
+          <div className="col">
+            <h1>
+              <Translation i18nkey="Import / Export">
+                Import / Export
+              </Translation>
+            </h1>
+            <div className="section p-3">
+              <a
+                href={`/api/state/export?download=true&export-audit-trail=${!!state
+                  .exportAuditTrail}`}
+                target="_blank"
+                className="btn btn-outline-primary">
+                <i className="fas fa-download mr-1" />
+                <Translation i18nkey="download state">
+                  download state
                 </Translation>
-              </h1>
-              <div className="section p-3">
-                <a
-                  href={`/api/state/export?download=true&export-audit-trail=${!!this.state
-                    .exportAuditTrail}`}
-                  target="_blank"
-                  className="btn btn-outline-primary">
-                  <i className="fas fa-download mr-1" />
-                  <Translation i18nkey="download state" language={this.props.currentLanguage}>
-                    download state
-                  </Translation>
-                </a>
-                <button
-                  type="button"
-                  style={{ marginLeft: 10 }}
-                  onClick={this.importState}
-                  className="btn btn-outline-primary">
-                  <i className="fas fa-upload mr-1" />
-                  {this.state.uploading
-                    ? t('importing ...', this.props.currentLanguage)
-                    : t('import state', this.props.currentLanguage)}
-                </button>
-                <div className="d-flex justify-content-start">
-                  <SwitchButton
-                    onSwitch={(enabled) => this.setState({ exportAuditTrail: enabled })}
-                    checked={this.state.exportAuditTrail}
-                    label={t('audittrail.export.label', this.props.currentLanguage)}
-                  />
-                </div>
-                <input
-                  type="file"
-                  className="hide"
-                  ref={(r) => (this.input = r)}
-                  onChange={this.actuallyImportState}
+              </a>
+              <button
+                type="button"
+                style={{ marginLeft: 10 }}
+                onClick={importState}
+                className="btn btn-outline-primary">
+                <i className="fas fa-upload mr-1" />
+                {state.uploading
+                  ? translateMethod('importing ...')
+                  : translateMethod('import state')}
+              </button>
+              <div className="d-flex justify-content-start">
+                <SwitchButton
+                  onSwitch={(enabled) => setState({ ...state, exportAuditTrail: enabled })}
+                  checked={state.exportAuditTrail}
+                  label={translateMethod('audittrail.export.label')}
                 />
               </div>
-              <h2 className="my-2">
-                <Translation i18nkey="Mongo migration" language={this.props.currentLanguage}>
-                  Mongo migration
-                </Translation>
-              </h2>
-              <div className="section p-3">
-                <button type="button" onClick={this.migrate} className="btn btn-outline-primary">
-                  <i className="fas fa-database mr-1" />
-                  {processing
-                    ? t('migration in progress ...', this.props.currentLanguage)
-                    : t('migrate database', this.props.currentLanguage)}
-                </button>
-                {error.length > 0 && (
-                  <div className="alert alert-danger my-0 mt-3" role="alert">
-                    {error}
-                  </div>
-                )}
-                {onSuccessMessage.length > 0 && (
-                  <div className="alert alert-success my-0 mt-3" role="alert">
-                    {onSuccessMessage}
-                  </div>
-                )}
-              </div>
+              <input
+                type="file"
+                className="hide"
+                ref={(r) => (input = r)}
+                onChange={actuallyImportState}
+              />
+            </div>
+            <h2 className="my-2">
+              <Translation i18nkey="Mongo migration">
+                Mongo migration
+              </Translation>
+            </h2>
+            <div className="section p-3">
+              <button type="button" onClick={migrate} className="btn btn-outline-primary">
+                <i className="fas fa-database mr-1" />
+                {processing
+                  ? translateMethod('migration in progress ...')
+                  : translateMethod('migrate database')}
+              </button>
+              {error.length > 0 && (
+                <div className="alert alert-danger my-0 mt-3" role="alert">
+                  {error}
+                </div>
+              )}
+              {onSuccessMessage.length > 0 && (
+                <div className="alert alert-success my-0 mt-3" role="alert">
+                  {onSuccessMessage}
+                </div>
+              )}
             </div>
           </div>
-        </Can>
-      </UserBackOffice>
-    );
-  }
+        </div>
+      </Can>
+    </UserBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

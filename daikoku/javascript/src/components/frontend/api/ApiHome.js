@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import hljs from 'highlight.js';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
@@ -18,10 +18,9 @@ import {
 import { converter } from '../../../services/showdown';
 import { Can, manage, api as API, Option, ActionWithTeamSelector } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
-import { setError, openContactModal, updateUser } from '../../../core';
+import { setError, openContactModal, updateUser, I18nContext } from '../../../core';
 
 import 'highlight.js/styles/monokai.css';
-import { Translation, t } from '../../../locales';
 import StarsButton from './StarsButton';
 import Select from 'react-select';
 import { LoginOrRegisterModal } from '../modals';
@@ -51,7 +50,6 @@ const ApiHeader = ({
   history,
   connectedUser,
   toggleStar,
-  currentLanguage,
   params,
   tab,
 }) => {
@@ -128,7 +126,6 @@ const ApiHeader = ({
                 stars={api.stars}
                 starred={connectedUser.starredApis.includes(api._id)}
                 toggleStar={toggleStar}
-                currentLanguage={currentLanguage}
               />
             </div>
           </h1>
@@ -145,7 +142,6 @@ const ApiHomeComponent = ({
   match,
   history,
   setError,
-  currentLanguage,
   connectedUser,
   updateUser,
   tenant,
@@ -159,6 +155,8 @@ const ApiHomeComponent = ({
   const [showGuestModal, setGuestModal] = useState(false);
 
   const params = useParams();
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     updateSubscriptions(match.params.apiId);
@@ -197,7 +195,7 @@ const ApiHomeComponent = ({
   };
 
   const askForApikeys = (teams, plan, apiKey) => {
-    const planName = formatPlanType(plan, currentLanguage);
+    const planName = formatPlanType(plan, translateMethod);
 
     return (apiKey
       ? Services.extendApiKey(api._id, apiKey._id, teams, plan._id)
@@ -205,19 +203,18 @@ const ApiHomeComponent = ({
     )
       .then((results) => {
         if (results.error) {
-          return toastr.error(t('Error', currentLanguage), results.error);
+          return toastr.error(translateMethod('Error'), results.error);
         }
         return results.forEach((result) => {
           const team = myTeams.find((t) => t._id === result.subscription.team);
 
           if (result.error) {
-            return toastr.error(t('Error', currentLanguage), result.error);
+            return toastr.error(translateMethod('Error'), result.error);
           } else if (result.creation === 'done') {
             return toastr.success(
-              t('Done', currentLanguage),
-              t(
+              translateMethod('Done'),
+              translateMethod(
                 'subscription.plan.accepted',
-                currentLanguage,
                 false,
                 `API key for ${planName} plan and the team ${team.name} is available`,
                 planName,
@@ -226,10 +223,9 @@ const ApiHomeComponent = ({
             );
           } else if (result.creation === 'waiting') {
             return toastr.info(
-              t('Pending request', currentLanguage),
-              t(
+              translateMethod('Pending request'),
+              translateMethod(
                 'subscription.plan.waiting',
-                currentLanguage,
                 false,
                 `The API key request for ${planName} plan and the team ${team.name} is pending acceptance`,
                 planName,
@@ -272,10 +268,9 @@ const ApiHomeComponent = ({
       <div className="m-3">
         <LoginOrRegisterModal
           tenant={tenant}
-          currentLanguage={currentLanguage}
           showOnlyMessage={true}
           asFlatFormat
-          message={t('guest_user_not_allowed', currentLanguage)}
+          message={translateMethod('guest_user_not_allowed')}
         />
       </div>
     );
@@ -296,22 +291,21 @@ const ApiHomeComponent = ({
           (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
         showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
           <>
-            <h2 className="text-center my-3">{t('request_already_pending', currentLanguage)}</h2>
+            <h2 className="text-center my-3">{translateMethod('request_already_pending')}</h2>
             <button
               className="btn btn-outline-info mx-auto"
               style={{ width: 'fit-content' }}
               onClick={() => history.goBack()}>
-              {t('go_back', currentLanguage)}
+              {translateMethod('go_back')}
             </button>
           </>
         ) : (
           <>
-            <span className="text-center my-3">{t('request_api_access', currentLanguage)}</span>
+            <span className="text-center my-3">{translateMethod('request_api_access')}</span>
             <ActionWithTeamSelector
               title="Api access"
-              description={t(
+              description={translateMethod(
                 'api.access.request',
-                currentLanguage,
                 false,
                 `You will send an access request to the API "${params.apIid}". For which team do you want to send the request ?`,
                 [params.apIid]
@@ -325,7 +319,7 @@ const ApiHomeComponent = ({
                 );
               }}>
               <button className="btn btn-success mx-auto" style={{ width: 'fit-content' }}>
-                {t('notif.api.access', currentLanguage, null, false, [params.apiId])}
+                {translateMethod('notif.api.access', null, false, [params.apiId])}
               </button>
             </ActionWithTeamSelector>
           </>
@@ -357,7 +351,6 @@ const ApiHomeComponent = ({
         history={history}
         connectedUser={connectedUser}
         toggleStar={toggleStar}
-        currentLanguage={currentLanguage}
         params={match.params}
         tab={tab}
       />
@@ -369,7 +362,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'description' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}`}>
-                  <Translation i18nkey="Description" language={currentLanguage}>
+                  <Translation i18nkey="Description">
                     Description
                   </Translation>
                 </Link>
@@ -378,7 +371,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/pricing`}>
-                  <Translation i18nkey="Plan" language={currentLanguage} isPlural={true}>
+                  <Translation i18nkey="Plan" isPlural={true}>
                     Plans
                   </Translation>
                 </Link>
@@ -389,7 +382,7 @@ const ApiHomeComponent = ({
                     tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
                   }`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/documentation`}>
-                  <Translation i18nkey="Documentation" language={currentLanguage}>
+                  <Translation i18nkey="Documentation">
                     Documentation
                   </Translation>
                 </Link>
@@ -398,7 +391,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/redoc`}>
-                  <Translation i18nkey="Api Reference" language={currentLanguage}>
+                  <Translation i18nkey="Api Reference">
                     Api Reference
                   </Translation>
                 </Link>
@@ -407,7 +400,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/swagger`}>
-                  <Translation i18nkey="Try it !" language={currentLanguage}>
+                  <Translation i18nkey="Try it !">
                     Try it !
                   </Translation>
                 </Link>
@@ -417,7 +410,7 @@ const ApiHomeComponent = ({
                   <Link
                     className={`nav-link ${tab === 'news' ? 'active' : ''}`}
                     to={`/${match.params.teamId}/${apiId}/${versionId}/news`}>
-                    <Translation i18nkey="News" language={currentLanguage}>
+                    <Translation i18nkey="News">
                       News
                     </Translation>
                   </Link>
@@ -427,7 +420,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/issues`}>
-                  <Translation i18nkey="issues" language={currentLanguage}>
+                  <Translation i18nkey="issues">
                     Issues
                   </Translation>
                 </Link>
@@ -447,7 +440,6 @@ const ApiHomeComponent = ({
                 api={api}
                 subscriptions={subscriptions}
                 askForApikeys={(teams, plan) => askForApikeys(teams, plan)}
-                currentLanguage={currentLanguage}
                 tenant={tenant}
                 openContactModal={() =>
                   openContactModal(userName, userEmail, tenant._id, api.team, api._id)
@@ -472,7 +464,6 @@ const ApiHomeComponent = ({
                 askForApikeys={askForApikeys}
                 pendingSubscriptions={pendingSubscriptions}
                 updateSubscriptions={updateSubscriptions}
-                currentLanguage={currentLanguage}
                 tenant={tenant}
               />
             )}
@@ -481,7 +472,6 @@ const ApiHomeComponent = ({
                 api={api}
                 ownerTeam={ownerTeam}
                 match={match}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'documentation-page' && (
@@ -489,7 +479,6 @@ const ApiHomeComponent = ({
                 api={api}
                 ownerTeam={ownerTeam}
                 match={match}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'swagger' && (
@@ -501,7 +490,6 @@ const ApiHomeComponent = ({
                 testing={api.testing}
                 tenant={tenant}
                 connectedUser={connectedUser}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'redoc' && (
@@ -512,7 +500,6 @@ const ApiHomeComponent = ({
                 match={match}
                 tenant={tenant}
                 connectedUser={connectedUser}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'console' && (
@@ -531,7 +518,6 @@ const ApiHomeComponent = ({
                 ownerTeam={ownerTeam}
                 match={match}
                 versionId={match.params.versionId}
-                currentLanguage={currentLanguage}
               />
             )}
             {tab === 'issues' && (
@@ -542,7 +528,6 @@ const ApiHomeComponent = ({
                 ownerTeam={ownerTeam}
                 connectedUser={connectedUser}
                 match={match}
-                currentLanguage={currentLanguage}
               />
             )}
           </div>

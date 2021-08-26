@@ -1,51 +1,47 @@
-import React, { Component } from 'react';
+import React, { useContext } from 'react';
 import { AssetChooserByModal, MimeTypeFilter } from '../frontend';
 import md5 from 'js-md5';
-import { t, Translation } from '../../locales';
+import { I18nContext } from '../../locales/i18n-context';
 
-class Gravatar extends Component {
-  setGravatarLink = () => {
-    const email = this.props.rawValue.contact.toLowerCase().trim();
+function Gravatar(props) {
+  const setGravatarLink = () => {
+    const email = props.rawValue.contact.toLowerCase().trim();
     const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
-    this.props.changeValue('avatar', url);
+    props.changeValue('avatar', url);
   };
 
-  render() {
-    return (
-      <button type="button" className="btn btn-access" onClick={this.setGravatarLink}>
-        <i className="fas fa-user-circle mr-1" />
-        <Translation i18nkey="gravatar.btn.label" language={this.props.currentLanguage}>
-          Set avatar from Gravatar
-        </Translation>
-      </button>
-    );
-  }
+  return (
+    <button type="button" className="btn btn-access" onClick={setGravatarLink}>
+      <i className="fas fa-user-circle mr-1" />
+      <Translation i18nkey="gravatar.btn.label">
+        Set avatar from Gravatar
+      </Translation>
+    </button>
+  );
 }
 
-class AssetButton extends Component {
-  render() {
-    return (
-      <AssetChooserByModal
-        typeFilter={MimeTypeFilter.image}
-        onlyPreview
-        tenantMode={false}
-        team={this.props.team()}
-        label={t('Set avatar from asset', this.props.currentLanguage)}
-        onSelect={(asset) => this.props.changeValue('avatar', asset.link)}
-      />
-    );
-  }
+function AssetButton(props) {
+  const { translateMethod } = useContext(I18nContext)
+
+  return (
+    <AssetChooserByModal
+      typeFilter={MimeTypeFilter.image}
+      onlyPreview
+      tenantMode={false}
+      team={props.team()}
+      label={translateMethod('Set avatar from asset')}
+      onSelect={(asset) => props.changeValue('avatar', asset.link)}
+    />
+  );
 }
 
-export class AvatarChooser extends Component {
-  render() {
-    return (
-      <div className="form-group row">
-        <div className="col-12 d-flex justify-content-end">
-          <Gravatar {...this.props} />
-          <AssetButton {...this.props} />
-        </div>
+export const AvatarChooser = props => {
+  return (
+    <div className="form-group row">
+      <div className="col-12 d-flex justify-content-end">
+        <Gravatar {...props} />
+        <AssetButton {...props} />
       </div>
-    );
-  }
+    </div>
+  );
 }

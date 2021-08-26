@@ -951,7 +951,6 @@
     "mail.new.message.body": "You've got a new message",
     "mail.new.user.title": "Validate your [tenant] account",
     "mail.new.user.body": "Thanks for creating your [tenant] account, you're almost done.",
-    "mailing_internalization.missing_translations": "Edition of all front office text will be available in next version",
     "mailing_internalization.message_text": "Message text",
     "mailing_internalization.required_variables": "Required variables",
     "mailing_internalization.translation_updated": "Translation updated",
@@ -959,5 +958,8 @@
     "mailing_internalization.mail_tab": "Mail",
     "mailing_internalization.mail_template_tab": "Mail template",
     "mailing_internalization.front_office_tab": "Front office",
-    "mailing_internalization.go_to_edit_template": "Edit mail template"
+    "mailing_internalization.go_to_edit_template": "Edit mail template",
+    "tenant_edit.translation_mode_message": "You can now navigate and edit all elements just by hovering it",
+    "Translation mode enabled": "Translation mode enabled",
+    "Search translation": "Search translation"
 }

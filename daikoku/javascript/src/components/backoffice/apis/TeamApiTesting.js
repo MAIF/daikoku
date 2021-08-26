@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import faker from 'faker';
 import _ from 'lodash';
 
 import { Option } from '../../utils';
 import * as Services from '../../../services';
-import { t, Translation } from '../../../locales';
 import { BooleanInput, TextInput, SelectInput } from '../../inputs';
+import { I18nContext } from '../../../core';
 
 export const TeamApiTesting = (props) => {
   const testing = props.value.testing;
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const handleOtoroshiUsage = () => {
     const random = faker.random.alphaNumeric(16);
@@ -27,13 +29,12 @@ export const TeamApiTesting = (props) => {
     props.openSubMetadataModal({
       save: (metadata) =>
         props.openTestingApiKeyModal({
-          currentLanguage: props.currentLanguage,
           metadata,
           otoroshiSettings: props.otoroshiSettings,
           teamId: props.teamId,
           config: newConfig,
           update: testing.config && testing.config.otoroshiSettings,
-          title: t('Otoroshi settings', props.currentLanguage),
+          title: translateMethod('Otoroshi settings'),
           onChange: (apiKey, config) => {
             props.onAction({
               ...props.value,
@@ -50,13 +51,12 @@ export const TeamApiTesting = (props) => {
         }),
       config: testing.config,
       api: props.value._id,
-      currentLanguage: props.currentLanguage,
       description: <div>Description</div>,
     });
   };
 
   const deleteOtoroshiKey = () => {
-    window.confirm(t('otoroshi.testing.delete.confirm', props.currentLanguage)).then((ok) => {
+    window.confirm(translateMethod('otoroshi.testing.delete.confirm')).then((ok) => {
       if (ok)
         Services.deleteTestingApiKey(props.team._id, {
           otoroshiSettings: testing.config.otoroshiSettings,
@@ -86,21 +86,19 @@ export const TeamApiTesting = (props) => {
     .map((t) => t.config)
     .exists((c) => c.otoroshiSettings);
 
-  const lang = props.currentLanguage;
-
   return (
     <div className="d-flex">
       <form className="col-6 section pt-2 pr-2">
         <BooleanInput
           value={testing.enabled}
-          label={t('Enabled', lang)}
+          label={translateMethod('Enabled')}
           onChange={(enabled) => setTesting({ ...testing, enabled })}
         />
         <SelectInput
           clearable={false}
           value={{ label: testing.auth, value: testing.auth }}
-          placeholder={t('Select a auth type', lang)}
-          label={t('Auth. type', lang)}
+          placeholder={translateMethod('Select a auth type')}
+          label={translateMethod('Auth. type')}
           possibleValues={[
             { label: 'ApiKey', value: 'ApiKey' },
             { label: 'Basic', value: 'Basic' },
@@ -111,17 +109,17 @@ export const TeamApiTesting = (props) => {
         />
         <TextInput
           value={testing.name}
-          label={t('Auth. name', lang)}
+          label={translateMethod('Auth. name')}
           onChange={(name) => setTesting({ ...testing, name })}
         />
         <TextInput
           value={testing.username}
-          label={t('Client Id', lang)}
+          label={translateMethod('Client Id')}
           onChange={(username) => setTesting({ ...testing, username })}
         />
         <TextInput
           value={testing.password}
-          label={t('Client secret', lang)}
+          label={translateMethod('Client secret')}
           type="password"
           onChange={(password) => setTesting({ ...testing, password })}
         />
@@ -129,7 +127,7 @@ export const TeamApiTesting = (props) => {
       {!otoKeyExists && (
         <div className="col-6 d-flex justify-content-center align-items-center">
           <button className="btn btn-outline-success" onClick={handleOtoroshiUsage}>
-            <Translation i18nkey="testing.key.creation" language={lang}>
+            <Translation i18nkey="testing.key.creation">
               Use Otoroshi to create testing ApiKey
             </Translation>
           </button>
@@ -145,7 +143,7 @@ export const TeamApiTesting = (props) => {
               alignItems: 'flex-start',
             }}>
             <p>
-              <Translation i18nkey="otoroshi.test.key.modal.description" language={lang}>
+              <Translation i18nkey="otoroshi.test.key.modal.description">
                 In order to make everything work, you'll have to add a tags match (OneTageIn /
                 AllTagIn) in your service descriptor in the 'Api Keys Constraints' section. Make
                 sure this service descriptor is the right one for testing and not a production
@@ -153,7 +151,7 @@ export const TeamApiTesting = (props) => {
               </Translation>
             </p>
             <p>
-              <Translation i18nkey="otoroshi.test.key.modal.tag.name" language={lang}>
+              <Translation i18nkey="otoroshi.test.key.modal.tag.name">
                 The tag you need to add is the following
               </Translation>
             </p>
@@ -173,12 +171,12 @@ export const TeamApiTesting = (props) => {
           </div>
           <div className="d-flex justify-content-center align-items-center flex-grow-1">
             <button className="btn btn-outline-danger" onClick={deleteOtoroshiKey}>
-              <Translation i18nkey="Delete Testing ApiKey" language={lang}>
+              <Translation i18nkey="Delete Testing ApiKey">
                 Delete Testing ApiKey
               </Translation>
             </button>
             <button className="btn btn-outline-success ml-1" onClick={handleOtoroshiUsage}>
-              <Translation i18nkey="Update Testing ApiKey" language={lang}>
+              <Translation i18nkey="Update Testing ApiKey">
                 Update Testing ApiKey
               </Translation>
             </button>

@@ -1,46 +1,46 @@
-import React from 'react';
-
-import { t } from '../../../../locales';
+import React, { useContext } from 'react';
+import { I18nContext } from '../../../../core';
 import { MailTemplateButton } from './MailTemplateButton';
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export function MailjetConfig({ currentLanguage, value, onChange }) {
+export function MailjetConfig({ value, onChange }) {
+  const { translateMethod } = useContext(I18nContext);
+
   const formFlow = ['apiKeyPublic', 'apiKeyPrivate', 'fromTitle', 'fromEmail', 'template'];
 
   const formSchema = {
     apiKeyPublic: {
       type: 'string',
       props: {
-        label: t('Mailjet apikey public', currentLanguage),
+        label: translateMethod('Mailjet apikey public'),
       },
     },
     apiKeyPrivate: {
       type: 'string',
       props: {
-        label: t('Mailjet apikey private', currentLanguage),
+        label: translateMethod('Mailjet apikey private'),
       },
     },
     fromTitle: {
       type: 'string',
       props: {
-        label: t('Email title', currentLanguage),
+        label: translateMethod('Email title'),
       },
     },
     fromEmail: {
       type: 'string',
       props: {
-        label: t('Email from', currentLanguage),
+        label: translateMethod('Email from'),
       },
     },
     template: {
-      type: () => <MailTemplateButton currentLanguage={currentLanguage} />,
+      type: () => <MailTemplateButton />,
     },
   };
 
   return (
     <React.Suspense>
       <LazyForm
-        currentLanguage={currentLanguage}
         value={value}
         onChange={onChange}
         flow={formFlow}

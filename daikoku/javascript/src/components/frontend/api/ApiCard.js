@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import classNames from 'classnames';
 
 import { Can, manage, api as API } from '../../utils';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
-import { Translation, t } from '../../../locales';
 import StarsButton from './StarsButton';
+import { I18nContext } from '../../../core';
 
 export const ApiCard = (props) => {
   const allTeamsAreAuthorized =
@@ -13,6 +13,8 @@ export const ApiCard = (props) => {
     props.api.authorizations && props.api.authorizations.some((a) => a.pending && !a.authorized);
   const api = props.api;
   const team = props.team || { name: '--', avatar: '#', _id: api.team };
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const accessButton = () => {
     if (
@@ -23,9 +25,8 @@ export const ApiCard = (props) => {
       return (
         <ActionWithTeamSelector
           title="Api access"
-          description={t(
+          description={translateMethod(
             'api.access.request',
-            props.currentLanguage,
             false,
             `You will send an access request to the API "${api.name}". For which team do you want to send the request ?`,
             [api.name]
@@ -39,7 +40,7 @@ export const ApiCard = (props) => {
           action={(teams) => props.askForApiAccess(teams)}
           withAllTeamSelector={true}>
           <button className="btn btn-sm btn-access-negative mr-1">
-            <Translation i18nkey="Access" language={props.currentLanguage}>
+            <Translation i18nkey="Access">
               Access
             </Translation>
           </button>
@@ -48,7 +49,7 @@ export const ApiCard = (props) => {
     } else if (isPending) {
       return (
         <button className="btn btn-sm btn-access-negative mr-1">
-          <Translation i18nkey="Pending request" language={props.currentLanguage}>
+          <Translation i18nkey="Pending request">
             Pending request
           </Translation>
         </button>
@@ -118,7 +119,8 @@ export const ApiCard = (props) => {
               stars={api.stars}
               starred={props.user.starredApis.includes(api._id)}
               toggleStar={props.toggleStar}
-              currentLanguage={props.currentLanguage}
+
+              
               connectedUser={props.connectedUser}
             />
           </div>
@@ -126,7 +128,7 @@ export const ApiCard = (props) => {
       </div>
       <div className="col-12 lead">
         <Translation
-          language={props.currentLanguage}
+         
           i18nkey={`${api._humanReadableId}.description`}
           extraConf={api.translation}>
           {api.smallDescription}

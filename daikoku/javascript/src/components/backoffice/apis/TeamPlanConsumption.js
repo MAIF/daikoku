@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import moment from 'moment';
 import { connect } from 'react-redux';
@@ -6,27 +6,28 @@ import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import { TeamBackOffice } from '../..';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
-import { t } from '../../../locales';
+import { I18nContext } from '../../../core';
 
-class TeamPlanConsumptionComponent extends Component {
-  state = {
-    api: null,
-  };
+function TeamPlanConsumptionComponent(props) {
+  const { translateMethod } = useContext(I18nContext);
 
-  mappers = [
+  const [state, setState] = useState({
+    api: null
+  })
+
+  const mappers = [
     {
       type: 'LineChart',
       label: (data) => {
         const totalHits = data.reduce((acc, cons) => acc + cons.hits, 0);
-        return t(
+        return translateMethod(
           'data.in.plus.hits',
-          this.props.currentLanguage,
           false,
           `Data In (${totalHits})`,
           totalHits
         );
       },
-      title: t('Data In', this.props.currentLanguage),
+      title: translateMethod('Data In'),
       formatter: (data) =>
         data.reduce((acc, item) => {
           const date = moment(item.to).format('DD MMM.');
@@ -38,13 +39,13 @@ class TeamPlanConsumptionComponent extends Component {
     },
     {
       type: 'RoundChart',
-      label: t('Hits by apikey', this.props.currentLanguage),
-      title: t('Hits by apikey', this.props.currentLanguage),
+      label: translateMethod('Hits by apikey'),
+      title: translateMethod('Hits by apikey'),
       formatter: (data) =>
         data.reduce((acc, item) => {
           const value = acc.find((a) => a.name === item.clientId) || { count: 0 };
 
-          const team = this.state.teams.find((t) => t._id === item.team);
+          const team = state.teams.find((t) => t._id === item.team);
           const name = team.name;
 
           return [
@@ -56,26 +57,26 @@ class TeamPlanConsumptionComponent extends Component {
     },
     {
       type: 'Global',
-      label: t('Global informations', this.props.currentLanguage),
-      formatter: (data) => this.sumGlobalInformations(data),
+      label: translateMethod('Global informations'),
+      formatter: (data) => sumGlobalInformations(data),
     },
   ];
 
-  getPlanInformation = () => {
-    return Services.teamApi(this.props.currentTeam._id, this.props.match.params.apiId).then(
+  const getPlanInformation = () => {
+    return Services.teamApi(props.currentTeam._id, props.match.params.apiId, props.match.params.versionId).then(
       (api) => {
         if (api.error) {
           return null;
         }
         return {
           api,
-          plan: api.possibleUsagePlans.find((pp) => pp._id === this.props.match.params.planId),
+          plan: api.possibleUsagePlans.find((pp) => pp._id === props.match.params.planId),
         };
       }
     );
   };
 
-  sumGlobalInformations = (data) => {
+  const sumGlobalInformations = (data) => {
     const globalInformations = data.map((d) => d.globalInformations);
 
     const value = globalInformations.reduce((acc, item) => {
@@ -93,52 +94,46 @@ class TeamPlanConsumptionComponent extends Component {
     };
   };
 
-  componentDidMount() {
-    Services.teams().then((teams) => this.setState({ teams }));
-  }
+  useEffect(() => {
+    Services.teams().then((teams) => setState({ ...state, teams }));
+  }, [])
 
-  render() {
-    return (
-      <TeamBackOffice
-        tab="Apis"
-        title={`${this.props.currentTeam.name} - ${t(
-          'Plan consumption',
-          this.props.currentLanguage
-        )}`}>
-        <div>
-          <div className="row">
-            <div className="col">
-              <h1>Api Consumption</h1>
-              <PlanInformations fetchData={() => this.getPlanInformation()} />
-            </div>
-            <p className="col">
-              <Link
-                to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${this.props.match.params.apiId}`}
-                className="btn my-2 btn-access-negative">
-                <i className="fas fa-angle-left" /> Back to plans
-              </Link>
-            </p>
+  return (
+    <TeamBackOffice
+      tab="Apis"
+      title={`${props.currentTeam.name} - ${translateMethod('Plan consumption')}`}>
+      <div>
+        <div className="row">
+          <div className="col">
+            <h1>Api Consumption</h1>
+            <PlanInformations fetchData={() => getPlanInformation()} />
           </div>
-          <OtoroshiStatsVizualization
-            sync={() =>
-              Services.syncApiConsumption(this.props.match.params.apiId, this.props.currentTeam._id)
-            }
-            fetchData={(from, to) =>
-              Services.apiConsumption(
-                this.props.match.params.apiId,
-                this.props.match.params.planId,
-                this.props.currentTeam._id,
-                from.valueOf(),
-                to.valueOf()
-              )
-            }
-            mappers={this.mappers}
-            currentLanguage={this.props.currentLanguage}
-          />
+          <p className="col">
+            <Link
+              to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${props.match.params.apiId}`}
+              className="btn my-2 btn-access-negative">
+              <i className="fas fa-angle-left" /> Back to plans
+            </Link>
+          </p>
         </div>
-      </TeamBackOffice>
-    );
-  }
+        <OtoroshiStatsVizualization
+          sync={() =>
+            Services.syncApiConsumption(props.match.params.apiId, props.currentTeam._id)
+          }
+          fetchData={(from, to) =>
+            Services.apiConsumption(
+              props.match.params.apiId,
+              props.match.params.planId,
+              props.currentTeam._id,
+              from.valueOf(),
+              to.valueOf()
+            )
+          }
+          mappers={mappers}
+        />
+      </div>
+    </TeamBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({
@@ -147,30 +142,29 @@ const mapStateToProps = (state) => ({
 
 export const TeamPlanConsumption = connect(mapStateToProps)(TeamPlanConsumptionComponent);
 
-class PlanInformations extends Component {
-  state = {
-    loading: true,
-    informations: null,
-  };
+function PlanInformations(props) {
+  const [loading, setLoading] = useState(true)
+  const [informations, setInformations] = useState()
 
-  componentDidMount() {
-    this.props.fetchData().then((informations) => this.setState({ informations, loading: false }));
+  useEffect(() => {
+    props.fetchData()
+      .then(informations => {
+        setInformations(informations)
+        setLoading(false)
+      })
+  }, []);
+
+  if (loading)
+    return <Spinner width="50" height="50" />;
+
+  if (!informations) {
+    return null;
   }
 
-  render() {
-    if (this.state.loading) {
-      return <Spinner width="50" height="50" />;
-    }
-
-    if (!this.state.informations) {
-      return null;
-    }
-
-    return (
-      <h3>
-        {this.state.informations.api.name} -{' '}
-        {this.state.informations.plan.customName || this.state.informations.plan.type}
-      </h3>
-    );
-  }
+  return (
+    <h3>
+      {informations.api.name} -{' '}
+      {informations.plan.customName || informations.plan.type}
+    </h3>
+  );
 }

@@ -1,36 +1,36 @@
 import React from 'react';
 
 import { Spinner } from '../../../utils';
-import { t } from '../../../../locales';
 import { MailTemplateButton } from './MailTemplateButton';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export function SendGridConfig({ currentLanguage, value, onChange }) {
+export function SendGridConfig({ value, onChange }) {
+  const { translateMethod } = useContext(I18nContext);
+
   const formFlow = ['apikey', 'fromEmail', 'template'];
 
   const formSchema = {
     apikey: {
       type: 'string',
       props: {
-        label: t('send_grid.api_key', currentLanguage),
+        label: translateMethod('send_grid.api_key'),
       },
     },
     fromEmail: {
       type: 'string',
       props: {
-        label: t('send_grid.from_email', currentLanguage),
+        label: translateMethod('send_grid.from_email'),
       },
     },
     template: {
-      type: () => <MailTemplateButton currentLanguage={currentLanguage} />,
+      type: () => <MailTemplateButton />,
     },
   };
 
   return (
     <React.Suspense fallback={<Spinner />}>
       <LazyForm
-        currentLanguage={currentLanguage}
         value={value}
         onChange={onChange}
         flow={formFlow}

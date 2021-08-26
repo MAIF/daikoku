@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import Creatable from 'react-select/creatable';
 import { toastr } from 'react-redux-toastr';
@@ -7,7 +7,7 @@ import _ from 'lodash';
 import { Spinner, formatPlanType, Option } from '../../utils';
 import * as Services from '../../../services';
 import { ObjectInput, Collapse, BooleanInput, NumberInput } from '../../inputs';
-import { t, Translation } from '../../../locales';
+import { I18nContext } from '../../../core';
 
 export const SubscriptionMetadataModal = (props) => {
   const [loading, setLoading] = useState(true);
@@ -21,6 +21,8 @@ export const SubscriptionMetadataModal = (props) => {
   const [customReadOnly, setCustomReadOnly] = useState(undefined);
   const [isValid, setIsValid] = useState(false);
   const [loadingInput, setLoadingInput] = useState(false);
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (api) {
@@ -95,7 +97,7 @@ export const SubscriptionMetadataModal = (props) => {
   }, [metadata, customMetadata]);
 
   useEffect(() => {
-    Services.getVisibleApi(props.api).then((api) => {
+    Services.getVisibleApiWithId(props.api).then((api) => {
       if (api.error) {
         toastr.error(api.error);
         props.closeModal();
@@ -150,7 +152,7 @@ export const SubscriptionMetadataModal = (props) => {
             },
           },
         ],
-      }).then((api) => {
+      }, api.currentVersion).then((api) => {
         setMetadata({ ...metadata, [key]: newValue });
         setLoadingInput(false);
         setApi(api);
@@ -178,9 +180,8 @@ export const SubscriptionMetadataModal = (props) => {
           options={possibleValues.sort().map((v) => ({ label: v, value: v }))}
           value={{ label: metadata[key], value: metadata[key] }}
           formatCreateLabel={(value) =>
-            t(
+            translateMethod(
               'create.metadata.option.label',
-              props.currentLanguage,
               false,
               `Create option ${value}`,
               value
@@ -197,7 +198,7 @@ export const SubscriptionMetadataModal = (props) => {
       <div className="modal-header">
         {!api && (
           <h5 className="modal-title">
-            <Translation i18nkey="Subscription metadata" language={props.currentLanguage}>
+            <Translation i18nkey="Subscription metadata">
               Subscription metadata
             </Translation>
           </h5>
@@ -206,7 +207,7 @@ export const SubscriptionMetadataModal = (props) => {
           <h5 className="modal-title">
             <Translation
               i18nkey="Subscription metadata title"
-              language={props.currentLanguage}
+             
               replacements={[api.name]}>
               Subscription metadata - {api.name}
             </Translation>
@@ -224,10 +225,10 @@ export const SubscriptionMetadataModal = (props) => {
               <div className="modal-description">
                 <Translation
                   i18nkey="subscription.metadata.modal.creation.description"
-                  language={props.currentLanguage}
-                  replacements={[props.team.name, plan.customName || formatPlanType(plan)]}>
+                 
+                  replacements={[props.team.name, plan.customName || formatPlanType(plan, translateMethod)]}>
                   {props.team.name} ask you an apikey for plan{' '}
-                  {plan.customName || formatPlanType(plan)}
+                  {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
               </div>
             )}
@@ -235,18 +236,17 @@ export const SubscriptionMetadataModal = (props) => {
               <div className="modal-description">
                 <Translation
                   i18nkey="subscription.metadata.modal.update.description"
-                  language={props.currentLanguage}
-                  replacements={[props.team.name, plan.customName || formatPlanType(plan)]}>
-                  Team: {props.team.name} - Plan: {plan.customName || formatPlanType(plan)}
+                 
+                  replacements={[props.team.name, plan.customName || formatPlanType(plan, translateMethod)]}>
+                  Team: {props.team.name} - Plan: {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
               </div>
             )}
             {props.description && <div className="modal-description">{props.description}</div>}
             {!!plan && (
               <Collapse
-                label={t(
+                label={translateMethod(
                   'mandatory.metadata.label',
-                  props.currentLanguage,
                   false,
                   `Mandatory metadata (${plan.otoroshiTarget.apikeyCustomization.customMetadata.length})`,
                   plan.otoroshiTarget.apikeyCustomization.customMetadata.length
@@ -268,7 +268,7 @@ export const SubscriptionMetadataModal = (props) => {
                 )}
               </Collapse>
             )}
-            <Collapse label={t('Additional metadata', props.currentLanguage)} collapsed={true}>
+            <Collapse label={translateMethod('Additional metadata')} collapsed={true}>
               <ObjectInput
                 value={customMetadata}
                 onChange={(values) => {
@@ -276,32 +276,32 @@ export const SubscriptionMetadataModal = (props) => {
                 }}
               />
             </Collapse>
-            <Collapse label={t('Custom quotas', props.currentLanguage)} collapsed={true}>
+            <Collapse label={translateMethod('Custom quotas')} collapsed={true}>
               <NumberInput
                 step="1"
                 min="0"
-                label={t('Max. requests per second', props.currentLanguage)}
+                label={translateMethod('Max. requests per second')}
                 value={customMaxPerSecond}
                 onChange={(e) => setCustomMaxPerSecond(Number(e.target.value))}
               />
               <NumberInput
                 step="1"
                 min="0"
-                label={t('Max. requests per day', props.currentLanguage)}
+                label={translateMethod('Max. requests per day')}
                 value={customMaxPerDay}
                 onChange={(e) => setCustomMaxPerDay(Number(e.target.value))}
               />
               <NumberInput
                 step="1"
                 min="0"
-                label={t('Max. requests per month', props.currentLanguage)}
+                label={translateMethod('Max. requests per month')}
                 value={customMaxPerMonth}
                 onChange={(e) => setCustomMaxPerMonth(Number(e.target.value))}
               />
             </Collapse>
-            <Collapse label={t('Other custom props', props.currentLanguage)} collapsed={true}>
+            <Collapse label={translateMethod('Other custom props')} collapsed={true}>
               <BooleanInput
-                label={t('Read only apikey', props.currentLanguage)}
+                label={translateMethod('Read only apikey')}
                 value={customReadOnly}
                 onChange={(readOnly) => setCustomReadOnly(readOnly)}
               />
@@ -314,7 +314,7 @@ export const SubscriptionMetadataModal = (props) => {
             type="button"
             className="btn btn-outline-danger"
             onClick={() => props.closeModal()}>
-            <Translation i18nkey="Cancel" language={props.currentLanguage}>
+            <Translation i18nkey="Cancel">
               Cancel
             </Translation>
           </button>
@@ -324,8 +324,8 @@ export const SubscriptionMetadataModal = (props) => {
             disabled={isValid ? undefined : 'disabled'}
             onClick={() => actionAndClose(props.save)}>
             {props.creationMode
-              ? t('Accept', props.currentLanguage)
-              : t('Update', props.currentLanguage)}
+              ? translateMethod('Accept')
+              : translateMethod('Update')}
           </button>
         </div>
       </div>

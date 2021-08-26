@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 import Select from 'react-select';
-import { t } from '../../../../locales';
+import { I18nContext } from '../../../../core';
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 import * as Services from '../../../../services';
 import { Can, manage } from '../../../utils';
@@ -18,10 +18,12 @@ const styles = {
   },
 };
 
-export function NewIssue({ currentLanguage, user, api, ...props }) {
+export function NewIssue({ user, api, ...props }) {
   const { issuesTags, team, _humanReadableId } = api;
   const [issue, setIssue] = useState(null);
   const [availableApiVersions, setApiVersions] = useState([]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.fetchNewIssue().then((template) => setIssue(template));
@@ -62,18 +64,18 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
       <div>
         <div className="px-3 py-2" style={styles.commentHeader}>
           <div>
-            <label htmlFor="title">{t('Title', currentLanguage)}</label>
+            <label htmlFor="title">{translateMethod('Title')}</label>
             <input
               id="title"
               type="text"
               className="form-control"
-              placeholder={t('Title', currentLanguage)}
+              placeholder={translateMethod('Title')}
               value={issue.title}
               onChange={(e) => setIssue({ ...issue, title: e.target.value })}
             />
           </div>
           <div className="py-2">
-            <label htmlFor="apiVersion">{t('issues.apiVersion', currentLanguage)}</label>
+            <label htmlFor="apiVersion">{translateMethod('issues.apiVersion')}</label>
             <Select
               id="apiVersion"
               onChange={(apiVersion) =>
@@ -93,7 +95,7 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
           </div>
           <Can I={manage} a={API} team={props.currentTeam}>
             <div className="py-2">
-              <label htmlFor="tags">{t('issues.tags', currentLanguage)}</label>
+              <label htmlFor="tags">{translateMethod('issues.tags')}</label>
               <Select
                 id="tags"
                 isMulti
@@ -122,9 +124,9 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
             borderBottomRightRadius: '8px',
             backgroundColor: '#fff',
           }}>
-          <React.Suspense fallback={<div>{t('loading', currentLanguage)}</div>}>
+          <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
-              currentLanguage={currentLanguage}
+              fullWidth
               height="300px"
               value={issue.comments[0].content}
               fixedWitdh="0px"
@@ -143,13 +145,13 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
           </React.Suspense>
           <div className="d-flex mt-3 justify-content-end">
             <button className="btn btn-success" onClick={createIssue}>
-              {t('issues.submit_new_issue', currentLanguage)}
+              {translateMethod('issues.submit_new_issue')}
             </button>
           </div>
         </div>
       </div>
     </div>
   ) : (
-    <p>{t('loading', currentLanguage)}</p>
+    <p>{translateMethod('loading')}</p>
   );
 }

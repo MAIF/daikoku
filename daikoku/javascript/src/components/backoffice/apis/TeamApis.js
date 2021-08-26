@@ -1,32 +1,35 @@
-import React, { Component } from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import faker from 'faker';
 
 import * as Services from '../../../services';
-import { Can, read, manage, stat, api as API, administrator } from '../../utils';
+import { Can, read, manage, stat, api as API } from '../../utils';
 import { TeamBackOffice } from '../..';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
-import { t, Translation } from '../../../locales';
-import { setError } from '../../../core';
+import { I18nContext, setError } from '../../../core';
 
-class TeamApisComponent extends Component {
-  columns = [
+function TeamApisComponent(props) {
+  const { translateMethod, Translation } = useContext(I18nContext);
+
+  let table;
+
+  const columns = [
     {
       id: 'name',
-      Header: t('Name', this.props.currentLanguage),
+      Header: translateMethod('Name'),
       style: { textAlign: 'left' },
       accessor: (api) => `${api.name} - (${api.currentVersion})`,
       sortType: 'basic',
     },
     {
-      Header: t('Description', this.props.currentLanguage),
+      Header: translateMethod('Description'),
       style: { textAlign: 'left' },
       accessor: (api) => api.smallDescription,
     },
     {
-      Header: t('Published', this.props.currentLanguage),
+      Header: translateMethod('Published'),
       style: { textAlign: 'center' },
       accessor: (api) => api.published,
       disableSortBy: true,
@@ -39,9 +42,9 @@ class TeamApisComponent extends Component {
       }) => {
         const api = original;
         return (
-          <Can I={manage} a={API} team={this.props.currentTeam}>
+          <Can I={manage} a={API} team={props.currentTeam}>
             <SwitchButton
-              onSwitch={() => this.togglePublish(api)}
+              onSwitch={() => togglePublish(api)}
               checked={api.published}
               disabled={api.visibility === 'AdminOnly'}
               large
@@ -52,7 +55,7 @@ class TeamApisComponent extends Component {
       },
     },
     {
-      Header: t('Actions', this.props.currentLanguage),
+      Header: translateMethod('Actions'),
       style: { textAlign: 'center' },
       disableSortBy: true,
       disableFilters: true,
@@ -67,37 +70,37 @@ class TeamApisComponent extends Component {
           <div className="btn-group">
             <Link
               rel="noopener"
-              to={`/${this.props.currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
+              to={`/${props.currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
               className="btn btn-sm btn-access-negative"
               title="View this Api">
               <i className="fas fa-eye" />
             </Link>
             {api.published && (
-              <Can I={read} a={stat} team={this.props.currentTeam}>
+              <Can I={read} a={stat} team={props.currentTeam}>
                 <Link
                   key={`consumption-${api._humanReadableId}`}
-                  to={`/${this.props.currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}/${api.currentVersion}`}
+                  to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}/${api.currentVersion}`}
                   className="btn btn-sm btn-access-negative"
-                  title={t('View this api consumption', this.props.currentLanguage)}>
+                  title={translateMethod('View this api consumption')}>
                   <i className="fas fa-chart-bar" />
                 </Link>
               </Can>
             )}
             {api.published && (
-              <Can I={manage} a={API} team={this.props.currentTeam}>
+              <Can I={manage} a={API} team={props.currentTeam}>
                 <Link
                   key={`apikeys-${api._humanReadableId}`}
-                  to={`/${this.props.currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}/${api.currentVersion}`}
+                  to={`/${props.currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}/${api.currentVersion}`}
                   className="btn btn-sm btn-access-negative"
-                  title={t('View this api subscriptions', this.props.currentLanguage)}>
+                  title={translateMethod('View this api subscriptions')}>
                   <i className="fas fa-key" />
                 </Link>
               </Can>
             )}
-            <Can I={manage} a={API} team={this.props.currentTeam}>
+            <Can I={manage} a={API} team={props.currentTeam}>
               <Link
                 key={`edit-${api._humanReadableId}`}
-                to={`/${this.props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`}
+                to={`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`}
                 className="btn btn-sm btn-access-negative"
                 title="Edit this Api">
                 <i className="fas fa-edit" />
@@ -108,7 +111,7 @@ class TeamApisComponent extends Component {
                   type="button"
                   className="btn btn-sm btn-access-negative"
                   title="Delete this Api"
-                  onClick={() => this.delete(api)}>
+                  onClick={() => deleteApi (api)}>
                   <i className="fas fa-trash" />
                 </button>
               )}
@@ -119,50 +122,40 @@ class TeamApisComponent extends Component {
     },
   ];
 
-  togglePublish = (api) => {
-    Services.saveTeamApi(this.props.currentTeam._id, {
+  const togglePublish = (api) => {
+    Services.saveTeamApi(props.currentTeam._id, {
       ...api,
       published: !api.published,
-    }).then(() => this.table.update());
+    }, api.currentVersion).then(() => table.update());
   };
 
-  isTeamAdmin = (user) => {
-    return Option(this.props.currentTeam.users.find((u) => u.userId === user._id))
-      .map((user) => user.teamPermission)
-      .fold(
-        () => false,
-        (perm) => perm === administrator
-      );
-  };
-
-  delete = (api) => {
+  const deleteApi = (api) => {
     window
       .confirm(
-        t(
+        translateMethod(
           'delete.api.confirm',
-          this.props.currentLanguage,
+          false,
           'Are you sure you want to delete this api ?'
         )
       )
       .then((ok) => {
         if (ok) {
-          Services.deleteTeamApi(this.props.currentTeam._id, api._id).then(() => {
+          Services.deleteTeamApi(props.currentTeam._id, api._id).then(() => {
             toastr.success(
-              t(
+              translateMethod(
                 'delete.api.success',
-                this.props.currentLanguage,
                 false,
                 'API deleted successfully',
                 api.name
               )
             );
-            this.table.update();
+            table.update();
           });
         }
       });
   };
 
-  createNewApi = () => {
+  const createNewApi = () => {
     Services.fetchNewApi()
       .then((e) => {
         const verb = faker.hacker.verb();
@@ -180,66 +173,63 @@ class TeamApisComponent extends Component {
         return e;
       })
       .then((newApi) => {
-        this.props.history.push(
-          `/${this.props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
-          { newApi: { ...newApi, team: this.props.currentTeam._id } }
+        props.history.push(
+          `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
+          { newApi: { ...newApi, team: props.currentTeam._id } }
         );
       });
   };
 
-  render() {
-    if (this.props.tenant.creationSecurity && !this.props.currentTeam.apisCreationPermission) {
-      this.props.setError({ error: { status: 403, message: 'unauthorized' } });
-    }
-    return (
-      <TeamBackOffice
-        tab="Apis"
-        apiId={this.props.match.params.apiId}
-        title={`${this.props.currentTeam.name} - ${t('API', this.props.currentLanguage, true)}`}>
-        <Can I={read} a={API} dispatchError={true} team={this.props.currentTeam}>
-          <div className="row">
-            <div className="col">
-              <h1>
-                <Translation i18nkey="Team apis" language={this.props.currentLanguage}>
-                  Team APIs
-                </Translation>
-                {this.props.apiCreationPermitted && this.props.currentTeam.type !== 'Admin' && (
-                  <Can I={manage} a={API} team={this.props.currentTeam}>
-                    <a
-                      className="btn btn-sm btn-access-negative mb-1 ml-1"
-                      title={t('Create a new API', this.props.currentLanguage)}
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        this.createNewApi();
-                      }}>
-                      <i className="fas fa-plus-circle" />
-                    </a>
-                  </Can>
-                )}
-              </h1>
-              <div className="p-2">
-                <Table
-                  currentLanguage={this.props.currentLanguage}
-                  selfUrl="apis"
-                  defaultTitle="Team Apis"
-                  defaultValue={() => ({})}
-                  defaultSort="name"
-                  itemName="api"
-                  columns={this.columns}
-                  fetchItems={() => Services.teamApis(this.props.currentTeam._id)}
-                  showActions={false}
-                  showLink={false}
-                  extractKey={(item) => item._id}
-                  injectTable={(t) => (this.table = t)}
-                />
-              </div>
+  if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
+    props.setError({ error: { status: 403, message: 'unauthorized' } });
+  }
+  return (
+    <TeamBackOffice
+      tab="Apis"
+      apiId={props.match.params.apiId}
+      title={`${props.currentTeam.name} - ${translateMethod('API', true)}`}>
+      <Can I={read} a={API} dispatchError={true} team={props.currentTeam}>
+        <div className="row">
+          <div className="col">
+            <h1>
+              <Translation i18nkey="Team apis">
+                Team APIs
+              </Translation>
+              {props.apiCreationPermitted && props.currentTeam.type !== 'Admin' && (
+                <Can I={manage} a={API} team={props.currentTeam}>
+                  <a
+                    className="btn btn-sm btn-access-negative mb-1 ml-1"
+                    title={translateMethod('Create a new API')}
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      createNewApi();
+                    }}>
+                    <i className="fas fa-plus-circle" />
+                  </a>
+                </Can>
+              )}
+            </h1>
+            <div className="p-2">
+              <Table
+                selfUrl="apis"
+                defaultTitle="Team Apis"
+                defaultValue={() => ({})}
+                defaultSort="name"
+                itemName="api"
+                columns={columns}
+                fetchItems={() => Services.teamApis(props.currentTeam._id)}
+                showActions={false}
+                showLink={false}
+                extractKey={(item) => item._id}
+                injectTable={(t) => (table = t)}
+              />
             </div>
           </div>
-        </Can>
-      </TeamBackOffice>
-    );
-  }
+        </div>
+      </Can>
+    </TeamBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

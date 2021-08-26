@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 
 import { Spinner } from '../../utils';
 import * as Services from '../../../services';
-import { t, Translation } from '../../../locales';
+import { I18nContext } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 export const TestingApiKeyModal = (props) => {
   const [config, setConfig] = useState({ ...props.config });
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const otoroshiFlow = ['otoroshiSettings', 'serviceGroup'];
   const otoroshiForm = (_found) => {
@@ -16,7 +18,7 @@ export const TestingApiKeyModal = (props) => {
         otoroshiSettings: {
           type: 'select',
           props: {
-            label: t('Otoroshi instance', props.currentLanguage),
+            label: translateMethod('Otoroshi instance'),
             possibleValues: props.otoroshiSettings.map((s) => ({
               label: s.url,
               value: s._id,
@@ -27,7 +29,7 @@ export const TestingApiKeyModal = (props) => {
           type: 'select',
           disabled: true,
           props: {
-            label: t('Otoroshi instance', props.currentLanguage),
+            label: translateMethod('Otoroshi instance'),
           },
         },
       };
@@ -36,7 +38,7 @@ export const TestingApiKeyModal = (props) => {
       otoroshiSettings: {
         type: 'select',
         props: {
-          label: t('Otoroshi instance', props.currentLanguage),
+          label: translateMethod('Otoroshi instance'),
           possibleValues: props.otoroshiSettings.map((s) => ({
             label: s.url,
             value: s._id,
@@ -46,7 +48,7 @@ export const TestingApiKeyModal = (props) => {
       serviceGroup: {
         type: 'select',
         props: {
-          label: t('Service group', props.currentLanguage),
+          label: translateMethod('Service group'),
           valuesFrom: `/api/teams/${props.teamId}/tenant/otoroshis/${_found.otoroshiSettings}/groups`,
           transformer: (s) => ({ label: s.name, value: s.id }),
         },
@@ -97,7 +99,7 @@ export const TestingApiKeyModal = (props) => {
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-          <Translation i18nkey="Cancel" language={props.currentLanguage}>
+          <Translation i18nkey="Cancel">
             Cancel
           </Translation>
         </button>
@@ -108,7 +110,7 @@ export const TestingApiKeyModal = (props) => {
           disabled={!config.otoroshiSettings && !config.serviceGroup ? 'disabled' : undefined}>
           <Translation
             i18nkey={props.update ? 'Update' : 'Create'}
-            language={props.currentLanguage}>
+           >
             {props.update ? 'Update' : 'Create'}
           </Translation>
         </button>

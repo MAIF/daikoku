@@ -1,15 +1,13 @@
-import React, { Component, useEffect, useState, useImperativeHandle } from 'react';
+import React, { Component, useEffect, useState, useImperativeHandle, useContext } from 'react';
 import _ from 'lodash';
 import * as Services from '../../../services';
 import faker from 'faker';
-import { toastr } from 'react-redux-toastr';
 
 import { Spinner } from '../../utils';
 
-import { t, Translation } from '../../../locales';
 import { AssetChooserByModal } from '../../frontend';
 import { connect } from 'react-redux';
-import { openApiDocumentationSelectModal } from '../../../core';
+import { I18nContext, openApiDocumentationSelectModal } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -50,36 +48,35 @@ const mimeTypes = [
   { label: '.css fichier css', value: 'text/css' },
 ];
 
-class AssetButton extends Component {
-  render() {
-    const team = this.props.parentProps().team;
-    return (
-      <div className="form-group row">
-        <label className="col-xs-12 col-sm-2 col-form-label" />
-        <div
-          className="col-sm-10"
-          style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}>
-          <AssetChooserByModal
-            currentLanguage={this.props.currentLanguage}
-            team={team}
-            teamId={team._id}
-            label={t('Set from asset', this.props.currentLanguage)}
-            onSelect={(asset) => {
-              this.props.onRawChange({
-                ...this.props.rawValue,
-                contentType: asset.contentType,
-                remoteContentUrl: asset.link,
-              });
-            }}
-          />
-        </div>
+function AssetButton(props) {
+  const { translateMethod } = useContext(I18nContext);
+
+  const team = props.parentProps().team;
+  return (
+    <div className="form-group row">
+      <label className="col-xs-12 col-sm-2 col-form-label" />
+      <div
+        className="col-sm-10"
+        style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}>
+        <AssetChooserByModal
+          team={team}
+          teamId={team._id}
+          label={translateMethod('Set from asset')}
+          onSelect={(asset) => {
+            props.onRawChange({
+              ...props.rawValue,
+              contentType: asset.contentType,
+              remoteContentUrl: asset.link,
+            });
+          }}
+        />
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
-  const { currentLanguage, team, value, versionId, creationInProgress, params } = props;
+  const { team, value, versionId, creationInProgress, params } = props;
 
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState(undefined);
@@ -87,12 +84,14 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   const [deletedPage, setDeletedPage] = useState(false);
 
+  const { translateMethod, Translation } = useContext(I18nContext);
+
   const flow = [
     '_id',
     'title',
     'level',
     'contentType',
-    `>>> ${t('Remote content', currentLanguage)}`,
+    `>>> ${translateMethod('Remote content')}`,
     'remoteContentEnabled',
     'remoteContentUrl',
     'assetButton',
@@ -102,14 +101,13 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   ];
 
   const schema = {
-    _id: { type: 'string', disabled: true, props: { label: t('Id', currentLanguage) } },
-    title: { type: 'string', props: { label: t('Page title', currentLanguage) } },
+    _id: { type: 'string', disabled: true, props: { label: translateMethod('Id') } },
+    title: { type: 'string', props: { label: translateMethod('Page title') } },
     //index: { type: 'number', props: { label: 'Page index' } },
-    level: { type: 'number', props: { label: t('Page level', currentLanguage) } },
+    level: { type: 'number', props: { label: translateMethod('Page level') } },
     content: {
       type: 'markdown',
       props: {
-        currentLanguage: currentLanguage,
         label: 'Page content',
         height: '800px',
         team: team,
@@ -117,15 +115,15 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     },
     remoteContentEnabled: {
       type: 'bool',
-      props: { label: t('Remote content', currentLanguage) },
+      props: { label: translateMethod('Remote content') },
     },
     contentType: {
       type: 'select',
-      props: { label: t('Content type', currentLanguage), possibleValues: mimeTypes },
+      props: { label: translateMethod('Content type'), possibleValues: mimeTypes },
     },
     remoteContentUrl: {
       type: 'string',
-      props: { label: t('Content URL', currentLanguage) },
+      props: { label: translateMethod('Content URL') },
     },
     assetButton: {
       type: AssetButton,
@@ -133,7 +131,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
     },
     remoteContentHeaders: {
       type: 'object',
-      props: { label: t('Content headers', currentLanguage) },
+      props: { label: translateMethod('Content headers') },
     },
   };
 
@@ -254,9 +252,9 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
   function deletePage() {
     window
       .confirm(
-        t(
+        translateMethod(
           'delete.documentation.page.confirm',
-          currentLanguage,
+          false,
           'Are you sure you want to delete this page ?'
         )
       )
@@ -276,7 +274,6 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
 
   function importPage() {
     props.openApiDocumentationSelectModal({
-      currentLanguage,
       api: value,
       teamId: props.teamId,
       onClose: () => {
@@ -352,7 +349,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                 type="button"
                 className="btn btn-sm btn-outline-danger mb-2">
                 <i className="fas fa-trash mr-1" />
-                <Translation i18nkey="Delete page" language={currentLanguage}>
+                <Translation i18nkey="Delete page">
                   Delete page
                 </Translation>
               </button>

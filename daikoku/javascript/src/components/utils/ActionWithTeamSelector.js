@@ -1,41 +1,38 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { PropTypes } from 'prop-types';
 import { openTeamSelectorModal } from '../../core/modal';
 import { connect } from 'react-redux';
 
-class ActionWithTeamSelectorComponent extends Component {
-  openTeamSelectorModal = () => {
-    if (this.props.teams.length === 1) this.props.action([this.props.teams[0]._id]);
+function ActionWithTeamSelectorComponent(props) {
+  const openTeamSelectorModal = () => {
+    if (props.teams.length === 1) props.action([props.teams[0]._id]);
     else
-      this.props.openTeamSelectorModal({
-        allTeamSelector: this.props.withAllTeamSelector,
-        title: this.props.title,
-        description: this.props.description,
-        currentLanguage: this.props.currentLanguage,
-        teams: this.props.teams,
-        pendingTeams: this.props.pendingTeams,
-        acceptedTeams: this.props.authorizedTeams,
-        action: (teams) => this.props.action(teams),
-        allowMultipleDemand: this.props.allowMultipleDemand,
+      props.openTeamSelectorModal({
+        allTeamSelector: props.withAllTeamSelector,
+        title: props.title,
+        description: props.description,
+        teams: props.teams,
+        pendingTeams: props.pendingTeams,
+        acceptedTeams: props.authorizedTeams,
+        action: (teams) => props.action(teams),
+        allowMultipleDemand: props.allowMultipleDemand,
       });
   };
 
-  render() {
-    if (
-      !this.props.allowMultipleDemand &&
-      this.props.teams.length === 1 &&
-      (this.props.pendingTeams.includes(this.props.teams[0]._id) ||
-        this.props.authorizedTeams.includes(this.props.teams[0]._id))
-    ) {
-      return null;
-    }
-
-    return (
-      <>
-        {React.cloneElement(this.props.children, { onClick: () => this.openTeamSelectorModal() })}
-      </>
-    );
+  if (
+    !props.allowMultipleDemand &&
+    props.teams.length === 1 &&
+    (props.pendingTeams.includes(props.teams[0]._id) ||
+      props.authorizedTeams.includes(props.teams[0]._id))
+  ) {
+    return null;
   }
+
+  return (
+    <>
+      {React.cloneElement(props.children, { onClick: () => openTeamSelectorModal() })}
+    </>
+  );
 }
 
 ActionWithTeamSelectorComponent.defaultProps = {
@@ -46,7 +43,6 @@ ActionWithTeamSelectorComponent.defaultProps = {
 ActionWithTeamSelectorComponent.propTypes = {
   title: PropTypes.string,
   description: PropTypes.string,
-  currentLanguage: PropTypes.string,
   teams: PropTypes.array.isRequired,
   pendingTeams: PropTypes.array,
   authorizedTeams: PropTypes.array,

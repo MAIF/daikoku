@@ -1,11 +1,13 @@
 import moment from 'moment';
-import { t } from '../../../../locales';
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import * as Services from '../../../../services/index';
+import { I18nContext } from '../../../../core';
 
-export function ApiIssues({ filter, currentLanguage, api, selectedVersion }) {
+export function ApiIssues({ filter, api, selectedVersion }) {
   const [issues, setIssues] = useState([]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getAPIIssues(api._humanReadableId).then((res) =>
@@ -27,7 +29,7 @@ export function ApiIssues({ filter, currentLanguage, api, selectedVersion }) {
   return (
     <div className="d-flex flex-column pt-3">
       {filteredIssues.map(
-        ({ seqId, title, tags, by, createdDate, closedDate, open, apiVersion }) => (
+        ({ seqId, title, tags, by, createdDate, closedDate, open, apiVersion, _id }) => (
           <div
             className="border-bottom py-3 d-flex align-items-center justify-content-between"
             key={`issue-${seqId}`}
@@ -38,7 +40,7 @@ export function ApiIssues({ filter, currentLanguage, api, selectedVersion }) {
                 style={{ color: open ? 'inherit' : 'red' }}></i>
               <div>
                 <div>
-                  <Link to={`issues/${seqId}`} className="mr-2">
+                  <Link to={`issues/${_id}`} className="mr-2">
                     {title}
                   </Link>
                   {tags
@@ -54,18 +56,18 @@ export function ApiIssues({ filter, currentLanguage, api, selectedVersion }) {
                 </div>
                 {open ? (
                   <span>
-                    #{seqId} {t('issues.opened_on', currentLanguage)}{' '}
+                    #{seqId} {translateMethod('issues.opened_on')}{' '}
                     {moment(createdDate).format(
-                      t('moment.date.format.without.hours', currentLanguage)
+                      translateMethod('moment.date.format.without.hours')
                     )}{' '}
-                    {t('issues.by', currentLanguage)} {by._humanReadableId}
+                    {translateMethod('issues.by')} {by._humanReadableId}
                   </span>
                 ) : (
                   <span>
-                    #{seqId} {t('issues.by', currentLanguage)} {by._humanReadableId}{' '}
-                    {t('was closed on', currentLanguage)}{' '}
+                    #{seqId} {translateMethod('issues.by')} {by._humanReadableId}{' '}
+                    {translateMethod('was closed on')}{' '}
                     {moment(closedDate).format(
-                      t('moment.date.format.without.hours', currentLanguage)
+                      translateMethod('moment.date.format.without.hours')
                     )}{' '}
                   </span>
                 )}
@@ -77,7 +79,7 @@ export function ApiIssues({ filter, currentLanguage, api, selectedVersion }) {
           </div>
         )
       )}
-      {filteredIssues.length <= 0 && <p>{t('issues.nothing_matching_filter', currentLanguage)}</p>}
+      {filteredIssues.length <= 0 && <p>{translateMethod('issues.nothing_matching_filter')}</p>}
     </div>
   );
 }

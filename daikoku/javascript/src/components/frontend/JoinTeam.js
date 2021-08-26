@@ -4,13 +4,8 @@ import { openJoinTeamModal } from '../../core';
 
 const JoinTeamComponent = (props) => {
   useEffect(() => {
-    props.openJoinTeamModal({
-      currentLanguage: props.currentLanguage,
-    });
+    props.openJoinTeamModal();
   }, []);
-
-  function showModal() {}
-
   return null;
 };
 

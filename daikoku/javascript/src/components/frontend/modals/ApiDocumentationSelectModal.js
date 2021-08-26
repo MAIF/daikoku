@@ -1,17 +1,18 @@
 import Select from 'react-select';
-import React, { useEffect, useState } from 'react';
-import { t } from '../../../locales';
+import React, { useContext, useEffect, useState } from 'react';
 import * as Services from '../../../services';
+import { I18nContext } from '../../../core';
 
 export const ApiDocumentationSelectModal = ({
   closeModal,
-  currentLanguage,
   teamId,
   api,
   onClose,
 }) => {
   const [apis, setApis] = useState([]);
   const [pages, setPages] = useState([]);
+
+  const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getAllApiDocumentation(teamId, api._humanReadableId, api.currentVersion).then(
@@ -44,12 +45,10 @@ export const ApiDocumentationSelectModal = ({
       .then(() => closeModal());
   }
 
-  console.log(apis);
-
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{t('api_select_modal.title', currentLanguage)}</h5>
+        <h5 className="modal-title">{translateMethod('api_select_modal.title')}</h5>
         <button type="button" className="close" aria-label="Close" onClick={closeModal}>
           <span aria-hidden="true">&times;</span>
         </button>
@@ -57,7 +56,7 @@ export const ApiDocumentationSelectModal = ({
       <div className="modal-body">
         <Select
           isMulti
-          placeholder={t('Select all pages', currentLanguage)}
+          placeholder={translateMethod('Select all pages')}
           options={apis}
           onChange={setPages}
           classNamePrefix="reactSelect"
@@ -65,10 +64,10 @@ export const ApiDocumentationSelectModal = ({
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={closeModal}>
-          {t('Close', currentLanguage, 'Close')}
+          {translateMethod('Close', 'Close')}
         </button>
         <button type="button" className="btn btn-outline-success" onClick={importPages}>
-          {t('Choose', currentLanguage, 'Close')}
+          {translateMethod('Choose', 'Close')}
         </button>
       </div>
     </div>
