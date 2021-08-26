@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
@@ -160,15 +160,15 @@ export const TenantStyleEdit = connect(mapStateToProps)(TenantStyleEditComponent
 
 class Preview extends React.Component {
   componentDidMount() {
-    _updateIframe();
+    this._updateIframe();
   }
 
   componentDidUpdate() {
-    _updateIframe();
+    this._updateIframe();
   }
 
   _updateIframe() {
-    const iframe = iframe;
+    const iframe = this.iframe;
     const document = iframe.contentDocument;
     const head = document.getElementsByTagName('head')[0];
 
@@ -185,7 +185,7 @@ class Preview extends React.Component {
       head && head.appendChild(newLink);
     });
 
-    const styleVariables = props.variables
+    const styleVariables = this.props.variables
       .map((variable) => `${variable.value}:${variable.color};\n`)
       .join('');
     const root = `:root {${styleVariables}}`;
@@ -198,7 +198,7 @@ class Preview extends React.Component {
   render() {
     return (
       <iframe
-        ref={(ref) => (iframe = ref)}
+        ref={(ref) => (this.iframe = ref)}
         style={{
           height: '100vh',
           border: 'none',
@@ -206,7 +206,7 @@ class Preview extends React.Component {
           borderRadius: '4px',
         }}
         src="/"
-        className={props.className}
+        className={this.props.className}
       />
     );
   }
