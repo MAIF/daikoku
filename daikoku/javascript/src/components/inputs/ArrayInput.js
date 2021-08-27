@@ -25,36 +25,14 @@ export function ArrayInput(props) {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    if (props.valuesFrom) {
-      reloadValues(props.valuesFrom);
+    if (props.value) {
+      if (props.valuesFrom) {
+        reloadValues();
+      }
+      else
+        setState({ ...state, value: (props.value || []).map(valueToSelectOption) });
     }
-  }, [])
-
-  useEffect(() => {
-    if (props.valuesFrom !== props.valuesFrom) {
-      reloadValues(props.valuesFrom);
-    }
-  }, [props.valuesFrom]);
-
-  useEffect(() => {
-    if (props.valuesFrom && props.value) {
-      reloadValues().then(() => {
-        if (!props.creatable) {
-          setState({
-            ...state,
-            value: state.values.filter((v) => props.value.includes(v.value)),
-          });
-        } else {
-          setState({ ...state, value: (props.value || []).map(valueToSelectOption) });
-        }
-      });
-    }
-
-    if (!props.valuesFrom && props.value) {
-      setState({ ...state, value: (props.value || []).map(valueToSelectOption) });
-    }
-
-  }, [props.value])
+  }, [props.valuesFrom])
 
   const reloadValues = (from) => {
     setState({ ...state, loading: true });
@@ -71,7 +49,7 @@ export function ArrayInput(props) {
         setState({
           ...state,
           values,
-          value: values.filter((v) => props.value.includes(v.value)),
+          value: !props.creatable ? values.filter((v) => props.value.includes(v.value)) : (props.value || []).map(valueToSelectOption),
           loading: false,
         })
       );
@@ -113,9 +91,8 @@ export function ArrayInput(props) {
             ...state,
             inputValue: '',
             value: newValue,
-          },
-          () => props.onChange(newValue.map(finaItem))
-        );
+          });
+        props.onChange(newValue.map(finaItem))
         event.preventDefault();
     }
   };
@@ -176,6 +153,8 @@ export function ArrayInput(props) {
                 options={state.values}
                 onChange={changeValue}
                 classNamePrefix="reactSelect"
+                menuPortalTarget={document.body}
+                styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
               />
             )}
           </div>

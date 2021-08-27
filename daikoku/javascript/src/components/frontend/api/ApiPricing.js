@@ -5,7 +5,7 @@ import { currencies } from '../../../services/currencies';
 
 import { formatPlanType } from '../../utils/formatters';
 import { ActionWithTeamSelector } from '../../utils/ActionWithTeamSelector';
-import { Can, access, apikey, getCurrencySymbol, formatCurrency } from '../../utils';
+import { Can, access, apikey, getCurrencySymbol, formatCurrency, manage } from '../../utils';
 import { openLoginOrRegisterModal, openApiKeySelectModal, I18nContext } from '../../../core';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
@@ -27,7 +27,7 @@ const currency = (plan) => {
 
 function ApiPricingCardComponent(props) {
   const { Translation } = useContext(I18nContext);
-  
+
   const renderFreeWithoutQuotas = () => (
     <span>
       <Translation i18nkey="free.without.quotas.desc">
@@ -150,12 +150,14 @@ function ApiPricingCardComponent(props) {
 
   const allPossibleTeams = _.difference(
     authorizedTeams.map((t) => t._id),
-    props.subscriptions.map((s) => s.team)
+    props.subscriptions.filter(f => !f._deleted).map((s) => s.team)
   );
+  
   const isPending = !_.difference(
     allPossibleTeams,
     props.pendingSubscriptions.map((s) => s.action.team)
   ).length;
+
   const isAccepted = !allPossibleTeams.length;
 
   const { translateMethod } = useContext(I18nContext);
@@ -237,6 +239,9 @@ function ApiPricingCardComponent(props) {
               teams={authorizedTeams.filter(
                 (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
               )}>
+              <Can I={manage} a={apikey} teams={authorizedTeams.filter(team => team._id === props.ownerTeam._id)}>
+                {!plan.otoroshiTarget && <span className="badge badge-danger">Missing otoroshi target</span>}
+              </Can>
               {(props.api.visibility === 'AdminOnly' ||
                 (plan.otoroshiTarget && !isAccepted && !isPending)) && (
                   <ActionWithTeamSelector
@@ -248,8 +253,6 @@ function ApiPricingCardComponent(props) {
                       false,
                       'You are going to get or request API keys. On which team do you want them for?'
                     )}
-      
-              
                     teams={authorizedTeams
                       .filter((t) => t.type !== 'Admin')
                       .filter(
@@ -260,7 +263,8 @@ function ApiPricingCardComponent(props) {
                         (t) => !props.tenant.subscriptionSecurity || t.type === 'Organization'
                       )}
                     pendingTeams={props.pendingSubscriptions.map((s) => s.action.team)}
-                    authorizedTeams={props.subscriptions.map((subs) => subs.team)}
+                    authorizedTeams={props.subscriptions.filter(f => !f._deleted).map((subs) => subs.team)}
+                    allowMultipleDemand={plan.allowMultipleKeys}
                     withAllTeamSelector={false}
                     action={(teams) => showApiKeySelectModal(teams)}>
                     <button type="button" className="btn btn-sm btn-access-negative col-12">
@@ -353,8 +357,8 @@ export function ApiPricing(props) {
                   )}
                   askForApikeys={props.askForApikeys}
                   updateSubscriptions={props.updateSubscriptions}
-    
-              
+
+
                   tenant={props.tenant}
                   connectedUser={props.connectedUser}
                 />

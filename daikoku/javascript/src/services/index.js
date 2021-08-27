@@ -182,6 +182,12 @@ export const createOtoroshiSettings = (tenantId, oto) =>
 export const getOtoroshiGroups = (tenantId, otoId) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/groups`);
 
+export const getOtoroshiGroupsAsTeamAdmin = (teamId, otoId) => 
+  customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/groups`);
+
+export const getOtoroshiServicesAsTeamAdmin = (teamId, otoId) => 
+  customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/services`);
+
 export const getOtoroshiServices = (tenantId, otoId) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services`);
 

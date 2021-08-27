@@ -161,6 +161,8 @@ export class SelectInput extends Component {
               onChange={this.onChange}
               classNamePrefix="reactSelect"
               className="reactSelect"
+              menuPortalTarget={document.body}
+              styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
             />
           </div>
         </div>
