@@ -4,8 +4,9 @@ import { openJoinTeamModal } from '../../core';
 
 const JoinTeamComponent = (props) => {
   useEffect(() => {
-    props.openJoinTeamModal();
+    props.openModal({});
   }, []);
+
   return null;
 };
 
@@ -14,7 +15,7 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = {
-  openJoinTeamModal: (modalProps) => openJoinTeamModal(modalProps),
+  openModal: (modalProps) => openJoinTeamModal(modalProps),
 };
 
 export const JoinTeam = connect(mapStateToProps, mapDispatchToProps)(JoinTeamComponent);

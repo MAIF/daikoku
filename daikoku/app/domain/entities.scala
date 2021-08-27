@@ -278,6 +278,7 @@ sealed trait MailerSettings {
   def mailerType: String
   def mailer(implicit env: Env): Mailer
   def asJson: JsValue
+  def template: Option[String]
 }
 
 case class ConsoleMailerSettings(template: Option[String] = None)

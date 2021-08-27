@@ -49,7 +49,7 @@ export function UnauthenticatedHomeComponent(props) {
                   </p>
                 )}
                 {!!props.tenant.description && (
-                  <p className="lead">{props.tenant.description}</p>
+                  <div dangerouslySetInnerHTML={{ __html: converter.makeHtml(props.tenant.description || '') }}></div>
                 )}
                 <p>
                   {props.tenant.authProvider === 'Local' && (
