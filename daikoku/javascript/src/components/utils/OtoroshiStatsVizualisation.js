@@ -279,7 +279,7 @@ export function GlobalDataConsumption(props) {
       computedValue = parseFloat((converterBase2(value, 'B', 'PB') || 0).toFixed(3));
       unit = 'Pb';
     }
-    return `${computedValue.prettify()} ${unit}`;
+    return `${computedValue ? computedValue.prettify() : 0} ${unit}`;
   };
 
   const row = (value, label) => {
@@ -296,7 +296,7 @@ export function GlobalDataConsumption(props) {
   }
 
   const { data } = props;
-  const hits = data.hits ? data.hits.prettify() : 0;
+  const hits = data.hits ? data.hits /*.prettify()*/ : 0;
   const totalDataIn = computeValue(data.dataIn);
   const totalDataOut = computeValue(data.dataOut);
   const avgDuration = data.avgDuration ? data.avgDuration.toFixed(3) : 0;

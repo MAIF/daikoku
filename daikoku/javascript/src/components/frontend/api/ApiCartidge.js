@@ -15,7 +15,7 @@ export function ApiCartidge(props) {
   const pricing = defaultPlan ? defaultPlan.type : 'None';
 
   const subscribingTeams = props.myTeams
-    .filter((t) => t.type !== 'Admin')
+    // .filter((t) => t.type !== 'Admin')
     .filter((team) => props.subscriptions.some((sub) => sub.team === team._id));
 
   return (
@@ -112,11 +112,11 @@ export function ApiCartidge(props) {
             teams={subscribingTeams.filter((t) =>
               CanIDoAction(props.connectedUser, manage, apikey, t)
             )}
-            action={(teams) =>
+            action={(teams) => {
               props.redirectToApiKeysPage(
                 props.myTeams.find((t) => teams.includes(t._id))
               )
-            }
+            }}
             withAllTeamSelector={false}>
             <button className="btn btn-sm btn-access-negative mt-2">
               <Translation i18nkey="View your api keys">

@@ -310,6 +310,8 @@ GET     /api/tenants/:tenantId/otoroshis/:oto/groups    fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/tenants/:tenantId/otoroshis/:oto/services  fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesForTenant(tenantId, oto)
 ### NoDocs ###
+GET     /api/teams/:teamId/tenant/otoroshis/:oto/services  fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiServicesFor(teamId, oto)
+### NoDocs ###
 GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys   fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto)
 
 ### NoDocs ###

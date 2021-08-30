@@ -12,6 +12,7 @@ import { Help } from '../../inputs';
 import { toastr } from 'react-redux-toastr';
 import { connect } from 'react-redux';
 import { I18nContext, openApiSelectModal } from '../../../core';
+import { useParams } from 'react-router-dom';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
@@ -47,13 +48,17 @@ const OtoroshiServicesAndGroupSelector = (props) => {
 
   const { Translation } = useContext(I18nContext);
 
+  const params = useParams()
+
   useEffect(() => {
     Promise.all([
-      Services.getOtoroshiGroups(props.tenant._id, props._found.otoroshiTarget.otoroshiSettings),
-      Services.getOtoroshiServices(props.tenant._id, props._found.otoroshiTarget.otoroshiSettings),
+      Services.getOtoroshiGroupsAsTeamAdmin(params.teamId, props._found.otoroshiTarget.otoroshiSettings),
+      Services.getOtoroshiServicesAsTeamAdmin(params.teamId, props._found.otoroshiTarget.otoroshiSettings),
     ]).then(([groups, services]) => {
-      setGroups(groups.map((g) => ({ label: g.name, value: g.id, type: 'group' })));
-      setServices(services.map((g) => ({ label: g.name, value: g.id, type: 'service' })));
+      if (!groups.error)
+        setGroups(groups.map((g) => ({ label: g.name, value: g.id, type: 'group' })));
+      if (!services.error)
+        setServices(services.map((g) => ({ label: g.name, value: g.id, type: 'service' })));
     });
   }, []);
 
@@ -546,8 +551,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Billing')}`,
       'billingDuration.value',
       'billingDuration.unit',
@@ -668,8 +673,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
@@ -815,8 +820,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
@@ -1003,8 +1008,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
@@ -1199,8 +1204,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Billing')}`,
       'costPerMonth',
       'costPerRequest',

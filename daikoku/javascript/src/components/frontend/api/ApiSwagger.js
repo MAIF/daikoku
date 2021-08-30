@@ -97,7 +97,6 @@ export function ApiSwagger(props) {
         'fake-' + props.api._id
       );
     } else {
-      console.log(props);
       if (canCreate) {
         window.alert('Unknown authentication type');
       } else {

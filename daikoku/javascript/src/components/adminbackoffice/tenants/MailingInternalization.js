@@ -117,10 +117,13 @@ const EditMailtemplate = ({ tenantId, team }) => {
               }))
               .flatMap((t) => t)
           );
-        } else setMailTemplateTranslations(data.translations[0][1]);
+        } else
+          setMailTemplateTranslations(data.translations);
       });
     });
   }, []);
+
+  console.log(mailTemplateTranslations)
 
   const handleTranslation = (key, language, value) => {
     setMailTemplateTranslations(
@@ -191,7 +194,7 @@ const EditMailtemplate = ({ tenantId, team }) => {
           <div className="mt-3">
             <MarkdownComponent
               team={team}
-              value={tenant.mailerSettings.template}
+              value={tenant.mailerSettings.template || "{{email}}"}
               language="en"
               saveTranslation={saveTenant}
               handleInputChange={(k, l, template) =>

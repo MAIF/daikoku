@@ -96,7 +96,6 @@ function TeamBackOfficeHomeComponent(props) {
                 <span className="home-tile-text">
                   <Translation
                     i18nkey="apis subcriptions"
-
                     count={team.subscriptionsCount}>
                     apis subcriptions
                   </Translation>
@@ -116,7 +115,6 @@ function TeamBackOfficeHomeComponent(props) {
                     <span className="home-tile-text">
                       <Translation
                         i18nkey="members"
-
                         count={team.users.length}>
                         members
                       </Translation>
@@ -129,7 +127,6 @@ function TeamBackOfficeHomeComponent(props) {
                 <span className="home-tile-text">
                   <Translation
                     i18nkey="unread notifications"
-
                     count={team.notificationCount}>
                     unread notifications
                   </Translation>

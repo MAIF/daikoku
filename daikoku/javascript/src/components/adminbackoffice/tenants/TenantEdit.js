@@ -466,7 +466,7 @@ export function TenantEditComponent(props) {
         save: () => save(),
         history: props.history,
         isTenantUpdated: () => !!state.updated,
-        openModal: (props) => props.openSaveOrCancelModal({ ...props }),
+        openModal: (p) => props.openSaveOrCancelModal({ ...p }),
       },
     },
     'style.js': {

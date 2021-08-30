@@ -156,7 +156,10 @@ class LoginController(DaikokuAction: DaikokuAction,
                                  request,
                                  TrieMap[String, String](),
                                  AuthorizationLevel.AuthorizedSelf)
-          Redirect(request.session.get("redirect").getOrElse("/"))
+
+          val redirectUri = request.session.get("redirect").getOrElse("/")
+
+          Redirect(if(redirectUri.startsWith("/api/")) "/" else redirectUri)
             .withSession("sessionId" -> session.sessionId.value)
             .removingFromSession("redirect")(request)
         }
