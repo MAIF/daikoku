@@ -312,7 +312,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -341,7 +341,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -448,7 +448,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/subscriptions")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions")(
           tenant,
           session)
       respVerif.status mustBe 200

@@ -140,7 +140,7 @@ function ApiPricingCardComponent(props) {
   const type = plan.type;
   const customDescription = plan.customDescription;
   const authorizedTeams = props.myTeams
-    .filter((t) => !props.tenant.subscriptionSecurity || t.type === 'Organization')
+    .filter((t) => !props.tenant.subscriptionSecurity || t.type !== 'Personal')
     .filter(
       (t) =>
         props.api.visibility === 'Public' ||
@@ -152,7 +152,7 @@ function ApiPricingCardComponent(props) {
     authorizedTeams.map((t) => t._id),
     props.subscriptions.filter(f => !f._deleted).map((s) => s.team)
   );
-  
+
   const isPending = !_.difference(
     allPossibleTeams,
     props.pendingSubscriptions.map((s) => s.action.team)
@@ -232,16 +232,17 @@ function ApiPricingCardComponent(props) {
               </Translation>
             </button>
           )}
-          {!isAccepted && props.api.published && (
+          {(!isAccepted || props.api.visibility === 'AdminOnly') && props.api.published && (
             <Can
               I={access}
               a={apikey}
               teams={authorizedTeams.filter(
                 (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
               )}>
-              <Can I={manage} a={apikey} teams={authorizedTeams.filter(team => team._id === props.ownerTeam._id)}>
-                {!plan.otoroshiTarget && <span className="badge badge-danger">Missing otoroshi target</span>}
-              </Can>
+              {props.api.visibility !== 'AdminOnly' &&
+                <Can I={manage} a={apikey} teams={authorizedTeams.filter(team => team._id === props.ownerTeam._id)}>
+                  {!plan.otoroshiTarget && <span className="badge badge-danger">Missing otoroshi target</span>}
+                </Can>}
               {(props.api.visibility === 'AdminOnly' ||
                 (plan.otoroshiTarget && !isAccepted && !isPending)) && (
                   <ActionWithTeamSelector
@@ -254,13 +255,13 @@ function ApiPricingCardComponent(props) {
                       'You are going to get or request API keys. On which team do you want them for?'
                     )}
                     teams={authorizedTeams
-                      .filter((t) => t.type !== 'Admin')
+                      .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
                       .filter(
                         (team) =>
                           plan.visibility === 'Public' || team._id === props.ownerTeam._id
                       )
                       .filter(
-                        (t) => !props.tenant.subscriptionSecurity || t.type === 'Organization'
+                        (t) => !props.tenant.subscriptionSecurity || t.type !== 'Personnal'
                       )}
                     pendingTeams={props.pendingSubscriptions.map((s) => s.action.team)}
                     authorizedTeams={props.subscriptions.filter(f => !f._deleted).map((subs) => subs.team)}

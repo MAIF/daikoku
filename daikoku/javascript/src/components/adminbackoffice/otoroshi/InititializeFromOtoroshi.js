@@ -269,7 +269,8 @@ const mapStateToProps = (state) => ({
 
 export const InitializeFromOtoroshi = connect(mapStateToProps)(InitializeFromOtoroshiComponent);
 
-const Help = ({ language }) => {
+const Help = () => {
+  const { Translation } = useContext(I18nContext);
   return (
     <BeautifulTitle
       place="bottom"
