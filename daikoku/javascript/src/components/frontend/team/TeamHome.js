@@ -19,17 +19,23 @@ function TeamHomeComponent(props) {
 
   const fetchData = (teamId) => {
     Promise.all([
-      Services.myVisibleApisOfTeam(teamId),
+      client.query({
+        query: Services.graphql.myVisibleApisOfTeam(teamId)
+      }),
       Services.team(teamId),
       Services.teams(),
       client.query({
         query: Services.graphql.myTeams
       })
-    ]).then(([apis, team, teams, { data: { myTeams } }]) => {
-      if (apis.error || team.error) {
-        props.setError({ error: { status: 404, message: apis.error } });
+    ]).then(([{ data: { visibleApis } }, team, teams, { data: { myTeams } }]) => {
+      if (visibleApis.error || team.error) {
+        props.setError({ error: { status: 404, message: visibleApis.error } });
       } else {
-        setState({ ...state, apis, team, teams, myTeams });
+        setState({
+          ...state,
+          apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
+          team, teams, myTeams
+        });
       }
     });
   };
@@ -68,10 +74,10 @@ function TeamHomeComponent(props) {
 
   const redirectToApiPage = (api) => {
     if (api.visibility === 'Public' || api.authorized) {
-      const apiOwner = state.teams.find((t) => t._id === api.team);
+      const apiOwner = state.teams.find((t) => t._id === api.team._id);
 
       const route = (version) =>
-        `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}/${version}`;
+        `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}`;
 
       // if (api.isDefault)
       props.history.push(route(api.currentVersion));
@@ -103,6 +109,8 @@ function TeamHomeComponent(props) {
   }
 
   document.title = `${props.tenant.name} - ${state.team.name}`;
+
+  console.log(state.apis)
 
   return (
     <main role="main" className="row">

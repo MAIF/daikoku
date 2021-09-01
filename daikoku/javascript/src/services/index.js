@@ -19,8 +19,6 @@ export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/
 export const getTeamVisibleApi = (teamId, apiId, version) => customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 export const myVisibleApis = () => customFetch('/api/me/visible-apis');
-export const myVisibleApisOfTeam = (currentTeam) =>
-  customFetch(`/api/teams/${currentTeam}/visible-apis`);
 
 export const teamAllNotifications = (teamId, page = 0) =>
   customFetch(`/api/teams/${teamId}/notifications/all?page=${page}`);
@@ -183,10 +181,10 @@ export const createOtoroshiSettings = (tenantId, oto) =>
 export const getOtoroshiGroups = (tenantId, otoId) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/groups`);
 
-export const getOtoroshiGroupsAsTeamAdmin = (teamId, otoId) => 
+export const getOtoroshiGroupsAsTeamAdmin = (teamId, otoId) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/groups`);
 
-export const getOtoroshiServicesAsTeamAdmin = (teamId, otoId) => 
+export const getOtoroshiServicesAsTeamAdmin = (teamId, otoId) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/services`);
 
 export const getOtoroshiServices = (tenantId, otoId) =>
@@ -883,9 +881,8 @@ export const getAllApiDocumentation = (teamId, apiId, version) =>
 export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
 
-export const graphQLSearch = query => customFetch(`/api/search?query=${query.replace(/\s/g, "")}`)
-
-export const schema = () => fetch(`/api/render-schema`).then(r => r.text())
+// export const myVisibleApisOfTeam = (currentTeam) =>
+//   customFetch(`/api/teams/${currentTeam}/visible-apis`);
 
 export const graphql = {
   myTeams: gql`
@@ -897,5 +894,32 @@ export const graphql = {
       type
     }
   }
-  `
+  `,
+  myVisibleApis: teamId => gql(`
+    query AllVisibleApis {
+      visibleApis: ${teamId ? `visibleApisOfTeam(teamId: "${teamId}")` : 'visibleApis'} {
+        api {
+          name
+          _humanReadableId
+          _id
+          tags
+          categories
+          stars
+          smallDescription
+          currentVersion
+          team {
+            _id
+            name
+            avatar
+          }
+        }
+        authorizations {
+          team
+          authorized
+          pending
+        }
+      }
+    }
+    `),
+  myVisibleApisOfTeam: teamId => graphql.myVisibleApis(teamId)
 }

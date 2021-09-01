@@ -168,37 +168,6 @@ object authorizations {
           case Left(value) => value
           case Right(value) => AppError.render(value)
         }
-      /*if (ctx.user.isDaikokuAdmin) {
-        f.andThen {
-          case _ =>
-            audit.logTenantAuditEvent(ctx.tenant,
-                                      ctx.user,
-                                      ctx.session,
-                                      ctx.request,
-                                      ctx.ctx,
-                                      AuthorizationLevel.AuthorizedDaikokuAdmin)
-        }
-      } else if (ctx.user.tenants.contains(ctx.tenant.id)) {
-        f.andThen {
-          case _ =>
-            audit.logTenantAuditEvent(ctx.tenant,
-                                      ctx.user,
-                                      ctx.session,
-                                      ctx.request,
-                                      ctx.ctx,
-                                      AuthorizationLevel.AuthorizedUberPublic)
-        }
-      } else {
-        audit.logTenantAuditEvent(ctx.tenant,
-                                  ctx.user,
-                                  ctx.session,
-                                  ctx.request,
-                                  ctx.ctx,
-                                  AuthorizationLevel.NotAuthorized)
-        FastFuture.successful(
-          Results.Unauthorized(
-            Json.obj("error" -> "You're not authorized here")))
-      }*/
     }
 
     def PublicUserAccess[T](audit: AuditEvent)(ctx: DaikokuActionContext[T])(

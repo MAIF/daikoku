@@ -110,7 +110,7 @@ const ApiListComponent = (props) => {
     return !!_.find(api.categories, (cat) => cat.trim().toLowerCase().indexOf(term) > -1);
   };
   const teamMatch = (api, searched) => {
-    const ownerTeam = props.teams.find((t) => t._id === api.team);
+    const ownerTeam = props.teams.find((t) => t._id === api.team._id);
     return ownerTeam && ownerTeam.name.trim().toLowerCase().indexOf(searched) > -1;
   };
   const clearFilter = () => {
@@ -320,7 +320,7 @@ const ApiListComponent = (props) => {
                 api={api}
                 showTeam={props.showTeam}
                 teamVisible={props.teamVisible}
-                team={props.teams.find((t) => t._id === api.team)}
+                team={props.teams.find((t) => t._id === api.team._id)}
                 myTeams={props.myTeams}
                 askForApiAccess={(teams) => props.askForApiAccess(api, teams)}
                 redirectToTeamPage={(team) => props.redirectToTeamPage(team)}
@@ -331,8 +331,6 @@ const ApiListComponent = (props) => {
                 handleCategorySelect={(category) =>
                   setSelectedCategory(categories.find((c) => c.value === category))
                 }
-  
-              
                 view={view}
                 connectedUser={props.connectedUser}
               />

@@ -8,7 +8,7 @@ import { ApiList } from '../../frontend';
 import { updateUser } from '../../../core';
 import { api as API, CanIDoAction, manage } from '../../utils';
 import { converter } from '../../../services/showdown';
-import { getApolloContext, gql, useQuery } from '@apollo/client';
+import { getApolloContext } from '@apollo/client';
 
 function MyHomeComponent(props) {
   const [state, setState] = useState({
@@ -23,11 +23,23 @@ function MyHomeComponent(props) {
 
   const fetchData = () => {
     setState({ ...state, loading: true })
-    Promise.all([Services.myVisibleApis(), Services.teams(), client.query({
-      query: Services.graphql.myTeams
-    })]).then(
-      ([apis, teams, { data: { myTeams } }]) => {
-        setState({ ...state, apis, teams, myTeams, loading: false });
+    Promise.all([
+      client.query({
+        query: Services.graphql.myVisibleApis()
+      }),
+      Services.teams(),
+      client.query({
+        query: Services.graphql.myTeams
+      })
+    ]).then(
+      ([{ data: { visibleApis } }, teams, { data: { myTeams } }]) => {
+        setState({
+          ...state,
+          apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
+          teams,
+          myTeams,
+          loading: false
+        });
       }
     );
   };
@@ -66,10 +78,10 @@ function MyHomeComponent(props) {
   };
 
   const redirectToApiPage = (api) => {
-    const apiOwner = state.teams.find((t) => t._id === api.team);
+    const apiOwner = state.teams.find((t) => t._id === api.team._id);
 
     const route = (version) =>
-      `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}/${version}`;
+      `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}`;
 
     if (api.isDefault) props.history.push(route(api.currentVersion));
     else
@@ -79,7 +91,7 @@ function MyHomeComponent(props) {
   };
 
   const redirectToEditPage = (api) => {
-    const adminTeam = state.myTeams.find((team) => api.team === team._id);
+    const adminTeam = state.myTeams.find((team) => api.team._id === team._id);
 
     if (
       CanIDoAction(
@@ -116,11 +128,7 @@ function MyHomeComponent(props) {
               <h1 className="jumbotron-heading">
                 {props.tenant.title ? props.tenant.title : translateMethod('Your APIs center')}
               </h1>
-              <Description
-                description={props.tenant.description}
-
-
-              />
+              <Description description={props.tenant.description} />
             </div>
             {props.connectedUser.isDaikokuAdmin && (
               <div className="col-sm-1 d-flex flex-column">

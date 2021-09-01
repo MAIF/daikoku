@@ -128,7 +128,6 @@ export const ApiCard = (props) => {
       </div>
       <div className="col-12 lead">
         <Translation
-         
           i18nkey={`${api._humanReadableId}.description`}
           extraConf={api.translation}>
           {api.smallDescription}

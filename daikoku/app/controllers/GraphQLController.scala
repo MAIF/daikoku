@@ -8,41 +8,15 @@ import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsObject, JsValue, Json}
 import sangria.execution.{ExceptionHandler, Executor, HandledException, MaxQueryDepthReachedError, QueryReducer}
-import storage.{DataStore, Repo, UserRepo}
+import storage.DataStore
 import play.api.mvc._
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.marshalling.playJson._
 import sangria.renderer.SchemaRenderer
-import sangria.schema.Context
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
-object AuthMiddleware extends Middleware[(DataStore,DaikokuActionContext[JsValue])] with MiddlewareBeforeField[(DataStore,DaikokuActionContext[JsValue])] {
-  override type QueryVal = Unit
-  override type FieldVal = Unit
-
-  override def beforeQuery(context: MiddlewareQueryContext[(DataStore,DaikokuActionContext[JsValue]), _, _]) = ()
-
-  override def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[(DataStore,DaikokuActionContext[JsValue]), _, _]) = ()
-
-  override def beforeField(queryVal: QueryVal,
-                           mctx: MiddlewareQueryContext[(DataStore,DaikokuActionContext[JsValue]), _, _],
-                           ctx: Context[(DataStore,DaikokuActionContext[JsValue]), _]) = {
-
-    /*ctx.field.tags match {
-      case tags if (tags contains SchemaDefinition.UberPublicUserAccessTag) &&
-    }*/
-
-   /* if(requireAuth) {
-      println(ctx.field.tags)
-      throw NotAuthorizedError("coucou")
-    }*/
-
-    continue
-  }
-}
 
 class GraphQLController(DaikokuAction: DaikokuAction,
                         env: Env,
@@ -53,7 +27,7 @@ class GraphQLController(DaikokuAction: DaikokuAction,
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
 
-  lazy val schema = SchemaDefinition.getSchema(env)
+  lazy val (schema, resolver) = SchemaDefinition.getSchema(env)
 
   val logger = Logger("GraphQLController")
 
@@ -86,8 +60,8 @@ class GraphQLController(DaikokuAction: DaikokuAction,
         Executor.execute(schema, queryAst, (env.dataStore, ctx),
           operationName = operation,
           variables = variables getOrElse Json.obj(),
+          deferredResolver = resolver,
           exceptionHandler = exceptionHandler,
-          middleware = AuthMiddleware :: Nil,
           queryReducers = List(
             QueryReducer.rejectMaxDepth[(DataStore,DaikokuActionContext[JsValue])](15),
             QueryReducer.rejectComplexQueries[(DataStore,DaikokuActionContext[JsValue])](4000, (_, _) => TooComplexQueryError)))
