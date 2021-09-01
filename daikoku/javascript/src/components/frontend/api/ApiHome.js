@@ -544,7 +544,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = {
   setError,
   openContactModal,
-  updateUser,
+  updateUser: (u) => updateUser(u)
 };
 
 export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);
