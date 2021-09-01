@@ -204,41 +204,29 @@ function SetPassword(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const genAndSetPassword = () => {
-    window
-      .prompt(translateMethod('Type the password'), undefined, true)
-      .then((pw1) => {
-        if (pw1) {
-          window
-            .prompt(translateMethod('Re-type the password'), undefined, true)
-            .then((pw2) => {
-              const validation = validatePassword(pw1, pw2, translateMethod);
-              if (validation.ok) {
-                const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-                props.changeValue('password', hashed);
-              } else {
-                props.displayError(validation.error);
-              }
-            });
-        }
-      });
+    window.prompt(translateMethod('Type the password'), undefined, true).then((pw1) => {
+      if (pw1) {
+        window.prompt(translateMethod('Re-type the password'), undefined, true).then((pw2) => {
+          const validation = validatePassword(pw1, pw2, translateMethod);
+          if (validation.ok) {
+            const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
+            props.changeValue('password', hashed);
+          } else {
+            props.displayError(validation.error);
+          }
+        });
+      }
+    });
   };
 
-  if (
-    props.rawValue.origins.length === 1 &&
-    props.rawValue.origins[0].toLowerCase() === 'local'
-  ) {
+  if (props.rawValue.origins.length === 1 && props.rawValue.origins[0].toLowerCase() === 'local') {
     return (
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2 col-form-label" />
         <div className="col-sm-10">
-          <button
-            type="button"
-            className="btn btn-outline-primary"
-            onClick={genAndSetPassword}>
+          <button type="button" className="btn btn-outline-primary" onClick={genAndSetPassword}>
             <i className="fas fa-unlock-alt mr-1" />
-            <Translation i18nkey="Change my password">
-              Change my password
-            </Translation>
+            <Translation i18nkey="Change my password">Change my password</Translation>
           </button>
         </div>
       </div>
@@ -261,9 +249,7 @@ function RefreshToken(props) {
       <div className="col-sm-10">
         <button type="button" className="btn btn-outline-primary" onClick={reloadToken}>
           <i className="fas fa-sync-alt mr-1" />
-          <Translation i18nkey="Reload personal token">
-            Reload personal token
-          </Translation>
+          <Translation i18nkey="Reload personal token">Reload personal token</Translation>
         </button>
       </div>
     </div>
@@ -310,9 +296,7 @@ const Avatar = ({ value, rawValue, changeValue, label, ...props }) => {
       <div className="col-sm-10 offset-sm-2 d-flex mt-1">
         <button type="button" className="btn btn-outline-primary mr-1" onClick={setGravatarLink}>
           <i className="fas fa-user-circle mr-1" />
-          <Translation i18nkey="Set avatar from Gravatar">
-            Set avatar from Gravatar
-          </Translation>
+          <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
         </button>
         {isOtherOriginThanLocal && (
           <button
@@ -337,16 +321,13 @@ function TenantList(props) {
   const { Translation } = useContext(I18nContext);
 
   useEffect(() => {
-    Services.getTenantNames(props.value)
-      .then(setTenants);
+    Services.getTenantNames(props.value).then(setTenants);
   }, []);
 
   return (
     <div className="form-group row pt-3">
       <label className="col-xs-12 col-sm-2 col-form-label">
-        <Translation i18nkey="Tenants">
-          Tenants
-        </Translation>
+        <Translation i18nkey="Tenants">Tenants</Translation>
       </label>
       <div className="col-sm-10">
         <p className="fake-form-control">{tenants.join(', ')}</p>
@@ -356,14 +337,14 @@ function TenantList(props) {
 }
 
 function PictureUpload(props) {
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState(false);
 
-  const { Translation } = useContext(I18nContext)
+  const { Translation } = useContext(I18nContext);
 
   const setFiles = (e) => {
     const files = e.target.files;
     setUploading(true);
-    props.setFiles(files)
+    props.setFiles(files);
     setUploading(false);
   };
 
@@ -390,9 +371,7 @@ function PictureUpload(props) {
         {uploading && <i className="fas fa-spinner" />}
         {!uploading && (
           <div className="text-white">
-            <Translation i18nkey="Change your picture">
-              Change your picture
-            </Translation>
+            <Translation i18nkey="Change your picture">Change your picture</Translation>
           </div>
         )}
       </button>
@@ -401,22 +380,21 @@ function PictureUpload(props) {
 }
 
 function MyProfileComponent(props) {
-  const [user, setUser] = useState()
+  const [user, setUser] = useState();
 
-  const { translateMethod, setLanguage, language, Translation, languages } = useContext(I18nContext);
+  const { translateMethod, setLanguage, language, Translation, languages } =
+    useContext(I18nContext);
 
   const formSchema = {
     _id: { type: 'string', disabled: true, props: { label: 'Id', placeholder: '---' } },
     tenants: {
-      type: TenantList
+      type: TenantList,
     },
     origins: {
       type: ({ value }) => (
         <div className="form-group row">
           <label className="col-xs-12 col-sm-2 col-form-label">
-            <Translation i18nkey="Origins">
-              Origins
-            </Translation>
+            <Translation i18nkey="Origins">Origins</Translation>
           </label>
           <div className="col-sm-10">
             <p className="fake-form-control">{value.join(', ')}</p>
@@ -444,7 +422,7 @@ function MyProfileComponent(props) {
       },
     },
     refreshToken: {
-      type: RefreshToken
+      type: RefreshToken,
     },
     isDaikokuAdmin: {
       type: 'bool',
@@ -510,26 +488,25 @@ function MyProfileComponent(props) {
   };
 
   useEffect(() => {
-    Services.me(props.connectedUser._id)
-      .then(user => {
-        setUser(user);
-        if (user.defaultLanguage && user.defaultLanguage !== language)
-          setLanguage(user.defaultLanguage);
-      });
-  }, [])
+    Services.me(props.connectedUser._id).then((user) => {
+      setUser(user);
+      if (user.defaultLanguage && user.defaultLanguage !== language)
+        setLanguage(user.defaultLanguage);
+    });
+  }, []);
 
   const save = () => {
     if (user.name && user.email && user.picture) {
       const emailValidation = ValidateEmail(user.email, translateMethod);
       if (emailValidation.ok) {
         Services.updateUserById(user).then((user) => {
-          setUser(user)
+          setUser(user);
           props.updateUser(user);
 
-          if (language !== user.defaultLanguage)
-            setLanguage(user.defaultLanguage);
+          if (language !== user.defaultLanguage) setLanguage(user.defaultLanguage);
 
-          toastr.success(translateMethod('user.updated.success', false, 'user successfully updated', user.name)
+          toastr.success(
+            translateMethod('user.updated.success', false, 'user successfully updated', user.name)
           );
         });
       } else {
@@ -566,8 +543,7 @@ function MyProfileComponent(props) {
             {user && (
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <img
-                  src={`${user.picture}${user.picture.startsWith('http') ? '' : `?${Date.now()}`
-                    }`}
+                  src={`${user.picture}${user.picture.startsWith('http') ? '' : `?${Date.now()}`}`}
                   style={{
                     width: 200,
                     borderRadius: '50%',
@@ -577,9 +553,7 @@ function MyProfileComponent(props) {
                   alt="avatar"
                   className="mr-3"
                 />
-                <PictureUpload
-                  setFiles={setFiles}
-                />
+                <PictureUpload setFiles={setFiles} />
               </div>
             )}
             {user ? (
@@ -606,14 +580,9 @@ function MyProfileComponent(props) {
         </div>
       </div>
       <div className="row" style={{ justifyContent: 'flex-end' }}>
-        <a
-          className="btn btn-outline-primary"
-          href="#"
-          onClick={() => props.history.goBack()}>
+        <a className="btn btn-outline-primary" href="#" onClick={() => props.history.goBack()}>
           <i className="fas fa-chevron-left mr-1" />
-          <Translation i18nkey="Back">
-            Back
-          </Translation>
+          <Translation i18nkey="Back">Back</Translation>
         </a>
         <button
           type="button"
@@ -621,9 +590,7 @@ function MyProfileComponent(props) {
           style={{ marginLeft: 5 }}
           onClick={removeUser}>
           <i className="fas fa-trash mr-1" />
-          <Translation i18nkey="Delete my profile">
-            Delete my profile
-          </Translation>
+          <Translation i18nkey="Delete my profile">Delete my profile</Translation>
         </button>
         <button
           style={{ marginLeft: 5 }}
@@ -632,9 +599,7 @@ function MyProfileComponent(props) {
           onClick={save}>
           <span>
             <i className="fas fa-save mr-1" />
-            <Translation i18nkey="Save">
-              Save
-            </Translation>
+            <Translation i18nkey="Save">Save</Translation>
           </span>
         </button>
       </div>
@@ -647,7 +612,7 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = {
-  updateUser: (u) => updateUser(u)
+  updateUser: (u) => updateUser(u),
 };
 
 export const MyProfile = connect(mapStateToProps, mapDispatchToProps)(MyProfileComponent);

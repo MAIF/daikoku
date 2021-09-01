@@ -17,7 +17,7 @@ export function SwitchButton(props) {
         setLoading(false);
       }
     }
-  }, [loading])
+  }, [loading]);
 
   const notifySwitch = () => {
     if (props.onSwitch) {

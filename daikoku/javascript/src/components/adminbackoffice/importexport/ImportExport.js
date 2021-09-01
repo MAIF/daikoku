@@ -8,7 +8,7 @@ import { SwitchButton } from '../../inputs';
 import { I18nContext } from '../../../locales/i18n-context';
 
 export function ImportExportComponent(props) {
-  const { translateMethod, Translation } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   let input;
 
@@ -19,7 +19,7 @@ export function ImportExportComponent(props) {
       processing: false,
       error: '',
       onSuccessMessage: '',
-    }
+    },
   });
 
   const importState = () => {
@@ -30,7 +30,7 @@ export function ImportExportComponent(props) {
 
   const actuallyImportState = (e) => {
     const files = e.target.files;
-    setState({ ...state, uploading: true })
+    setState({ ...state, uploading: true });
     Services.uploadExportFile(files[0]).then(() => {
       setState({ ...state, uploading: false });
       window.location.reload();
@@ -44,8 +44,8 @@ export function ImportExportComponent(props) {
         processing: true,
         error: '',
         onSuccessMessage: '',
-      }
-    })
+      },
+    });
     Services.migrateMongoToPostgres().then(async (res) => {
       setState({
         ...state,
@@ -65,20 +65,15 @@ export function ImportExportComponent(props) {
         <div className="row">
           <div className="col">
             <h1>
-              <Translation i18nkey="Import / Export">
-                Import / Export
-              </Translation>
+              <Translation i18nkey="Import / Export">Import / Export</Translation>
             </h1>
             <div className="section p-3">
               <a
-                href={`/api/state/export?download=true&export-audit-trail=${!!state
-                  .exportAuditTrail}`}
+                href={`/api/state/export?download=true&export-audit-trail=${!!state.exportAuditTrail}`}
                 target="_blank"
                 className="btn btn-outline-primary">
                 <i className="fas fa-download mr-1" />
-                <Translation i18nkey="download state">
-                  download state
-                </Translation>
+                <Translation i18nkey="download state">download state</Translation>
               </a>
               <button
                 type="button"
@@ -105,9 +100,7 @@ export function ImportExportComponent(props) {
               />
             </div>
             <h2 className="my-2">
-              <Translation i18nkey="Mongo migration">
-                Mongo migration
-              </Translation>
+              <Translation i18nkey="Mongo migration">Mongo migration</Translation>
             </h2>
             <div className="section p-3">
               <button type="button" onClick={migrate} className="btn btn-outline-primary">

@@ -47,12 +47,7 @@ function TeamApiConsumptionComponent(props) {
       type: 'LineChart',
       label: (data) => {
         const totalHits = data.reduce((acc, cons) => acc + cons.hits, 0);
-        return translateMethod(
-          'data.in.plus.hits',
-          false,
-          `Data In (${totalHits})`,
-          totalHits
-        );
+        return translateMethod('data.in.plus.hits', false, `Data In (${totalHits})`, totalHits);
       },
       title: translateMethod('Data In'),
       formatter: (data) =>
@@ -118,7 +113,11 @@ function TeamApiConsumptionComponent(props) {
   useEffect(() => {
     Promise.all([
       Services.teams(),
-      Services.teamApi(props.currentTeam._id, props.match.params.apiId, props.match.params.versionId),
+      Services.teamApi(
+        props.currentTeam._id,
+        props.match.params.apiId,
+        props.match.params.versionId
+      ),
     ]).then(([teams, api]) => setState({ ...state, teams, api }));
   }, []);
 
@@ -133,10 +132,7 @@ function TeamApiConsumptionComponent(props) {
             <div className="row">
               <div className="col-12">
                 <h1>
-                  <Translation
-                    i18nkey="api.consumption.title"
-
-                    replacements={[state.api.name]}>
+                  <Translation i18nkey="api.consumption.title" replacements={[state.api.name]}>
                     Api Consumption - {state.api.name}
                   </Translation>
                 </h1>
@@ -144,10 +140,7 @@ function TeamApiConsumptionComponent(props) {
               <div className="col section p-2">
                 <OtoroshiStatsVizualization
                   sync={() =>
-                    Services.syncApiConsumption(
-                      props.match.params.apiId,
-                      props.currentTeam._id
-                    )
+                    Services.syncApiConsumption(props.match.params.apiId, props.currentTeam._id)
                   }
                   fetchData={(from, to) =>
                     Services.apiGlobalConsumption(
@@ -188,16 +181,16 @@ function PlanLightConsumption(props) {
   renderQuotasWithLimits = () => (
     <span>
       You'll pay {props.plan.costPerMonth}
-      <Currency plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized
-      requests per month
+      <Currency plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
+      per month
     </span>
   );
 
   renderQuotasWithoutLimits = () => (
     <span>
       You'll pay {props.plan.costPerMonth}
-      <Currency plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per
-      month and you'll be charged {props.plan.costPerAdditionalRequest}
+      <Currency plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
+      you'll be charged {props.plan.costPerAdditionalRequest}
       <Currency plan={props.plan} /> per additional request
     </span>
   );
@@ -207,8 +200,7 @@ function PlanLightConsumption(props) {
       return (
         <span>
           You'll pay {props.plan.costPerMonth}
-          <Currency plan={props.plan} /> per month and you'll be charged{' '}
-          {props.plan.costPerRequest}
+          <Currency plan={props.plan} /> per month and you'll be charged {props.plan.costPerRequest}
           <Currency plan={props.plan} /> per request
         </span>
       );
@@ -241,9 +233,7 @@ function PlanLightConsumption(props) {
           {!customDescription && type === 'FreeWithoutQuotas' && renderFreeWithoutQuotas()}
           {!customDescription && type === 'FreeWithQuotas' && renderFreeWithQuotas()}
           {!customDescription && type === 'QuotasWithLimits' && renderQuotasWithLimits()}
-          {!customDescription &&
-            type === 'QuotasWithoutLimits' &&
-            renderQuotasWithoutLimits()}
+          {!customDescription && type === 'QuotasWithoutLimits' && renderQuotasWithoutLimits()}
           {!customDescription && type === 'PayPerUse' && renderPayPerUse()}
         </p>
       </div>

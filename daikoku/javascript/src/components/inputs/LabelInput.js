@@ -4,7 +4,7 @@ import { Help } from './Help';
 export function LabelInput(props) {
   const [value, setValue] = useState(props.value);
 
-  const identity = (v) => v
+  const identity = (v) => v;
 
   useEffect(() => {
     const transform = props.transform || identity;

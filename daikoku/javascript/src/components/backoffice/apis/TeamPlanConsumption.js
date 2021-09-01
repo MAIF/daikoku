@@ -12,20 +12,15 @@ function TeamPlanConsumptionComponent(props) {
   const { translateMethod } = useContext(I18nContext);
 
   const [state, setState] = useState({
-    api: null
-  })
+    api: null,
+  });
 
   const mappers = [
     {
       type: 'LineChart',
       label: (data) => {
         const totalHits = data.reduce((acc, cons) => acc + cons.hits, 0);
-        return translateMethod(
-          'data.in.plus.hits',
-          false,
-          `Data In (${totalHits})`,
-          totalHits
-        );
+        return translateMethod('data.in.plus.hits', false, `Data In (${totalHits})`, totalHits);
       },
       title: translateMethod('Data In'),
       formatter: (data) =>
@@ -63,17 +58,19 @@ function TeamPlanConsumptionComponent(props) {
   ];
 
   const getPlanInformation = () => {
-    return Services.teamApi(props.currentTeam._id, props.match.params.apiId, props.match.params.versionId).then(
-      (api) => {
-        if (api.error) {
-          return null;
-        }
-        return {
-          api,
-          plan: api.possibleUsagePlans.find((pp) => pp._id === props.match.params.planId),
-        };
+    return Services.teamApi(
+      props.currentTeam._id,
+      props.match.params.apiId,
+      props.match.params.versionId
+    ).then((api) => {
+      if (api.error) {
+        return null;
       }
-    );
+      return {
+        api,
+        plan: api.possibleUsagePlans.find((pp) => pp._id === props.match.params.planId),
+      };
+    });
   };
 
   const sumGlobalInformations = (data) => {
@@ -96,7 +93,7 @@ function TeamPlanConsumptionComponent(props) {
 
   useEffect(() => {
     Services.teams().then((teams) => setState({ ...state, teams }));
-  }, [])
+  }, []);
 
   return (
     <TeamBackOffice
@@ -117,9 +114,7 @@ function TeamPlanConsumptionComponent(props) {
           </p>
         </div>
         <OtoroshiStatsVizualization
-          sync={() =>
-            Services.syncApiConsumption(props.match.params.apiId, props.currentTeam._id)
-          }
+          sync={() => Services.syncApiConsumption(props.match.params.apiId, props.currentTeam._id)}
           fetchData={(from, to) =>
             Services.apiConsumption(
               props.match.params.apiId,
@@ -143,19 +138,17 @@ const mapStateToProps = (state) => ({
 export const TeamPlanConsumption = connect(mapStateToProps)(TeamPlanConsumptionComponent);
 
 function PlanInformations(props) {
-  const [loading, setLoading] = useState(true)
-  const [informations, setInformations] = useState()
+  const [loading, setLoading] = useState(true);
+  const [informations, setInformations] = useState();
 
   useEffect(() => {
-    props.fetchData()
-      .then(informations => {
-        setInformations(informations)
-        setLoading(false)
-      })
+    props.fetchData().then((informations) => {
+      setInformations(informations);
+      setLoading(false);
+    });
   }, []);
 
-  if (loading)
-    return <Spinner width="50" height="50" />;
+  if (loading) return <Spinner width="50" height="50" />;
 
   if (!informations) {
     return null;
@@ -163,8 +156,7 @@ function PlanInformations(props) {
 
   return (
     <h3>
-      {informations.api.name} -{' '}
-      {informations.plan.customName || informations.plan.type}
+      {informations.api.name} - {informations.plan.customName || informations.plan.type}
     </h3>
   );
 }

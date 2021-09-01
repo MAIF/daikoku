@@ -66,9 +66,7 @@ export function ApiIssues({ filter, api, selectedVersion }) {
                   <span>
                     #{seqId} {translateMethod('issues.by')} {by._humanReadableId}{' '}
                     {translateMethod('was closed on')}{' '}
-                    {moment(closedDate).format(
-                      translateMethod('moment.date.format.without.hours')
-                    )}{' '}
+                    {moment(closedDate).format(translateMethod('moment.date.format.without.hours'))}{' '}
                   </span>
                 )}
               </div>

@@ -95,7 +95,7 @@ const handleAssetType = (tenantMode, type) => {
         type === 'text/css' ||
         type === 'text/javascript' ||
         type === 'application/x-javascript',
-        type === 'font/openntype')
+      type === 'font/openntype')
     ) {
       return reject(translateMethod('content type is not allowed'));
     } else {
@@ -189,9 +189,7 @@ const FileInput = (props) => {
         onClick={trigger}>
         {uploading && <i className="fas fa-spinner mr-1" />}
         {!uploading && <i className="fas fa-upload mr-1" />}
-        <Translation i18nkey="Select file">
-          Select file
-        </Translation>
+        <Translation i18nkey="Select file">Select file</Translation>
       </button>
     </div>
   );
@@ -210,22 +208,14 @@ const AddAsset = (props) => {
           disabled={props.disabled ? 'disabled' : undefined}
           onClick={() => props.addAsset()}>
           <i className="fas fa-plus mr-1" />
-          <Translation i18nkey="Add asset">
-            Add asset
-          </Translation>
+          <Translation i18nkey="Add asset">Add asset</Translation>
         </button>
       </div>
     </div>
   );
 };
 
-const AssetsListComponent = ({
-  match,
-  currentTeam,
-  tenant,
-  tenantMode,
-  openWysywygModal,
-}) => {
+const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysywygModal }) => {
   const [assets, setAssets] = useState([]);
   const [newAsset, setNewAsset] = useState({});
   const [loading, setLoading] = useState(true);
@@ -265,7 +255,7 @@ const AssetsListComponent = ({
       type: AddAsset,
       disabled: Object.keys(newAsset).length === 0,
       props: {
-        addAsset: () => addAsset()
+        addAsset: () => addAsset(),
       },
     },
   };
@@ -410,7 +400,7 @@ const AssetsListComponent = ({
           },
           title: asset.meta.filename,
           value,
-          team: currentTeam
+          team: currentTeam,
         })
       );
   };
@@ -539,10 +529,7 @@ const AssetsListComponent = ({
     <BackOffice
       tab="Assets"
       apiId={match.params.apiId}
-      title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod(
-        'Asset',
-        true
-      )}`}>
+      title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}>
       <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
         <div className="row">
           <div className="col">

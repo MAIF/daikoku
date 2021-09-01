@@ -53,10 +53,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
                 a={API}
                 team={ownerTeam}
                 orElse={<Redirect to={`${basePath}/issues`} />}>
-                <TeamApiIssueTags
-                  value={api}
-                  onChange={onChange}
-                />
+                <TeamApiIssueTags value={api} onChange={onChange} />
               </Can>
             )}
           />
@@ -64,12 +61,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
             exact
             path={`${basePath}/issues/new`}
             component={() => (
-              <NewIssue
-                api={api}
-                user={props.connectedUser}
-                basePath={basePath}
-                {...props}
-              />
+              <NewIssue api={api} user={props.connectedUser} basePath={basePath} {...props} />
             )}
           />
           <Route
@@ -103,11 +95,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
                   selectedVersion={selectedVersion}
                   setSelectedVersion={setSelectedVersion}
                 />
-                <ApiIssues
-                  filter={filter}
-                  api={api}
-                  selectedVersion={selectedVersion}
-                />
+                <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} />
               </>
             )}
           />

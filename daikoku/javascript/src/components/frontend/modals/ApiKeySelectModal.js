@@ -1,13 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { I18nContext } from '../../../core';
 
-export const ApiKeySelectModal = ({
-  closeModal,
-  onSubscribe,
-  plan,
-  apiKeys,
-  ...props
-}) => {
+export const ApiKeySelectModal = ({ closeModal, onSubscribe, plan, apiKeys, ...props }) => {
   const [showApiKeys, toggleApiKeysView] = useState(false);
   const [showSelectOrCreateApiKey, toggleSelectOrCreateApiKey] = useState(true);
 
@@ -45,12 +39,7 @@ export const ApiKeySelectModal = ({
             aggregationApiKeysSecurity={plan.aggregationApiKeysSecurity}
           />
         )}
-        {showApiKeys && (
-          <ApiKeysView
-            apiKeys={apiKeys}
-            extendApiKey={extendApiKey}
-          />
-        )}
+        {showApiKeys && <ApiKeysView apiKeys={apiKeys} extendApiKey={extendApiKey} />}
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>

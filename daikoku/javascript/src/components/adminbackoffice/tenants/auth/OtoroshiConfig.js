@@ -5,7 +5,7 @@ import { Spinner } from '../../../utils';
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export function OtoroshiConfig(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   const formFlow = ['sessionMaxAge', 'claimSecret', 'claimHeaderName'];
 
@@ -39,7 +39,7 @@ export function OtoroshiConfig(props) {
         claimHeaderName: props.value.claimHeaderName || 'Otoroshi-Claim',
       });
     }
-  }, [])
+  }, []);
 
   return (
     <React.Suspense fallback={<Spinner />}>

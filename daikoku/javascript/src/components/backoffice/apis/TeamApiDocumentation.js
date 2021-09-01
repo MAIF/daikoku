@@ -349,9 +349,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                 type="button"
                 className="btn btn-sm btn-outline-danger mb-2">
                 <i className="fas fa-trash mr-1" />
-                <Translation i18nkey="Delete page">
-                  Delete page
-                </Translation>
+                <Translation i18nkey="Delete page">Delete page</Translation>
               </button>
             </div>
             <React.Suspense fallback={<Spinner />}>

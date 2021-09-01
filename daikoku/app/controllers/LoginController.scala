@@ -159,7 +159,7 @@ class LoginController(DaikokuAction: DaikokuAction,
 
           val redirectUri = request.session.get("redirect").getOrElse("/")
 
-          Redirect(if(redirectUri.startsWith("/api/")) "/" else redirectUri)
+          Redirect(if (redirectUri.startsWith("/api/")) "/" else redirectUri)
             .withSession("sessionId" -> session.sessionId.value)
             .removingFromSession("redirect")(request)
         }

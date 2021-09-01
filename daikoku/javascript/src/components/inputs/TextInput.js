@@ -95,9 +95,7 @@ export function RangeTextInput(props) {
       <div className="col-sm-10" style={{ display: 'flex' }}>
         {(props.prefixFrom || props.suffixFrom) && (
           <div className="input-group col-sm-6">
-            {props.prefixFrom && (
-              <div className="input-group-addon">{props.prefixFrom}</div>
-            )}
+            {props.prefixFrom && <div className="input-group-addon">{props.prefixFrom}</div>}
             <input
               type={props.typeFrom || 'text'}
               className="form-control"
@@ -107,16 +105,12 @@ export function RangeTextInput(props) {
               value={props.valueFrom || ''}
               onChange={onChangeFrom}
             />
-            {props.suffixFrom && (
-              <div className="input-group-addon">{props.suffixFrom}</div>
-            )}
+            {props.suffixFrom && <div className="input-group-addon">{props.suffixFrom}</div>}
           </div>
         )}
         {(props.prefixTo || props.suffixTo) && (
           <div className="input-group col-sm-6">
-            {props.prefixTo && (
-              <div className="input-group-addon">{props.prefixTo}</div>
-            )}
+            {props.prefixTo && <div className="input-group-addon">{props.prefixTo}</div>}
             <input
               type={props.typeTo || 'text'}
               className="form-control"
@@ -126,9 +120,7 @@ export function RangeTextInput(props) {
               value={props.valueTo || ''}
               onChange={onChangeTo}
             />
-            {props.suffixTo && (
-              <div className="input-group-addon">{props.suffixTo}</div>
-            )}
+            {props.suffixTo && <div className="input-group-addon">{props.suffixTo}</div>}
           </div>
         )}
         {!(props.prefixFrom || props.suffixFrom) && (

@@ -38,9 +38,7 @@ export const NoData = () => {
   return (
     <div className="col-12 no-data__container">
       <span className="badge badge-secondary no-data">
-        <Translation i18nkey="No datas">
-          No Datas
-        </Translation>
+        <Translation i18nkey="No datas">No Datas</Translation>
       </span>
     </div>
   );
@@ -55,9 +53,7 @@ export const TheadBillingContainer = (props) => {
       </div>
       <div className="pricing__zone">
         <span className="label">
-          <Translation i18nkey="Total">
-            Total
-          </Translation>
+          <Translation i18nkey="Total">Total</Translation>
         </span>
         <span className="currency__total">
           {props.total}

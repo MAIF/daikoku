@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
-export const TeamApiDescription = props => (
+export const TeamApiDescription = (props) => (
   <div>
     <Suspense fallback={<div>loading ...</div>}>
       <LazySingleMarkdownInput

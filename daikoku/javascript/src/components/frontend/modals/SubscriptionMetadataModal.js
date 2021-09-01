@@ -132,27 +132,31 @@ export const SubscriptionMetadataModal = (props) => {
   const renderInput = (key, possibleValues) => {
     const createOption = (newValue) => {
       setLoadingInput(true);
-      Services.saveTeamApi(api.team, {
-        ...api,
-        possibleUsagePlans: [
-          ...api.possibleUsagePlans.filter((p) => p._id !== props.plan),
-          {
-            ...plan,
-            otoroshiTarget: {
-              ...plan.otoroshiTarget,
-              apikeyCustomization: {
-                ...plan.otoroshiTarget.apikeyCustomization,
-                customMetadata: [
-                  ...plan.otoroshiTarget.apikeyCustomization.customMetadata.filter(
-                    (m) => m.key !== key
-                  ),
-                  { key, possibleValues: [...possibleValues, newValue] },
-                ],
+      Services.saveTeamApi(
+        api.team,
+        {
+          ...api,
+          possibleUsagePlans: [
+            ...api.possibleUsagePlans.filter((p) => p._id !== props.plan),
+            {
+              ...plan,
+              otoroshiTarget: {
+                ...plan.otoroshiTarget,
+                apikeyCustomization: {
+                  ...plan.otoroshiTarget.apikeyCustomization,
+                  customMetadata: [
+                    ...plan.otoroshiTarget.apikeyCustomization.customMetadata.filter(
+                      (m) => m.key !== key
+                    ),
+                    { key, possibleValues: [...possibleValues, newValue] },
+                  ],
+                },
               },
             },
-          },
-        ],
-      }, api.currentVersion).then((api) => {
+          ],
+        },
+        api.currentVersion
+      ).then((api) => {
         setMetadata({ ...metadata, [key]: newValue });
         setLoadingInput(false);
         setApi(api);
@@ -180,12 +184,7 @@ export const SubscriptionMetadataModal = (props) => {
           options={possibleValues.sort().map((v) => ({ label: v, value: v }))}
           value={{ label: metadata[key], value: metadata[key] }}
           formatCreateLabel={(value) =>
-            translateMethod(
-              'create.metadata.option.label',
-              false,
-              `Create option ${value}`,
-              value
-            )
+            translateMethod('create.metadata.option.label', false, `Create option ${value}`, value)
           }
           classNamePrefix="reactSelect"
         />
@@ -198,17 +197,12 @@ export const SubscriptionMetadataModal = (props) => {
       <div className="modal-header">
         {!api && (
           <h5 className="modal-title">
-            <Translation i18nkey="Subscription metadata">
-              Subscription metadata
-            </Translation>
+            <Translation i18nkey="Subscription metadata">Subscription metadata</Translation>
           </h5>
         )}
         {api && (
           <h5 className="modal-title">
-            <Translation
-              i18nkey="Subscription metadata title"
-             
-              replacements={[api.name]}>
+            <Translation i18nkey="Subscription metadata title" replacements={[api.name]}>
               Subscription metadata - {api.name}
             </Translation>
           </h5>
@@ -225,8 +219,10 @@ export const SubscriptionMetadataModal = (props) => {
               <div className="modal-description">
                 <Translation
                   i18nkey="subscription.metadata.modal.creation.description"
-                 
-                  replacements={[props.team.name, plan.customName || formatPlanType(plan, translateMethod)]}>
+                  replacements={[
+                    props.team.name,
+                    plan.customName || formatPlanType(plan, translateMethod),
+                  ]}>
                   {props.team.name} ask you an apikey for plan{' '}
                   {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
@@ -236,9 +232,12 @@ export const SubscriptionMetadataModal = (props) => {
               <div className="modal-description">
                 <Translation
                   i18nkey="subscription.metadata.modal.update.description"
-                 
-                  replacements={[props.team.name, plan.customName || formatPlanType(plan, translateMethod)]}>
-                  Team: {props.team.name} - Plan: {plan.customName || formatPlanType(plan, translateMethod)}
+                  replacements={[
+                    props.team.name,
+                    plan.customName || formatPlanType(plan, translateMethod),
+                  ]}>
+                  Team: {props.team.name} - Plan:{' '}
+                  {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
               </div>
             )}
@@ -314,18 +313,14 @@ export const SubscriptionMetadataModal = (props) => {
             type="button"
             className="btn btn-outline-danger"
             onClick={() => props.closeModal()}>
-            <Translation i18nkey="Cancel">
-              Cancel
-            </Translation>
+            <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
           <button
             type="button"
             className="btn btn-outline-success"
             disabled={isValid ? undefined : 'disabled'}
             onClick={() => actionAndClose(props.save)}>
-            {props.creationMode
-              ? translateMethod('Accept')
-              : translateMethod('Update')}
+            {props.creationMode ? translateMethod('Accept') : translateMethod('Update')}
           </button>
         </div>
       </div>

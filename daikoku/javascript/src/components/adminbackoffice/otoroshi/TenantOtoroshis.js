@@ -74,16 +74,14 @@ export function TenantOtoroshisComponent(props) {
   };
 
   const onDelete = (id) => {
-    window
-      .confirm(translateMethod('otoroshi.settings.delete.confirm'))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteOtoroshiSettings(props.tenant._id, id).then(() => {
-            toastr.success(translateMethod('otoroshi.settings.deleted.success'));
-            table.update();
-          });
-        }
-      });
+    window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteOtoroshiSettings(props.tenant._id, id).then(() => {
+          toastr.success(translateMethod('otoroshi.settings.deleted.success'));
+          table.update();
+        });
+      }
+    });
   };
 
   const createNewSettings = () => {
@@ -103,9 +101,7 @@ export function TenantOtoroshisComponent(props) {
         <div className="row">
           <div className="col">
             <h1>
-              <Translation i18nkey="Otoroshi settings">
-                Otoroshi settings
-              </Translation>
+              <Translation i18nkey="Otoroshi settings">Otoroshi settings</Translation>
               <a
                 className="btn btn-sm btn-access-negative mb-1 ml-1"
                 title={translateMethod('Create new settings')}

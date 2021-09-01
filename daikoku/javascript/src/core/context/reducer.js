@@ -50,7 +50,7 @@ export function contextReducer(state = initialState, action) {
     case UPDATE_USER:
       return {
         ...state,
-        connectedUser: action.user
+        connectedUser: action.user,
       };
 
     default:

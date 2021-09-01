@@ -99,18 +99,14 @@ export const TestingApiKeyModal = (props) => {
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-          <Translation i18nkey="Cancel">
-            Cancel
-          </Translation>
+          <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
         <button
           type="button"
           className="btn btn-outline-success"
           onClick={apiKeyAction}
           disabled={!config.otoroshiSettings && !config.serviceGroup ? 'disabled' : undefined}>
-          <Translation
-            i18nkey={props.update ? 'Update' : 'Create'}
-           >
+          <Translation i18nkey={props.update ? 'Update' : 'Create'}>
             {props.update ? 'Update' : 'Create'}
           </Translation>
         </button>

@@ -80,7 +80,6 @@ const periods = (translateMethod) => ({
 });
 
 export function OtoroshiStatsVizualization(props) {
-
   const { translateMethod } = useContext(I18nContext);
   const [state, setState] = useState({
     tab: 0,
@@ -108,10 +107,7 @@ export function OtoroshiStatsVizualization(props) {
   const tabs = (value, label) => {
     const realLabel =
       label instanceof Function
-        ? label(
-          state.consumptions,
-          getMaxCall(state.period.unitTime, state.consumptions.plan)
-        )
+        ? label(state.consumptions, getMaxCall(state.period.unitTime, state.consumptions.plan))
         : label;
     return (
       <a
@@ -125,12 +121,19 @@ export function OtoroshiStatsVizualization(props) {
     );
   };
 
-  const formatValue = ({ type, formatter, formatter2, title, xAxis, yAxis, dataKey, parentKey }) => {
+  const formatValue = ({
+    type,
+    formatter,
+    formatter2,
+    title,
+    xAxis,
+    yAxis,
+    dataKey,
+    parentKey,
+  }) => {
     switch (type) {
       case 'Histogram':
-        return (
-          <Histogram series={formatter(state.consumptions)} title={title} unit=" bytes" />
-        );
+        return <Histogram series={formatter(state.consumptions)} title={title} unit=" bytes" />;
       case 'LineChart':
         return (
           <div style={{ width: '100%', height: 300 }}>
@@ -189,7 +192,7 @@ export function OtoroshiStatsVizualization(props) {
   }, [state.period]);
 
   const updateConsumption = (from, to) => {
-    setState({ ...state, loading: true })
+    setState({ ...state, loading: true });
     props
       .fetchData(from, to)
       .then((consumptions) => {
@@ -204,7 +207,7 @@ export function OtoroshiStatsVizualization(props) {
 
   const sync = () => {
     const { from, to } = state.period;
-    setState({ ...state, loading: true })
+    setState({ ...state, loading: true });
     props
       .sync()
       .then(() => props.fetchData(from, to()))
@@ -230,9 +233,7 @@ export function OtoroshiStatsVizualization(props) {
           onChange={(period) => setState({ ...state, period })}
           classNamePrefix="reactSelect"
         />
-        <span className="col period-display">
-          {state.period.format(state.consumptions)}
-        </span>
+        <span className="col period-display">{state.period.format(state.consumptions)}</span>
         {props.sync && (
           <button className="btn btn-access-negative" onClick={sync}>
             <i className="fas fa-sync-alt" />

@@ -256,9 +256,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
 
   def otoroshiServicesForTenant(tenantId: String, oto: String) =
     DaikokuAction.async { ctx =>
-      TenantAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has accessed services of one otoroshi settings ($oto)"))(
+      TenantAdminOnly(AuditTrailEvent(
+        s"@{user.name} has accessed services of one otoroshi settings ($oto)"))(
         tenantId,
         ctx) { (tenant, _) =>
         tenant.otoroshiSettings.find(s => s.id.value == oto) match {

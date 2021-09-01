@@ -130,7 +130,8 @@ const SingleMardownInput = (props) => {
     {
       name: translateMethod('Long Lorem Ipsum'),
       icon: 'feather',
-      inject: () => `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.
+      inject:
+        () => `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.
 
 Cras ut ultrices quam. Nulla eu purus sed turpis consequat sodales. Aenean vitae efficitur velit, vel accumsan felis. Curabitur aliquam odio dictum urna convallis faucibus. Vivamus eu dignissim lorem. Donec sed hendrerit massa. Suspendisse volutpat, nisi at fringilla consequat, eros lacus aliquam metus, eu convallis nulla mauris quis lacus. Aliquam ultricies, mi eget feugiat vestibulum, enim nunc eleifend nisi, nec tincidunt turpis elit id diam. Nunc placerat accumsan tincidunt. Nulla ut interdum dui. Praesent venenatis cursus aliquet. Nunc pretium rutrum felis nec pharetra.
 
@@ -223,18 +224,14 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               className="btn btn-secondary"
               style={{ color: !preview ? '#7f96af' : 'white' }}
               onClick={() => setPreview(false)}>
-              <Translation i18nkey="Write">
-                Write
-              </Translation>
+              <Translation i18nkey="Write">Write</Translation>
             </button>
             <button
               type="button"
               className="btn btn-secondary"
               style={{ color: preview ? '#7f96af' : 'white' }}
               onClick={() => setPreview(true)}>
-              <Translation i18nkey="Preview">
-                Preview
-              </Translation>
+              <Translation i18nkey="Preview">Preview</Translation>
             </button>
           </div>
         </div>
@@ -242,8 +239,6 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
         <div style={{ width: props.fixedWitdh || 250 }}>
           {props.assertChooserActive && (
             <AssetChooserByModal
-
-              
               tenantMode={props.tenantMode}
               team={team}
               label={translateMethod('Set from asset')}

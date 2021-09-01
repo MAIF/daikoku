@@ -12,34 +12,33 @@ export function ApiSwagger(props) {
   const [state, setState] = useState({
     error: undefined,
     info: undefined,
-  })
+  });
 
-  const params = useParams()
+  const params = useParams();
 
   useEffect(() => {
     if (props.api.testing.enabled)
-      fetch(`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger.json`).then(
-        (res) => {
-          if (res.status > 300)
-            setState({
-              ...state,
-              error: translateMethod('api_swagger.failed_to_retrieve_swagger'),
-            });
-          else drawSwaggerUi();
-          setTimeout(() => {
-            [...document.querySelectorAll('.scheme-container')].map(
-              (i) => (i.style.display = 'none')
-            );
-            [...document.querySelectorAll('.information-container')].map(
-              (i) => (i.style.display = 'none')
-            );
-            handleAuthorize(false);
-          }, 500);
-        }
-      );
-    else
-      setState({ ...state, info: translateMethod('api_swagger.try_it_error') });
-  }, [])
+      fetch(
+        `/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger.json`
+      ).then((res) => {
+        if (res.status > 300)
+          setState({
+            ...state,
+            error: translateMethod('api_swagger.failed_to_retrieve_swagger'),
+          });
+        else drawSwaggerUi();
+        setTimeout(() => {
+          [...document.querySelectorAll('.scheme-container')].map(
+            (i) => (i.style.display = 'none')
+          );
+          [...document.querySelectorAll('.information-container')].map(
+            (i) => (i.style.display = 'none')
+          );
+          handleAuthorize(false);
+        }, 500);
+      });
+    else setState({ ...state, info: translateMethod('api_swagger.try_it_error') });
+  }, []);
 
   const drawSwaggerUi = () => {
     if (props.api.swagger) {
@@ -118,12 +117,7 @@ export function ApiSwagger(props) {
     );
 
   const api = props.api;
-  if (!api)
-    return (
-      <div>
-        {translateMethod('api_data.missing', false, undefined, ['Swagger'])}
-      </div>
-    );
+  if (!api) return <div>{translateMethod('api_data.missing', false, undefined, ['Swagger'])}</div>;
 
   if (state.error || state.info)
     return (

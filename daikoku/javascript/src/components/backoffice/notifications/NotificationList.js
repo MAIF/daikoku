@@ -11,7 +11,7 @@ import { updateNotications, openSubMetadataModal, I18nContext } from '../../../c
 
 function NotificationListComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
-  
+
   const [state, setState] = useState({
     notifications: [],
     teams: [],
@@ -47,8 +47,8 @@ function NotificationListComponent(props) {
 
   useEffect(() => {
     if (state.untreatedNotifications)
-      props.updateNotifications(state.untreatedNotifications.length)
-  }, [state.untreatedNotifications])
+      props.updateNotifications(state.untreatedNotifications.length);
+  }, [state.untreatedNotifications]);
 
   const acceptNotification = (notificationId, values) => {
     setState({
@@ -69,7 +69,7 @@ function NotificationListComponent(props) {
           untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
         })
       );
-  }
+  };
 
   const rejectNotification = (notificationId) => {
     setState({
@@ -93,62 +93,56 @@ function NotificationListComponent(props) {
           () => props.updateNotifications(state.untreatedNotifications.length)
         )
       );
-  }
+  };
 
   useEffect(() => {
     if (state.loading)
       if (state.tab === 'all') {
-        Services.myAllNotifications(
-          state.page,
-          state.pageSize
-        ).then(({ notifications, count }) =>
+        Services.myAllNotifications(state.page, state.pageSize).then(({ notifications, count }) =>
           setState({ ...state, notifications, count, loading: false })
         );
       } else {
-        Services.myNotifications(state.page, state.pageSize).then(
-          ({ notifications, count }) =>
-            setState({
-              ...state,
-              notifications,
-              count,
-              untreatedCount: count,
-              loading: false,
-            })
+        Services.myNotifications(state.page, state.pageSize).then(({ notifications, count }) =>
+          setState({
+            ...state,
+            notifications,
+            count,
+            untreatedCount: count,
+            loading: false,
+          })
         );
       }
-  }, [state.tab, state.page, state.loading])
+  }, [state.tab, state.page, state.loading]);
 
   const onSelectTab = (tab) => {
-    setState({ ...state, tab, loading: true, page: 0 })
+    setState({ ...state, tab, loading: true, page: 0 });
   };
 
   const moreBtnIsDisplay = () => !!state.count && state.count > state.notifications.length;
 
   const getMoreNotifications = () => {
     if (state.tab === 'unread') {
-      setState({ ...state, nextIsPending: true })
-      Services.myNotifications(state.page, state.pageSize).then(
-        ({ notifications, count }) =>
-          setState({
-            ...state,
-            notifications: [...state.notifications, ...notifications],
-            count,
-            untreatedCount: count,
-            page: state.page + 1,
-            nextIsPending: false,
-          })
+      setState({ ...state, nextIsPending: true });
+      Services.myNotifications(state.page, state.pageSize).then(({ notifications, count }) =>
+        setState({
+          ...state,
+          notifications: [...state.notifications, ...notifications],
+          count,
+          untreatedCount: count,
+          page: state.page + 1,
+          nextIsPending: false,
+        })
       );
     } else if (state.tab === 'all') {
-      setState({ ...state, nextIsPending: true })
-      Services.myAllNotifications(state.page, state.pageSize).then(
-        ({ notifications, count }) =>
-          setState({
-            ...state,
-            notifications: [...state.notifications, ...notifications],
-            count,
-            page: state.page + 1,
-            nextIsPending: false,
-          })
+      setState({ ...state, nextIsPending: true });
+      Services.myAllNotifications(state.page, state.pageSize).then(({ notifications, count }) =>
+        setState({
+          ...state,
+          notifications: [...state.notifications, ...notifications],
+          count,
+          page: state.page + 1,
+          nextIsPending: false,
+        })
       );
     }
   };
@@ -170,10 +164,7 @@ function NotificationListComponent(props) {
               active: state.tab === 'unread',
             })}>
             <a href="#" onClick={() => onSelectTab('unread')}>
-              <Translation
-                i18nkey="Untreated"
-
-                count={state.untreatedCount}>
+              <Translation i18nkey="Untreated" count={state.untreatedCount}>
                 Untreated
               </Translation>
               &nbsp;({state.untreatedCount})
@@ -185,19 +176,14 @@ function NotificationListComponent(props) {
               active: state.tab === 'all',
             })}>
             <a href="#" onClick={() => onSelectTab('all')}>
-              <Translation i18nkey="All notifications">
-                All notifications
-              </Translation>
+              <Translation i18nkey="All notifications">All notifications</Translation>
             </a>
           </li>
         </ul>
       }>
       <div className="row">
         <h1>
-          <Translation
-            i18nkey="Notifications"
-
-            isPlural={true}>
+          <Translation i18nkey="Notifications" isPlural={true}>
             Notifications
           </Translation>{' '}
           ({state.count})
@@ -210,9 +196,7 @@ function NotificationListComponent(props) {
           {state.notifications.length === 0 && (
             <div>
               <h4>
-                <Translation i18nkey="no notification">
-                  You have 0 notification
-                </Translation>
+                <Translation i18nkey="no notification">You have 0 notification</Translation>
               </h4>
             </div>
           )}
@@ -238,8 +222,6 @@ function NotificationListComponent(props) {
                           reject={() => rejectNotification(notification._id)}
                           getTeam={(id) => state.teams.find((team) => team._id === id)}
                           getApi={(id) => state.apis.find((a) => a._id === id)}
-            
-              
                           openSubMetadataModal={props.openSubMetadataModal}
                           history={props.history}
                         />
@@ -253,9 +235,7 @@ function NotificationListComponent(props) {
               <button
                 className="btn btn-access-negative my-2 ml-2"
                 onClick={() => getMoreNotifications()}>
-                <Translation i18nkey="more">
-                  more
-                </Translation>
+                <Translation i18nkey="more">more</Translation>
               </button>
             )}
           </div>

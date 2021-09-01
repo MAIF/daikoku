@@ -15,14 +15,10 @@ export const SelectionStepStep = (props) => {
   return (
     <div className="d-flex">
       <button className="btn btn-outline-primary mr-2" onClick={() => props.goToServices()}>
-        <Translation i18nkey="Import Otoroshi services">
-          Import Otoroshi Services
-        </Translation>
+        <Translation i18nkey="Import Otoroshi services">Import Otoroshi Services</Translation>
       </button>
       <button className="btn btn-outline-primary" onClick={() => props.goToApikeys()}>
-        <Translation i18nkey="Import Otoroshi apikeys">
-          Import Otoroshi Apikeys
-        </Translation>
+        <Translation i18nkey="Import Otoroshi apikeys">Import Otoroshi Apikeys</Translation>
       </button>
     </div>
   );
@@ -69,9 +65,7 @@ export const SelectOtoStep = (props) => {
       />
       {!!previousState && previousState.tenant === props.tenant._id && (
         <div className="d-flex flex-column">
-          <BeautifulTitle
-            placement="bottom"
-            title={translateMethod('Load a work in progress')}>
+          <BeautifulTitle placement="bottom" title={translateMethod('Load a work in progress')}>
             <button className="btn btn-access" onClick={props.loadPreviousState}>
               <i className="fa fa-download" />
             </button>
@@ -88,9 +82,7 @@ export const RecapServiceStep = (props) => {
   return (
     <div>
       <h2>
-        <Translation i18nkey="Api imported">
-          Apis to import
-        </Translation>
+        <Translation i18nkey="Api imported">Apis to import</Translation>
       </h2>
       <ul style={{ listStyleType: 'none' }}>
         {props.teams
@@ -115,19 +107,13 @@ export const RecapServiceStep = (props) => {
       <div className="d-flex justify-content-end">
         <button className="btn btn-outline-primary mr-1" onClick={() => props.goBackToServices()}>
           <i className="fas fa-chevron-left mr-1"></i>
-          <Translation i18nkey="Back">
-            Back
-          </Translation>
+          <Translation i18nkey="Back">Back</Translation>
         </button>
         <button className="btn btn-outline-danger mr-1" onClick={props.cancel}>
-          <Translation i18nkey="Cancel">
-            Cancel
-          </Translation>
+          <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
         <button className="btn btn-outline-success" onClick={() => props.create()}>
-          <Translation i18nkey="Create apis">
-            Create APIs
-          </Translation>
+          <Translation i18nkey="Create apis">Create APIs</Translation>
         </button>
       </div>
     </div>
@@ -146,9 +132,7 @@ export const RecapSubsStep = (props) => {
   return (
     <div className="mt-3">
       <h4 className="ml-3">
-        <Translation
-          i18nkey="initialize_from_otoroshi.api_keys_imported"
-        >
+        <Translation i18nkey="initialize_from_otoroshi.api_keys_imported">
           These api keys will be import
         </Translation>
       </h4>
@@ -180,19 +164,13 @@ export const RecapSubsStep = (props) => {
       <div className="d-flex justify-content-end">
         <button className="btn btn-outline-primary mr-1" onClick={() => props.goBackToServices()}>
           <i className="fas fa-chevron-left mr-1"></i>
-          <Translation i18nkey="Back">
-            Back
-          </Translation>
+          <Translation i18nkey="Back">Back</Translation>
         </button>
         <button className="btn btn-outline-danger mr-1" onClick={reset}>
-          <Translation i18nkey="Reset">
-            Reset
-          </Translation>
+          <Translation i18nkey="Reset">Reset</Translation>
         </button>
         <button className="btn btn-outline-success" onClick={() => props.create()}>
-          <Translation i18nkey="Create subscriptions">
-            Create subscriptions
-          </Translation>
+          <Translation i18nkey="Create subscriptions">Create subscriptions</Translation>
         </button>
       </div>
     </div>
@@ -209,7 +187,7 @@ export const ServicesStep = (props) => {
   const [error, setError] = useState({});
   const [inputRef, setInputRef] = useState(null);
 
-  const { translateMethod, Translation } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (newTeam) {
@@ -291,15 +269,12 @@ export const ServicesStep = (props) => {
     <div className="d-flex flex-row flex-wrap">
       <div className="col-6">
         <h2>
-          <Translation i18nkey="Otoroshi">
-            Otoroshi
-          </Translation>
+          <Translation i18nkey="Otoroshi">Otoroshi</Translation>
         </h2>
         <div>
           <span style={{ fontWeight: 'bold' }}>
             <Translation
               i18nkey="init.services.title"
-
               replacements={[props.infos.index + 1, props.infos.total]}>
               Api {props.infos.index + 1}/{props.infos.total}
             </Translation>
@@ -317,9 +292,7 @@ export const ServicesStep = (props) => {
         </div>
         <div className="mt-3">
           <span style={{ fontWeight: 'bold' }}>
-            <Translation i18nkey="api group">
-              Api group
-            </Translation>
+            <Translation i18nkey="api group">Api group</Translation>
           </span>{' '}
           :{' '}
           {props.groups.find((g) => g.id === props.service.groupId)
@@ -332,9 +305,7 @@ export const ServicesStep = (props) => {
         <div className="d-flex flex-row align-items-center mb-3">
           <div className="col-4">
             <span style={{ fontWeight: 'bold' }}>
-              <Translation i18nkey="Api name">
-                Api name
-              </Translation>
+              <Translation i18nkey="Api name">Api name</Translation>
             </span>
           </div>
           <div className="d-flex flex-column col-8">
@@ -353,9 +324,7 @@ export const ServicesStep = (props) => {
           <div className="col-4">
             <div>
               <span style={{ fontWeight: 'bold' }}>
-                <Translation i18nkey="Api team">
-                  Api team
-                </Translation>
+                <Translation i18nkey="Api team">Api team</Translation>
               </span>
             </div>
           </div>
@@ -395,9 +364,7 @@ export const ServicesStep = (props) => {
           </button>
           {props.maybeCreatedApi.isDefined && (
             <button className="btn btn-outline-success" onClick={reset}>
-              <Translation i18nkey="Reset">
-                Reset
-              </Translation>
+              <Translation i18nkey="Reset">Reset</Translation>
             </button>
           )}
           {props.maybeCreatedApi.isDefined && (
@@ -405,9 +372,7 @@ export const ServicesStep = (props) => {
               className="btn btn-outline-success mr-2"
               disabled={!selectedTeam || error.name ? 'disabled' : null}
               onClick={update}>
-              <Translation i18nkey="Update">
-                Update
-              </Translation>
+              <Translation i18nkey="Update">Update</Translation>
             </button>
           )}
           {!props.maybeCreatedApi.isDefined && (
@@ -415,9 +380,7 @@ export const ServicesStep = (props) => {
               className="btn btn-outline-success mr-2"
               disabled={!selectedTeam || error.name ? 'disabled' : null}
               onClick={getIt}>
-              <Translation i18nkey="Import">
-                Import this service
-              </Translation>
+              <Translation i18nkey="Import">Import this service</Translation>
             </button>
           )}
           <button className="btn btn-access ml-2" onClick={nextStep}>
@@ -433,14 +396,10 @@ export const ServicesStep = (props) => {
 
         <div>
           <button className="btn btn-outline-danger mr-2" onClick={props.cancel}>
-            <Translation i18nkey="Cancel">
-              Cancel
-            </Translation>
+            <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
           <button className="btn btn-outline-success" onClick={props.recap}>
-            <Translation i18nkey="Finish">
-              Finish
-            </Translation>
+            <Translation i18nkey="Finish">Finish</Translation>
           </button>
         </div>
       </div>
@@ -450,14 +409,16 @@ export const ServicesStep = (props) => {
 
 const SelectApi = ({ apis, setSelectedApi, selectedApi }) => {
   const { translateMethod } = useContext(I18nContext);
-  return <Select
-    options={apis}
-    onChange={(slug) => setSelectedApi(slug.value)}
-    value={apis.find((a) => !!selectedApi && a.value._id === selectedApi._id)}
-    placeholder={translateMethod('Select an API')}
-    classNamePrefix="reactSelect"
-  />
-}
+  return (
+    <Select
+      options={apis}
+      onChange={(slug) => setSelectedApi(slug.value)}
+      value={apis.find((a) => !!selectedApi && a.value._id === selectedApi._id)}
+      placeholder={translateMethod('Select an API')}
+      classNamePrefix="reactSelect"
+    />
+  );
+};
 
 const SelectPlan = ({
   possiblePlans,
@@ -485,16 +446,9 @@ const SelectPlan = ({
       classNamePrefix="reactSelect"
     />
   ) : null;
-}
+};
 
-const SelectTeam = ({
-  loading,
-  setNewTeam,
-  teams,
-  selectedTeam,
-  setSelectedTeam,
-  selectedApi,
-}) => {
+const SelectTeam = ({ loading, setNewTeam, teams, selectedTeam, setSelectedTeam, selectedApi }) => {
   const { translateMethod } = useContext(I18nContext);
 
   return selectedApi ? (
@@ -513,7 +467,7 @@ const SelectTeam = ({
       classNamePrefix="reactSelect"
     />
   ) : null;
-}
+};
 
 export const ApiKeyStep = (props) => {
   const [apikeys, setApikeys] = useState([]);
@@ -581,9 +535,7 @@ export const ApiKeyStep = (props) => {
       <div className="ml-auto">
         {props.createdSubs.length <= 0 && (
           <button className="btn btn-outline-danger mr-2" onClick={props.cancel}>
-            <Translation i18nkey="Cancel">
-              Cancel
-            </Translation>
+            <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
         )}
       </div>
@@ -724,11 +676,7 @@ const ApiKey = (props) => {
         {props.apikey.clientName}
       </td>
       <td style={{ width: '23%' }} className="align-middle text-center">
-        <SelectApi
-          apis={apis}
-          setSelectedApi={setSelectedApi}
-          selectedApi={selectedApi}
-        />
+        <SelectApi apis={apis} setSelectedApi={setSelectedApi} selectedApi={selectedApi} />
       </td>
       <td style={{ width: '23%' }} className="align-middle text-center">
         <SelectPlan
@@ -752,8 +700,9 @@ const ApiKey = (props) => {
       </td>
       <td style={{ width: '10%' }} className="align-middle text-center">
         <button
-          className={`btn btn-outline-${props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
-            } mr-2`}
+          className={`btn btn-outline-${
+            props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
+          } mr-2`}
           disabled={!selectedTeam || error.name || !selectedPlan ? 'disabled' : null}
           onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
           {props.maybeCreatedSub(props.apikey).isDefined

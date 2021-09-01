@@ -37,12 +37,10 @@ function TeamApiKeyConsumptionComponent(props) {
     return (
       <div>
         <div>
-          <Translation i18nkey="Usage">
-            Usage
-          </Translation>
+          <Translation i18nkey="Usage">Usage</Translation>
         </div>
         <div>
-          {hits/*.prettify()*/}{' '}
+          {hits /*.prettify()*/}{' '}
           <Translation i18nkey="Hit" isPlural={hits > 1}>
             hits
           </Translation>
@@ -96,8 +94,6 @@ function TeamApiKeyConsumptionComponent(props) {
                   ).then((c) => c.consumptions)
                 }
                 mappers={mappers}
-  
-              
                 forConsumer={true}
               />
             </div>
@@ -111,7 +107,7 @@ function TeamApiKeyConsumptionComponent(props) {
 function PlanInformations(props) {
   const [state, setState] = useState({
     loading: true,
-    informations: null
+    informations: null,
   });
 
   useEffect(() => {

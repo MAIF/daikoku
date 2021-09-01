@@ -105,9 +105,7 @@ export function init(
                   type="button"
                   className="btn btn-success"
                   onClick={() => extendSession(close)}>
-                  <Translation i18nkey="session.extend">
-                    Yes, extend my session
-                  </Translation>
+                  <Translation i18nkey="session.extend">Yes, extend my session</Translation>
                 </button>
               </div>
             </div>

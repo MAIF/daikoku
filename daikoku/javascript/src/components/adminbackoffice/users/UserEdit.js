@@ -18,37 +18,28 @@ function SetPassword(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const genAndSetPassword = () => {
-    window
-      .prompt(translateMethod('Type the password'), undefined, true)
-      .then((pw1) => {
-        if (pw1) {
-          window
-            .prompt(translateMethod('Re-type the password'), undefined, true)
-            .then((pw2) => {
-              const validation = validatePassword(pw1, pw2, translateMethod);
-              if (validation.ok) {
-                const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-                props.changeValue('password', hashed);
-              } else {
-                props.displayError(validation.error);
-              }
-            });
-        }
-      });
+    window.prompt(translateMethod('Type the password'), undefined, true).then((pw1) => {
+      if (pw1) {
+        window.prompt(translateMethod('Re-type the password'), undefined, true).then((pw2) => {
+          const validation = validatePassword(pw1, pw2, translateMethod);
+          if (validation.ok) {
+            const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
+            props.changeValue('password', hashed);
+          } else {
+            props.displayError(validation.error);
+          }
+        });
+      }
+    });
   };
 
   return (
     <div className="form-group row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div className="col-sm-10">
-        <button
-          type="button"
-          className="btn btn-outline-success"
-          onClick={genAndSetPassword}>
+        <button type="button" className="btn btn-outline-success" onClick={genAndSetPassword}>
           <i className="fas fa-unlock-alt mr-1" />
-          <Translation i18nkey="Set password">
-            Set password
-          </Translation>
+          <Translation i18nkey="Set password">Set password</Translation>
         </button>
       </div>
     </div>
@@ -68,9 +59,7 @@ function RefreshToken(props) {
       <div className="col-sm-10">
         <button type="button" className="btn btn-outline-success" onClick={reloadToken}>
           <i className="fas fa-sync-alt mr-1" />
-          <Translation i18nkey="Reload personal token">
-            Reload personal token
-          </Translation>
+          <Translation i18nkey="Reload personal token">Reload personal token</Translation>
         </button>
       </div>
     </div>
@@ -89,9 +78,7 @@ function Gravatar(props) {
   return (
     <button type="button" className="btn btn-access" onClick={setGravatarLink}>
       <i className="fas fa-user-circle mr-1" />
-      <Translation i18nkey="Set avatar from Gravatar">
-        Set avatar from Gravatar
-      </Translation>
+      <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
     </button>
   );
 }
@@ -125,7 +112,7 @@ export function UserEditComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState({
-    user: null
+    user: null,
   });
 
   const formSchema = {
@@ -176,7 +163,7 @@ export function UserEditComponent(props) {
       },
     },
     refreshToken: {
-      type: RefreshToken
+      type: RefreshToken,
     },
     password: {
       type: 'string',
@@ -198,7 +185,7 @@ export function UserEditComponent(props) {
       },
     },
     avatarFromAsset: {
-      type: AvatarChooser
+      type: AvatarChooser,
     },
   };
 
@@ -233,25 +220,21 @@ export function UserEditComponent(props) {
   }, []);
 
   const removeUser = () => {
-    window
-      .confirm(
-        translateMethod('remove.user.confirm')
-      )
-      .then((ok) => {
-        if (ok) {
-          Services.deleteUserById(state.user._id).then(() => {
-            toastr.info(
-              translateMethod(
-                'remove.user.success',
-                false,
-                `user ${state.user.name} is successfully deleted`,
-                state.user.name
-              )
-            );
-            props.history.push('/settings/users');
-          });
-        }
-      });
+    window.confirm(translateMethod('remove.user.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteUserById(state.user._id).then(() => {
+          toastr.info(
+            translateMethod(
+              'remove.user.success',
+              false,
+              `user ${state.user.name} is successfully deleted`,
+              state.user.name
+            )
+          );
+          props.history.push('/settings/users');
+        });
+      }
+    });
   };
 
   const save = () => {
@@ -271,7 +254,7 @@ export function UserEditComponent(props) {
         });
       } else {
         Services.updateUserById(state.user).then((user) => {
-          setState({ ...state, user, create: false })
+          setState({ ...state, user, create: false });
           toastr.success(
             translateMethod(
               'user.updated.success',
@@ -325,9 +308,7 @@ export function UserEditComponent(props) {
         )}
         <div className="row" style={{ justifyContent: 'flex-end' }}>
           <Link className="btn btn-outline-danger" to={'/settings/users'}>
-            <Translation i18nkey="Cancel">
-              Cancel
-            </Translation>
+            <Translation i18nkey="Cancel">Cancel</Translation>
           </Link>
           {!state.create && (
             <button
@@ -336,9 +317,7 @@ export function UserEditComponent(props) {
               className="btn btn-outline-danger"
               onClick={removeUser}>
               <i className="fas fa-trash mr-1" />
-              <Translation i18nkey="Delete">
-                Delete
-              </Translation>
+              <Translation i18nkey="Delete">Delete</Translation>
             </button>
           )}
           <button
@@ -349,17 +328,13 @@ export function UserEditComponent(props) {
             {!state.create && (
               <span>
                 <i className="fas fa-save mr-1" />
-                <Translation i18nkey="Save">
-                  Save
-                </Translation>
+                <Translation i18nkey="Save">Save</Translation>
               </span>
             )}
             {state.create && (
               <span>
                 <i className="fas fa-save mr-1" />
-                <Translation i18nkey="Create">
-                  Create
-                </Translation>
+                <Translation i18nkey="Create">Create</Translation>
               </span>
             )}
           </button>

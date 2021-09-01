@@ -32,7 +32,10 @@ class Translator {
       }
   }
 
-  def getMailTemplate(key: String, tenant: Tenant)(implicit language: String, env: Env, messagesApi: MessagesApi): Future[String] = {
+  def getMailTemplate(key: String, tenant: Tenant)(
+      implicit language: String,
+      env: Env,
+      messagesApi: MessagesApi): Future[String] = {
     implicit val ec = env.defaultExecutionContext
     implicit val mat = env.defaultMaterializer
 
@@ -42,10 +45,15 @@ class Translator {
       .forTenant(tenant)
       .findOne(Json.obj("key" -> key, "language" -> language.toLowerCase))
       .flatMap {
-        case None => tenant.mailerSettings match {
-          case None => translate(key, tenant, Map("email" -> defaultTemplate))
-          case Some(mailer) => mailer.template.map(t => FastFuture.successful(t)).getOrElse(translate(key, tenant, Map("email" -> defaultTemplate)))
-        }
+        case None =>
+          tenant.mailerSettings match {
+            case None => translate(key, tenant, Map("email" -> defaultTemplate))
+            case Some(mailer) =>
+              mailer.template
+                .map(t => FastFuture.successful(t))
+                .getOrElse(
+                  translate(key, tenant, Map("email" -> defaultTemplate)))
+          }
         case Some(translation) => FastFuture.successful(translation.value)
       }
   }

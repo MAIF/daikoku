@@ -15,8 +15,8 @@ function TenantOtoroshiComponent(props) {
 
   const [state, setState] = useState({
     otoroshi: null,
-    create: false
-  })
+    create: false,
+  });
 
   const formSchema = {
     _id: {
@@ -54,12 +54,11 @@ function TenantOtoroshiComponent(props) {
     if (props.location && props.location.state && props.location.state.newSettings) {
       setState({ ...state, otoroshi: props.location.state.newSettings, create: true });
     } else {
-      Services.oneOtoroshi(
-        props.tenant._id,
-        props.match.params.otoroshiId
-      ).then((otoroshi) => setState({ ...state, otoroshi }));
+      Services.oneOtoroshi(props.tenant._id, props.match.params.otoroshiId).then((otoroshi) =>
+        setState({ ...state, otoroshi })
+      );
     }
-  }, [])
+  }, []);
 
   const save = () => {
     if (state.create) {
@@ -67,9 +66,7 @@ function TenantOtoroshiComponent(props) {
         if (result.error) {
           toastr.error('Failure', result.error);
         } else {
-          toastr.success(
-            translateMethod('otoroshi.settings.created.success')
-          );
+          toastr.success(translateMethod('otoroshi.settings.created.success'));
           setState({ ...state, create: false });
         }
       });
@@ -78,9 +75,7 @@ function TenantOtoroshiComponent(props) {
         if (result.error) {
           toastr.error('Failure', result.error);
         } else {
-          toastr.success(
-            translateMethod('otoroshi.settings.updated.success')
-          );
+          toastr.success(translateMethod('otoroshi.settings.updated.success'));
           setState({ ...state, create: false });
         }
       });
@@ -88,20 +83,14 @@ function TenantOtoroshiComponent(props) {
   };
 
   const onDelete = () => {
-    window
-      .confirm(
-        translateMethod('otoroshi.settings.delete.confirm')
-      )
-      .then((ok) => {
-        if (ok) {
-          Services.deleteOtoroshiSettings(props.tenant._id, state.otoroshi._id).then(
-            () => {
-              toastr.success(translateMethod('otoroshi.settings.deleted.success'));
-              props.history.push('/settings/otoroshis');
-            }
-          );
-        }
-      });
+    window.confirm(translateMethod('otoroshi.settings.delete.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteOtoroshiSettings(props.tenant._id, state.otoroshi._id).then(() => {
+          toastr.success(translateMethod('otoroshi.settings.deleted.success'));
+          props.history.push('/settings/otoroshis');
+        });
+      }
+    });
   };
 
   return (
@@ -111,18 +100,12 @@ function TenantOtoroshiComponent(props) {
           <div className="row">
             {!state.create && (
               <h1>
-                <Translation i18nkey="Otoroshi settings">
-                  Otoroshi settings
-                </Translation>
+                <Translation i18nkey="Otoroshi settings">Otoroshi settings</Translation>
               </h1>
             )}
             {state.create && (
               <h1>
-                <Translation
-                  i18nkey="New otoroshi settings"
-                >
-                  New otoroshi settings
-                </Translation>
+                <Translation i18nkey="New otoroshi settings">New otoroshi settings</Translation>
               </h1>
             )}
           </div>
@@ -142,9 +125,7 @@ function TenantOtoroshiComponent(props) {
           <div className="row justify-content-end">
             <Link className="btn btn-outline-primary" to="/settings/otoroshis">
               <i className="fas fa-chevron-left mr-1" />
-              <Translation i18nkey="Back">
-                Back
-              </Translation>
+              <Translation i18nkey="Back">Back</Translation>
             </Link>
             {!state.create && (
               <button
@@ -153,9 +134,7 @@ function TenantOtoroshiComponent(props) {
                 className="btn btn-outline-danger"
                 onClick={onDelete}>
                 <i className="fas fa-trash mr-1" />
-                <Translation i18nkey="Delete">
-                  Delete
-                </Translation>
+                <Translation i18nkey="Delete">Delete</Translation>
               </button>
             )}
             <button
@@ -166,16 +145,12 @@ function TenantOtoroshiComponent(props) {
               {!state.create && (
                 <span>
                   <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Save">
-                    Save
-                  </Translation>
+                  <Translation i18nkey="Save">Save</Translation>
                 </span>
               )}
               {state.create && (
                 <span>
-                  <Translation i18nkey="Create">
-                    Create
-                  </Translation>
+                  <Translation i18nkey="Create">Create</Translation>
                 </span>
               )}
             </button>
