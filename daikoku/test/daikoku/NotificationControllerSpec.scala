@@ -589,7 +589,7 @@ class NotificationControllerSpec()
       val respVerif =
         httpJsonCallBlocking(
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
-          tenan
+          tenant,
           session)
       respVerif.status mustBe 200
       val eventualApi = json.ApiFormat.reads(respVerif.json)
