@@ -8,7 +8,7 @@ import { I18nContext } from '../../../../core';
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
 export function AlgoSettings(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   if (!props.rawValue.readProfileFromToken) {
     return null;
@@ -227,7 +227,7 @@ const defaultConfig = {
   pictureField: 'picture',
   otoroshiDataField: 'app_metadata | otoroshi_data',
   daikokuAdmins: [],
-}
+};
 
 export function OAuth2Config(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -293,9 +293,7 @@ export function OAuth2Config(props) {
           <label className="col-xs-12 col-sm-2 col-form-label" />
           <div className="col-sm-10">
             <button type="button" className="btn btn-success" onClick={fetchConfig}>
-              <Translation i18nkey="Get from OIDC config 2">
-                Get from OIDC config 2
-              </Translation>
+              <Translation i18nkey="Get from OIDC config 2">Get from OIDC config 2</Translation>
             </button>
           </div>
         </div>
@@ -398,7 +396,7 @@ export function OAuth2Config(props) {
       },
     },
     jwtVerifier: {
-      type: AlgoSettings
+      type: AlgoSettings,
     },
   };
 
@@ -407,7 +405,6 @@ export function OAuth2Config(props) {
       props.onChange({ ...defaultConfig, ...props.value });
     }
   }, []);
-
 
   return (
     <React.Suspense fallback={<Spinner />}>

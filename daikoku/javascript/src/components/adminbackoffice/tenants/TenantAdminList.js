@@ -142,9 +142,7 @@ const TenantAdminListComponent = (props) => {
           <div className="col">
             <h1>
               {tenant && <>{tenant.name} - </>}
-              <Translation i18nkey="Admins">
-                Admins
-              </Translation>
+              <Translation i18nkey="Admins">Admins</Translation>
             </h1>
           </div>
         </div>

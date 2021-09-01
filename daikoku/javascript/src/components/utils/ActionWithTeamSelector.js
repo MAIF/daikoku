@@ -28,11 +28,7 @@ function ActionWithTeamSelectorComponent(props) {
     return null;
   }
 
-  return (
-    <>
-      {React.cloneElement(props.children, { onClick: () => openTeamSelectorModal() })}
-    </>
-  );
+  return <>{React.cloneElement(props.children, { onClick: () => openTeamSelectorModal() })}</>;
 }
 
 ActionWithTeamSelectorComponent.defaultProps = {

@@ -61,7 +61,9 @@ const InitializeFromOtoroshiComponent = (props) => {
 
   const updateApi = (api) => {
     return Services.teamApi(api.team, api._humanReadableId, api.currentVersion)
-      .then((oldApi) => Services.saveTeamApi(api.team, { ...oldApi, ...api }, oldApi.currentVersion))
+      .then((oldApi) =>
+        Services.saveTeamApi(api.team, { ...oldApi, ...api }, oldApi.currentVersion)
+      )
       .then((updatedApi) => {
         const filteredApis = apis.filter((a) => a._id !== updatedApi._id);
         setApis([...filteredApis, updatedApi]);
@@ -138,9 +140,7 @@ const InitializeFromOtoroshiComponent = (props) => {
       <Can I={manage} a={TENANT} dispatchError>
         <div className="d-flex flex-row align-items-center">
           <h1>
-            <Translation i18nkey="Daikoku initialization">
-              Daikoku initialization
-            </Translation>
+            <Translation i18nkey="Daikoku initialization">Daikoku initialization</Translation>
           </h1>
           {state.matches('completeServices') && <Help />}
         </div>
@@ -248,11 +248,7 @@ const InitializeFromOtoroshiComponent = (props) => {
               }
             />
           )}
-          {state.matches('complete') && (
-            <Translation i18nkey="Done">
-              Done
-            </Translation>
-          )}
+          {state.matches('complete') && <Translation i18nkey="Done">Done</Translation>}
 
           {state.matches('failure') && (
             <div className="alert alert-danger">{state.context.error.error}</div>
@@ -277,9 +273,7 @@ const Help = () => {
       title={
         <div className="d-flex flex-column">
           <h4>
-            <Translation i18nkey="Keyboard shortcuts">
-              Keyboard shortcut
-            </Translation>
+            <Translation i18nkey="Keyboard shortcuts">Keyboard shortcut</Translation>
           </h4>
           <ul>
             <li>
@@ -293,9 +287,7 @@ const Help = () => {
               </Translation>
             </li>
             <li>
-              <Translation i18nkey="keyboard.shortcuts.tab">
-                tab: focus on api name
-              </Translation>
+              <Translation i18nkey="keyboard.shortcuts.tab">tab: focus on api name</Translation>
             </li>
           </ul>
         </div>

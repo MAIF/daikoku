@@ -12,9 +12,10 @@ export const me = () => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
 export const oneOfMyTeam = (id) => customFetch(`/api/me/teams/${id}`);
 
-export const getVisibleApiWithId = id => customFetch(`/api/me/visible-apis/${id}`)
+export const getVisibleApiWithId = (id) => customFetch(`/api/me/visible-apis/${id}`);
 export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/${id}/${version}`);
-export const getTeamVisibleApi = (teamId, apiId, version) => customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
+export const getTeamVisibleApi = (teamId, apiId, version) =>
+  customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const myTeams = () => customFetch('/api/me/teams');
 export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 export const myVisibleApis = () => customFetch('/api/me/visible-apis');
@@ -126,7 +127,8 @@ export const member = (teamId, userId) => customFetch(`/api/teams/${teamId}/memb
 export const members = (teamId) => customFetch(`/api/teams/${teamId}/members`);
 export const teamHome = (teamId) => customFetch(`/api/teams/${teamId}/home`);
 
-export const teamApi = (teamId, apiId, version) => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
+export const teamApi = (teamId, apiId, version) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}`);
 
 export const teamApis = (teamId) => customFetch(`/api/teams/${teamId}/apis`);
 export const team = (teamId) => customFetch(`/api/teams/${teamId}`);
@@ -182,10 +184,10 @@ export const createOtoroshiSettings = (tenantId, oto) =>
 export const getOtoroshiGroups = (tenantId, otoId) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/groups`);
 
-export const getOtoroshiGroupsAsTeamAdmin = (teamId, otoId) => 
+export const getOtoroshiGroupsAsTeamAdmin = (teamId, otoId) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/groups`);
 
-export const getOtoroshiServicesAsTeamAdmin = (teamId, otoId) => 
+export const getOtoroshiServicesAsTeamAdmin = (teamId, otoId) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/services`);
 
 export const getOtoroshiServices = (tenantId, otoId) =>
@@ -611,7 +613,7 @@ export const saveTranslation = (translation) =>
     }),
   });
 
-export const deleteTranslation = translation =>
+export const deleteTranslation = (translation) =>
   customFetch(`/api/translations`, {
     method: 'DELETE',
     body: JSON.stringify({
@@ -715,9 +717,9 @@ export const checkConnection = (config, user) =>
     method: 'POST',
     body: user
       ? JSON.stringify({
-        config,
-        user,
-      })
+          config,
+          user,
+        })
       : JSON.stringify(config),
   });
 
@@ -855,7 +857,8 @@ export const getAllApiVersions = (teamId, apiId) =>
 
 export const getDefaultApiVersion = (apiId) => customFetch(`/api/apis/${apiId}/default_version`);
 
-export const getAllPlanOfApi = (teamId, apiId, version) => customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
+export const getAllPlanOfApi = (teamId, apiId, version) =>
+  customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/plans`);
 
 export const cloneApiPlan = (teamId, apiId, fromApi, plan) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/plans`, {

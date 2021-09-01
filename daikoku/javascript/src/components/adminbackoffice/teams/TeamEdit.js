@@ -12,7 +12,7 @@ import { I18nContext } from '../../../locales/i18n-context';
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 function TeamEditForAdministrationComponent(props) {
-  const [team, setTeam] = useState(null)
+  const [team, setTeam] = useState(null);
   const [create, setCreate] = useState(false);
 
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -62,7 +62,7 @@ function TeamEditForAdministrationComponent(props) {
     avatarFrom: {
       type: AvatarChooser,
       props: {
-        team: () => team
+        team: () => team,
       },
     },
     metadata: {
@@ -84,23 +84,23 @@ function TeamEditForAdministrationComponent(props) {
 
   const save = () => {
     if (props.location && props.location.state && props.location.state.newTeam) {
-      Services.createTeam(team)
-        .then((team) => {
-          if (team.error)
-            toastr.error(translateMethod("team_api_post.failed"));
-          else {
-            toastr.success(translateMethod(
+      Services.createTeam(team).then((team) => {
+        if (team.error) toastr.error(translateMethod('team_api_post.failed'));
+        else {
+          toastr.success(
+            translateMethod(
               'team.created',
               false,
               `Team ${team.name} successfully created`,
               team.name
-            ));
-            props.history.push(`/settings/teams/${team._humanReadableId}/members`);
-          }
-        })
+            )
+          );
+          props.history.push(`/settings/teams/${team._humanReadableId}/members`);
+        }
+      });
     } else {
       Services.updateTeam(team).then((t) => {
-        setTeam(t)
+        setTeam(t);
         toastr.success(translateMethod('team.updated'));
       });
     }
@@ -113,9 +113,8 @@ function TeamEditForAdministrationComponent(props) {
   useEffect(() => {
     if (props.location && props.location.state && props.location.state.newTeam) {
       setTeam(props.location.state.newTeam);
-      setCreate(true)
-    } else
-      Services.teamFull(props.match.params.teamSettingId).then(setTeam);
+      setCreate(true);
+    } else Services.teamFull(props.match.params.teamSettingId).then(setTeam);
   }, []);
 
   if (!team) {
@@ -147,9 +146,7 @@ function TeamEditForAdministrationComponent(props) {
           <div className="row form-back-fixedBtns">
             <Link className="btn btn-outline-primary" to={'/settings/teams'}>
               <i className="fas fa-chevron-left mr-1" />
-              <Translation i18nkey="Back">
-                Back
-              </Translation>
+              <Translation i18nkey="Back">Back</Translation>
             </Link>
             <button
               style={{ marginLeft: 5 }}
@@ -172,17 +169,13 @@ function TeamEditForAdministrationComponent(props) {
               {!create && (
                 <span>
                   <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Save">
-                    Save
-                  </Translation>
+                  <Translation i18nkey="Save">Save</Translation>
                 </span>
               )}
               {create && (
                 <span>
                   <i className="fas fa-save mr-1" />
-                  <Translation i18nkey="Create">
-                    Create
-                  </Translation>
+                  <Translation i18nkey="Create">Create</Translation>
                 </span>
               )}
             </button>

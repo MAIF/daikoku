@@ -8,15 +8,17 @@ import {
   UPDATE_USER,
 } from './';
 
-export const login = ({ user, team, tenant, language }) => (dispatch) => {
-  return dispatch({
-    type: LOGIN,
-    user,
-    team,
-    tenant,
-    language,
-  });
-};
+export const login =
+  ({ user, team, tenant, language }) =>
+  (dispatch) => {
+    return dispatch({
+      type: LOGIN,
+      user,
+      team,
+      tenant,
+      language,
+    });
+  };
 
 export const logout = () => (dispatch) => {
   return dispatch({
@@ -24,12 +26,14 @@ export const logout = () => (dispatch) => {
   });
 };
 
-export const impersonate = ({ impersonator }) => (dispatch) => {
-  return dispatch({
-    type: IMPERSONATE,
-    impersonator,
-  });
-};
+export const impersonate =
+  ({ impersonator }) =>
+  (dispatch) => {
+    return dispatch({
+      type: IMPERSONATE,
+      impersonator,
+    });
+  };
 
 export const updateTeam = (team) => (dispatch) => {
   return dispatch({

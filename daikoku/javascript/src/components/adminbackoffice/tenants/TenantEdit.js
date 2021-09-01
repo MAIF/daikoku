@@ -44,10 +44,8 @@ function AuthConfig(props) {
   } else {
     return (
       <span>
-        <Translation i18nkey="Unsupported auth. type">
-          Unsupported auth. type
-        </Translation>{' '}
-        ({props.rawValue.authProvider})
+        <Translation i18nkey="Unsupported auth. type">Unsupported auth. type</Translation> (
+        {props.rawValue.authProvider})
       </span>
     );
   }
@@ -68,11 +66,12 @@ function MailerConfig(props) {
 }
 
 function StyleLogoAssetButton(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
-  const origin = window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+  const origin =
+    window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
     <div className="form-group d-flex justify-content-end">
       <AssetChooserByModal
@@ -87,11 +86,12 @@ function StyleLogoAssetButton(props) {
 }
 
 function StyleJsUrlAssetButton(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
-  const origin = window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+  const origin =
+    window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
     <div className="form-group d-flex justify-content-end">
       <AssetChooserByModal
@@ -105,11 +105,12 @@ function StyleJsUrlAssetButton(props) {
 }
 
 function StyleCssUrlAssetButton(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
-  const origin = window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+  const origin =
+    window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
 
   return (
     <div className="form-group d-flex justify-content-end">
@@ -123,13 +124,13 @@ function StyleCssUrlAssetButton(props) {
   );
 }
 
-
 function StyleFaviconUrlAssetButton(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
-  const origin = window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
+  const origin =
+    window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
     <div className="form-group d-flex justify-content-end">
       <AssetChooserByModal
@@ -144,7 +145,7 @@ function StyleFaviconUrlAssetButton(props) {
 }
 
 function StyleFontFamilyUrlAssetButton(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   const tenant = props.tenant ? props.tenant() : { domain: window.location.origin };
   const domain = tenant.domain;
@@ -163,7 +164,7 @@ function StyleFontFamilyUrlAssetButton(props) {
 }
 
 function ThemeUpdatorFromUI(props) {
-  const { translateMethod, Translation } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   return (
     <div className="form-group d-flex justify-content-end">
@@ -178,11 +179,7 @@ function ThemeUpdatorFromUI(props) {
               open: true,
               dontsave: () => RedirectToUI(),
               save: () => props.save().then(() => RedirectToUI()),
-              title: translateMethod(
-                'unsaved.modifications.title',
-                false,
-                'Unsaved modifications'
-              ),
+              title: translateMethod('unsaved.modifications.title', false, 'Unsaved modifications'),
               message: translateMethod(
                 'unsaved.modifications.message',
                 false,
@@ -193,16 +190,13 @@ function ThemeUpdatorFromUI(props) {
             RedirectToUI();
           }
         }}>
-        <Translation i18nkey="Set Color Theme from UI">
-          Set Color Theme from UI
-        </Translation>
+        <Translation i18nkey="Set Color Theme from UI">Set Color Theme from UI</Translation>
       </button>
     </div>
   );
 }
 
 function HomePageVisibilitySwitch(props) {
-
   if (props.rawValue.isPrivate) {
     return null;
   }
@@ -217,13 +211,14 @@ function HomePageVisibilitySwitch(props) {
 }
 
 export function TenantEditComponent(props) {
-  const { translateMethod, language, Translation, languages, setTranslationMode } = useContext(I18nContext)
+  const { translateMethod, language, Translation, languages, setTranslationMode } =
+    useContext(I18nContext);
 
   const [state, setState] = useState({
     tenant: null,
     create: false,
     updated: false,
-  })
+  });
 
   const flow = [
     '_id',
@@ -381,7 +376,7 @@ export function TenantEditComponent(props) {
       type: 'select',
       props: {
         label: translateMethod('Default language'),
-        possibleValues: languages
+        possibleValues: languages,
       },
     },
     contact: {
@@ -618,7 +613,7 @@ export function TenantEditComponent(props) {
     mailerSettings: {
       type: MailerConfig,
       props: {
-        label: translateMethod('Mailer')
+        label: translateMethod('Mailer'),
       },
     },
     'daikokuHeader.name': {
@@ -804,11 +799,11 @@ export function TenantEditComponent(props) {
       Services.oneTenant(props.match.params.tenantId).then((tenant) => {
         setState({
           ...state,
-          tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} }
+          tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },
         });
       });
     }
-  }, [])
+  }, []);
 
   const save = () => {
     if (state.create) {
@@ -831,13 +826,9 @@ export function TenantEditComponent(props) {
         );
       });
     } else {
-      if (state.tenant.tenantMode === "translation") {
-        window.alert(
-          <p>
-            {translateMethod('tenant_edit.translation_mode_message')}
-          </p>
-        )
-        setTranslationMode(true)
+      if (state.tenant.tenantMode === 'translation') {
+        window.alert(<p>{translateMethod('tenant_edit.translation_mode_message')}</p>);
+        setTranslationMode(true);
       }
       return Services.saveTenant(state.tenant)
         .then(({ uiPayload }) => props.updateTenant(uiPayload))
@@ -863,7 +854,6 @@ export function TenantEditComponent(props) {
             </div>
             <React.Suspense fallback={<Spinner />}>
               <LazyForm
-
                 flow={flow}
                 schema={schema}
                 value={state.tenant}
@@ -875,18 +865,14 @@ export function TenantEditComponent(props) {
             <div className="row form-back-fixedBtns">
               <Link className="btn btn-outline-primary mr-1" to={'/settings/tenants'}>
                 <i className="fas fa-chevron-left mr-1" />
-                <Translation i18nkey="Back">
-                  Back
-                </Translation>
+                <Translation i18nkey="Back">Back</Translation>
               </Link>
               {!state.create && (
                 <Link
                   className="btn btn-outline-primary mr-1"
                   to={`/settings/tenants/${state.tenant._humanReadableId}/admins`}>
                   <i className="fas fa-user-shield mr-1" />
-                  <Translation i18nkey="Admins">
-                    Admins
-                  </Translation>
+                  <Translation i18nkey="Admins">Admins</Translation>
                 </Link>
               )}
               <button
@@ -897,17 +883,13 @@ export function TenantEditComponent(props) {
                 {!state.create && (
                   <span>
                     <i className="fas fa-save mr-1" />
-                    <Translation i18nkey="Save">
-                      Save
-                    </Translation>
+                    <Translation i18nkey="Save">Save</Translation>
                   </span>
                 )}
                 {state.create && (
                   <span>
                     <i className="fas fa-save mr-1" />
-                    <Translation i18nkey="Create">
-                      Create
-                    </Translation>
+                    <Translation i18nkey="Create">Create</Translation>
                   </span>
                 )}
               </button>

@@ -36,55 +36,52 @@ export function ApiDocumentationCartidge({ details }) {
 export function ApiDocumentation(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  const params = useParams()
+  const params = useParams();
 
   const [state, setState] = useState({
     details: null,
     content: translateMethod('Loading page ...'),
-  })
+  });
 
   useEffect(() => {
     if (state.content)
       window.$('pre code').each((i, block) => {
         hljs.highlightBlock(block);
       });
-  }, [state.content])
-
+  }, [state.content]);
 
   useEffect(() => {
     fetchPage();
   }, [props.api, params.pageId]);
 
   const fetchPage = () => {
-    Services.getDocDetails(props.api._humanReadableId, params.versionId).then(
-      (details) => {
-        const pageId = params.pageId || details.pages[0];
-        if (pageId) {
-          Services.getDocPage(props.api._id, pageId).then((page) => {
-            if (page.remoteContentEnabled) {
-              setState({
-                ...state,
-                details,
-                content: null,
-                contentType: page.contentType,
-                remoteContent: {
-                  url: page.contentUrl,
-                },
-              });
-            } else
-              setState({
-                ...state,
-                details,
-                content: page.content,
-                contentType: page.contentType,
-                remoteContent: null,
-              });
-          });
-        } else {
-          setState({ ...state, details });
-        }
+    Services.getDocDetails(props.api._humanReadableId, params.versionId).then((details) => {
+      const pageId = params.pageId || details.pages[0];
+      if (pageId) {
+        Services.getDocPage(props.api._id, pageId).then((page) => {
+          if (page.remoteContentEnabled) {
+            setState({
+              ...state,
+              details,
+              content: null,
+              contentType: page.contentType,
+              remoteContent: {
+                url: page.contentUrl,
+              },
+            });
+          } else
+            setState({
+              ...state,
+              details,
+              content: page.content,
+              contentType: page.contentType,
+              remoteContent: null,
+            });
+        });
+      } else {
+        setState({ ...state, details });
       }
-    );
+    });
   };
 
   const api = props.api;
@@ -113,29 +110,20 @@ export function ApiDocumentation(props) {
       <div className="col p-3">
         <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
           {prevId && (
-            <Link
-              to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
+            <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
               <i className="fas fa-chevron-left mr-1" />
-              <Translation i18nkey="Previous page">
-                Previous page
-              </Translation>
+              <Translation i18nkey="Previous page">Previous page</Translation>
             </Link>
           )}
           {nextId && (
-            <Link
-              to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
-              <Translation i18nkey="Next page">
-                Next page
-              </Translation>
+            <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
+              <Translation i18nkey="Next page">Next page</Translation>
               <i className="fas fa-chevron-right ml-1" />
             </Link>
           )}
         </div>
         {!state.remoteContent && (
-          <AwesomeContentViewer
-            contentType={state.contentType}
-            content={state.content}
-          />
+          <AwesomeContentViewer contentType={state.contentType} content={state.content} />
         )}
         {state.remoteContent && (
           <AwesomeContentViewer
@@ -145,20 +133,14 @@ export function ApiDocumentation(props) {
         )}
         <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
           {prevId && (
-            <Link
-              to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
+            <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
               <i className="fas fa-chevron-left mr-1" />
-              <Translation i18nkey="Previous page">
-                Previous page
-              </Translation>
+              <Translation i18nkey="Previous page">Previous page</Translation>
             </Link>
           )}
           {nextId && (
-            <Link
-              to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
-              <Translation i18nkey="Next page">
-                Next page
-              </Translation>
+            <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
+              <Translation i18nkey="Next page">Next page</Translation>
               <i className="fas fa-chevron-right ml-1" />
             </Link>
           )}
@@ -185,24 +167,23 @@ function Markdown(props) {
   const [content, setContent] = useState();
 
   useEffect(() => {
-    if (props.url)
-      update(props.url);
-  }, [props.url])
+    if (props.url) update(props.url);
+  }, [props.url]);
 
   useEffect(() => {
     if (content)
       window.$('pre code').each((i, block) => {
         hljs.highlightBlock(block);
       });
-  }, [content])
+  }, [content]);
 
   const update = (url) => {
     fetch(url, {
       method: 'GET',
       credentials: 'include',
     })
-      .then(r => r.text())
-      .then(setContent)
+      .then((r) => r.text())
+      .then(setContent);
   };
 
   if (!props.content && !content) {
@@ -222,16 +203,15 @@ function Asciidoc(props) {
   const [content, setContent] = useState();
 
   useEffect(() => {
-    if (props.url)
-      update(props.url);
-  }, [props.url])
+    if (props.url) update(props.url);
+  }, [props.url]);
 
   useEffect(() => {
     if (content)
       window.$('pre code').each((i, block) => {
         hljs.highlightBlock(block);
       });
-  }, [content])
+  }, [content]);
 
   const update = (url) => {
     fetch(url, {
@@ -296,7 +276,7 @@ const mimeTypes = [
   {
     label: '.html HyperText Markup Language file',
     value: 'text/html',
-    render: (url, content) => url ? <Html url={url} /> : <Markdown url={url} content={content} />,
+    render: (url, content) => (url ? <Html url={url} /> : <Markdown url={url} content={content} />),
   },
   { label: '.jpg JPEG image', value: 'image/jpeg', render: (url) => <Image url={url} /> },
   {

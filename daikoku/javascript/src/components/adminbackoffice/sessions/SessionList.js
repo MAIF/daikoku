@@ -64,35 +64,31 @@ function SessionListComponent(props) {
   ];
 
   const deleteSession = (session) => {
-    window
-      .confirm(translateMethod('destroy.session.confirm'))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteSession(session._id).then(() => {
-            if (table) {
-              table.update();
-              if (props.connectedUser._id === session.userId) {
-                window.location.reload();
-              }
+    window.confirm(translateMethod('destroy.session.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteSession(session._id).then(() => {
+          if (table) {
+            table.update();
+            if (props.connectedUser._id === session.userId) {
+              window.location.reload();
             }
-          });
-        }
-      });
+          }
+        });
+      }
+    });
   };
 
   const deleteSessions = () => {
-    window
-      .confirm(translateMethod('destroy.all.sessions.confirm'))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteSessions().then(() => {
-            if (table) {
-              table.update();
-              window.location.reload();
-            }
-          });
-        }
-      });
+    window.confirm(translateMethod('destroy.all.sessions.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteSessions().then(() => {
+          if (table) {
+            table.update();
+            window.location.reload();
+          }
+        });
+      }
+    });
   };
 
   return (
@@ -101,9 +97,7 @@ function SessionListComponent(props) {
         <div className="row">
           <div className="col">
             <h1>
-              <Translation i18nkey="User sessions">
-                User sessions
-              </Translation>
+              <Translation i18nkey="User sessions">User sessions</Translation>
             </h1>
             <div className="section p-2">
               <Table
@@ -125,11 +119,7 @@ function SessionListComponent(props) {
                     style={{ marginLeft: 10 }}
                     onClick={() => deleteSessions()}>
                     <i className="fas fa-trash mr-1" />
-                    <Translation
-                      i18nkey="Delete all sessions"
-                    >
-                      Delete all sessions
-                    </Translation>
+                    <Translation i18nkey="Delete all sessions">Delete all sessions</Translation>
                   </button>
                 )}
               />

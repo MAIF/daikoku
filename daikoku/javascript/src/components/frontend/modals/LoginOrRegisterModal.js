@@ -5,13 +5,15 @@ export const LoginOrRegisterModal = (props) => {
   const loginProvider = props.tenant.authProvider;
   const { asFlatFormat } = props;
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   return asFlatFormat ? (
     <div className="mx-auto" style={{ maxWidth: '448px', color: '#000' }}>
       <p className="font-weight-bold text-center">{props.message}</p>
       <div className="m-2 d-flex align-items-center justify-content-center">
-        <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1 login-button">
+        <a
+          href={`/auth/${loginProvider}/login`}
+          className="btn btn-outline-success mx-1 login-button">
           {translateMethod('Login')}
         </a>
         <a
@@ -33,15 +35,15 @@ export const LoginOrRegisterModal = (props) => {
       )}
       <div className="modal-body">
         <div className="modal-description">
-          {props.showOnlyMessage
-            ? props.message
-            : translateMethod('get.apikey.requires.login')}
+          {props.showOnlyMessage ? props.message : translateMethod('get.apikey.requires.login')}
         </div>
       </div>
       <div
         className="p-2 d-flex align-items-center justify-content-end"
         style={{ borderTop: '1px solid #dee2e6' }}>
-        <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1 login-button">
+        <a
+          href={`/auth/${loginProvider}/login`}
+          className="btn btn-outline-success mx-1 login-button">
           {translateMethod('Login')}
         </a>
         <a

@@ -38,14 +38,7 @@ const styles = {
   },
 };
 
-export function ApiTimelineIssue({
-  issueId,
-  connectedUser,
-  team,
-  api,
-  basePath,
-  history,
-}) {
+export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, history }) {
   const [issue, setIssue] = useState({ comments: [] });
   const [editionMode, handleEdition] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -160,8 +153,7 @@ export function ApiTimelineIssue({
   }
 
   function createComment() {
-    if (newComment.length <= 0)
-      toastr.error(translateMethod('issues.on_missing_comment_content'));
+    if (newComment.length <= 0) toastr.error(translateMethod('issues.on_missing_comment_content'));
     else {
       setIssue({
         ...issue,
@@ -191,12 +183,12 @@ export function ApiTimelineIssue({
       comments:
         newComment.length > 0
           ? [
-            ...issue.comments,
-            {
-              by: connectedUser,
-              content: newComment,
-            },
-          ]
+              ...issue.comments,
+              {
+                by: connectedUser,
+                content: newComment,
+              },
+            ]
           : issue.comments,
     };
     Services.updateIssue(api._humanReadableId, team._id, id, {
@@ -242,9 +234,7 @@ export function ApiTimelineIssue({
                 <Link
                   to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/new`}
                   style={{ whiteSpace: 'nowrap' }}>
-                  <button className="btn btn-success">
-                    {translateMethod('issues.new_issue')}
-                  </button>
+                  <button className="btn btn-success">{translateMethod('issues.new_issue')}</button>
                 </Link>
               </>
             )}
@@ -263,8 +253,8 @@ export function ApiTimelineIssue({
             {issue.by ? issue.by._humanReadableId : ''}
           </span>
           {translateMethod('issues.opened_message')}{' '}
-          {moment(issue.createdDate).format(translateMethod('moment.date.format.without.hours'))}{' '}
-          · {issue.comments ? issue.comments.length : 0} {translateMethod('issues.comments')}
+          {moment(issue.createdDate).format(translateMethod('moment.date.format.without.hours'))} ·{' '}
+          {issue.comments ? issue.comments.length : 0} {translateMethod('issues.comments')}
         </div>
       </div>
 
@@ -395,7 +385,7 @@ function Comment({
 }) {
   const [showActions, toggleActions] = useState(false);
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   return (
     <div className="d-flex pb-4">
@@ -480,7 +470,7 @@ function NewComment({
   openIssue,
   team,
 }) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
   return (
     <div className="d-flex pb-4">
       <div className="dropdown pr-2">

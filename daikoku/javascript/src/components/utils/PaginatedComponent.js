@@ -8,7 +8,7 @@ export const PaginatedComponent = (props) => {
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   const pageNumber = props.count || 10;
 
@@ -77,5 +77,5 @@ PaginatedComponent.propTypes = {
   reverse: PropTypes.bool,
   previousLabel: PropTypes.string,
   nextLabel: PropTypes.string,
-  breakLabel: PropTypes.string
+  breakLabel: PropTypes.string,
 };

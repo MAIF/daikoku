@@ -29,9 +29,7 @@ function Gravatar(props) {
       className={'btn btn-access ' + (props.fullWidth ? 'btn-block' : '')}
       onClick={setGravatarLink}>
       <i className="fas fa-user-circle mr-1" />
-      <Translation i18nkey="Set avatar from Gravatar">
-        Set avatar from Gravatar
-      </Translation>
+      <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
     </button>
   );
 
@@ -48,7 +46,7 @@ function Gravatar(props) {
 }
 
 export function SignupComponent(props) {
-  const { translateMethod, Translation } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = useState({
     user: {
@@ -98,23 +96,29 @@ export function SignupComponent(props) {
     gravatar: {
       type: Gravatar,
       props: {
-        fullWidth: true
+        fullWidth: true,
       },
     },
     createAccount: {
       type: () => (
         <div className="my-3">
           <button type="button" className="btn btn-success btn-block" onClick={createAccount}>
-            <Translation i18nkey="Create account">
-              Create account
-            </Translation>
+            <Translation i18nkey="Create account">Create account</Translation>
           </button>
         </div>
       ),
     },
   };
 
-  const formFlow = ['name', 'email', 'avatar', 'password1', 'password2', 'gravatar', 'createAccount'];
+  const formFlow = [
+    'name',
+    'email',
+    'avatar',
+    'password1',
+    'password2',
+    'gravatar',
+    'createAccount',
+  ];
 
   const createAccount = () => {
     if (
@@ -155,7 +159,7 @@ export function SignupComponent(props) {
     } else {
       setState({
         state: 'error',
-        error: translateMethod('Missing informations ...')
+        error: translateMethod('Missing informations ...'),
       });
     }
   };
@@ -169,24 +173,18 @@ export function SignupComponent(props) {
         error: translateMethod('account.creation.error'),
       });
     }
-  }, [])
+  }, []);
 
   if (state.state === 'done') {
     return (
       <div className="col">
         <h1 className="h1-rwd-reduce text-center">
-          <Translation i18nkey="Create account">
-            Create account
-          </Translation>
+          <Translation i18nkey="Create account">Create account</Translation>
         </h1>
         <p style={{ width: '100%', textAlign: 'center' }}>
-          <Translation
-            i18nkey="create.account.done"
-
-            replacements={[state.user.email]}>
-            You will receive an email at <b>{state.user.email}</b> to finish your account
-            creation process. You will have 15 minutes from now to finish your account creation
-            process.
+          <Translation i18nkey="create.account.done" replacements={[state.user.email]}>
+            You will receive an email at <b>{state.user.email}</b> to finish your account creation
+            process. You will have 15 minutes from now to finish your account creation process.
           </Translation>
         </p>
       </div>
@@ -196,9 +194,7 @@ export function SignupComponent(props) {
   return (
     <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px', minWidth: '448px' }}>
       <h1 className="h1-rwd-reduce text-center">
-        <Translation i18nkey="Create account">
-          Create account
-        </Translation>
+        <Translation i18nkey="Create account">Create account</Translation>
       </h1>
       {state.user && (
         <div className="d-flex justify-content-center align-items-center my-4">
@@ -234,7 +230,7 @@ export function ResetPasswordComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const [state, setState] = {
-    user: {}
+    user: {},
   };
 
   const formSchema = {
@@ -265,15 +261,13 @@ export function ResetPasswordComponent(props) {
           <button type="button" className="btn btn-outline-danger m-2" onClick={resetPassword}>
             <span>
               <i className="fas fa-bomb mr-1" />
-              <Translation i18nkey="Reset password">
-                Reset password
-              </Translation>
+              <Translation i18nkey="Reset password">Reset password</Translation>
             </span>
           </button>
         </div>
       ),
     },
-  }
+  };
 
   const formFlow = ['email', 'password1', 'password2', 'resetPassword'];
 
@@ -328,18 +322,12 @@ export function ResetPasswordComponent(props) {
     return (
       <div className="col">
         <h1 className="h1-rwd-reduce text-center mt-2">
-          <Translation i18nkey="Reset password">
-            Reset password
-          </Translation>
+          <Translation i18nkey="Reset password">Reset password</Translation>
         </h1>
         <p className="text-center mt-2">
-          <Translation
-            i18nkey="password.reset.done"
-
-            replacements={[state.user.email]}>
-            You will receive an email at <b>{state.user.email}</b> to finish your passsword
-            reset process. You will have 15 minutes from now to finish your password reset
-            process.
+          <Translation i18nkey="password.reset.done" replacements={[state.user.email]}>
+            You will receive an email at <b>{state.user.email}</b> to finish your passsword reset
+            process. You will have 15 minutes from now to finish your password reset process.
           </Translation>
         </p>
       </div>
@@ -348,9 +336,7 @@ export function ResetPasswordComponent(props) {
   return (
     <div className="col">
       <h1 className="h1-rwd-reduce text-center mt-2">
-        <Translation i18nkey="Reset password">
-          Reset password
-        </Translation>
+        <Translation i18nkey="Reset password">Reset password</Translation>
       </h1>
       {state.state === 'error' && (
         <div className="alert alert-danger" role="alert">
@@ -383,7 +369,7 @@ export function TwoFactorAuthentication({ title }) {
   const [showBackupCodes, toggleBackupCodesInput] = useState(false);
   const [backupCode, setBackupCode] = useState('');
 
-  const { translateMethod, language } = useContext(I18nContext)
+  const { translateMethod, language } = useContext(I18nContext);
 
   function verify() {
     if (!code || code.length !== 6) {
@@ -416,8 +402,7 @@ export function TwoFactorAuthentication({ title }) {
   }, []);
 
   useEffect(() => {
-    if (error)
-      setError(translateMethod('2fa.code_error'));
+    if (error) setError(translateMethod('2fa.code_error'));
   }, [language]);
 
   return (

@@ -14,12 +14,7 @@ export const MimeTypeFilter = {
   font: (value) => value.indexOf('font') > -1,
 };
 
-export const AssetSelectorModal = ({
-  closeModal,
-  assets,
-  onSelect,
-  onlyPreview
-}) => {
+export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }) => {
   const [selectedAsset, setSelectedAsset] = useState({});
   const [search, setSearch] = useState();
 
@@ -38,9 +33,7 @@ export const AssetSelectorModal = ({
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">
-          <Translation i18nkey="Select an asset">
-            Select an asset
-          </Translation>
+          <Translation i18nkey="Select an asset">Select an asset</Translation>
         </h5>
         <button type="button" className="close" aria-label="Close" onClick={closeModal}>
           <span aria-hidden="true">&times;</span>
@@ -111,17 +104,13 @@ export const AssetSelectorModal = ({
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          <Translation i18nkey="Close">
-            Close
-          </Translation>
+          <Translation i18nkey="Close">Close</Translation>
         </button>
         <button
           type="button"
           className="btn btn-outline-success"
           onClick={() => selectAssetAndCloseModal()}>
-          <Translation i18nkey="Select">
-            Select
-          </Translation>
+          <Translation i18nkey="Select">Select</Translation>
         </button>
       </div>
     </div>
@@ -139,17 +128,18 @@ export function AssetChooserComponent(props) {
 
   const getTenantAssets = () =>
     Services.listTenantAssets(props.teamId).then((assets) =>
-      assets.error ? [] :
-        assets.map((asset) => ({
-          label: asset.meta.filename + ' - ' + asset.meta.title,
-          value: asset.meta.asset,
-          filename: asset.meta.filename,
-          title: asset.meta.title,
-          desc: asset.meta.desc,
-          contentType: asset.meta['content-type'],
-          meta: asset.meta,
-          link: `/tenant-assets/${asset.meta.asset}`,
-        }))
+      assets.error
+        ? []
+        : assets.map((asset) => ({
+            label: asset.meta.filename + ' - ' + asset.meta.title,
+            value: asset.meta.asset,
+            filename: asset.meta.filename,
+            title: asset.meta.title,
+            desc: asset.meta.desc,
+            contentType: asset.meta['content-type'],
+            meta: asset.meta,
+            link: `/tenant-assets/${asset.meta.asset}`,
+          }))
     );
 
   const getTeamAssets = (team) =>
@@ -157,24 +147,24 @@ export function AssetChooserComponent(props) {
       assets.error
         ? []
         : assets.map((asset) => ({
-          label: asset.meta.filename + ' - ' + asset.meta.title,
-          value: asset.meta.asset,
-          filename: asset.meta.filename,
-          title: asset.meta.title,
-          desc: asset.meta.desc,
-          contentType: asset.meta['content-type'],
-          meta: asset.meta,
-          link: `/team-assets/${team._id}/${asset.meta.asset}`,
-        }))
+            label: asset.meta.filename + ' - ' + asset.meta.title,
+            value: asset.meta.asset,
+            filename: asset.meta.filename,
+            title: asset.meta.title,
+            desc: asset.meta.desc,
+            contentType: asset.meta['content-type'],
+            meta: asset.meta,
+            link: `/team-assets/${team._id}/${asset.meta.asset}`,
+          }))
     );
 
-  let mounted
+  let mounted;
 
   useEffect(() => {
-    mounted = true
+    mounted = true;
     getAssets(props.team);
 
-    return () => mounted = false
+    return () => (mounted = false);
   }, []);
 
   const getAssets = (team) => {
@@ -200,17 +190,14 @@ export function AssetChooserComponent(props) {
         }
       })
       .catch((error) => {
-        if (mounted)
-          setState({ ...state, error, loading: false })
+        if (mounted) setState({ ...state, error, loading: false });
       });
-  }
+  };
 
   if (state.assets && state.loading) {
     return (
       <button type="button" className="btn btn-outline-success ml-1" disabled>
-        <Translation i18nkey="loading">
-          loading...
-        </Translation>
+        <Translation i18nkey="loading">loading...</Translation>
       </button>
     );
   }
@@ -257,7 +244,7 @@ export function AssetChooserComponent(props) {
           assets: state.assets,
           onSelect: (asset) => props.onSelect(asset),
           onlyPreview: props.onlyPreview,
-          panelView: true
+          panelView: true,
         })
       }>
       <i
@@ -265,9 +252,9 @@ export function AssetChooserComponent(props) {
           props.icon
             ? props.icon
             : classNames('fas mr-1', {
-              'fa-user-circle': !!props.onlyPreview,
-              'fa-file': !props.onlyPreview,
-            })
+                'fa-user-circle': !!props.onlyPreview,
+                'fa-file': !props.onlyPreview,
+              })
         }
       />{' '}
       {props.label}

@@ -3,12 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 
-export const ApiDocumentationSelectModal = ({
-  closeModal,
-  teamId,
-  api,
-  onClose,
-}) => {
+export const ApiDocumentationSelectModal = ({ closeModal, teamId, api, onClose }) => {
   const [apis, setApis] = useState([]);
   const [pages, setPages] = useState([]);
 

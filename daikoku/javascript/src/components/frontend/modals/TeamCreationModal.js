@@ -10,7 +10,7 @@ export const TeamCreationModal = (props) => {
   const [created, setCreated] = useState(false);
   const [error, setError] = useState(undefined);
 
-  const { translateMethod, Translation } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (created) {
@@ -23,9 +23,7 @@ export const TeamCreationModal = (props) => {
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">
-          <Translation i18nkey="New team">
-            New team
-          </Translation>
+          <Translation i18nkey="New team">New team</Translation>
         </h5>
         <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
           <span aria-hidden="true">&times;</span>
@@ -41,9 +39,7 @@ export const TeamCreationModal = (props) => {
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={props.closeModal}>
-          <Translation i18nkey="Close">
-            Close
-          </Translation>
+          <Translation i18nkey="Close">Close</Translation>
         </button>
         {!created && (
           <button
@@ -64,9 +60,7 @@ export const TeamCreationModal = (props) => {
                   setError(e.error);
                 })
             }>
-            <Translation i18nkey="Create">
-              Create
-            </Translation>
+            <Translation i18nkey="Create">Create</Translation>
           </button>
         )}
       </div>
@@ -76,5 +70,5 @@ export const TeamCreationModal = (props) => {
 
 TeamCreationModal.propTypes = {
   closeModal: PropTypes.func.isRequired,
-  team: PropTypes.object.isRequired
+  team: PropTypes.object.isRequired,
 };

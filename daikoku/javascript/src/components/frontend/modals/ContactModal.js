@@ -14,7 +14,7 @@ const ContactModalComponent = (props) => {
   const [formRef, setFormRef] = useState(undefined);
   const [validity, setValidity] = useState(false);
 
-  const { translateMethod, Translation} = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (formRef) {
@@ -24,15 +24,9 @@ const ContactModalComponent = (props) => {
 
   const sendEmail = () => {
     if (!honeyName && validity) {
-      Services.sendEmails(
-        name,
-        email,
-        subject,
-        body,
-        props.tenant._id,
-        props.team,
-        props.api
-      ).then(() => props.closeModal());
+      Services.sendEmails(name, email, subject, body, props.tenant._id, props.team, props.api).then(
+        () => props.closeModal()
+      );
     }
   };
 
@@ -40,9 +34,7 @@ const ContactModalComponent = (props) => {
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">
-          <Translation i18nkey="Contact request">
-            Contact request
-          </Translation>
+          <Translation i18nkey="Contact request">Contact request</Translation>
         </h5>
         <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
           <span aria-hidden="true">&times;</span>
@@ -55,9 +47,7 @@ const ContactModalComponent = (props) => {
             {!props.name && (
               <div className="form-group">
                 <label htmlFor="sender-name">
-                  <Translation i18nkey="Name">
-                    Name
-                  </Translation>
+                  <Translation i18nkey="Name">Name</Translation>
                 </label>
                 <input
                   onChange={(e) => setName(e.target.value)}
@@ -74,9 +64,7 @@ const ContactModalComponent = (props) => {
             {!props.email && (
               <div className="form-group">
                 <label htmlFor="sender-email">
-                  <Translation i18nkey="Email address">
-                    Email address
-                  </Translation>
+                  <Translation i18nkey="Email address">Email address</Translation>
                 </label>
                 <input
                   onChange={(e) => setEmail(e.target.value)}
@@ -92,9 +80,7 @@ const ContactModalComponent = (props) => {
             )}
             <div className="form-group">
               <label htmlFor="subject">
-                <Translation i18nkey="Subject">
-                  Subject
-                </Translation>
+                <Translation i18nkey="Subject">Subject</Translation>
               </label>
               <input
                 onChange={(e) => setSubject(e.target.value)}
@@ -109,9 +95,7 @@ const ContactModalComponent = (props) => {
             </div>
             <div className="form-group">
               <label htmlFor="message">
-                <Translation i18nkey="Message">
-                  Message
-                </Translation>
+                <Translation i18nkey="Message">Message</Translation>
               </label>
               <textarea
                 onChange={(e) => setBody(e.target.value)}
@@ -129,9 +113,7 @@ const ContactModalComponent = (props) => {
 
             <div className="form-group ohnohoney">
               <label htmlFor="name">
-                <Translation i18nkey="Name">
-                  Name
-                </Translation>
+                <Translation i18nkey="Name">Name</Translation>
               </label>
               <input
                 onChange={(e) => setHoneyName(e.target.value)}
@@ -149,9 +131,7 @@ const ContactModalComponent = (props) => {
 
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-          <Translation i18nkey="Cancel">
-            Cancel
-          </Translation>
+          <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
 
         <button
@@ -159,9 +139,7 @@ const ContactModalComponent = (props) => {
           className="btn btn-outline-success"
           disabled={!validity ? 'disabled' : undefined}
           onClick={() => sendEmail()}>
-          <Translation i18nkey="Send">
-            Send
-          </Translation>
+          <Translation i18nkey="Send">Send</Translation>
         </button>
       </div>
     </div>

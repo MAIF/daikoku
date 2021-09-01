@@ -8,29 +8,29 @@ import AsyncSelect from 'react-select/async';
 import { Sun, Moon } from 'react-feather';
 
 import * as Services from '../../services';
-import {
-  logout,
-  updateNotications,
-  updateTenant,
-} from '../../core/context/actions';
+import { logout, updateNotications, updateTenant } from '../../core/context/actions';
 import { Can, manage, daikoku, tenant } from '../utils';
 import { MessagesTopBarTools } from '../backoffice/messages';
 import { I18nContext } from '../../locales/i18n-context';
 
 const GuestUserMenu = ({ loginProvider }) => {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
-  return <>
-    <a href={`/auth/${loginProvider}/login`} className="btn btn-outline-success mx-1 login-button">
-      {translateMethod('Login')}
-    </a>
-    <a
-      href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-      className="btn btn-success register-button">
-      {translateMethod('Register')}
-    </a>
-  </>
-}
+  return (
+    <>
+      <a
+        href={`/auth/${loginProvider}/login`}
+        className="btn btn-outline-success mx-1 login-button">
+        {translateMethod('Login')}
+      </a>
+      <a
+        href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
+        className="btn btn-success register-button">
+        {translateMethod('Register')}
+      </a>
+    </>
+  );
+};
 
 const DarkModeActivator = ({ initialDark }) => {
   const DARK = 'DARK';
@@ -61,9 +61,11 @@ const TopBarComponent = (props) => {
   const [teams, setTeams] = useState([]);
   const [daikokuVersion, setVersion] = useState(null);
 
-  const { translateMethod, setLanguage, language, isTranslationMode, languages } = useContext(I18nContext);
+  const { translateMethod, setLanguage, language, isTranslationMode, languages } =
+    useContext(I18nContext);
 
-  const isMaintenanceMode = props.tenant.tenantMode && props.tenant.tenantMode !== 'Default' && !isTranslationMode;
+  const isMaintenanceMode =
+    props.tenant.tenantMode && props.tenant.tenantMode !== 'Default' && !isTranslationMode;
 
   useEffect(() => {
     Promise.all([Services.myUnreadNotificationsCount(), Services.teams()]).then(
@@ -161,7 +163,7 @@ const TopBarComponent = (props) => {
   const isDefaultLogo = props.tenant.logo === '/assets/images/daikoku.svg';
   return (
     <header className={impersonator ? 'impersonator-topbar-mb' : ''}>
-      { }
+      {}
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
@@ -223,15 +225,16 @@ const TopBarComponent = (props) => {
                 classNamePrefix="reactSelect"
               />
             )}
-            {props.connectedUser.isGuest && (
-              <GuestUserMenu
-                loginProvider={props.loginProvider}
-              />
-            )}
+            {props.connectedUser.isGuest && <GuestUserMenu loginProvider={props.loginProvider} />}
             {!props.connectedUser.isGuest && (
               <div className="d-flex justify-content-end align-items-center mt-1 mt-lg-0">
-                <Can I={manage} a={tenant} isTenantAdmin={props.connectedUser.isDaikokuAdmin ||
-                  (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1}>
+                <Can
+                  I={manage}
+                  a={tenant}
+                  isTenantAdmin={
+                    props.connectedUser.isDaikokuAdmin ||
+                    (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1
+                  }>
                   {isMaintenanceMode && (
                     <span className="badge badge-danger mr-3">
                       {translateMethod('Global maintenance mode enabled')}
@@ -254,9 +257,7 @@ const TopBarComponent = (props) => {
                   <i className="fas fa-bell" />
                 </Link>
                 {(props.connectedUser.isDaikokuAdmin || props.isTenantAdmin) && (
-                  <MessagesTopBarTools
-                    connectedUser={props.connectedUser}
-                  />
+                  <MessagesTopBarTools connectedUser={props.connectedUser} />
                 )}
                 <div className="dropdown" onClick={getDaikokuVersion}>
                   <img
@@ -266,9 +267,11 @@ const TopBarComponent = (props) => {
                     data-toggle="dropdown"
                     title={
                       impersonator
-                        ? `${props.connectedUser.name} (${props.connectedUser.email}) ${translateMethod(
-                          'Impersonated by'
-                        )} ${impersonator.name} (${impersonator.email})`
+                        ? `${props.connectedUser.name} (${
+                            props.connectedUser.email
+                          }) ${translateMethod('Impersonated by')} ${impersonator.name} (${
+                            impersonator.email
+                          })`
                         : props.connectedUser.name
                     }
                     alt="user menu"
@@ -312,13 +315,14 @@ const TopBarComponent = (props) => {
                     {props.connectedUser.isDaikokuAdmin && (
                       <a className="dropdown-item" href="#" onClick={toggleMaintenanceMode}>
                         <i className="fas fa-lock" />{' '}
-                        {translateMethod(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')}
+                        {translateMethod(
+                          isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode'
+                        )}
                       </a>
                     )}
                     {props.tenant.mode === 'Dev' && (
                       <a className="dropdown-item" href="#" onClick={reset}>
-                        <i className="fas fa-skull-crossbones" />{' '}
-                        {translateMethod('Reset')}
+                        <i className="fas fa-skull-crossbones" /> {translateMethod('Reset')}
                       </a>
                     )}
                     <a className="dropdown-item" href="/logout">

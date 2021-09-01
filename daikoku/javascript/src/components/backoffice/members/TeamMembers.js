@@ -40,7 +40,7 @@ export function TeamMembersSimpleComponent(props) {
 
   useEffect(() => {
     updateMembers(props.currentTeam);
-  }, [])
+  }, []);
 
   const updateMembers = (team) => {
     Promise.all([Services.members(team._id), Services.pendingMembers(team._id)]).then(
@@ -108,14 +108,14 @@ export function TeamMembersSimpleComponent(props) {
             Services.removeMemberFromTeam(teamId, member._id).then(({ done, team }) => {
               done
                 ? toastr.success(
-                  'Success',
-                  translateMethod(
-                    'remove.member.success',
-                    false,
-                    `${member.name} is no longer member of your team`,
-                    member.name
+                    'Success',
+                    translateMethod(
+                      'remove.member.success',
+                      false,
+                      `${member.name} is no longer member of your team`,
+                      member.name
+                    )
                   )
-                )
                 : toastr.error('Failure');
               props.updateTeam(team).then(() => updateMembers(props.currentTeam));
             });
@@ -131,14 +131,14 @@ export function TeamMembersSimpleComponent(props) {
         setState({ ...state, selectedMember: null });
         done
           ? toastr.success(
-            'Success',
-            translateMethod(
-              'member.now.invited',
-              false,
-              `${member.name} has been invited as new member of your team`,
-              member.name
+              'Success',
+              translateMethod(
+                'member.now.invited',
+                false,
+                `${member.name} has been invited as new member of your team`,
+                member.name
+              )
             )
-          )
           : toastr.error('Failure');
       })
       .then(() => updateMembers(props.currentTeam));
@@ -177,15 +177,15 @@ export function TeamMembersSimpleComponent(props) {
           ({ done, team }) => {
             done
               ? toastr.success(
-                'Success',
-                translateMethod(
-                  'member.new.permission.success',
-                  false,
-                  `${member.name} is now ${newPermission}`,
-                  member.name,
-                  newPermission
+                  'Success',
+                  translateMethod(
+                    'member.new.permission.success',
+                    false,
+                    `${member.name} is now ${newPermission}`,
+                    member.name,
+                    newPermission
+                  )
                 )
-              )
               : toastr.error('Failure');
             props.updateTeam(team).then(() => updateMembers(props.currentTeam));
           }
@@ -214,8 +214,7 @@ export function TeamMembersSimpleComponent(props) {
   };
 
   const invitUser = (email) => {
-    if (props.tenant && props.tenant.authProvider === 'LDAP')
-      addLdapUserToTeam(email);
+    if (props.tenant && props.tenant.authProvider === 'LDAP') addLdapUserToTeam(email);
     else
       Services.addUncheckedMembersToTeam(props.currentTeam._id, email).then(() =>
         updateMembers(props.currentTeam)
@@ -232,24 +231,21 @@ export function TeamMembersSimpleComponent(props) {
 
   const filteredMembers = state.search
     ? state.members.filter(({ name, email }) =>
-      [name, email].some((value) => value.toLowerCase().includes(state.search))
-    )
+        [name, email].some((value) => value.toLowerCase().includes(state.search))
+      )
     : state.members;
 
   const filteredPending = state.search
     ? state.pendingUsers.filter(({ name, email }) =>
-      [name, email].some((value) => value.toLowerCase().includes(state.search))
-    )
+        [name, email].some((value) => value.toLowerCase().includes(state.search))
+      )
     : state.pendingUsers;
   return (
     <>
       <div className="row">
         <div className="col">
           <h1>
-            <Translation
-              i18nkey="team.members.title"
-
-              replacements={[props.currentTeam.name]}>
+            <Translation i18nkey="team.members.title" replacements={[props.currentTeam.name]}>
               {props.currentTeam.name} members
             </Translation>
           </h1>
@@ -260,12 +256,7 @@ export function TeamMembersSimpleComponent(props) {
           className="btn btn-success"
           type="button"
           onClick={() => {
-            const {
-              history,
-              currentTeam,
-              tenant,
-              openInvitationModal,
-            } = props;
+            const { history, currentTeam, tenant, openInvitationModal } = props;
 
             openInvitationModal({
               history,
@@ -284,13 +275,11 @@ export function TeamMembersSimpleComponent(props) {
             <ul className="nav nav-tabs flex-column flex-sm-row">
               <li className="nav-item">
                 <span
-                  className={`nav-link cursor-pointer ${state.tab === TABS.members ? 'active' : ''
-                    }`}
+                  className={`nav-link cursor-pointer ${
+                    state.tab === TABS.members ? 'active' : ''
+                  }`}
                   onClick={() => setState({ ...state, tab: TABS.members })}>
-                  <Translation
-                    i18nkey="Member"
-
-                    isPlural={state.members.length > 1}>
+                  <Translation i18nkey="Member" isPlural={state.members.length > 1}>
                     Member
                   </Translation>
                 </span>
@@ -303,7 +292,6 @@ export function TeamMembersSimpleComponent(props) {
                   onClick={() => setState({ ...state, tab: TABS.pending })}>
                   <Translation
                     i18nkey="pending members"
-
                     replacements={[(state.pendingUsers || []).length]}>
                     Pending ({(state.pendingUsers || []).length})
                   </Translation>
@@ -320,24 +308,15 @@ export function TeamMembersSimpleComponent(props) {
               <div className="d-flex flex-column">
                 <div>
                   <i className="fas fa-shield-alt mr-1" />
-                  <Translation
-                    i18nkey="permission.caption.administrator"
-
-                  />
+                  <Translation i18nkey="permission.caption.administrator" />
                 </div>
                 <div>
                   <i className="fas fa-pencil-alt mr-1" />
-                  <Translation
-                    i18nkey="permission.caption.apiEditor"
-
-                  />
+                  <Translation i18nkey="permission.caption.apiEditor" />
                 </div>
                 <div>
                   <i className="fas fa-user-alt mr-1" />
-                  <Translation
-                    i18nkey="permission.caption.user"
-
-                  />
+                  <Translation i18nkey="permission.caption.user" />
                 </div>
               </div>,
               translateMethod('Permission', true)
@@ -388,21 +367,25 @@ export function TeamMembersSimpleComponent(props) {
                     action: [
                       {
                         action: () => togglePermission(member, administrator),
-                        iconClass: `fas fa-shield-alt ${isAdmin ? 'admin-active' : 'admin-inactive'
-                          }`,
-                        tooltip: `${isAdmin
-                          ? translateMethod('Remove administrator status')
-                          : translateMethod('Add administrator status')
-                          }`,
+                        iconClass: `fas fa-shield-alt ${
+                          isAdmin ? 'admin-active' : 'admin-inactive'
+                        }`,
+                        tooltip: `${
+                          isAdmin
+                            ? translateMethod('Remove administrator status')
+                            : translateMethod('Add administrator status')
+                        }`,
                       },
                       {
                         action: () => togglePermission(member, apiEditor),
-                        iconClass: `fas fa-pencil-alt ${isApiEditor ? 'admin-active' : 'admin-inactive'
-                          }`,
-                        tooltip: `${isApiEditor
-                          ? translateMethod('Remove api editor status')
-                          : translateMethod('Add api editor status')
-                          }`,
+                        iconClass: `fas fa-pencil-alt ${
+                          isApiEditor ? 'admin-active' : 'admin-inactive'
+                        }`,
+                        tooltip: `${
+                          isApiEditor
+                            ? translateMethod('Remove api editor status')
+                            : translateMethod('Add api editor status')
+                        }`,
                       },
                     ],
                     iconClass: 'fas fa-user-cog',
@@ -433,24 +416,22 @@ export function TeamMembersSimpleComponent(props) {
                   actions={
                     invitedUser
                       ? [
-                        {
-                          action: () => {
-                            window
-                              .confirm(
-                                translateMethod('team_member.confirm_remove_invitation')
-                              )
-                              .then((ok) => {
-                                if (ok)
-                                  Services.removeInvitation(
-                                    props.currentTeam._id,
-                                    member._id
-                                  ).then(() => updateMembers(props.currentTeam));
-                              });
+                          {
+                            action: () => {
+                              window
+                                .confirm(translateMethod('team_member.confirm_remove_invitation'))
+                                .then((ok) => {
+                                  if (ok)
+                                    Services.removeInvitation(
+                                      props.currentTeam._id,
+                                      member._id
+                                    ).then(() => updateMembers(props.currentTeam));
+                                });
+                            },
+                            iconClass: 'fas fa-trash delete-icon',
+                            tooltip: translateMethod('Remove invitation'),
                           },
-                          iconClass: 'fas fa-trash delete-icon',
-                          tooltip: translateMethod('Remove invitation'),
-                        },
-                      ]
+                        ]
                       : []
                   }
                 />
@@ -459,10 +440,7 @@ export function TeamMembersSimpleComponent(props) {
           />
         ) : (
           <div className="p-3">
-            <Translation
-              i18nkey="team_member.no_pending_members"
-
-            />
+            <Translation i18nkey="team_member.no_pending_members" />
           </div>
         ))}
     </>

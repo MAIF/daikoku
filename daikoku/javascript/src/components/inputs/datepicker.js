@@ -10,12 +10,7 @@ export function OtoDatePicker(props) {
   const onChange = (value) => {
     const from = value[0];
     const to = value[1];
-    if (
-      from &&
-      to &&
-      props.updateDateRange &&
-      (!props.from.isSame(from) || !props.to.isSame(to))
-    ) {
+    if (from && to && props.updateDateRange && (!props.from.isSame(from) || !props.to.isSame(to))) {
       props.updateDateRange(from, to);
     }
   };

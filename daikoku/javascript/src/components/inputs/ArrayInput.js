@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { I18nContext } from '../../core';
-import { Help } from './Help';;
+import { Help } from './Help';
 
 const valueToSelectOption = (value) => {
   if (value === null) {
@@ -28,11 +28,9 @@ export function ArrayInput(props) {
     if (props.value) {
       if (props.valuesFrom) {
         reloadValues();
-      }
-      else
-        setState({ ...state, value: (props.value || []).map(valueToSelectOption) });
+      } else setState({ ...state, value: (props.value || []).map(valueToSelectOption) });
     }
-  }, [props.valuesFrom])
+  }, [props.valuesFrom]);
 
   const reloadValues = (from) => {
     setState({ ...state, loading: true });
@@ -49,7 +47,9 @@ export function ArrayInput(props) {
         setState({
           ...state,
           values,
-          value: !props.creatable ? values.filter((v) => props.value.includes(v.value)) : (props.value || []).map(valueToSelectOption),
+          value: !props.creatable
+            ? values.filter((v) => props.value.includes(v.value))
+            : (props.value || []).map(valueToSelectOption),
           loading: false,
         })
       );
@@ -81,18 +81,16 @@ export function ArrayInput(props) {
     if (!inputValue) return;
 
     const newValue = [...value, { label: inputValue, value: inputValue }];
-    const finaItem = (item) =>
-      props.transformSet ? props.transformSet(item.value) : item.value;
+    const finaItem = (item) => (props.transformSet ? props.transformSet(item.value) : item.value);
     switch (event.key) {
       case 'Enter':
       case 'Tab':
-        setState(
-          {
-            ...state,
-            inputValue: '',
-            value: newValue,
-          });
-        props.onChange(newValue.map(finaItem))
+        setState({
+          ...state,
+          inputValue: '',
+          value: newValue,
+        });
+        props.onChange(newValue.map(finaItem));
         event.preventDefault();
     }
   };
@@ -101,9 +99,7 @@ export function ArrayInput(props) {
   return (
     <div>
       <div className="form-group row" style={{ marginBottom: 15 }}>
-        <label
-          htmlFor={`input-${props.label}`}
-          className="col-xs-12 col-sm-2 col-form-label">
+        <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
           <Help text={props.help} label={props.label} />
         </label>
         <div className="col-sm-10">
@@ -154,7 +150,7 @@ export function ArrayInput(props) {
                 onChange={changeValue}
                 classNamePrefix="reactSelect"
                 menuPortalTarget={document.body}
-                styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
               />
             )}
           </div>

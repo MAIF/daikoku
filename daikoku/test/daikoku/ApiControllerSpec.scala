@@ -302,7 +302,9 @@ class ApiControllerSpec()
         .forall(id => resultTestSubscriptions.get.exists(sub => sub.plan == id)) mustBe true
 
       val respTestMySubscriptions = httpJsonCallBlocking(
-        s"/api/me/subscriptions/${defaultApi.humanReadableId}/${defaultApi.currentVersion.value}")(tenant, sessionTest)
+        s"/api/me/subscriptions/${defaultApi.humanReadableId}/${defaultApi.currentVersion.value}")(
+        tenant,
+        sessionTest)
       respTestMySubscriptions.status mustBe 200
       (respTestMySubscriptions.json \ "subscriptions")
         .as[JsArray]
@@ -499,21 +501,21 @@ class ApiControllerSpec()
 
     "not update an api of a team which he is not a member" in {
       val secondApi = defaultApi.copy(id = ApiId("another-api"),
-        description = "another-api",
-        team = teamConsumerId)
+                                      description = "another-api",
+                                      team = teamConsumerId)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner),
-        apis = Seq(defaultApi,
-          secondApi)
+        apis = Seq(defaultApi, secondApi)
       )
 
       val updatedApi = defaultApi.copy(description = "description")
       val session = loginWithBlocking(userAdmin, tenant)
 
       val respError = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}",
         method = "PUT",
         body = Some(updatedApi.asJson))(tenant, session)
 
@@ -521,7 +523,8 @@ class ApiControllerSpec()
       (respError.json \ "error").as[String] mustBe "Api not found"
 
       val respError2 = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamConsumerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}",
         method = "PUT",
         body = Some(updatedApi.asJson))(tenant, session)
 
@@ -544,7 +547,8 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
         method = "PUT",
         body = Some(updatedApi.asJson))(tenant, session)
 
@@ -1302,7 +1306,8 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userApiEditor, tenant)
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
         method = "PUT",
         body = Some(updatedApi.asJson))(tenant, session)
 
@@ -1430,8 +1435,8 @@ class ApiControllerSpec()
       )
 
       val session = loginWithBlocking(userApiEditor, tenant)
-      var resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
+      var resp = httpJsonCallBlocking(path =
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
         tenant,
         session)
 
@@ -1450,8 +1455,8 @@ class ApiControllerSpec()
       )(tenant, session)
       resp.status mustBe Status.OK
 
-      resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
+      resp = httpJsonCallBlocking(path =
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
         tenant,
         session)
       resp.status mustBe Status.OK
@@ -1491,8 +1496,8 @@ class ApiControllerSpec()
       )
 
       val session = loginWithBlocking(userApiEditor, tenant)
-      var resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
+      var resp = httpJsonCallBlocking(path =
+        s"/api/teams/${teamOwnerId.value}/apis/${secondApi.id.value}/${secondApi.currentVersion.value}")(
         tenant,
         session)
 
@@ -1595,7 +1600,8 @@ class ApiControllerSpec()
       val updatedApi = defaultApi.copy(description = "description")
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
         method = "PUT",
         body = Some(updatedApi.asJson))(tenant, session)
 
@@ -1641,8 +1647,7 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userApiEditor, tenant)
       val plan = "1"
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/apis/${defaultApi.id.value}/subscriptions",
+        path = s"/api/apis/${defaultApi.id.value}/subscriptions",
         method = "POST",
         body = Some(
           Json.obj("plan" -> plan,
@@ -2392,11 +2397,11 @@ class ApiControllerSpec()
         .copy(visibility = Private)
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
         method = "PUT",
-        body = Some(api.copy(possibleUsagePlans = Seq(privatePlan)).asJson))(
-        tenant,
-        session)
+        body = Some(api.copy(possibleUsagePlans = Seq(privatePlan)).asJson)
+      )(tenant, session)
 
       resp.status mustBe 200
       val result =
@@ -2466,11 +2471,11 @@ class ApiControllerSpec()
       resultStart.get.length mustBe 1
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
         method = "PUT",
-        body = Some(defaultApi.copy(possibleUsagePlans = Seq.empty).asJson))(
-        tenant,
-        session)
+        body = Some(defaultApi.copy(possibleUsagePlans = Seq.empty).asJson)
+      )(tenant, session)
 
       resp.status mustBe 200
 
@@ -2673,7 +2678,8 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${defaultAdminTeam.id.value}/apis/${adminApi.id.value}/${adminApi.currentVersion.value}",
         method = "PUT",
-        body = Some(updatedAdminApi.asJson))(tenant, session)
+        body = Some(updatedAdminApi.asJson)
+      )(tenant, session)
       resp.status mustBe 200
       val result =
         fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(resp.json)
@@ -3466,7 +3472,8 @@ class ApiControllerSpec()
       wireMockServer.isRunning mustBe true
 
       val resp = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwner.id.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamOwner.id.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}",
         method = "PUT",
         body = Some(ApiFormat.writes(defaultApi.copy(
           possibleUsagePlans = defaultApi.possibleUsagePlans.map {

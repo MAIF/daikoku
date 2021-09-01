@@ -44,9 +44,7 @@ const TeamConsumptionComponent = ({ currentTeam }) => {
   ];
 
   return (
-    <TeamBackOffice
-      tab="ApiKeys"
-      title={`${currentTeam.name} - ${translateMethod('Consumption')}`}>
+    <TeamBackOffice tab="ApiKeys" title={`${currentTeam.name} - ${translateMethod('Consumption')}`}>
       <div className="row">
         <div className="col">
           <h1>Consumption</h1>

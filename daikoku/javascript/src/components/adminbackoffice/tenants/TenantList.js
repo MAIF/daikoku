@@ -8,16 +8,17 @@ import { I18nContext } from '../../../core';
 
 export function TenantListComponent(props) {
   const [state, setState] = useState({
-    tenants: []
-  })
+    tenants: [],
+  });
 
   useEffect(() => {
     getTenants();
-  }, [])
+  }, []);
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  const getTenants = _ => Services.allTenants().then((tenants) => setState({ ...state, tenants }));
+  const getTenants = (_) =>
+    Services.allTenants().then((tenants) => setState({ ...state, tenants }));
 
   const createNewTenant = () => {
     Services.fetchNewTenant().then((newTenant) => {
@@ -26,13 +27,11 @@ export function TenantListComponent(props) {
   };
 
   const removeTenant = (tenantId) => {
-    window
-      .confirm(translateMethod('delete.tenant.confirm'))
-      .then((ok) => {
-        if (ok) {
-          Services.deleteTenant(tenantId).then(() => getTenants());
-        }
-      });
+    window.confirm(translateMethod('delete.tenant.confirm')).then((ok) => {
+      if (ok) {
+        Services.deleteTenant(tenantId).then(() => getTenants());
+      }
+    });
   };
 
   const filteredTenants = state.search
@@ -99,9 +98,7 @@ export function TenantListComponent(props) {
                       },
                       {
                         redirect: () =>
-                          props.history.push(
-                            `/settings/tenants/${tenant._humanReadableId}/admins`
-                          ),
+                          props.history.push(`/settings/tenants/${tenant._humanReadableId}/admins`),
                         iconClass: 'fas fa-user-shield',
                         tooltip: translateMethod('Admins'),
                       },

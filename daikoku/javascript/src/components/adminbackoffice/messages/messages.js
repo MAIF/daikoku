@@ -261,9 +261,7 @@ const AdminMessagesComponent = (props) => {
                 className="btn btn-sm btn-outline-primary"
                 disabled={loading ? 'disabled' : null}
                 onClick={() => getPreviousMessages(selectedChat)}>
-                <Translation i18nkey="Load previous messages">
-                  Load previous messages
-                </Translation>
+                <Translation i18nkey="Load previous messages">Load previous messages</Translation>
               </button>
             </div>
           )}

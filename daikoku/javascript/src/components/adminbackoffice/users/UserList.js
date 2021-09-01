@@ -11,8 +11,8 @@ import { I18nContext } from '../../../locales/i18n-context';
 
 function UserListComponent(props) {
   const [state, setState] = useState({
-    users: []
-  })
+    users: [],
+  });
 
   useEffect(() => {
     updateUsers();
@@ -45,17 +45,14 @@ function UserListComponent(props) {
   const removeUser = (user) => {
     window
       .confirm(
-        translateMethod(
-          'remove.user.confirm',
-          false,
-          'Are you sure you want to delete this user ?'
-        )
+        translateMethod('remove.user.confirm', false, 'Are you sure you want to delete this user ?')
       )
       .then((ok) => {
         if (ok) {
           Services.deleteUserById(user._id).then(() => {
             toastr.info(
-              translateMethod('remove.user.success',
+              translateMethod(
+                'remove.user.success',
                 false,
                 `user ${user.name} is successfully deleted`,
                 user.name
@@ -77,8 +74,8 @@ function UserListComponent(props) {
 
   const filteredUsers = state.search
     ? state.users.filter(({ name, email }) =>
-      [name, email].some((item) => item.toLowerCase().includes(state.search))
-    )
+        [name, email].some((item) => item.toLowerCase().includes(state.search))
+      )
     : state.users;
   return (
     <UserBackOffice tab="Users">
@@ -142,8 +139,9 @@ function UserListComponent(props) {
                       },
                       {
                         action: () => toggleAdmin(user),
-                        iconClass: `fas fa-shield-alt ${user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
-                          }`,
+                        iconClass: `fas fa-shield-alt ${
+                          user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
+                        }`,
                         tooltip: translateMethod('toggle admin status'),
                       },
                     ]}

@@ -9,7 +9,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
   const [team, setTeam] = useState('');
   const [notificationId, setNotificationId] = useState('');
 
-  const { translateMethod, Translation } = useContext(I18nContext)
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -50,11 +50,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
       <div className="modal-header d-flex flex-column align-items-center">
         <i className="fas fa-users fa-2x mb-3" />
         <h5 className="modal-title text-center">
-          <Translation
-            i18nkey="team_member.invitation"
-
-            replacements={[team]}
-          />
+          <Translation i18nkey="team_member.invitation" replacements={[team]} />
           <span style={{ fontWeight: 'bold', display: 'block' }}>{team}</span>
         </h5>
       </div>

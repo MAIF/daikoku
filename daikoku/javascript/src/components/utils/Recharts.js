@@ -162,19 +162,15 @@ export function RoundChart(props) {
               dataKey={props.dataKey || 'value'}
               label={renderCustomizedLabel}>
               {props.series2.map((entry) => {
-                const parentIdx = [
-                  ...new Set(props.series.map((item) => item.name)),
-                ].indexOf(entry[props.parentKey]);
-                return (
-                  <Cell key={entry.name} fill={colors[parentIdx % colors.length]} />
+                const parentIdx = [...new Set(props.series.map((item) => item.name))].indexOf(
+                  entry[props.parentKey]
                 );
+                return <Cell key={entry.name} fill={colors[parentIdx % colors.length]} />;
               })}
             </Pie>
           )}
           <Tooltip />
-          {props.legend && (
-            <Legend verticalAlign="top" height={36} content={props.legend} />
-          )}
+          {props.legend && <Legend verticalAlign="top" height={36} content={props.legend} />}
         </PieChart>
       </ResponsiveContainer>
     </div>

@@ -16,12 +16,10 @@ function Alert(props) {
   useEffect(() => {
     document.body.addEventListener('keydown', defaultButton);
 
-    return document.body.removeEventListener('keydown', defaultButton)
+    return document.body.removeEventListener('keydown', defaultButton);
   }, []);
 
-  const res = _.isFunction(props.message)
-    ? props.message(props.close)
-    : props.message;
+  const res = _.isFunction(props.message) ? props.message(props.close) : props.message;
 
   return (
     <div>
@@ -43,20 +41,12 @@ function Alert(props) {
             </div>
             <div className="modal-footer">
               {props.linkOpt && (
-                <a
-                  href={props.linkOpt.to}
-                  className="btn btn-secondary"
-                  onClick={props.close}>
+                <a href={props.linkOpt.to} className="btn btn-secondary" onClick={props.close}>
                   {props.linkOpt.title}
                 </a>
               )}
-              <button
-                type="button"
-                className="btn btn-outline-primary"
-                onClick={props.close}>
-                {props.closeMessage
-                  ? props.closeMessage
-                  : "Close"}
+              <button type="button" className="btn btn-outline-primary" onClick={props.close}>
+                {props.closeMessage ? props.closeMessage : 'Close'}
               </button>
             </div>
           </div>
@@ -103,10 +93,7 @@ function Confirm(props) {
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-outline-danger"
-                onClick={props.cancel}>
+              <button type="button" className="btn btn-outline-danger" onClick={props.cancel}>
                 Cancel
               </button>
               <button type="button" className="btn btn-outline-success" onClick={props.ok}>
@@ -128,7 +115,7 @@ Confirm.propTypes = {
 };
 
 function Prompt(props) {
-  const [text, setText] = useState(props.value || '')
+  const [text, setText] = useState(props.value || '');
 
   let ref;
 
@@ -172,10 +159,7 @@ function Prompt(props) {
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-outline-danger"
-                onClick={props.cancel}>
+              <button type="button" className="btn btn-outline-danger" onClick={props.cancel}>
                 Cancel
               </button>
               <button

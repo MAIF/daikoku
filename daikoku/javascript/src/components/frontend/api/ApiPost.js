@@ -15,18 +15,20 @@ export function ApiPost({ api, versionId }) {
   });
 
   useEffect(() => {
-    Services.getAPIPosts(api._humanReadableId, versionId, pagination.offset, pagination.limit).then((data) => {
-      setPosts(
-        [...posts, ...data.posts].reduce((acc, post) => {
-          if (!acc.find((p) => p._id === post._id)) acc.push(post);
-          return acc;
-        }, [])
-      );
-      setPagination({
-        ...pagination,
-        total: data.total,
-      });
-    });
+    Services.getAPIPosts(api._humanReadableId, versionId, pagination.offset, pagination.limit).then(
+      (data) => {
+        setPosts(
+          [...posts, ...data.posts].reduce((acc, post) => {
+            if (!acc.find((p) => p._id === post._id)) acc.push(post);
+            return acc;
+          }, [])
+        );
+        setPagination({
+          ...pagination,
+          total: data.total,
+        });
+      }
+    );
   }, [pagination.offset, pagination.limit]);
 
   function formatDate(lastModificationAt) {

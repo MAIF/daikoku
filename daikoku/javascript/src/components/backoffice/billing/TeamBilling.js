@@ -25,7 +25,7 @@ function TeamBillingComponent(props) {
     getTeamBilling(props.currentTeam);
   }, []);
 
-  const getTeamBilling = team => {
+  const getTeamBilling = (team) => {
     setState({ ...state, loading: true });
     Promise.all([
       Services.getTeamBillings(
@@ -38,7 +38,7 @@ function TeamBillingComponent(props) {
       const consumptionsByApi = getConsumptionsByApi(consumptions);
       setState({ ...state, consumptions, consumptionsByApi, apis, loading: false });
     });
-  }
+  };
 
   const getConsumptionsByApi = (consumptions) =>
     consumptions.reduce((acc, consumption) => {
@@ -54,7 +54,7 @@ function TeamBillingComponent(props) {
     }, []);
 
   const getBilling = (date) => {
-    setState({ ...state, loading: true, selectedApi: undefined })
+    setState({ ...state, loading: true, selectedApi: undefined });
     Services.getTeamBillings(
       props.currentTeam._id,
       date.startOf('month').valueOf(),
@@ -104,27 +104,19 @@ function TeamBillingComponent(props) {
         <div className="row">
           <div className="col">
             <h1>
-              <Translation i18nkey="Billing">
-                Billing
-              </Translation>
+              <Translation i18nkey="Billing">Billing</Translation>
             </h1>
             <div className="row">
               <div className="col apis">
                 <div className="row month__and__total">
                   <div className="col-12 month__selector d-flex align-items-center">
-                    <MonthPicker
-                      updateDate={getBilling}
-                      value={state.date}
-                    />
+                    <MonthPicker updateDate={getBilling} value={state.date} />
                     <button className="btn btn-sm btn-access-negative" onClick={sync}>
                       <i className="fas fa-sync-alt ml-1" />
                     </button>
                     {lastDate && (
                       <i className="ml-1">
-                        <Translation
-                          i18nkey="date.update"
-
-                          replacements={[lastDate]}>
+                        <Translation i18nkey="date.update" replacements={[lastDate]}>
                           upd. {lastDate}
                         </Translation>
                       </i>
@@ -133,13 +125,10 @@ function TeamBillingComponent(props) {
                 </div>
                 <div className="row api__billing__card__container section p-2">
                   <TheadBillingContainer
-
                     label={translateMethod('Subscribed Apis')}
                     total={formatCurrency(total)}
                   />
-                  {!state.consumptionsByApi.length && (
-                    <NoData />
-                  )}
+                  {!state.consumptionsByApi.length && <NoData />}
                   {state.consumptionsByApi
                     .sort((api1, api2) => api2.billing.total - api1.billing.total)
                     .map(({ api, billing }) => (
@@ -156,7 +145,6 @@ function TeamBillingComponent(props) {
                       />
                     ))}
                   <TheadBillingContainer
-
                     label={translateMethod('Subscribed Apis')}
                     total={formatCurrency(total)}
                   />
@@ -182,7 +170,9 @@ function TeamBillingComponent(props) {
                         return (
                           <PriceCartridge
                             key={idx}
-                            label={usagePlan.customName || formatPlanType(usagePlan, translateMethod)}
+                            label={
+                              usagePlan.customName || formatPlanType(usagePlan, translateMethod)
+                            }
                             total={billing.total}
                             currency={usagePlan.currency}
                           />

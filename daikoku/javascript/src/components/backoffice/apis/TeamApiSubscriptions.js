@@ -26,11 +26,15 @@ const TeamApiSubscriptionsComponent = (props) => {
 
   const params = useParams();
 
-  const { translateMethod, language, Translation } = useContext(I18nContext)
+  const { translateMethod, language, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     Promise.all([
-      Services.teamApi(props.currentTeam._id, props.match.params.apiId, props.match.params.versionId),
+      Services.teamApi(
+        props.currentTeam._id,
+        props.match.params.apiId,
+        props.match.params.versionId
+      ),
       Services.teams(),
     ]).then(([api, teams]) => {
       setApi(api);
@@ -154,7 +158,7 @@ const TeamApiSubscriptionsComponent = (props) => {
       api: sub.api,
       plan: sub.plan,
       team: teams.find((t) => t._id === sub.team),
-      subscription: sub
+      subscription: sub,
     });
 
   const regenerateSecret = (sub) => {
@@ -170,11 +174,7 @@ const TeamApiSubscriptionsComponent = (props) => {
         if (ok) {
           Services.regenerateApiKeySecret(props.currentTeam._id, sub._id).then(() => {
             toastr.success(
-              translateMethod(
-                'secret.refresh.success',
-                false,
-                'Secret is successfuly refreshed'
-              )
+              translateMethod('secret.refresh.success', false, 'Secret is successfuly refreshed')
             );
             table.update();
           });
@@ -193,10 +193,8 @@ const TeamApiSubscriptionsComponent = (props) => {
           <div className="row">
             <div className="col-12">
               <h1>
-                <Translation i18nkey="Api subscriptions">
-                  Api subscriptions
-                </Translation>{' '}
-                - {api.name}
+                <Translation i18nkey="Api subscriptions">Api subscriptions</Translation> -{' '}
+                {api.name}
               </h1>
             </div>
             <div className="col-12">

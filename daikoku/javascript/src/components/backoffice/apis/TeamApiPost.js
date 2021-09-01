@@ -171,13 +171,7 @@ export function TeamApiPost({ team, params, api, ...props }) {
       <Switch>
         <Route
           path={`${basePath}/new`}
-          render={(props) => (
-            <ApiPost
-              {...props}
-              publishPost={publishPost}
-              params={params}
-            />
-          )}
+          render={(props) => <ApiPost {...props} publishPost={publishPost} params={params} />}
         />
         <Route
           path={basePath}
@@ -192,9 +186,7 @@ export function TeamApiPost({ team, params, api, ...props }) {
                 </Link>
               </div>
               <div>
-                {posts.length === 0 && (
-                  <p>{translateMethod('team_api_post.empty_posts_list')}</p>
-                )}
+                {posts.length === 0 && <p>{translateMethod('team_api_post.empty_posts_list')}</p>}
                 {posts.map((post, i) => (
                   <div key={i}>
                     <div className="d-flex justify-content-between align-items-center pb-1">

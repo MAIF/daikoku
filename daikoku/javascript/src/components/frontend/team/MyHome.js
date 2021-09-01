@@ -19,7 +19,7 @@ function MyHomeComponent(props) {
   const { translateMethod } = useContext(I18nContext);
 
   const fetchData = () => {
-    setState({ ...state, loading: true })
+    setState({ ...state, loading: true });
     Promise.all([Services.myVisibleApis(), Services.teams(), Services.myTeams()]).then(
       ([apis, teams, myTeams]) => {
         setState({ ...state, apis, teams, myTeams, loading: false });
@@ -29,9 +29,10 @@ function MyHomeComponent(props) {
 
   useEffect(() => {
     fetchData();
-  }, [props.connectedUser._id])
+  }, [props.connectedUser._id]);
 
-  const askForApiAccess = (api, teams) => Services.askForApiAccess(teams, api._id).then(() => fetchData());
+  const askForApiAccess = (api, teams) =>
+    Services.askForApiAccess(teams, api._id).then(() => fetchData());
 
   const toggleStar = (api) => {
     Services.toggleStar(api._id).then((res) => {
@@ -76,15 +77,7 @@ function MyHomeComponent(props) {
   const redirectToEditPage = (api) => {
     const adminTeam = state.myTeams.find((team) => api.team === team._id);
 
-    if (
-      CanIDoAction(
-        props.connectedUser,
-        manage,
-        API,
-        adminTeam,
-        props.apiCreationPermitted
-      )
-    ) {
+    if (CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
       props
         .updateTeam(adminTeam)
         .then(() =>
@@ -111,11 +104,7 @@ function MyHomeComponent(props) {
               <h1 className="jumbotron-heading">
                 {props.tenant.title ? props.tenant.title : translateMethod('Your APIs center')}
               </h1>
-              <Description
-                description={props.tenant.description}
-  
-              
-              />
+              <Description description={props.tenant.description} />
             </div>
             {props.connectedUser.isDaikokuAdmin && (
               <div className="col-sm-1 d-flex flex-column">
@@ -150,13 +139,11 @@ function MyHomeComponent(props) {
 
 const Description = (props) => {
   const { Translation } = useContext(I18nContext);
-  
+
   if (!props.description) {
     return (
       <p className="lead">
-        <Translation i18nkey="Daikoku description start">
-          Daikoku is the perfect
-        </Translation>
+        <Translation i18nkey="Daikoku description start">Daikoku is the perfect</Translation>
         <a href="https: //www.otoroshi.io">Otoroshi</a>
         <Translation i18nkey="Daikoku description end">
           companion to manage, document, and expose your beloved APIs to your developpers community.

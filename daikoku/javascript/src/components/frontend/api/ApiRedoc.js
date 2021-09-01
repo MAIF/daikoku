@@ -3,7 +3,7 @@ import { LoginOrRegisterModal } from '..';
 import { I18nContext } from '../../../core';
 
 export function ApiRedoc(props) {
-  const [error, setError] = useState()
+  const [error, setError] = useState();
 
   const { translateMethod } = useContext(I18nContext);
 
@@ -15,8 +15,7 @@ export function ApiRedoc(props) {
       const url = `${window.location.origin}/api/teams/${props.teamId}/apis/${props.api._id}/${props.match.params.versionId}/swagger.json`;
 
       fetch(url).then((res) => {
-        if (res.status > 300)
-          setError(translateMethod('api_redoc.failed_to_retrieve_doc'));
+        if (res.status > 300) setError(translateMethod('api_redoc.failed_to_retrieve_doc'));
         else {
           // eslint-disable-next-line no-undef
           Redoc.init(
@@ -30,9 +29,8 @@ export function ApiRedoc(props) {
           );
         }
       });
-    } else
-      setError(translateMethod('api_redoc.guest_user'));
-  }, [])
+    } else setError(translateMethod('api_redoc.guest_user'));
+  }, []);
 
   const { tenant, connectedUser } = props;
 
@@ -55,11 +53,7 @@ export function ApiRedoc(props) {
 
   const api = props.api;
   if (!api || !api.swagger)
-    return (
-      <div>
-        {translateMethod('api_data.missing', false, undefined, ['Api reference'])}
-      </div>
-    );
+    return <div>{translateMethod('api_data.missing', false, undefined, ['Api reference'])}</div>;
 
   return <div id="redoc-container" />;
 }

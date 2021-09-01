@@ -40,18 +40,14 @@ export const ApiCard = (props) => {
           action={(teams) => props.askForApiAccess(teams)}
           withAllTeamSelector={true}>
           <button className="btn btn-sm btn-access-negative mr-1">
-            <Translation i18nkey="Access">
-              Access
-            </Translation>
+            <Translation i18nkey="Access">Access</Translation>
           </button>
         </ActionWithTeamSelector>
       );
     } else if (isPending) {
       return (
         <button className="btn btn-sm btn-access-negative mr-1">
-          <Translation i18nkey="Pending request">
-            Pending request
-          </Translation>
+          <Translation i18nkey="Pending request">Pending request</Translation>
         </button>
       );
     }
@@ -119,18 +115,13 @@ export const ApiCard = (props) => {
               stars={api.stars}
               starred={props.user.starredApis.includes(api._id)}
               toggleStar={props.toggleStar}
-
-              
               connectedUser={props.connectedUser}
             />
           </div>
         </div>
       </div>
       <div className="col-12 lead">
-        <Translation
-         
-          i18nkey={`${api._humanReadableId}.description`}
-          extraConf={api.translation}>
+        <Translation i18nkey={`${api._humanReadableId}.description`} extraConf={api.translation}>
           {api.smallDescription}
         </Translation>
       </div>

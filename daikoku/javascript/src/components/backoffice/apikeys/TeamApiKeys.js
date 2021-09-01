@@ -16,10 +16,12 @@ export function TeamApiKeysComponent(props) {
   let table;
 
   useEffect(() => {
-    setShowApiKey(props.connectedUser.isDaikokuAdmin ||
-      !props.currentTeam.showApiKeyOnlyToAdmins ||
-      isUserIsTeamAdmin(props.connectedUser, props.currentTeam))
-  }, [props.connectedUser.isDaikokuAdmin, props.currentTeam.showApiKeyOnlyToAdmins])
+    setShowApiKey(
+      props.connectedUser.isDaikokuAdmin ||
+        !props.currentTeam.showApiKeyOnlyToAdmins ||
+        isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
+    );
+  }, [props.connectedUser.isDaikokuAdmin, props.currentTeam.showApiKeyOnlyToAdmins]);
 
   const columns = [
     {
@@ -51,9 +53,7 @@ export function TeamApiKeysComponent(props) {
                 to={`/${props.currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
                 className="btn btn-sm btn-access-negative">
                 <i className="fas fa-eye mr-1" />
-                <Translation i18nkey="Api keys">
-                  Api keys
-                </Translation>
+                <Translation i18nkey="Api keys">Api keys</Translation>
               </Link>
             </div>
           )
@@ -73,9 +73,7 @@ export function TeamApiKeysComponent(props) {
       )
       .then((ok) => {
         if (ok) {
-          Services.cleanArchivedSubscriptions(props.currentTeam._id).then(() =>
-            table.update()
-          );
+          Services.cleanArchivedSubscriptions(props.currentTeam._id).then(() => table.update());
         }
       });
   };
@@ -89,17 +87,13 @@ export function TeamApiKeysComponent(props) {
         <div className="row">
           <div className="col">
             <h1>
-              <Translation i18nkey="Subscribed Apis">
-                Subscribed Apis
-              </Translation>
+              <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
             </h1>
             <Link
               to={`/${props.currentTeam._humanReadableId}/settings/consumption`}
               className="btn btn-sm btn-access-negative mb-2">
               <i className="fas fa-chart-bar mr-1" />
-              <Translation i18nkey="See Stats">
-                See Stats
-              </Translation>
+              <Translation i18nkey="See Stats">See Stats</Translation>
             </Link>
             <div className="section p-2">
               <Table
@@ -116,11 +110,7 @@ export function TeamApiKeysComponent(props) {
                 injectTable={(t) => (table = t)}
               />
               <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
-                <Translation
-                  i18nkey="clean archived apikeys"
-                >
-                  clean archived apikeys
-                </Translation>
+                <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
               </button>
             </div>
           </div>

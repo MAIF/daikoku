@@ -61,7 +61,7 @@ export function TeamEditForm(props) {
     avatarFrom: {
       type: AvatarChooser,
       props: {
-        team: () => props.team
+        team: () => props.team,
       },
     },
     apiKeyVisibility: {
@@ -136,9 +136,7 @@ const TeamEditComponent = ({ history, currentTeam }) => {
       <div className="row form-back-fixedBtns">
         <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
           <i className="fas fa-chevron-left mr-1" />
-          <Translation i18nkey="Back">
-            Back
-          </Translation>
+          <Translation i18nkey="Back">Back</Translation>
         </Link>
         <button
           style={{ marginLeft: 5 }}
@@ -147,9 +145,7 @@ const TeamEditComponent = ({ history, currentTeam }) => {
           onClick={members}>
           <span>
             <i className="fas fa-users mr-1" />
-            <Translation i18nkey="Members">
-              Members
-            </Translation>
+            <Translation i18nkey="Members">Members</Translation>
           </span>
         </button>
         <button
@@ -159,9 +155,7 @@ const TeamEditComponent = ({ history, currentTeam }) => {
           onClick={save}>
           <span>
             <i className="fas fa-save mr-1" />
-            <Translation i18nkey="Save">
-              Save
-            </Translation>
+            <Translation i18nkey="Save">Save</Translation>
           </span>
         </button>
       </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const Spinner = props => (
+export const Spinner = (props) => (
   <div
     style={{
       display: 'flex',
