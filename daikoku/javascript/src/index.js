@@ -13,7 +13,6 @@ import './style/main.scss';
 import 'bootstrap';
 
 import { store } from './core';
-import { DaikokuApp, DaikokuHomeApp } from './apps';
 import { LoginPage } from './components';
 import {
   registerAlert,
@@ -23,6 +22,8 @@ import {
 } from './components/utils/window';
 import { customizeFetch } from './services/customize';
 import { I18nProvider } from './locales/i18n-context';
+
+import { DaikokuApp, DaikokuHomeApp } from './apps';
 
 import {
   ApolloClient,
