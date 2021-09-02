@@ -367,7 +367,7 @@ export function TenantEditComponent(props) {
       props: { label: translateMethod('Domain name') },
     },
     exposedPort: {
-      type: 'string',
+      type: 'number',
       props: {
         label: translateMethod('Exposed port'),
       },

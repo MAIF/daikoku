@@ -1656,8 +1656,9 @@ object json {
       "_deleted" -> o.deleted,
       "name" -> o.name,
       "domain" -> o.domain,
-      "exposedPort" -> o.exposedPort
-        .fold(JsNull.as[JsValue])(JsNumber(_)),
+      "exposedPort" -> o.exposedPort.map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "enabled" -> o.enabled,

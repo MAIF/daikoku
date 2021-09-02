@@ -757,10 +757,11 @@ class ApiController(DaikokuAction: DaikokuAction,
 
     val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
 
-    val notificationUrl = env.config.exposedPort match {
-      case 80 => s"http://${tenant.domain}/notifications"
-      case 443 => s"https://${tenant.domain}/notifications"
-      case value => s"http://${tenant.domain}:$value/"
+    val notificationUrl = tenant.exposedPort match {
+      case Some(80) => s"http://${tenant.domain}/notifications"
+      case Some(443) => s"https://${tenant.domain}/notifications"
+      case Some(value) => s"http://${tenant.domain}:$value/"
+      case None => s"http://${tenant.domain}:${env.config.exposedPort}/"
     }
     for {
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
