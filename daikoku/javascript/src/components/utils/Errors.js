@@ -71,7 +71,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   goBack: () => goBack(),
-  setError: (error) => setError(error)
+  setError: (error) => setError(error),
 };
 
 export const Error = connect(mapStateToProps, mapDispatchToProps)(ErrorComponent);
