@@ -73,8 +73,6 @@ GET     /api/me/visible-apis/:humanReadableId/:version  fr.maif.otoroshi.daikoku
 ### NoDocs ###
 GET     /api/me/visible-apis/:id                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApiWithId(id)
 ### NoDocs ###
-GET     /api/me/visible-apis                            fr.maif.otoroshi.daikoku.ctrls.ApiController.myVisibleApis()
-### NoDocs ###
 GET     /api/me/teams/:teamId/visible-apis/:apiId/:version       fr.maif.otoroshi.daikoku.ctrls.ApiController.getTeamVisibleApis(teamId, apiId, version)
 ### NoDocs ###
 GET     /api/me/subscriptions/:apiId/:version           fr.maif.otoroshi.daikoku.ctrls.ApiController.getMyTeamsApiSubscriptions(apiId, version)
@@ -217,8 +215,6 @@ DELETE  /api/teams/:teamId/apis/:id                     fr.maif.otoroshi.daikoku
 POST    /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku.ctrls.ApiController.createApiOfTeam(teamId)
 ### NoDocs ###
 GET     /api/teams/:teamId/apis                         fr.maif.otoroshi.daikoku.ctrls.ApiController.apisOfTeam(teamId)
-### NoDocs ###
-GET     /api/teams/:teamId/visible-apis                 fr.maif.otoroshi.daikoku.ctrls.ApiController.visibleApisOfTeam(teamId)
 ### NoDocs ###
 GET     /api/teams/:teamId/apis/:apiId/:version/pages            fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApiDocumentation(teamId, apiId, version)
 ### NoDocs ###

@@ -19,7 +19,6 @@ export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/
 export const getTeamVisibleApi = (teamId, apiId, version) => customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const myTeams = () => customFetch('/api/me/teams');
 export const allJoinableTeams = () => customFetch('/api/teams/joinable');
-export const myVisibleApis = () => customFetch('/api/me/visible-apis');
 
 export const teamAllNotifications = (teamId, page = 0) =>
   customFetch(`/api/teams/${teamId}/notifications/all?page=${page}`);
@@ -883,9 +882,6 @@ export const getAllApiDocumentation = (teamId, apiId, version) =>
 
 export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
-
-// export const myVisibleApisOfTeam = (currentTeam) =>
-//   customFetch(`/api/teams/${currentTeam}/visible-apis`);
 
 export const graphql = {
   myTeams: gql`

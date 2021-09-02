@@ -2,7 +2,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import domain.SchemaDefinition
 import domain.SchemaDefinition.NotAuthorizedError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.Logger
 import play.api.i18n.I18nSupport
@@ -19,6 +19,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 class GraphQLController(DaikokuAction: DaikokuAction,
+                        DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                         env: Env,
                         cc: ControllerComponents)
   extends AbstractController(cc)
@@ -31,7 +32,7 @@ class GraphQLController(DaikokuAction: DaikokuAction,
 
   val logger = Logger("GraphQLController")
 
-  def search() = DaikokuAction.async(parse.json) { ctx =>
+  def search() = DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
   // query: String, variables: Option[String], operation: Option[String]
     val query = (ctx.request.body \ "query").as[String]
     val variables = (ctx.request.body \ "variables").asOpt[String]

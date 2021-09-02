@@ -325,7 +325,7 @@ object SchemaDefinition {
       name = "UsagePlan",
       description = "Usage Plan description",
       fields = fields[Unit, UsagePlan](
-        Field("id",           StringType /*UsagePlanIdType*/, resolve = _.value.id.value),
+        Field("_id", StringType, resolve = _.value.id.value),
         Field("costPerMonth", BigDecimalType, resolve = _.value.costPerMonth),
         Field("maxRequestPerSecond", OptionType(LongType), resolve = _.value.maxRequestPerSecond),
         Field("maxRequestPerDay", OptionType(LongType), resolve = _.value.maxRequestPerDay),
@@ -350,7 +350,7 @@ object SchemaDefinition {
     val AdminUsagePlanType = deriveObjectType[Unit, UsagePlan.Admin](
       Interfaces(UsagePlanInterfaceType),
       ReplaceField("id",
-        Field("id",StringType /*UsagePlanIdType*/, resolve = _.value.id.value)
+        Field("id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)
       ),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)
