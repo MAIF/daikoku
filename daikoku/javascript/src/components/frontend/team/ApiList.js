@@ -148,9 +148,7 @@ const ApiListComponent = (props) => {
         </div>
         <div className="clear cursor-pointer" onClick={clearFilter}>
           <i className="far fa-times-circle mr-1" />
-          <Translation i18nkey="clear filter">
-            clear filter
-          </Translation>
+          <Translation i18nkey="clear filter">clear filter</Translation>
         </div>
       </div>
     );
@@ -177,16 +175,16 @@ const ApiListComponent = (props) => {
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (teamMatch(api, searchedTrim)) {
-          return true;
-        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-      })
+          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (teamMatch(api, searchedTrim)) {
+            return true;
+          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+        })
   )
     .groupBy('_humanReadableId')
     .map((value) => {

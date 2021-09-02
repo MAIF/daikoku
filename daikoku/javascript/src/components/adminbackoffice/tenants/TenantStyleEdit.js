@@ -47,24 +47,25 @@ export function TenantStyleEditComponent(props) {
         setState({ ...state, tenant: { ...tenant }, style, initialStyle: style });
       });
     }
-  }, [])
+  }, []);
 
   const updateStyleProp = (item, color) => {
     const style = [...state.style.filter((s) => s.value !== item.value), { ...item, color }];
     setState({ ...state, style });
-  }
+  };
 
-  const getStyleFromState = () => state.style.reduce((acc, curr) => {
-    return `${acc}${curr.value}:${curr.color};\n`;
-  }, ':root {\n') + '}'
+  const getStyleFromState = () =>
+    state.style.reduce((acc, curr) => {
+      return `${acc}${curr.value}:${curr.color};\n`;
+    }, ':root {\n') + '}';
 
   const goBack = () => {
     props.history.goBack();
-  }
+  };
 
   const reset = () => {
     setState({ ...state, style: state.initialStyle });
-  }
+  };
 
   const save = () => {
     Services.saveTenant({
@@ -75,7 +76,7 @@ export function TenantStyleEditComponent(props) {
         document.location.href = `/settings/tenants/${state.tenant._id}`;
       })
       .then(() => toastr.success(translateMethod('Tenant updated successfully')));
-  }
+  };
 
   return (
     <UserBackOffice tab="Tenants" isLoading={!state.tenant}>
@@ -86,26 +87,18 @@ export function TenantStyleEditComponent(props) {
               <button
                 className="btn btn-access-negative"
                 onClick={() => setState({ ...state, preview: !state.preview })}>
-                <Translation i18nkey="Preview">
-                  Preview
-                </Translation>
+                <Translation i18nkey="Preview">Preview</Translation>
               </button>
             </div>
             <div>
               <button className="btn btn-access-negative" onClick={() => goBack()}>
-                <Translation i18nkey="Cancel">
-                  Cancel
-                </Translation>
+                <Translation i18nkey="Cancel">Cancel</Translation>
               </button>
               <button className="btn btn-access-negative mx-2" onClick={() => reset()}>
-                <Translation i18nkey="Reset">
-                  Reset
-                </Translation>
+                <Translation i18nkey="Reset">Reset</Translation>
               </button>
               <button className="btn btn-outline-success" onClick={() => save()}>
-                <Translation i18nkey="Save">
-                  Save
-                </Translation>
+                <Translation i18nkey="Save">Save</Translation>
               </button>
             </div>
           </div>

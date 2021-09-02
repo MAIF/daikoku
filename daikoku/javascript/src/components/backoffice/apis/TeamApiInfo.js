@@ -20,10 +20,9 @@ function NameAlreadyExists(props) {
 
   useEffect(() => {
     update(props);
-  }, [props.rawValue.name])
+  }, [props.rawValue.name]);
 
-  if (!exists)
-    return null;
+  if (!exists) return null;
 
   return (
     <div className="form-group row">
@@ -31,9 +30,7 @@ function NameAlreadyExists(props) {
         className="col-sm-12"
         style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <span className="badge badge-danger">
-          <Translation
-            i18nkey="api.already.exists"
-            replacements={[props.rawValue.name]}>
+          <Translation i18nkey="api.already.exists" replacements={[props.rawValue.name]}>
             api with name "{props.rawValue.name}" already exists
           </Translation>
         </span>
@@ -81,7 +78,7 @@ export function TeamApiInfo(props) {
     nameAlreadyExists: {
       type: NameAlreadyExists,
       props: {
-        creating: props.creating
+        creating: props.creating,
       },
     },
     smallDescription: {
@@ -108,7 +105,7 @@ export function TeamApiInfo(props) {
       type: StyleLogoAssetButton,
       props: {
         tenant: props.tenant,
-        team: props.team
+        team: props.team,
       },
     },
     currentVersion: {
@@ -148,11 +145,7 @@ export function TeamApiInfo(props) {
           { label: translateMethod('Public', false, 'Public'), value: 'Public' },
           { label: translateMethod('Private', false, 'Private'), value: 'Private' },
           {
-            label: translateMethod(
-              'PublicWithAuthorizations',
-              false,
-              'Public with authorizations'
-            ),
+            label: translateMethod('PublicWithAuthorizations', false, 'Public with authorizations'),
             value: 'PublicWithAuthorizations',
           },
         ],

@@ -202,9 +202,10 @@ const ApiHomeComponent = ({
   const askForApikeys = (teams, plan, apiKey) => {
     const planName = formatPlanType(plan, translateMethod);
 
-    return (apiKey
-      ? Services.extendApiKey(api._id, apiKey._id, teams, plan._id)
-      : Services.askForApiKey(api._id, teams, plan._id)
+    return (
+      apiKey
+        ? Services.extendApiKey(api._id, apiKey._id, teams, plan._id)
+        : Services.askForApiKey(api._id, teams, plan._id)
     )
       .then((results) => {
         if (results.error) {
@@ -367,9 +368,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'description' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}`}>
-                  <Translation i18nkey="Description">
-                    Description
-                  </Translation>
+                  <Translation i18nkey="Description">Description</Translation>
                 </Link>
               </li>
               <li className="nav-item">
@@ -386,27 +385,21 @@ const ApiHomeComponent = ({
                   className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
                     }`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/documentation`}>
-                  <Translation i18nkey="Documentation">
-                    Documentation
-                  </Translation>
+                  <Translation i18nkey="Documentation">Documentation</Translation>
                 </Link>
               </li>
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'redoc' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/redoc`}>
-                  <Translation i18nkey="Api Reference">
-                    Api Reference
-                  </Translation>
+                  <Translation i18nkey="Api Reference">Api Reference</Translation>
                 </Link>
               </li>
               <li className="nav-item">
                 <Link
                   className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/swagger`}>
-                  <Translation i18nkey="Try it !">
-                    Try it !
-                  </Translation>
+                  <Translation i18nkey="Try it !">Try it !</Translation>
                 </Link>
               </li>
               {!!api.posts.length && (
@@ -414,9 +407,7 @@ const ApiHomeComponent = ({
                   <Link
                     className={`nav-link ${tab === 'news' ? 'active' : ''}`}
                     to={`/${match.params.teamId}/${apiId}/${versionId}/news`}>
-                    <Translation i18nkey="News">
-                      News
-                    </Translation>
+                    <Translation i18nkey="News">News</Translation>
                   </Link>
                 </li>
               )}
@@ -424,9 +415,7 @@ const ApiHomeComponent = ({
                 <Link
                   className={`nav-link ${tab === 'issues' ? 'active' : ''}`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/issues`}>
-                  <Translation i18nkey="issues">
-                    Issues
-                  </Translation>
+                  <Translation i18nkey="issues">Issues</Translation>
                 </Link>
               </li>
             </ul>
@@ -472,18 +461,10 @@ const ApiHomeComponent = ({
               />
             )}
             {tab === 'documentation' && (
-              <ApiDocumentation
-                api={api}
-                ownerTeam={ownerTeam}
-                match={match}
-              />
+              <ApiDocumentation api={api} ownerTeam={ownerTeam} match={match} />
             )}
             {tab === 'documentation-page' && (
-              <ApiDocumentation
-                api={api}
-                ownerTeam={ownerTeam}
-                match={match}
-              />
+              <ApiDocumentation api={api} ownerTeam={ownerTeam} match={match} />
             )}
             {tab === 'swagger' && (
               <ApiSwagger
@@ -546,9 +527,9 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = {
-  setError,
-  openContactModal,
-  updateUser,
+  setError: (e) => setError(e),
+  openContactModal: (props) => openContactModal(props),
+  updateUser: (u) => updateUser(u),
 };
 
 export const ApiHome = connect(mapStateToProps, mapDispatchToProps)(ApiHomeComponent);

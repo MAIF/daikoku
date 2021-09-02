@@ -25,7 +25,7 @@ export function LocalConfig(props) {
         sessionMaxAge: props.value.sessionMaxAge || 86400,
       });
     }
-  }, [])
+  }, []);
 
   return (
     <React.Suspense fallback={<Spinner />}>

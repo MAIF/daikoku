@@ -46,9 +46,10 @@ function MyHomeComponent(props) {
 
   useEffect(() => {
     fetchData();
-  }, [props.connectedUser._id])
+  }, [props.connectedUser._id]);
 
-  const askForApiAccess = (api, teams) => Services.askForApiAccess(teams, api._id).then(() => fetchData());
+  const askForApiAccess = (api, teams) =>
+    Services.askForApiAccess(teams, api._id).then(() => fetchData());
 
   const toggleStar = (api) => {
     Services.toggleStar(api._id).then((res) => {
@@ -93,15 +94,7 @@ function MyHomeComponent(props) {
   const redirectToEditPage = (api) => {
     const adminTeam = state.myTeams.find((team) => api.team._id === team._id);
 
-    if (
-      CanIDoAction(
-        props.connectedUser,
-        manage,
-        API,
-        adminTeam,
-        props.apiCreationPermitted
-      )
-    ) {
+    if (CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
       props
         .updateTeam(adminTeam)
         .then(() =>
@@ -167,9 +160,7 @@ const Description = (props) => {
   if (!props.description) {
     return (
       <p className="lead">
-        <Translation i18nkey="Daikoku description start">
-          Daikoku is the perfect
-        </Translation>
+        <Translation i18nkey="Daikoku description start">Daikoku is the perfect</Translation>
         <a href="https: //www.otoroshi.io">Otoroshi</a>
         <Translation i18nkey="Daikoku description end">
           companion to manage, document, and expose your beloved APIs to your developpers community.

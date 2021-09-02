@@ -31,29 +31,20 @@ export function TeamCard(props) {
                   </a>
                 </Can>
               </h3>
-              <Translation
-
-                i18nkey={`${team._id}.description`}
-                extraConf={team.translation}>
+              <Translation i18nkey={`${team._id}.description`} extraConf={team.translation}>
                 {team.description}
               </Translation>
             </div>
             <div className="ml-2">
               <div className="btn_group">
                 {team.canJoin && !team.alreadyJoin && (
-                  <button
-                    className="btn btn-sm btn-access-negative mr-2"
-                    onClick={props.askToJoin}>
-                    <Translation i18nkey="Join">
-                      Join
-                    </Translation>
+                  <button className="btn btn-sm btn-access-negative mr-2" onClick={props.askToJoin}>
+                    <Translation i18nkey="Join">Join</Translation>
                   </button>
                 )}
                 {team.canJoin && team.alreadyJoin && (
                   <button className="btn btn-sm btn-access-negative mr-2">
-                    <Translation i18nkey="Pending request">
-                      Pending request
-                    </Translation>
+                    <Translation i18nkey="Pending request">Pending request</Translation>
                   </button>
                 )}
               </div>

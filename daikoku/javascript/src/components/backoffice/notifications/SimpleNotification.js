@@ -116,7 +116,7 @@ export function SimpleNotification(props) {
     }
   };
 
-  const actionFormatter = notification => {
+  const actionFormatter = (notification) => {
     const { status, date } = notification.status;
     const { notificationType } = notification;
 
@@ -222,7 +222,7 @@ export function SimpleNotification(props) {
           );
       }
     }
-  }
+  };
 
   const fromFormatter = (action, sender) => {
     switch (action.type) {
@@ -250,7 +250,7 @@ export function SimpleNotification(props) {
       case 'ApiKeyRefresh':
         return `${sender.name}`;
     }
-  }
+  };
 
   const { notification, getApi } = props;
   let infos = {};
@@ -278,19 +278,14 @@ export function SimpleNotification(props) {
             <h5 className="alert-heading mb-0">
               {notification.action.type === 'ApiAccess' && (
                 <div>
-                  <Translation
-                    i18nkey="notif.api.access"
-
-                    replacements={[infos.api.name]}>
+                  <Translation i18nkey="notif.api.access" replacements={[infos.api.name]}>
                     Request access to {infos.api.name}
                   </Translation>
                 </div>
               )}
               {notification.action.type === 'TeamAccess' && (
                 <div>
-                  <Translation
-                    i18nkey="notif.membership.team"
-                  >
+                  <Translation i18nkey="notif.membership.team">
                     membership request to your team
                   </Translation>
                 </div>
@@ -299,10 +294,11 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="notif.api.subscription"
-
                     replacements={[
                       infos.api.name,
-                      Option(infos.plan.customName).getOrElse(formatPlanType(infos.plan, translateMethod)),
+                      Option(infos.plan.customName).getOrElse(
+                        formatPlanType(infos.plan, translateMethod)
+                      ),
                     ]}>
                     Request subscription to {infos.api.name} for plan {infos.plan.type}
                   </Translation>
@@ -312,7 +308,6 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="notif.apikey.deletion"
-
                     replacements={[notification.action.clientId, notification.action.api]}>
                     Your apiKey with clientId {notification.action.clientId} for api{' '}
                     {notification.action.api} has been deleted
@@ -329,15 +324,14 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="notif.apikey.rotation.inprogress"
-
                     replacements={[
                       notification.action.clientId,
                       notification.action.api,
                       notification.action.plan,
                     ]}>
                     Your apiKey with clientId {notification.action.clientId} (
-                    {notification.action.api}/{notification.action.plan}) has started its
-                    rotation. Its clientSecret hab been updated.
+                    {notification.action.api}/{notification.action.plan}) has started its rotation.
+                    Its clientSecret hab been updated.
                   </Translation>
                 </div>
               )}
@@ -345,7 +339,6 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="notif.apikey.rotation.ended"
-
                     replacements={[
                       notification.action.clientId,
                       notification.action.api,
@@ -360,14 +353,13 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="notif.apikey.refresh"
-
                     replacements={[
                       notification.action.subscription,
                       notification.action.api,
                       notification.action.plan,
                     ]}>
-                    Your subscription {notification.action.subscription} (
-                    {notification.action.api}/{notification.action.plan}) has been refreshed.
+                    Your subscription {notification.action.subscription} ({notification.action.api}/
+                    {notification.action.plan}) has been refreshed.
                   </Translation>
                 </div>
               )}
@@ -375,7 +367,6 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="team.invitation"
-
                     replacements={[
                       notification.sender.name,
                       props.getTeam(notification.action.team).name,
@@ -389,14 +380,13 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="team.invitation"
-
                     replacements={[
                       notification.sender.name,
                       props.getTeam(notification.action.teamId).name,
                     ]}>
                     {notification.sender.name}, as admin of{' '}
-                    {props.getTeam(notification.action.teamId).name}, has published a new
-                    post on {notification.action.apiName}.
+                    {props.getTeam(notification.action.teamId).name}, has published a new post on{' '}
+                    {notification.action.apiName}.
                   </Translation>
                 </div>
               )}
@@ -404,7 +394,6 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="issues.notification"
-
                     replacements={[notification.action.apiName]}>
                     {notification.sender.name} has published a new issue on{' '}
                     {notification.action.apiName}.
@@ -415,7 +404,6 @@ export function SimpleNotification(props) {
                 <div>
                   <Translation
                     i18nkey="issues.comment.notification"
-
                     replacements={[notification.action.apiName]}>
                     {notification.sender.name} has published a new comment on issue of{' '}
                     {notification.action.apiName}.
@@ -424,9 +412,7 @@ export function SimpleNotification(props) {
               )}
             </h5>
           </div>
-          <div className="d-flex mt-1 justify-content-end">
-            {actionFormatter(notification)}
-          </div>
+          <div className="d-flex mt-1 justify-content-end">{actionFormatter(notification)}</div>
         </div>
         <hr />
         <div className="d-flex justify-content-between" style={{ fontSize: 12 }}>

@@ -23,10 +23,10 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
     apiSelectModal: Modals.ApiSelectModal,
     apiDocumentationSelectModal: Modals.ApiDocumentationSelectModal,
   };
-  
+
   const [modalIsOpen, setModalIsOpen] = useState(open);
   const SpecifiedModal = MODAL_TYPES[modalType];
-  
+
   useEffect(() => {
     setModalIsOpen(open);
   }, [open]);

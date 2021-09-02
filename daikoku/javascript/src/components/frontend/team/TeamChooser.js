@@ -30,9 +30,7 @@ function TeamChooserComponent(props) {
   };
 
   const redirectToTeamSettings = (team) => {
-    props
-      .updateTeam(team)
-      .then(() => props.history.push(`/${team._humanReadableId}/settings`));
+    props.updateTeam(team).then(() => props.history.push(`/${team._humanReadableId}/settings`));
   };
 
   const handlePageClick = (data) => {
@@ -45,14 +43,11 @@ function TeamChooserComponent(props) {
     searched === ''
       ? teams
       : teams.filter((team) => {
-        if (team.name.toLowerCase().indexOf(searched) > -1) {
-          return true;
-        } else return team.description.toLowerCase().indexOf(searched) > -1;
-      });
-  const paginateTeams = filteredTeams.slice(
-    state.offset,
-    state.offset + state.pageNumber
-  );
+          if (team.name.toLowerCase().indexOf(searched) > -1) {
+            return true;
+          } else return team.description.toLowerCase().indexOf(searched) > -1;
+        });
+  const paginateTeams = filteredTeams.slice(state.offset, state.offset + state.pageNumber);
 
   return (
     <main role="main" className="row">
@@ -68,9 +63,7 @@ function TeamChooserComponent(props) {
             </div>
             <div className="col-sm-8 d-flex flex-column justify-content-center">
               <h1 className="jumbotron-heading">
-                <Translation i18nkey="All teams">
-                  All teams
-                </Translation>
+                <Translation i18nkey="All teams">All teams</Translation>
               </h1>
             </div>
           </div>
@@ -96,8 +89,6 @@ function TeamChooserComponent(props) {
                 key={team._id}
                 user={props.connectedUser}
                 team={team}
-  
-              
                 askToJoin={(e) => askToJoin(e, team)}
                 redirectToTeamPage={() => props.history.push(`/${team._humanReadableId}`)}
                 redirectToTeamSettings={() => redirectToTeamSettings(team)}

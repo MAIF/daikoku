@@ -9,7 +9,7 @@ import { I18nContext } from '../../../core';
 
 function TeamListComponent(props) {
   const [state, setState] = useState({
-    teams: []
+    teams: [],
   });
 
   const createNewTeam = () => {
@@ -26,9 +26,7 @@ function TeamListComponent(props) {
 
   const deleteTeam = (teamId) => {
     window
-      .confirm(
-        translateMethod('delete team', 'Are you sure you want to delete this team ?')
-      )
+      .confirm(translateMethod('delete team', 'Are you sure you want to delete this team ?'))
       .then((ok) => {
         if (ok) {
           Services.deleteTeam(teamId).then(() => {
@@ -67,8 +65,7 @@ function TeamListComponent(props) {
     return [
       ...basicActions,
       {
-        redirect: () =>
-          props.history.push(`/settings/teams/${team._humanReadableId}/members`),
+        redirect: () => props.history.push(`/settings/teams/${team._humanReadableId}/members`),
         iconClass: 'fas fa-users',
         tooltip: translateMethod('Team members'),
       },
@@ -82,9 +79,7 @@ function TeamListComponent(props) {
           <div className="col">
             <div className="d-flex justify-content-between align-items-center">
               <h1>
-                <Translation i18nkey="Teams">
-                  Teams
-                </Translation>
+                <Translation i18nkey="Teams">Teams</Translation>
                 <a
                   className="btn btn-sm btn-access-negative mb-1 ml-1"
                   title={translateMethod('Create a new team')}

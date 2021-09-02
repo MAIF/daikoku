@@ -263,10 +263,9 @@ trait ApiRepo extends TenantCapableRepo[Api, ApiId] {
   def findByVersion(tenant: Tenant, id: String, version: String)(
       implicit env: Env,
       ec: ExecutionContext): Future[Option[Api]] = {
-    val query = Json.obj(
-      "currentVersion" -> version,
-      "$or" -> Json.arr(Json.obj("_id" -> id),
-                        Json.obj("_humanReadableId" -> id)))
+    val query = Json.obj("currentVersion" -> version,
+                         "$or" -> Json.arr(Json.obj("_id" -> id),
+                                           Json.obj("_humanReadableId" -> id)))
 
     env.dataStore.apiRepo.forTenant(tenant.id).findOneNotDeleted(query)
   }

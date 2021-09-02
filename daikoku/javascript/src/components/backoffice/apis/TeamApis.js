@@ -111,7 +111,7 @@ function TeamApisComponent(props) {
                   type="button"
                   className="btn btn-sm btn-access-negative"
                   title="Delete this Api"
-                  onClick={() => deleteApi (api)}>
+                  onClick={() => deleteApi(api)}>
                   <i className="fas fa-trash" />
                 </button>
               )}
@@ -123,31 +123,26 @@ function TeamApisComponent(props) {
   ];
 
   const togglePublish = (api) => {
-    Services.saveTeamApi(props.currentTeam._id, {
-      ...api,
-      published: !api.published,
-    }, api.currentVersion).then(() => table.update());
+    Services.saveTeamApi(
+      props.currentTeam._id,
+      {
+        ...api,
+        published: !api.published,
+      },
+      api.currentVersion
+    ).then(() => table.update());
   };
 
   const deleteApi = (api) => {
     window
       .confirm(
-        translateMethod(
-          'delete.api.confirm',
-          false,
-          'Are you sure you want to delete this api ?'
-        )
+        translateMethod('delete.api.confirm', false, 'Are you sure you want to delete this api ?')
       )
       .then((ok) => {
         if (ok) {
           Services.deleteTeamApi(props.currentTeam._id, api._id).then(() => {
             toastr.success(
-              translateMethod(
-                'delete.api.success',
-                false,
-                'API deleted successfully',
-                api.name
-              )
+              translateMethod('delete.api.success', false, 'API deleted successfully', api.name)
             );
             table.update();
           });
@@ -192,9 +187,7 @@ function TeamApisComponent(props) {
         <div className="row">
           <div className="col">
             <h1>
-              <Translation i18nkey="Team apis">
-                Team APIs
-              </Translation>
+              <Translation i18nkey="Team apis">Team APIs</Translation>
               {props.apiCreationPermitted && props.currentTeam.type !== 'Admin' && (
                 <Can I={manage} a={API} team={props.currentTeam}>
                   <a

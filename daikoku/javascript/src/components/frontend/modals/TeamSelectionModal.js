@@ -102,9 +102,7 @@ export const TeamSelectorModal = ({
               onClick={() => toggleAllTeam()}>
               {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
               <span className="ml-2">
-                <Translation i18nkey="All">
-                  All
-                </Translation>
+                <Translation i18nkey="All">All</Translation>
               </span>
             </div>
           )}

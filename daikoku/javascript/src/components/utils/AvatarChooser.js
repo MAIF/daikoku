@@ -4,7 +4,7 @@ import md5 from 'js-md5';
 import { I18nContext } from '../../locales/i18n-context';
 
 function Gravatar(props) {
-  const { Translation } = useContext(I18nContext)
+  const { Translation } = useContext(I18nContext);
   const setGravatarLink = () => {
     const email = props.rawValue.contact.toLowerCase().trim();
     const url = `https://www.gravatar.com/avatar/${md5(email)}?size=128&d=robohash`;
@@ -14,15 +14,13 @@ function Gravatar(props) {
   return (
     <button type="button" className="btn btn-access" onClick={setGravatarLink}>
       <i className="fas fa-user-circle mr-1" />
-      <Translation i18nkey="gravatar.btn.label">
-        Set avatar from Gravatar
-      </Translation>
+      <Translation i18nkey="gravatar.btn.label">Set avatar from Gravatar</Translation>
     </button>
   );
 }
 
 function AssetButton(props) {
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   return (
     <AssetChooserByModal
@@ -36,7 +34,7 @@ function AssetButton(props) {
   );
 }
 
-export const AvatarChooser = props => {
+export const AvatarChooser = (props) => {
   return (
     <div className="form-group row">
       <div className="col-12 d-flex justify-content-end">
@@ -45,4 +43,4 @@ export const AvatarChooser = props => {
       </div>
     </div>
   );
-}
+};

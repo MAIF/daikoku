@@ -162,7 +162,7 @@ export class SelectInput extends Component {
               classNamePrefix="reactSelect"
               className="reactSelect"
               menuPortalTarget={document.body}
-              styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+              styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
             />
           </div>
         </div>

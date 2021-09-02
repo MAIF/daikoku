@@ -21,9 +21,7 @@ export function ApiCartidge(props) {
   return (
     <div className="d-flex col-12 col-sm-3 col-md-2 text-muted flex-column p-3 additionalContent">
       <span>
-        <Translation i18nkey="API by">
-          API by
-        </Translation>
+        <Translation i18nkey="API by">API by</Translation>
       </span>
       <small className="word-break">
         <Link to={`/${ownerTeam._humanReadableId}`}>{ownerTeam.name}</Link>
@@ -31,23 +29,17 @@ export function ApiCartidge(props) {
       <div>
         <button className="btn btn-xs btn-access-negative" onClick={props.openContactModal}>
           <i className="far fa-envelope mr-1" />
-          <Translation i18nkey="Contact us">
-            Contact us
-          </Translation>
+          <Translation i18nkey="Contact us">Contact us</Translation>
         </button>
       </div>
       <Separator />
       <span>
-        <Translation i18nkey="Version">
-          Version
-        </Translation>
+        <Translation i18nkey="Version">Version</Translation>
         <span className="badge badge-info ml-1">{api.currentVersion}</span>
       </span>
       <Separator />
       <span>
-        <Translation i18nkey="Supported versions">
-          Supported versions
-        </Translation>
+        <Translation i18nkey="Supported versions">Supported versions</Translation>
         {(api.supportedVersions || []).map((v, idx) => (
           <span key={idx} className="badge badge-info ml-1">
             {v}
@@ -56,9 +48,7 @@ export function ApiCartidge(props) {
       </span>
       <Separator />
       <span>
-        <Translation i18nkey="Tags">
-          Tags
-        </Translation>
+        <Translation i18nkey="Tags">Tags</Translation>
         {(api.tags || []).map((a, idx) => (
           <span key={idx} className="badge badge-warning ml-1">
             {a}
@@ -67,12 +57,11 @@ export function ApiCartidge(props) {
       </span>
       <Separator />
       <span>
-        <Translation i18nkey="Visibility">
-          Visibility
-        </Translation>
+        <Translation i18nkey="Visibility">Visibility</Translation>
         <span
-          className={`badge ml-1 ${api.visibility === 'Public' ? 'badge-success' : 'badge-danger'
-            }`}>
+          className={`badge ml-1 ${
+            api.visibility === 'Public' ? 'badge-success' : 'badge-danger'
+          }`}>
           {translateMethod(api.visibility)}
         </span>
       </span>
@@ -80,12 +69,8 @@ export function ApiCartidge(props) {
       {defaultPlan && (
         <>
           <span>
-            <Translation i18nkey="Default plan">
-              Default plan
-            </Translation>
-            <span
-              className="badge badge-primary word-break ml-1"
-              style={{ whiteSpace: 'normal' }}>
+            <Translation i18nkey="Default plan">Default plan</Translation>
+            <span className="badge badge-primary word-break ml-1" style={{ whiteSpace: 'normal' }}>
               {defaultPlan.customName || translateMethod(pricing)}
             </span>
           </span>
@@ -93,13 +78,9 @@ export function ApiCartidge(props) {
         </>
       )}
       <span>
-        <Translation i18nkey="Last modification">
-          Last modification
-        </Translation>
+        <Translation i18nkey="Last modification">Last modification</Translation>
       </span>
-      <small>
-        {moment(api.lastUpdate).format(translateMethod('moment.date.format.short'))}
-      </small>
+      <small>{moment(api.lastUpdate).format(translateMethod('moment.date.format.short'))}</small>
 
       {!!subscribingTeams.length && (
         <Can I={manage} a={apikey} teams={subscribingTeams}>
@@ -113,15 +94,11 @@ export function ApiCartidge(props) {
               CanIDoAction(props.connectedUser, manage, apikey, t)
             )}
             action={(teams) => {
-              props.redirectToApiKeysPage(
-                props.myTeams.find((t) => teams.includes(t._id))
-              )
+              props.redirectToApiKeysPage(props.myTeams.find((t) => teams.includes(t._id)));
             }}
             withAllTeamSelector={false}>
             <button className="btn btn-sm btn-access-negative mt-2">
-              <Translation i18nkey="View your api keys">
-                View your api keys
-              </Translation>
+              <Translation i18nkey="View your api keys">View your api keys</Translation>
             </button>
           </ActionWithTeamSelector>
         </Can>

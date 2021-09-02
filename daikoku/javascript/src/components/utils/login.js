@@ -10,7 +10,7 @@ export function LoginPage(props) {
     password: '',
     message: null,
     loginError: null,
-  })
+  });
 
   const onChange = (e) => {
     setState({
@@ -48,10 +48,7 @@ export function LoginPage(props) {
             />
           </div>
           <h3>
-            <Translation
-
-              i18nkey="login.to.tenant"
-              replacements={[props.tenant.name]}>
+            <Translation i18nkey="login.to.tenant" replacements={[props.tenant.name]}>
               Login to {props.tenant.name}
             </Translation>
           </h3>
@@ -72,9 +69,7 @@ export function LoginPage(props) {
           )}
           <div className="form-group">
             <label className="control-label">
-              <Translation i18nkey="Email address">
-                Email address
-              </Translation>
+              <Translation i18nkey="Email address">Email address</Translation>
             </label>
             <input
               type="text"
@@ -86,9 +81,7 @@ export function LoginPage(props) {
           </div>
           <div className="form-group">
             <label className="control-label">
-              <Translation i18nkey="Password">
-                Password
-              </Translation>
+              <Translation i18nkey="Password">Password</Translation>
             </label>
             <input
               type="password"
@@ -100,9 +93,7 @@ export function LoginPage(props) {
           </div>
           <div className="form-group">
             <button type="submit" className="btn btn-success btn-block">
-              <Translation i18nkey="Login">
-                Login
-              </Translation>
+              <Translation i18nkey="Login">Login</Translation>
             </button>
           </div>
           {props.provider == 'Local' && (
@@ -113,7 +104,6 @@ export function LoginPage(props) {
                 borderRadius: '6px',
               }}>
               <Translation
-
                 i18nkey="login_page.register_message"
                 replacements={[props.tenant.name]}
               />
@@ -122,11 +112,7 @@ export function LoginPage(props) {
           )}
           <div className="form-group">
             <a href="/reset">
-              <Translation
-
-                i18nkey="Forgot your password ?">
-                Forgot your password ?
-              </Translation>
+              <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
             </a>
           </div>
         </form>

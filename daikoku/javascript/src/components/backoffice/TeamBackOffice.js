@@ -81,10 +81,7 @@ function TeamBackOfficeHomeComponent(props) {
                 className="home-tile">
                 <span className="home-tile-number">{team.apisCount}</span>
                 <span className="home-tile-text">
-                  <Translation
-                    i18nkey="apis published"
-
-                    count={team.apisCount}>
+                  <Translation i18nkey="apis published" count={team.apisCount}>
                     apis published
                   </Translation>
                 </span>
@@ -94,9 +91,7 @@ function TeamBackOfficeHomeComponent(props) {
                 className="home-tile">
                 <span className="home-tile-number">{team.subscriptionsCount}</span>
                 <span className="home-tile-text">
-                  <Translation
-                    i18nkey="apis subcriptions"
-                    count={team.subscriptionsCount}>
+                  <Translation i18nkey="apis subcriptions" count={team.subscriptionsCount}>
                     apis subcriptions
                   </Translation>
                 </span>
@@ -113,9 +108,7 @@ function TeamBackOfficeHomeComponent(props) {
                   <>
                     <span className="home-tile-number">{team.users.length}</span>
                     <span className="home-tile-text">
-                      <Translation
-                        i18nkey="members"
-                        count={team.users.length}>
+                      <Translation i18nkey="members" count={team.users.length}>
                         members
                       </Translation>
                     </span>
@@ -125,9 +118,7 @@ function TeamBackOfficeHomeComponent(props) {
               <Link to={'/notifications'} className="home-tile">
                 <span className="home-tile-number">{team.notificationCount}</span>
                 <span className="home-tile-text">
-                  <Translation
-                    i18nkey="unread notifications"
-                    count={team.notificationCount}>
+                  <Translation i18nkey="unread notifications" count={team.notificationCount}>
                     unread notifications
                   </Translation>
                 </span>
@@ -201,9 +192,7 @@ const TeamBackOfficeComponent = ({
                           className={`nav-link ${tab === 'Apis' ? 'active' : ''}`}
                           to={`/${currentTeam._humanReadableId}/settings/apis`}>
                           <i className="fas fa-atlas" />
-                          <Translation i18nkey="Team Apis">
-                            Team Apis
-                          </Translation>
+                          <Translation i18nkey="Team Apis">Team Apis</Translation>
                         </Link>
                       </li>
                     </Can>
@@ -215,9 +204,7 @@ const TeamBackOfficeComponent = ({
                           className={`nav-link ${tab === 'Income' ? 'active' : ''}`}
                           to={`/${currentTeam._humanReadableId}/settings/income`}>
                           <i className="fas fa-file-invoice-dollar" />
-                          <Translation i18nkey="Team Income">
-                            Team Income
-                          </Translation>
+                          <Translation i18nkey="Team Income">Team Income</Translation>
                         </Link>
                       </li>
                     </Can>
@@ -228,9 +215,7 @@ const TeamBackOfficeComponent = ({
                         className={`nav-link ${tab === 'ApiKeys' ? 'active' : ''}`}
                         to={`/${currentTeam._humanReadableId}/settings/apikeys`}>
                         <i className="fas fa-key" />
-                        <Translation i18nkey="Team api keys">
-                          Team api keys
-                        </Translation>
+                        <Translation i18nkey="Team api keys">Team api keys</Translation>
                       </Link>
                     </li>
                   </Can>
@@ -240,9 +225,7 @@ const TeamBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Billing' ? 'active' : ''}`}
                         to={`/${currentTeam._humanReadableId}/settings/billing`}>
                         <i className="fas fa-file-invoice-dollar" />
-                        <Translation i18nkey="Team billing">
-                          Team billing
-                        </Translation>
+                        <Translation i18nkey="Team billing">Team billing</Translation>
                       </Link>
                     </li>
                   </Can>
@@ -254,9 +237,7 @@ const TeamBackOfficeComponent = ({
                           className={`nav-link ${tab === 'Members' ? 'active' : ''}`}
                           to={`/${currentTeam._humanReadableId}/settings/members`}>
                           <i className="fas fa-users" />
-                          <Translation i18nkey="Team members">
-                            Team members
-                          </Translation>
+                          <Translation i18nkey="Team members">Team members</Translation>
                         </Link>
                       </li>
                     </Can>
@@ -268,9 +249,7 @@ const TeamBackOfficeComponent = ({
                           className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
                           to={`/${currentTeam._humanReadableId}/settings/assets`}>
                           <i className="fas fa-tools" />
-                          <Translation i18nkey="Team assets">
-                            Team assets
-                          </Translation>
+                          <Translation i18nkey="Team assets">Team assets</Translation>
                         </Link>
                       </li>
                     </Can>
@@ -335,9 +314,7 @@ const UserBackOfficeComponent = ({
                       className={`nav-link ${tab === 'Me' ? 'active' : ''}`}
                       to={'/settings/me'}>
                       <i className="fas fa-user" />
-                      <Translation i18nkey="My profile">
-                        My profile
-                      </Translation>
+                      <Translation i18nkey="My profile">My profile</Translation>
                     </Link>
                   </li>
                   <li className="nav-item">
@@ -345,9 +322,7 @@ const UserBackOfficeComponent = ({
                       className={`nav-link ${tab === 'Notifications' ? 'active' : ''}`}
                       to={'/notifications'}>
                       <i className="fas fa-bell" />
-                      <Translation i18nkey="Notifications">
-                        Notifications
-                      </Translation>
+                      <Translation i18nkey="Notifications">Notifications</Translation>
                     </Link>
                     {notificationSubMenu || null}
                   </li>
@@ -355,9 +330,7 @@ const UserBackOfficeComponent = ({
 
                 <Can I={manage} a={TENANT}>
                   <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                    <Translation i18nkey="Tenant administration">
-                      Tenant administration
-                    </Translation>
+                    <Translation i18nkey="Tenant administration">Tenant administration</Translation>
                     <Link
                       to={`/settings/tenants/${tenant._humanReadableId}`}
                       className=""
@@ -381,10 +354,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Otoroshi' ? 'active' : ''}`}
                         to={'/settings/otoroshis'}>
                         <i className="fas fa-pastafarianism" />
-                        <Translation
-                          i18nkey="Otoroshi instance"
-
-                          isPlural>
+                        <Translation i18nkey="Otoroshi instance" isPlural>
                           Otoroshi instances
                         </Translation>
                       </Link>
@@ -394,9 +364,7 @@ const UserBackOfficeComponent = ({
                         className={`mr-1 nav-link ${tab === 'Admins' ? 'active' : ''}`}
                         to={'/settings/admins'}>
                         <i className="fas fa-user-shield mr-1" />
-                        <Translation i18nkey="Admins">
-                          Admins
-                        </Translation>
+                        <Translation i18nkey="Admins">Admins</Translation>
                       </Link>
                     </li>
                     <li className="nav-item">
@@ -404,9 +372,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Audit trail' ? 'active' : ''}`}
                         to={'/settings/audit'}>
                         <i className="fas fa-book" />
-                        <Translation i18nkey="Audit trail">
-                          Audit trail
-                        </Translation>
+                        <Translation i18nkey="Audit trail">Audit trail</Translation>
                       </Link>
                     </li>
                     <li className="nav-item">
@@ -414,9 +380,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Teams' ? 'active' : ''}`}
                         to={'/settings/teams'}>
                         <i className="fas fa-user-friends" />
-                        <Translation i18nkey="Teams">
-                          Teams
-                        </Translation>
+                        <Translation i18nkey="Teams">Teams</Translation>
                       </Link>
                     </li>
                     <li className="nav-item">
@@ -424,9 +388,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
                         to={'/settings/assets'}>
                         <i className="fas fa-tools" />
-                        <Translation i18nkey="Tenant assets">
-                          Tenant assets
-                        </Translation>
+                        <Translation i18nkey="Tenant assets">Tenant assets</Translation>
                       </Link>
                     </li>
                     <li className="nav-item">
@@ -434,15 +396,14 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Initialization' ? 'active' : ''}`}
                         to={'/settings/init'}>
                         <i className="fas fa-cloud-download-alt" />
-                        <Translation i18nkey="Initialization">
-                          Initalization
-                        </Translation>
+                        <Translation i18nkey="Initialization">Initalization</Translation>
                       </Link>
                     </li>
                     <li className="nav-item">
                       <Link
-                        className={`nav-link ${tab === 'Email internationalization' ? 'active' : ''
-                          }`}
+                        className={`nav-link ${
+                          tab === 'Email internationalization' ? 'active' : ''
+                        }`}
                         to={'/settings/internationalization/mail'}>
                         <i className="fas fa-language" />
                         <Translation i18nkey="Internationalization">
@@ -468,9 +429,7 @@ const UserBackOfficeComponent = ({
                         to={'/settings/tenants'}>
                         <i className="fas fa-globe" />
 
-                        <Translation i18nkey="Tenants">
-                          Tenants
-                        </Translation>
+                        <Translation i18nkey="Tenants">Tenants</Translation>
                       </Link>
                     </li>
                     <li className="nav-item">
@@ -478,9 +437,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Users' ? 'active' : ''}`}
                         to={'/settings/users'}>
                         <i className="fas fa-users" />
-                        <Translation i18nkey="Users">
-                          Users
-                        </Translation>
+                        <Translation i18nkey="Users">Users</Translation>
                       </Link>
                     </li>
                     <li className="nav-item">
@@ -488,9 +445,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'User sessions' ? 'active' : ''}`}
                         to={'/settings/sessions'}>
                         <i className="fas fa-address-card" />
-                        <Translation i18nkey="User sessions">
-                          User sessions
-                        </Translation>
+                        <Translation i18nkey="User sessions">User sessions</Translation>
                       </Link>
                     </li>
                     <li className="nav-item">
@@ -498,9 +453,7 @@ const UserBackOfficeComponent = ({
                         className={`nav-link ${tab === 'Import / Export' ? 'active' : ''}`}
                         to={'/settings/import-export'}>
                         <i className="fas fa-download" />
-                        <Translation i18nkey="Import / Export">
-                          Import / Export
-                        </Translation>
+                        <Translation i18nkey="Import / Export">Import / Export</Translation>
                       </Link>
                     </li>
                   </ul>

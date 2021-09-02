@@ -52,7 +52,8 @@ class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
       env: Env,
       language: String): Future[Unit] = {
 
-    translator.getMailTemplate("tenant.mail.template", tenant)
+    translator
+      .getMailTemplate("tenant.mail.template", tenant)
       .map { templateBody =>
         logger.info(s"Sent email: ${Json.prettyPrint(
           Json.obj(
@@ -79,7 +80,8 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
       env: Env,
       language: String): Future[Unit] = {
 
-    translator.getMailTemplate("tenant.mail.template", tenant)
+    translator
+      .getMailTemplate("tenant.mail.template", tenant)
       .map(templatedBody => {
         wsClient
           .url(if (settings.eu) {
@@ -118,7 +120,8 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
       env: Env,
       language: String): Future[Unit] = {
 
-    translator.getMailTemplate("tenant.mail.template", tenant)
+    translator
+      .getMailTemplate("tenant.mail.template", tenant)
       .map(templatedBody => {
         wsClient
           .url(s"https://api.mailjet.com/v3.1/send")
@@ -176,7 +179,8 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
       env: Env,
       language: String): Future[Unit] = {
 
-    translator.getMailTemplate("tenant.mail.template", tenant)
+    translator
+      .getMailTemplate("tenant.mail.template", tenant)
       .map(templatedBody => {
 
         val properties = new Properties()
@@ -229,7 +233,8 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
       env: Env,
       language: String): Future[Unit] = {
 
-    translator.getMailTemplate("tenant.mail.template", tenant)
+    translator
+      .getMailTemplate("tenant.mail.template", tenant)
       .map(templatedBody => {
         ws.url(s"https://api.sendgrid.com/v3/mail/send")
           .withHttpHeaders(

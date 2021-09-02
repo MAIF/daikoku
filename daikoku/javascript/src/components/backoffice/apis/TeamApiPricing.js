@@ -48,12 +48,18 @@ const OtoroshiServicesAndGroupSelector = (props) => {
 
   const { Translation } = useContext(I18nContext);
 
-  const params = useParams()
+  const params = useParams();
 
   useEffect(() => {
     Promise.all([
-      Services.getOtoroshiGroupsAsTeamAdmin(params.teamId, props._found.otoroshiTarget.otoroshiSettings),
-      Services.getOtoroshiServicesAsTeamAdmin(params.teamId, props._found.otoroshiTarget.otoroshiSettings),
+      Services.getOtoroshiGroupsAsTeamAdmin(
+        params.teamId,
+        props._found.otoroshiTarget.otoroshiSettings
+      ),
+      Services.getOtoroshiServicesAsTeamAdmin(
+        params.teamId,
+        props._found.otoroshiTarget.otoroshiSettings
+      ),
     ]).then(([groups, services]) => {
       if (!groups.error)
         setGroups(groups.map((g) => ({ label: g.name, value: g.id, type: 'group' })));
@@ -144,9 +150,7 @@ const OtoroshiServicesAndGroupSelector = (props) => {
         <div className="col-12 d-flex flex-row mt-1">
           <div className="d-flex flex-column flex-grow-1">
             <strong className="font-italic">
-              <Translation i18nkey="Authorized Groups">
-                Authorized Groups
-              </Translation>
+              <Translation i18nkey="Authorized Groups">Authorized Groups</Translation>
             </strong>
             {!!value &&
               value
@@ -159,9 +163,7 @@ const OtoroshiServicesAndGroupSelector = (props) => {
           </div>
           <div className="d-flex flex-column flex-grow-1">
             <strong className="font-italic">
-              <Translation i18nkey="Authorized Services">
-                Authorized Services
-              </Translation>
+              <Translation i18nkey="Authorized Services">Authorized Services</Translation>
             </strong>
             {!!value &&
               value
@@ -524,12 +526,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          flow={flow}
-          schema={schema}
-          value={found}
-          onChange={onChange}
-        />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
       </React.Suspense>
     );
   }
@@ -551,8 +548,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${translateMethod('Billing')}`,
       'billingDuration.value',
       'billingDuration.unit',
@@ -646,12 +643,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          flow={flow}
-          schema={schema}
-          value={found}
-          onChange={onChange}
-        />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
       </React.Suspense>
     );
   }
@@ -673,8 +665,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
@@ -793,12 +785,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          flow={flow}
-          schema={schema}
-          value={found}
-          onChange={onChange}
-        />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
       </React.Suspense>
     );
   }
@@ -820,8 +807,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
@@ -981,12 +968,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          flow={flow}
-          schema={schema}
-          value={found}
-          onChange={onChange}
-        />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
       </React.Suspense>
     );
   }
@@ -1008,8 +990,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
@@ -1177,12 +1159,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          flow={flow}
-          schema={schema}
-          value={found}
-          onChange={onChange}
-        />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
       </React.Suspense>
     );
   }
@@ -1204,8 +1181,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-          ? 'aggregationApiKeysSecurity'
-          : undefined,
+        ? 'aggregationApiKeysSecurity'
+        : undefined,
       `>>> ${translateMethod('Billing')}`,
       'costPerMonth',
       'costPerRequest',
@@ -1348,12 +1325,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     };
     return (
       <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          flow={flow}
-          schema={schema}
-          value={found}
-          onChange={onChange}
-        />
+        <LazyForm flow={flow} schema={schema} value={found} onChange={onChange} />
       </React.Suspense>
     );
   }
@@ -1505,9 +1477,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                   type="button"
                   className="btn btn-sm btn-outline-primary mr-1 mb-2">
                   <i className="fas fa-star mr-1" title="Default plan" />
-                  <Translation i18nkey="Make default plan">
-                    Make default plan
-                  </Translation>
+                  <Translation i18nkey="Make default plan">Make default plan</Translation>
                 </button>
               )}
               {value.defaultUsagePlan !== selected._id && (
@@ -1522,14 +1492,10 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                     })}
                   />
                   {selected.visibility === 'Public' && (
-                    <Translation i18nkey="Make it private">
-                      Make it private
-                    </Translation>
+                    <Translation i18nkey="Make it private">Make it private</Translation>
                   )}
                   {selected.visibility === 'Private' && (
-                    <Translation i18nkey="Make it public">
-                      Make it public
-                    </Translation>
+                    <Translation i18nkey="Make it public">Make it public</Translation>
                   )}
                 </button>
               )}
@@ -1539,9 +1505,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                   type="button"
                   className="btn btn-sm btn-outline-primary mb-2 mr-1">
                   <i className="fas fa-clone mr-1" />
-                  <Translation i18nkey="Duplicate plan">
-                    Duplicate plan
-                  </Translation>
+                  <Translation i18nkey="Duplicate plan">Duplicate plan</Translation>
                 </button>
               )}
               {value.visibility !== 'AdminOnly' && (
@@ -1550,9 +1514,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                   type="button"
                   className="btn btn-sm btn-outline-danger mb-2">
                   <i className="fas fa-trash mr-1" />
-                  <Translation i18nkey="Delete plan">
-                    Delete plan
-                  </Translation>
+                  <Translation i18nkey="Delete plan">Delete plan</Translation>
                 </button>
               )}
             </div>

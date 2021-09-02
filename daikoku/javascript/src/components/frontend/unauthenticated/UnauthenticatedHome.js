@@ -20,9 +20,7 @@ export function UnauthenticatedHomeComponent(props) {
               <div className="col-sm-4">
                 <div className="avatar__container">
                   <img
-                    src={
-                      props.tenant ? props.tenant.logo : '/assets/images/daikoku.svg'
-                    }
+                    src={props.tenant ? props.tenant.logo : '/assets/images/daikoku.svg'}
                     style={{
                       width: 'auto',
                       height: '100%',
@@ -34,50 +32,41 @@ export function UnauthenticatedHomeComponent(props) {
                 </div>
               </div>
               <div className="col-sm-8">
-                {!props.tenant.title && (
-                  <h1 className="jumbotron-heading">Your APIs center</h1>
-                )}
+                {!props.tenant.title && <h1 className="jumbotron-heading">Your APIs center</h1>}
                 {!!props.tenant.title && (
                   <h1 className="jumbotron-heading">{props.tenant.title}</h1>
                 )}
 
                 {!props.tenant.description && (
                   <p className="lead">
-                    Daikoku is the perfect <a href="https://www.otoroshi.io">Otoroshi</a>{' '}
-                    companion to manage, document, and expose your beloved APIs to your
-                    developpers community. Publish a new API in a few seconds
+                    Daikoku is the perfect <a href="https://www.otoroshi.io">Otoroshi</a> companion
+                    to manage, document, and expose your beloved APIs to your developpers community.
+                    Publish a new API in a few seconds
                   </p>
                 )}
                 {!!props.tenant.description && (
-                  <div dangerouslySetInnerHTML={{ __html: converter.makeHtml(props.tenant.description || '') }}></div>
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: converter.makeHtml(props.tenant.description || ''),
+                    }}></div>
                 )}
                 <p>
                   {props.tenant.authProvider === 'Local' && (
                     <a className="btn btn-access-negative my-2 ml-2" href={'/signup'}>
                       <i className="fas fa-plus-square mr-1" />
-                      <Translation
-                        i18nkey="Create your account"
-                      >
-                        Create your account
-                      </Translation>
+                      <Translation i18nkey="Create your account">Create your account</Translation>
                     </a>
                   )}
                   {false && props.tenant.authProvider === 'Local' && (
                     <a className="btn btn-access-negative my-2 ml-2" href={'/reset'}>
                       <i className="fas fa-bomb mr-1" />
-                      <Translation
-                        i18nkey="Reset your password"
-                      >
-                        Reset your password
-                      </Translation>
+                      <Translation i18nkey="Reset your password">Reset your password</Translation>
                     </a>
                   )}
 
                   <a className="btn btn-access-negative my-2 ml-2" href={`/auth/Local/login`}>
                     <i className="fas fa-user mr-1" />
-                    <Translation
-                      i18nkey="Connect to your account"
-                    >
+                    <Translation i18nkey="Connect to your account">
                       Connect to your account
                     </Translation>
                   </a>
@@ -86,9 +75,7 @@ export function UnauthenticatedHomeComponent(props) {
                       className="btn btn-access-negative my-2 ml-2"
                       href={`/auth/${props.tenant.authProvider}/login`}>
                       <i className="fas fa-user mr-1" />
-                      <Translation
-                        i18nkey="Connect to your thrid party account"
-                      >
+                      <Translation i18nkey="Connect to your thrid party account">
                         Connect to your thrid party account
                       </Translation>
                     </a>
@@ -122,8 +109,7 @@ function TenantDescription(props) {
     window.$('pre code').each((i, block) => {
       hljs.highlightBlock(block);
     });
-  }, [])
-
+  }, []);
 
   const content = props.content || '';
   return (

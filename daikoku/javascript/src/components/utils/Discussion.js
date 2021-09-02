@@ -30,7 +30,7 @@ const DiscussionComponent = (props) => {
     }
   }, [opened, totalUnread]);
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   const handleKeyDown = (event) => {
     if (!newMessage.trim()) return;
@@ -105,9 +105,7 @@ const DiscussionComponent = (props) => {
                   disabled={loading ? 'disabled' : null}
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => getPreviousMessages(props.connectedUser._id)}>
-                  <Translation i18nkey="Load previous messages">
-                    Load previous messages
-                  </Translation>
+                  <Translation i18nkey="Load previous messages">Load previous messages</Translation>
                 </button>
               </div>
             )}

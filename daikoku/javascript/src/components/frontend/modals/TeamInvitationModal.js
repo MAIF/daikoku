@@ -14,8 +14,7 @@ export const TeamInvitationModal = (props) => {
 
     const validator = ValidateEmail(email, translateMethod);
     if (validator.ok) {
-      if (members.find((f) => f.email === email))
-        setError(translateMethod('User already in team'));
+      if (members.find((f) => f.email === email)) setError(translateMethod('User already in team'));
       else if (pendingUsers.find((f) => f.email === email))
         setError(translateMethod('User already invited'));
       else if (props.tenant && props.tenant.authProvider == 'LDAP') {

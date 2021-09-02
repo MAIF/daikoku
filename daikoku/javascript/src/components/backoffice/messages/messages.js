@@ -10,7 +10,7 @@ export const MessagesTopBarTools = (_) => {
 
   const [opened, setOpened] = useState(false);
 
-  const { translateMethod } = useContext(I18nContext)
+  const { translateMethod } = useContext(I18nContext);
 
   return (
     <div style={{ position: 'relative' }}>

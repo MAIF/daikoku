@@ -64,19 +64,17 @@ function TeamApiKeysForApiComponent(props) {
   };
 
   const makeUniqueApiKey = (subscription) => {
-    window
-      .confirm(translateMethod('team_apikey_for_api.ask_for_make_unique'))
-      .then((ok) => {
-        if (ok)
-          Services.makeUniqueApiKey(props.currentTeam._id, subscription._id).then(() =>
-            Services.getTeamSubscriptions(
-              props.match.params.apiId,
-              props.currentTeam._id,
-              params.versionId
-            )
-          );
-        then((subs) => setSubscriptions(subs));
-      });
+    window.confirm(translateMethod('team_apikey_for_api.ask_for_make_unique')).then((ok) => {
+      if (ok)
+        Services.makeUniqueApiKey(props.currentTeam._id, subscription._id).then(() =>
+          Services.getTeamSubscriptions(
+            props.match.params.apiId,
+            props.currentTeam._id,
+            params.versionId
+          )
+        );
+      then((subs) => setSubscriptions(subs));
+    });
   };
 
   const toggleApiKeyRotation = (subscription, plan, rotationEvery, gracePeriod) => {
@@ -147,16 +145,18 @@ function TeamApiKeysForApiComponent(props) {
     search === ''
       ? subscriptions
       : subscriptions.filter((subs) => {
-        const plan = currentPlan(subs);
+          const plan = currentPlan(subs);
 
-        if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
-          return true;
-        } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
-          return true;
-        } else {
-          return formatPlanType(currentPlan(subs), translateMethod).toLowerCase().includes(search);
-        }
-      });
+          if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
+            return true;
+          } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
+            return true;
+          } else {
+            return formatPlanType(currentPlan(subs), translateMethod)
+              .toLowerCase()
+              .includes(search);
+          }
+        });
 
   const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
   const sortedApiKeys = sorted
@@ -165,9 +165,9 @@ function TeamApiKeysForApiComponent(props) {
       (acc, sub) => {
         return acc.find((a) => a._id === sub.parent)
           ? acc.map((a) => {
-            if (a._id === sub.parent) a.children.push(sub);
-            return a;
-          })
+              if (a._id === sub.parent) a.children.push(sub);
+              return a;
+            })
           : [...acc, { ...sub, children: [] }];
       },
       sorted.filter((f) => !f.parent).map((sub) => ({ ...sub, children: [] }))
@@ -184,9 +184,7 @@ function TeamApiKeysForApiComponent(props) {
           <div className="row">
             <div className="col-12 d-flex align-items-center">
               <h1>
-                <Translation i18nkey="Api keys for">
-                  Api keys for
-                </Translation>
+                <Translation i18nkey="Api keys for">Api keys for</Translation>
                 &nbsp;
                 <Link
                   to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
@@ -400,9 +398,7 @@ const ApiKeyCard = ({
               ))}
             {settingMode ? (
               <h3>
-                <Translation i18nkey="ApiKey rotation">
-                  ApiKey rotation
-                </Translation>
+                <Translation i18nkey="ApiKey rotation">ApiKey rotation</Translation>
               </h3>
             ) : (
               <span
@@ -419,8 +415,7 @@ const ApiKeyCard = ({
               <div className="d-flex justify-content-end mb-3">
                 <div className="d-flex justify-content-around">
                   {!subscription.parent && (
-                    <BeautifulTitle
-                      title={translateMethod('Reset secret')}>
+                    <BeautifulTitle title={translateMethod('Reset secret')}>
                       <button
                         type="button"
                         className="btn btn-sm btn-outline-danger ml-1"
@@ -431,15 +426,13 @@ const ApiKeyCard = ({
                     </BeautifulTitle>
                   )}
                   <Can I={read} a={stat} team={currentTeam}>
-                    <BeautifulTitle
-                      title={translateMethod('View usage statistics')}>
+                    <BeautifulTitle title={translateMethod('View usage statistics')}>
                       <Link to={statsLink} className="btn btn-sm btn-access-negative ml-1">
                         <i className="fas fa-chart-bar" />
                       </Link>
                     </BeautifulTitle>
                   </Can>
-                  <BeautifulTitle
-                    title={translateMethod('Copy to clipboard')}>
+                  <BeautifulTitle title={translateMethod('Copy to clipboard')}>
                     <button
                       type="button"
                       disabled={!subscription.enabled}
@@ -453,8 +446,7 @@ const ApiKeyCard = ({
                     </button>
                   </BeautifulTitle>
                   {!subscription.parent && !disableRotation && (
-                    <BeautifulTitle
-                      title={translateMethod('Setup rotation')}>
+                    <BeautifulTitle title={translateMethod('Setup rotation')}>
                       <button
                         type="button"
                         className="btn btn-sm btn-access-negative ml-1"
@@ -463,8 +455,7 @@ const ApiKeyCard = ({
                       </button>
                     </BeautifulTitle>
                   )}
-                  <BeautifulTitle
-                    title={translateMethod('Enable/Disable')}>
+                  <BeautifulTitle title={translateMethod('Enable/Disable')}>
                     <button
                       type="button"
                       disabled={subscription.parent ? !subscription.parentUp : false}
@@ -499,9 +490,7 @@ const ApiKeyCard = ({
                       <span
                         className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
                         onClick={() => setActiveTab('apikey')}>
-                        <Translation i18nkey="ApiKey">
-                          ApiKey
-                        </Translation>
+                        <Translation i18nkey="ApiKey">ApiKey</Translation>
                       </span>
                     </li>
                     {!disableRotation && (
@@ -509,9 +498,7 @@ const ApiKeyCard = ({
                         <span
                           className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
                           onClick={() => setActiveTab('token')}>
-                          <Translation i18nkey="Integration token">
-                            Integration token
-                          </Translation>
+                          <Translation i18nkey="Integration token">Integration token</Translation>
                         </span>
                       </li>
                     )}
@@ -522,9 +509,7 @@ const ApiKeyCard = ({
                 <>
                   <div className="form-group">
                     <label htmlFor={`client-id-${_id}`} className="">
-                      <Translation i18nkey="Client Id">
-                        Client Id
-                      </Translation>
+                      <Translation i18nkey="Client Id">Client Id</Translation>
                     </label>
                     <div className="">
                       <input
@@ -538,9 +523,7 @@ const ApiKeyCard = ({
                   </div>
                   <div className="form-group">
                     <label htmlFor={`client-secret-${_id}`} className="">
-                      <Translation i18nkey="Client secret">
-                        Client secret
-                      </Translation>
+                      <Translation i18nkey="Client secret">Client secret</Translation>
                     </label>
                     <div className="input-group">
                       <input
@@ -575,9 +558,7 @@ const ApiKeyCard = ({
                 <>
                   <div className="form-group">
                     <label htmlFor={`token-${_id}`} className="">
-                      <Translation i18nkey="Integration token">
-                        Integration token
-                      </Translation>
+                      <Translation i18nkey="Integration token">Integration token</Translation>
                     </label>
                     <div className="">
                       <textarea
@@ -610,8 +591,9 @@ const ApiKeyCard = ({
                     </div>
                   )}
                   <button
-                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${showAggregatePlan ? 'mt-3' : ''
-                      }`}
+                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${
+                      showAggregatePlan ? 'mt-3' : ''
+                    }`}
                     onClick={() => setAggregatePlan(!showAggregatePlan)}>
                     {showAggregatePlan
                       ? translateMethod('team_apikey_for_api.hide_aggregate_sub')
@@ -639,9 +621,7 @@ const ApiKeyCard = ({
                 <form>
                   <div className="d-flex flex-row align-items-center mb-3">
                     <div className="col-6">
-                      <Translation i18nkey="Enabled">
-                        Enabled
-                      </Translation>
+                      <Translation i18nkey="Enabled">Enabled</Translation>
                       <Help
                         message={translateMethod(
                           'help.apikey.rotation',
@@ -660,9 +640,7 @@ const ApiKeyCard = ({
                   </div>
                   <div className="d-flex flex-row align-items-center mb-3">
                     <div className="col-9">
-                      <Translation i18nkey="Rotation Period">
-                        Rotation Every
-                      </Translation>
+                      <Translation i18nkey="Rotation Period">Rotation Every</Translation>
                       <Help
                         message={translateMethod(
                           'help.apikey.rotation.period',
@@ -688,9 +666,7 @@ const ApiKeyCard = ({
                   </div>
                   <div className="d-flex flex-row align-items-center mb-3">
                     <div className="col-9">
-                      <Translation i18nkey="Grace Period">
-                        Grace Period
-                      </Translation>
+                      <Translation i18nkey="Grace Period">Grace Period</Translation>
                       <Help
                         message={translateMethod(
                           'help.apikey.grace.period',
@@ -718,9 +694,7 @@ const ApiKeyCard = ({
               )}
               <div className="d-flex justify-content-end">
                 <button className="btn btn-outline-danger" onClick={abort}>
-                  <Translation i18nkey="Back">
-                    Back
-                  </Translation>
+                  <Translation i18nkey="Back">Back</Translation>
                 </button>
                 <button
                   className="btn btn-outline-success ml-2"
@@ -729,9 +703,7 @@ const ApiKeyCard = ({
                   }
                   onClick={handleChanges}>
                   <i className="fas fa-save mr-1"></i>
-                  <Translation i18nkey="Save">
-                    Save
-                  </Translation>
+                  <Translation i18nkey="Save">Save</Translation>
                 </button>
               </div>
             </div>

@@ -171,14 +171,10 @@ export const TeamApiTesting = (props) => {
           </div>
           <div className="d-flex justify-content-center align-items-center flex-grow-1">
             <button className="btn btn-outline-danger" onClick={deleteOtoroshiKey}>
-              <Translation i18nkey="Delete Testing ApiKey">
-                Delete Testing ApiKey
-              </Translation>
+              <Translation i18nkey="Delete Testing ApiKey">Delete Testing ApiKey</Translation>
             </button>
             <button className="btn btn-outline-success ml-1" onClick={handleOtoroshiUsage}>
-              <Translation i18nkey="Update Testing ApiKey">
-                Update Testing ApiKey
-              </Translation>
+              <Translation i18nkey="Update Testing ApiKey">Update Testing ApiKey</Translation>
             </button>
           </div>
         </div>

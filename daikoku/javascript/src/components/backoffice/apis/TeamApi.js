@@ -55,8 +55,7 @@ function TeamApiComponent(props) {
           create: true,
         })
       );
-    }
-    else {
+    } else {
       reloadState();
     }
   }, [params.tab, params.versionId]);
@@ -90,21 +89,16 @@ function TeamApiComponent(props) {
         .then((api) => {
           if (api.name) {
             toastr.success(
-              translateMethod(
-                'api.created.success',
-                false,
-                `Api "${api.name}" created`,
-                api.name
-              )
+              translateMethod('api.created.success', false, `Api "${api.name}" created`, api.name)
             );
             return api;
           } else return Promise.reject(api.error);
         })
         .then((api) => {
-          setState({ ...state, create: false, api })
+          setState({ ...state, create: false, api });
           props.history.push(
             `/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
-          )
+          );
         })
         .catch((error) => toastr.error(translateMethod(error)));
     } else {
@@ -121,23 +115,20 @@ function TeamApiComponent(props) {
               editedApi,
               apiVersion.value,
               editedApi._humanReadableId
-            )
-              .then((res) => {
-                if (res.error)
-                  toastr.error(translateMethod(res.error));
-                else {
-                  toastr.success(translateMethod('Api saved'));
-                  if (
-                    res._humanReadableId !== params.apiId ||
-                    res.currentVersion !== params.versionId
-                  )
-                    history.push(
-                      `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
-                    );
-                }
-              })
-        } else
-          toastr.error(`api with name "${editedApi.name}" already exists`);
+            ).then((res) => {
+              if (res.error) toastr.error(translateMethod(res.error));
+              else {
+                toastr.success(translateMethod('Api saved'));
+                if (
+                  res._humanReadableId !== params.apiId ||
+                  res.currentVersion !== params.versionId
+                )
+                  history.push(
+                    `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
+                  );
+              }
+            });
+        } else toastr.error(`api with name "${editedApi.name}" already exists`);
       });
     }
   }
@@ -255,7 +246,8 @@ function TeamApiComponent(props) {
       else {
         toastr.success('New version of api created');
         history.push(
-          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab ? params.tab : 'infos'
+          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${
+            params.tab ? params.tab : 'infos'
           }`
         );
       }
@@ -283,10 +275,7 @@ function TeamApiComponent(props) {
             <div className="row">
               {state.create ? (
                 <h1>
-                  <Translation i18nkey="New api">
-                    New api
-                  </Translation>{' '}
-                  - {editedApi.name}
+                  <Translation i18nkey="New api">New api</Translation> - {editedApi.name}
                 </h1>
               ) : (
                 <div
@@ -335,9 +324,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'infos' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/infos`}>
                     <i className="fas fa-info mr-1" />
-                    <Translation i18nkey="Informations">
-                      Informations
-                    </Translation>
+                    <Translation i18nkey="Informations">Informations</Translation>
                   </Link>
                 </li>
                 <li className="nav-item">
@@ -345,9 +332,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'description' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/description`}>
                     <i className="fas fa-file-alt mr-1" />
-                    <Translation i18nkey="Description">
-                      Description
-                    </Translation>
+                    <Translation i18nkey="Description">Description</Translation>
                   </Link>
                 </li>
                 <li className="nav-item">
@@ -366,9 +351,7 @@ function TeamApiComponent(props) {
                       className={`nav-link ${tab === 'otoroshi' ? 'active' : ''}`}
                       to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/otoroshi`}>
                       <i className="fas fa-pastafarianism mr-1" />
-                      <Translation i18nkey="Otoroshi">
-                        Otoroshi
-                      </Translation>
+                      <Translation i18nkey="Otoroshi">Otoroshi</Translation>
                     </Link>
                   </li>
                 )}
@@ -377,9 +360,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/swagger`}>
                     <i className="fas fa-file-code mr-1" />
-                    <Translation i18nkey="Swagger">
-                      Swagger
-                    </Translation>
+                    <Translation i18nkey="Swagger">Swagger</Translation>
                   </Link>
                 </li>
                 {editedApi.visibility !== 'AdminOnly' && (
@@ -388,9 +369,7 @@ function TeamApiComponent(props) {
                       className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
                       to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/testing`}>
                       <i className="fas fa-vial mr-1" />
-                      <Translation i18nkey="Testing">
-                        Testing
-                      </Translation>
+                      <Translation i18nkey="Testing">Testing</Translation>
                     </Link>
                   </li>
                 )}
@@ -399,9 +378,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'documentation' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/documentation`}>
                     <i className="fas fa-book mr-1" />
-                    <Translation i18nkey="Documentation">
-                      Documentation
-                    </Translation>
+                    <Translation i18nkey="Documentation">Documentation</Translation>
                   </Link>
                 </li>
                 <li className="nav-item">
@@ -409,9 +386,7 @@ function TeamApiComponent(props) {
                     className={`nav-link ${tab === 'news' ? 'active' : ''}`}
                     to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/news`}>
                     <i className="fas fa-newspaper mr-1" />
-                    <Translation i18nkey="News">
-                      News
-                    </Translation>
+                    <Translation i18nkey="News">News</Translation>
                   </Link>
                 </li>
               </ul>
@@ -520,9 +495,7 @@ function TeamApiComponent(props) {
                 {!state.create && (
                   <button type="button" className="btn btn-outline-danger ml-1" onClick={deleteApi}>
                     <i className="fas fa-trash mr-1" />
-                    <Translation i18nkey="Delete">
-                      Delete
-                    </Translation>
+                    <Translation i18nkey="Delete">Delete</Translation>
                   </button>
                 )}
                 <button
@@ -533,17 +506,13 @@ function TeamApiComponent(props) {
                   {!state.create && (
                     <span>
                       <i className="fas fa-save mr-1" />
-                      <Translation i18nkey="Save">
-                        Save
-                      </Translation>
+                      <Translation i18nkey="Save">Save</Translation>
                     </span>
                   )}
                   {state.create && (
                     <span>
                       <i className="fas fa-save mr-1" />
-                      <Translation i18nkey="Create">
-                        Create
-                      </Translation>
+                      <Translation i18nkey="Create">Create</Translation>
                     </span>
                   )}
                 </button>
