@@ -658,6 +658,7 @@ GET     /admin-api/translations                         fr.maif.otoroshi.daikoku
 GET     /admin-api/credentials/:token                   fr.maif.otoroshi.daikoku.ctrls.CredentialsAdminApiController.getCredentials(token)
 
 POST     /admin-api/search                               fr.maif.otoroshi.daikoku.ctrls.GraphQLController.adminApiSearch()
+GET      /admin-api/schema                               fr.maif.otoroshi.daikoku.ctrls.GraphQLController.adminApiSchema()
 
 
 GET     /integration-api/:teamId/:apiId/complete        fr.maif.otoroshi.daikoku.ctrls.IntegrationApiController.apiComplete(teamId, apiId)

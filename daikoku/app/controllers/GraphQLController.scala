@@ -83,6 +83,10 @@ class GraphQLController(DaikokuAction: DaikokuAction,
     executeQuery(generatedContext, query, variables map parseVariables, operation)
   }
 
+  def adminApiSchema = DaikokuApiAction {
+    Ok(SchemaRenderer.renderSchema(schema))
+  }
+
   def search() = DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
     val query = (ctx.request.body \ "query").as[String]
     val variables = (ctx.request.body \ "variables").asOpt[String]
