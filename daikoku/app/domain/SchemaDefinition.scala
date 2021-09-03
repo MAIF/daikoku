@@ -1,4 +1,4 @@
-package domain
+package fr.maif.otoroshi.daikoku.domain
 
 import akka.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
@@ -6,13 +6,13 @@ import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._UberPublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
-import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.ISODateTimeFormat
+import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
@@ -80,7 +80,7 @@ object SchemaDefinition {
     case Failure(_) => Left(DateCoercionViolation)
   }
 
-  val DateTimeType = ScalarType[DateTime]("DateTime",
+  val DateTimeUnitype = ScalarType[DateTime]("DateTime",
     coerceOutput = (date, _) => StringValue(ISODateTimeFormat.dateTime().print(date)),
     coerceUserInput = {
       case s: String => parseDate(s)
@@ -113,28 +113,28 @@ object SchemaDefinition {
     implicit val e = env.defaultExecutionContext
     implicit val en = env
 
-    val AuthProviderType: InterfaceType[Unit, AuthProvider] = InterfaceType(
+    val AuthProviderType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), AuthProvider] = InterfaceType(
       "AuthProvider",
       "Auth provider description",
-      () => fields[Unit, AuthProvider](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), AuthProvider](
         Field("name", StringType, Some("The name of auth provider"), resolve = _.value.name),
         Field("asJson", JsonType, resolve = _.value.asJson))
     )
 
-    val DaikokuStyleType = deriveObjectType[Unit, DaikokuStyle]()
+    val DaikokuStyleType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), DaikokuStyle]()
 
-    val ElasticAnalyticsConfigType = deriveObjectType[Unit, ElasticAnalyticsConfig](
+    val ElasticAnalyticsConfigType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ElasticAnalyticsConfig](
       ReplaceField("headers",
         Field("headers", MapType, resolve = _.value.headers)
       )
     )
-    val WebhookType = deriveObjectType[Unit, Webhook](
+    val WebhookType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Webhook](
       ReplaceField("headers",
         Field("headers", MapType, resolve = _.value.headers)
       )
     )
-    val KafkaConfigType = deriveObjectType[Unit, KafkaConfig]()
-    val AuditTrailConfigType = deriveObjectType[Unit, AuditTrailConfig](
+    val KafkaConfigType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), KafkaConfig]()
+    val AuditTrailConfigType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuditTrailConfig](
       ReplaceField("elasticConfigs",
         Field("elasticConfigs", OptionType(ElasticAnalyticsConfigType), resolve = _.value.elasticConfigs)
       ),
@@ -146,27 +146,27 @@ object SchemaDefinition {
       )
     )
 
-    val OtoroshiSettingsType = deriveObjectType[Unit, OtoroshiSettings](
+    val OtoroshiSettingsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSettings](
       ReplaceField("id",
         Field("id", StringType /*OtoroshiSettingsIdType*/, resolve = _.value.id.value)
       )
     )
-    val MailerSettingsType: InterfaceType[Unit, MailerSettings] = InterfaceType(
+    val MailerSettingsType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), MailerSettings] = InterfaceType(
       "MailerSettings",
       "The mailer settings type",
-      () => fields[Unit, MailerSettings](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), MailerSettings](
         Field("mailerType", StringType, resolve = _.value.mailerType)
       )
     )
-    val BucketSettingsType = deriveObjectType[Unit, S3Configuration]()
-    val TenantModeType: InterfaceType[Unit, TenantMode] = InterfaceType(
+    val BucketSettingsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), S3Configuration]()
+    val TenantModeType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), TenantMode] = InterfaceType(
       "TenantMode",
       "The tenant mode",
-      () => fields[Unit, TenantMode](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), TenantMode](
         Field("name", StringType, resolve = _.value.name)
       )
     )
-    val TenantType = deriveObjectType[Unit, Tenant](
+    val TenantType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Tenant](
       ReplaceField("id",
         Field("id", StringType /*TenantIdType*/, resolve = _.value.id.value)
       ),
@@ -202,8 +202,8 @@ object SchemaDefinition {
       )
     )
 
-    val ApiKeyRestrictionPathType = deriveObjectType[Unit, ApiKeyRestrictionPath]()
-    val ApiKeyRestrictionsType = deriveObjectType[Unit, ApiKeyRestrictions](
+    val ApiKeyRestrictionPathType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRestrictionPath]()
+    val ApiKeyRestrictionsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRestrictions](
       ReplaceField("allowed",
         Field("allowed", ListType(ApiKeyRestrictionPathType), resolve = _.value.allowed)
       ),
@@ -215,12 +215,12 @@ object SchemaDefinition {
       )
     )
 
-    val CustomMetadataType = deriveObjectType[Unit, CustomMetadata](
+    val CustomMetadataType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), CustomMetadata](
       ReplaceField("possibleValues",
         Field("possibleValues", ListType(StringType), resolve = _.value.possibleValues.toSeq)
       )
     )
-    val ApikeyCustomizationType = deriveObjectType[Unit, ApikeyCustomization](
+    val ApikeyCustomizationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApikeyCustomization](
       ReplaceField("metadata",
         Field("metadata", JsonType, resolve = _.value.metadata)
       ),
@@ -235,7 +235,7 @@ object SchemaDefinition {
       )
     )
 
-    val AuthorizedEntitiesType = deriveObjectType[Unit, AuthorizedEntities](
+    val AuthorizedEntitiesType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizedEntities](
       ReplaceField("services",
         Field("services", ListType(StringType /*OtoroshiServiceIdType*/), resolve = _.value.services.toSeq.map(_.value))
       ),
@@ -244,7 +244,7 @@ object SchemaDefinition {
       )
     )
 
-    val OtoroshiTargetType = deriveObjectType[Unit, OtoroshiTarget](
+    val OtoroshiTargetType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiTarget](
       ReplaceField("otoroshiSettings",
         Field("otoroshiSettings", StringType /*OtoroshiSettingsIdType*/, resolve = _.value.otoroshiSettings.value)
       ),
@@ -256,7 +256,7 @@ object SchemaDefinition {
       ),
     )
 
-    val OtoroshiServiceType = deriveObjectType[Unit, OtoroshiService](
+    val OtoroshiServiceType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiService](
       ReplaceField("otoroshiSettings",
         Field("otoroshiSettings", StringType /*OtoroshiSettingsIdType*/, resolve = _.value.otoroshiSettings.value)
       ),
@@ -268,12 +268,12 @@ object SchemaDefinition {
     val BillingTimeUnitInterfaceType = InterfaceType(
       "BillingTimeUnit",
       "BillingTimeUnit description",
-      () => fields[Unit, BillingTimeUnit](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), BillingTimeUnit](
         Field("name", StringType, resolve = _.value.name)
       )
     )
 
-    val BillingDurationType = deriveObjectType[Unit, BillingDuration](
+    val BillingDurationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), BillingDuration](
       ReplaceField("unit",
         Field("unit", BillingTimeUnitInterfaceType, resolve = _.value.unit)
       )
@@ -282,7 +282,7 @@ object SchemaDefinition {
     /*val TeamInterfaceType = InterfaceType(
       "TeamType",
       "TeamType description",
-      () => fields[Unit, TeamType](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), TeamType](
         Field("name", StringType, resolve = _.value.name)
       )
     )*/
@@ -290,7 +290,7 @@ object SchemaDefinition {
     val ApiVisibilityType = InterfaceType(
       "ApiVisibility",
       "ApiVisibility description",
-      () => fields[Unit, ApiVisibility](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), ApiVisibility](
         Field("name", StringType, resolve = _.value.name)
       )
     )
@@ -298,7 +298,7 @@ object SchemaDefinition {
     val UsagePlanVisibilityType = InterfaceType(
       "UsagePlanVisibility",
       "UsagePlanVisibility description",
-      () => fields[Unit, UsagePlanVisibility](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), UsagePlanVisibility](
         Field("name", StringType, resolve = _.value.name)
       )
     )
@@ -306,7 +306,7 @@ object SchemaDefinition {
     val SubscriptionProcessType = InterfaceType(
       "SubscriptionProcess",
       "SubscriptionProcess description",
-      () => fields[Unit, SubscriptionProcess](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionProcess](
         Field("name", StringType, resolve = _.value.name)
       )
     )
@@ -314,17 +314,17 @@ object SchemaDefinition {
     val IntegrationProcessType = InterfaceType(
       "IntegrationProcess",
       "IntegrationProcess description",
-      () => fields[Unit, IntegrationProcess](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), IntegrationProcess](
         Field("name", StringType, resolve = _.value.name)
       )
     )
 
-    val CurrencyType = deriveObjectType[Unit, Currency]()
+    val CurrencyType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Currency]()
 
     val UsagePlanInterfaceType = InterfaceType(
       name = "UsagePlan",
       description = "Usage Plan description",
-      fields = fields[Unit, UsagePlan](
+      fields = fields[(DataStore, DaikokuActionContext[JsValue]), UsagePlan](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("costPerMonth", BigDecimalType, resolve = _.value.costPerMonth),
         Field("maxRequestPerSecond", OptionType(LongType), resolve = _.value.maxRequestPerSecond),
@@ -347,20 +347,20 @@ object SchemaDefinition {
       )
     )
 
-    val AdminUsagePlanType = deriveObjectType[Unit, UsagePlan.Admin](
+    val AdminUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.Admin](
       Interfaces(UsagePlanInterfaceType),
       ReplaceField("id",
-        Field("id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)
+        Field("id", StringType /*UsagePlanIdType*/, resolve = ctx => ctx.value.id.value)
       ),
       ReplaceField("otoroshiTarget",
-        Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)
+        Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = ctx => ctx.value.otoroshiTarget)
       ),
       ReplaceField("authorizedTeams",
-        Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value))
+        Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = ctx => ctx.value.authorizedTeams.map(_.value))
       )
-    )
+    ))
 
-    val FreeWithoutQuotasUsagePlanType = deriveObjectType[Unit, UsagePlan.FreeWithoutQuotas](
+    val FreeWithoutQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithoutQuotas](
       Interfaces(UsagePlanInterfaceType),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
@@ -373,9 +373,9 @@ object SchemaDefinition {
         Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
-    )
+    ))
 
-    val FreeWithQuotasUsagePlanType = deriveObjectType[Unit, UsagePlan.FreeWithQuotas](
+    val FreeWithQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithQuotas](
       Interfaces(UsagePlanInterfaceType),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
@@ -388,25 +388,9 @@ object SchemaDefinition {
         Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
-    )
+    ))
 
-    val QuotasWithLimitsType = deriveObjectType[Unit, UsagePlan.QuotasWithLimits](
-      Interfaces(UsagePlanInterfaceType),
-      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
-      ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
-      ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
-      ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
-      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
-      ReplaceField("integrationProcess", Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess)),
-      ReplaceField("otoroshiTarget",
-        Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
-      ReplaceField("visibility",
-        Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
-      ReplaceField("authorizedTeams",
-        Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
-    )
-
-    val QuotasWithoutLimitsType = deriveObjectType[Unit, UsagePlan.QuotasWithoutLimits](
+    val QuotasWithLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithLimits](
       Interfaces(UsagePlanInterfaceType),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
@@ -420,9 +404,9 @@ object SchemaDefinition {
         Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
-    )
+    ))
 
-    val PayPerUseType = deriveObjectType[Unit, UsagePlan.PayPerUse](
+    val QuotasWithoutLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithoutLimits](
       Interfaces(UsagePlanInterfaceType),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
@@ -436,67 +420,83 @@ object SchemaDefinition {
         Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
-    )
+    ))
 
-    val OtoroshiApiKeyType = deriveObjectType[Unit, OtoroshiApiKey]()
-    val SwaggerAccessType = deriveObjectType[Unit, SwaggerAccess](
+    val PayPerUseType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.PayPerUse](
+      Interfaces(UsagePlanInterfaceType),
+      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
+      ReplaceField("id", Field("_id", StringType /*UsagePlanIdType*/, resolve = _.value.id.value)),
+      ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
+      ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
+      ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
+      ReplaceField("integrationProcess", Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess)),
+      ReplaceField("otoroshiTarget",
+        Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget)),
+      ReplaceField("visibility",
+        Field("visibility", UsagePlanVisibilityType, resolve = _.value.visibility)),
+      ReplaceField("authorizedTeams",
+        Field("authorizedTeams", ListType(StringType /*TeamIdType*/), resolve = _.value.authorizedTeams.map(_.value)))
+    ))
+
+    val OtoroshiApiKeyType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiApiKey]()
+    val SwaggerAccessType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SwaggerAccess](
       ReplaceField("headers",
         Field("headers", MapType, resolve = _.value.headers))
     )
     val ApiDocumentationType = ObjectType(
       "ApiDocumentation",
       "ApiDocumentation description",
-      fields[Unit, ApiDocumentation](
+      fields[(DataStore, DaikokuActionContext[JsValue]), ApiDocumentation](
         Field("id", StringType /*ApiDocumentationIdType*/, resolve = _.value.id.value),
         Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value),
         Field("pages", ListType(StringType /*ApiDocumentationPageIdType*/), resolve = _.value.pages.map(_.value)),
-        Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt)
+        Field("lastModificationAt", DateTimeUnitype, resolve = _.value.lastModificationAt)
       )
     )
-    val ApiDocumentationPageType = deriveObjectType[Unit, ApiDocumentationPage](
+    val ApiDocumentationPageType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiDocumentationPage](
       ReplaceField("id", Field("_id", StringType /*ApiDocumentationPageIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
-      ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt)),
+      ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeUnitype, resolve = _.value.lastModificationAt)),
       ReplaceField("remoteContentHeaders", Field("remoteContentHeaders", MapType, resolve = _.value.remoteContentHeaders)),
       AddFields(
         Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
       )
     )
-    val ApiPostType = deriveObjectType[Unit, ApiPost](
+    val ApiPostType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiPost](
       ReplaceField("id", Field("_id", StringType /*ApiPostIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
-      ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt)),
+      ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeUnitype, resolve = _.value.lastModificationAt)),
       AddFields(
         Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
       )
     )
-    val TwoFactorAuthenticationType = deriveObjectType[Unit, TwoFactorAuthentication]()
-    val ApiIssueTagType = deriveObjectType[Unit, ApiIssueTag](
+    val TwoFactorAuthenticationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), TwoFactorAuthentication]()
+    val ApiIssueTagType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiIssueTag](
       ReplaceField("id", Field("_id", StringType /*ApiIssueTagIdType*/, resolve = _.value.id.value))
     )
-    val ApiIssueCommentType = deriveObjectType[Unit, ApiIssueComment](
+    val ApiIssueCommentType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiIssueComment](
       ReplaceField("by", Field("by", StringType /*UserIdType*/, resolve = _.value.by.value)),
-      ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
-      ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt))
+      ReplaceField("createdAt", Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt)),
+      ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeUnitype, resolve = _.value.lastModificationAt))
     )
-    val ApiIssueType = deriveObjectType[Unit, ApiIssue](
+    val ApiIssueType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiIssue](
       ReplaceField("id", Field("_id", StringType /*ApiIssueIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
       ReplaceField("tags", Field("tags", ListType(StringType /*ApiIssueTagIdType*/), resolve = _.value.tags.toSeq.map(_.value))),
-      ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
-      ReplaceField("closedAt", Field("closedAt", OptionType(DateTimeType), resolve = _.value.closedAt)),
+      ReplaceField("createdAt", Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt)),
+      ReplaceField("closedAt", Field("closedAt", OptionType(DateTimeUnitype), resolve = _.value.closedAt)),
       ReplaceField("by", Field("by", StringType /*UserIdType*/, resolve = _.value.by.value)),
       ReplaceField("comments", Field("comments", ListType(ApiIssueCommentType), resolve = _.value.comments)),
-      ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeType, resolve = _.value.lastModificationAt)),
+      ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeUnitype, resolve = _.value.lastModificationAt)),
       AddFields(
         Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
       )
     )
-    val UserInvitationType = deriveObjectType[Unit, UserInvitation](
-      ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
+    val UserInvitationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UserInvitation](
+      ReplaceField("createdAt", Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt)),
     )
-    val UserType: ObjectType[Unit, User] =
-      deriveObjectType[Unit, User](
+    val UserType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), User] =
+      deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), User](
         ObjectTypeName("User"),
         ObjectTypeDescription("A user of daikoku"),
         ReplaceField("id",
@@ -522,32 +522,34 @@ object SchemaDefinition {
         )
       )
 
-    val TeamPermissionType = InterfaceType(
+    val TeamPermissionEnum = EnumType(
       "TeamPermission",
-      "TeamPermission description",
-      () => fields[Unit, TeamPermission](
-        Field("name", StringType, resolve = _.value.name)
+      Some("TeamPermission"),
+      List(
+        EnumValue("Administrator", value = "Administrator"),
+        EnumValue("ApiEditor", value = "ApiEditor"),
+        EnumValue("User", value = "User")
       )
     )
 
     val UserWithPermissionType = ObjectType(
       "UserWithPermission",
       "UserWithPermission description",
-      fields[Unit, UserWithPermission](
-        Field("userId", StringType /*UserIdType*/, resolve = _.value.userId.value),
-        Field("teamPermission", TeamPermissionType, resolve = _.value.teamPermission)
+      fields[(DataStore, DaikokuActionContext[JsValue]), UserWithPermission](
+        Field("user", OptionType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.userId)),
+        Field("teamPermission", TeamPermissionEnum, resolve = _.value.teamPermission.name)
       )
     )
 
     val TeamApiKeyVisibilityType = InterfaceType(
       "TeamApiKeyVisibility",
       "TeamApiKeyVisibility description",
-      () => fields[Unit, TeamApiKeyVisibility](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), TeamApiKeyVisibility](
         Field("name", StringType, resolve = _.value.name)
       )
     )
 
-    val TeamObjectType = deriveObjectType[Unit, Team](
+    val TeamObjectType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Team](
       ReplaceField("id", Field("_id", StringType /*TeamIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
       ReplaceField("users", Field("users", ListType(UserWithPermissionType), resolve = _.value.users.toSeq)),
@@ -564,19 +566,19 @@ object SchemaDefinition {
     val TestingAuthType = InterfaceType(
       "TestingAuth",
       "TestingAuth description",
-      () => fields[Unit, TestingAuth](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), TestingAuth](
         Field("name", StringType, resolve = _.value.name)
       )
     )
 
-    val TestingConfigType = deriveObjectType[Unit, TestingConfig](
+    val TestingConfigType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
       ReplaceField("otoroshiSettings", Field("otoroshiSettings", StringType /*OtoroshiSettingsIdType*/, resolve = _.value.otoroshiSettings.value)),
       ReplaceField("serviceGroup", Field("serviceGroup", StringType /*OtoroshiServiceGroupIdType*/, resolve = _.value.serviceGroup.value)),
       ReplaceField("api", Field("api", StringType /*ApiIdType*/, resolve = _.value.api.value)),
       ReplaceField("customMetadata", Field("customMetadata", OptionType(JsonType), resolve = _.value.customMetadata))
     )
 
-    val TestingType = deriveObjectType[Unit, Testing](
+    val TestingType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing](
       ReplaceField("auth", Field("auth", TestingAuthType, resolve = _.value.auth)),
       ReplaceField("config", Field("config", OptionType(TestingConfigType), resolve = _.value.config))
     )
@@ -587,19 +589,20 @@ object SchemaDefinition {
         .map(teams => teams.flatten)
       )(HasId[Team, TeamId](_.id))
 
-    val ApiType = deriveObjectType[Unit, Api](
+    val ApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Api](
       ReplaceField("id", Field("_id", StringType /*ApiIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
       ReplaceField("team", Field("team", TeamObjectType, resolve = ctx => teamsFetcher.defer(ctx.value.team))),
       ReplaceField("currentVersion", Field("currentVersion", StringType /*VersionType*/, resolve = _.value.currentVersion.value)),
       ReplaceField("supportedVersions", Field("supportedVersions", ListType(StringType /*VersionType*/), resolve = _.value.supportedVersions.toSeq.map(_.value))),
-      ReplaceField("lastUpdate", Field("lastUpdate", DateTimeType, resolve = _.value.lastUpdate)),
+      ReplaceField("lastUpdate", Field("lastUpdate", DateTimeUnitype, resolve = _.value.lastUpdate)),
       ReplaceField("testing", Field("testing", TestingType, resolve = _.value.testing)),
       ReplaceField("documentation", Field("documentation", ApiDocumentationType, resolve = _.value.documentation)),
       ReplaceField("swagger", Field("swagger", OptionType(SwaggerAccessType), resolve = _.value.swagger)),
       ReplaceField("visibility", Field("visibility", ApiVisibilityType, resolve = _.value.visibility)),
       ReplaceField("possibleUsagePlans",
-        Field("possibleUsagePlans", ListType(UsagePlanInterfaceType), resolve = _.value.possibleUsagePlans,
+        Field("possibleUsagePlans", ListType(UsagePlanInterfaceType),
+          resolve = _.value.possibleUsagePlans,
           possibleTypes = List(AdminUsagePlanType, FreeWithQuotasUsagePlanType, FreeWithoutQuotasUsagePlanType,
             PayPerUseType, QuotasWithLimitsType, QuotasWithoutLimitsType))),
       ReplaceField("defaultUsagePlan", Field("defaultUsagePlan", StringType /*UsagePlanIdType*/, resolve = _.value.defaultUsagePlan.value)),
@@ -616,23 +619,23 @@ object SchemaDefinition {
     )
 
     case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
-    val AuthorizationApiType = deriveObjectType[Unit, AuthorizationApi]()
+    val AuthorizationApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizationApi]()
 
     case class GraphQLApi(api: Api, authorizations: Seq[AuthorizationApi] = Seq.empty)
 
-    val GraphQLApiType = deriveObjectType[Unit, GraphQLApi](
+    val GraphQLApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), GraphQLApi](
       ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
       ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations))
     )
 
-    val ApiKeyRotationType = deriveObjectType[Unit, ApiKeyRotation]()
-    val ApiSubscriptionRotationType = deriveObjectType[Unit, ApiSubscriptionRotation]()
-    val ApiSubscriptionType = deriveObjectType[Unit, ApiSubscription](
+    val ApiKeyRotationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotation]()
+    val ApiSubscriptionRotationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionRotation]()
+    val ApiSubscriptionType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscription](
       ReplaceField("id", Field("_id", StringType /*ApiSubscriptionIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
       ReplaceField("apiKey", Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey)),
       ReplaceField("plan", Field("plan", StringType /*UsagePlanIdType*/, resolve = _.value.plan.value)),
-      ReplaceField("createdAt", Field("createdAt", DateTimeType, resolve = _.value.createdAt)),
+      ReplaceField("createdAt", Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt)),
       ReplaceField("team", Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value)),
       ReplaceField("api", Field("api", StringType /*ApiIdType*/, resolve = _.value.api.value)),
       ReplaceField("by", Field("by", StringType /*UserIdType*/, resolve = _.value.by.value)),
@@ -641,7 +644,7 @@ object SchemaDefinition {
       ReplaceField("parent", Field("parent", OptionType(StringType /*ApiSubscriptionIdType*/), resolve = _.value.parent.map(_.value))),
     )
 
-    val ActualOtoroshiApiKey = deriveObjectType[Unit, ActualOtoroshiApiKey](
+    val ActualOtoroshiApiKey = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ActualOtoroshiApiKey](
       ReplaceField("authorizedEntities", Field("authorizedEntities", AuthorizedEntitiesType, resolve = _.value.authorizedEntities)),
       ReplaceField("tags", Field("tags", ListType(StringType), resolve = _.value.tags)),
       ReplaceField("metadata", Field("metadata", MapType, resolve = _.value.metadata)),
@@ -649,141 +652,141 @@ object SchemaDefinition {
       ReplaceField("rotation", Field("rotation", OptionType(ApiKeyRotationType), resolve = _.value.rotation))
     )
 
-    val NotificationStatusType: InterfaceType[Unit, NotificationStatus] = InterfaceType(
+    val NotificationStatusType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus] = InterfaceType(
       "NotificationStatus",
       "NotificationStatus description",
-      () => fields[Unit, NotificationStatus](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus](
         Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
       )
     )
 
-    val NotificationStatusAcceptedType = deriveObjectType[Unit, NotificationStatus.Accepted](
+    val NotificationStatusAcceptedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Accepted](
       Interfaces(NotificationStatusType),
       ReplaceField("date",
-        Field("date", DateTimeType, resolve = _.value.date)
+        Field("date", DateTimeUnitype, resolve = _.value.date)
       )
-    )
+    ))
 
-    val NotificationStatusRejectedType = deriveObjectType[Unit, NotificationStatus.Rejected](
+    val NotificationStatusRejectedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Rejected](
       Interfaces(NotificationStatusType),
       ReplaceField("date",
-        Field("date", DateTimeType, resolve = _.value.date)
+        Field("date", DateTimeUnitype, resolve = _.value.date)
       )
-    )
+    ))
 
-    val NotificationStatusPendingType = deriveObjectType[Unit, NotificationStatus.Pending](
+    val NotificationStatusPendingType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Pending](
       Interfaces(NotificationStatusType),
       AddFields(
         Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
       )
-    )
+    ))
 
-    val NotificationActionType: InterfaceType[Unit, NotificationAction] = InterfaceType(
+    val NotificationActionType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationAction] = InterfaceType(
       "NotificationAction",
       "NotificationAction description",
-      () => fields[Unit, NotificationAction](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), NotificationAction](
         Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
       )
     )
-    val OtoroshiSyncNotificationActionType: InterfaceType[Unit, OtoroshiSyncNotificationAction] = InterfaceType(
+    val OtoroshiSyncNotificationActionType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncNotificationAction] = InterfaceType(
       "OtoroshiSyncNotificationAction",
       "OtoroshiSyncNotificationAction description",
-      () => fields[Unit, OtoroshiSyncNotificationAction](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncNotificationAction](
         Field("message", StringType, resolve = _.value.message)
       )
     )
 
-    val ApiAccessType = ObjectType(
+    val ApiAccessType = new PossibleObject(ObjectType(
       "ApiAccess",
       "ApiAccess description",
-      interfaces[Unit, ApiAccess](NotificationActionType),
-      fields[Unit, ApiAccess](
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiAccess](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), ApiAccess](
         Field("api", StringType /*ApiIdType*/, resolve = _.value.api.value),
         Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value)
       )
-    )
-    val TeamAccessType = ObjectType(
+    ))
+    val TeamAccessType = new PossibleObject(ObjectType(
       "TeamAccess",
       "TeamAccess description",
-      interfaces[Unit, TeamAccess](NotificationActionType),
-      fields[Unit, TeamAccess](
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), TeamAccess](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), TeamAccess](
         Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value)
       )
-    )
-    val TeamInvitationType = ObjectType(
+    ))
+    val TeamInvitationType = new PossibleObject(ObjectType(
       "TeamInvitation",
       "TeamInvitation description",
-      interfaces[Unit, TeamInvitation](NotificationActionType),
-      fields[Unit, TeamInvitation](
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), TeamInvitation](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), TeamInvitation](
         Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value),
         Field("user", StringType /*UserIdType*/, resolve = _.value.user.value)
       )
-    )
-    val ApiSubscriptionDemandType = ObjectType(
+    ))
+    val ApiSubscriptionDemandType = new PossibleObject(ObjectType(
       "ApiSubscriptionDemand",
       "ApiSubscriptionDemand description",
-      interfaces[Unit, ApiSubscriptionDemand](NotificationActionType),
-      fields[Unit, ApiSubscriptionDemand](
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDemand](NotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDemand](
         Field("api", StringType /*ApiIdType*/, resolve = _.value.api.value),
         Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value),
         Field("plan", StringType /*UsagePlanIdType*/, resolve = _.value.plan.value),
         Field("parentSubscriptionId", OptionType(StringType /*ApiSubscriptionIdType*/), resolve = _.value.parentSubscriptionId.map(_.value))
       )
-    )
-    val OtoroshiSyncSubscriptionErrorType = ObjectType(
+    ))
+    val OtoroshiSyncSubscriptionErrorType = new PossibleObject(ObjectType(
       "OtoroshiSyncSubscriptionError",
       "OtoroshiSyncSubscriptionError description",
-      interfaces[Unit, OtoroshiSyncSubscriptionError](OtoroshiSyncNotificationActionType),
-      fields[Unit, OtoroshiSyncSubscriptionError](
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncSubscriptionError](OtoroshiSyncNotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncSubscriptionError](
         Field("subscription", ApiSubscriptionType, resolve = _.value.subscription),
         Field("message", StringType, resolve = _.value.message)
       )
-    )
-    val OtoroshiSyncApiErrorType = ObjectType(
+    ))
+    val OtoroshiSyncApiErrorType = new PossibleObject(ObjectType(
       "OtoroshiSyncApiError",
       "OtoroshiSyncApiError description",
-      interfaces[Unit, OtoroshiSyncApiError](OtoroshiSyncNotificationActionType),
-      fields[Unit, OtoroshiSyncApiError](
+      interfaces[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncApiError](OtoroshiSyncNotificationActionType),
+      fields[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncApiError](
         Field("api", ApiType, resolve = _.value.api),
         Field("message", StringType, resolve = _.value.message)
       )
-    )
-    val ApiKeyDeletionInformationType = deriveObjectType[Unit, ApiKeyDeletionInformation](
+    ))
+    val ApiKeyDeletionInformationType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyDeletionInformation](
       Interfaces(NotificationActionType)
-    )
-    val ApiKeyRotationInProgressType = deriveObjectType[Unit, ApiKeyRotationInProgress](
+    ))
+    val ApiKeyRotationInProgressType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationInProgress](
       Interfaces(NotificationActionType)
-    )
-    val ApiKeyRotationEndedType = deriveObjectType[Unit, ApiKeyRotationEnded](
+    ))
+    val ApiKeyRotationEndedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationEnded](
       Interfaces(NotificationActionType)
-    )
-    val ApiKeyRefreshType = deriveObjectType[Unit, ApiKeyRefresh](
+    ))
+    val ApiKeyRefreshType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefresh](
       Interfaces(NotificationActionType)
-    )
-    val NewPostPublishedType = deriveObjectType[Unit, NewPostPublished](
+    ))
+    val NewPostPublishedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NewPostPublished](
       Interfaces(NotificationActionType)
-    )
-    val NewIssueOpenType = deriveObjectType[Unit, NewIssueOpen](
+    ))
+    val NewIssueOpenType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NewIssueOpen](
       Interfaces(NotificationActionType)
-    )
-    val NewCommentOnIssueType = deriveObjectType[Unit, NewCommentOnIssue](
+    ))
+    val NewCommentOnIssueType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NewCommentOnIssue](
       Interfaces(NotificationActionType)
-    )
+    ))
 
-    val NotificationInterfaceType: InterfaceType[Unit, NotificationType] = InterfaceType(
+    val NotificationInterfaceType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationType] = InterfaceType(
       "NotificationType",
       "NotificationType description",
-      () => fields[Unit, NotificationType](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), NotificationType](
         Field("value", StringType, resolve = _.value.value)
       )
     )
 
-    val NotificationType = deriveObjectType[Unit, Notification](
+    val NotificationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Notification](
       ReplaceField("id", Field("_id", StringType /*NotificationIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
       ReplaceField("team", Field("team", OptionType(StringType /*TeamIdType*/), resolve = _.value.team.map(_.value))),
       ReplaceField("sender", Field("sender", UserType, resolve = _.value.sender)),
-      ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date)),
+      ReplaceField("date", Field("date", DateTimeUnitype, resolve = _.value.date)),
       ReplaceField("notificationType", Field("notificationType", NotificationInterfaceType, resolve = _.value.notificationType)),
       ReplaceField("status", Field("status", NotificationStatusType, resolve = _.value.status, possibleTypes = List(NotificationStatusAcceptedType, NotificationStatusRejectedType, NotificationStatusPendingType))),
       ReplaceField("action", Field("action", NotificationActionType, resolve = _.value.action, possibleTypes = List(ApiAccessType, TeamAccessType, TeamInvitationType, ApiSubscriptionDemandType, OtoroshiSyncSubscriptionErrorType, OtoroshiSyncApiErrorType,
@@ -794,28 +797,28 @@ object SchemaDefinition {
     val FiniteDurationType = ObjectType(
       "FiniteDuration",
       "FiniteDuration description",
-      fields[Unit, FiniteDuration](
+      fields[(DataStore, DaikokuActionContext[JsValue]), FiniteDuration](
         Field("length", LongType, resolve = _.value.length),
         Field("unit", TimeUnitType, resolve = _.value.unit),
       )
     )
 
-    val UserSessionType = deriveObjectType[Unit, UserSession](
+    val UserSessionType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UserSession](
       ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
       ReplaceField("userId", Field("userId", StringType /*UserIdType*/, resolve = _.value.userId.value)),
       ReplaceField("sessionId", Field("sessionId", StringType /*UserSessionIdType*/, resolve = _.value.sessionId.value)),
       ReplaceField("impersonatorId", Field("impersonatorId", OptionType(StringType /*UserIdType*/), resolve = _.value.impersonatorId.map(_.value))),
       ReplaceField("impersonatorSessionId", Field("impersonatorSessionId", OptionType(StringType /*UserSessionIdType*/), resolve = _.value.impersonatorSessionId.map(_.value))),
-      ReplaceField("created", Field("created", DateTimeType, resolve = _.value.created)),
+      ReplaceField("created", Field("created", DateTimeUnitype, resolve = _.value.created)),
       ReplaceField("ttl", Field("ttl", FiniteDurationType, resolve = _.value.ttl)),
-      ReplaceField("expires", Field("expires", DateTimeType, resolve = _.value.expires))
+      ReplaceField("expires", Field("expires", DateTimeUnitype, resolve = _.value.expires))
     )
 
-    val ApiKeyGlobalConsumptionInformationsType = deriveObjectType[Unit, ApiKeyGlobalConsumptionInformations]()
-    val ApiKeyQuotasType = deriveObjectType[Unit, ApiKeyQuotas]()
-    val ApiKeyBillingType = deriveObjectType[Unit, ApiKeyBilling]()
+    val ApiKeyGlobalConsumptionInformationsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyGlobalConsumptionInformations]()
+    val ApiKeyQuotasType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyQuotas]()
+    val ApiKeyBillingType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyBilling]()
 
-    val ApiKeyConsumptionType = deriveObjectType[Unit, ApiKeyConsumption](
+    val ApiKeyConsumptionType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyConsumption](
       ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
       ReplaceField("team", Field("team", StringType /*TeamIdType*/, resolve = _.value.team.value)),
@@ -824,54 +827,54 @@ object SchemaDefinition {
       ReplaceField("globalInformations", Field("globalInformations", ApiKeyGlobalConsumptionInformationsType, resolve = _.value.globalInformations)),
       ReplaceField("quotas", Field("quotas", ApiKeyQuotasType, resolve = _.value.quotas)),
       ReplaceField("billing", Field("billing", ApiKeyBillingType, resolve = _.value.billing)),
-      ReplaceField("from", Field("from", DateTimeType, resolve = _.value.from)),
-      ReplaceField("to", Field("to", DateTimeType, resolve = _.value.to))
+      ReplaceField("from", Field("from", DateTimeUnitype, resolve = _.value.from)),
+      ReplaceField("to", Field("to", DateTimeUnitype, resolve = _.value.to))
     )
 
-    val PasswordResetType = deriveObjectType[Unit, PasswordReset](
+    val PasswordResetType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), PasswordReset](
       ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
       ReplaceField("user", Field("user", StringType /*UserIdType*/, resolve = _.value.user.value)),
-      ReplaceField("creationDate", Field("creationDate", DateTimeType, resolve = _.value.creationDate)),
-      ReplaceField("validUntil", Field("validUntil", DateTimeType, resolve = _.value.validUntil))
+      ReplaceField("creationDate", Field("creationDate", DateTimeUnitype, resolve = _.value.creationDate)),
+      ReplaceField("validUntil", Field("validUntil", DateTimeUnitype, resolve = _.value.validUntil))
     )
-    val AccountCreationType = deriveObjectType[Unit, AccountCreation](
+    val AccountCreationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AccountCreation](
       ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
-      ReplaceField("creationDate", Field("creationDate", DateTimeType, resolve = _.value.creationDate)),
-      ReplaceField("validUntil", Field("validUntil", DateTimeType, resolve = _.value.validUntil))
+      ReplaceField("creationDate", Field("creationDate", DateTimeUnitype, resolve = _.value.creationDate)),
+      ReplaceField("validUntil", Field("validUntil", DateTimeUnitype, resolve = _.value.validUntil))
     )
-    val TranslationType = deriveObjectType[Unit, Translation](
+    val TranslationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Translation](
       ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
-      ReplaceField("lastModificationAt", Field("lastModificationAt", OptionType(DateTimeType), resolve = _.value.lastModificationAt))
+      ReplaceField("lastModificationAt", Field("lastModificationAt", OptionType(DateTimeUnitype), resolve = _.value.lastModificationAt))
     )
-    val EvolutionType = deriveObjectType[Unit, Evolution](
+    val EvolutionType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Evolution](
       ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
-      ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date))
+      ReplaceField("date", Field("date", DateTimeUnitype, resolve = _.value.date))
     )
 
-    val MessageIntefaceType: InterfaceType[Unit, MessageType] = InterfaceType(
+    val MessageIntefaceType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), MessageType] = InterfaceType(
       "MessageType",
       "MessageType description",
-      () => fields[Unit, MessageType](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), MessageType](
         Field("name", StringType, resolve = _.value.value.value)
       ))
 
-    val MessageType = deriveObjectType[Unit, Message](
+    val MessageType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Message](
       ReplaceField("id", Field("_id", StringType /*DatastoreIdType*/, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", StringType /*TenantIdType*/, resolve = _.value.tenant.value)),
       ReplaceField("messageType", Field("messageType", MessageIntefaceType, resolve = _.value.messageType)),
       ReplaceField("participants", Field("participants", ListType(StringType /*UserIdType*/), resolve = _.value.participants.toSeq.map(_.value))),
       ReplaceField("readBy", Field("readBy", ListType(StringType /*UserIdType*/), resolve = _.value.readBy.toSeq.map(_.value))),
       ReplaceField("chat", Field("chat", StringType /*UserIdType*/, resolve = _.value.chat.value)),
-      ReplaceField("date", Field("date", DateTimeType, resolve = _.value.date)),
+      ReplaceField("date", Field("date", DateTimeUnitype, resolve = _.value.date)),
       ReplaceField("sender", Field("sender", StringType /*UserIdType*/, resolve = _.value.sender.value)),
-      ReplaceField("closed", Field("closed", OptionType(DateTimeType), resolve = _.value.closed)),
+      ReplaceField("closed", Field("closed", OptionType(DateTimeUnitype), resolve = _.value.closed)),
     )
 
-    val AuthorizationLevelType: InterfaceType[Unit, AuthorizationLevel] = InterfaceType(
+    val AuthorizationLevelType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), AuthorizationLevel] = InterfaceType(
       "AuthorizationLevel",
       "AuthorizationLevel description",
-      () => fields[Unit, AuthorizationLevel](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), AuthorizationLevel](
         Field("value", StringType, resolve = _.value.value)
       )
     )
@@ -892,29 +895,29 @@ object SchemaDefinition {
         EnumValue(AuthorizationLevel.AuthorizedJob.value, value = AuthorizationLevel.AuthorizedJob.value)
       ))
 
-    val AuditEventType: InterfaceType[Unit, AuditEvent] = InterfaceType(
+    val AuditEventType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), AuditEvent] = InterfaceType(
       "AuditEvent",
       "AuditEvent description",
-      () => fields[Unit, AuditEvent](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), AuditEvent](
         Field("message", StringType, resolve = _.value.message)
       )
     )
-    val AuditTrailEventType = deriveObjectType[Unit, AuditTrailEvent](
+    val AuditTrailEventType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuditTrailEvent](
       Interfaces(AuditEventType)
     )
-    val JobEventType = deriveObjectType[Unit, JobEvent](
+    val JobEventType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), JobEvent](
       Interfaces(AuditEventType)
     )
-    val AlertEventType = deriveObjectType[Unit, AlertEvent](
+    val AlertEventType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AlertEvent](
       Interfaces(AuditEventType)
     )
-    val ApiKeyRotationEventType = deriveObjectType[Unit, ApiKeyRotationEvent](
+    val ApiKeyRotationEventType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationEvent](
       Interfaces(AuditEventType),
       ReplaceField("subscription",
         Field("subscription", ApiSubscriptionIdType, resolve = _.value.subscription)
       )
     )
-    val TenantAuditEventType = deriveObjectType[Unit, TenantAuditEvent](
+    val TenantAuditEventType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), TenantAuditEvent](
       ReplaceField("evt", Field("evt", AuditEventType, resolve = _.value.evt, possibleTypes = List(
         AuditTrailEventType, JobEventType, AlertEventType, ApiKeyRotationEventType
       ))),
@@ -927,7 +930,7 @@ object SchemaDefinition {
     )*/
 
     case class UserAuditEvent(id: UserId, name: String, email: String, isDaikokuAdmin: Boolean)
-    val UserAuditEventType = deriveObjectType[Unit, UserAuditEvent](
+    val UserAuditEventType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UserAuditEvent](
       ReplaceField("id", Field("_id", StringType /*UserIdType*/, resolve = _.value.id.value))
     )
 
@@ -943,7 +946,7 @@ object SchemaDefinition {
     }
 
     case class TenantAuditEvent(id: TenantId, name: String)
-    val TenantAuditEventType = deriveObjectType[Unit, TenantAuditEvent](
+    val TenantAuditEventType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), TenantAuditEvent](
       ReplaceField("id", Field("_id", StringType /*TenantIdType*/, resolve = _.value.id.value))
     )
 
@@ -956,9 +959,9 @@ object SchemaDefinition {
       override def writes(o: TenantAuditEvent): JsValue = Json.obj()
     }
 
-    val AuditEventType = ObjectType[Unit, JsObject](
+    val AuditEventType = ObjectType[(DataStore, DaikokuActionContext[JsValue]), JsObject](
       "AuditEvent",
-      () => fields[Unit, JsObject](
+      () => fields[(DataStore, DaikokuActionContext[JsValue]), JsObject](
         Field("event_id", OptionType(StringType), resolve = ctx => (ctx.value \ "@id").asOpt[String]),
         Field("event_type", OptionType(StringType), resolve = ctx => (ctx.value \ "@type").asOpt[String]),
         Field("event_userId", OptionType(StringType), resolve = ctx => (ctx.value \ "@userId").asOpt[String]),
@@ -978,10 +981,7 @@ object SchemaDefinition {
     val ID: Argument[String] = Argument("id", StringType, description = "id of element")
     val TEAM_ID: Argument[String] = Argument("teamId", StringType, description = "id of the team")
 
-    def teamFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("team", OptionType(TeamObjectType), arguments = List(ID),
-        resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("teams", ListType(TeamObjectType), resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+    def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
           _UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed his team list"))(ctx.ctx._2) {
@@ -1068,9 +1068,7 @@ object SchemaDefinition {
       }
     }
 
-    def apiFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("api", OptionType(ApiType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("apis", ListType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+    def apiQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("visibleApis", ListType(GraphQLApiType), resolve = ctx => {
         getVisibleApis(ctx)
       }),
@@ -1082,6 +1080,13 @@ object SchemaDefinition {
     def allFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("user", OptionType(UserType), arguments = List(ID), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx arg ID)),
       Field("users", ListType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findAll()),
+
+      Field("api", OptionType(ApiType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+      Field("apis", ListType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findAll()),
+
+      Field("team", OptionType(TeamObjectType), arguments = List(ID),
+        resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
+      Field("teams", ListType(TeamObjectType), resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findAll()),
 
       Field("userSession", OptionType(UserSessionType), arguments = List(ID), resolve = ctx => ctx.ctx._1.userSessionRepo.findById(ctx arg ID)),
       Field("userSessions", ListType(UserSessionType), resolve = ctx => ctx.ctx._1.userSessionRepo.findAll()),
@@ -1132,7 +1137,7 @@ object SchemaDefinition {
 
     val Query: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Unit] = ObjectType(
       "Query", fields[(DataStore, DaikokuActionContext[JsValue]), Unit](
-        (allFields() ++ teamFields() ++ apiFields()):_*
+        (allFields() ++ teamQueryFields() ++ apiQueryFields()):_*
       )
     )
 

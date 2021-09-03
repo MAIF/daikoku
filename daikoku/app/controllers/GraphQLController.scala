@@ -1,25 +1,32 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import domain.SchemaDefinition
-import domain.SchemaDefinition.NotAuthorizedError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, SchemaDefinition, User, UserId, UserSession, UserSessionId}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.otoroshi.daikoku.utils.admin.DaikokuApiAction
+import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsObject, JsValue, Json}
 import sangria.execution.{ExceptionHandler, Executor, HandledException, MaxQueryDepthReachedError, QueryReducer}
 import storage.DataStore
 import play.api.mvc._
+import reactivemongo.bson.BSONObjectID
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.marshalling.playJson._
 import sangria.renderer.SchemaRenderer
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
 class GraphQLController(DaikokuAction: DaikokuAction,
                         DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+                        DaikokuApiAction: DaikokuApiAction,
                         env: Env,
                         cc: ControllerComponents)
   extends AbstractController(cc)
@@ -32,8 +39,51 @@ class GraphQLController(DaikokuAction: DaikokuAction,
 
   val logger = Logger("GraphQLController")
 
+
+  def adminApiSearch() = DaikokuApiAction.async(parse.json) { ctx =>
+    val query = (ctx.request.body \ "query").as[String]
+    val variables = (ctx.request.body \ "variables").asOpt[String]
+    val operation = (ctx.request.body \ "operation").asOpt[String]
+
+    val user = User(
+      id = UserId(BSONObjectID.generate().stringify),
+      tenants = Set(ctx.tenant.id),
+      origins = Set(ctx.tenant.authProvider),
+      name = "generated-user",
+      email = "generated-user@foo.bar",
+      isDaikokuAdmin = true,
+      password = Some("password"),
+      lastTenant = Some(ctx.tenant.id),
+      personalToken = Some(IdGenerator.token(32)),
+      defaultLanguage = None
+    )
+    val generatedContext = DaikokuActionContext(
+      ctx.request,
+      user,
+      tenant = ctx.tenant,
+      session = UserSession(
+        id = DatastoreId(BSONObjectID.generate().stringify),
+        userId = user.id,
+        userName = user.name,
+        userEmail = user.email,
+        impersonatorId = None,
+        impersonatorName = None,
+        impersonatorEmail = None,
+        impersonatorSessionId = None,
+        sessionId = UserSessionId(IdGenerator.token),
+        created = DateTime.now(),
+        expires = DateTime.now().plusSeconds(10),
+        ttl = FiniteDuration(10, TimeUnit.SECONDS)
+      ),
+      None,
+      isTenantAdmin = true,
+      apiCreationPermitted = true
+    )
+
+    executeQuery(generatedContext, query, variables map parseVariables, operation)
+  }
+
   def search() = DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
-  // query: String, variables: Option[String], operation: Option[String]
     val query = (ctx.request.body \ "query").as[String]
     val variables = (ctx.request.body \ "variables").asOpt[String]
     val operation = (ctx.request.body \ "operation").asOpt[String]

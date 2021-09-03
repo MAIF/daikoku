@@ -134,8 +134,6 @@ class TenantController(DaikokuAction: DaikokuAction,
                 FastFuture.successful(())
               }
               fu.map { _ => {
-                  println(tenant.exposedPort, tenant.domain, env.config.exposedPort)
-                  println(Json.prettyPrint(TenantFormat.writes(tenant)))
                   tenant.exposedPort match {
                     case Some(80)    => Redirect(s"http://${tenant.domain}/")
                     case Some(443)   => Redirect(s"https://${tenant.domain}/")
