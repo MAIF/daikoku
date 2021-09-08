@@ -6,6 +6,7 @@ import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._UberPublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
+import fr.maif.otoroshi.daikoku.domain.ValueType
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.S3Configuration
@@ -15,9 +16,9 @@ import play.api.libs.json._
 import sangria.ast.{ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
-import sangria.schema._
+import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
-import storage._
+import storage.{DataStore, _}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -727,7 +728,7 @@ object SchemaDefinition {
       )
     )
 
-    lazy val  ApiAccessType = new PossibleObject(ObjectType(
+    lazy val ApiAccessType = new PossibleObject(ObjectType(
       "ApiAccess",
       "ApiAccess description",
       interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiAccess](NotificationActionType),
@@ -938,10 +939,10 @@ object SchemaDefinition {
         Field("lastModificationAt", OptionType(DateTimeUnitype), resolve = _.value.lastModificationAt)
       ))
 
-    val  EvolutionType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Evolution](
+    /*val  EvolutionType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Evolution](
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("date", Field("date", DateTimeUnitype, resolve = _.value.date))
-    )
+    )*/
 
     val  MessageIntefaceType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), MessageType] = InterfaceType(
       "MessageType",
@@ -1020,8 +1021,12 @@ object SchemaDefinition {
       )
     )
 
-    val  ID: Argument[String] = Argument("id", StringType, description = "id of element")
-    val  TEAM_ID: Argument[String] = Argument("teamId", StringType, description = "id of the team")
+    val ID: Argument[String] = Argument("id", StringType, description = "The id of element")
+    val TEAM_ID: Argument[String] = Argument("teamId", StringType, description = "The id of the team")
+    val LIMIT: Argument[Int] = Argument("limit", IntType,
+      description = "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used.", defaultValue = -1)
+    val OFFSET: Argument[Int] = Argument("offset", IntType,
+      description = "The (zero-based) offset of the first item in the collection to return", defaultValue = 0)
 
     def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
       Field("myTeams", ListType(TeamObjectType),
@@ -1119,70 +1124,53 @@ object SchemaDefinition {
       })
     )
 
-    def allFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] = List(
-      Field("user", OptionType(UserType), arguments = List(ID), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx arg ID)),
-      Field("users", ListType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findAll()),
-
-      Field("api", OptionType(ApiType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("apis", ListType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("team", OptionType(TeamObjectType), arguments = List(ID),
-        resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("teams", ListType(TeamObjectType), resolve = ctx => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("userSession", OptionType(UserSessionType), arguments = List(ID), resolve = ctx => ctx.ctx._1.userSessionRepo.findById(ctx arg ID)),
-      Field("userSessions", ListType(UserSessionType), resolve = ctx => ctx.ctx._1.userSessionRepo.findAll()),
-
-      Field("tenant", OptionType(TenantType), arguments = List(ID), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx arg ID)),
-      Field("tenants", ListType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findAll()),
-
-      Field("passwordReset", OptionType(PasswordResetType), arguments = List(ID), resolve = ctx => ctx.ctx._1.passwordResetRepo.findById(ctx arg ID)),
-      Field("passwordResets", ListType(PasswordResetType), resolve = ctx => ctx.ctx._1.passwordResetRepo.findAll()),
-
-      Field("accountCreation", OptionType(AccountCreationType), arguments = List(ID), resolve = ctx => ctx.ctx._1.accountCreationRepo.findById(ctx arg ID)),
-      Field("accountCreations", ListType(AccountCreationType), resolve = ctx => ctx.ctx._1.accountCreationRepo.findAll()),
-
-      Field("translation", OptionType(TranslationType), arguments = List(ID), resolve = ctx => ctx.ctx._1.translationRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("translations", ListType(TranslationType), resolve = ctx => ctx.ctx._1.translationRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("message", OptionType(MessageType), arguments = List(ID), resolve = ctx => ctx.ctx._1.messageRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("messages", ListType(MessageType), resolve = ctx => ctx.ctx._1.messageRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("apiSubscription", OptionType(ApiSubscriptionType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiSubscriptionRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("apiSubscriptions", ListType(ApiSubscriptionType), resolve = ctx => ctx.ctx._1.apiSubscriptionRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("apiDocumentationPage", OptionType(ApiDocumentationPageType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiDocumentationPageRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("apiDocumentationPages", ListType(ApiDocumentationPageType), resolve = ctx => ctx.ctx._1.apiDocumentationPageRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("notification", OptionType(NotificationType), arguments = List(ID), resolve = ctx => ctx.ctx._1.notificationRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("notifications", ListType(NotificationType), resolve = ctx => ctx.ctx._1.notificationRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("consumption", OptionType(ApiKeyConsumptionType), arguments = List(ID), resolve = ctx => ctx.ctx._1.consumptionRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("consumptions", ListType(ApiKeyConsumptionType), resolve = ctx => ctx.ctx._1.consumptionRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("apiPost", OptionType(ApiPostType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiPostRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("apiPosts", ListType(ApiPostType), resolve = ctx => ctx.ctx._1.apiPostRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("apiIssue", OptionType(ApiIssueType), arguments = List(ID), resolve = ctx => ctx.ctx._1.apiIssueRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("apiIssues", ListType(ApiIssueType), resolve = ctx => ctx.ctx._1.apiIssueRepo.forTenant(ctx.ctx._2.tenant).findAll()),
-
-      Field("evolution", OptionType(EvolutionType), arguments = List(ID), resolve = ctx => ctx.ctx._1.evolutionRepo.findById(ctx arg ID)),
-      Field("evolutions", ListType(EvolutionType), resolve = ctx => ctx.ctx._1.evolutionRepo.findAll()),
-
-      Field("auditEvent", OptionType(AuditEventType), arguments = List(ID),
-        resolve = ctx => ctx.ctx._1.auditTrailRepo.forTenant(ctx.ctx._2.tenant).findById(ctx arg ID)),
-      Field("auditEvents", ListType(AuditEventType),
-        resolve = ctx => ctx.ctx._1.auditTrailRepo.forTenant(ctx.ctx._2.tenant).findAll())
-    )
-
-    val resolver = DeferredResolver.fetchers(teamsFetcher)
-
-    val Query: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Unit] = ObjectType("Query",
-      () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](
-        (allFields() ++ teamQueryFields() ++ apiQueryFields()):_*
+    def getRepoFields[Out, Of, Id <: ValueType](
+                                               fieldName: String,
+                                               fieldType: OutputType[Out],
+                                               repo: Context[(DataStore, DaikokuActionContext[JsValue]), Unit] => Repo[Of, Id]): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(fieldName, OptionType(fieldType), arguments = List(ID),
+          resolve = ctx => repo(ctx).findById(ctx arg ID).asInstanceOf[Option[Out]]),
+        Field(s"${fieldName}s", ListType(fieldType), arguments = LIMIT :: OFFSET :: Nil,
+          resolve = ctx => {
+            (ctx.arg(LIMIT), ctx.arg(OFFSET)) match {
+              case (-1, _) => repo(ctx).findAll().map(_.asInstanceOf[Seq[Out]])
+              case (limit, offset) => repo(ctx).findWithPagination(Json.obj(), offset, limit).map(_._1.asInstanceOf[Seq[Out]])
+            }
+          })
       )
-    )
 
-    (Schema(Query), resolver)
+    def getTenantFields[Out, Of, Id <: ValueType](
+                                               fieldName: String,
+                                               fieldType: OutputType[Out],
+                                               repo: Context[(DataStore, DaikokuActionContext[JsValue]), Unit] => TenantCapableRepo[Of, Id]): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      getRepoFields(fieldName, fieldType, ctx => repo(ctx).forTenant(ctx.ctx._2.tenant))
+
+    def allFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(getRepoFields("user", UserType, ctx => ctx.ctx._1.userRepo) ++
+      getRepoFields("userSession", UserSessionType, ctx => ctx.ctx._1.userSessionRepo) ++
+      getRepoFields("tenant", TenantType, ctx => ctx.ctx._1.tenantRepo) ++
+      getRepoFields("passwordReset", PasswordResetType, ctx => ctx.ctx._1.passwordResetRepo) ++
+      getRepoFields("accountCreation", AccountCreationType, ctx => ctx.ctx._1.accountCreationRepo) ++
+      // getRepoFields("evolution", EvolutionType, ctx => ctx.ctx._1.evolutionRepo) ++
+
+      getTenantFields("api", ApiType, ctx => ctx.ctx._1.apiRepo) ++
+      getTenantFields("team", TeamObjectType, ctx => ctx.ctx._1.teamRepo) ++
+      getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo) ++
+      getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo) ++
+      getTenantFields("apiSubscription", ApiSubscriptionType, ctx => ctx.ctx._1.apiSubscriptionRepo) ++
+      getTenantFields("apiDocumentationPage", ApiDocumentationPageType, ctx => ctx.ctx._1.apiDocumentationPageRepo) ++
+      getTenantFields("notification", NotificationType, ctx => ctx.ctx._1.notificationRepo) ++
+      getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo) ++
+      getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo) ++
+      getTenantFields("issue", ApiIssueType, ctx => ctx.ctx._1.apiIssueRepo) ++
+      getTenantFields("auditEvent", AuditEventType, ctx => ctx.ctx._1.auditTrailRepo):_*)
+
+    (
+      Schema(ObjectType("Query",
+        () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++ teamQueryFields() ++ apiQueryFields():_*)
+      )),
+      DeferredResolver.fetchers(teamsFetcher)
+    )
   }
 }

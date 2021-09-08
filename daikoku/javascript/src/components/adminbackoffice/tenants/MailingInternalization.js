@@ -122,8 +122,6 @@ const EditMailtemplate = ({ tenantId, team }) => {
     });
   }, []);
 
-  console.log(mailTemplateTranslations);
-
   const handleTranslation = (key, language, value) => {
     setMailTemplateTranslations(
       mailTemplateTranslations.map((translation) => {

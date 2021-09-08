@@ -33,7 +33,12 @@ import {
 
 const client = new ApolloClient({
   uri: '/api/search',
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  defaultOptions: {
+    query: {
+      fetchPolicy: 'network-only'
+    }
+  }
 });
 
 window.$ = jQuery;

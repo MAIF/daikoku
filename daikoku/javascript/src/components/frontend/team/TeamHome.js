@@ -110,8 +110,6 @@ function TeamHomeComponent(props) {
 
   document.title = `${props.tenant.name} - ${state.team.name}`;
 
-  console.log(state.apis)
-
   return (
     <main role="main" className="row">
       <section className="organisation__header col-12 mb-4 p-3">

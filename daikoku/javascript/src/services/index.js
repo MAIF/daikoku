@@ -891,6 +891,12 @@ export const graphql = {
       _humanReadableId
       _id
       type
+      users {
+        user {
+          userId: id
+        }
+        teamPermission
+      }
     }
   }
   `,

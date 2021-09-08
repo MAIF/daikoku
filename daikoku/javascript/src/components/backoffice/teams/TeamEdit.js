@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { Link } from 'react-router-dom';
 
-import { I18nContext, updateTeamPromise } from '../../../locales/i18n-context';
+import { I18nContext, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
 
 import { TeamBackOffice } from '..';
