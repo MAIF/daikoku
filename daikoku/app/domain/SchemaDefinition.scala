@@ -603,7 +603,7 @@ object SchemaDefinition {
 
     lazy val ApiSubscriptionType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscription] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscription](
       "ApiSubscriptionType",
-      ObjectTypeDescription("A subscription on an api plan"),
+      "A subscription on an api plan",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscription](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("tenant", OptionType(TenantType), resolve =
@@ -651,7 +651,7 @@ object SchemaDefinition {
 
     lazy val TestingConfigType = ObjectType[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
       "TestingConfig",
-      ObjectTypeDescription("A configuration to try to call an api on Otorshi from the Daikoku UI"),
+      "A configuration to try to call an api on Otorshi from the Daikoku UI",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
         Field("otoroshiSettings", StringType, resolve = _.value.otoroshiSettings.value),
         Field("serviceGroup", StringType, resolve = _.value.serviceGroup.value),
@@ -661,7 +661,8 @@ object SchemaDefinition {
       )
     )
 
-    lazy val TestingType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing](
+    lazy val TestingType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing] = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing](
+      ObjectTypeName("Testing"),
       ObjectTypeDescription("Credentials used to test an api from UI"),
       ReplaceField("auth", Field("auth", TestingAuthType, resolve = _.value.auth.name)),
       ReplaceField("config", Field("config", OptionType(TestingConfigType), resolve = _.value.config))
@@ -673,8 +674,9 @@ object SchemaDefinition {
         .map(teams => teams.flatten)
       )(HasId[Team, TeamId](_.id))
 
-    lazy val ApiType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api]("Api",
-      ObjectTypeDescription("A Daikoku Api"),
+    lazy val ApiType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api](
+      "Api",
+      "A Daikoku Api",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), Api](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.ctx._2.tenant.id)),
