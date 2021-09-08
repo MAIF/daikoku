@@ -108,6 +108,7 @@ object SchemaDefinition {
     implicit val en = env
 
     lazy val TenantType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Tenant] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Tenant]("Tenant",
+      "A tenant object",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), Tenant](
         Field("id", StringType, resolve = _.value.id.value),
         Field("enabled", BooleanType, resolve = _.value.enabled),
@@ -143,16 +144,23 @@ object SchemaDefinition {
       )
     )
 
-    lazy val DaikokuStyleType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), DaikokuStyle]()
+    lazy val DaikokuStyleType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), DaikokuStyle](
+      ObjectTypeDescription("A set of css, js and colors to customize Daikoku elements")
+    )
     lazy val ElasticAnalyticsConfigType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ElasticAnalyticsConfig](
+      ObjectTypeDescription("A configuration to connect with elasticsearch cluster"),
       ReplaceField("headers", Field("headers", MapType, resolve = _.value.headers))
     )
     lazy val WebhookType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Webhook](
+      ObjectTypeDescription("A configuration of a Kakfa web hook"),
       ReplaceField("headers", Field("headers", MapType, resolve = _.value.headers))
     )
-    lazy val  KafkaConfigType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), KafkaConfig]()
+    lazy val  KafkaConfigType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), KafkaConfig](
+      ObjectTypeDescription("A configuration to connect with a kafka"),
+    )
 
     lazy val  AuditTrailConfigType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuditTrailConfig](
+      ObjectTypeDescription("A configuration to push audit trails inside ES/Kafka/..."),
       ReplaceField("elasticConfigs",
         Field("elasticConfigs", OptionType(ElasticAnalyticsConfigType), resolve = _.value.elasticConfigs)
       ),
@@ -165,35 +173,44 @@ object SchemaDefinition {
     )
 
     lazy val OtoroshiSettingsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSettings](
+      ObjectTypeDescription("Settings to communicate with an instance of Otoroshi"),
       ReplaceField("id", Field("id", StringType, resolve = _.value.id.value))
     )
     lazy val MailerSettingsType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), MailerSettings] = InterfaceType(
       "MailerSettings",
-      "The mailer settings type",
+      "A template of mailer",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), MailerSettings](
         Field("mailerType", StringType, resolve = _.value.mailerType)
       )
     )
     lazy val ConsoleMailerSettingsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ConsoleMailerSettings](
+      ObjectTypeDescription("A mailer to write mails on the standard output"),
       Interfaces(MailerSettingsType)
     ))
     lazy val MailgunSettingsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), MailgunSettings](
+      ObjectTypeDescription("A mailer to send mails with a Mailgun service"),
       Interfaces(MailerSettingsType)
     ))
     lazy val MailjetSettingsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), MailjetSettings](
+      ObjectTypeDescription("A mailer to send mails with a Mailjet service"),
       Interfaces(MailerSettingsType)
     ))
     lazy val SimpleSMTPSettingsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SimpleSMTPSettings](
+      ObjectTypeDescription("A STMP mailer configuration"),
       Interfaces(MailerSettingsType)
     ))
     lazy val SendgridSettingsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SendgridSettings](
+      ObjectTypeDescription("A mailer to send mails with a Sendgrid service"),
       Interfaces(MailerSettingsType)
     ))
 
-    lazy val  BucketSettingsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), S3Configuration]()
+    lazy val  BucketSettingsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), S3Configuration](
+      ObjectTypeDescription("A S3 configuration to manage assets inside Daikoku"),
+    )
 
     lazy val  ApiKeyRestrictionPathType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRestrictionPath]()
     lazy val  ApiKeyRestrictionsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRestrictions](
+      ObjectTypeDescription("A set of restrictions apply on an api key"),
       ReplaceField("allowed",
         Field("allowed", ListType(ApiKeyRestrictionPathType), resolve = _.value.allowed)
       ),
@@ -206,11 +223,13 @@ object SchemaDefinition {
     )
 
     lazy val  CustomMetadataType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), CustomMetadata](
+      ObjectTypeDescription("Custom metadata attached to an api key"),
       ReplaceField("possibleValues",
         Field("possibleValues", ListType(StringType), resolve = _.value.possibleValues.toSeq)
       )
     )
     lazy val  ApikeyCustomizationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApikeyCustomization](
+      ObjectTypeDescription("Additional information of an api key"),
       ReplaceField("metadata",
         Field("metadata", JsonType, resolve = _.value.metadata)
       ),
@@ -226,6 +245,7 @@ object SchemaDefinition {
     )
 
     lazy val  AuthorizedEntitiesType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AuthorizedEntities](
+      ObjectTypeDescription("Groups and services allowed to be reached with an api key"),
       ReplaceField("services",
         Field("services", ListType(StringType), resolve = _.value.services.toSeq.map(_.value))
       ),
@@ -235,6 +255,7 @@ object SchemaDefinition {
     )
 
     lazy val  OtoroshiTargetType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiTarget](
+      ObjectTypeDescription("Complete configuration to communicate with an instance of Otoroshi"),
       ReplaceField("otoroshiSettings",
         Field("otoroshiSettings", StringType, resolve = _.value.otoroshiSettings.value)
       ),
@@ -248,13 +269,14 @@ object SchemaDefinition {
 
     lazy val  BillingTimeUnitInterfaceType = InterfaceType(
       "BillingTimeUnit",
-      "BillingTimeUnit description",
+      "Interface of billing Time : hour, day, month or year",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), BillingTimeUnit](
         Field("name", StringType, resolve = _.value.name)
       )
     )
 
     lazy val  BillingDurationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), BillingDuration](
+      ObjectTypeDescription("A possible value of billing duration"),
       ReplaceField("unit",
         Field("unit", BillingTimeUnitInterfaceType, resolve = _.value.unit)
       )
@@ -262,7 +284,7 @@ object SchemaDefinition {
 
     lazy val  UsagePlanVisibilityType = InterfaceType(
       "UsagePlanVisibility",
-      "UsagePlanVisibility description",
+      "Interface of Usage Plan Visibility",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), UsagePlanVisibility](
         Field("name", StringType, resolve = _.value.name)
       )
@@ -270,7 +292,7 @@ object SchemaDefinition {
 
     lazy val  SubscriptionProcessType = InterfaceType(
       "SubscriptionProcess",
-      "SubscriptionProcess description",
+      "Interface of SubscriptionProcess",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionProcess](
         Field("name", StringType, resolve = _.value.name)
       )
@@ -278,16 +300,19 @@ object SchemaDefinition {
 
     lazy val  IntegrationProcessType = InterfaceType(
       "IntegrationProcess",
-      "IntegrationProcess description",
+      "Interface of IntegrationProcess",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), IntegrationProcess](
         Field("name", StringType, resolve = _.value.name)
       )
     )
 
-    lazy val  CurrencyType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Currency]()
+    lazy val  CurrencyType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Currency](
+      ObjectTypeDescription("One currency represented by code"),
+    )
 
     lazy val TeamObjectType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team](
       "Team",
+      "A Daikoku Team object",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), Team](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.value.tenant)),
@@ -312,7 +337,7 @@ object SchemaDefinition {
 
     lazy val UsagePlanInterfaceType = InterfaceType(
       name = "UsagePlan",
-      description = "Usage Plan description",
+      description = "A plan of api in Daikoku",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), UsagePlan](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("costPerMonth", BigDecimalType, resolve = _.value.costPerMonth),
@@ -340,6 +365,7 @@ object SchemaDefinition {
 
     lazy val  AdminUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.Admin](
       Interfaces(UsagePlanInterfaceType),
+      ObjectTypeDescription("An Api plan visible only by admins"),
       ReplaceField("id", Field("id", StringType, resolve = ctx => ctx.value.id.value)),
       ReplaceField("otoroshiTarget",
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = ctx => ctx.value.otoroshiTarget)
@@ -352,6 +378,7 @@ object SchemaDefinition {
 
     lazy val  FreeWithoutQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithoutQuotas](
       Interfaces(UsagePlanInterfaceType),
+      ObjectTypeDescription("An Api plan which generate api key without quotas"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -369,6 +396,7 @@ object SchemaDefinition {
 
     lazy val  FreeWithQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithQuotas](
       Interfaces(UsagePlanInterfaceType),
+      ObjectTypeDescription("An Api plan which generate api key with quotas"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -386,6 +414,7 @@ object SchemaDefinition {
 
     lazy val  QuotasWithLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithLimits](
       Interfaces(UsagePlanInterfaceType),
+      ObjectTypeDescription("An Api plan which generate api key with limited quotas"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
@@ -404,6 +433,7 @@ object SchemaDefinition {
 
     lazy val  QuotasWithoutLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithoutLimits](
       Interfaces(UsagePlanInterfaceType),
+      ObjectTypeDescription("An Api plan which generate api key with quotas but not limited"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
@@ -422,6 +452,7 @@ object SchemaDefinition {
 
     lazy val  PayPerUseType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.PayPerUse](
       Interfaces(UsagePlanInterfaceType),
+      ObjectTypeDescription("An Api plan which generate api key where you need to pay per use"),
       ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
@@ -438,12 +469,16 @@ object SchemaDefinition {
         ))
     ))
 
-    lazy val  OtoroshiApiKeyType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiApiKey]()
+    lazy val  OtoroshiApiKeyType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiApiKey](
+      ObjectTypeDescription("A representation of an Otoroshi api key"),
+    )
     lazy val  SwaggerAccessType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), SwaggerAccess](
+      ObjectTypeDescription("A configuration to display content of a swagger"),
       ReplaceField("headers",
         Field("headers", MapType, resolve = _.value.headers))
     )
     lazy val ApiDocumentationPageType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiDocumentationPage](
+      ObjectTypeDescription("A page of documentation"),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx =>
         ctx.ctx._1.tenantRepo.findById(ctx.value.tenant))),
@@ -456,7 +491,7 @@ object SchemaDefinition {
 
     lazy val ApiDocumentationType = ObjectType(
       "ApiDocumentation",
-      "ApiDocumentation description",
+      "The documentation of an api composed of multiples pages",
       fields[(DataStore, DaikokuActionContext[JsValue]), ApiDocumentation](
         Field("id", StringType, resolve = _.value.id.value),
         Field("tenant", OptionType(TenantType), resolve = ctx =>
@@ -468,6 +503,7 @@ object SchemaDefinition {
       )
     )
     lazy val  ApiPostType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiPost](
+      ObjectTypeDescription("A post of an api used to communicate with consumers"),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx =>
         ctx.ctx._1.tenantRepo.findById(ctx.value.tenant))),
@@ -476,16 +512,21 @@ object SchemaDefinition {
         Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
       )
     )
-    lazy val  TwoFactorAuthenticationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), TwoFactorAuthentication]()
+    lazy val  TwoFactorAuthenticationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), TwoFactorAuthentication](
+      ObjectTypeDescription("A two factor authentication configuration of an user account"),
+    )
     lazy val  ApiIssueTagType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiIssueTag](
+      ObjectTypeDescription("A tag used on issues"),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value))
     )
     lazy val  ApiIssueCommentType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiIssueComment](
+      ObjectTypeDescription("A comment on an issue"),
       ReplaceField("by", Field("by", OptionType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.by))),
       ReplaceField("createdAt", Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt)),
       ReplaceField("lastModificationAt", Field("lastModificationAt", DateTimeUnitype, resolve = _.value.lastModificationAt))
     )
     lazy val  ApiIssueType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiIssue](
+      ObjectTypeDescription("An issue on an api"),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx =>
         ctx.ctx._1.tenantRepo.findById(ctx.value.tenant)
@@ -501,11 +542,13 @@ object SchemaDefinition {
       )
     )
     lazy val UserInvitationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UserInvitation](
+      ObjectTypeDescription("An user invitation sended by authenticated user to ask to join his team"),
       ReplaceField("createdAt", Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt)),
     )
 
     lazy val UserType = ObjectType[(DataStore, DaikokuActionContext[JsValue]), User](
         "User",
+        "A Daikoku user",
         () => fields[(DataStore, DaikokuActionContext[JsValue]), User](
           Field("id", StringType, resolve = _.value.id.value),
           Field("deleted", BooleanType, resolve = _.value.deleted),
@@ -537,7 +580,7 @@ object SchemaDefinition {
 
     lazy val TeamPermissionEnum = EnumType(
       "TeamPermission",
-      Some("TeamPermission"),
+      Some("Type of permissions assigned to each member of a team"),
       List(
         EnumValue("Administrator", value = "Administrator"),
         EnumValue("ApiEditor", value = "ApiEditor"),
@@ -547,17 +590,20 @@ object SchemaDefinition {
 
     lazy val UserWithPermissionType = ObjectType(
       "UserWithPermission",
-      "UserWithPermission description",
+      "A user permission on a specific team",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), UserWithPermission](
         Field("user", OptionType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.userId)),
         Field("teamPermission", TeamPermissionEnum, resolve = _.value.teamPermission.name)
       )
     )
 
-    lazy val ApiSubscriptionRotationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionRotation]()
+    lazy val ApiSubscriptionRotationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionRotation](
+      ObjectTypeDescription("A configuration to cover the rotation of the credentials of an api key")
+    )
 
     lazy val ApiSubscriptionType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscription] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscription](
       "ApiSubscriptionType",
+      ObjectTypeDescription("A subscription on an api plan"),
       () => fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscription](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("tenant", OptionType(TenantType), resolve =
@@ -605,6 +651,7 @@ object SchemaDefinition {
 
     lazy val TestingConfigType = ObjectType[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
       "TestingConfig",
+      ObjectTypeDescription("A configuration to try to call an api on Otorshi from the Daikoku UI"),
       () => fields[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
         Field("otoroshiSettings", StringType, resolve = _.value.otoroshiSettings.value),
         Field("serviceGroup", StringType, resolve = _.value.serviceGroup.value),
@@ -615,6 +662,7 @@ object SchemaDefinition {
     )
 
     lazy val TestingType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Testing](
+      ObjectTypeDescription("Credentials used to test an api from UI"),
       ReplaceField("auth", Field("auth", TestingAuthType, resolve = _.value.auth.name)),
       ReplaceField("config", Field("config", OptionType(TestingConfigType), resolve = _.value.config))
     )
@@ -626,6 +674,7 @@ object SchemaDefinition {
       )(HasId[Team, TeamId](_.id))
 
     lazy val ApiType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Api]("Api",
+      ObjectTypeDescription("A Daikoku Api"),
       () => fields[(DataStore, DaikokuActionContext[JsValue]), Api](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.ctx._2.tenant.id)),
@@ -680,13 +729,14 @@ object SchemaDefinition {
     case class GraphQLApi(api: Api, authorizations: Seq[AuthorizationApi] = Seq.empty)
 
     lazy val GraphQLApiType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), GraphQLApi](
+      ObjectTypeDescription("A Daikoku api with the list of teams authorizations"),
       ReplaceField("api", Field("api", ApiType, resolve = _.value.api)),
       ReplaceField("authorizations", Field("authorizations", ListType(AuthorizationApiType), resolve = _.value.authorizations))
     )
 
     lazy val  NotificationStatusType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus] = InterfaceType(
       "NotificationStatus",
-      "NotificationStatus description",
+      "The status of a notification",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus](
         Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
       )
@@ -694,6 +744,7 @@ object SchemaDefinition {
 
     lazy val  NotificationStatusAcceptedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Accepted](
       Interfaces(NotificationStatusType),
+      ObjectTypeDescription("An accepted notification status"),
       ReplaceField("date",
         Field("date", DateTimeUnitype, resolve = _.value.date)
       )
@@ -701,6 +752,7 @@ object SchemaDefinition {
 
     lazy val  NotificationStatusRejectedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Rejected](
       Interfaces(NotificationStatusType),
+      ObjectTypeDescription("A rejected notification status"),
       ReplaceField("date",
         Field("date", DateTimeUnitype, resolve = _.value.date)
       )
@@ -708,6 +760,7 @@ object SchemaDefinition {
 
     lazy val  NotificationStatusPendingType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NotificationStatus.Pending](
       Interfaces(NotificationStatusType),
+      ObjectTypeDescription("A pending notification status"),
       AddFields(
         Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
       )
@@ -715,14 +768,14 @@ object SchemaDefinition {
 
     lazy val  NotificationActionType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationAction] = InterfaceType(
       "NotificationAction",
-      "NotificationAction description",
+      "An action of notification",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), NotificationAction](
         Field("_generated", StringType, resolve = _.value.toString) // TODO - can't generate interface without fields
       )
     )
     lazy val  OtoroshiSyncNotificationActionType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncNotificationAction] = InterfaceType(
       "OtoroshiSyncNotificationAction",
-      "OtoroshiSyncNotificationAction description",
+      "A Otoroshi notification triggered when the synchronization with an otoroshi is done",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncNotificationAction](
         Field("message", StringType, resolve = _.value.message)
       )
@@ -730,7 +783,7 @@ object SchemaDefinition {
 
     lazy val ApiAccessType = new PossibleObject(ObjectType(
       "ApiAccess",
-      "ApiAccess description",
+      "A api access notification action",
       interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiAccess](NotificationActionType),
       fields[(DataStore, DaikokuActionContext[JsValue]), ApiAccess](
         Field("api", OptionType(ApiType),
@@ -741,7 +794,7 @@ object SchemaDefinition {
     ))
     lazy val  TeamAccessType = new PossibleObject(ObjectType(
       "TeamAccess",
-      "TeamAccess description",
+      "A team access notification action",
       interfaces[(DataStore, DaikokuActionContext[JsValue]), TeamAccess](NotificationActionType),
       fields[(DataStore, DaikokuActionContext[JsValue]), TeamAccess](
         Field("team", OptionType(TeamObjectType),
@@ -750,7 +803,7 @@ object SchemaDefinition {
     ))
     lazy val  TeamInvitationType = new PossibleObject(ObjectType(
       "TeamInvitation",
-      "TeamInvitation description",
+      "A team invitation notification action",
       interfaces[(DataStore, DaikokuActionContext[JsValue]), TeamInvitation](NotificationActionType),
       fields[(DataStore, DaikokuActionContext[JsValue]), TeamInvitation](
         Field("team", OptionType(TeamObjectType),
@@ -761,7 +814,7 @@ object SchemaDefinition {
     ))
     lazy val  ApiSubscriptionDemandType = new PossibleObject(ObjectType(
       "ApiSubscriptionDemand",
-      "ApiSubscriptionDemand description",
+      "A api subscription notification action",
       interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDemand](NotificationActionType),
       fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDemand](
         Field("api", OptionType(ApiType),
@@ -784,7 +837,7 @@ object SchemaDefinition {
     ))
     lazy val  OtoroshiSyncSubscriptionErrorType = new PossibleObject(ObjectType(
       "OtoroshiSyncSubscriptionError",
-      "OtoroshiSyncSubscriptionError description",
+      "A Otoroshi notification triggered when the synchronization with an otoroshi had failed",
       interfaces[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncSubscriptionError](OtoroshiSyncNotificationActionType),
       fields[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncSubscriptionError](
         Field("subscription", ApiSubscriptionType, resolve = _.value.subscription),
@@ -793,7 +846,7 @@ object SchemaDefinition {
     ))
     lazy val  OtoroshiSyncApiErrorType = new PossibleObject(ObjectType(
       "OtoroshiSyncApiError",
-      "OtoroshiSyncApiError description",
+      "An Otoroshi notification triggered when syncing an API with an otoroshi failed",
       interfaces[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncApiError](OtoroshiSyncNotificationActionType),
       fields[(DataStore, DaikokuActionContext[JsValue]), OtoroshiSyncApiError](
         Field("api", ApiType, resolve = _.value.api),
@@ -801,36 +854,44 @@ object SchemaDefinition {
       )
     ))
     lazy val  ApiKeyDeletionInformationType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyDeletionInformation](
+      ObjectTypeDescription("An Otoroshi notification triggered when an api key has been deleted"),
       Interfaces(NotificationActionType)
     ))
     lazy val  ApiKeyRotationInProgressType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationInProgress](
+      ObjectTypeDescription("An Otoroshi notification triggered when the credentials of an api key is in rotation progress"),
       Interfaces(NotificationActionType)
     ))
     lazy val  ApiKeyRotationEndedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationEnded](
+      ObjectTypeDescription("An Otoroshi notification triggered when the credentials of an api key has been rotated"),
       Interfaces(NotificationActionType)
     ))
     lazy val  ApiKeyRefreshType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefresh](
+      ObjectTypeDescription("An Otoroshi notification triggered when an api key has been refreshed"),
       Interfaces(NotificationActionType)
     ))
     lazy val  NewPostPublishedType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NewPostPublished](
+      ObjectTypeDescription("An Otoroshi notification triggered when a new post has been pusblished"),
       Interfaces(NotificationActionType)
     ))
     lazy val  NewIssueOpenType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NewIssueOpen](
+      ObjectTypeDescription("An Otoroshi notification triggered when a new issue has been created"),
       Interfaces(NotificationActionType)
     ))
     lazy val  NewCommentOnIssueType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), NewCommentOnIssue](
+      ObjectTypeDescription("An Otoroshi notification triggered when a new comment has been written"),
       Interfaces(NotificationActionType)
     ))
 
     lazy val  NotificationInterfaceType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), NotificationType] = InterfaceType(
       "NotificationType",
-      "NotificationType description",
+      "Interface of a notification",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), NotificationType](
         Field("value", StringType, resolve = _.value.value)
       )
     )
 
     lazy val  NotificationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Notification](
+      ObjectTypeDescription("A default notification object"),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx =>
         ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
@@ -850,7 +911,7 @@ object SchemaDefinition {
 
     lazy val  FiniteDurationType = ObjectType(
       "FiniteDuration",
-      "FiniteDuration description",
+      "A finite duration",
       fields[(DataStore, DaikokuActionContext[JsValue]), FiniteDuration](
         Field("length", LongType, resolve = _.value.length),
         Field("unit", TimeUnitType, resolve = _.value.unit),
@@ -859,6 +920,7 @@ object SchemaDefinition {
 
     lazy val UserSessionType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), UserSession] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), UserSession](
       "UserSession",
+      "A user session",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), UserSession](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("userId", OptionType(UserType), resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.userId)),
@@ -882,11 +944,18 @@ object SchemaDefinition {
       )
     )
 
-    val  ApiKeyGlobalConsumptionInformationsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyGlobalConsumptionInformations]()
-    val  ApiKeyQuotasType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyQuotas]()
-    val  ApiKeyBillingType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyBilling]()
+    val  ApiKeyGlobalConsumptionInformationsType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyGlobalConsumptionInformations](
+      ObjectTypeDescription("Consumptions of an api key")
+    )
+    val  ApiKeyQuotasType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyQuotas](
+      ObjectTypeDescription("Quotas of an api key")
+    )
+    val  ApiKeyBillingType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyBilling](
+      ObjectTypeDescription("Billing of an api key")
+    )
 
     val  ApiKeyConsumptionType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiKeyConsumption](
+      ObjectTypeDescription("Quotas and information about an api key"),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("tenant", Field("tenant", OptionType(TenantType), resolve = ctx =>
         ctx.ctx._1.tenantRepo.findById(ctx.value.tenant.value)
@@ -914,6 +983,7 @@ object SchemaDefinition {
     )
 
     val  PasswordResetType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), PasswordReset](
+      ObjectTypeDescription("Information to reset the account password of an user."),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("user", Field("user", OptionType(UserType), resolve = ctx =>
         ctx.ctx._1.userRepo.findById(ctx.value.user.value)
@@ -922,12 +992,14 @@ object SchemaDefinition {
       ReplaceField("validUntil", Field("validUntil", DateTimeUnitype, resolve = _.value.validUntil))
     )
     val  AccountCreationType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), AccountCreation](
+      ObjectTypeDescription("A new user awaiting confirmation of their account."),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("creationDate", Field("creationDate", DateTimeUnitype, resolve = _.value.creationDate)),
       ReplaceField("validUntil", Field("validUntil", DateTimeUnitype, resolve = _.value.validUntil))
     )
     lazy val TranslationType = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Translation](
       "Translation",
+      "A translation of Daikoku elements like (mail, notification, buttons, title ...).",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), Translation](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("tenant", OptionType(TenantType), resolve = ctx =>
@@ -945,14 +1017,15 @@ object SchemaDefinition {
     )*/
 
     val  MessageIntefaceType: InterfaceType[(DataStore, DaikokuActionContext[JsValue]), MessageType] = InterfaceType(
-      "MessageType",
-      "MessageType description",
+      "MessageInterface",
+      "An in-app message interface.",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), MessageType](
         Field("name", StringType, resolve = _.value.value.value)
       ))
 
     val  MessageType = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Message](
       "Message",
+      "An in-app message.",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), Message](
         Field("_id", StringType, resolve = _.value.id.value),
         Field("tenant", OptionType(TenantType), resolve = ctx => ctx.ctx._1.tenantRepo.findById(ctx.ctx._2.tenant.id)),
@@ -1004,6 +1077,7 @@ object SchemaDefinition {
 
     val  AuditEventType = ObjectType[(DataStore, DaikokuActionContext[JsValue]), JsObject](
       "AuditEvent",
+      "An audit event",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), JsObject](
         Field("event_id", OptionType(StringType), resolve = ctx => (ctx.value \ "@id").asOpt[String]),
         Field("event_type", OptionType(StringType), resolve = ctx => (ctx.value \ "@type").asOpt[String]),
