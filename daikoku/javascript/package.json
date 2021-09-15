@@ -57,7 +57,7 @@
     "redux": "4.0.5",
     "redux-logger": "3.0.6",
     "redux-thunk": "2.3.0",
-    "set-value": "3.0.2",
+    "set-value": "4.0.1",
     "showdown": "1.9.1",
     "swagger-editor": "3.14.8",
     "swagger-ui-dist": "3.38.0",
