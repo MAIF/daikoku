@@ -4,25 +4,14 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
-  Admin,
-  FreeWithoutQuotas,
-  PayPerUse,
-  QuotasWithLimits
-}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithoutQuotas, PayPerUse, QuotasWithLimits}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -1665,6 +1654,31 @@ class ApiControllerSpec()
       )(tenant, session)
 
       (apiResp.json \ "stars").as[Int] mustBe 0
+
+    }
+
+    "can get his subscription for a private api if team is authorized" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user),
+        teams = Seq(
+          teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+          teamConsumer.copy(users = Set(UserWithPermission(userTeamUserId, Administrator)))),
+        apis = Seq(defaultApi.copy(visibility = ApiVisibility.Private, authorizedTeams = Seq(teamOwnerId, TeamId("fifou"))))
+      )
+
+      val sessionAdmin = loginWithBlocking(userAdmin, tenant)
+      val sessionUser = loginWithBlocking(user, tenant)
+
+      val subAdminResp = httpJsonCallBlocking(
+        path = s"/api/me/subscriptions/${defaultApi.id.value}"
+      )(tenant, sessionAdmin)
+      subAdminResp.status mustBe 200
+
+      val subUserResp = httpJsonCallBlocking(
+        path = s"/api/me/subscriptions/${defaultApi.id.value}"
+      )(tenant, sessionUser)
+      subUserResp.status mustBe 401
 
     }
   }

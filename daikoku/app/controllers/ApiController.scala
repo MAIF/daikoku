@@ -785,7 +785,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               .flatMap {
                 case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
                 case Some(api)
-                  if api.visibility == ApiVisibility.Public || api.authorizedTeams.diff(myTeams.map(_.id)).isEmpty =>
+                  if api.visibility == ApiVisibility.Public || api.authorizedTeams.intersect(myTeams.map(_.id)).nonEmpty =>
                   findSubscriptions(api, myTeams)
                 case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api")))
               }
