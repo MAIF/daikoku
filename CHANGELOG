@@ -209,3 +209,10 @@ We'd like to thank all the contributors who worked on this release!
 
 - [Postgres] : Fix consumption sync process [#284](https://github.com/MAIF/daikoku/issues/284)
 
+## [v1.1.4] - 2021-09-21
+
+## :beetle: Bug Fixes
+
+- An authorized team can't access to private API [#318](https://github.com/MAIF/daikoku/issues/318)
+- Admin API seems to be not created on first Daikoku initialization [#285](https://github.com/MAIF/daikoku/issues/285)
+
