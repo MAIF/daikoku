@@ -4,14 +4,29 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.{Admin, FreeWithoutQuotas, PayPerUse, QuotasWithLimits}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
+  Administrator,
+  ApiEditor,
+  TeamUser
+}
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
+  Admin,
+  FreeWithoutQuotas,
+  PayPerUse,
+  QuotasWithLimits
+}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -1662,9 +1677,14 @@ class ApiControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
         teams = Seq(
-          teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
-          teamConsumer.copy(users = Set(UserWithPermission(userTeamUserId, Administrator)))),
-        apis = Seq(defaultApi.copy(visibility = ApiVisibility.Private, authorizedTeams = Seq(teamOwnerId, TeamId("fifou"))))
+          teamOwner.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamUserId, Administrator)))
+        ),
+        apis = Seq(
+          defaultApi.copy(visibility = ApiVisibility.Private,
+                          authorizedTeams = Seq(teamOwnerId, TeamId("fifou"))))
       )
 
       val sessionAdmin = loginWithBlocking(userAdmin, tenant)

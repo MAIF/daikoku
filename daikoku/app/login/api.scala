@@ -182,14 +182,15 @@ object TenantHelper {
                                          tenant)
             case Some(tenant) => f(tenant)
           }
-        .recoverWith {
-          case _ =>
-            Errors.craftResponseResult("Failed to retrieve tenant # Try to reload your page",
-              Results.NotFound,
-              request,
-              None,
-              env)
-        }
+          .recoverWith {
+            case _ =>
+              Errors.craftResponseResult(
+                "Failed to retrieve tenant # Try to reload your page",
+                Results.NotFound,
+                request,
+                None,
+                env)
+          }
     }
   }
 }
