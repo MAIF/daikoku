@@ -454,7 +454,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getAsset(assetId: String) = DaikokuTenantAction.async { ctx =>
+  def getAsset(assetId: String, streamed: Option[Boolean]) = DaikokuTenantAction.async { ctx =>
     ctx.tenant.bucketSettings match {
       case None =>
         FastFuture.successful(
@@ -468,7 +468,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
           case None =>
             FastFuture.successful(
               NotFound(Json.obj("error" -> "Asset not found!")))
-          case Some(url) if download =>
+          case Some(_) if download || streamed.contains(true) =>
             env.assetsStore
               .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
               .map {

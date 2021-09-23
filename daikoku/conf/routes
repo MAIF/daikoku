@@ -267,7 +267,7 @@ POST    /api/teams/:teamId/assets/:assetId/_replace     fr.maif.otoroshi.daikoku
 ### NoDocs ###
 DELETE  /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.deleteAsset(assetId)
 ### NoDocs ###
-GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.getAsset(assetId)
+GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.getAsset(assetId, streamed: Option[Boolean] ?= None)
 ### NoDocs ###
 GET     /tenant-assets                                  fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.listAssets()
 ### NoDocs ###
