@@ -50,10 +50,7 @@ const OtoroshiServicesAndGroupSelector = (props) => {
 
   const params = useParams();
 
-  // console.debug({target: props._found.otoroshiTarget})
-
   useEffect(() => {
-    console.debug('fetch services & groups')
     Promise.all([
       Services.getOtoroshiGroupsAsTeamAdmin(
         params.teamId,
@@ -263,7 +260,6 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
   }
 
   function otoroshiForm(_found) {
-    console.debug('render oto form');
     const firstPartOfOtoroshiForm = {
       'otoroshiTarget.otoroshiSettings': {
         type: 'select',
