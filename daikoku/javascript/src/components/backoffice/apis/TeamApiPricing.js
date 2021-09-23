@@ -50,7 +50,10 @@ const OtoroshiServicesAndGroupSelector = (props) => {
 
   const params = useParams();
 
+  // console.debug({target: props._found.otoroshiTarget})
+
   useEffect(() => {
+    console.debug('fetch services & groups')
     Promise.all([
       Services.getOtoroshiGroupsAsTeamAdmin(
         params.teamId,
@@ -63,10 +66,18 @@ const OtoroshiServicesAndGroupSelector = (props) => {
     ]).then(([groups, services]) => {
       if (!groups.error)
         setGroups(groups.map((g) => ({ label: g.name, value: g.id, type: 'group' })));
+      else
+        setGroups([]);
       if (!services.error)
         setServices(services.map((g) => ({ label: g.name, value: g.id, type: 'service' })));
+      else
+        setServices([]);
+    })
+    .catch(() => {
+      setGroups([]);
+      setServices([]);
     });
-  }, []);
+  }, [props._found.otoroshiTarget.otoroshiSettings]);
 
   useEffect(() => {
     if (groups && services) {
@@ -252,6 +263,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
   }
 
   function otoroshiForm(_found) {
+    console.debug('render oto form');
     const firstPartOfOtoroshiForm = {
       'otoroshiTarget.otoroshiSettings': {
         type: 'select',
