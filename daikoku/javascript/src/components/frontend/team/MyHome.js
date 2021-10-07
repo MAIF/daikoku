@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import { I18nContext, openContactModal, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
@@ -8,6 +8,7 @@ import { ApiList } from '../../frontend';
 import { updateUser } from '../../../core';
 import { api as API, CanIDoAction, manage } from '../../utils';
 import { converter } from '../../../services/showdown';
+import { getApolloContext } from '@apollo/client';
 
 function MyHomeComponent(props) {
   const [state, setState] = useState({
@@ -16,20 +17,45 @@ function MyHomeComponent(props) {
     myTeams: [],
   });
 
+  const location = useLocation()
+
   const { translateMethod } = useContext(I18nContext);
 
+  const { client } = useContext(getApolloContext())
+
   const fetchData = () => {
-    setState({ ...state, loading: true });
-    Promise.all([Services.myVisibleApis(), Services.teams(), Services.myTeams()]).then(
-      ([apis, teams, myTeams]) => {
-        setState({ ...state, apis, teams, myTeams, loading: false });
+    setState({ ...state, loading: true })
+    console.log("run store")
+    Promise.all([
+      client.query({
+        query: Services.graphql.myVisibleApis()
+      }),
+      Services.teams(),
+      client.query({
+        query: Services.graphql.myTeams
+      })
+    ]).then(
+      ([{ data: { visibleApis } }, teams, { data: { myTeams } }]) => {
+        console.log("changed store")
+        setState({
+          ...state,
+          apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
+          teams,
+          myTeams: myTeams.map(({ users, ...data }) => ({
+            ...data,
+            users: users
+              .map(({ teamPermission, user }) => ({ ...user, teamPermission }))
+          })),
+          loading: false
+        });
       }
     );
   };
 
   useEffect(() => {
+    console.log(location.pathname)
     fetchData();
-  }, [props.connectedUser._id]);
+  }, [props.connectedUser._id, location.pathname]);
 
   const askForApiAccess = (api, teams) =>
     Services.askForApiAccess(teams, api._id).then(() => fetchData());
@@ -62,10 +88,10 @@ function MyHomeComponent(props) {
   };
 
   const redirectToApiPage = (api) => {
-    const apiOwner = state.teams.find((t) => t._id === api.team);
+    const apiOwner = state.teams.find((t) => t._id === api.team._id);
 
     const route = (version) =>
-      `/${apiOwner ? apiOwner._humanReadableId : api.team}/${api._humanReadableId}/${version}`;
+      `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}`;
 
     if (api.isDefault) props.history.push(route(api.currentVersion));
     else
@@ -75,7 +101,8 @@ function MyHomeComponent(props) {
   };
 
   const redirectToEditPage = (api) => {
-    const adminTeam = state.myTeams.find((team) => api.team === team._id);
+    const adminTeam = (props.connectedUser.isDaikokuAdmin ? state.teams : state.myTeams)
+      .find((team) => api.team._id === team._id);
 
     if (CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
       props

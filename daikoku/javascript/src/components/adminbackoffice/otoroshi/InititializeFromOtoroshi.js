@@ -1,3 +1,4 @@
+import { getApolloContext, gql } from '@apollo/client';
 import { useMachine } from '@xstate/react';
 import _ from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
@@ -32,6 +33,8 @@ const InitializeFromOtoroshiComponent = (props) => {
   const [createdApis, setCreatedApis] = useState([]);
   const [createdSubs, setCreatedSubs] = useState([]);
 
+  const { client } = useContext(getApolloContext())
+
   useEffect(() => {
     if (apis.length && state.context.otoroshi && (createdApis.length || createdSubs.length)) {
       localStorage.setItem(
@@ -51,13 +54,38 @@ const InitializeFromOtoroshiComponent = (props) => {
     Promise.all([
       Services.teams(),
       Services.allSimpleOtoroshis(props.tenant._id),
-      Services.myVisibleApis(),
+      getVisibleApis(),
     ]).then(([teams, otoroshis, apis]) => {
       setTeams(teams);
       setOtoroshis(otoroshis);
       setApis(apis);
     });
   }, [props.tenant]);
+
+  const getVisibleApis = () => client.query({
+    query: gql`
+      query AllVisibleApis {
+        visibleApis {
+          api {
+            _id
+            tenant
+            team {
+              _id 
+            }
+            currentVersion
+            possibleUsagePlans {
+              _id
+            }
+            _humanReadableId
+          }
+        }
+      }
+      `
+  })
+    .then(({ data: { visibleApis } }) => visibleApis.map(({ api }) => ({
+      ...api,
+      team: api.team._id
+    })))
 
   const updateApi = (api) => {
     return Services.teamApi(api.team, api._humanReadableId, api.currentVersion)
@@ -104,12 +132,13 @@ const InitializeFromOtoroshiComponent = (props) => {
     orderedApikeys.filter((apikey) => (apikey.authorizedGroup || '').includes(group.value));
 
   const afterCreation = () => {
-    Services.myVisibleApis().then((apis) => {
-      setStep(1);
-      setApis(apis);
-      setCreatedApis([]);
-      toastr.success('Apis successfully created');
-    });
+    getVisibleApis()
+      .then(apis => {
+        setStep(1);
+        setApis(apis);
+        setCreatedApis([]);
+        toastr.success('Apis successfully created');
+      });
   };
 
   const afterSubCreation = () => {

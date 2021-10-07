@@ -30,6 +30,7 @@ object AppError {
   case object SubscriptionAggregationDisabled extends AppError
   case object MissingParentSubscription extends AppError
   case object TranslationNotFound extends AppError
+  case object Unauthorized extends AppError
 
   def render(error: AppError): mvc.Result = error match {
     case ApiVersionConflict => Conflict(toJson(ApiVersionConflict))
@@ -41,20 +42,20 @@ object AppError {
     case OtoroshiSettingsNotFound =>
       NotFound(Json.obj("error" -> "Otoroshi settings not found"))
     case TeamUnauthorized =>
-      Unauthorized(Json.obj("error" -> "You're not authorized on this team"))
+      play.api.mvc.Results.Unauthorized(Json.obj("error" -> "You're not authorized on this team"))
     case ApiUnauthorized =>
-      Unauthorized(
+      play.api.mvc.Results.Unauthorized(
         Json.obj("error" -> "You're not authorized on this api",
                  "status" -> 403))
     case PlanUnauthorized =>
-      Unauthorized(Json.obj("error" -> "You're not authorized on this plan"))
+      play.api.mvc.Results.Unauthorized(Json.obj("error" -> "You're not authorized on this plan"))
     case PlanNotFound =>
       NotFound(Json.obj("error" -> "Plan not found"))
     case ApiNotLinked =>
       BadRequest(
         Json.obj("error" -> "Api is not linked to an Otoroshi descriptor"))
     case UserNotTeamAdmin(userId, teamId) =>
-      Unauthorized(
+      play.api.mvc.Results.Unauthorized(
         Json.obj("error" -> s"User $userId is not an admin for team $teamId"))
     case OtoroshiError(e) => BadRequest(e)
     case SubscriptionConflict =>
@@ -74,6 +75,7 @@ object AppError {
     case MissingParentSubscription =>
       NotFound(toJson(MissingParentSubscription))
     case TranslationNotFound => NotFound(toJson(TranslationNotFound))
+    case Unauthorized => play.api.mvc.Results.Unauthorized(toJson(Unauthorized))
   }
 
   def toJson(error: AppError) = {
@@ -109,6 +111,7 @@ object AppError {
           case MissingParentSubscription =>
             "The parent of this subscription is missing"
           case TranslationNotFound => "Translation not found"
+          case Unauthorized       => "You're not authorized here"
           case _                   => ""
         }))
     }

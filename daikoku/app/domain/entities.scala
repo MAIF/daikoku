@@ -16,6 +16,7 @@ import org.joda.time.DateTime
 import play.api.libs.json._
 import play.twirl.api.Html
 import reactivemongo.bson.BSONObjectID
+import sangria.schema.ObjectType
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
@@ -1513,7 +1514,7 @@ case class ActualOtoroshiApiKey(
 sealed trait NotificationStatus
 
 object NotificationStatus {
-  case object Pending extends NotificationStatus with Product with Serializable
+  case class Pending() extends NotificationStatus with Product with Serializable
   case class Accepted(date: DateTime = DateTime.now())
       extends NotificationStatus
       with Product
@@ -1605,7 +1606,7 @@ case class Notification(
     sender: User,
     date: DateTime = DateTime.now(),
     notificationType: NotificationType = NotificationType.AcceptOrReject,
-    status: NotificationStatus = Pending,
+    status: NotificationStatus = Pending(),
     action: NotificationAction
 ) extends CanJson[Notification] {
   override def asJson: JsValue = json.NotificationFormat.writes(this)

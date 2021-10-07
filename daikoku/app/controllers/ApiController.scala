@@ -146,16 +146,6 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def myVisibleApis() = DaikokuActionMaybeWithGuest.async { ctx =>
-    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
-      env.dataStore.teamRepo
-        .forTenant(ctx.tenant)
-        .findAllNotDeleted()
-        .flatMap(teams => getVisibleApis(if(ctx.user.isDaikokuAdmin) teams else teams.filter(team => team.users.exists(u => u.userId == ctx.user.id)), ctx.user, ctx.tenant))
-        .map(Ok(_))
-    }
-  }
-
   def subscribedApis(teamId: String) = DaikokuAction.async { ctx =>
     TeamMemberOnly(
       AuditTrailEvent(s"@{user.name} has accessed the subscribed api list of team @{team.name} - @{team.id}")
@@ -767,10 +757,11 @@ class ApiController(DaikokuAction: DaikokuAction,
 
     val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
 
-    val notificationUrl = env.config.exposedPort match {
-      case 80 => s"http://${tenant.domain}/notifications"
-      case 443 => s"https://${tenant.domain}/notifications"
-      case value => s"http://${tenant.domain}:$value/"
+    val notificationUrl = tenant.exposedPort match {
+      case Some(80) => s"http://${tenant.domain}/notifications"
+      case Some(443) => s"https://${tenant.domain}/notifications"
+      case Some(value) => s"http://${tenant.domain}:$value/"
+      case None => s"http://${tenant.domain}:${env.config.exposedPort}/"
     }
     for {
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
@@ -1341,20 +1332,6 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def visibleApisOfTeam(teamId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
-    //todo: add authorizations property
-    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed visible apis of team @{team.name} - @{team.id}"))(ctx) {
-      env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrId(teamId).flatMap {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Team not found")))
-        case Some(team) =>
-          ctx.setCtxValue("team.id", team.id)
-          ctx.setCtxValue("team.name", team.name)
-          getVisibleApis(Seq(team), ctx.user, ctx.tenant)
-            .map(Ok(_))
-      }
-    }
-  }
-
   def getAllApiDocumentation(teamId: String, apiId: String, version: String) = DaikokuAction.async { ctx =>
     TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has requested all pages of @{api.name} - @{team.id}"))(teamId, ctx) {
       team => {
@@ -1409,86 +1386,6 @@ class ApiController(DaikokuAction: DaikokuAction,
           }
         }).flatten
       }
-    }
-  }
-
-  def getVisibleApis(teams: Seq[Team], user: User, tenant: Tenant): Future[JsArray] = {
-    val teamFilter = Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))))
-    for {
-      myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
-      myCurrentRequests <- if (user.isGuest) FastFuture.successful(Seq.empty) else env.dataStore.notificationRepo
-        .forTenant(tenant.id)
-        .findNotDeleted(
-          Json.obj("action.type" -> "ApiAccess",
-            "action.team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))),
-            "status.status" -> "Pending")
-        )
-      apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
-      publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public"))
-      almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-        Json.obj(
-          "visibility" -> "PublicWithAuthorizations",
-          /*"$or" -> Json.arr(
-            Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
-            teamFilter
-          )*/
-      ))
-      privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-        Json.obj(
-          "visibility" -> "Private",
-          "$or" -> Json.arr(
-            Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
-            teamFilter
-          )
-        )
-      )
-      adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-        Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ teamFilter
-      )
-    } yield {
-      val apis = (publicApis ++ almostPublicApis ++ privateApis).filter(api => api.published || myTeams.exists(api.team == _.id))
-
-      val sortedApis = apis.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-
-      val jsons = sortedApis
-        .map { api =>
-        val app = api
-          .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team)))
-
-        var json: JsObject = Json.obj()
-        if(api.visibility.name == "PublicWithAuthorizations" &&
-          !api.authorizedTeams.exists(t => myTeams.exists(a => a.id == t)) &&
-          !myTeams.exists(t => t.id == api.team))
-            json = app.asPublicWithAuthorizationsJson().as[JsObject]
-        else
-          json = app.asSimpleJson.as[JsObject]
-
-        val authorizations = teams
-          .filter(t => t.`type` != TeamType.Admin)
-          .map(team =>
-              Json.obj(
-                "team" -> team.id.asJson,
-                "authorized" -> (api.authorizedTeams.contains(team.id) || api.team == team.id),
-                "pending" -> myCurrentRequests.exists(notif => {
-                  val accessApi = notif.action.asInstanceOf[ApiAccess]
-                  accessApi.team == team.id && accessApi.api == api.id
-                })
-              ))
-
-        api.visibility.name match {
-          case "PublicWithAuthorizations" => json.as[JsObject] ++ Json.obj("authorizations" -> JsArray(authorizations))
-          case "Private" => json.as[JsObject] ++ Json.obj("authorizations" -> authorizations)
-          case _ => json
-        }
-      }
-
-      JsArray(if (user.isDaikokuAdmin) adminApis.map(api => api.asJson.as[JsObject] ++ Json.obj("authorizations" -> teams.map(team =>
-        Json.obj(
-          "team" -> team.id.asJson,
-          "authorized" -> (user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id)),
-          "pending" -> false
-        )
-      ))) ++ jsons else jsons)
     }
   }
 

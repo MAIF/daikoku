@@ -13,7 +13,6 @@ import './style/main.scss';
 import 'bootstrap';
 
 import { store } from './core';
-import { DaikokuApp, DaikokuHomeApp } from './apps';
 import { LoginPage } from './components';
 import {
   registerAlert,
@@ -23,6 +22,24 @@ import {
 } from './components/utils/window';
 import { customizeFetch } from './services/customize';
 import { I18nProvider } from './locales/i18n-context';
+
+import { DaikokuApp, DaikokuHomeApp } from './apps';
+
+import {
+  ApolloClient,
+  InMemoryCache,
+  ApolloProvider,
+} from "@apollo/client";
+
+const client = new ApolloClient({
+  uri: '/api/search',
+  cache: new InMemoryCache(),
+  defaultOptions: {
+    query: {
+      fetchPolicy: 'network-only'
+    }
+  }
+});
 
 window.$ = jQuery;
 window.jQuery = jQuery;
@@ -49,15 +66,17 @@ export function init(
 
   ReactDOM.render(
     <Provider store={storeInst}>
-      <I18nProvider tenant={tenant}>
-        <DaikokuApp
-          user={user}
-          tenant={tenant}
-          impersonator={impersonator}
-          loginProvider={tenant.authProvider}
-          loginAction={loginCallback}
-        />
-      </I18nProvider>
+      <ApolloProvider client={client}>
+        <I18nProvider tenant={tenant}>
+          <DaikokuApp
+            user={user}
+            tenant={tenant}
+            impersonator={impersonator}
+            loginProvider={tenant.authProvider}
+            loginAction={loginCallback}
+          />
+        </I18nProvider>
+      </ApolloProvider>
     </Provider>,
     document.getElementById('app')
   );

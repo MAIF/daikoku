@@ -110,7 +110,7 @@ const ApiListComponent = (props) => {
     return !!_.find(api.categories, (cat) => cat.trim().toLowerCase().indexOf(term) > -1);
   };
   const teamMatch = (api, searched) => {
-    const ownerTeam = props.teams.find((t) => t._id === api.team);
+    const ownerTeam = props.teams.find((t) => t._id === api.team._id);
     return ownerTeam && ownerTeam.name.trim().toLowerCase().indexOf(searched) > -1;
   };
   const clearFilter = () => {
@@ -175,16 +175,16 @@ const ApiListComponent = (props) => {
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (teamMatch(api, searchedTrim)) {
-            return true;
-          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-        })
+        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (teamMatch(api, searchedTrim)) {
+          return true;
+        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+      })
   )
     .groupBy('_humanReadableId')
     .map((value) => {
@@ -215,7 +215,7 @@ const ApiListComponent = (props) => {
       ),
     ];
   })().slice(offset, offset + pageNumber);
-
+  
   return (
     <section className="container">
       <div className="row mb-2">
@@ -318,7 +318,7 @@ const ApiListComponent = (props) => {
                 api={api}
                 showTeam={props.showTeam}
                 teamVisible={props.teamVisible}
-                team={props.teams.find((t) => t._id === api.team)}
+                team={props.teams.find((t) => t._id === api.team._id)}
                 myTeams={props.myTeams}
                 askForApiAccess={(teams) => props.askForApiAccess(api, teams)}
                 redirectToTeamPage={(team) => props.redirectToTeamPage(team)}

@@ -1656,8 +1656,9 @@ object json {
       "_deleted" -> o.deleted,
       "name" -> o.name,
       "domain" -> o.domain,
-      "exposedPort" -> o.exposedPort
-        .fold(JsNull.as[JsValue])(JsNumber(_)),
+      "exposedPort" -> o.exposedPort.map(JsNumber(_))
+        .getOrElse(JsNull)
+        .as[JsValue],
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "enabled" -> o.enabled,
@@ -2626,14 +2627,14 @@ object json {
     new Format[NotificationStatus] {
       override def reads(json: JsValue): JsResult[NotificationStatus] =
         (json \ "status").as[String] match {
-          case "Pending"  => JsSuccess(Pending)
+          case "Pending"  => JsSuccess(Pending())
           case "Accepted" => NotificationStatusAcceptedFormat.reads(json)
           case "Rejected" => NotificationStatusRejectedFormat.reads(json)
           case str        => JsError(s"Bad notification status value: $str")
         }
 
       override def writes(o: NotificationStatus): JsValue = o match {
-        case Pending => Json.obj("status" -> "Pending")
+        case status: Pending => Json.obj("status" -> "Pending")
         case status: Accepted =>
           NotificationStatusAcceptedFormat.writes(status).as[JsObject] ++ Json
             .obj("status" -> "Accepted")

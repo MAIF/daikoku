@@ -8,6 +8,7 @@ import { UserBackOffice } from '../';
 import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
 import { updateNotications, openSubMetadataModal, I18nContext } from '../../../core';
+import { getApolloContext, gql } from "@apollo/client";
 
 function NotificationListComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -24,12 +25,28 @@ function NotificationListComponent(props) {
 
   const isUntreatedNotification = (n) => n.status.status === 'Pending';
 
+  const { client } = useContext(getApolloContext())
+
   useEffect(() => {
     Promise.all([
       Services.myNotifications(state.page, state.pageSize),
       Services.teams(),
-      Services.myVisibleApis(),
-    ]).then(([notifications, teams, apis]) =>
+      client.query({
+        query: gql`
+        query AllVisibleApis {
+          visibleApis {
+            api {
+              _id
+              name
+              possibleUsagePlans {
+                _id
+              }
+            }
+          }
+        }
+        `
+      })
+    ]).then(([notifications, teams, { data: { visibleApis } }]) =>
       setState({
         ...state,
         untreatedNotifications: notifications.notifications.filter((n) =>
@@ -40,7 +57,7 @@ function NotificationListComponent(props) {
         untreatedCount: notifications.count,
         // page: state.page + 1,
         teams,
-        apis,
+        apis: visibleApis.map(({ api }) => api),
       })
     );
   }, []);

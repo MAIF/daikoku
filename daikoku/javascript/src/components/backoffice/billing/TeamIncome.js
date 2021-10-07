@@ -9,6 +9,7 @@ import { MonthPicker } from '../../inputs/monthPicker';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 import { formatCurrency, formatPlanType, Spinner, Can, read, api } from '../../utils';
 import { I18nContext, setError } from '../../../core';
+import { getApolloContext } from '@apollo/client';
 
 function TeamIncomeComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -27,6 +28,8 @@ function TeamIncomeComponent(props) {
     getBillingData(props.currentTeam);
   }, []);
 
+  const { client } = useContext(getApolloContext())
+
   const getBillingData = (team) => {
     setState({ ...state, loading: true });
     Promise.all([
@@ -35,11 +38,17 @@ function TeamIncomeComponent(props) {
         state.date.startOf('month').valueOf(),
         state.date.endOf('month').valueOf()
       ),
-      Services.myVisibleApis(team._id),
+      client.query({
+        query: Services.graphql.myVisibleApisOfTeam(team._id)
+      }),
       Services.teams(),
-    ]).then(([consumptions, apis, teams]) => {
+    ]).then(([consumptions, { data: { visibleApis } }, teams]) => {
       const consumptionsByApi = getConsumptionsByApi(consumptions);
-      setState({ ...state, consumptions, consumptionsByApi, apis, teams, loading: false });
+      setState({
+        ...state, consumptions, consumptionsByApi,
+        apis: visibleApis.map(({ api }) => api),
+        teams, loading: false
+      });
     });
   };
 

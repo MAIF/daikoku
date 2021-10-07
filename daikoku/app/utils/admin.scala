@@ -73,6 +73,11 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
           }
         case LocalAdminApiConfig(_) =>
           request.headers.get("Authorization") match {
+            case None => Errors.craftResponseResult("No api key provided",
+              Results.Unauthorized,
+              request,
+              None,
+              env)
             case Some(auth) if auth.startsWith("Basic ") =>
               extractUsernamePassword(auth) match {
                 case None =>

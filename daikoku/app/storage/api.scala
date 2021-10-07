@@ -32,7 +32,6 @@ trait Repo[Of, Id <: ValueType] {
   def format: Format[Of]
 
   def extractId(value: Of): String
-
   def collectionName: String
 
   def indices: Seq[Index.Default] = Seq.empty
