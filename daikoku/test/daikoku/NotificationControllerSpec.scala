@@ -185,7 +185,7 @@ class NotificationControllerSpec()
         (resp.json \ "notifications").as[JsArray])
       eventualNotifications.isSuccess mustBe true
       eventualNotifications.get.head.id mustBe untreatedNotification.id
-      eventualNotifications.get.forall(_.status == Pending) mustBe true
+      eventualNotifications.get.forall(_.status == Pending()) mustBe true
     }
     "read his count of notifications" in {
       setupEnvBlocking(
@@ -232,7 +232,7 @@ class NotificationControllerSpec()
         (resp.json \ "notifications").as[JsArray])
       eventualNotifications.isSuccess mustBe true
       eventualNotifications.get.head.id mustBe untreatedNotification.id
-      eventualNotifications.get.forall(_.status == Pending) mustBe true
+      eventualNotifications.get.forall(_.status == Pending()) mustBe true
     }
     "accept notification - team access" in {
       setupEnvBlocking(
@@ -508,7 +508,7 @@ class NotificationControllerSpec()
         (resp.json \ "notifications").as[JsArray])
       eventualNotifications.isSuccess mustBe true
       eventualNotifications.get.head.id mustBe untreatedNotification.id
-      eventualNotifications.get.forall(_.status == Pending) mustBe true
+      eventualNotifications.get.forall(_.status == Pending()) mustBe true
     }
     "accept notification - team access" in {
       setupEnvBlocking(
