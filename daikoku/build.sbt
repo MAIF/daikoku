@@ -79,7 +79,9 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.893",
   "commons-logging" % "commons-logging" % "1.1.1",
   "org.sangria-graphql" % "sangria_2.13" % "2.1.3",
-  "org.sangria-graphql" % "sangria-play-json_2.13" % "2.0.2",
+  "org.sangria-graphql" % "sangria-play-json_2.13" % "2.0.2" excludeAll ExclusionRule(
+    organization = "com.typesafe.play"
+  ),
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2"
 )
 
