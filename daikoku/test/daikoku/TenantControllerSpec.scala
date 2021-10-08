@@ -77,9 +77,35 @@ class TenantControllerSpec()
 
       val sessionNewTenant = loginWithBlocking(daikokuAdmin, createdTenant)
       val respTeams =
-        httpJsonCallBlocking(s"/api/me/teams")(createdTenant, sessionNewTenant)
+        httpJsonCallBlocking(s"/api/search", "POST", body = Some(Json.obj(
+          "query" -> """
+            |query MyTeams {
+            |    myTeams {
+            |      name
+            |      _humanReadableId
+            |      tenant {
+            |         id
+            |      }
+            |      _id
+            |      type
+            |      contact
+            |      users {
+            |        user {
+            |          userId: id
+            |        }
+            |        teamPermission
+            |      }
+            |    }
+            |  }
+            |""".stripMargin
+        )))(createdTenant, sessionNewTenant)
+
       val tryMyTeams =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads(respTeams.json)
+        fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads((respTeams.json \ "data" \ "myTeams").as[JsArray].value
+          .foldLeft(JsArray())((acc, team) =>
+            acc :+ team.as[JsObject].deepMerge(Json.obj("_tenant" -> (team \ "tenant" \ "id").as[String]))
+          ))
+
       tryMyTeams.isSuccess mustBe true
       val myTeams = tryMyTeams.get
 

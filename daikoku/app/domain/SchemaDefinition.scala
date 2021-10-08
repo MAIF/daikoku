@@ -1108,8 +1108,13 @@ object SchemaDefinition {
       Field("myTeams", ListType(TeamObjectType),
         resolve = ctx =>
           _UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed his team list"))(ctx.ctx._2) {
-            ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant)
-              .findNotDeleted(Json.obj("users.userId" -> (ctx.ctx._2.user.id.value)))
+            (if (ctx.ctx._2.user.isDaikokuAdmin)
+              ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant)
+                .findAllNotDeleted()
+            else
+              ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant)
+                .findNotDeleted(Json.obj("users.userId" -> ctx.ctx._2.user.id.value))
+            )
               .map(teams => teams.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0))
           }.map {
             case Left(value) => value

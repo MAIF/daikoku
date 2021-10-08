@@ -412,12 +412,30 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = httpJsonCallBlocking("/api/me/teams")(tenant, session)
+      val resp = httpJsonCallBlocking("/api/search", "POST",
+        body = Some(Json.obj(
+          "query" ->
+            """
+              |query MyTeams {
+              |    myTeams {
+              |      name
+              |      _humanReadableId
+              |      _id
+              |      type
+              |      users {
+              |        user {
+              |          userId: id
+              |        }
+              |        teamPermission
+              |      }
+              |    }
+              |  }
+              |""".stripMargin
+        )))(tenant, session)
       resp.status mustBe 200
-      val result =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads(resp.json)
-      result.isSuccess mustBe true
-      result.get.size mustBe 3
+
+      val result = (resp.json \ "data" \ "myTeams").as[JsArray]
+      result.value.length mustBe 3
     }
 
     "see one of his teams" in {
@@ -1194,12 +1212,30 @@ class ApiControllerSpec()
         teams = Seq(teamOwner)
       )
       val session = loginWithBlocking(userApiEditor, tenant)
-      val resp = httpJsonCallBlocking("/api/me/teams")(tenant, session)
+      val resp = httpJsonCallBlocking("/api/search", "POST",
+        body = Some(Json.obj(
+          "query" ->
+            """
+              |query MyTeams {
+              |    myTeams {
+              |      name
+              |      _humanReadableId
+              |      _id
+              |      type
+              |      users {
+              |        user {
+              |          userId: id
+              |        }
+              |        teamPermission
+              |      }
+              |    }
+              |  }
+              |""".stripMargin
+        )))(tenant, session)
       resp.status mustBe 200
-      val result =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads(resp.json)
-      result.isSuccess mustBe true
-      result.get.size mustBe 2
+
+      val result = (resp.json \ "data" \ "myTeams").as[JsArray]
+      result.value.length mustBe 2
     }
 
     "see one of his teams" in {
@@ -1526,12 +1562,30 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(user, tenant)
-      val resp = httpJsonCallBlocking("/api/me/teams")(tenant, session)
+      val resp = httpJsonCallBlocking("/api/search", "POST",
+        body = Some(Json.obj(
+          "query" ->
+            """
+              |query MyTeams {
+              |    myTeams {
+              |      name
+              |      _humanReadableId
+              |      _id
+              |      type
+              |      users {
+              |        user {
+              |          userId: id
+              |        }
+              |        teamPermission
+              |      }
+              |    }
+              |  }
+              |""".stripMargin
+        )))(tenant, session)
       resp.status mustBe 200
-      val result =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads(resp.json)
-      result.isSuccess mustBe true
-      result.get.size mustBe 3
+
+      val result = (resp.json \ "data" \ "myTeams").as[JsArray]
+      result.value.length mustBe 3
     }
 
     "see one of his teams" in {
@@ -1868,7 +1922,7 @@ class ApiControllerSpec()
       subAdminResp.status mustBe 200
 
       val subUserResp = httpJsonCallBlocking(
-        path = s"/api/me/subscriptions/${defaultApi.id.value}"
+        path = s"/api/me/subscriptions/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
       )(tenant, sessionUser)
       subUserResp.status mustBe 401
 
