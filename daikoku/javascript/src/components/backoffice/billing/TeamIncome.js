@@ -22,6 +22,7 @@ function TeamIncomeComponent(props) {
     teams: [],
     loading: false,
     date: moment(),
+    apis: []
   });
 
   useEffect(() => {

@@ -306,10 +306,6 @@ object SchemaDefinition {
       )
     )
 
-    lazy val  CurrencyType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), Currency](
-      ObjectTypeDescription("One currency represented by code"),
-    )
-
     lazy val TeamObjectType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team] = ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team](
       "Team",
       "A Daikoku Team object",
@@ -346,7 +342,7 @@ object SchemaDefinition {
         Field("maxRequestPerMonth", OptionType(LongType), resolve = _.value.maxRequestPerMonth),
         Field("allowMultipleKeys", OptionType(BooleanType), resolve = _.value.allowMultipleKeys),
         Field("autoRotation", OptionType(BooleanType), resolve = _.value.autoRotation),
-        Field("currency", CurrencyType, resolve = _.value.currency),
+        Field("currency", StringType, resolve = _.value.currency.code),
         Field("customName", OptionType(StringType), resolve = _.value.customName),
         Field("customDescription", OptionType(StringType), resolve = _.value.customDescription),
         Field("otoroshiTarget", OptionType(OtoroshiTargetType), resolve = _.value.otoroshiTarget),
@@ -359,7 +355,8 @@ object SchemaDefinition {
         ),
         Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess),
         Field("integrationProcess", IntegrationProcessType, resolve = _.value.integrationProcess),
-        Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity)
+        Field("aggregationApiKeysSecurity", OptionType(BooleanType), resolve = _.value.aggregationApiKeysSecurity),
+        Field("type", StringType, resolve = _.value.typeName)
       )
     )
 
@@ -373,13 +370,16 @@ object SchemaDefinition {
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
-        ))
+        )),
+      AddFields(
+        Field("type", StringType, resolve = _.value.typeName)
+      )
     ))
 
     lazy val  FreeWithoutQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithoutQuotas](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key without quotas"),
-      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
+      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
@@ -391,13 +391,16 @@ object SchemaDefinition {
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
-        ))
+        )),
+      AddFields(
+        Field("type", StringType, resolve = _.value.typeName)
+      )
     ))
 
     lazy val  FreeWithQuotasUsagePlanType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.FreeWithQuotas](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key with quotas"),
-      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
+      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
       ReplaceField("subscriptionProcess", Field("subscriptionProcess", SubscriptionProcessType, resolve = _.value.subscriptionProcess)),
@@ -409,13 +412,16 @@ object SchemaDefinition {
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
-        ))
+        )),
+      AddFields(
+        Field("type", StringType, resolve = _.value.typeName)
+      )
     ))
 
     lazy val  QuotasWithLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithLimits](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key with limited quotas"),
-      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
+      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -428,13 +434,16 @@ object SchemaDefinition {
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
-        ))
+        )),
+      AddFields(
+        Field("type", StringType, resolve = _.value.typeName)
+      )
     ))
 
     lazy val  QuotasWithoutLimitsType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.QuotasWithoutLimits](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key with quotas but not limited"),
-      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
+      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -447,13 +456,16 @@ object SchemaDefinition {
       ReplaceField("authorizedTeams",
           Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
             Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
-          ))
+          )),
+      AddFields(
+        Field("type", StringType, resolve = _.value.typeName)
+      )
     ))
 
     lazy val  PayPerUseType = new PossibleObject(deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), UsagePlan.PayPerUse](
       Interfaces(UsagePlanInterfaceType),
       ObjectTypeDescription("An Api plan which generate api key where you need to pay per use"),
-      ReplaceField("currency", Field("currency", CurrencyType, resolve = _.value.currency)),
+      ReplaceField("currency", Field("currency", StringType, resolve = _.value.currency.code)),
       ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
       ReplaceField("trialPeriod", Field("trialPeriod", OptionType(BillingDurationType), resolve = _.value.trialPeriod)),
       ReplaceField("billingDuration", Field("billingDuration", BillingDurationType, resolve = _.value.billingDuration)),
@@ -466,7 +478,10 @@ object SchemaDefinition {
       ReplaceField("authorizedTeams",
         Field("authorizedTeams", ListType(OptionType(TeamObjectType)), resolve = ctx =>
           Future.sequence(ctx.value.authorizedTeams.map(team => ctx.ctx._1.teamRepo.forTenant(ctx.ctx._2.tenant).findById(team)))
-        ))
+        )),
+      AddFields(
+        Field("type", StringType, resolve = _.value.typeName)
+      )
     ))
 
     lazy val  OtoroshiApiKeyType = deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), OtoroshiApiKey](

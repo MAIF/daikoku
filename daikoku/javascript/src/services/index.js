@@ -911,6 +911,12 @@ export const graphql = {
           categories
           stars
           smallDescription
+          possibleUsagePlans {
+            _id
+            customName
+            currency
+            type
+          }
           currentVersion
           team {
             _id
