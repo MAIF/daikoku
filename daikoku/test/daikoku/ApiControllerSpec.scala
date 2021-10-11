@@ -10,7 +10,10 @@ import controllers.AppError.{
   SubscriptionAggregationDisabled,
   SubscriptionParentExisted
 }
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
   Admin,
@@ -20,7 +23,11 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlan.{
   QuotasWithLimits,
   QuotasWithoutLimits
 }
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
+  Administrator,
+  ApiEditor,
+  TeamUser
+}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.{
@@ -29,7 +36,10 @@ import fr.maif.otoroshi.daikoku.domain.json.{
   SeqApiSubscriptionFormat
 }
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
@@ -56,7 +66,7 @@ class ApiControllerSpec()
   override def afterEach(): Unit = {
     wireMockServer.stop()
   }
-/*
+  /*
   "a tenant administrator" can {
     "not initialize apis for a tenant for which he's not admin" in {
       setupEnvBlocking(
@@ -1203,7 +1213,7 @@ class ApiControllerSpec()
       (resultOrg \ "creation").as[String] mustBe "done"
     }
   }
-*/
+   */
 
   "a api editor" can {
     "see his teams" in {
@@ -1213,10 +1223,13 @@ class ApiControllerSpec()
         teams = Seq(teamOwner)
       )
       val session = loginWithBlocking(userApiEditor, tenant)
-      val resp = httpJsonCallBlocking("/api/search", "POST",
-        body = Some(Json.obj(
-          "query" ->
-            """
+      val resp = httpJsonCallBlocking(
+        "/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              """
               |query MyTeams {
               |    myTeams {
               |      name
@@ -1232,7 +1245,8 @@ class ApiControllerSpec()
               |    }
               |  }
               |""".stripMargin
-        )))(tenant, session)
+          ))
+      )(tenant, session)
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
@@ -1307,14 +1321,16 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userApiEditor, tenant)
 
       val respError = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/another-api/${defaultApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/another-api/${defaultApi.currentVersion.value}",
         method = "PUT",
         body = Some(updatedApi.asJson))(tenant, session)
 
       respError.status mustBe 404
 
       val respError2 = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/apis/another-api/${defaultApi.currentVersion.value}",
+        path =
+          s"/api/teams/${teamConsumerId.value}/apis/another-api/${defaultApi.currentVersion.value}",
         method = "PUT",
         body = Some(updatedApi.asJson))(tenant, session)
 
@@ -1563,10 +1579,13 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(user, tenant)
-      val resp = httpJsonCallBlocking("/api/search", "POST",
-        body = Some(Json.obj(
-          "query" ->
-            """
+      val resp = httpJsonCallBlocking(
+        "/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              """
               |query MyTeams {
               |    myTeams {
               |      name
@@ -1582,7 +1601,8 @@ class ApiControllerSpec()
               |    }
               |  }
               |""".stripMargin
-        )))(tenant, session)
+          ))
+      )(tenant, session)
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
@@ -1909,9 +1929,14 @@ class ApiControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin, user),
         teams = Seq(
-          teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
-          teamConsumer.copy(users = Set(UserWithPermission(userTeamUserId, Administrator)))),
-        apis = Seq(defaultApi.copy(visibility = ApiVisibility.Private, authorizedTeams = Seq(teamOwnerId, TeamId("fifou"))))
+          teamOwner.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))),
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamUserId, Administrator)))
+        ),
+        apis = Seq(
+          defaultApi.copy(visibility = ApiVisibility.Private,
+                          authorizedTeams = Seq(teamOwnerId, TeamId("fifou"))))
       )
 
       val sessionAdmin = loginWithBlocking(userAdmin, tenant)
@@ -1923,7 +1948,8 @@ class ApiControllerSpec()
       subAdminResp.status mustBe 200
 
       val subUserResp = httpJsonCallBlocking(
-        path = s"/api/me/subscriptions/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
+        path =
+          s"/api/me/subscriptions/${defaultApi.id.value}/${defaultApi.currentVersion.value}"
       )(tenant, sessionUser)
       subUserResp.status mustBe 401
 

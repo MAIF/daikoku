@@ -8,7 +8,7 @@ import { UserBackOffice } from '../';
 import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
 import { updateNotications, openSubMetadataModal, I18nContext } from '../../../core';
-import { getApolloContext, gql } from "@apollo/client";
+import { getApolloContext, gql } from '@apollo/client';
 
 function NotificationListComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -25,7 +25,7 @@ function NotificationListComponent(props) {
 
   const isUntreatedNotification = (n) => n.status.status === 'Pending';
 
-  const { client } = useContext(getApolloContext())
+  const { client } = useContext(getApolloContext());
 
   useEffect(() => {
     Promise.all([
@@ -33,32 +33,39 @@ function NotificationListComponent(props) {
       Services.teams(),
       client.query({
         query: gql`
-        query AllVisibleApis {
-          visibleApis {
-            api {
-              _id
-              name
-              possibleUsagePlans {
+          query AllVisibleApis {
+            visibleApis {
+              api {
                 _id
+                name
+                possibleUsagePlans {
+                  _id
+                }
               }
             }
           }
-        }
-        `
-      })
-    ]).then(([notifications, teams, { data: { visibleApis } }]) =>
-      setState({
-        ...state,
-        untreatedNotifications: notifications.notifications.filter((n) =>
-          isUntreatedNotification(n)
-        ),
-        notifications: notifications.notifications,
-        count: notifications.count,
-        untreatedCount: notifications.count,
-        // page: state.page + 1,
+        `,
+      }),
+    ]).then(
+      ([
+        notifications,
         teams,
-        apis: visibleApis.map(({ api }) => api),
-      })
+        {
+          data: { visibleApis },
+        },
+      ]) =>
+        setState({
+          ...state,
+          untreatedNotifications: notifications.notifications.filter((n) =>
+            isUntreatedNotification(n)
+          ),
+          notifications: notifications.notifications,
+          count: notifications.count,
+          untreatedCount: notifications.count,
+          // page: state.page + 1,
+          teams,
+          apis: visibleApis.map(({ api }) => api),
+        })
     );
   }, []);
 
