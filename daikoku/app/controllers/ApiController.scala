@@ -2307,7 +2307,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                                 "_humanReadableId" -> api.humanReadableId,
                                 "_id" -> Json.obj("$ne" -> generatedApiId.value)
                               ),
-                              Json.obj("$push" -> Json.obj("isDefault" -> false))
+                              Json.obj("$set" -> Json.obj("isDefault" -> false))
                             )
                               .map(_ => Created(Json.obj("created" -> true)))
                           case false  => FastFuture.successful(BadRequest(Json.obj("error" -> "The creation of api has failed")))

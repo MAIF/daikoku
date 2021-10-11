@@ -81,7 +81,7 @@ object Helper {
                             params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
     logger.debug(s"_convertTuple - $field")
 
-    if (field._1 == "$push") {
+    if (field._1 == "$push" || field._1 == "$set") {
       val entry = field._2.as[JsObject].fields.head
       (
         s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(

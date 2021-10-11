@@ -1146,6 +1146,7 @@ abstract class CommonMongoRepo[Of, Id <: ValueType](
       update
         .element(q = query, u = queryUpdate, upsert = false, multi = true)
         .flatMap { element =>
+          println(element)
           update.many(List(element)).map(_.nModified)
         }
     }
