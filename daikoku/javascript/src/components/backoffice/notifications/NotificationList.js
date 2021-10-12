@@ -232,7 +232,7 @@ function NotificationListComponent(props) {
 
                 return (
                   <div key={key}>
-                    <h2>{team ? team.name : translateMethod('Personal')}</h2>
+                    <h2>{(team ? team.name : translateMethod('Personal'))}</h2>
                     {notifs
                       .sort((a, b) => {
                         return b.date - a.date;

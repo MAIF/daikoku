@@ -227,7 +227,7 @@ export function SimpleNotification(props) {
   const fromFormatter = (action, sender) => {
     switch (action.type) {
       case 'ApiAccess':
-        return `${sender.name}/${props.getTeam(action.team)?.name}`;
+        return `${sender.name}/${Option(props.getTeam(action.team)).map(team => team.name).getOrNull()}`;
       case 'TeamAccess':
       case 'NewPostPublished':
       case 'NewIssueOpen':
@@ -236,7 +236,7 @@ export function SimpleNotification(props) {
       case 'TeamInvitation':
         return props.getTeam(action.team).name;
       case 'ApiSubscription':
-        return `${sender.name}/${props.getTeam(action.team)?.name}`;
+        return `${sender.name}/${Option(props.getTeam(action.team)).map(team => team.name).getOrNull()}`;
       case 'OtoroshiSyncSubscriptionError':
         return 'Otoroshi verifier job';
       case 'OtoroshiSyncApiError':
