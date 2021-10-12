@@ -42,13 +42,15 @@ object AppError {
     case OtoroshiSettingsNotFound =>
       NotFound(Json.obj("error" -> "Otoroshi settings not found"))
     case TeamUnauthorized =>
-      play.api.mvc.Results.Unauthorized(Json.obj("error" -> "You're not authorized on this team"))
+      play.api.mvc.Results
+        .Unauthorized(Json.obj("error" -> "You're not authorized on this team"))
     case ApiUnauthorized =>
       play.api.mvc.Results.Unauthorized(
         Json.obj("error" -> "You're not authorized on this api",
                  "status" -> 403))
     case PlanUnauthorized =>
-      play.api.mvc.Results.Unauthorized(Json.obj("error" -> "You're not authorized on this plan"))
+      play.api.mvc.Results
+        .Unauthorized(Json.obj("error" -> "You're not authorized on this plan"))
     case PlanNotFound =>
       NotFound(Json.obj("error" -> "Plan not found"))
     case ApiNotLinked =>
@@ -75,7 +77,7 @@ object AppError {
     case MissingParentSubscription =>
       NotFound(toJson(MissingParentSubscription))
     case TranslationNotFound => NotFound(toJson(TranslationNotFound))
-    case Unauthorized => play.api.mvc.Results.Unauthorized(toJson(Unauthorized))
+    case Unauthorized        => play.api.mvc.Results.Unauthorized(toJson(Unauthorized))
   }
 
   def toJson(error: AppError) = {
@@ -111,7 +113,7 @@ object AppError {
           case MissingParentSubscription =>
             "The parent of this subscription is missing"
           case TranslationNotFound => "Translation not found"
-          case Unauthorized       => "You're not authorized here"
+          case Unauthorized        => "You're not authorized here"
           case _                   => ""
         }))
     }

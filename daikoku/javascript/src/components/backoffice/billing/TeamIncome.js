@@ -22,14 +22,14 @@ function TeamIncomeComponent(props) {
     teams: [],
     loading: false,
     date: moment(),
-    apis: []
+    apis: [],
   });
 
   useEffect(() => {
     getBillingData(props.currentTeam);
   }, []);
 
-  const { client } = useContext(getApolloContext())
+  const { client } = useContext(getApolloContext());
 
   const getBillingData = (team) => {
     setState({ ...state, loading: true });
@@ -40,17 +40,28 @@ function TeamIncomeComponent(props) {
         state.date.endOf('month').valueOf()
       ),
       client.query({
-        query: Services.graphql.myVisibleApisOfTeam(team._id)
+        query: Services.graphql.myVisibleApisOfTeam(team._id),
       }),
       Services.teams(),
-    ]).then(([consumptions, { data: { visibleApis } }, teams]) => {
-      const consumptionsByApi = getConsumptionsByApi(consumptions);
-      setState({
-        ...state, consumptions, consumptionsByApi,
-        apis: visibleApis.map(({ api }) => api),
-        teams, loading: false
-      });
-    });
+    ]).then(
+      ([
+        consumptions,
+        {
+          data: { visibleApis },
+        },
+        teams,
+      ]) => {
+        const consumptionsByApi = getConsumptionsByApi(consumptions);
+        setState({
+          ...state,
+          consumptions,
+          consumptionsByApi,
+          apis: visibleApis.map(({ api }) => api),
+          teams,
+          loading: false,
+        });
+      }
+    );
   };
 
   const getConsumptionsByApi = (consumptions) =>

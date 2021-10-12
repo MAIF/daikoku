@@ -175,16 +175,16 @@ const ApiListComponent = (props) => {
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (teamMatch(api, searchedTrim)) {
-          return true;
-        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-      })
+          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (teamMatch(api, searchedTrim)) {
+            return true;
+          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+        })
   )
     .groupBy('_humanReadableId')
     .map((value) => {
@@ -215,7 +215,7 @@ const ApiListComponent = (props) => {
       ),
     ];
   })().slice(offset, offset + pageNumber);
-  
+
   return (
     <section className="container">
       <div className="row mb-2">

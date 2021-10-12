@@ -60,20 +60,19 @@ const OtoroshiServicesAndGroupSelector = (props) => {
         params.teamId,
         props._found.otoroshiTarget.otoroshiSettings
       ),
-    ]).then(([groups, services]) => {
-      if (!groups.error)
-        setGroups(groups.map((g) => ({ label: g.name, value: g.id, type: 'group' })));
-      else
+    ])
+      .then(([groups, services]) => {
+        if (!groups.error)
+          setGroups(groups.map((g) => ({ label: g.name, value: g.id, type: 'group' })));
+        else setGroups([]);
+        if (!services.error)
+          setServices(services.map((g) => ({ label: g.name, value: g.id, type: 'service' })));
+        else setServices([]);
+      })
+      .catch(() => {
         setGroups([]);
-      if (!services.error)
-        setServices(services.map((g) => ({ label: g.name, value: g.id, type: 'service' })));
-      else
         setServices([]);
-    })
-    .catch(() => {
-      setGroups([]);
-      setServices([]);
-    });
+      });
   }, [props._found.otoroshiTarget.otoroshiSettings]);
 
   useEffect(() => {

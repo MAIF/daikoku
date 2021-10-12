@@ -2,7 +2,10 @@ package fr.maif.otoroshi.daikoku.tests
 
 import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.{
+  DaikokuSpecHelper,
+  OneServerPerSuiteWithMyComponents
+}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -43,8 +46,12 @@ class GuestModeSpec()
         teams = Seq(teamOwner)
       )
 
-      val resp = httpJsonCallWithoutSessionBlocking(path = s"/api/search", "POST", body = Some(Json.obj(
-        "query" -> """
+      val resp = httpJsonCallWithoutSessionBlocking(
+        path = s"/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" -> """
                      |query MyTeams {
                      |    myTeams {
                      |      name
@@ -64,14 +71,19 @@ class GuestModeSpec()
                      |    }
                      |  }
                      |""".stripMargin
-      )))(
-        publicTenant)
+          ))
+      )(publicTenant)
       resp.status mustBe 200
       val myTeam =
-        fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads((resp.json \ "data" \ "myTeams").as[JsArray].value
-          .foldLeft(JsArray())((acc, team) =>
-            acc :+ team.as[JsObject].deepMerge(Json.obj("_tenant" -> (team \ "tenant" \ "id").as[String]))
-          ))
+        fr.maif.otoroshi.daikoku.domain.json.SeqTeamFormat.reads(
+          (resp.json \ "data" \ "myTeams")
+            .as[JsArray]
+            .value
+            .foldLeft(JsArray())((acc, team) =>
+              acc :+ team
+                .as[JsObject]
+                .deepMerge(
+                  Json.obj("_tenant" -> (team \ "tenant" \ "id").as[String]))))
       myTeam.isSuccess mustBe true
       myTeam.get.size mustBe 0
     }
@@ -108,8 +120,11 @@ class GuestModeSpec()
       )
 
       val resp = httpJsonCallWithoutSessionBlocking(
-        path = s"/api/search", "POST", body = Some(Json.obj(
-          "query" -> """
+        path = s"/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" -> """
             |query AllVisibleApis {
             |          visibleApis {
             |            api {
@@ -118,10 +133,14 @@ class GuestModeSpec()
             |          }
             |        }
             |""".stripMargin
-        )))(publicTenant)
+          ))
+      )(publicTenant)
       resp.status mustBe 200
       val apis =
-        (resp.json \ "data" \ "visibleApis").as[JsArray].value.map(json => (json \ "api" \ "_id").as[String])
+        (resp.json \ "data" \ "visibleApis")
+          .as[JsArray]
+          .value
+          .map(json => (json \ "api" \ "_id").as[String])
       apis.size mustBe 1
       apis.contains(publicApi.id.value) mustBe true
 
@@ -140,8 +159,11 @@ class GuestModeSpec()
       )
 
       val resp = httpJsonCallWithoutSessionBlocking(
-        path = s"/api/search", "POST", body = Some(Json.obj(
-          "query" -> s"""
+        path = s"/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" -> s"""
             |query AllVisibleApis {
             |      visibleApis: visibleApisOfTeam(teamId: "${teamOwnerId}") {
             |        api {
@@ -150,11 +172,15 @@ class GuestModeSpec()
             |    }
             |}
             |""".stripMargin
-        )))(publicTenant)
+          ))
+      )(publicTenant)
       println(resp.json)
       resp.status mustBe 200
       val apis =
-        (resp.json \ "data" \ "visibleApis").as[JsArray].value.map(json => (json \ "api" \ "_id").as[String])
+        (resp.json \ "data" \ "visibleApis")
+          .as[JsArray]
+          .value
+          .map(json => (json \ "api" \ "_id").as[String])
       apis.size mustBe 1
       apis.contains(publicApi.id.value) mustBe true
     }

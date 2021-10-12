@@ -25,20 +25,16 @@ import { I18nProvider } from './locales/i18n-context';
 
 import { DaikokuApp, DaikokuHomeApp } from './apps';
 
-import {
-  ApolloClient,
-  InMemoryCache,
-  ApolloProvider,
-} from "@apollo/client";
+import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
 
 const client = new ApolloClient({
   uri: '/api/search',
   cache: new InMemoryCache(),
   defaultOptions: {
     query: {
-      fetchPolicy: 'network-only'
-    }
-  }
+      fetchPolicy: 'network-only',
+    },
+  },
 });
 
 window.$ = jQuery;

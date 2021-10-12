@@ -4,7 +4,10 @@ import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
 import controllers.AppError.Unauthorized
-import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuActionContext,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.audit.{AuditEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain._
@@ -123,37 +126,40 @@ object authorizations {
   }
 
   object async {
-    def _UberPublicUserAccess[T,B](audit: AuditEvent)(
-      ctx: DaikokuActionContext[T])(f: => Future[B])(implicit ec: ExecutionContext, env: Env): Future[Either[B, AppError]] = {
+    def _UberPublicUserAccess[T, B](audit: AuditEvent)(
+        ctx: DaikokuActionContext[T])(f: => Future[B])(
+        implicit ec: ExecutionContext,
+        env: Env): Future[Either[B, AppError]] = {
       if (ctx.user.isDaikokuAdmin) {
         f.andThen {
-          case _ =>
-            audit.logTenantAuditEvent(ctx.tenant,
-              ctx.user,
-              ctx.session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.AuthorizedDaikokuAdmin)
-        }
+            case _ =>
+              audit.logTenantAuditEvent(
+                ctx.tenant,
+                ctx.user,
+                ctx.session,
+                ctx.request,
+                ctx.ctx,
+                AuthorizationLevel.AuthorizedDaikokuAdmin)
+          }
           .flatMap(f => FastFuture.successful(Left(f)))
       } else if (ctx.user.tenants.contains(ctx.tenant.id)) {
         f.andThen {
-          case _ =>
-            audit.logTenantAuditEvent(ctx.tenant,
-              ctx.user,
-              ctx.session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.AuthorizedUberPublic)
-        }
+            case _ =>
+              audit.logTenantAuditEvent(ctx.tenant,
+                                        ctx.user,
+                                        ctx.session,
+                                        ctx.request,
+                                        ctx.ctx,
+                                        AuthorizationLevel.AuthorizedUberPublic)
+          }
           .flatMap(f => FastFuture.successful(Left(f)))
       } else {
         audit.logTenantAuditEvent(ctx.tenant,
-          ctx.user,
-          ctx.session,
-          ctx.request,
-          ctx.ctx,
-          AuthorizationLevel.NotAuthorized)
+                                  ctx.user,
+                                  ctx.session,
+                                  ctx.request,
+                                  ctx.ctx,
+                                  AuthorizationLevel.NotAuthorized)
 
         FastFuture.successful(Right(Unauthorized))
       }
@@ -165,7 +171,7 @@ object authorizations {
         env: Env): Future[Result] = {
       _UberPublicUserAccess(audit)(ctx)(f)
         .map {
-          case Left(value) => value
+          case Left(value)  => value
           case Right(value) => AppError.render(value)
         }
     }

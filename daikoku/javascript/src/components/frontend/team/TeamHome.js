@@ -15,29 +15,42 @@ function TeamHomeComponent(props) {
     apis: [],
   });
 
-  const { client } = useContext(getApolloContext())
+  const { client } = useContext(getApolloContext());
 
   const fetchData = (teamId) => {
     Promise.all([
       client.query({
-        query: Services.graphql.myVisibleApisOfTeam(teamId)
+        query: Services.graphql.myVisibleApisOfTeam(teamId),
       }),
       Services.team(teamId),
       Services.teams(),
       client.query({
-        query: Services.graphql.myTeams
-      })
-    ]).then(([{ data: { visibleApis } }, team, teams, { data: { myTeams } }]) => {
-      if (visibleApis.error || team.error) {
-        props.setError({ error: { status: 404, message: visibleApis.error } });
-      } else {
-        setState({
-          ...state,
-          apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
-          team, teams, myTeams
-        });
+        query: Services.graphql.myTeams,
+      }),
+    ]).then(
+      ([
+        {
+          data: { visibleApis },
+        },
+        team,
+        teams,
+        {
+          data: { myTeams },
+        },
+      ]) => {
+        if (visibleApis.error || team.error) {
+          props.setError({ error: { status: 404, message: visibleApis.error } });
+        } else {
+          setState({
+            ...state,
+            apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
+            team,
+            teams,
+            myTeams,
+          });
+        }
       }
-    });
+    );
   };
 
   useEffect(() => {
@@ -77,7 +90,9 @@ function TeamHomeComponent(props) {
       const apiOwner = state.teams.find((t) => t._id === api.team._id);
 
       const route = (version) =>
-        `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}`;
+        `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${
+          api._humanReadableId
+        }/${version}`;
 
       // if (api.isDefault)
       props.history.push(route(api.currentVersion));
@@ -153,9 +168,7 @@ function TeamHomeComponent(props) {
         history={props.history}
         myTeams={state.myTeams}
         showTeam={false}
-        team={state.teams.find(
-          (team) => team._humanReadableId === props.match.params.teamId
-        )}
+        team={state.teams.find((team) => team._humanReadableId === props.match.params.teamId)}
       />
     </main>
   );

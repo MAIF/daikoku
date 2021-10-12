@@ -17,43 +17,50 @@ function MyHomeComponent(props) {
     myTeams: [],
   });
 
-  const location = useLocation()
+  const location = useLocation();
 
   const { translateMethod } = useContext(I18nContext);
 
-  const { client } = useContext(getApolloContext())
+  const { client } = useContext(getApolloContext());
 
   const fetchData = () => {
-    setState({ ...state, loading: true })
-    console.log("run store")
+    setState({ ...state, loading: true });
+    console.log('run store');
     Promise.all([
       client.query({
-        query: Services.graphql.myVisibleApis()
+        query: Services.graphql.myVisibleApis(),
       }),
       Services.teams(),
       client.query({
-        query: Services.graphql.myTeams
-      })
+        query: Services.graphql.myTeams,
+      }),
     ]).then(
-      ([{ data: { visibleApis } }, teams, { data: { myTeams } }]) => {
-        console.log("changed store")
+      ([
+        {
+          data: { visibleApis },
+        },
+        teams,
+        {
+          data: { myTeams },
+        },
+      ]) => {
+        console.log('changed store');
         setState({
           ...state,
           apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
           teams,
           myTeams: myTeams.map(({ users, ...data }) => ({
             ...data,
-            users: users
-              .map(({ teamPermission, user }) => ({ ...user, teamPermission }))
+            users: users.map(({ teamPermission, user }) => ({ ...user, teamPermission })),
           })),
-          loading: false
+          loading: false,
         });
       }
     );
   };
 
   useEffect(() => {
-    console.log(location.pathname)
+    console.log(location.pathname);
     fetchData();
   }, [props.connectedUser._id, location.pathname]);
 
@@ -101,8 +108,9 @@ function MyHomeComponent(props) {
   };
 
   const redirectToEditPage = (api) => {
-    const adminTeam = (props.connectedUser.isDaikokuAdmin ? state.teams : state.myTeams)
-      .find((team) => api.team._id === team._id);
+    const adminTeam = (props.connectedUser.isDaikokuAdmin ? state.teams : state.myTeams).find(
+      (team) => api.team._id === team._id
+    );
 
     if (CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
       props

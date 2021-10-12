@@ -157,7 +157,9 @@ function StyleFontFamilyUrlAssetButton(props) {
         typeFilter={MimeTypeFilter.font}
         tenantMode
         label={translateMethod('Set font family from asset')}
-        onSelect={(asset) => props.changeValue('style.fontFamilyUrl', origin + asset.link + '?streamed=true')}
+        onSelect={(asset) =>
+          props.changeValue('style.fontFamilyUrl', origin + asset.link + '?streamed=true')
+        }
       />
     </div>
   );
@@ -582,7 +584,7 @@ export function TenantEditComponent(props) {
         help: translateMethod(
           'appi.reference.visibility.help',
           false,
-          'if enabled, guest user can\'t see api reference on public api'
+          "if enabled, guest user can't see api reference on public api"
         ),
       },
     },

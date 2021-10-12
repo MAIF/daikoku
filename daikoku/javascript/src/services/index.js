@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -16,7 +16,8 @@ export const oneOfMyTeam = (id) => customFetch(`/api/me/teams/${id}`);
 
 export const getVisibleApiWithId = (id) => customFetch(`/api/me/visible-apis/${id}`);
 export const getVisibleApi = (id, version) => customFetch(`/api/me/visible-apis/${id}/${version}`);
-export const getTeamVisibleApi = (teamId, apiId, version) => customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
+export const getTeamVisibleApi = (teamId, apiId, version) =>
+  customFetch(`/api/me/teams/${teamId}/visible-apis/${apiId}/${version}`);
 export const myTeams = () => customFetch('/api/me/teams');
 export const allJoinableTeams = () => customFetch('/api/teams/joinable');
 
@@ -885,22 +886,23 @@ export const getMyTeamsStatusAccess = (teamId, apiId, version) =>
 
 export const graphql = {
   myTeams: gql`
-  query MyTeams {
-    myTeams {
-      name
-      _humanReadableId
-      _id
-      type
-      users {
-        user {
-          userId: id
+    query MyTeams {
+      myTeams {
+        name
+        _humanReadableId
+        _id
+        type
+        users {
+          user {
+            userId: id
+          }
+          teamPermission
         }
-        teamPermission
       }
     }
-  }
   `,
-  myVisibleApis: teamId => gql(`
+  myVisibleApis: (teamId) =>
+    gql(`
     query AllVisibleApis {
       visibleApis: ${teamId ? `visibleApisOfTeam(teamId: "${teamId}")` : 'visibleApis'} {
         api {
@@ -932,5 +934,5 @@ export const graphql = {
       }
     }
     `),
-  myVisibleApisOfTeam: teamId => graphql.myVisibleApis(teamId)
-}
+  myVisibleApisOfTeam: (teamId) => graphql.myVisibleApis(teamId),
+};
