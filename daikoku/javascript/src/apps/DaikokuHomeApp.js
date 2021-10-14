@@ -154,6 +154,18 @@ export const SignupComponent = () => {
         schema={schema}
         flow={flow}
         onChange={createAccount}
+        footer={({ reset, valid }) => {
+            return (
+              <div className="d-flex justify-content-end">
+                <button className="btn btn-outline-danger m-3" onClick={reset}>
+                  <Translation i18nkey="Cancel">Cancel</Translation>
+                </button>
+                <button className="btn btn-outline-success m-3" onClick={valid}>
+                  <Translation i18nkey="Create account">Create account</Translation>
+                </button>
+              </div>
+            );
+          }}
       />
     </div>
   );
@@ -256,6 +268,19 @@ export const ResetPasswordComponent = (props) => {
         schema={schema}
         flow={flow}
         onChange={resetPassword}
+        footer={({ reset, valid }) => {
+            return (
+              <div className="d-flex justify-content-end">
+                <button className="btn btn-outline-primary m-3" onClick={reset}>Cancel</button>
+                <button className="btn btn-outline-danger m-3" onClick={valid}>
+                  <span>
+                    <i className="fas fa-bomb mr-1" />
+                    <Translation i18nkey="Reset password">Reset password</Translation>
+                  </span>
+                </button>
+              </div>
+            );
+          }}
       />
     </div>
   );
