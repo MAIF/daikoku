@@ -364,15 +364,15 @@ class LoginController(DaikokuAction: DaikokuAction,
 
   def validateUserCreationForm(name: String,
                                email: String,
-                               password1: String,
-                               password2: String): Either[String, Unit] = {
+                               password: String,
+                               confirmPassword: String): Either[String, Unit] = {
 
     if (name.trim().isEmpty()) {
       Left("Name should not be empty")
     } else if (email.trim().isEmpty()) {
       Left("Email address should not be empty")
     } else {
-      (password1.trim(), password2.trim()) match {
+      (password.trim(), confirmPassword.trim()) match {
         case (pwd1, pwd2) if pwd1 != pwd2 =>
           Left("Your passwords does not match")
         case (pwd1, pwd2) if pwd1.isEmpty || pwd2.isEmpty =>
@@ -391,15 +391,15 @@ class LoginController(DaikokuAction: DaikokuAction,
     val name = (body \ "name").as[String]
     val avatar =
       (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
-    val password1 = (body \ "password1").as[String]
-    val password2 = (body \ "password2").as[String]
+    val password = (body \ "password").as[String]
+    val confirmPawword = (body \ "confirmPassword").as[String]
     env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
       case Some(user)
           if user.invitation.isEmpty || user.invitation.get.registered =>
         FastFuture.successful(
           BadRequest(Json.obj("error" -> "Email address already exists")))
       case _ =>
-        validateUserCreationForm(name, email, password1, password2) match {
+        validateUserCreationForm(name, email, password, confirmPawword) match {
           case Left(msg) =>
             FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
           case Right(_) => {
@@ -411,7 +411,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                 email = email,
                 name = name,
                 avatar = avatar,
-                password = BCrypt.hashpw(password1, BCrypt.gensalt()),
+                password = BCrypt.hashpw(password, BCrypt.gensalt()),
                 creationDate = DateTime.now(),
                 validUntil = DateTime.now().plusMinutes(15)
               ))
@@ -463,7 +463,7 @@ class LoginController(DaikokuAction: DaikokuAction,
               env.dataStore.accountCreationRepo
                 .deleteByIdLogically(accountCreation.id.value)
                 .map { _ =>
-                  Redirect("/signup?error=not-valid-anymore")
+                  Redirect("/signup?error=not.valid.anymore")
                 }
             }
             case Some(accountCreation)
@@ -539,15 +539,15 @@ class LoginController(DaikokuAction: DaikokuAction,
   def askForPasswordReset() = DaikokuTenantAction.async(parse.json) { ctx =>
     val body = ctx.request.body.as[JsObject]
     val email = (body \ "email").as[String]
-    val password1 = (body \ "password1").as[String]
-    val password2 = (body \ "password2").as[String]
+    val password = (body \ "password").as[String]
+    val confirmPassword = (body \ "confirmPassword").as[String]
 
     AuditTrailEvent(s"unauthenticated user with $email ask to reset password")
       .logUnauthenticatedUserEvent(ctx.tenant)
 
     env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
       case Some(user) =>
-        validateUserCreationForm("daikoku", email, password1, password2) match {
+        validateUserCreationForm("daikoku", email, password, confirmPassword) match {
           case Left(msg) =>
             FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
           case Right(_) => {
@@ -556,7 +556,7 @@ class LoginController(DaikokuAction: DaikokuAction,
               id = DatastoreId(BSONObjectID.generate().stringify),
               randomId = randomId,
               email = email,
-              password = BCrypt.hashpw(password1, BCrypt.gensalt()),
+              password = BCrypt.hashpw(password, BCrypt.gensalt()),
               user = user.id,
               creationDate = DateTime.now(),
               validUntil = DateTime.now().plusMinutes(15)
@@ -610,7 +610,7 @@ class LoginController(DaikokuAction: DaikokuAction,
               env.dataStore.passwordResetRepo
                 .deleteByIdLogically(pwdReset.id.value)
                 .map { _ =>
-                  Redirect("/reset?error=not-valid-anymore")
+                  Redirect("/reset?error=not.valid.anymore")
                 }
             }
             case Some(pwdReset)
@@ -636,8 +636,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                 }
             }
             case _ =>
-              FastFuture.successful(
-                BadRequest(Json.obj("error" -> "Bad creation id")))
+              FastFuture.successful(Redirect("/reset?error=bad.creation.id"))
           }
       }
     }
