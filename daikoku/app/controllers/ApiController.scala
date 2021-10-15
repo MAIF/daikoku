@@ -1592,7 +1592,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                          _ <- deleteApiPlansSubscriptions(deletedPlans, oldApi, ctx.tenant, ctx.user)
                          apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
                          _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
-                         _ <- otoroshiSynchronisator.verify(Json.obj("api" -> apiId)) //launch synhro to maybe update customeMetadata & authorizedEntities
+                         _ <- otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)) //launch synhro to maybe update customeMetadata & authorizedEntities
                          _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
                          _ <- updateAllHumanReadableId(ctx, apiToSave, oldApi)
                          _ <- turnOffDefaultVersion(ctx, apiToSave, oldApi, apiToSave.humanReadableId, apiToSave.currentVersion.value)

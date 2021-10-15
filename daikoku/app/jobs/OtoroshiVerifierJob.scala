@@ -234,7 +234,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
             case Some(tenant) =>
               env.dataStore.apiRepo
                 .forAllTenant()
-                .findByIdNotDeleted(subscription.api)
+                .findOneNotDeleted(Json.obj("_id" -> subscription.api.value, "published" -> true))
                 .map {
                   case None =>
                     sendErrorNotification(
@@ -308,7 +308,6 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                                     case Success(Right(apk)) =>
                                       import cats.data.OptionT
                                       import cats.implicits._
-
                                       val prefix = plan.otoroshiTarget
                                         .flatMap(
                                           _.apikeyCustomization.dynamicPrefix)
