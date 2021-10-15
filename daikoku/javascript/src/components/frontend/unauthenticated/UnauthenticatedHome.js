@@ -64,7 +64,7 @@ export function UnauthenticatedHomeComponent(props) {
                     </a>
                   )}
 
-                  <a className="btn btn-access-negative my-2 ml-2" href={`/auth/Local/login`}>
+                  <a className="btn btn-access-negative my-2 ml-2" href={'/auth/Local/login'}>
                     <i className="fas fa-user mr-1" />
                     <Translation i18nkey="Connect to your account">
                       Connect to your account

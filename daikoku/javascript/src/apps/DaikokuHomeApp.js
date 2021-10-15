@@ -185,7 +185,8 @@ export const ResetPasswordComponent = (props) => {
       format: format.email,
       label: translateMethod('Email address'),
       constraints: [
-        constraints.required('email is required')
+        constraints.required('email is required'),
+        constraints.url('wrong format for an email')
       ]
     },
     password: {

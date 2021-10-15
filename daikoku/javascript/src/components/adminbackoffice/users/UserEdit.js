@@ -1,4 +1,4 @@
-import React, { Component, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
@@ -9,7 +9,7 @@ import { toastr } from 'react-redux-toastr';
 
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
 import { UserBackOffice } from '../../backoffice';
-import { Can, manage, daikoku, Spinner, validatePassword, validateUser } from '../../utils';
+import { Can, manage, daikoku, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -21,7 +21,8 @@ function SetPassword(props) {
     window.prompt(translateMethod('Type the password'), undefined, true).then((pw1) => {
       if (pw1) {
         window.prompt(translateMethod('Re-type the password'), undefined, true).then((pw2) => {
-          const validation = validatePassword(pw1, pw2, translateMethod);
+          // const validation = validatePassword(pw1, pw2, translateMethod);
+          const validation = true; //FIXME: use constraints instaend of validate fucntion
           if (validation.ok) {
             const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
             props.changeValue('password', hashed);
@@ -238,7 +239,8 @@ export function UserEditComponent(props) {
   };
 
   const save = () => {
-    const validation = validateUser(state.user, translateMethod);
+    // const validation = validateUser(state.user, translateMethod);
+    const validation = true; //FIXME: use constraints instead of validation function
     if (validation.ok) {
       if (state.create) {
         Services.createUser(state.user).then(() => {

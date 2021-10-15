@@ -1,4 +1,4 @@
-import React, { Component, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, Route } from 'react-router-dom';
 import classNames from 'classnames';
 import { connect } from 'react-redux';
@@ -263,7 +263,7 @@ const TeamBackOfficeComponent = ({
                   active: isLoading && !error.status,
                 })}
               />
-              <BackOfficeContent error={error}>{children}</BackOfficeContent>
+              {!isLoading && <BackOfficeContent error={error}>{children}</BackOfficeContent>}
             </main>
           </div>
         )}

@@ -605,7 +605,7 @@ export const getTranslations = (domain) =>
   customFetch(`/api/translations${domain ? `?domain=${domain}` : ''}`);
 
 export const saveTranslation = (translation) =>
-  customFetch(`/api/translations`, {
+  customFetch('/api/translations', {
     method: 'PUT',
     body: JSON.stringify({
       translation,
@@ -613,7 +613,7 @@ export const saveTranslation = (translation) =>
   });
 
 export const deleteTranslation = (translation) =>
-  customFetch(`/api/translations`, {
+  customFetch('/api/translations', {
     method: 'DELETE',
     body: JSON.stringify({
       translation,
@@ -826,12 +826,12 @@ export const reset2faAccess = (backupCodes) =>
 export const selfVerify2faCode = (code) => customFetch(`/api/me/_2fa/enable?code=${code}`);
 
 export const validateInvitationToken = (token) =>
-  customFetch(`/api/me/invitation/_check`, {
+  customFetch('/api/me/invitation/_check', {
     method: 'POST',
     body: JSON.stringify({ token }),
   });
 
-export const removeTeamInvitation = () => customFetch(`/api/me/invitation`, { method: 'DELETE' });
+export const removeTeamInvitation = () => customFetch('/api/me/invitation', { method: 'DELETE' });
 
 export const createNewApiVersion = (apiId, teamId, version) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
