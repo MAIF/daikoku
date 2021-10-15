@@ -179,8 +179,6 @@ const ApiListComponent = (props) => {
             return true;
           } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
             return true;
-          } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
           } else if (teamMatch(api, searchedTrim)) {
             return true;
           } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
