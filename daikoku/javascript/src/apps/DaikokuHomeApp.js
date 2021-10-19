@@ -59,7 +59,7 @@ export const SignupComponent = () => {
       type: type.string,
       label: translateMethod('Name'),
       constraints: [
-        constraints.required('name is required')
+        constraints.required(translateMethod('constraints.required.name'))
       ]
     },
     email: {
@@ -67,7 +67,7 @@ export const SignupComponent = () => {
       format: format.email,
       label: translateMethod('Email address'),
       constraints: [
-        constraints.required('email is required')
+        constraints.required(translateMethod('constraints.required.email'))
       ]
     },
     avatar: {
@@ -82,8 +82,8 @@ export const SignupComponent = () => {
       format: format.password,
       label: translateMethod('Password'),
       constraints: [
-        constraints.required('password is required'),
-        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, 'Your password must have 8 letters min with Capital, number and special caracter')
+        constraints.required(translateMethod('constraints.required.password')),
+        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, translateMethod('constraint.matches.password'))
       ]
     },
     confirmPassword: {
@@ -91,8 +91,8 @@ export const SignupComponent = () => {
       format: format.password,
       label: translateMethod('Confirm password'),
       constraints: [
-        constraints.required('confirm password is required'),
-        constraints.oneOf([constraints.ref('password')], 'confirm and password must be equal')
+        constraints.required(translateMethod('constraints.required.confirmPassword')),
+        constraints.oneOf([constraints.ref('password')], translateMethod('constraint.oneof.confirm.password'))
       ]
     },
   };
@@ -185,8 +185,8 @@ export const ResetPasswordComponent = (props) => {
       format: format.email,
       label: translateMethod('Email address'),
       constraints: [
-        constraints.required('email is required'),
-        constraints.url('wrong format for an email')
+        constraints.required(translateMethod('constraints.required.email')),
+        constraints.url(translateMethod('constraints.format.url'))
       ]
     },
     password: {
@@ -194,8 +194,8 @@ export const ResetPasswordComponent = (props) => {
       format: format.password,
       label: translateMethod('Password'),
       constraints: [
-        constraints.required('password is required'),
-        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, 'Your password must have 8 letters min with Capital, number and special caracter')
+        constraints.required(translateMethod('constraints.required.password')),
+        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, translateMethod('constraints.matches.password'))
       ]
     },
     confirmPassword: {
@@ -203,8 +203,8 @@ export const ResetPasswordComponent = (props) => {
       format: format.password,
       label: translateMethod('Confirm password'),
       constraints: [
-        constraints.required('confirm password is required'),
-        constraints.oneOf([constraints.ref('password')], 'confirm and password must be equal')
+        constraints.required(translateMethod('constraints.required.confirmPassword')),
+        constraints.oneOf([constraints.ref('password')], translateMethod('constraint.oneof.confirm.password'))
       ]
     }
   };

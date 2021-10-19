@@ -962,5 +962,19 @@
     "mailing_internalization.go_to_edit_template": "Edit mail template",
     "tenant_edit.translation_mode_message": "You can now navigate and edit all elements just by hovering it",
     "Translation mode enabled": "Translation mode enabled",
-    "Search translation": "Search translation"
+    "profile.security.oldPassword": "Old password",
+    "profile.security.newPassword": "New password",
+    "profile.security.confirmPassword": "Confirm new password",
+    "profile.security.updatePassword": "Update password",
+    "Search translation": "Search translation",
+    "constraints.required.name": "Name is required",
+    "constraints.required.email": "Email is required",
+    "constraints.required.password": "Password is required",
+    "constraints.required.oldPassword": "Old password is required",
+    "constraints.required.newPassword": "New password is required",
+    "constraints.required.confirmPassword": "Confirm password is required",
+    "constraints.format.url": "%s must be a valid URL",
+    "constraint.matches.password": "Your password must have 8 letters min with Capital, number and special caracter",
+    "constraint.oneof.confirm.password": "confirm and password must be equal",
+    "constraints.test.password": "wrong password"
 }

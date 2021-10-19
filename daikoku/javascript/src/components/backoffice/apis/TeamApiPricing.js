@@ -1358,7 +1358,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     });
   }
 
-  function clonePlan() {
+  const clonePlan = () => {
     let plans = _.cloneDeep(value.possibleUsagePlans);
     const clone = {
       ..._.cloneDeep(selected),
@@ -1366,7 +1366,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       customName: `${selected.customName} (copy)`,
     };
     plans.push(clone);
-    const value = _.cloneDeep(value);
+    const newValue = _.cloneDeep(value);
     value.possibleUsagePlans = plans;
     props.onChange(value);
     setSelected(clone);

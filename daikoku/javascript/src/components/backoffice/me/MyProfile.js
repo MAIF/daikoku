@@ -333,7 +333,7 @@ function MyProfileComponent(props) {
       type: type.string,
       label: translateMethod('Name'),
       constraints: [
-        constraints.required('A name is required')
+        constraints.required(translateMethod('constraints.required.name'))
       ]
     },
     email: {
@@ -341,7 +341,7 @@ function MyProfileComponent(props) {
       format: format.email,
       label: translateMethod('Email address'),
       constraints: [
-        constraints.required('An email address is required')
+        constraints.required(translateMethod('constraints.required.email'))
       ]
 
     },
@@ -350,8 +350,8 @@ function MyProfileComponent(props) {
       label: translateMethod('Avatar'),
       render: v => Avatar({ ...v, tenant: props.tenant }),
       constraints: [
-        constraints.required('Please, provide an avatar'),
-        constraints.url('not an url')
+        constraints.required(translateMethod('constraints.required.avatar')),
+        constraints.url(translateMethod('constraints.format.url', false, '', translateMethod('Avatar')))
       ]
     },
     defaultLanguage: {
@@ -374,10 +374,10 @@ function MyProfileComponent(props) {
     oldPassword: {
       type: type.string,
       format: format.password,
-      label: 'Old Password',
+      label: translateMethod('profile.security.oldPassword'),
       constraints: [
-        constraints.required('Your old password is required'),
-        constraints.test('hash', 'wrong password', (value) => {
+        constraints.required(translateMethod('constraints.required.oldPassword')),
+        constraints.test('hash', translateMethod('constraints.test.password'), (value) => {
           return bcrypt.compareSync(value, user.password);
         })
       ]
@@ -385,19 +385,19 @@ function MyProfileComponent(props) {
     newPassword: {
       type: type.string,
       format: format.password,
-      label: 'New password',
+      label: translateMethod('profile.security.newPassword'),
       constraints: [
-        constraints.required('Your new password is required'),
-        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, 'Your new password must have 8 letters min with Capital, number and special caracter')
+        constraints.required(translateMethod('constraints.required.newPassword')),
+        constraints.matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/, translateMethod('constraint.matches.password'))
       ]
     },
     confirmNewPassword: {
       type: type.string,
       format: format.password,
-      label: 'Confirm new password',
+      label: translateMethod('profile.security.confirmPassword'),
       constraints: [
-        constraints.required('confirm password is required'),
-        constraints.oneOf([constraints.ref('newPassword')], 'confirm and password must be equal')
+        constraints.required(translateMethod('constraints.required.newPassword')),
+        constraints.oneOf([constraints.ref('newPassword')], translateMethod('constraint.oneof.confirm.password'))
       ]
     },
   };
@@ -513,7 +513,9 @@ function MyProfileComponent(props) {
           {tab === 'security' && (
             <div className='d-flex flex-row'>
               <div className='col-sm-6 d-flex flex-column flex-grow-1'>
-                <h4>Change password</h4>
+                <h4>
+                  <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
+                </h4>
                 <Form
                   schema={changePasswordSchema}
                   onChange={updatePassword}
@@ -526,18 +528,19 @@ function MyProfileComponent(props) {
                           className="btn btn-outline-success"
                           onClick={valid}>
                           <span>
-                            <i className="fas fa-save mr-1" />
-                            <Translation i18nkey="update.password">Update password</Translation>
+                            <Translation i18nkey="profile.security.updatePassword">Update password</Translation>
                           </span>
                         </button>
-                        {/* FIXME: forgot password link */}
+                        {/* TODO: forgot password link */}
                       </div>
                     );
                   }}
                 />
               </div>
               <div className='d-flex flex-column  flex-grow-1'>
-                <h4>Two-factor authentication</h4>
+                <h4>
+                  <Translation i18nkey="2fa">Two-factor authentication</Translation>
+                </h4>
                 <TwoFactorAuthentication user={user} />
               </div>
             </div>
