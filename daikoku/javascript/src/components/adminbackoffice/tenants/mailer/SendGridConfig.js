@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { I18nContext } from '../../../../core';
 
 import { Spinner } from '../../../utils';
 import { MailTemplateButton } from './MailTemplateButton';
