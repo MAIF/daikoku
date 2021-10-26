@@ -64,7 +64,7 @@ class ApiService(env: Env, otoroshiClient: OtoroshiClient, messagesApi: Messages
               plan.customName
                 .getOrElse(plan.typeName)
                 .urlPathSegmentSanitized
-            }-${team.humanReadableId}-${System.currentTimeMillis()}")
+            }-${team.humanReadableId}-${System.currentTimeMillis()}-${api.currentVersion.value}")
           val integrationToken = IdGenerator.token(64)
           val apiSubscription = ApiSubscription(
             id = ApiSubscriptionId(BSONObjectID.generate().stringify),
