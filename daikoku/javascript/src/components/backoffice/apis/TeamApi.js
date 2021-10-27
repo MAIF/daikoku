@@ -18,7 +18,6 @@ import {
 } from '.';
 
 import { setError, openSubMetadataModal, openTestingApiKeyModal, I18nContext } from '../../../core';
-import Select from 'react-select';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 
@@ -32,13 +31,6 @@ function TeamApiComponent(props) {
   });
 
   const params = useParams();
-
-  const [versions, setApiVersions] = useState([]);
-  const [apiVersion, setApiVersion] = useState({
-    value: params.versionId,
-    label: params.versionId,
-  });
-
   const teamApiDocumentationRef = useRef();
 
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -71,12 +63,9 @@ function TeamApiComponent(props) {
     Promise.all([
       Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.allSimpleOtoroshis(props.tenant._id),
-      Services.getAllApiVersions(props.currentTeam._id, params.apiId),
-    ]).then(([api, otoroshiSettings, versions]) => {
+    ]).then(([api, otoroshiSettings]) => {
       if (!api.error) setState({ ...state, api, otoroshiSettings });
       else toastr.error(api.error);
-      setApiVersions(versions.map((v) => ({ label: v, value: v })));
-      setApiVersion({ value: params.versionId, label: params.versionId });
     });
   }
 
@@ -217,43 +206,6 @@ function TeamApiComponent(props) {
     return api;
   }
 
-  function promptVersion() {
-    const { api } = state;
-    window
-      .prompt(
-        'Version number',
-        undefined,
-        false,
-        'Create a new version',
-        `Current version : ${api.currentVersion}`
-      )
-      .then((newVersion) => {
-        if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-          toastr.error(
-            "Can't create version with special characters : " + reservedCharacters.join(' | ')
-          );
-        else createNewVersion(newVersion);
-      });
-  }
-
-  function createNewVersion(newVersion) {
-    Services.createNewApiVersion(
-      state.api._humanReadableId,
-      props.currentTeam._id,
-      newVersion
-    ).then((res) => {
-      if (res.error) toastr.error(res.error);
-      else {
-        toastr.success('New version of api created');
-        history.push(
-          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${
-            params.tab ? params.tab : 'infos'
-          }`
-        );
-      }
-    });
-  }
-
   const teamId = props.currentTeam._id;
   const disabled = {}; //TODO: deepEqual(state.originalApi, state.api) ? { disabled: 'disabled' } : {};
   const tab = params.tab || 'infos';
@@ -272,125 +224,6 @@ function TeamApiComponent(props) {
         {!editedApi && <Spinner />}
         {editedApi && (
           <>
-            <div className="row">
-              {state.create ? (
-                <h1>
-                  <Translation i18nkey="New api">New api</Translation> - {editedApi.name}
-                </h1>
-              ) : (
-                <div
-                  className="d-flex justify-content-between align-items-center"
-                  style={{ flex: 1 }}>
-                  <h1>
-                    Api - {editedApi.name}{' '}
-                    <Link
-                      to={`/${props.currentTeam._humanReadableId}/${editedApi._humanReadableId}/${editedApi.currentVersion}`}
-                      className="btn btn-sm btn-access-negative"
-                      title={translateMethod('View this Api')}>
-                      <i className="fas fa-eye" />
-                    </Link>
-                  </h1>
-                  <div className="d-flex align-items-center">
-                    {versions.length > 1 && (
-                      <div style={{ minWidth: '125px' }}>
-                        <Select
-                          name="versions-selector"
-                          value={apiVersion}
-                          options={versions}
-                          onChange={(e) =>
-                            history.push(
-                              `/${params.teamId}/settings/apis/${params.apiId}/${e.value}/${params.tab}`
-                            )
-                          }
-                          classNamePrefix="reactSelect"
-                          className="mr-2"
-                          menuPlacement="auto"
-                          menuPosition="fixed"
-                        />
-                      </div>
-                    )}
-                    <button type="button" className="btn btn-outline-info" onClick={promptVersion}>
-                      <i className="fas fa-plus mr-1" />
-                      {translateMethod('teamapi.new_version')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="row">
-              <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
-                <li className="nav-item">
-                  <Link
-                    className={`nav-link ${tab === 'infos' ? 'active' : ''}`}
-                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/infos`}>
-                    <i className="fas fa-info mr-1" />
-                    <Translation i18nkey="Informations">Informations</Translation>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link
-                    className={`nav-link ${tab === 'description' ? 'active' : ''}`}
-                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/description`}>
-                    <i className="fas fa-file-alt mr-1" />
-                    <Translation i18nkey="Description">Description</Translation>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link
-                    className={`nav-link ${tab === 'pricing' ? 'active' : ''}`}
-                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/plans`}>
-                    <i className="fas fa-dollar-sign mr-1" />
-                    <Translation i18nkey="Plan" isPlural>
-                      Plans
-                    </Translation>
-                  </Link>
-                </li>
-                {false && (
-                  <li className="nav-item">
-                    <Link
-                      className={`nav-link ${tab === 'otoroshi' ? 'active' : ''}`}
-                      to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/otoroshi`}>
-                      <i className="fas fa-pastafarianism mr-1" />
-                      <Translation i18nkey="Otoroshi">Otoroshi</Translation>
-                    </Link>
-                  </li>
-                )}
-                <li className="nav-item">
-                  <Link
-                    className={`nav-link ${tab === 'swagger' ? 'active' : ''}`}
-                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/swagger`}>
-                    <i className="fas fa-file-code mr-1" />
-                    <Translation i18nkey="Swagger">Swagger</Translation>
-                  </Link>
-                </li>
-                {editedApi.visibility !== 'AdminOnly' && (
-                  <li className="nav-item">
-                    <Link
-                      className={`nav-link ${tab === 'testing' ? 'active' : ''}`}
-                      to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/testing`}>
-                      <i className="fas fa-vial mr-1" />
-                      <Translation i18nkey="Testing">Testing</Translation>
-                    </Link>
-                  </li>
-                )}
-                <li className="nav-item">
-                  <Link
-                    className={`nav-link ${tab === 'documentation' ? 'active' : ''}`}
-                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/documentation`}>
-                    <i className="fas fa-book mr-1" />
-                    <Translation i18nkey="Documentation">Documentation</Translation>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link
-                    className={`nav-link ${tab === 'news' ? 'active' : ''}`}
-                    to={`/${props.currentTeam._humanReadableId}/settings/apis/${editedApi._humanReadableId}/${editedApi.currentVersion}/news`}>
-                    <i className="fas fa-newspaper mr-1" />
-                    <Translation i18nkey="News">News</Translation>
-                  </Link>
-                </li>
-              </ul>
-            </div>
             <div className="row">
               <div className="section col container-api">
                 <div className="mt-2">

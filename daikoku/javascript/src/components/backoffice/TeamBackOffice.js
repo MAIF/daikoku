@@ -1,6 +1,7 @@
-import React, { Component, useContext, useEffect, useState } from 'react';
-import { Link, Route } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, Route, useParams, useLocation, NavLink, useHistory } from 'react-router-dom';
 import classNames from 'classnames';
+import Select from 'react-select';
 import { connect } from 'react-redux';
 
 import * as Services from '../../services';
@@ -30,7 +31,7 @@ function elvis(value, f) {
 
 const BackOfficeContent = (props) => {
   return (
-    <div className="pt-4 pr-3" style={{ height: '100%' }}>
+    <div className="" style={{ height: '100%' }}>
       {props.error.status && <Error error={props.error} />}
       {!props.error.status && props.children}
     </div>
@@ -131,8 +132,79 @@ function TeamBackOfficeHomeComponent(props) {
   );
 }
 
+const NavItem = ({ to, icon, name }) => (
+  <li className="nav-item">
+    <NavLink
+      activeClassName="active"
+      className="nav-link"
+      to={to}>
+      <i className={`fas fa-${icon}`} />
+      {name}
+    </NavLink>
+  </li>
+);
+
+const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
+  const { translateMethod } = useContext(I18nContext);
+
+  const promptVersion = () => {
+    window
+      .prompt(
+        'Version number',
+        undefined,
+        false,
+        'New version',
+        `Current version : ${versionId}`
+      )
+      .then(newVersion => {
+        if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
+          toastr.error("Can't create version with special characters : " + reservedCharacters.join(' | '));
+        else
+          createNewVersion(newVersion);
+      });
+  }
+
+  const createNewVersion = newVersion => {
+    Services.createNewApiVersion(apiId, currentTeam._id, newVersion
+    ).then(res => {
+      if (res.error) toastr.error(res.error);
+      else {
+        toastr.success('New version of api created');
+        history.push(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
+      }
+    });
+  }
+
+  return <button onClick={promptVersion} className="btn btn-sm btn-outline-info">
+    {translateMethod('teamapi.new_version')}
+  </button>
+}
+
+const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
+  const [versions, setVersions] = useState([]);
+  const history = useHistory();
+
+  useEffect(() => {
+    Services.getAllApiVersions(currentTeam._id, apiId)
+      .then(res => setVersions(res.map((v) => ({ label: v, value: v }))))
+  }, []);
+
+  if (versions.length)
+    return <Select
+      name="versions-selector"
+      value={{ label: versionId, value: versionId }}
+      options={versions}
+      onChange={e => history.push(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
+      classNamePrefix="reactSelect"
+      className="m-2"
+      menuPlacement="auto"
+      menuPosition="fixed"
+    />
+
+  return null;
+}
+
 const TeamBackOfficeComponent = ({
-  tab,
   currentTeam,
   tenant,
   isLoading,
@@ -146,130 +218,159 @@ const TeamBackOfficeComponent = ({
     }
   }, [title]);
 
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { Translation, translateMethod } = useContext(I18nContext);
 
   if (!currentTeam) {
     return null;
   }
 
-  return (
-    <>
-      <Route
-        path="/:teamId/settings"
-        render={() => (
-          <div className="row">
-            <button
-              id="toggle-sidebar"
-              type="button"
-              className="navbar-toggle btn btn-sm btn-access-negative float-left mr-2"
-              data-toggle="collapse"
-              data-target="#sidebar"
-              aria-expanded="false"
-              aria-controls="sidebar">
-              <span className="sr-only">Toggle sidebar</span>
-              <span className="chevron" />
-            </button>
-            <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
-              <div className="sidebar-sticky">
-                <h6 className="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                  <Link to={`/${currentTeam._humanReadableId}/settings`}>{currentTeam.name}</Link>
-                  {currentTeam.type === 'Organization' && (
-                    <Can I={manage} a={team} team={currentTeam}>
-                      <Link
-                        to={`/${currentTeam._humanReadableId}/settings/edition`}
-                        className=""
-                        title={translateMethod('Update team')}>
-                        <i className="fas fa-pen" />
-                      </Link>
-                    </Can>
-                  )}
-                </h6>
-                <ul className="nav flex-column mt-3">
-                  {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
-                    <Can I={read} a={api} team={currentTeam}>
-                      <li className="nav-item">
-                        <Link
-                          className={`nav-link ${tab === 'Apis' ? 'active' : ''}`}
-                          to={`/${currentTeam._humanReadableId}/settings/apis`}>
-                          <i className="fas fa-atlas" />
-                          <Translation i18nkey="Team Apis">Team Apis</Translation>
-                        </Link>
-                      </li>
-                    </Can>
-                  )}
-                  {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
-                    <Can I={read} a={api} team={currentTeam}>
-                      <li className="nav-item">
-                        <Link
-                          className={`nav-link ${tab === 'Income' ? 'active' : ''}`}
-                          to={`/${currentTeam._humanReadableId}/settings/income`}>
-                          <i className="fas fa-file-invoice-dollar" />
-                          <Translation i18nkey="Team Income">Team Income</Translation>
-                        </Link>
-                      </li>
-                    </Can>
-                  )}
-                  <Can I={read} a={apikey} team={currentTeam}>
-                    <li className="nav-item">
-                      <Link
-                        className={`nav-link ${tab === 'ApiKeys' ? 'active' : ''}`}
-                        to={`/${currentTeam._humanReadableId}/settings/apikeys`}>
-                        <i className="fas fa-key" />
-                        <Translation i18nkey="Team api keys">Team api keys</Translation>
-                      </Link>
-                    </li>
-                  </Can>
-                  <Can I={read} a={stat} team={currentTeam}>
-                    <li className="nav-item">
-                      <Link
-                        className={`nav-link ${tab === 'Billing' ? 'active' : ''}`}
-                        to={`/${currentTeam._humanReadableId}/settings/billing`}>
-                        <i className="fas fa-file-invoice-dollar" />
-                        <Translation i18nkey="Team billing">Team billing</Translation>
-                      </Link>
-                    </li>
-                  </Can>
+  const teamBasePath = "/:teamId/settings"
+  const apiBasePath = `${teamBasePath}/apis/:apiId/:version/:tab`;
 
-                  {currentTeam.type === 'Organisation' && (
-                    <Can I={manage} a={team} team={currentTeam}>
-                      <li className="nav-item">
-                        <Link
-                          className={`nav-link ${tab === 'Members' ? 'active' : ''}`}
-                          to={`/${currentTeam._humanReadableId}/settings/members`}>
-                          <i className="fas fa-users" />
-                          <Translation i18nkey="Team members">Team members</Translation>
-                        </Link>
-                      </li>
-                    </Can>
-                  )}
-                  {currentTeam.type !== 'Admin' && (
-                    <Can I={manage} a={asset} team={currentTeam}>
-                      <li className="nav-item">
-                        <Link
-                          className={`nav-link ${tab === 'Assets' ? 'active' : ''}`}
-                          to={`/${currentTeam._humanReadableId}/settings/assets`}>
-                          <i className="fas fa-tools" />
-                          <Translation i18nkey="Team assets">Team assets</Translation>
-                        </Link>
-                      </li>
-                    </Can>
-                  )}
-                </ul>
-              </div>
-            </nav>
-            <main role="main" className="col-md-10 ml-sm-auto px-4">
-              <div
-                className={classNames('back-office-overlay', {
-                  active: isLoading && !error.status,
-                })}
-              />
-              <BackOfficeContent error={error}>{children}</BackOfficeContent>
-            </main>
-          </div>
-        )}
+  const params = useParams();
+  const location = useLocation()
+
+  return <div className="row">
+    <button
+      id="toggle-sidebar"
+      type="button"
+      className="navbar-toggle btn btn-sm btn-access-negative float-left mr-2"
+      data-toggle="collapse"
+      data-target="#sidebar"
+      aria-expanded="false"
+      aria-controls="sidebar">
+      <span className="sr-only">Toggle sidebar</span>
+      <span className="chevron" />
+    </button>
+    <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
+      <div className="sidebar-sticky d-flex flex-column p-0">
+        <Route
+          exact
+          path={apiBasePath}
+          component={() => <div className="d-flex justify-content-between align-items-center mt-4 px-3">
+            <span className="text-muted" style={{ textTransform: "uppercase" }}>
+              {params.apiId}
+            </span>
+            <span className="badge badge-info">{params.versionId}</span>
+          </div>} />
+        <Route
+          exact
+          path={[teamBasePath, `${teamBasePath}/:tab`]}
+          component={() => <span className="mt-4 px-3 text-muted" style={{ textTransform: "uppercase" }}>
+            {currentTeam.name}
+          </span>} />
+        <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
+          <Route
+            exact
+            path={apiBasePath}
+            render={() => {
+              const to = `/${currentTeam._humanReadableId}/settings/apis/${params.apiId}/${params.versionId}`;
+              return <>
+                <VersionsButton {...params} currentTeam={currentTeam} />
+                {[
+                  { route: "infos", icon: "info", name: "Informations" },
+                  { route: "description", icon: "file-alt", name: "Description" },
+                  { route: "plans", icon: "dollar-sign", name: "Plans" },
+                  { route: "swagger", icon: "file-code", name: "Swagger" },
+                  { route: "testing", icon: "vial", name: "Testing" },
+                  { route: "documentation", icon: "book", name: "Documentation" },
+                  { route: "news", icon: "newspaper", name: "News" },
+                ].map((item, i) => <NavItem {...item} to={`${to}/${item.route}`} key={`item-${i}`} />)}
+
+                <div className="px-3 mb-4 mt-auto d-flex flex-column">
+                  <Link
+                    to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
+                    className="btn btn-sm btn-access-negative mb-2">
+                    {translateMethod('View this Api')}
+                  </Link>
+                  <CreateNewVersionButton {...params} currentTeam={currentTeam} />
+                  <Link className="d-flex justify-content-around mt-3 align-items-center" style={{
+                    border: 0,
+                    background: 'transparent',
+                    outline: 'none'
+                  }} to={`/${currentTeam._humanReadableId}/settings`}>
+                    <i className="fas fa-chevron-left" />
+                    Back to {currentTeam._humanReadableId}
+                  </Link>
+                </div>
+              </>
+            }} />
+          <Route
+            exact
+            path={[teamBasePath, `${teamBasePath}/:tab`]}
+            render={() => {
+              const tab = location.pathname.split("/").slice(-1)[0]
+              const isOnHomePage = tab === "settings"
+
+              return <>
+                <Can I={read} a={api} team={currentTeam}>
+                  <li className="nav-item">
+                    <Link
+                      className={`nav-link ${isOnHomePage ? 'active' : ''}`}
+                      to={`/${currentTeam._humanReadableId}/settings`}>
+                      <i className="fas fa-cog" />
+                      <Translation i18nkey="Settings">Settings</Translation>
+                    </Link>
+                  </li>
+                </Can>
+                {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
+                  <Can I={read} a={api} team={currentTeam}>
+                    <NavItem
+                      to={`/${currentTeam._humanReadableId}/settings/apis`}
+                      icon="atlas"
+                      name={translateMethod("Apis")} />
+                  </Can>
+                )}
+                <Can I={read} a={apikey} team={currentTeam}>
+                  <NavItem
+                    to={`/${currentTeam._humanReadableId}/settings/apikeys`}
+                    icon="key"
+                    name={translateMethod("Api keys")} />
+                </Can>
+                <Can I={read} a={stat} team={currentTeam}>
+                  <NavItem
+                    to={`/${currentTeam._humanReadableId}/settings/billing`}
+                    icon="file-invoice-dollar"
+                    name={translateMethod("Billing")} />
+                </Can>
+                {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
+                  <Can I={read} a={api} team={currentTeam}>
+                    <NavItem
+                      to={`/${currentTeam._humanReadableId}/settings/income`}
+                      icon="file-invoice-dollar"
+                      name="Income" />
+                  </Can>
+                )}
+                {currentTeam.type === 'Organization' && (
+                  <Can I={manage} a={team} team={currentTeam}>
+                    <NavItem
+                      to={`/${currentTeam._humanReadableId}/settings/members`}
+                      icon="users"
+                      name="Members" />
+                  </Can>
+                )}
+                {currentTeam.type !== 'Admin' && (
+                  <Can I={manage} a={asset} team={currentTeam}>
+                    <NavItem
+                      to={`/${currentTeam._humanReadableId}/settings/assets`}
+                      icon="tools"
+                      name="Assets" />
+                  </Can>
+                )}
+              </>
+            }} />
+        </ul>
+      </div >
+    </nav >
+    <main role="main" className="col-md-10 ml-sm-auto px-4 mt-3">
+      <div
+        className={classNames('back-office-overlay', {
+          active: isLoading && !error.status,
+        })}
       />
-    </>
-  );
+      <BackOfficeContent error={error}>{children}</BackOfficeContent>
+    </main>
+  </div >
 };
 
 const UserBackOfficeComponent = ({
@@ -401,9 +502,8 @@ const UserBackOfficeComponent = ({
                     </li>
                     <li className="nav-item">
                       <Link
-                        className={`nav-link ${
-                          tab === 'Email internationalization' ? 'active' : ''
-                        }`}
+                        className={`nav-link ${tab === 'Email internationalization' ? 'active' : ''
+                          }`}
                         to={'/settings/internationalization/mail'}>
                         <i className="fas fa-language" />
                         <Translation i18nkey="Internationalization">
