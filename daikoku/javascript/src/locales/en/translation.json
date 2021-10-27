@@ -961,5 +961,11 @@
     "mailing_internalization.go_to_edit_template": "Edit mail template",
     "tenant_edit.translation_mode_message": "You can now navigate and edit all elements just by hovering it",
     "Translation mode enabled": "Translation mode enabled",
-    "Search translation": "Search translation"
+    "Search translation": "Search translation",
+    "Authorized PerSec": "Authorized PerSec",
+    "Remaining PerSec": "Remaining PerSec",
+    "Authorized PerDay": "Authorized PerDay",
+    "Remaining PerDay": "Remaining PerDay",
+    "Authorized PerMonth": "Authorized PerMonth",
+    "Remaining PerMonth": "Remaining PerMonth"
 }
