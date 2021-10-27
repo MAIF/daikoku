@@ -268,6 +268,8 @@ export function GlobalDataConsumption(props) {
   const computeValue = (value) => {
     let unit = 'Mb';
     let computedValue = parseFloat((converterBase2(value, 'B', 'MB') || 0).toFixed(3));
+
+
     if (computedValue > 1024.0) {
       computedValue = parseFloat((converterBase2(value, 'B', 'GB') || 0).toFixed(3));
       unit = 'Gb';
@@ -280,7 +282,8 @@ export function GlobalDataConsumption(props) {
       computedValue = parseFloat((converterBase2(value, 'B', 'PB') || 0).toFixed(3));
       unit = 'Pb';
     }
-    return `${computedValue ? computedValue.prettify() : 0} ${unit}`;
+
+    return `${computedValue ? computedValue : 0} ${unit}`;
   };
 
   const row = (value, label) => {

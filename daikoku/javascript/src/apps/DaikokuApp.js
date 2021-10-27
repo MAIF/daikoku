@@ -39,6 +39,7 @@ import {
   TeamPlanConsumption,
   TeamConsumption,
   TeamBilling,
+  TeamQuotas,
   TeamIncome,
   TeamEdit,
   AssetsList,
@@ -540,6 +541,7 @@ const TeamBackOfficeRouter = ({ tenant }) => {
         <Route exact path={`${basePath}/edition`} render={(p) => <TeamEdit {...p} />} />
         <Route exact path={`${basePath}/consumption`} render={(p) => <TeamConsumption {...p} />} />
         <Route exact path={`${basePath}/billing`} render={(p) => <TeamBilling {...p} />} />
+        <Route exact path={`${basePath}/quotas`} render={(p) => <TeamQuotas {...p} />} />
         <Route exact path={`${basePath}/income`} render={(p) => <TeamIncome {...p} />} />
         <Route
           exact

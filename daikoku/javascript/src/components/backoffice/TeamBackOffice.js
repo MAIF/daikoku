@@ -219,10 +219,20 @@ const TeamBackOfficeComponent = ({
                       </Link>
                     </li>
                   </Can>
+                  <Can I={read} a={apikey} team={currentTeam}>
+                    <li className="nav-item">
+                      <Link
+                        className={`nav-link ${tab === 'Quotas' ? 'active' : ''}`}
+                        to={`/${currentTeam._humanReadableId}/settings/quotas`}>
+                        <i className="fas fa-coins" />
+                        <Translation i18nkey="Quotas api keys">Quotas api keys</Translation>
+                      </Link>
+                    </li>
+                  </Can>
                   <Can I={read} a={stat} team={currentTeam}>
                     <li className="nav-item">
                       <Link
-                        className={`nav-link ${tab === 'Billing' ? 'active' : ''}`}
+                        className={`nav-link ${tab === 'Qutoas' ? 'active' : ''}`}
                         to={`/${currentTeam._humanReadableId}/settings/billing`}>
                         <i className="fas fa-file-invoice-dollar" />
                         <Translation i18nkey="Team billing">Team billing</Translation>

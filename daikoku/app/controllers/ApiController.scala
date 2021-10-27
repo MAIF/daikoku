@@ -920,7 +920,7 @@ class ApiController(DaikokuAction: DaikokuAction,
             .map(_.integrationProcess)
             .getOrElse(IntegrationProcess.Automatic)
 
-          val r = sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
+          val defaultResponse =  sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
             api.possibleUsagePlans
               .find(p => p.id == sub.plan)
               .map { plan => Json.obj("planType" -> plan.typeName) }
@@ -929,21 +929,33 @@ class ApiController(DaikokuAction: DaikokuAction,
             Json.obj("_humanReadableId" -> api.humanReadableId) ++
             Json.obj("parentUp" -> false)
 
+         api.possibleUsagePlans
+            .find(p => p.id == sub.plan)
+            .map(_.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+              ctx.tenant.otoroshiSettings.find(_.id == id)
+            } match {
+              case None => FastFuture.successful(defaultResponse)
+              case Some(otoroshiSettings) =>
+                otoroshiClient.getApiKeyQuotas(sub.apiKey.clientId)(otoroshiSettings)
+                  .map(r => defaultResponse ++ Json.obj("quotas" -> r))
+            })
+           .getOrElse(FastFuture.successful(defaultResponse))
+           .flatMap { r =>
+             sub.parent match {
+               case None => FastFuture.successful(r)
+               case Some(parentId) =>
+                 parentSub match {
+                   case Some(parent) => FastFuture.successful(r ++ Json.obj("parentUp" -> parent.enabled))
+                   case None => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
+                     .findById(parentId.value)
+                     .map {
+                       case None => r
+                       case Some(p) => r ++ Json.obj("parentUp" -> p.enabled)
+                     }
+                 }
 
-          sub.parent match {
-            case None => FastFuture.successful(r)
-            case Some(parentId) =>
-              parentSub match {
-                case Some(parent) => FastFuture.successful(r ++ Json.obj("parentUp" -> parent.enabled))
-                case None => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
-                  .findById(parentId.value)
-                  .map {
-                    case None => r
-                    case Some(p) => r ++ Json.obj("parentUp" -> p.enabled)
-                  }
-              }
-
-          }
+             }
+           }
         }
 
         def findSubscriptions(api: Api, team: Team): Future[Result] = {
@@ -987,7 +999,7 @@ class ApiController(DaikokuAction: DaikokuAction,
   def getSubscriptionsOfTeam(teamId: String) = DaikokuAction.async { ctx =>
     TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has accessed subscriptions of team : - $teamId"))(teamId, ctx) {
       team =>
-        def findSubscriptions(api: Api, team: Team) =
+        def findSubscriptions(api: Api, team: Team): Future[Seq[JsObject]] =
           env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant.id)
             .findNotDeleted(Json.obj("api" -> api.id.value, "team" -> team.id.value))
@@ -1002,23 +1014,33 @@ class ApiController(DaikokuAction: DaikokuAction,
                     "parent" -> Json.obj("$in" -> subscriptions.map(s => s.id.value))
                 ))
                 .flatMap { subs =>
-                  FastFuture.successful(
-                    (subscriptions ++ subs)
+                    Future.sequence((subscriptions ++ subs)
                       .filter(s => team.subscriptions.contains(s.id) && s.parent.isEmpty)
-                      .map(sub => {
+                      .flatMap(sub => {
                         val planIntegrationProcess = api.possibleUsagePlans
                           .find(p => p.id == sub.plan)
                           .map(_.integrationProcess)
                           .getOrElse(IntegrationProcess.Automatic)
 
-                        sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
+                        val defaultResponse = sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
                           api.possibleUsagePlans
                             .find(p => p.id == sub.plan)
                             .map { plan => Json.obj("planType" -> plan.typeName) }
                             .getOrElse(Json.obj("planType" -> "")) ++
                           Json.obj("apiName" -> api.name)
-                      })
-                  )
+
+                        api.possibleUsagePlans
+                          .find(p => p.id == sub.plan)
+                          .map(_.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+                            ctx.tenant.otoroshiSettings.find(_.id == id)
+                          } match {
+                            case None => FastFuture.successful(defaultResponse)
+                            case Some(otoroshiSettings) =>
+                              otoroshiClient.getApiKeyQuotas(sub.apiKey.clientId)(otoroshiSettings)
+                                .map(r => defaultResponse ++ Json.obj("quotas" -> r))
+                          })
+                      }
+                  ))
                 }
             }
 

@@ -28,6 +28,7 @@ export const Table = ({
   search,
   pageSizee = 15,
   mobileSize = 767,
+  hideFilter
 }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -231,12 +232,12 @@ export const Table = ({
     <div>
       <div>
         <div className="rrow section">
-          <div className="row" style={{ marginBottom: 10 }}>
+          {/* <div className="row" style={{ marginBottom: 10 }}>
             <div className="col-md-12 d-flex">
               {injectTopBar && <div style={{ fontSize: 14 }}>{injectTopBar()}</div>}
               {tablePagination}
             </div>
-          </div>
+          </div> */}
           <table {...getTableProps()} className="reactTableV7">
             <thead>
               {headerGroups.map((headerGroup, idx) => (
@@ -252,9 +253,9 @@ export const Table = ({
                       <div {...column.getHeaderProps(column.getSortByToggleProps())}>
                         {column.render('Header')}
                       </div>
-                      <div className="my-2">
+                      {!hideFilter && <div className="my-2">
                         {column.canFilter ? column.render('Filter') : null}
-                      </div>
+                      </div>}
                     </th>
                   ))}
                 </tr>
