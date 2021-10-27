@@ -20,6 +20,7 @@ import {
 } from '../utils';
 
 import { I18nContext } from '../../core';
+import { toastr } from 'react-redux-toastr';
 
 function elvis(value, f) {
   if (value) {
@@ -146,6 +147,9 @@ const NavItem = ({ to, icon, name }) => (
 
 const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) => {
   const { translateMethod } = useContext(I18nContext);
+  const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
+
+  const history = useHistory();
 
   const promptVersion = () => {
     window
@@ -165,14 +169,14 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
   }
 
   const createNewVersion = newVersion => {
-    Services.createNewApiVersion(apiId, currentTeam._id, newVersion
-    ).then(res => {
-      if (res.error) toastr.error(res.error);
-      else {
-        toastr.success('New version of api created');
-        history.push(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
-      }
-    });
+    Services.createNewApiVersion(apiId, currentTeam._id, newVersion)
+      .then(res => {
+        if (res.error) toastr.error(res.error);
+        else {
+          toastr.success('New version of api created');
+          history.push(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
+        }
+      });
   }
 
   return <button onClick={promptVersion} className="btn btn-sm btn-outline-info">
@@ -255,7 +259,13 @@ const TeamBackOfficeComponent = ({
           </div>} />
         <Route
           exact
-          path={[teamBasePath, `${teamBasePath}/:tab`]}
+          path={[
+            teamBasePath,
+            `${teamBasePath}/:tab`,
+            `${teamBasePath}/consumptions/apis/:apiId/:versionId`,
+            `${teamBasePath}/apikeys/:apiId/:versionId`,
+            `${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`
+          ]}
           component={() => <span className="mt-4 px-3 text-muted" style={{ textTransform: "uppercase" }}>
             {currentTeam.name}
           </span>} />
@@ -297,7 +307,13 @@ const TeamBackOfficeComponent = ({
             }} />
           <Route
             exact
-            path={[teamBasePath, `${teamBasePath}/:tab`]}
+            path={[
+              teamBasePath,
+              `${teamBasePath}/:tab`,
+              `${teamBasePath}/consumptions/apis/:apiId/:versionId`,
+              `${teamBasePath}/apikeys/:apiId/:versionId`,
+              `${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`
+            ]}
             render={() => {
               const tab = location.pathname.split("/").slice(-1)[0]
               const isOnHomePage = tab === "settings"
