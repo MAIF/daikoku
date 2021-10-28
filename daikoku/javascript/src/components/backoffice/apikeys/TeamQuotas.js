@@ -6,6 +6,7 @@ import { Table } from '../../inputs';
 import { Can, manage, apikey } from '../../utils';
 import { I18nContext } from '../../../core';
 import { useSelector } from 'react-redux'
+import { Progress } from 'antd';
 
 export const TeamQuotas = (props) => {
     const { translateMethod, Translation } = useContext(I18nContext);
@@ -13,45 +14,57 @@ export const TeamQuotas = (props) => {
 
     const { currentTeam } = useSelector((state) => state.context);
 
-    const accessor = (item, remainingName, thresholdName) => {
+    const getValue = (item, remainingName, thresholdName) => {
         const remaining = (item.quotas || {})[remainingName] || 0;
         const threshold = (item.quotas || {})[thresholdName] || 0;
 
-        const r = remaining/ threshold * 100
+        const r = remaining / threshold * 100
+
         if (isNaN(r))
-            return "-"
-        return `${remaining} (${r}%)`
+            return 0
+
+        return r
     }
 
     const columns = [
         {
             Header: translateMethod('Client Id'),
             style: { textAlign: 'left' },
-            accessor: item => item.apiKey.clientId,
-        },
-        {
-            Header: translateMethod("Authorized PerSec"),
-            accessor: item => (item.quotas || {})["authorizedCallsPerSec"] || "-"
-        },
-        {
-            Header: translateMethod("Remaining PerSec"),
-            accessor: item => accessor(item, "remainingCallsPerSec", "authorizedCallsPerSec")
-        },
-        {
-            Header: translateMethod("Aauthorized PerDay"),
-            accessor: item => (item.quotas || {})["authorizedCallsPerDay"] || "-"
+            accessor: item => item.apiKey.clientId
         },
         {
             Header: translateMethod("Remaining PerDay"),
-            accessor: item => accessor(item, "remainingCallsPerDay", "authorizedCallsPerDay")
-        },
-        {
-            Header: translateMethod("Authorized PerMonth"),
-            accessor: item => (item.quotas || {})["authorizedCallsPerMonth"] || "-"
+            Cell: ({
+                cell: {
+                    row: { original },
+                },
+            }) => (
+                <Progress
+                    status="normal"
+                    percent={getValue(original, "remainingCallsPerDay", "authorizedCallsPerDay")}
+                    default={'default'}
+                    showInfo={true}
+                    trailColor={"#ddd"}
+                    format={(percent) => `${Math.round(percent)} %`}
+                />
+            )
         },
         {
             Header: translateMethod("Remaining PerMonth"),
-            accessor: item => accessor(item, "remainingCallsPerMonth", "authorizedCallsPerMonth")
+            Cell: ({
+                cell: {
+                    row: { original },
+                },
+            }) => (
+                <Progress
+                    status="normal"
+                    percent={getValue(original, "remainingCallsPerMonth", "authorizedCallsPerMonth")}
+                    default={'default'}
+                    showInfo={true}
+                    trailColor={"#ddd"}
+                    format={(percent) => `${Math.round(percent || 0)} %`}
+                />
+            )
         },
     ];
 
@@ -71,7 +84,6 @@ export const TeamQuotas = (props) => {
                     fetchItems={() => Services.getAllTeamSubscriptions(currentTeam._id)}
                     showActions={false}
                     showLink={false}
-                    hideFilter={true}
                     extractKey={(item) => item._id}
                     injectTable={(t) => (table = t)}
                 />
