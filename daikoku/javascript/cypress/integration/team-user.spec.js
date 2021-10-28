@@ -80,6 +80,8 @@ describe('Team back-office', () => {
 
   it('Team income works', () => {
     cy
+      .get('nav#sidebar a.nav-link').contains('Billing').click()
+      .url().should('include', '/testers/settings/billing')
       .get('nav#sidebar a.nav-link').contains('Income').click()
       .url().should('include', '/testers/settings/income')
       .get('.month__and__total button.btn-access-negative').click()
@@ -117,6 +119,8 @@ describe('Team back-office', () => {
 
   it('Team assets works', () => {
     cy
+      .visit('http://localhost:9000/testers/settings')
+      .get('nav#sidebar a.nav-link').contains('Settings').click()
       .get('nav#sidebar a.nav-link').contains('Assets').click()
       .url().should('include', '/testers/settings/assets')
       .get('main h1').should('have.text', 'Testers assets')

@@ -133,13 +133,13 @@ function TeamBackOfficeHomeComponent(props) {
   );
 }
 
-const NavItem = ({ to, icon, name }) => (
+const NavItem = ({ to, icon, name, subItem }) => (
   <li className="nav-item">
     <NavLink
       activeClassName="active"
       className="nav-link"
       to={to}>
-      <i className={`fas fa-${icon}`} />
+      <i className={`fas fa-${icon}`} style={{ marginLeft: subItem ? '12px' : 0 }} />
       {name}
     </NavLink>
   </li>
@@ -262,13 +262,39 @@ const TeamBackOfficeComponent = ({
           path={[
             teamBasePath,
             `${teamBasePath}/:tab`,
-            `${teamBasePath}/consumptions/apis/:apiId/:versionId`,
-            `${teamBasePath}/apikeys/:apiId/:versionId`,
-            `${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`
+            `${teamBasePath}/consumptions/apis/:apiId/:versionId`
           ]}
           component={() => <span className="mt-4 px-3 text-muted" style={{ textTransform: "uppercase" }}>
             {currentTeam.name}
           </span>} />
+        <Route
+          exact
+          path={`${teamBasePath}/apikeys/:apiId/:versionId`}
+          component={() => <div className="d-flex justify-content-between align-items-center mt-4 px-3">
+            <span className="text-muted" style={{ textTransform: "uppercase" }}>
+              {params.apiId}
+            </span>
+          </div>}
+        />
+        <Route
+          exact
+          path={`${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
+          component={() => {
+            const [name, setName] = useState("")
+            useEffect(() => {
+              if (params.subscription)
+                Services.getSubscriptionInformations(
+                  params.subscription,
+                  currentTeam._id,
+                ).then(r => setName(r.plan?.customName || r.plan?.type || params.apiId))
+            }, [params.subscription])
+            return <div className="d-flex justify-content-between align-items-center mt-4 px-3">
+              <span className="text-muted" style={{ textTransform: "uppercase" }}>
+                {name}
+              </span>
+            </div>
+          }}
+        />
         <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
           <Route
             exact
@@ -307,12 +333,52 @@ const TeamBackOfficeComponent = ({
             }} />
           <Route
             exact
+            path={`${teamBasePath}/apikeys/:apiId/:versionId`}
+            render={() => (
+              <>
+                <Can I={read} a={apikey} team={currentTeam}>
+                  <NavItem
+                    to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}
+                    icon="key"
+                    name={translateMethod("Api keys")} />
+                </Can>
+                <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
+                  border: 0,
+                  background: 'transparent',
+                  outline: 'none'
+                }} to={`/${currentTeam._humanReadableId}/settings/apikeys`}>
+                  <i className="fas fa-chevron-left" />
+                  Back to apis
+                </Link>
+              </>
+            )} />
+          <Route
+            exact
+            path={`${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
+            render={() => (
+              <>
+                <Can I={read} a={apikey} team={currentTeam}>
+                  <NavItem
+                    to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${params.subscription}/consumptions`}
+                    icon="key"
+                    name={translateMethod("Consumptions")} />
+                </Can>
+                <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
+                  border: 0,
+                  background: 'transparent',
+                  outline: 'none'
+                }} to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}>
+                  <i className="fas fa-chevron-left" />
+                  Back to apikeys
+                </Link>
+              </>
+            )} />
+          <Route
+            exact
             path={[
               teamBasePath,
               `${teamBasePath}/:tab`,
-              `${teamBasePath}/consumptions/apis/:apiId/:versionId`,
-              `${teamBasePath}/apikeys/:apiId/:versionId`,
-              `${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`
+              `${teamBasePath}/consumptions/apis/:apiId/:versionId`
             ]}
             render={() => {
               const tab = location.pathname.split("/").slice(-1)[0]
@@ -329,6 +395,39 @@ const TeamBackOfficeComponent = ({
                     </Link>
                   </li>
                 </Can>
+
+                <Route exact
+                  path={[teamBasePath, `${teamBasePath}/edition`, `${teamBasePath}/members`, `${teamBasePath}/assets`]}
+                  component={() => (
+                    <>
+                      <Can I={read} a={api} team={currentTeam}>
+                        <NavItem
+                          to={`/${currentTeam._humanReadableId}/settings/edition`}
+                          icon="info"
+                          name={translateMethod("Informations")}
+                          subItem={true} />
+                      </Can>
+                      {currentTeam.type === 'Organization' && (
+                        <Can I={manage} a={team} team={currentTeam}>
+                          <NavItem
+                            to={`/${currentTeam._humanReadableId}/settings/members`}
+                            icon="users"
+                            name="Members"
+                            subItem={true} />
+                        </Can>
+                      )}
+                      {currentTeam.type !== 'Admin' && (
+                        <Can I={manage} a={asset} team={currentTeam}>
+                          <NavItem
+                            to={`/${currentTeam._humanReadableId}/settings/assets`}
+                            icon="tools"
+                            name="Assets"
+                            subItem={true}
+                          />
+                        </Can>
+                      )}
+                    </>
+                  )} />
                 {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
                   <Can I={read} a={api} team={currentTeam}>
                     <NavItem
@@ -343,36 +442,41 @@ const TeamBackOfficeComponent = ({
                     icon="key"
                     name={translateMethod("Api keys")} />
                 </Can>
+                <Route exact
+                  path={[`${teamBasePath}/apikeys`, `${teamBasePath}/apikeys/:apiId/:versionId`, `${teamBasePath}/consumption`]}
+                  component={() => (
+                    <>
+                      <Can I={read} a={stat} team={currentTeam}>
+                        <NavItem
+                          to={`/${currentTeam._humanReadableId}/settings/consumption`}
+                          icon="file-invoice-dollar"
+                          name={translateMethod("Global stats")}
+                          subItem={true} />
+                      </Can>
+                    </>
+                  )}
+                />
                 <Can I={read} a={stat} team={currentTeam}>
                   <NavItem
                     to={`/${currentTeam._humanReadableId}/settings/billing`}
                     icon="file-invoice-dollar"
                     name={translateMethod("Billing")} />
                 </Can>
-                {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
-                  <Can I={read} a={api} team={currentTeam}>
-                    <NavItem
-                      to={`/${currentTeam._humanReadableId}/settings/income`}
-                      icon="file-invoice-dollar"
-                      name="Income" />
-                  </Can>
-                )}
-                {currentTeam.type === 'Organization' && (
-                  <Can I={manage} a={team} team={currentTeam}>
-                    <NavItem
-                      to={`/${currentTeam._humanReadableId}/settings/members`}
-                      icon="users"
-                      name="Members" />
-                  </Can>
-                )}
-                {currentTeam.type !== 'Admin' && (
-                  <Can I={manage} a={asset} team={currentTeam}>
-                    <NavItem
-                      to={`/${currentTeam._humanReadableId}/settings/assets`}
-                      icon="tools"
-                      name="Assets" />
-                  </Can>
-                )}
+                <Route exact
+                  path={[`${teamBasePath}/billing`, `${teamBasePath}/income`]}
+                  component={() => (
+                    <>
+                      {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
+                        <Can I={read} a={api} team={currentTeam}>
+                          <NavItem
+                            to={`/${currentTeam._humanReadableId}/settings/income`}
+                            icon="file-invoice-dollar"
+                            name="Income"
+                            subItem={true} />
+                        </Can>
+                      )}
+                    </>
+                  )} />
               </>
             }} />
         </ul>
