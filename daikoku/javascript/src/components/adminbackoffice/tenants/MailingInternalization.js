@@ -49,7 +49,7 @@ const MarkdownComponent = ({
   </Suspense>
 );
 
-const Collapse = ({ label, children, edited, toggleTranslation, translationKey }) => {
+const Collapse = ({ label, children, edited, toggleTranslation, translationKey, defaultTranslation }) => {
   function getRequiredVariables(str) {
     let dels = [];
     const words = [];
@@ -72,7 +72,7 @@ const Collapse = ({ label, children, edited, toggleTranslation, translationKey }
         <div className="col-12 d-flex justify-space-between">
           <span style={{ fontWeight: 'bold', flex: 1 }}>{label}</span>
           <div style={{ flex: 1 }} className="text-center">
-            {getRequiredVariables(label).map((word, i) => (
+            {getRequiredVariables(defaultTranslation).map((word, i) => (
               <span className="badge badge-info mr-2" key={`translationKey${i}`}>
                 [{word}]
               </span>
@@ -274,9 +274,10 @@ function MailingInternalizationComponent({ team, tenant }) {
 
   function toggleTranslation(editedKey) {
     setTranslations(
-      translations.map(([key, values, edited]) => [
+      translations.map(([key, values, defaultTranslation, edited]) => [
         key,
         values,
+        defaultTranslation,
         key === editedKey ? (edited === undefined ? true : !edited) : edited,
       ])
     );
@@ -301,7 +302,7 @@ function MailingInternalizationComponent({ team, tenant }) {
 
   function editTranslations(editedKey, language, actions) {
     setTranslations(
-      translations.map(([key, values, edited]) => {
+      translations.map(([key, values, defaultTranslation, edited]) => {
         if (key === editedKey)
           return [
             key,
@@ -312,9 +313,10 @@ function MailingInternalizationComponent({ team, tenant }) {
                 );
               return translation;
             }),
+            defaultTranslation,
             edited,
           ];
-        return [key, values, edited];
+        return [key, values, defaultTranslation, edited];
       })
     );
   }
@@ -367,12 +369,13 @@ function MailingInternalizationComponent({ team, tenant }) {
                     {translateMethod('mailing_internalization.required_variables')}
                   </span>
                 </div>
-                {translations.map(([key, values, edited]) => (
+                {translations.map(([key, values, defaultTranslation, edited]) => (
                   <Collapse
                     label={translateMethod(key)}
                     edited={edited === undefined ? false : edited}
                     translationKey={key}
                     toggleTranslation={toggleTranslation}
+                    defaultTranslation={defaultTranslation}
                     key={`${key}-collapse`}>
                     {values.map((v, i) => (
                       <MarkdownComponent

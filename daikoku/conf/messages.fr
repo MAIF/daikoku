@@ -66,7 +66,7 @@ mail.new.user.body=Merci d''avoir créer un compte sur [tenant], vous y êtes pr
  <br/>\
 Cliquez sur le lien suivant pour finaliser la crétation de votre compte.\
 <br/>\
-[link]\
+<a href="[link]">Confirmer</a>\
 <br/>\
 L''équipe [tenant]
 tenant.mail.template=[email]
