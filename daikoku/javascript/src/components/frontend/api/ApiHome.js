@@ -201,7 +201,7 @@ const ApiHomeComponent = ({
           setApi(api);
           setSubscriptions(subscriptions);
           setPendingSubscriptions(requests);
-          setMyTeams(myTeams.map(team => ({ ...team, users: team.users.map(u => ({ ...u, ...u.user })) })));
+          setMyTeams(myTeams.map(team => ({ ...team, users: team.users.map(us => ({ ...us, ...us.user })) })));
         }
       }
     );
