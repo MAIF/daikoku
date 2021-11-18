@@ -40,6 +40,8 @@ function NotificationListComponent(props) {
                 name
                 possibleUsagePlans {
                   _id
+                  type
+                  customName
                 }
               }
             }
