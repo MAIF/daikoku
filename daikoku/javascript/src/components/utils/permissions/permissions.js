@@ -16,7 +16,11 @@ export const isUserIsTeamAdmin = (user, team) =>
 
 export const permissions = {
   User: [
-    { action: manage, what: apikey, condition: (team) => !team.apiKeyVisibility || team.apiKeyVisibility === 'User' },
+    {
+      action: manage,
+      what: apikey,
+      condition: (team) => !team.apiKeyVisibility || team.apiKeyVisibility === 'User',
+    },
     { action: read, what: api },
     { action: read, what: asset },
     { action: read, what: team },
