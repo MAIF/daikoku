@@ -137,7 +137,10 @@ function ApiPricingCardComponent(props) {
 
   const allPossibleTeams = _.difference(
     authorizedTeams.map((t) => t._id),
-    props.subscriptions.filter((f) => !f._deleted).map((s) => s.team)
+    props.subscriptions
+      .filter(() => !plan.allowMultipleKey)
+      .filter((f) => !f._deleted)
+      .map((s) => s.team)
   );
 
   const isPending = !_.difference(

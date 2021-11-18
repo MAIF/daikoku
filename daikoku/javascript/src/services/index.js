@@ -892,6 +892,7 @@ export const graphql = {
         _humanReadableId
         _id
         type
+        apiKeyVisibility
         users {
           user {
             userId: id
