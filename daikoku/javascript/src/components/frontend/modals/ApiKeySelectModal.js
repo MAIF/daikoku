@@ -51,22 +51,25 @@ export const ApiKeySelectModal = ({ closeModal, onSubscribe, plan, apiKeys, ...p
 };
 
 const ApiKeysView = ({ apiKeys, extendApiKey }) => {
-  const { translateMethod } = useContext(I18nContext)
-  return <div>
-    <h5 className="modal-title">{translateMethod('apikey_select_modal.select_your_api_key')}</h5>
-    <div className="team-selection__container">
-      {apiKeys.map((apiKey) => (
-        <div
-          key={apiKey._id}
-          className="team-selection team-selection__team selectable mt-1"
-          onClick={() => extendApiKey(apiKey)}>
-          <span className="ml-2">{`${apiKey.apiName}/${apiKey.customName || apiKey.planType
+  const { translateMethod } = useContext(I18nContext);
+  return (
+    <div>
+      <h5 className="modal-title">{translateMethod('apikey_select_modal.select_your_api_key')}</h5>
+      <div className="team-selection__container">
+        {apiKeys.map((apiKey) => (
+          <div
+            key={apiKey._id}
+            className="team-selection team-selection__team selectable mt-1"
+            onClick={() => extendApiKey(apiKey)}>
+            <span className="ml-2">{`${apiKey.apiName}/${
+              apiKey.customName || apiKey.planType
             }`}</span>
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
     </div>
-  </div>
-}
+  );
+};
 
 const SelectOrCreateApiKey = ({ create, disableExtendButton, aggregationApiKeysSecurity }) => {
   const Button = ({ onClick, message, icon, disabled }) => (

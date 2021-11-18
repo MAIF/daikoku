@@ -87,7 +87,14 @@ class TranslationController(
                           }
                         }
                         .groupBy(_.key)
-                        .map(v => (v._1, v._2.map(TranslationFormat.writes), defaultTranslations.find(p => p.key == v._1).map(_.value).getOrElse("")))
+                        .map(
+                          v =>
+                            (v._1,
+                             v._2.map(TranslationFormat.writes),
+                             defaultTranslations
+                               .find(p => p.key == v._1)
+                               .map(_.value)
+                               .getOrElse("")))
                     )
                   else
                     Json.obj(
