@@ -404,7 +404,7 @@ class UsersController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def checkTokenInvitation() = DaikokuAction.async(parse.json) { ctx =>
+  def checkTokenInvitation() = DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
     UberPublicUserAccess(
       AuditTrailEvent(
         "@{user.name} has tried to validate an invitation token"))(ctx) {
