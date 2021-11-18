@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>First run · Daikoku</title>
+<title>Use an api key on multiple apis · Daikoku</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='daikoku-manual'/>
@@ -44,7 +44,7 @@
     <li><a href="../getdaikoku/frombinaries.html" class="page">From binaries</a></li>
     <li><a href="../getdaikoku/fromdocker.html" class="page">From docker</a></li>
   </ul></li>
-  <li><a href="../firstrun/index.html" class="active page">First run</a>
+  <li><a href="../firstrun/index.html" class="page">First run</a>
   <ul>
     <li><a href="../firstrun/datastore.html" class="page">Choose your audit trail datastore</a></li>
     <li><a href="../firstrun/configfile.html" class="page">Config. with files</a></li>
@@ -84,7 +84,7 @@
   <ul>
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
-    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
+    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="active page">Use an api key on multiple apis</a></li>
     <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
@@ -137,7 +137,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../getdaikoku/frombinaries.html" class="page">From binaries</a></li>
     <li><a href="../getdaikoku/fromdocker.html" class="page">From docker</a></li>
   </ul></li>
-  <li><a href="../firstrun/index.html" class="active page">First run</a>
+  <li><a href="../firstrun/index.html" class="page">First run</a>
   <ul>
     <li><a href="../firstrun/datastore.html" class="page">Choose your audit trail datastore</a></li>
     <li><a href="../firstrun/configfile.html" class="page">Config. with files</a></li>
@@ -177,7 +177,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <ul>
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
-    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
+    <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="active page">Use an api key on multiple apis</a></li>
     <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
@@ -199,7 +199,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-breadcrumbs">
 <ul>
   <li><a href="../index.html">Daikoku</a></li>
-  <li>First run</li>
+  <li><a href="../consumerusage/index.html">Using Daikoku as api consumer</a></li>
+  <li>Use an api key on multiple apis</li>
 </ul>
 </div>
 </div>
@@ -207,12 +208,20 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#first-run" name="first-run" class="anchor"><span class="anchor-link"></span></a>First run</h1>
-<p>Now that you have your own distro of Daikoku, it&rsquo;s time to run it. </p>
-<p>But before doing so, you&rsquo;ll need to make a few choices about some essential stuff in order to have the version of Daikoku which suits to your needs.</p>
-<p>Let&rsquo;s start with the datastore !</p>
+<h1><a href="#use-an-api-key-on-multiple-apis" name="use-an-api-key-on-multiple-apis" class="anchor"><span class="anchor-link"></span></a>Use an api key on multiple apis</h1>
+<p>By default, the api keys, generated from Daikoku, can&rsquo;t be used on multiple plans.</p>
+<p>To enable this feature, you have to navigate to the settings of your tenant, to jump on the <code>Security</code> section, and to enable <code>Aggregation api keys security</code> option. Once clicked, an alert message will advert you on the risk of override metadata between key using multiple plans.</p>
+<pre><code>You&#39;re enabled the aggregation of api keys.
+It&#39;s an advanced usage of the api keys. 
+Keep in mind that the metadatas and the quotas will be shared 
+between the parent api key and his aggregate api keys. 
+Daikoku will not apply any control when conflict metadata.
+</code></pre>
+<p>Now, you can navigate to your plans, and enable this security on each plan you expected this behaviour.</p>
+<p>Once the feature is enabled on a plan, and when an user has already an existing api key, the <code>request api key</code> button will prompt to the user a choice : subscribe with a new api key or subscribe using an existing api key.</p>
+<p>When the rights of an api key is extended, the user can visualize the link between root api key and the children &ldquo;extended&rdquo; api keys, directly in the api keys view.</p>
 <div class="nav-next">
-<p><strong>Next:</strong> <a href="../firstrun/datastore.html">Choose your audit trail datastore</a></p>
+<p><strong>Next:</strong> <a href="../consumerusage/4-billing.html">Team billing</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>

@@ -49,7 +49,14 @@ const MarkdownComponent = ({
   </Suspense>
 );
 
-const Collapse = ({ label, children, edited, toggleTranslation, translationKey, defaultTranslation }) => {
+const Collapse = ({
+  label,
+  children,
+  edited,
+  toggleTranslation,
+  translationKey,
+  defaultTranslation,
+}) => {
   function getRequiredVariables(str) {
     let dels = [];
     const words = [];

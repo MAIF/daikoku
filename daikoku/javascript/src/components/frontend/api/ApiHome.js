@@ -201,7 +201,12 @@ const ApiHomeComponent = ({
           setApi(api);
           setSubscriptions(subscriptions);
           setPendingSubscriptions(requests);
-          setMyTeams(myTeams.map(team => ({ ...team, users: team.users.map(us => ({ ...us, ...us.user })) })));
+          setMyTeams(
+            myTeams.map((team) => ({
+              ...team,
+              users: team.users.map((us) => ({ ...us, ...us.user })),
+            }))
+          );
         }
       }
     );
@@ -303,7 +308,7 @@ const ApiHomeComponent = ({
         <h1 style={{ margin: 0 }}>{showAccessModal.error}</h1>
         {(teams.length === 1 &&
           (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
-          showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
+        showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
           <>
             <h2 className="text-center my-3">{translateMethod('request_already_pending')}</h2>
             <button
@@ -390,8 +395,9 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                    }`}
+                  className={`nav-link ${
+                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                  }`}
                   to={`/${match.params.teamId}/${apiId}/${versionId}/documentation`}>
                   <Translation i18nkey="Documentation">Documentation</Translation>
                 </Link>

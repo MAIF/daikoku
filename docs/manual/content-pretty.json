@@ -70,9 +70,16 @@
     "content": "# Manage APIkeys\nIn the backoffice team, click on the `Team APIkeys` entry, on the left.\nAnd you should see the list of existing `APIkeys`\n\n## View APIkeys\nOn the right of the API line, click on the `API Keys` button.\nAll subscribed plan for the API are displayed.\n - Secret can be reseted for an APIkey\n - APIkey usage statistics are avalaible after clicking on the `stats` button.\nStats are avalaible for `today`, `yesterday`, `last week`, `last month` or `the billing period`.\nYou can see a graph to see usage or some global informations likes hits count, average duration or average overhead.\n - To copy credentials, click on the `copy` button at the bottom right of the component.\n - APIkey Rotation can be enabled and setup (by choosing rotation period and grace period)\n - APIkey can be enabled or disabled\n \nEvery subscription have an integration token, which make credentials accessible by admin api. This token is visible in integration token tab.\n\n## View global statistics\nAfter clicking on the `see stats` button, global statistics are displayed.\nIt's a view of your usage by APIs, split by APIkeys."
   },
   {
-    "name": "3-billing.md",
-    "id": "/consumerusage/3-billing.md",
-    "url": "/consumerusage/3-billing.html",
+    "name": "3-aggregation-of-apikeys.md",
+    "id": "/consumerusage/3-aggregation-of-apikeys.md",
+    "url": "/consumerusage/3-aggregation-of-apikeys.html",
+    "title": "Use an api key on multiple apis",
+    "content": "# Use an api key on multiple apis\n\nBy default, the api keys, generated from Daikoku, can't be used on multiple plans.\n\nTo enable this feature, you have to navigate to the settings of your tenant, to jump on the `Security` section, and to enable `Aggregation api keys security` option. Once clicked, an alert message will advert you on the risk of override metadata between key using multiple plans.\n\n```\nYou're enabled the aggregation of api keys.\nIt's an advanced usage of the api keys. \nKeep in mind that the metadatas and the quotas will be shared \nbetween the parent api key and his aggregate api keys. \nDaikoku will not apply any control when conflict metadata.\n```\n\nNow, you can navigate to your plans, and enable this security on each plan you expected this behaviour.\n\nOnce the feature is enabled on a plan, and when an user has already an existing api key, the `request api key` button will prompt to the user a choice : subscribe with a new api key or subscribe using an existing api key.\n\nWhen the rights of an api key is extended, the user can visualize the link between root api key and the children \"extended\" api keys, directly in the api keys view."
+  },
+  {
+    "name": "4-billing.md",
+    "id": "/consumerusage/4-billing.md",
+    "url": "/consumerusage/4-billing.html",
     "title": "Team billing",
     "content": "# Team billing\n\nTeam billing page is basically the same view than @ref:[Team income](../producerusage/4-income.md) with consumer point of view.\n"
   },
@@ -81,7 +88,7 @@
     "id": "/consumerusage/index.md",
     "url": "/consumerusage/index.html",
     "title": "Using Daikoku as api consumer",
-    "content": "# Using Daikoku as api consumer\n\nNow we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku as consumer.\n\n\n@@@ index\n\n* [subscribe api](./1-subscribe.md)\n* [managing apikeys](./2-apikeys.md)\n* [team billing](./3-billing.md)\n\n@@@\n"
+    "content": "# Using Daikoku as api consumer\n\nNow we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku as consumer.\n\n\n@@@ index\n\n* [Subscribe api](./1-subscribe.md)\n* [Managing apikeys](./2-apikeys.md)\n* [Aggregation of api keys](./3-aggregation-of-apikeys.md)\n* [Team billing](./4-billing.md)\n\n@@@\n"
   },
   {
     "name": "index.md",
@@ -273,10 +280,17 @@
     "content": "# User messages\n\nA user can send a message to whole tenant admins. In fact, all members of the tenant admin team can reply to user.\n\nGo to `settings/Organizations settings` and then click `messages` on the left menu, you should see the list of opened conversations. \n\n## reply to message\nIf you receive a new message, conversation  show  you a notification woith the count of unread message. Click on conversation to open message editor and reply to user.\n\n## Close a conversation\nTo close a conversation just click on `trash` button of conversation on the left panel.\nIt's possible to get closed messages on clicking `load previous message` button on the opened conversation.\n\n## Start a new conversation\n\nJust select a user in the selector to start a new  conversation.\n"
   },
   {
+    "name": "5-translations.md",
+    "id": "/tenantusage/5-translations.md",
+    "url": "/tenantusage/5-translations.html",
+    "title": "Translate mail content and front office",
+    "content": "# Translate mail content and front office\n\nDaikoku supports two languages : french and english. All translations can be override when navigating on the `internationalization` page from a tenant settings page (the full route is `https://<your-domain-name>/settings/internationalization/mail`).\n\nOn this page, you have 3 tabs : `Mail`, `Mail Template` and `Front office`.\n\n### Mail tab\n\nThe mail tab manages all the translations of the contents of the mails. For each translation, you have a list of `required variables` which will be replace by Daikoku when an email is send.\n\nFor example, the message \n```\nYour apikey for api [apiName] and plan [planName] have been updated.\n```\n\nhas by default two variable `apiName` and `planName` which will be replace by the name of the api and the name of the plan respectively. \n\n```\nYour apikey for api My First API and plan My first plan have been updated. \n```\n\nEach translation has one field for the french translation and another for the english translation. Once a translation is overloaded, a reset button will appear to retrieve the original translation.\n\n### Mail template \n\nAll sent mails are composed of the subject of the mail as body, incorporate in a template. This template can be change and translate in the two supported langauges.\n\nWhen you want to change one of these fields, we have to include one `required variable` which is the `email` variable. That variable are replaced by Daikoku, depending on the subject of the email. \n\nIf we take the previous example, without any changes, you should have for an update of api :\n\n```\nYour apikey for api My First API and plan My first plan have been updated. \n```\n\nNow if you want to add a header and a footer at your mail, you have to write in the first field `Default mail template`\n\n```\nHello,\n\n{{email}}\n\nSend from Daikoku.\n```\n\nThe mail will be send with the following content :\n\n```\nHello,\n\nYour apikey for api My First API and plan My first plan have been updated. \n\nSend from Daikoku.\n```\n\n### Front office\n\nDaikoku is a fully customizable user interface that includes the ability to translate the front office (which represents a list of one thousand words).\n\nTo change one expression.\n\n1. Search the expression to change.\n2. Replace the value for your current language.\n3. Click on the save button on your right.\n4. Refresh your page (Daikoku is caching the translations to avoid to fetch the translations in back office each time that needed).\n\n"
+  },
+  {
     "name": "index.md",
     "id": "/tenantusage/index.md",
     "url": "/tenantusage/index.html",
     "title": "Using Daikoku as Tenant admin",
-    "content": "# Using Daikoku as Tenant admin\n\nNow we will see how to use Daikoku as tenant admin.\n\n@@@ index\n\n* [managing Otoroshi instances](./1-otoroshi.md)\n* [initialize tenant from otoroshi instance](./1.5-initialize.md)\n* [managing teams](./2-teams.md)\n* [managing assets](./3-assets.md)\n* [user messages](./4-messages.md)\n\n@@@\n"
+    "content": "# Using Daikoku as Tenant admin\n\nNow we will see how to use Daikoku as tenant admin.\n\n@@@ index\n\n* [Managing Otoroshi instances](./1-otoroshi.md)\n* [Initialize tenant from otoroshi instance](./1.5-initialize.md)\n* [Managing teams](./2-teams.md)\n* [Managing assets](./3-assets.md)\n* [User messages](./4-messages.md)\n* [Translations](./5-translations.md)\n\n@@@\n"
   }
 ]
