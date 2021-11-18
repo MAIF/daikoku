@@ -405,7 +405,7 @@ class UsersController(DaikokuAction: DaikokuAction,
   }
 
   def checkTokenInvitation() = DaikokuAction.async(parse.json) { ctx =>
-    PublicUserAccess(
+    UberPublicUserAccess(
       AuditTrailEvent(
         "@{user.name} has tried to validate an invitation token"))(ctx) {
       val body = ctx.request.body
