@@ -4,10 +4,11 @@ Now we will see how to use Daikoku as tenant admin.
 
 @@@ index
 
-* [managing Otoroshi instances](./1-otoroshi.md)
-* [initialize tenant from otoroshi instance](./1.5-initialize.md)
-* [managing teams](./2-teams.md)
-* [managing assets](./3-assets.md)
-* [user messages](./4-messages.md)
+* [Managing Otoroshi instances](./1-otoroshi.md)
+* [Initialize tenant from otoroshi instance](./1.5-initialize.md)
+* [Managing teams](./2-teams.md)
+* [Managing assets](./3-assets.md)
+* [User messages](./4-messages.md)
+* [Translations](./5-translations.md)
 
 @@@
