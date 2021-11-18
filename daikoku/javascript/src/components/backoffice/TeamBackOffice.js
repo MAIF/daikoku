@@ -1,5 +1,5 @@
 import React, { Component, useContext, useEffect, useState } from 'react';
-import { Link, Route } from 'react-router-dom';
+import { Link, NavLink, Route } from 'react-router-dom';
 import classNames from 'classnames';
 import { connect } from 'react-redux';
 
@@ -400,16 +400,15 @@ const UserBackOfficeComponent = ({
                       </Link>
                     </li>
                     <li className="nav-item">
-                      <Link
-                        className={`nav-link ${
-                          tab === 'Email internationalization' ? 'active' : ''
-                        }`}
+                      <NavLink
+                        className="nav-link"
+                        activeClassName="active"
                         to={'/settings/internationalization/mail'}>
                         <i className="fas fa-language" />
                         <Translation i18nkey="Internationalization">
                           Internationalization
                         </Translation>
-                      </Link>
+                      </NavLink>
                     </li>
                   </ul>
                 </Can>
