@@ -138,7 +138,7 @@ function ApiPricingCardComponent(props) {
   const allPossibleTeams = _.difference(
     authorizedTeams.map((t) => t._id),
     props.subscriptions
-      .filter(() => !plan.allowMultipleKey)
+      .filter(() => !plan.allowMultipleKeys)
       .filter((f) => !f._deleted)
       .map((s) => s.team)
   );
