@@ -454,46 +454,47 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getAsset(assetId: String, streamed: Option[Boolean]) = DaikokuTenantAction.async { ctx =>
-    ctx.tenant.bucketSettings match {
-      case None =>
-        FastFuture.successful(
-          NotFound(Json.obj("error" -> "No bucket config found !")))
-      case Some(cfg) =>
-        val download = ctx.request.getQueryString("download").contains("true")
+  def getAsset(assetId: String, streamed: Option[Boolean]) =
+    DaikokuTenantAction.async { ctx =>
+      ctx.tenant.bucketSettings match {
+        case None =>
+          FastFuture.successful(
+            NotFound(Json.obj("error" -> "No bucket config found !")))
+        case Some(cfg) =>
+          val download = ctx.request.getQueryString("download").contains("true")
 
-        env.assetsStore.getTenantAssetPresignedUrl(
-          ctx.tenant.id,
-          AssetId(assetId))(cfg) match {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "Asset not found!")))
-          case Some(_) if download || streamed.contains(true) =>
-            env.assetsStore
-              .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
-              .map {
-                case None => NotFound(Json.obj("error" -> "Asset not found!"))
-                case Some((source, meta)) =>
-                  val filename = meta.metadata
-                    .filter(_.name().startsWith("x-amz-meta-"))
-                    .find(_.name() == "x-amz-meta-filename")
-                    .map(_.value())
-                    .getOrElse("asset.txt")
+          env.assetsStore.getTenantAssetPresignedUrl(
+            ctx.tenant.id,
+            AssetId(assetId))(cfg) match {
+            case None =>
+              FastFuture.successful(
+                NotFound(Json.obj("error" -> "Asset not found!")))
+            case Some(_) if download || streamed.contains(true) =>
+              env.assetsStore
+                .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
+                .map {
+                  case None => NotFound(Json.obj("error" -> "Asset not found!"))
+                  case Some((source, meta)) =>
+                    val filename = meta.metadata
+                      .filter(_.name().startsWith("x-amz-meta-"))
+                      .find(_.name() == "x-amz-meta-filename")
+                      .map(_.value())
+                      .getOrElse("asset.txt")
 
-                  Ok.sendEntity(
-                      HttpEntity.Streamed(
-                        source,
-                        None,
-                        meta.contentType
-                          .map(Some.apply)
-                          .getOrElse(Some("application/octet-stream"))))
-                    .withHeaders(
-                      "Content-Disposition" -> s"""attachment; filename="$filename"""")
-              }
-          case Some(url) => FastFuture.successful(Redirect(url))
-        }
+                    Ok.sendEntity(
+                        HttpEntity.Streamed(
+                          source,
+                          None,
+                          meta.contentType
+                            .map(Some.apply)
+                            .getOrElse(Some("application/octet-stream"))))
+                      .withHeaders(
+                        "Content-Disposition" -> s"""attachment; filename="$filename"""")
+                }
+            case Some(url) => FastFuture.successful(Redirect(url))
+          }
+      }
     }
-  }
 }
 
 class UserAssetsController(DaikokuAction: DaikokuAction,

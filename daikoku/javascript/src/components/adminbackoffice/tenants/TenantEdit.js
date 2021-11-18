@@ -165,7 +165,9 @@ class StyleFontFamilyUrlAssetButton extends Component {
           tenantMode
           label={t('Set font family from asset', this.props.currentLanguage)}
           currentLanguage={this.props.currentLanguage}
-          onSelect={(asset) => this.props.changeValue('style.fontFamilyUrl', origin + asset.link + '?streamed=true')}
+          onSelect={(asset) =>
+            this.props.changeValue('style.fontFamilyUrl', origin + asset.link + '?streamed=true')
+          }
         />
       </div>
     );
@@ -585,7 +587,7 @@ export class TenantEditComponent extends Component {
           'appi.reference.visibility.help',
           this.props.currentLanguage,
           false,
-          'if enabled, guest user can\'t see api reference on public api'
+          "if enabled, guest user can't see api reference on public api"
         ),
       },
     },
