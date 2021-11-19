@@ -148,7 +148,6 @@ function ApiPricingCardComponent(props) {
     props.pendingSubscriptions.map((s) => s.action.team)
   ).length;
 
-  console.log(plan)
   const isAccepted = !allPossibleTeams.length;
 
   const { translateMethod } = useContext(I18nContext);

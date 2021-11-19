@@ -126,8 +126,8 @@ object json {
           TestingConfig(
             otoroshiSettings =
               (json \ "otoroshiSettings").as(OtoroshiSettingsIdFormat),
-            serviceGroup =
-              (json \ "serviceGroup").as(OtoroshiServiceGroupIdFormat),
+            authorizedEntities =
+              (json \ "authorizedEntities").as(AuthorizedEntitiesFormat),
             clientName = (json \ "clientName").as[String],
             api = (json \ "api").as(ApiIdFormat),
             tag = (json \ "tag").as[String],
@@ -144,7 +144,7 @@ object json {
 
     override def writes(o: TestingConfig): JsValue = Json.obj(
       "otoroshiSettings" -> OtoroshiSettingsIdFormat.writes(o.otoroshiSettings),
-      "serviceGroup" -> OtoroshiServiceGroupIdFormat.writes(o.serviceGroup),
+      "authorizedEntities" -> AuthorizedEntitiesFormat.writes(o.authorizedEntities),
       "clientName" -> o.clientName,
       "api" -> ApiIdFormat.writes(o.api),
       "tag" -> o.tag,

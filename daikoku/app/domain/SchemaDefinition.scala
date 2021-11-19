@@ -669,7 +669,7 @@ object SchemaDefinition {
       "A configuration to try to call an api on Otorshi from the Daikoku UI",
       () => fields[(DataStore, DaikokuActionContext[JsValue]), TestingConfig](
         Field("otoroshiSettings", StringType, resolve = _.value.otoroshiSettings.value),
-        Field("serviceGroup", StringType, resolve = _.value.serviceGroup.value),
+        Field("authorizedEntities", OptionType(AuthorizedEntitiesType), resolve = _.value.authorizedEntities),
         Field("api", OptionType(ApiType),
           resolve = ctx => ctx.ctx._1.apiRepo.forTenant(ctx.ctx._2.tenant).findById(ctx.value.api.value)),
         Field("customMetadata", OptionType(JsonType), resolve = _.value.customMetadata)

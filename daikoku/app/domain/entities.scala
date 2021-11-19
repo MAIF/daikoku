@@ -1294,7 +1294,7 @@ object TestingAuth {
 
 case class TestingConfig(
     otoroshiSettings: OtoroshiSettingsId,
-    serviceGroup: OtoroshiServiceGroupId,
+    authorizedEntities: AuthorizedEntities,
     clientName: String,
     api: ApiId,
     tag: String,
