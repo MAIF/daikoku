@@ -292,16 +292,9 @@ abstract class AdminApiController[Of, Id <: ValueType](
   }
 
   def patchEntity(id: String) = DaikokuApiAction.async(parse.json) { ctx =>
-    import cats.implicits._
-    import diffson._
-    import diffson.jsonpatch.lcsdiff._
-    import diffson.lcs._
-    import diffson.playJson._
-
-    implicit val lcs: Patience[JsValue] = new Patience[JsValue]
 
     val fu: Future[Option[Of]] =
-      if (ctx.request.queryString.get("notDeleted").contains("true")) {
+      if (ctx.request.queryString.get("notDeleted").exists(_.contains("true"))) {
         entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
       } else {
         entityStore(ctx.tenant, env.dataStore).findById(id)
@@ -317,25 +310,17 @@ abstract class AdminApiController[Of, Id <: ValueType](
       case Some(entity) =>
         val currentJson = toJson(entity)
 
-        val patch = diff(currentJson, ctx.request.body)
-        val maybeNewEntity = patch[Try](currentJson)
+        val maybeNewEntity = currentJson.as[JsObject].deepMerge(ctx.request.body.as[JsObject])
 
-        maybeNewEntity.map(fromJson) match {
-          case Failure(e) =>
+        fromJson(maybeNewEntity) match {
+          case Left(e) =>
             logger.error(s"Bad $entityName format", new RuntimeException(e))
             Errors.craftResponseResult(s"Bad $entityName format",
                                        Results.BadRequest,
                                        ctx.request,
                                        None,
                                        env)
-          case Success(Left(e)) =>
-            logger.error(s"Bad $entityName format", new RuntimeException(e))
-            Errors.craftResponseResult(s"Bad $entityName format",
-                                       Results.BadRequest,
-                                       ctx.request,
-                                       None,
-                                       env)
-          case Success(Right(newNewEntity)) =>
+          case Right(newNewEntity) =>
             entityStore(ctx.tenant, env.dataStore)
               .save(newNewEntity)
               .map(_ => Ok(toJson(newNewEntity)))

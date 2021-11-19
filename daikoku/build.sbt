@@ -52,8 +52,6 @@ libraryDependencies ++= Seq(
   "com.github.tomakehurst" % "wiremock-jre8" % wiremockVersion % Test,
   "org.apache.commons" % "commons-lang3" % "3.10",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.65",
-  "org.gnieh" %% "diffson-play-json" % "4.0.2" excludeAll ExclusionRule(
-    organization = "com.typesafe.akka"),
   "com.typesafe.play" %% "play-json" % "2.8.1",
   "com.typesafe.play" %% "play-json-joda" % "2.8.1",
   "com.auth0" % "java-jwt" % "3.10.3",
