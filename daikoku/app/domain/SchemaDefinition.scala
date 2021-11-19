@@ -1193,7 +1193,7 @@ object SchemaDefinition {
                   }
                 })
 
-              if (user.isDaikokuAdmin)
+              (if (user.isDaikokuAdmin)
                 adminApis.map(api => GraphQLApi(api, teams.map(team =>
                   AuthorizationApi(
                     team = team.id.value,
@@ -1202,7 +1202,10 @@ object SchemaDefinition {
                   )
                 ))) ++ sortedApis
               else
-                sortedApis
+                sortedApis)
+                .groupBy(p => (p.api.currentVersion, p.api.humanReadableId))
+                .map(res => res._2.head)
+                .toSeq
             }
           })
       }.map {
