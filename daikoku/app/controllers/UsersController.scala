@@ -3,10 +3,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -17,13 +14,8 @@ import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import io.nayuki.qrcodegen.QrCode
 import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
-import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.libs.json.{JsArray, JsError, JsNull, JsSuccess, Json}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
 
 import java.time.Instant
@@ -47,7 +39,9 @@ class UsersController(DaikokuAction: DaikokuAction,
       ctx.tenant.id.value,
       ctx) { (_, _) =>
       env.dataStore.userRepo.findAllNotDeleted().map { users =>
-        Ok(JsArray(users.map(_.asSimpleJson)))
+        Ok(JsArray(users
+          .filter(u => u.invitation.forall(_.registered))
+          .map(_.asSimpleJson)))
       }
     }
   }

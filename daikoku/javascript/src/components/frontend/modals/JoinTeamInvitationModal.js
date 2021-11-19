@@ -27,9 +27,11 @@ export const JoinTeamInvitationModal = withRouter((props) => {
 
   function accept() {
     Services.acceptNotificationOfTeam(notificationId).then(() => {
-      Services.removeTeamInvitation();
-      toastr.success(translateMethod('team_member.has_joined'));
-      goToHome();
+      Services.removeTeamInvitation()
+        .then(() => {
+          toastr.success(translateMethod('team_member.has_joined'));
+          goToHome();
+        });
     });
   }
 
