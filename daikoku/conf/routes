@@ -438,6 +438,8 @@ GET     /api/entities/user                              fr.maif.otoroshi.daikoku
 GET     /api/entities/otoroshi                          fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newOtoroshi()
 ### NoDocs ###
 GET     /api/entities/issue                             fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newIssue()
+### NoDocs ###
+GET     /api/entities/plan                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newPlan(planType: String)
 
 ### NoDocs ###
 POST    /api/jobs/otoroshi/_sync                        fr.maif.otoroshi.daikoku.ctrls.JobsController.otoroshiSyncJob()
