@@ -456,14 +456,25 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       v.currency = { code: 'EUR' };
     }
     v = { ...v, ...smartNameAndDescription(v.type) };
-    const selected = value.possibleUsagePlans.filter((p) => p._id === v._id)[0];
-    const idx = value.possibleUsagePlans.indexOf(selected);
-    let plans = _.cloneDeep(value.possibleUsagePlans);
-    plans.splice(idx, 1, v);
-    const newValue = _.cloneDeep(value);
-    newValue.possibleUsagePlans = plans;
-    props.onChange(newValue);
-    setSelected(v);
+
+    (() => {
+      if (v.type !== selected.type)
+        return Services.fetchNewPlan(v.type)
+          .then(res => ({ ...res, ...v }))
+      else
+        return Promise.resolve(v)
+    })()
+      .then(plan => {
+        const selected = value.possibleUsagePlans.filter((p) => p._id === plan._id)[0];
+        const idx = value.possibleUsagePlans.indexOf(selected);
+        let plans = _.cloneDeep(value.possibleUsagePlans);
+        plans.splice(idx, 1, plan);
+
+        const newValue = _.cloneDeep(value);
+        newValue.possibleUsagePlans = plans;
+        props.onChange(newValue);
+        setSelected(plan);
+      })
   }
 
   function renderAdmin(plan) {
@@ -555,8 +566,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Billing')}`,
       'billingDuration.value',
       'billingDuration.unit',
@@ -672,8 +683,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
@@ -814,8 +825,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
@@ -997,8 +1008,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Quotas')}`,
       'maxPerSecond',
       'maxPerDay',
@@ -1188,8 +1199,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       found.aggregationApiKeysSecurity
         ? 'aggregationApiKeysSecurity'
         : tenant.aggregationApiKeysSecurity
-        ? 'aggregationApiKeysSecurity'
-        : undefined,
+          ? 'aggregationApiKeysSecurity'
+          : undefined,
       `>>> ${translateMethod('Billing')}`,
       'costPerMonth',
       'costPerRequest',
@@ -1449,13 +1460,13 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
             <button onClick={addNewPlan} type="button" className="btn btn-outline-primary mr-1">
               {translateMethod('add a new plan')}
             </button>
-            <button
+            {value.possibleUsagePlans.length > 1 && <button
               onClick={importPlan}
               type="button"
               className="btn btn-outline-primary mr-1"
               style={{ marginTop: 0 }}>
               {translateMethod('import a plan')}
-            </button>
+            </button>}
           </>
         )}
         <Select

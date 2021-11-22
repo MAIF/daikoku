@@ -33,7 +33,7 @@ function NotificationListComponent(props) {
       Services.teams(),
       client.query({
         query: gql`
-          query AllVisibleApis {
+          query NotificationList {
             visibleApis {
               api {
                 _id
@@ -55,7 +55,7 @@ function NotificationListComponent(props) {
         {
           data: { visibleApis },
         },
-      ]) =>
+      ]) => {
         setState({
           ...state,
           untreatedNotifications: notifications.notifications.filter((n) =>
@@ -68,7 +68,7 @@ function NotificationListComponent(props) {
           teams,
           apis: visibleApis.map(({ api }) => api),
         })
-    );
+      });
   }, []);
 
   useEffect(() => {

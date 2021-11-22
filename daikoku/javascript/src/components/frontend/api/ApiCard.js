@@ -9,8 +9,9 @@ import { I18nContext } from '../../../core';
 export const ApiCard = (props) => {
   const allTeamsAreAuthorized =
     props.api.visibility === 'Public' || props.api.authorizations.every((a) => a.authorized);
+
   const isPending =
-    props.api.authorizations && props.api.authorizations.some((a) => a.pending && !a.authorized);
+    props.api.authorizations && props.api.authorizations.every((a) => a.pending && !a.authorized);
   const api = props.api;
   const team = props.team || { name: '--', avatar: '#', _id: api.team };
 
@@ -19,7 +20,7 @@ export const ApiCard = (props) => {
   const accessButton = () => {
     if (
       !allTeamsAreAuthorized &&
-      !isPending &&
+      // !isPending &&
       !['Private', 'AdminOnly'].includes(api.visibility)
     ) {
       return (
@@ -39,16 +40,16 @@ export const ApiCard = (props) => {
           teams={props.myTeams.filter((t) => t.type !== 'Admin')}
           action={(teams) => props.askForApiAccess(teams)}
           withAllTeamSelector={true}>
-          <button className="btn btn-sm btn-access-negative mr-1">
-            <Translation i18nkey="Access">Access</Translation>
-          </button>
+          {isPending ?
+            <button className="btn btn-sm btn-access-negative mr-1">
+              <Translation i18nkey="Pending request">Pending request</Translation>
+            </button>
+            :
+            <button className="btn btn-sm btn-access-negative mr-1">
+              <Translation i18nkey="Access">Access</Translation>
+            </button>
+          }
         </ActionWithTeamSelector>
-      );
-    } else if (isPending) {
-      return (
-        <button className="btn btn-sm btn-access-negative mr-1">
-          <Translation i18nkey="Pending request">Pending request</Translation>
-        </button>
       );
     }
     return null;
