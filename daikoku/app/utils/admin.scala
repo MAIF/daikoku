@@ -1,20 +1,17 @@
 package fr.maif.otoroshi.daikoku.utils.admin
 
 import java.util.Base64
-
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{
-  Env,
-  LocalAdminApiConfig,
-  OtoroshiAdminApiConfig
-}
+import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
+import org.joda.time.DateTime
 import play.api.Logger
 import play.api.http.HttpEntity
 import play.api.libs.json._
@@ -293,12 +290,45 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
   def patchEntity(id: String) = DaikokuApiAction.async(parse.json) { ctx =>
 
+    object JsonImplicits {
+      implicit val jodaDateTimeWrites: Writes[DateTime] = play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites
+      implicit val jodaDateTimeReads: Reads[DateTime]   = play.api.libs.json.JodaReads.DefaultJodaDateTimeReads
+    }
+
+    object JsonPatchHelpers {
+      import diffson.playJson.DiffsonProtocol._
+      import play.api.libs.json._
+
+      def patchJson(patchOps: JsValue, document: JsValue): JsValue = {
+        val patch = diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
+        patch.apply(document).get
+      }
+    }
+
     val fu: Future[Option[Of]] =
       if (ctx.request.queryString.get("notDeleted").exists(_.contains("true"))) {
         entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
       } else {
         entityStore(ctx.tenant, env.dataStore).findById(id)
       }
+
+    def finalizePatch(patchedJson: JsValue): Future[Result] = {
+      fromJson(patchedJson) match {
+        case Left(e) =>
+          logger.error(s"Bad $entityName format", new RuntimeException(e))
+          Errors.craftResponseResult(s"Bad $entityName format",
+            Results.BadRequest,
+            ctx.request,
+            None,
+            env)
+        case Right(newNewEntity) =>
+          entityStore(ctx.tenant, env.dataStore)
+            .save(newNewEntity)
+            .map(_ => Ok(toJson(newNewEntity)))
+      }
+    }
+
+
 
     val value: Future[Result] = fu.flatMap {
       case None =>
@@ -310,21 +340,17 @@ abstract class AdminApiController[Of, Id <: ValueType](
       case Some(entity) =>
         val currentJson = toJson(entity)
 
-        val maybeNewEntity = currentJson.as[JsObject].deepMerge(ctx.request.body.as[JsObject])
-
-        fromJson(maybeNewEntity) match {
-          case Left(e) =>
-            logger.error(s"Bad $entityName format", new RuntimeException(e))
-            Errors.craftResponseResult(s"Bad $entityName format",
-                                       Results.BadRequest,
-                                       ctx.request,
-                                       None,
-                                       env)
-          case Right(newNewEntity) =>
-            entityStore(ctx.tenant, env.dataStore)
-              .save(newNewEntity)
-              .map(_ => Ok(toJson(newNewEntity)))
+        ctx.request.body match {
+          case JsArray(_) =>
+            val newJson     = JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
+            finalizePatch(newJson)
+          case JsObject(_) =>
+            val newJson = currentJson.as[JsObject].deepMerge(ctx.request.body.as[JsObject])
+            finalizePatch(newJson)
+          case _ =>
+            FastFuture.successful(BadRequest(Json.obj("error" -> "[patch error] wrong patch format")))
         }
+
     }
     value
   }
