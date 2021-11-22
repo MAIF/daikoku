@@ -916,6 +916,7 @@ export const graphql = {
           stars
           smallDescription
           isDefault
+          visibility
           possibleUsagePlans {
             _id
             customName
