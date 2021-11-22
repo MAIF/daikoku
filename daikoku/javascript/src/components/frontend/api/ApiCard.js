@@ -10,7 +10,6 @@ export const ApiCard = (props) => {
   const allTeamsAreAuthorized =
     props.api.visibility === 'Public' || props.api.authorizations.every((a) => a.authorized);
     
-  console.log(props.api.authorizations)
   const isPending =
     props.api.authorizations && props.api.authorizations.some((a) => a.pending && !a.authorized);
   const api = props.api;
