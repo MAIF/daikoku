@@ -112,8 +112,6 @@ function MyHomeComponent(props) {
       (team) => api.team._id === team._id
     );
 
-    console.log(api)
-
     if (CanIDoAction(props.connectedUser, manage, API, adminTeam, props.apiCreationPermitted)) {
       props
         .updateTeam(adminTeam)
