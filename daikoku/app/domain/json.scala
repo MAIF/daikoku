@@ -1638,7 +1638,8 @@ object json {
               .asOpt[String],
             tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat),
             aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity")
-              .asOpt[Boolean]
+              .asOpt[Boolean],
+            robotTxt = (json \ "robotTxt").asOpt[String]
           )
         )
       } recover {
@@ -1708,7 +1709,11 @@ object json {
       "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
         .map(JsBoolean)
         .getOrElse(JsBoolean(false))
-        .as[JsValue]
+        .as[JsValue],
+      "robotTxt" -> o.robotTxt
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
     )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {

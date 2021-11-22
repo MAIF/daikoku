@@ -149,7 +149,8 @@ case class Tenant(
     hideTeamsPage: Option[Boolean] = None,
     defaultMessage: Option[String] = None,
     tenantMode: Option[TenantMode] = None,
-    aggregationApiKeysSecurity: Option[Boolean] = None
+    aggregationApiKeysSecurity: Option[Boolean] = None,
+    robotTxt: Option[String] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
