@@ -219,7 +219,7 @@ class TenantController(DaikokuAction: DaikokuAction,
               pages = Seq.empty[ApiDocumentationPageId],
               lastModificationAt = DateTime.now()
             ),
-            swagger = None,
+            swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
             possibleUsagePlans = Seq(
               FreeWithoutQuotas(
                 id = UsagePlanId("admin"),

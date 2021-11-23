@@ -25,7 +25,6 @@ function MyHomeComponent(props) {
 
   const fetchData = () => {
     setState({ ...state, loading: true });
-    console.log('run store');
     Promise.all([
       client.query({
         query: Services.graphql.myVisibleApis(),
@@ -44,7 +43,6 @@ function MyHomeComponent(props) {
           data: { myTeams },
         },
       ]) => {
-        console.log('changed store');
         setState({
           ...state,
           apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
@@ -60,7 +58,7 @@ function MyHomeComponent(props) {
   };
 
   useEffect(() => {
-    console.log(location.pathname);
+    // console.log(location.pathname);
     fetchData();
   }, [props.connectedUser._id, location.pathname]);
 

@@ -51,6 +51,13 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   val logger = Logger("ApiController")
 
+  def getDaikokuUrl(tenant: Tenant, path: String) = tenant.exposedPort match {
+    case Some(80) => s"http://${tenant.domain}$path"
+    case Some(443) => s"https://${tenant.domain}$path"
+    case Some(value) => s"http://${tenant.domain}:$value/$path"
+    case None => s"http://${tenant.domain}:${env.config.exposedPort}$path"
+  }
+
   def me() = DaikokuAction.async { ctx =>
     authorizations.sync.PublicUserAccess(AuditTrailEvent("@{user.name} has accessed his own profile"))(ctx) {
         ctx.user.asJson
@@ -68,7 +75,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         api.swagger match {
           case Some(SwaggerAccess(_, Some(content), _)) => FastFuture.successful(Ok(content).as("application/json"))
           case Some(SwaggerAccess(url, None, headers)) => {
-            val finalUrl = if (url.startsWith("/")) s"http://127.0.0.1:${env.config.port}${url}" else url
+            val finalUrl = if (url.startsWith("/")) getDaikokuUrl(ctx.tenant, url) else url
             Try {
               env.wsClient.url(finalUrl).withHttpHeaders(headers.toSeq: _*).get().map { resp =>
                 Ok(resp.body).as(resp.header("Content-Type").getOrElse("application/json"))
@@ -757,13 +764,7 @@ class ApiController(DaikokuAction: DaikokuAction,
     )
 
     val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
-
-    val notificationUrl = tenant.exposedPort match {
-      case Some(80) => s"http://${tenant.domain}/notifications"
-      case Some(443) => s"https://${tenant.domain}/notifications"
-      case Some(value) => s"http://${tenant.domain}:$value/"
-      case None => s"http://${tenant.domain}:${env.config.exposedPort}/"
-    }
+    val notificationUrl = getDaikokuUrl(tenant, "/notifications")
     for {
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       maybeApiTeam <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)

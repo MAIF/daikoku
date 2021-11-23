@@ -530,15 +530,18 @@ abstract class AdminApiController[Of, Id <: ValueType](
            |}
         """.stripMargin),
       "patch" -> Json.parse(s"""{
-           |  "summary": "update a $entityName with JSON patch",
+           |  "summary": "update a $entityName with JSON patch or by  merging JSON object",
            |  "operationId": "${entityName}s.patch",
            |  "requestBody": {
-           |    "description": "the patch to update the $entityName",
+           |    "description": "the patch to update the $entityName or a JSON object",
            |    "required": true,
            |    "content": {
            |      "application/json": {
            |        "schema": {
-           |          "$$ref": "#/components/schemas/patch"
+           |          "oneOf": [
+           |           {"$$ref": "#/components/schemas/patch"},
+           |           {"$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"}
+           |          ]
            |        }
            |      }
            |    }

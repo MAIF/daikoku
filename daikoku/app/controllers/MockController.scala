@@ -725,7 +725,7 @@ class MockController(DaikokuAction: DaikokuAction,
         pages = Seq.empty[ApiDocumentationPageId],
         lastModificationAt = DateTime.now()
       ),
-      swagger = None,
+      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
       possibleUsagePlans = Seq(
         Admin(
           id = UsagePlanId("admin"),
@@ -747,6 +747,7 @@ class MockController(DaikokuAction: DaikokuAction,
       name = s"admin-api-tenant-${tenant2Id.value}",
       team = tenant2adminTeam.id,
       tags = Set("Administration"),
+      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
       documentation = ApiDocumentation(
         id = ApiDocumentationId(BSONObjectID.generate().stringify),
         tenant = tenant2Id,
