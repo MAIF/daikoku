@@ -13,7 +13,6 @@ import play.api.mvc._
 import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import play.api.Logger
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration.FiniteDuration

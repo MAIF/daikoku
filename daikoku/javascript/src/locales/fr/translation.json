@@ -964,5 +964,6 @@
   "Search translation": "Rechercher une traduction",
   "SEO": "SEO",
   "Robot.txt.label": "Contenu  du Robot.txt",
-  "Robot.txt.content": "Le contenu du fichier Robot.txt file servi par Daikoku"
+  "Robot.txt.content": "Le contenu du fichier Robot.txt file servi par Daikoku",
+  "Mode": "Mode"
 }

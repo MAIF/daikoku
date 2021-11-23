@@ -26,7 +26,7 @@ Now, you can create a new user. Provide the informations about the admin user yo
 Activate `Daikoku admin.`
 Click on `Create`.
 
-Now, you can delete the initially generated `Super admin`, confirm, then logout, login with the admin user you have just created and the danger popup will go away.
+Now, you can log in with the newly created admin adn then delete the initially generated `Super admin`, confirm, and the danger popup will go away.
 
 ## Delete admin user
 

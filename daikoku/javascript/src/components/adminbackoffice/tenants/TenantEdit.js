@@ -173,7 +173,7 @@ function ThemeUpdatorFromUI(props) {
       <button
         type="button"
         className="btn btn-access-negative"
-        onClick={() => {
+        onClick={(e) => {
           const RedirectToUI = () =>
             props.history.push(`/settings/tenants/${props.tenant()._id}/style`);
           if (props.isTenantUpdated()) {
@@ -618,6 +618,11 @@ export function TenantEditComponent(props) {
       type: MailerConfig,
       props: {
         label: translateMethod('Mailer'),
+        tenant: () => state.tenant,
+        save: () => save(),
+        history: props.history,
+        isTenantUpdated: () => !!state.updated,
+        openModal: (p) => props.openSaveOrCancelModal({ ...p }),
       },
     },
     'daikokuHeader.name': {
@@ -778,12 +783,11 @@ export function TenantEditComponent(props) {
     tenantMode: {
       type: 'select',
       props: {
-        label: translateMethod('Modes'),
+        label: translateMethod('Mode'),
         possibleValues: [
           { label: translateMethod('Default mode'), value: 'default' },
           { label: translateMethod('Maintenance mode'), value: 'maintenance' },
           { label: translateMethod('Construction mode'), value: 'construction' },
-          { label: translateMethod('Translation mode'), value: 'translation' },
         ],
       },
     },
