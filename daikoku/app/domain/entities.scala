@@ -1736,7 +1736,7 @@ case class CmsPage(
 
     {
       "_id": "03013ab7-18cf-4b7e-bcc3-6d1ab6ea315c",
-      "body": "<h1>Hello {{user.email}} - {{tenant.name}} !</h1><br/><a href=\"{{asset-url \"fifou\"}}\">foo</a><br/><ul>{{#apis}}<li>{{name}}</li>{{/apis}}</ul><br/>{{#api \"admin-api-tenant-default\"}}first api: {{name}}{{/api}}",
+      "body": "<h1>Hello {{user.email}} - {{tenant.name}} !</h1><br/><a href=\"{{daikoku-asset-url \"fifou\"}}\">foo</a><br/><ul>{{#daikoku-apis}}<li>{{name}}</li>{{/daikoku-apis}}</ul><br/>{{#daikoku-api \"admin-api-tenant-default\"}}first api: {{name}}{{/daikoku-api}}",
       "name": "fifou page",
       "path": "/fifou",
       "tags": [],
@@ -1763,27 +1763,27 @@ case class CmsPage(
         val wantDraft = ctx.request.getQueryString("draft").contains("true")
         val template = if (wantDraft) metadata.getOrElse("draft", page.body) else page.body
         val handlebars = new Handlebars()
-        handlebars.registerHelper("asset-url", new Helper[String] {
+        handlebars.registerHelper("daikoku-asset-url", new Helper[String] {
           override def apply(context: String, options: Options): CharSequence = {
             s"/tenant-assets/${context}"
           }
         })
-        handlebars.registerHelper("page-url", new Helper[String] {
+        handlebars.registerHelper("daikoku-page-url", new Helper[String] {
           override def apply(id: String, options: Options): CharSequence = {
             s"/cms/pages/${id}"
           }
         })
-        handlebars.registerHelper("apis", new Helper[CmsPage] {
+        handlebars.registerHelper("daikoku-apis", new Helper[CmsPage] {
           override def apply(page: CmsPage, options: Options): CharSequence = {
             val apis = Await.result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
-            apis.map(api => new JavaBeanApi(api)).map(api => options.fn.apply(Context.newBuilder(api).build())).mkString("\n")
+            apis.map(api => new JavaBeanApi(api)).map(api => options.fn.apply(Context.newBuilder(api).combine("api", api).build())).mkString("\n")
           }
         })
-        handlebars.registerHelper("api", new Helper[String] {
+        handlebars.registerHelper("daikoku-api", new Helper[String] {
           override def apply(id: String, options: Options): CharSequence = {
             Await.result(env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
               case None => "api not found"
-              case Some(api) => options.fn.apply(Context.newBuilder(new JavaBeanApi(api)).build())
+              case Some(api) => options.fn.apply(Context.newBuilder(new JavaBeanApi(api)).combine("api", api).build())
             }
           }
         })
