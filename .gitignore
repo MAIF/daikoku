@@ -12,6 +12,7 @@ target
 *.iml
 es-data
 s3-data
+pg-data
 mongo-data
 /demo/config/mongo-data/
 /demo/config/redis-data/
