@@ -6,11 +6,7 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.TenantMode
@@ -26,7 +22,7 @@ import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object json {
   val BillingTimeUnitFormat = new Format[BillingTimeUnit] {
@@ -3153,5 +3149,54 @@ object json {
       JsSuccess(json.as[JsObject])
 
     override def writes(o: JsObject): JsValue = o
+  }
+
+  val CmsPageIdFormat = new Format[CmsPageId] {
+    override def reads(json: JsValue): JsResult[CmsPageId] =
+      Try {
+        JsSuccess(CmsPageId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: CmsPageId): JsValue = JsString(o.value)
+  }
+
+  val CmsPageFormat = new Format[CmsPage] {
+    override def writes(o: CmsPage): JsValue = Json.obj(
+      "_id" -> o.id.value,
+      "_tenant" -> o.tenant.value,
+      "_deleted" -> o.deleted,
+      "visible" -> o.visible,
+      "authenticated" -> o.authenticated,
+      "name" -> o.name,
+      "picture" -> o.picture.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "tags" -> o.tags,
+      "metadata" -> o.metadata,
+      "contentType" -> o.contentType,
+      "forwardRef" -> o.forwardRef.map(v => v.asJson).getOrElse(JsNull).as[JsValue],
+      "body" -> o.body,
+      "path" -> o.path,
+    )
+    override def reads(json: JsValue): JsResult[CmsPage] = Try {
+      CmsPage(
+        id = (json \ "_id").as(CmsPageIdFormat),
+        tenant = (json \ "_tenant").as(TenantIdFormat),
+        deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
+        visible = (json \ "visible").asOpt[Boolean].getOrElse(false),
+        authenticated = (json \ "authenticated").asOpt[Boolean].getOrElse(false),
+        name = (json \ "name").as[String],
+        picture = (json \ "picture").asOpt[String].filter(_.trim.nonEmpty),
+        tags = (json \ "tags").asOpt[List[String]].getOrElse(List.empty),
+        metadata = (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
+        body = (json \ "body").asOpt[String].getOrElse(""),
+        contentType = (json \ "contentType").asOpt[String].getOrElse("text/html"),
+        forwardRef = (json \ "forwardRef").asOpt[String].filter(_.trim.nonEmpty).map(v => CmsPageId(v)),
+        path = (json \ "path").asOpt[String].getOrElse("-"),
+      )
+    } match {
+      case Failure(exception) => JsError(exception.getMessage)
+      case Success(page) => JsSuccess(page)
+    }
   }
 }

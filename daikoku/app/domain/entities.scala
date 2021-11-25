@@ -3,6 +3,8 @@ package fr.maif.otoroshi.daikoku.domain
 import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
+import com.github.jknack.handlebars.{Context, Handlebars, Helper, Options}
+import fr.maif.otoroshi.daikoku.actions.DaikokuActionMaybeWithoutUserContext
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
@@ -14,6 +16,7 @@ import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.libs.json._
+import play.api.mvc.Request
 import play.twirl.api.Html
 import reactivemongo.bson.BSONObjectID
 
@@ -1706,4 +1709,78 @@ case class Message(id: DatastoreId,
                    send: Boolean = false)
     extends CanJson[Message] {
   override def asJson: JsValue = json.MessageFormat.writes(this)
+}
+
+case class CmsPageId(value: String) extends ValueType with CanJson[CmsPageId] {
+  def asJson: JsValue = JsString(value)
+}
+
+case class CmsPage(
+  id: CmsPageId,
+  tenant: TenantId,
+  deleted: Boolean = false,
+  visible: Boolean,
+  authenticated: Boolean,
+  name: String,
+  picture: Option[String] = None,
+  forwardRef: Option[CmsPageId],
+  tags: List[String],
+  metadata: Map[String, String],
+  contentType: String,
+  body: String,
+  path: String
+) extends CanJson[CmsPage] {
+
+  override def asJson: JsValue = json.CmsPageFormat.writes(this)
+
+  def render(ctx: DaikokuActionMaybeWithoutUserContext[_])(implicit ec: ExecutionContext, env: Env): Future[(String, String)] = {
+    (forwardRef match {
+      case Some(id) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).map(_.getOrElse(this))
+      case None => FastFuture.successful(this)
+    }).flatMap { page =>
+      import scala.jdk.CollectionConverters._
+      val wantDraft = ctx.request.getQueryString("draft").contains("true")
+      val template = if (wantDraft) metadata.getOrElse("draft", page.body) else page.body
+      val handlebars = new Handlebars()
+      handlebars.registerHelper("asset-url", new Helper[String] {
+        override def apply(context: String, options: Options): CharSequence = {
+          s"/tenant-assets/${context}"
+        }
+      })
+      handlebars.registerHelper("page-url",  new Helper[String] {
+        override def apply(id: String, options: Options): CharSequence = {
+          s"/cms/pages/${id}"
+        }
+      })
+      val context = Context
+        .newBuilder(this)
+          .combine("tenant", new JavaBeanTenant(ctx.tenant))
+          .combine("admin", ctx.isTenantAdmin)
+          .combine("connected", ctx.user.isDefined)
+          .combine("user", ctx.user.map(u => new JavaBeanUser(u)).orNull)
+          .combine("request", new JavaBeanRequest(ctx.request))
+          .build()
+      val result = handlebars.compileInline(template).apply(context)
+      context.destroy()
+      FastFuture.successful((result, page.contentType))
+    }
+  }
+}
+
+class JavaBeanUser(user: User) {
+  def getName(): String = user.name
+  def getEmail(): String = user.email
+}
+
+class JavaBeanRequest(req: Request[_]) {
+
+  import scala.jdk.CollectionConverters._
+
+  def getPath(): String = req.path
+  def getMethod(): String = req.method
+  def getHeaders(): java.util.Map[String, String] = req.headers.toSimpleMap.asJava
+}
+
+class JavaBeanTenant(tenant: Tenant) {
+  def getName(): String = tenant.name
 }

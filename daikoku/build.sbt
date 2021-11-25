@@ -77,7 +77,8 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-core" % "1.11.779",
   "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1",
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.893",
-  "commons-logging" % "commons-logging" % "1.1.1"
+  "commons-logging" % "commons-logging" % "1.1.1",
+  "com.github.jknack" % "handlebars" % "4.3.0"
 )
 
 dependencyOverrides += "io.netty" % "netty-handler" % "4.1.58.Final"

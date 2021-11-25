@@ -463,6 +463,23 @@ class PostsAdminApiController(daa: DaikokuApiAction,
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 }
 
+class CmsPagesAdminApiController(daa: DaikokuApiAction,
+                            env: Env,
+                            cc: ControllerComponents)
+  extends AdminApiController[CmsPage, CmsPageId](daa, env, cc) {
+  override def entityClass = classOf[CmsPage]
+  override def entityName: String = "cms-page"
+  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def entityStore(tenant: Tenant, ds: DataStore): Repo[CmsPage, CmsPageId] =
+    ds.cmsRepo.forTenant(tenant)
+  override def toJson(entity: CmsPage): JsValue = entity.asJson
+  override def fromJson(entity: JsValue): Either[String, CmsPage] =
+    CmsPageFormat
+      .reads(entity)
+      .asEither
+      .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
+}
+
 class AdminApiSwaggerController(
     env: Env,
     cc: ControllerComponents,

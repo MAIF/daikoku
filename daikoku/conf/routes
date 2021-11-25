@@ -1,6 +1,10 @@
 ### NoDocs ###
 GET     /assets/*file                                   controllers.Assets.versioned(path="/public", file: Asset)
 
+GET     /_/                                             fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsPageByPath(path="")
+GET     /_/*path                                        fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsPageByPath(path)
+GET     /cms/pages/:id                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsPageById(id)
+
 ### NoDocs ###
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
@@ -599,6 +603,13 @@ PUT     /admin-api/posts/:id                            fr.maif.otoroshi.daikoku
 GET     /admin-api/posts/:id                            fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.findById(id)
 POST    /admin-api/posts                                fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.createEntity()
 GET     /admin-api/posts                                fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.findAll()
+
+DELETE  /admin-api/cms-pages/:id                        fr.maif.otoroshi.daikoku.ctrls.CmsPagesAdminApiController.deleteEntity(id)
+PATCH   /admin-api/cms-pages/:id                        fr.maif.otoroshi.daikoku.ctrls.CmsPagesAdminApiController.patchEntity(id)
+PUT     /admin-api/cms-pages/:id                        fr.maif.otoroshi.daikoku.ctrls.CmsPagesAdminApiController.updateEntity(id)
+GET     /admin-api/cms-pages/:id                        fr.maif.otoroshi.daikoku.ctrls.CmsPagesAdminApiController.findById(id)
+POST    /admin-api/cms-pages                            fr.maif.otoroshi.daikoku.ctrls.CmsPagesAdminApiController.createEntity()
+GET     /admin-api/cms-pages                            fr.maif.otoroshi.daikoku.ctrls.CmsPagesAdminApiController.findAll()
 
 DELETE  /admin-api/issues/:id                           fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.deleteEntity(id)
 PATCH   /admin-api/issues/:id                           fr.maif.otoroshi.daikoku.ctrls.IssuesAdminApiController.patchEntity(id)

@@ -280,6 +280,8 @@ trait TranslationRepo extends TenantCapableRepo[Translation, DatastoreId]
 
 trait MessageRepo extends TenantCapableRepo[Message, DatastoreId]
 
+trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
+
 trait DataStore {
   def start(): Future[Unit]
 
@@ -318,6 +320,8 @@ trait DataStore {
   def accountCreationRepo: AccountCreationRepo
 
   def messageRepo: MessageRepo
+
+  def cmsRepo: CmsPageRepo
 
   def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(
       implicit ec: ExecutionContext,
