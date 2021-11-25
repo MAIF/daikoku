@@ -1734,7 +1734,6 @@ case class CmsPage(
 
   /*
     tested with
-
     {
       "_id": "03013ab7-18cf-4b7e-bcc3-6d1ab6ea315c",
       "body": "<h1>Hello {{user.email}} - {{tenant.name}} !</h1><br/><a href=\"{{daikoku-asset-url \"fifou\"}}\">foo</a><br/><ul>{{#daikoku-apis}}<li>{{name}}</li>{{/daikoku-apis}}</ul><br/>{{#daikoku-api \"admin-api-tenant-default\"}}first api: {{name}}{{/daikoku-api}}",
@@ -1749,7 +1748,6 @@ case class CmsPage(
       "contentType": "text/html",
       "authenticated": false
     }
-
    */
 
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
@@ -1794,6 +1792,7 @@ case class CmsPage(
           }
         })
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api))
+        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "teams", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team))
         val context = Context
           .newBuilder(this)
           .combine("tenant", new JavaBeanTenant(ctx.tenant))
@@ -1817,6 +1816,11 @@ case class CmsPage(
 class JavaBeanApi(api: Api) {
   def getName(): String = api.name
   def getId(): String = api.id.value
+}
+
+class JavaBeanTeam(team: Team) {
+  def getName(): String = team.name
+  def getId(): String = team.id.value
 }
 
 class JavaBeanUser(user: User) {
