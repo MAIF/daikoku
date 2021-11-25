@@ -20,8 +20,8 @@ import play.api.mvc.Request
 import play.twirl.api.Html
 import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 trait CanJson[A] {
   def asJson: JsValue
@@ -1731,6 +1731,26 @@ case class CmsPage(
   path: String
 ) extends CanJson[CmsPage] {
 
+  /*
+    tested with
+
+    {
+      "_id": "03013ab7-18cf-4b7e-bcc3-6d1ab6ea315c",
+      "body": "<h1>Hello {{user.email}} - {{tenant.name}} !</h1><br/><a href=\"{{asset-url \"fifou\"}}\">foo</a><br/><ul>{{#apis}}<li>{{name}}</li>{{/apis}}</ul><br/>{{#api \"admin-api-tenant-default\"}}first api: {{name}}{{/api}}",
+      "name": "fifou page",
+      "path": "/fifou",
+      "tags": [],
+      "_tenant": "default",
+      "picture": null,
+      "visible": true,
+      "_deleted": false,
+      "metadata": {},
+      "contentType": "text/html",
+      "authenticated": false
+    }
+
+   */
+
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
   def render(ctx: DaikokuActionMaybeWithoutUserContext[_])(implicit ec: ExecutionContext, env: Env): Future[(String, String)] = {
@@ -1738,33 +1758,58 @@ case class CmsPage(
       case Some(id) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).map(_.getOrElse(this))
       case None => FastFuture.successful(this)
     }).flatMap { page =>
-      import scala.jdk.CollectionConverters._
-      val wantDraft = ctx.request.getQueryString("draft").contains("true")
-      val template = if (wantDraft) metadata.getOrElse("draft", page.body) else page.body
-      val handlebars = new Handlebars()
-      handlebars.registerHelper("asset-url", new Helper[String] {
-        override def apply(context: String, options: Options): CharSequence = {
-          s"/tenant-assets/${context}"
-        }
-      })
-      handlebars.registerHelper("page-url",  new Helper[String] {
-        override def apply(id: String, options: Options): CharSequence = {
-          s"/cms/pages/${id}"
-        }
-      })
-      val context = Context
-        .newBuilder(this)
+      try {
+        import scala.jdk.CollectionConverters._
+        val wantDraft = ctx.request.getQueryString("draft").contains("true")
+        val template = if (wantDraft) metadata.getOrElse("draft", page.body) else page.body
+        val handlebars = new Handlebars()
+        handlebars.registerHelper("asset-url", new Helper[String] {
+          override def apply(context: String, options: Options): CharSequence = {
+            s"/tenant-assets/${context}"
+          }
+        })
+        handlebars.registerHelper("page-url", new Helper[String] {
+          override def apply(id: String, options: Options): CharSequence = {
+            s"/cms/pages/${id}"
+          }
+        })
+        handlebars.registerHelper("apis", new Helper[CmsPage] {
+          override def apply(page: CmsPage, options: Options): CharSequence = {
+            val apis = Await.result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+            apis.map(api => new JavaBeanApi(api)).map(api => options.fn.apply(Context.newBuilder(api).build())).mkString("\n")
+          }
+        })
+        handlebars.registerHelper("api", new Helper[String] {
+          override def apply(id: String, options: Options): CharSequence = {
+            Await.result(env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+              case None => "api not found"
+              case Some(api) => options.fn.apply(Context.newBuilder(new JavaBeanApi(api)).build())
+            }
+          }
+        })
+        val context = Context
+          .newBuilder(this)
           .combine("tenant", new JavaBeanTenant(ctx.tenant))
           .combine("admin", ctx.isTenantAdmin)
           .combine("connected", ctx.user.isDefined)
           .combine("user", ctx.user.map(u => new JavaBeanUser(u)).orNull)
           .combine("request", new JavaBeanRequest(ctx.request))
           .build()
-      val result = handlebars.compileInline(template).apply(context)
-      context.destroy()
-      FastFuture.successful((result, page.contentType))
+        val result = handlebars.compileInline(template).apply(context)
+        context.destroy()
+        FastFuture.successful((result, page.contentType))
+      } catch {
+        case t: Throwable =>
+          t.printStackTrace()
+          FastFuture.successful(("text/html", s"error: ${t.getMessage}"))
+      }
     }
   }
+}
+
+class JavaBeanApi(api: Api) {
+  def getName(): String = api.name
+  def getId(): String = api.id.value
 }
 
 class JavaBeanUser(user: User) {
