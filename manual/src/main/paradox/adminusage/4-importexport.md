@@ -22,4 +22,4 @@ Since v1.1.1 Daikoku support postgresql database. If you want to migrate you mon
   3. run the migration
   4. update your daikoku.storage to postgres
   5. restart your Daikoku
-  6. remember to disable the maintennace mode
+  6. remember to disable the maintenance mode
