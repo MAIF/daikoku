@@ -19,6 +19,7 @@ import play.api.libs.json._
 import play.api.mvc.Request
 import play.twirl.api.Html
 import reactivemongo.bson.BSONObjectID
+import storage.{DataStore, Repo, TenantCapableRepo}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -1753,6 +1754,25 @@ case class CmsPage(
 
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
+  def enrichHandlebarsWithEntity[A](handlebars: Handlebars, env: Env, tenant: Tenant, name: String, getRepo: Env => TenantCapableRepo[A, _], makeBean: A => AnyRef): Handlebars = {
+    implicit val ec = env.defaultExecutionContext
+    val repo: TenantCapableRepo[A, _] = getRepo(env)
+    handlebars.registerHelper(s"daikoku-${name}s", new Helper[CmsPage] {
+      override def apply(page: CmsPage, options: Options): CharSequence = {
+        val apis = Await.result(repo.forTenant(tenant).findAllNotDeleted(), 10.seconds)
+        apis.map(api => makeBean(api)).map(api => options.fn.apply(Context.newBuilder(api).combine(name, api).build())).mkString("\n")
+      }
+    })
+    handlebars.registerHelper(s"daikoku-${name}", new Helper[String] {
+      override def apply(id: String, options: Options): CharSequence = {
+        Await.result(repo.forTenant(tenant).findByIdNotDeleted(id), 10.seconds) match {
+          case None => ""
+          case Some(api) => options.fn.apply(Context.newBuilder(makeBean(api)).combine(name, api).build())
+        }
+      }
+    })
+  }
+
   def render(ctx: DaikokuActionMaybeWithoutUserContext[_])(implicit ec: ExecutionContext, env: Env): Future[(String, String)] = {
     (forwardRef match {
       case Some(id) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).map(_.getOrElse(this))
@@ -1773,20 +1793,7 @@ case class CmsPage(
             s"/cms/pages/${id}"
           }
         })
-        handlebars.registerHelper("daikoku-apis", new Helper[CmsPage] {
-          override def apply(page: CmsPage, options: Options): CharSequence = {
-            val apis = Await.result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
-            apis.map(api => new JavaBeanApi(api)).map(api => options.fn.apply(Context.newBuilder(api).combine("api", api).build())).mkString("\n")
-          }
-        })
-        handlebars.registerHelper("daikoku-api", new Helper[String] {
-          override def apply(id: String, options: Options): CharSequence = {
-            Await.result(env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
-              case None => "api not found"
-              case Some(api) => options.fn.apply(Context.newBuilder(new JavaBeanApi(api)).combine("api", api).build())
-            }
-          }
-        })
+        enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api))
         val context = Context
           .newBuilder(this)
           .combine("tenant", new JavaBeanTenant(ctx.tenant))
