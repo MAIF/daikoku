@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{Executors, TimeUnit}
 import akka.http.scaladsl.util.FastFuture
 import cats.syntax.option._
 import com.github.jknack.handlebars.{Context, Handlebars, Helper, Options}
@@ -1716,6 +1716,10 @@ case class CmsPageId(value: String) extends ValueType with CanJson[CmsPageId] {
   def asJson: JsValue = JsString(value)
 }
 
+object CmsPage {
+  val pageRenderingEc = ExecutionContext.fromExecutor(Executors.newWorkStealingPool(Runtime.getRuntime.availableProcessors() + 1))
+}
+
 case class CmsPage(
   id: CmsPageId,
   tenant: TenantId,
@@ -1752,8 +1756,7 @@ case class CmsPage(
 
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
-  def enrichHandlebarsWithEntity[A](handlebars: Handlebars, env: Env, tenant: Tenant, name: String, getRepo: Env => TenantCapableRepo[A, _], makeBean: A => AnyRef): Handlebars = {
-    implicit val ec = env.defaultExecutionContext
+  def enrichHandlebarsWithEntity[A](handlebars: Handlebars, env: Env, tenant: Tenant, name: String, getRepo: Env => TenantCapableRepo[A, _], makeBean: A => AnyRef)(implicit ec: ExecutionContext): Handlebars = {
     val repo: TenantCapableRepo[A, _] = getRepo(env)
     handlebars.registerHelper(s"daikoku-${name}s", new Helper[CmsPage] {
       override def apply(page: CmsPage, options: Options): CharSequence = {
@@ -1771,25 +1774,33 @@ case class CmsPage(
     })
   }
 
-  def render(ctx: DaikokuActionMaybeWithoutUserContext[_])(implicit ec: ExecutionContext, env: Env): Future[(String, String)] = {
+  def render(ctx: DaikokuActionMaybeWithoutUserContext[_])(implicit env: Env): Future[(String, String)] = {
     (forwardRef match {
-      case Some(id) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).map(_.getOrElse(this))
+      case Some(id) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)(env.defaultExecutionContext).map(_.getOrElse(this))
       case None => FastFuture.successful(this)
     }).flatMap { page =>
       try {
         import scala.jdk.CollectionConverters._
+        implicit val ec = CmsPage.pageRenderingEc
         val wantDraft = ctx.request.getQueryString("draft").contains("true")
         val template = if (wantDraft) metadata.getOrElse("draft", page.body) else page.body
         val handlebars = new Handlebars()
         handlebars.registerHelper("daikoku-asset-url", new Helper[String] {
-          override def apply(context: String, options: Options): CharSequence = {
-            s"/tenant-assets/${context}"
-          }
+          override def apply(context: String, options: Options): CharSequence = s"/tenant-assets/${context}"
         })
         handlebars.registerHelper("daikoku-page-url", new Helper[String] {
           override def apply(id: String, options: Options): CharSequence = {
-            s"/cms/pages/${id}"
+            Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+              case None => "#not-found"
+              case Some(page) => s"/_${page.path}"
+            }
           }
+        })
+        handlebars.registerHelper("daikoku-generic-page-url", new Helper[String] {
+          override def apply(id: String, options: Options): CharSequence = s"/cms/pages/${id}"
+        })
+        handlebars.registerHelper("daikoku-page-preview-url", new Helper[String] {
+          override def apply(id: String, options: Options): CharSequence = s"/cms/pages/${id}?draft=true"
         })
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api))
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "teams", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team))
@@ -1809,7 +1820,7 @@ case class CmsPage(
           t.printStackTrace()
           FastFuture.successful(("text/html", s"error: ${t.getMessage}"))
       }
-    }
+    }(env.defaultExecutionContext)
   }
 }
 
