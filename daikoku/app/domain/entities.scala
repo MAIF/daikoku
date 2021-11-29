@@ -1776,12 +1776,13 @@ case class CmsPage(
 
   def render(ctx: DaikokuActionMaybeWithoutUserContext[_])(implicit env: Env): Future[(String, String)] = {
     (forwardRef match {
-      case Some(id) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)(env.defaultExecutionContext).map(_.getOrElse(this))
+      case Some(id) => env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id)(env.defaultExecutionContext).map(_.getOrElse(this))(env.defaultExecutionContext)
       case None => FastFuture.successful(this)
     }).flatMap { page =>
       try {
         import scala.jdk.CollectionConverters._
         implicit val ec = CmsPage.pageRenderingEc
+
         val wantDraft = ctx.request.getQueryString("draft").contains("true")
         val template = if (wantDraft) metadata.getOrElse("draft", page.body) else page.body
         val handlebars = new Handlebars()

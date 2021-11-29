@@ -68,7 +68,7 @@ class HomeController(
       case None => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
       case Some(page) if !page.visible => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
       case Some(page) if page.authenticated && ctx.user.isEmpty => FastFuture.successful(Redirect(s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"))
-      case Some(page) => page.render(ctx)(env.defaultExecutionContext, env).map(res => Ok(res._1).as(res._2))
+      case Some(page) => page.render(ctx)(env).map(res => Ok(res._1).as(res._2))
     }
   }
 
@@ -77,7 +77,7 @@ class HomeController(
       case None => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
       case Some(page) if !page.visible => FastFuture.successful(NotFound(Json.obj("error" -> "page not found !")))
       case Some(page) if page.authenticated && ctx.user.isEmpty => FastFuture.successful(Redirect(s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"))
-      case Some(page) => page.render(ctx)(env.defaultExecutionContext, env).map(res => Ok(res._1).as(res._2))
+      case Some(page) => page.render(ctx)(env).map(res => Ok(res._1).as(res._2))
     }
   }
 }
