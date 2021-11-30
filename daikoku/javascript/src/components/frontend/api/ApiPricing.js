@@ -137,7 +137,10 @@ function ApiPricingCardComponent(props) {
 
   const allPossibleTeams = _.difference(
     authorizedTeams.map((t) => t._id),
-    props.subscriptions.filter((f) => !f._deleted).map((s) => s.team)
+    props.subscriptions
+      .filter(_ => !plan.allowMultipleKeys)
+      .filter((f) => !f._deleted)
+      .map((s) => s.team)
   );
 
   const isPending = !_.difference(
@@ -145,6 +148,7 @@ function ApiPricingCardComponent(props) {
     props.pendingSubscriptions.map((s) => s.action.team)
   ).length;
 
+  console.log(plan)
   const isAccepted = !allPossibleTeams.length;
 
   const { translateMethod } = useContext(I18nContext);
@@ -228,38 +232,38 @@ function ApiPricingCardComponent(props) {
               )}
               {(props.api.visibility === 'AdminOnly' ||
                 (plan.otoroshiTarget && !isAccepted && !isPending)) && (
-                <ActionWithTeamSelector
-                  title={translateMethod('team.selection.title', 'Select teams')}
-                  description={translateMethod(
-                    plan.subscriptionProcess === 'Automatic'
-                      ? 'team.selection.desc.get'
-                      : 'team.selection.desc.request',
-                    false,
-                    'You are going to get or request API keys. On which team do you want them for?'
-                  )}
-                  teams={authorizedTeams
-                    .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
-                    .filter(
-                      (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
-                    )
-                    .filter((t) => !props.tenant.subscriptionSecurity || t.type !== 'Personnal')}
-                  pendingTeams={props.pendingSubscriptions.map((s) => s.action.team)}
-                  authorizedTeams={props.subscriptions
-                    .filter((f) => !f._deleted)
-                    .map((subs) => subs.team)}
-                  allowMultipleDemand={plan.allowMultipleKeys}
-                  withAllTeamSelector={false}
-                  action={(teams) => showApiKeySelectModal(teams)}>
-                  <button type="button" className="btn btn-sm btn-access-negative col-12">
-                    <Translation
-                      i18nkey={
-                        plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
-                      }>
-                      {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
-                    </Translation>
-                  </button>
-                </ActionWithTeamSelector>
-              )}
+                  <ActionWithTeamSelector
+                    title={translateMethod('team.selection.title', 'Select teams')}
+                    description={translateMethod(
+                      plan.subscriptionProcess === 'Automatic'
+                        ? 'team.selection.desc.get'
+                        : 'team.selection.desc.request',
+                      false,
+                      'You are going to get or request API keys. On which team do you want them for?'
+                    )}
+                    teams={authorizedTeams
+                      .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+                      .filter(
+                        (team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id
+                      )
+                      .filter((t) => !props.tenant.subscriptionSecurity || t.type !== 'Personnal')}
+                    pendingTeams={props.pendingSubscriptions.map((s) => s.action.team)}
+                    authorizedTeams={props.subscriptions
+                      .filter((f) => !f._deleted)
+                      .map((subs) => subs.team)}
+                    allowMultipleDemand={plan.allowMultipleKeys}
+                    withAllTeamSelector={false}
+                    action={(teams) => showApiKeySelectModal(teams)}>
+                    <button type="button" className="btn btn-sm btn-access-negative col-12">
+                      <Translation
+                        i18nkey={
+                          plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'
+                        }>
+                        {plan.subscriptionProcess === 'Automatic' ? 'Get API key' : 'Request API key'}
+                      </Translation>
+                    </button>
+                  </ActionWithTeamSelector>
+                )}
             </Can>
           )}
           {props.connectedUser.isGuest && (

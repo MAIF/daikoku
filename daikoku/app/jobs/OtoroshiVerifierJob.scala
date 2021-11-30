@@ -234,7 +234,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
             case Some(tenant) =>
               env.dataStore.apiRepo
                 .forAllTenant()
-                .findOneNotDeleted(Json.obj("_id" -> subscription.api.value, "published" -> true))
+                .findOneNotDeleted(Json.obj("_id" -> subscription.api.value,
+                                            "published" -> true))
                 .map {
                   case None =>
                     sendErrorNotification(

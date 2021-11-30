@@ -70,7 +70,9 @@ const InitializeFromOtoroshiComponent = (props) => {
             visibleApis {
               api {
                 _id
-                tenant
+                tenant {
+                  id
+                }
                 team {
                   _id
                 }

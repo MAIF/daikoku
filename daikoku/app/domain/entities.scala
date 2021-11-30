@@ -1243,7 +1243,8 @@ case class Team(
     users: Set[UserWithPermission] = Set.empty,
     subscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     authorizedOtoroshiGroups: Set[OtoroshiGroup] = Set.empty,
-    apiKeyVisibility: Option[TeamApiKeyVisibility] = None,
+    apiKeyVisibility: Option[TeamApiKeyVisibility] = Some(
+      TeamApiKeyVisibility.User),
     metadata: Map[String, String] = Map.empty,
     apisCreationPermission: Option[Boolean] = None,
 ) extends CanJson[User] {
