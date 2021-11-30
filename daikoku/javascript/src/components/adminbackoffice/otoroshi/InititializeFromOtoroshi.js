@@ -70,6 +70,7 @@ const InitializeFromOtoroshiComponent = (props) => {
             visibleApis {
               api {
                 _id
+                name
                 tenant {
                   id
                 }
@@ -79,6 +80,8 @@ const InitializeFromOtoroshiComponent = (props) => {
                 currentVersion
                 possibleUsagePlans {
                   _id
+                  customName
+                  type
                 }
                 _humanReadableId
               }
@@ -132,15 +135,16 @@ const InitializeFromOtoroshiComponent = (props) => {
     />
   ));
 
-  const orderedApikeys = _.orderBy(state.context.apikeys, ['authorizedGroup', 'clientName']);
+  const orderedApikeys = _.orderBy(state.context.apikeys, ['clientName']);
 
-  const filterApikeys = (group) =>
-    orderedApikeys.filter((apikey) => (apikey.authorizedGroup || '').includes(group.value));
+  const filterApikeys = (entitie) => {
+    return orderedApikeys.filter((apikey) => (apikey.authorizedEntities || '').includes(`${entitie.prefix}${entitie.value}`));
+  };
 
   const afterCreation = () => {
     getVisibleApis().then((apis) => {
       setStep(1);
-      setApis(apis);
+      // setApis(apis);
       setCreatedApis([]);
       toastr.success('Apis successfully created');
     });
@@ -226,8 +230,9 @@ const InitializeFromOtoroshiComponent = (props) => {
                 teams={teams}
                 apis={apis}
                 groups={state.context.groups}
+                services={state.context.services}
                 addNewTeam={(t) => setTeams([...teams, t])}
-                addSub={(apikey, team, api, plan) =>
+                addSub={(apikey, team, api, plan) => 
                   setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])
                 }
                 infos={(idx) => ({ index: idx, total: state.context.apikeys.length })}

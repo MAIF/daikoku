@@ -536,7 +536,8 @@ class AdminApiSwaggerController(
       path(ctrl11) ++
       path(ctrl12) ++
       path(ctrl13) ++
-      path(ctrl14)
+      path(ctrl14) ++
+      ctrl1.pathForIntegrationApi()
 
   def swagger() = Action {
     Ok(

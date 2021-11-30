@@ -1,12 +1,13 @@
 # Translate mail content and front office
 
-Daikoku supports two languages : french and english. All translations can be override when navigating on the `internationalization` page from a tenant settings page (the full route is `https://<your-domain-name>/settings/internationalization/mail`).
+Daikoku supports two languages : french and english (If your language is missing, you can contribute, do not hesitate). All translations can be override when navigating on the `internationalization` page from a tenant settings page (the full route is `https://<your-domain-name>/settings/internationalization/mail`).
 
 On this page, you have 3 tabs : `Mail`, `Mail Template` and `Front office`.
 
-### Mail tab
+### Mail
 
-The mail tab manages all the translations of the contents of the mails. For each translation, you have a list of `required variables` which will be replace by Daikoku when an email is send.
+The mail tab manage all the translations of the mails content. For each translation, you have a list of `required variables` which will be replaced by Daikoku when an email is send
+> Beware of surroound your variable by square brackets if you wants it to be replaced .
 
 For example, the message 
 ```
@@ -19,11 +20,11 @@ has by default two variable `apiName` and `planName` which will be replace by th
 Your apikey for api My First API and plan My first plan have been updated. 
 ```
 
-Each translation has one field for the french translation and another for the english translation. Once a translation is overloaded, a reset button will appear to retrieve the original translation.
+Each translation has one field by language. Once a translation is overloaded, a reset button will appear to retrieve the original translation.
 
 ### Mail template 
 
-All sent mails are composed of the subject of the mail as body, incorporate in a template. This template can be change and translate in the two supported langauges.
+All sent mails are composed of the subject of the mail as body, incorporate in a template. This template can be change and translate in the supported langauges.
 
 When you want to change one of these fields, we have to include one `required variable` which is the `email` variable. That variable are replaced by Daikoku, depending on the subject of the email. 
 
@@ -63,4 +64,8 @@ To change one expression.
 2. Replace the value for your current language.
 3. Click on the save button on your right.
 4. Refresh your page (Daikoku is caching the translations to avoid to fetch the translations in back office each time that needed).
+
+@@@warning
+some expressions are use in different pages, beware of breaking changes.
+@@@
 

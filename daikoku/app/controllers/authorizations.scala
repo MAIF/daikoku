@@ -212,25 +212,16 @@ object authorizations {
       }
     }
 
-    def PublicUserAccessTenant[T](audit: AuditEvent)(
-        ctx: DaikokuTenantActionContext[T])(f: => Future[Result])(
+    def TenantAdminAccessTenant[T](audit: AuditEvent)(
+        ctx: DaikokuActionContext[T])(f: => Future[Result])(
         implicit ec: ExecutionContext,
         env: Env): Future[Result] = {
-      val user = User(
-        id = UserId(IdGenerator.uuid),
-        tenants = Set(ctx.tenant.id),
-        origins = Set.empty[AuthProvider],
-        name = "Integration API",
-        email = "integration@daikoku.io",
-        personalToken = None,
-        lastTenant = None,
-        defaultLanguage = None
-      )
+      val tenant = ctx.tenant
       val session = UserSession(
         id = DatastoreId(BSONObjectID.generate().stringify),
-        userId = user.id,
-        userName = user.name,
-        userEmail = user.email,
+        userId = ctx.user.id,
+        userName = ctx.user.name,
+        userEmail = ctx.user.email,
         impersonatorId = None,
         impersonatorName = None,
         impersonatorEmail = None,
@@ -240,15 +231,61 @@ object authorizations {
         expires = DateTime.now().plusSeconds(10),
         ttl = FiniteDuration(10, TimeUnit.SECONDS)
       )
-      f.andThen {
-        case _ =>
-          audit.logTenantAuditEvent(ctx.tenant,
-                                    user,
-                                    session,
-                                    ctx.request,
-                                    new TrieMap[String, String],
-                                    AuthorizationLevel.AuthorizedPublic)
-      }
+      env.dataStore.teamRepo
+        .forTenant(tenant)
+        .findOneNotDeleted(Json.obj("type" -> "Admin"))
+        .flatMap {
+          case _ if ctx.user.isDaikokuAdmin =>
+            ctx.setCtxValue("tenant.id", tenant.id)
+            ctx.setCtxValue("tenant.name", tenant.name)
+            f.andThen {
+              case _ =>
+                audit.logTenantAuditEvent(
+                  ctx.tenant,
+                  ctx.user,
+                  session,
+                  ctx.request,
+                  ctx.ctx,
+                  AuthorizationLevel.AuthorizedDaikokuAdmin)
+            }
+          case Some(team)
+            if team.users.exists(u =>
+              u.userId == ctx.user.id && u.teamPermission == Administrator) =>
+            ctx.setCtxValue("tenant.id", tenant.id)
+            ctx.setCtxValue("tenant.name", tenant.name)
+            f.andThen {
+              case _ =>
+                audit.logTenantAuditEvent(
+                  ctx.tenant,
+                  ctx.user,
+                  session,
+                  ctx.request,
+                  ctx.ctx,
+                  AuthorizationLevel.AuthorizedTenantAdmin)
+            }
+          case Some(team)
+            if !team.users.exists(u =>
+              u.userId == ctx.user.id && u.teamPermission == Administrator) =>
+            ctx.setCtxValue("team.id", tenant.id)
+            ctx.setCtxValue("team.name", tenant.name)
+            audit.logTenantAuditEvent(ctx.tenant,
+              ctx.user,
+              session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized)
+            FastFuture.successful(Results.Forbidden(
+              Json.obj("error" -> "Access Forbidden")))
+          case _ =>
+            audit.logTenantAuditEvent(ctx.tenant,
+              ctx.user,
+              session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized)
+            FastFuture.successful(Results.NotFound(Json.obj(
+              "error" -> "Tenant admin team not found, please contact your administrator")))
+        }
     }
 
     def DaikokuAdminOnly[T](audit: AuditEvent)(ctx: DaikokuActionContext[T])(
@@ -355,7 +392,6 @@ object authorizations {
           }
       }
     }
-
     def TenantAdminOnly[T](audit: AuditEvent)(
         tenantId: String,
         ctx: DaikokuActionContext[T])(f: (Tenant, Team) => Future[Result])(

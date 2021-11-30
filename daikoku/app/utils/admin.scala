@@ -675,8 +675,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
           |    "content": {
           |      "application/json": {
           |        "schema": {
-          |          "$$ref": "#/components/schemas/${computeRef(
-                               entityClass.getName)}"
+          |          "type": "array",
+          |          "items": {
+          |           "$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"
+          |          }
           |        }
           |      }
           |    }
@@ -817,5 +819,400 @@ abstract class AdminApiController[Of, Id <: ValueType](
           )
         )) ++ findMissing(missing.keySet.toSet)
     }
+  }
+
+  def pathForIntegrationApi(): JsObject = {
+    Json.obj(
+      //todo: replace with real schema
+      s"integration-api/apis" -> Json.obj(
+        "get" -> Json.parse(s"""{
+        |  "summary": "get all public apis for integration",
+        |  "operationId": "integration-api.findallapis",
+        |  "responses": {
+        |    "401": $unauthorized,
+        |    "404": $notFound,
+        |    "200": {
+        |      "description": "List of public APIs",
+        |      "content": {
+        |        "application/json": {
+        |          "schema": {
+        |            "type": "array",
+        |            "items": {
+        |             "$$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+        |            }
+        |          }
+        |        }
+        |      }
+        |    }
+        |  },
+        |  "parameters": [
+        |    {
+        |      "schema": {
+        |        "type": "string"
+        |      },
+        |      "in": "header",
+        |      "name": "X-Personal-Token",
+        |      "required": true
+        |    }
+        |  ],
+        |  "tags": [
+        |    "integration-apis"
+        |  ]
+        |}
+        """.stripMargin)
+      ),
+      //todo: replace with real schema
+      s"integration-api/{teamId}" -> Json.obj(
+        "get" -> Json.parse(
+          s"""{
+             |  "summary": "get all teams for integration",
+             |  "operationId": "integration-api.findallateams",
+             |  "responses": {
+             |    "401": $unauthorized,
+             |    "404": $notFound,
+             |    "200": {
+             |      "description": "List of teams",
+             |      "content": {
+             |        "application/json": {
+             |          "schema": {
+             |            "type": "array",
+             |            "items" : {
+             |              "$$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Team"
+             |            }
+             |          }
+             |        }
+             |      }
+             |    }
+             |  },
+             |  "parameters": [
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "header",
+             |      "name": "X-Personal-Token",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "teamId",
+             |      "required": true
+             |    }
+             |  ],
+             |  "tags": [
+             |    "integration-apis"
+             |  ]
+             |}""".stripMargin)
+      ),
+      //todo: replace with real schema
+      s"integration-api/{teamId}/{apiId}/complete" -> Json.obj(
+        "get" -> Json.parse(
+          s"""{
+             |"summary": "get complete API for integration",
+             |  "operationId": "integration-api.findcompleteapi",
+             |  "responses": {
+             |    "401": $unauthorized,
+             |    "404": $notFound,
+             |    "200": {
+             |      "description": "Complete API",
+             |      "content": {
+             |        "application/json": {
+             |          "schema": {
+             |            "$$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Team"
+             |          }
+             |        }
+             |      }
+             |    }
+             |  },
+             |  "parameters": [
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "header",
+             |      "name": "X-Personal-Token",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "teamId",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "apiId",
+             |      "required": true
+             |    }
+             |  ],
+             |  "tags": [
+             |    "integration-apis"
+             |  ]
+             |}""".stripMargin)
+      ),
+      //todo: replace with real schema
+      s"integration-api/{teamId}/{apiId}/description" -> Json.obj(
+        "get" -> Json.parse(
+          s"""{
+             |"summary": "get API description",
+             |  "operationId": "integration-api.findapidescription",
+             |  "responses": {
+             |    "401": $unauthorized,
+             |    "404": $notFound,
+             |    "200": {
+             |      "description": "API description",
+             |      "content": {
+             |        "application/json": {
+             |          "schema": {
+             |            "$$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+             |          }
+             |        }
+             |      }
+             |    }
+             |  },
+             |  "parameters": [
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "header",
+             |      "name": "X-Personal-Token",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "teamId",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "apiId",
+             |      "required": true
+             |    }
+             |  ],
+             |  "tags": [
+             |    "integration-apis"
+             |  ]
+             |}""".stripMargin)
+      ),
+      //todo: replace with real schema
+      s"integration-api/{teamId}/{apiId}/plans" -> Json.obj(
+        "get" -> Json.parse(
+          s"""{
+             |"summary": "get API plans",
+             |  "operationId": "integration-api.findapiplans",
+             |  "responses": {
+             |    "401": $unauthorized,
+             |    "404": $notFound,
+             |    "200": {
+             |      "description": "API plans",
+             |      "content": {
+             |        "application/json": {
+             |          "schema": {
+             |            "$$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+             |          }
+             |        }
+             |      }
+             |    }
+             |  },
+             |  "parameters": [
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "header",
+             |      "name": "X-Personal-Token",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "teamId",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "apiId",
+             |      "required": true
+             |    }
+             |  ],
+             |  "tags": [
+             |    "integration-apis"
+             |  ]
+             |}""".stripMargin)
+      ),
+      //todo: update schema
+      s"integration-api/{teamId}/{apiId}/documentation" -> Json.obj(
+        "get" -> Json.parse(
+          s"""{
+             |"summary": "get API documentation",
+             |  "operationId": "integration-api.findapidocumentation",
+             |  "responses": {
+             |    "401": $unauthorized,
+             |    "404": $notFound,
+             |    "200": {
+             |      "description": "API documentation",
+             |      "content": {
+             |        "application/json": {
+             |          "schema": {
+             |            "$$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+             |          }
+             |        }
+             |      }
+             |    }
+             |  },
+             |  "parameters": [
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "header",
+             |      "name": "X-Personal-Token",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "teamId",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "apiId",
+             |      "required": true
+             |    }
+             |  ],
+             |  "tags": [
+             |    "integration-apis"
+             |  ]
+             |}""".stripMargin)
+      ),
+      //todo: replace with real schema
+      s"integration-api/{teamId}/{apiId}/apidoc" -> Json.obj(
+        "get" -> Json.parse(
+          s"""{
+             |"summary": "get API description",
+             |  "operationId": "integration-api.findapidoc",
+             |  "responses": {
+             |    "401": $unauthorized,
+             |    "404": $notFound,
+             |    "200": {
+             |      "description": "API doc (swagger)",
+             |      "content": {
+             |        "application/json": {
+             |          "schema": {
+             |            "$$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+             |          }
+             |        }
+             |      }
+             |    }
+             |  },
+             |  "parameters": [
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "header",
+             |      "name": "X-Personal-Token",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "teamId",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "apiId",
+             |      "required": true
+             |    }
+             |  ],
+             |  "tags": [
+             |    "integration-apis"
+             |  ]
+             |}""".stripMargin)
+      ),
+      //todo: replace with real schema
+      s"integration-api/{teamId}/{apiId}" -> Json.obj(
+        "get" -> Json.parse(
+          s"""{
+             |"summary": "get API",
+             |  "operationId": "integration-api.findapi",
+             |  "responses": {
+             |    "401": $unauthorized,
+             |    "404": $notFound,
+             |    "200": {
+             |      "description": "API",
+             |      "content": {
+             |        "application/json": {
+             |          "schema": {
+             |            "$$ref": "#/components/schemas/fr.maif.otoroshi.daikoku.domain.Api"
+             |          }
+             |        }
+             |      }
+             |    }
+             |  },
+             |  "parameters": [
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "header",
+             |      "name": "X-Personal-Token",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "teamId",
+             |      "required": true
+             |    },
+             |    {
+             |      "schema": {
+             |        "type": "string"
+             |      },
+             |      "in": "path",
+             |      "name": "apiId",
+             |      "required": true
+             |    }
+             |  ],
+             |  "tags": [
+             |    "integration-apis"
+             |  ]
+             |}""".stripMargin)
+      ),
+    )
   }
 }

@@ -150,24 +150,35 @@ export const Table = ({
   }, [error]);
 
   useEffect(() => {
-    setLoading(false);
     setError(undefined);
   }, [items]);
 
   const update = () => {
     setLoading(true);
-    return fetchItems().then(
-      (rawItems) => {
-        if (rawItems.error) {
-          setError(rawItems);
-        } else {
-          setItems(rawItems);
-          setLoading(false);
-        }
-      },
-      (e) => setError(e)
-    );
+    const isPromise = Boolean(fetchItems && typeof fetchItems().then === 'function');
+    if (isPromise) {
+      return fetchItems().then(
+        (rawItems) => {
+          if (rawItems.error) {
+            setError(rawItems);
+          } else {
+            setItems(rawItems);
+            setLoading(false);
+          }
+        },
+        (e) => setError(e)
+      );
+    } else {
+      setItems(fetchItems());
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    if (fetchItems) {
+      update();
+    }
+  }, [fetchItems]);
 
   if (error) {
     return <h3>{`Something went wrong: ${error.error}`}</h3>;

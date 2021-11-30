@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
-import Select from 'react-select';
+import Select, { components } from 'react-select';
 import Creatable from 'react-select/creatable';
 import AsyncSelect from 'react-select/async';
 import classNames from 'classnames';
 import _ from 'lodash';
 
-import { Option } from '../../../utils';
+import { Table } from '../../../inputs';
 import * as Services from '../../../../services';
-import { newPossibleUsagePlan, BeautifulTitle } from '../../../utils';
+import { newPossibleUsagePlan, BeautifulTitle, formatPlanType, Option } from '../../../utils';
 import { I18nContext } from '../../../../locales/i18n-context';
 
 export const SelectionStepStep = (props) => {
@@ -121,7 +121,7 @@ export const RecapServiceStep = (props) => {
 };
 
 export const RecapSubsStep = (props) => {
-  const { Translation } = useContext(I18nContext);
+  const { Translation, translateMethod } = useContext(I18nContext);
 
   const reset = () => {
     window.confirm(translateMethod('initialize_from_otoroshi.confirm')).then((ok) => {
@@ -411,10 +411,12 @@ const SelectApi = ({ apis, setSelectedApi, selectedApi }) => {
   const { translateMethod } = useContext(I18nContext);
   return (
     <Select
-      options={apis}
+      options={_.orderBy(apis, ['label'])}
+      style={{ with: '175px' }}
       onChange={(slug) => setSelectedApi(slug.value)}
       value={apis.find((a) => !!selectedApi && a.value._id === selectedApi._id)}
       placeholder={translateMethod('Select an API')}
+      className="reactSelect"
       classNamePrefix="reactSelect"
     />
   );
@@ -437,7 +439,7 @@ const SelectPlan = ({
       isLoading={!selectedApi || loadingPlan}
       onChange={(slug, { action }) => setSelectedPlan(action === 'clear' ? undefined : slug.value)}
       onCreateOption={setNewPlan}
-      options={possiblePlans}
+      options={_.orderBy(possiblePlans, ['label'])}
       value={possiblePlans.find((a) => !!selectedPlan && a.value._id === selectedPlan._id)}
       placeholder={translateMethod('Select a plan')}
       formatCreateLabel={(value) =>
@@ -458,7 +460,7 @@ const SelectTeam = ({ loading, setNewTeam, teams, selectedTeam, setSelectedTeam,
       isLoading={loading}
       onChange={(slug, { action }) => setSelectedTeam(action === 'clear' ? undefined : slug.value)}
       onCreateOption={setNewTeam}
-      options={teams}
+      options={_.orderBy(teams, ['label'])}
       value={teams.find((t) => t.value === selectedTeam)}
       placeholder={translateMethod('Select a team')}
       formatCreateLabel={(value) =>
@@ -470,18 +472,40 @@ const SelectTeam = ({ loading, setNewTeam, teams, selectedTeam, setSelectedTeam,
 };
 
 export const ApiKeyStep = (props) => {
-  const [apikeys, setApikeys] = useState([]);
-  const [selectedGroup, setSelectedGroup] = useState();
+  const [selectedEntity, setSelectedEntity] = useState();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  useEffect(() => {
-    if (selectedGroup) setApikeys(props.getFilteredApikeys(selectedGroup));
-  }, [selectedGroup]);
+  const groups = props.groups.map((g) => ({ value: g.id, label: g.name, prefix: 'group_' }));
+  const services = props.services.map((g) => ({ value: g.id, label: g.name, prefix: 'service_' }));
 
-  const apis = props.apis.map((a) => ({ label: a.name, value: a }));
-  const teams = props.teams.map((t) => ({ label: t.name, value: t._id }));
-  const groups = props.groups.map((g) => ({ value: g.id, label: g.name }));
+  const columns = [
+    {
+      id: 'oto.api.key',
+      Header: translateMethod('initialize_from_otoroshi.otoroshi_api_key'),
+      style: { textAlign: 'left', width: '20%' },
+      accessor: (apikey) => apikey.clientName,
+      sortType: 'basic',
+    },
+    {
+      id: 'apikey.actions',
+      Header: translateMethod('API.s'),
+      style: { textAlign: 'left' },
+      disableSortBy: true,
+      Cell: ({
+        cell: {
+          row: { original },
+        },
+      }) => {
+        const apikey = original;
+        return (
+          <ApiKey apikey={apikey} key={apikey.clientId} {...props} />
+        );
+      }
+    }
+  ];
+
+
 
   return (
     <div className="d-flex flex-column">
@@ -491,44 +515,31 @@ export const ApiKeyStep = (props) => {
         </span>
         <Select
           className="w-50"
-          options={groups}
-          onChange={setSelectedGroup}
-          value={selectedGroup}
+          components={(props) => <components.Group {...props} />}
+          options={[
+            { label: 'Services', options: _.orderBy(services, ['label']) },
+            { label: 'Service groups', options: _.orderBy(groups, ['label']) },
+          ]}
+          onChange={setSelectedEntity}
+          value={selectedEntity}
           placeholder={translateMethod('initialize_from_otoroshi.select_group')}
           classNamePrefix="reactSelect"
         />
       </div>
-      {selectedGroup && (
+      {selectedEntity && (
         <div className="d-flex flex-column mt-3">
-          <span style={{ fontWeight: 'bold' }} className="m-3">
-            {selectedGroup.label} has {apikeys.length} api keys.
-          </span>
-          {apikeys.length > 0 && (
-            <table className="table table-sm">
-              <thead>
-                <tr>
-                  <th className="text-center">
-                    {translateMethod('initialize_from_otoroshi.otoroshi_api_key')}
-                  </th>
-                  <th className="text-center">{translateMethod('API.s')}</th>
-                  <th className="text-center">
-                    {translateMethod('initialize_from_otoroshi.plan')}
-                  </th>
-                  <th className="text-center">
-                    {translateMethod('initialize_from_otoroshi.team')}
-                  </th>
-                  <th className="text-center">
-                    {translateMethod('initialize_from_otoroshi.actions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {apikeys.map((apikey) => (
-                  <ApiKey apikey={apikey} key={apikey.clientId} {...props} />
-                ))}
-              </tbody>
-            </table>
-          )}
+          <Table
+            selfUrl="apis"
+            defaultTitle="Team Apis"
+            defaultValue={() => ({})}
+            defaultSort="name"
+            itemName="api"
+            columns={columns}
+            fetchItems={() => props.getFilteredApikeys(selectedEntity)}
+            showActions={false}
+            showLink={false}
+            extractKey={(item) => item._id}
+          />
         </div>
       )}
 
@@ -544,6 +555,7 @@ export const ApiKeyStep = (props) => {
 };
 
 const ApiKey = (props) => {
+  const { translateMethod } = useContext(I18nContext);
   const [selectedApi, setSelectedApi] = useState(
     props
       .maybeCreatedSub(props.apikey)
@@ -645,40 +657,37 @@ const ApiKey = (props) => {
   }, [newPlan]);
 
   //handle error effect
-  useEffect(() => {
-    setError({ plan: !!selectedPlan, api: !!selectedApi, team: !!selectedTeam });
-    update();
-  }, [selectedPlan, selectedApi, selectedTeam]);
+  // useEffect(() => {
+  //   setError({ plan: !!selectedPlan, api: !!selectedApi, team: !!selectedTeam });
+  //   update();
+  // }, [selectedPlan, selectedApi, selectedTeam]);
 
   const apis = props.apis.map((a) => ({ label: a.name, value: a }));
   const teams = props.teams.map((t) => ({ label: t.name, value: t._id }));
   const possiblePlans = Option(props.apis.find((a) => selectedApi && a._id === selectedApi._id))
     .map((a) => a.possibleUsagePlans)
     .getOrElse([])
-    .map((pp) => ({ label: pp.customName || pp.type, value: pp }));
+    .map((pp) => ({ label: pp.customName || formatPlanType(pp, translateMethod), value: pp }));
 
   const getIt = () => {
     props.addSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
   };
 
-  const update = () => {
-    if (props.maybeCreatedSub(props.apikey).isDefined)
-      props.updateSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
-  };
+  // const update = () => {
+  //   if (props.maybeCreatedSub(props.apikey).isDefined)
+  //     props.updateSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
+  // };
 
   const remove = () => {
     props.resetSub(props.apikey);
   };
 
   return (
-    <tr>
-      <td style={{ width: '21%' }} className="align-middle text-center">
-        {props.apikey.clientName}
-      </td>
-      <td style={{ width: '23%' }} className="align-middle text-center">
+    <div className='d-flex flex-row justify-content-between'>
+      <div className="flex-grow-1 mr-2">
         <SelectApi apis={apis} setSelectedApi={setSelectedApi} selectedApi={selectedApi} />
-      </td>
-      <td style={{ width: '23%' }} className="align-middle text-center">
+      </div>
+      <div className="flex-grow-1 mr-2">
         <SelectPlan
           possiblePlans={possiblePlans}
           selectedPlan={selectedPlan}
@@ -687,8 +696,8 @@ const ApiKey = (props) => {
           setNewPlan={setNewPlan}
           selectedApi={selectedApi}
         />
-      </td>
-      <td style={{ width: '23%' }} className="align-middle text-center">
+      </div>
+      <div className="flex-grow-1 mr-2">
         <SelectTeam
           loading={loading}
           setNewTeam={setNewTeam}
@@ -697,19 +706,16 @@ const ApiKey = (props) => {
           setSelectedTeam={setSelectedTeam}
           selectedApi={selectedApi}
         />
-      </td>
-      <td style={{ width: '10%' }} className="align-middle text-center">
-        <button
-          className={`btn btn-outline-${
-            props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
-          } mr-2`}
-          disabled={!selectedTeam || error.name || !selectedPlan ? 'disabled' : null}
-          onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
-          {props.maybeCreatedSub(props.apikey).isDefined
-            ? translateMethod('initialize_from_otoroshi.remove')
-            : translateMethod('initialize_from_otoroshi.add')}
-        </button>
-      </td>
-    </tr>
+      </div>
+      <button
+        className={`btn btn-outline-${props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
+          }`}
+        disabled={!selectedTeam || error.name || !selectedPlan ? 'disabled' : null}
+        onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
+        {props.maybeCreatedSub(props.apikey).isDefined
+          ? translateMethod('initialize_from_otoroshi.remove')
+          : translateMethod('initialize_from_otoroshi.add')}
+      </button>
+    </div>
   );
 };

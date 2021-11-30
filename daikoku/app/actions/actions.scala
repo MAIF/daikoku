@@ -58,7 +58,13 @@ object tenantSecurity {
 
 }
 
-case class DaikokuTenantActionContext[A](request: Request[A], tenant: Tenant)
+case class DaikokuTenantActionContext[A](request: Request[A], tenant: Tenant, ctx: TrieMap[String, String] = new TrieMap[String, String]()) {
+  def setCtxValue(key: String, value: Any): Unit = {
+    if (value != null) {
+      ctx.put(key, value.toString)
+    }
+  }
+}
 
 case class DaikokuActionMaybeWithoutUserContext[A](
     request: Request[A],
@@ -331,12 +337,15 @@ class DaikokuTenantAction(val parser: BodyParser[AnyContent], env: Env)
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
   override def invokeBlock[A](
-      request: Request[A],
-      block: DaikokuTenantActionContext[A] => Future[Result])
-    : Future[Result] = {
-
-    TenantHelper.withTenant(request, env) { tenant =>
-      block(DaikokuTenantActionContext[A](request, tenant))
+                               request: Request[A],
+                               block: DaikokuTenantActionContext[A] => Future[Result])
+  : Future[Result] = {
+    request.attrs.get(IdentityAttrs.TenantKey) match {
+      case Some(tenant) => block(DaikokuTenantActionContext[A](request, tenant))
+      case None =>
+        TenantHelper.withTenant(request, env) { tenant =>
+          block(DaikokuTenantActionContext[A](request, tenant))
+        }
     }
   }
 
