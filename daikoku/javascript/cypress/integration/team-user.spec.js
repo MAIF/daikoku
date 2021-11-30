@@ -68,7 +68,7 @@ describe('Team back-office', () => {
   it('Team APIs works', () => {
     cy
       .visit('http://localhost:9000/testers/settings')
-      .get('nav#sidebar a.nav-link').contains('APIs').click()
+      .get('nav#sidebar a.nav-link').contains('Team Apis').click()
       .url().should('include', '/testers/settings/apis')
       .get('table tbody tr').should('have.length', 4)
       .visit('http://localhost:9000/testers/settings/subscriptions/apis/test-api/1.0.0')
@@ -80,9 +80,7 @@ describe('Team back-office', () => {
 
   it('Team income works', () => {
     cy
-      .get('nav#sidebar a.nav-link').contains('Billing').click()
-      .url().should('include', '/testers/settings/billing')
-      .get('nav#sidebar a.nav-link').contains('Income').click()
+      .get('nav#sidebar a.nav-link').contains('Team Income').click()
       .url().should('include', '/testers/settings/income')
       .get('.month__and__total button.btn-access-negative').click()
       .waitFor('.col.apis', {
@@ -97,7 +95,7 @@ describe('Team back-office', () => {
 
   it('Team billing works', () => {
     cy
-      .get('nav#sidebar a.nav-link').contains('Billing').click()
+      .get('nav#sidebar a.nav-link').contains('Team billing').click()
       .url().should('include', '/testers/settings/billing')
       .get('.month__and__total button.btn-access-negative').click()
       .get('.col.apis').should('be.visible')
@@ -107,7 +105,7 @@ describe('Team back-office', () => {
 
   it('Team Api keys works', () => {
     cy
-      .get('nav#sidebar a.nav-link').contains('Api keys').click()
+      .get('nav#sidebar a.nav-link').contains('Team api keys').click()
       .url().should('include', '/testers/settings/apikeys')
       .get('main h1').should('have.text', 'Subscribed Apis')
       .get('table tbody tr').should('have.length', 1)
@@ -119,9 +117,7 @@ describe('Team back-office', () => {
 
   it('Team assets works', () => {
     cy
-      .visit('http://localhost:9000/testers/settings')
-      .get('nav#sidebar a.nav-link').contains('Settings').click()
-      .get('nav#sidebar a.nav-link').contains('Assets').click()
+      .get('nav#sidebar a.nav-link').contains('Team assets').click()
       .url().should('include', '/testers/settings/assets')
       .get('main h1').should('have.text', 'Testers assets')
       .get('main .alert').should('have.text', 'No bucket config found !');
