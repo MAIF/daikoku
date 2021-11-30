@@ -903,7 +903,7 @@
   "audittrail.export.label": "Exporter la piste d'audit",
   "Authorized entities": "Authorized entities",
   "Authorized.entities.placeholder": "Selectionnez les service groupes de services et/ou les services Otoroshi",
-  "teamapi.new_version": "Créer une version",
+  "teamapi.new_version": "Nouvelle version",
   "authorized.entities.help": "Selectionnez les service groupes de services et/ou les services Otoroshi pour lesquels la clé d'API sera authorizée d'y accéder",
   "apikey_select_modal.title": "Récupération d'une api key",
   "apikey_select_modal.select_your_api_key": "Sélectionner l'api key à étendre",
