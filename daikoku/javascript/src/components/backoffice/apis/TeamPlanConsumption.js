@@ -107,7 +107,7 @@ function TeamPlanConsumptionComponent(props) {
           </div>
           <p className="col">
             <Link
-              to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${props.match.params.apiId}`}
+              to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${props.match.params.apiId}/${props.match.params.versionId}`}
               className="btn my-2 btn-access-negative">
               <i className="fas fa-angle-left" /> Back to plans
             </Link>

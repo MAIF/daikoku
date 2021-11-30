@@ -89,7 +89,7 @@ export function TeamMembersSimpleComponent(props) {
         translateMethod(
           'remove.member.alert',
           false,
-          "You can't delete this user, it must remain an admin in a team."
+          'You can\'t delete this user, it must remain an admin in a team.'
         )
       );
     } else {
@@ -167,7 +167,7 @@ export function TeamMembersSimpleComponent(props) {
           translateMethod(
             'remove.admin.alert',
             false,
-            "You can't remove this admin status, it must remain an admin in a team."
+            'You can\'t remove this admin status, it must remain an admin in a team.'
           )
         );
       } else {
@@ -195,7 +195,7 @@ export function TeamMembersSimpleComponent(props) {
         translateMethod(
           'not.admin.alert',
           false,
-          "Your are not an administrator. You can't do that."
+          'Your are not an administrator. You can\'t do that.'
         )
       );
     }
@@ -241,15 +241,6 @@ export function TeamMembersSimpleComponent(props) {
     : state.pendingUsers;
   return (
     <>
-      <div className="row">
-        <div className="col">
-          <h1>
-            <Translation i18nkey="team.members.title" replacements={[props.currentTeam.name]}>
-              {props.currentTeam.name} members
-            </Translation>
-          </h1>
-        </div>
-      </div>
       <div className="container-fluid" style={{ position: 'relative' }}>
         <button
           className="btn btn-success"
@@ -307,15 +298,15 @@ export function TeamMembersSimpleComponent(props) {
               <div className="d-flex flex-column">
                 <div>
                   <i className="fas fa-shield-alt mr-1" />
-                  <Translation i18nkey="permission.caption.administrator" />
+                  {translateMethod('permission.caption.administrator')}
                 </div>
                 <div>
                   <i className="fas fa-pencil-alt mr-1" />
-                  <Translation i18nkey="permission.caption.apiEditor" />
+                  {translateMethod('permission.caption.apiEditor')}
                 </div>
                 <div>
                   <i className="fas fa-user-alt mr-1" />
-                  <Translation i18nkey="permission.caption.user" />
+                  {translateMethod('permission.caption.user')}
                 </div>
               </div>,
               translateMethod('Permission', true)

@@ -3,6 +3,7 @@ import { Link, Route, useParams, useLocation, NavLink, useHistory } from 'react-
 import classNames from 'classnames';
 import Select from 'react-select';
 import { connect } from 'react-redux';
+import faker from 'faker';
 
 import * as Services from '../../services';
 import {
@@ -162,11 +163,11 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
       )
       .then(newVersion => {
         if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-          toastr.error("Can't create version with special characters : " + reservedCharacters.join(' | '));
+          toastr.error('Can\'t create version with special characters : ' + reservedCharacters.join(' | '));
         else
           createNewVersion(newVersion);
       });
-  }
+  };
 
   const createNewVersion = newVersion => {
     Services.createNewApiVersion(apiId, currentTeam._id, newVersion)
@@ -177,12 +178,14 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
           history.push(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
         }
       });
-  }
+  };
 
-  return <button onClick={promptVersion} className="btn btn-sm btn-outline-info">
-    {translateMethod('teamapi.new_version')}
-  </button>
-}
+  return (
+    <button onClick={promptVersion} className="btn btn-outline-primary">
+      {translateMethod('teamapi.new_version')}
+    </button>
+  );
+};
 
 const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
   const [versions, setVersions] = useState([]);
@@ -190,23 +193,25 @@ const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
 
   useEffect(() => {
     Services.getAllApiVersions(currentTeam._id, apiId)
-      .then(res => setVersions(res.map((v) => ({ label: v, value: v }))))
+      .then(res => setVersions(res.map((v) => ({ label: v, value: v }))));
   }, []);
 
   if (versions.length)
-    return <Select
-      name="versions-selector"
-      value={{ label: versionId, value: versionId }}
-      options={versions}
-      onChange={e => history.push(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
-      classNamePrefix="reactSelect"
-      className="m-2"
-      menuPlacement="auto"
-      menuPosition="fixed"
-    />
+    return (
+      <Select
+        name="versions-selector"
+        value={{ label: versionId, value: versionId }}
+        options={versions}
+        onChange={e => history.push(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
+        classNamePrefix="reactSelect"
+        className="m-2"
+        menuPlacement="auto"
+        menuPosition="fixed"
+      />
+    );
 
   return null;
-}
+};
 
 const TeamBackOfficeComponent = ({
   currentTeam,
@@ -228,11 +233,12 @@ const TeamBackOfficeComponent = ({
     return null;
   }
 
-  const teamBasePath = "/:teamId/settings"
+  const teamBasePath = '/:teamId/settings';
   const apiBasePath = `${teamBasePath}/apis/:apiId/:version/:tab`;
 
   const params = useParams();
-  const location = useLocation()
+  const location = useLocation();
+  const history = useHistory();
 
   return <div className="row">
     <button
@@ -249,50 +255,30 @@ const TeamBackOfficeComponent = ({
     <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
       <div className="sidebar-sticky d-flex flex-column p-0">
         <Route
-          exact
-          path={apiBasePath}
-          component={() => <div className="d-flex justify-content-between align-items-center mt-4 px-3">
-            <span className="text-muted" style={{ textTransform: "uppercase" }}>
-              {params.apiId}
-            </span>
-            <span className="badge badge-info">{params.versionId}</span>
-          </div>} />
-        <Route
-          exact
           path={[
-            teamBasePath,
-            `${teamBasePath}/:tab`,
-            `${teamBasePath}/consumptions/apis/:apiId/:versionId`
+            teamBasePath
           ]}
-          component={() => <span className="mt-4 px-3 text-muted" style={{ textTransform: "uppercase" }}>
+          component={() => <span className="mt-4 px-3 text-muted" style={{ textTransform: 'uppercase' }}>
             {currentTeam.name}
           </span>} />
         <Route
           exact
-          path={`${teamBasePath}/apikeys/:apiId/:versionId`}
-          component={() => <div className="d-flex justify-content-between align-items-center mt-4 px-3">
-            <span className="text-muted" style={{ textTransform: "uppercase" }}>
-              {params.apiId}
-            </span>
-          </div>}
-        />
-        <Route
-          exact
           path={`${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
           component={() => {
-            const [name, setName] = useState("")
+            const [name, setName] = useState('');
             useEffect(() => {
               if (params.subscription)
                 Services.getSubscriptionInformations(
                   params.subscription,
                   currentTeam._id,
-                ).then(r => setName(r.plan?.customName || r.plan?.type || params.apiId))
-            }, [params.subscription])
+                )
+                  .then(r => setName(r.plan?.customName || r.plan?.type || params.apiId));
+            }, [params.subscription]);
             return <div className="d-flex justify-content-between align-items-center mt-4 px-3">
-              <span className="text-muted" style={{ textTransform: "uppercase" }}>
+              <span className="text-muted" style={{ textTransform: 'uppercase' }}>
                 {name}
               </span>
-            </div>
+            </div>;
           }}
         />
         <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
@@ -304,13 +290,13 @@ const TeamBackOfficeComponent = ({
               return <>
                 <VersionsButton {...params} currentTeam={currentTeam} />
                 {[
-                  { route: "infos", icon: "info", name: "Informations" },
-                  { route: "description", icon: "file-alt", name: "Description" },
-                  { route: "plans", icon: "dollar-sign", name: "Plans" },
-                  { route: "swagger", icon: "file-code", name: "Swagger" },
-                  { route: "testing", icon: "vial", name: "Testing" },
-                  { route: "documentation", icon: "book", name: "Documentation" },
-                  { route: "news", icon: "newspaper", name: "News" },
+                  { route: 'infos', icon: 'info', name: 'Informations' },
+                  { route: 'description', icon: 'file-alt', name: 'Description' },
+                  { route: 'plans', icon: 'dollar-sign', name: 'Plans' },
+                  { route: 'swagger', icon: 'file-code', name: 'Swagger' },
+                  { route: 'testing', icon: 'vial', name: 'Testing' },
+                  { route: 'documentation', icon: 'book', name: 'Documentation' },
+                  { route: 'news', icon: 'newspaper', name: 'News' },
                 ].map((item, i) => <NavItem {...item} to={`${to}/${item.route}`} key={`item-${i}`} />)}
 
                 <div className="px-3 mb-4 mt-auto d-flex flex-column">
@@ -329,7 +315,22 @@ const TeamBackOfficeComponent = ({
                     Back to {currentTeam._humanReadableId}
                   </Link>
                 </div>
-              </>
+              </>;
+            }} />
+          <Route
+            exact
+            path={`${teamBasePath}/apis/:apiId/:tab`}
+            render={() => {
+              return <div className="px-3 mb-4 mt-auto d-flex flex-column">
+                <Link className="d-flex justify-content-around mt-3 align-items-center" style={{
+                  border: 0,
+                  background: 'transparent',
+                  outline: 'none'
+                }} to={`/${currentTeam._humanReadableId}/settings`}>
+                  <i className="fas fa-chevron-left" />
+                  Back to {currentTeam._humanReadableId}
+                </Link>
+              </div>;
             }} />
           <Route
             exact
@@ -340,7 +341,7 @@ const TeamBackOfficeComponent = ({
                   <NavItem
                     to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}
                     icon="key"
-                    name={translateMethod("Api keys")} />
+                    name={translateMethod('Api keys')} />
                 </Can>
                 <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
                   border: 0,
@@ -361,7 +362,7 @@ const TeamBackOfficeComponent = ({
                   <NavItem
                     to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${params.subscription}/consumptions`}
                     icon="key"
-                    name={translateMethod("Consumptions")} />
+                    name={translateMethod('Consumptions')} />
                 </Can>
                 <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
                   border: 0,
@@ -378,11 +379,13 @@ const TeamBackOfficeComponent = ({
             path={[
               teamBasePath,
               `${teamBasePath}/:tab`,
-              `${teamBasePath}/consumptions/apis/:apiId/:versionId`
+              `${teamBasePath}/consumptions/apis/:apiId/:versionId`,
+              `${teamBasePath}/subscriptions/apis/:apiId/:versionId`,
+              `${teamBasePath}/consumptions/apis/:apiId/:versionId/plan/:planId`,
             ]}
             render={() => {
-              const tab = location.pathname.split("/").slice(-1)[0]
-              const isOnHomePage = tab === "settings"
+              const tab = location.pathname.split('/').slice(-1)[0];
+              const isOnHomePage = tab === 'settings';
 
               return <>
                 <Can I={read} a={api} team={currentTeam}>
@@ -404,7 +407,7 @@ const TeamBackOfficeComponent = ({
                         <NavItem
                           to={`/${currentTeam._humanReadableId}/settings/edition`}
                           icon="info"
-                          name={translateMethod("Informations")}
+                          name={translateMethod('Informations')}
                           subItem={true} />
                       </Can>
                       {currentTeam.type === 'Organization' && (
@@ -433,14 +436,14 @@ const TeamBackOfficeComponent = ({
                     <NavItem
                       to={`/${currentTeam._humanReadableId}/settings/apis`}
                       icon="atlas"
-                      name={translateMethod("Apis")} />
+                      name={translateMethod('Apis')} />
                   </Can>
                 )}
                 <Can I={read} a={apikey} team={currentTeam}>
                   <NavItem
                     to={`/${currentTeam._humanReadableId}/settings/apikeys`}
                     icon="key"
-                    name={translateMethod("Api keys")} />
+                    name={translateMethod('Api keys')} />
                 </Can>
                 <Route exact
                   path={[`${teamBasePath}/apikeys`, `${teamBasePath}/apikeys/:apiId/:versionId`, `${teamBasePath}/consumption`]}
@@ -450,7 +453,7 @@ const TeamBackOfficeComponent = ({
                         <NavItem
                           to={`/${currentTeam._humanReadableId}/settings/consumption`}
                           icon="file-invoice-dollar"
-                          name={translateMethod("Global stats")}
+                          name={translateMethod('Global stats')}
                           subItem={true} />
                       </Can>
                     </>
@@ -460,7 +463,7 @@ const TeamBackOfficeComponent = ({
                   <NavItem
                     to={`/${currentTeam._humanReadableId}/settings/billing`}
                     icon="file-invoice-dollar"
-                    name={translateMethod("Billing")} />
+                    name={translateMethod('Billing')} />
                 </Can>
                 <Route exact
                   path={[`${teamBasePath}/billing`, `${teamBasePath}/income`]}
@@ -477,7 +480,42 @@ const TeamBackOfficeComponent = ({
                       )}
                     </>
                   )} />
-              </>
+                <Route exact
+                  path={`${teamBasePath}/apis`}
+                  component={() => (
+                    <div className="px-3 mb-4 mt-auto d-flex flex-column">
+                      <button
+                        onClick={() => {
+                          Services.fetchNewApi()
+                            .then((e) => {
+                              const verb = faker.hacker.verb();
+                              const apiName =
+                                verb.charAt(0).toUpperCase() +
+                                verb.slice(1) +
+                                ' ' +
+                                faker.hacker.adjective() +
+                                ' ' +
+                                faker.hacker.noun() +
+                                ' api';
+
+                              e.name = apiName;
+                              e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
+                              return e;
+                            })
+                            .then((newApi) => {
+                              history.push(
+                                `/${currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
+                                { newApi: { ...newApi, team: currentTeam._id } }
+                              );
+                            });
+                        }
+                        }
+                        className="btn btn-outline-primary mb-2">
+                        {translateMethod('Create a new API')}
+                      </button>
+                    </div>
+                  )} />
+              </>;
             }} />
         </ul>
       </div >
@@ -490,7 +528,7 @@ const TeamBackOfficeComponent = ({
       />
       <BackOfficeContent error={error}>{children}</BackOfficeContent>
     </main>
-  </div >
+  </div >;
 };
 
 const UserBackOfficeComponent = ({
@@ -621,15 +659,9 @@ const UserBackOfficeComponent = ({
                       </Link>
                     </li>
                     <li className="nav-item">
-<<<<<<< HEAD
-                      <Link
-                        className={`nav-link ${tab === 'Email internationalization' ? 'active' : ''
-                          }`}
-=======
                       <NavLink
                         className="nav-link"
                         activeClassName="active"
->>>>>>> v1.5
                         to={'/settings/internationalization/mail'}>
                         <i className="fas fa-language" />
                         <Translation i18nkey="Internationalization">

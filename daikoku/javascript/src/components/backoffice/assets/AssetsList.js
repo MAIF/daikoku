@@ -531,14 +531,6 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
       apiId={match.params.apiId}
       title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}>
       <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
-        <div className="row">
-          <div className="col">
-            <h1>
-              {tenantMode ? translateMethod('Tenant') : currentTeam.name}{' '}
-              {translateMethod('asset', true)}
-            </h1>
-          </div>
-        </div>
         {loading && <Spinner />}
         {error && <div className="alert alert-danger">{error}</div>}
         {!loading && !error && (

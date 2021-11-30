@@ -2,7 +2,6 @@ import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import faker from 'faker';
 
 import * as Services from '../../../services';
 import { Can, read, manage, stat, api as API } from '../../utils';
@@ -149,31 +148,7 @@ function TeamApisComponent(props) {
         }
       });
   };
-
-  const createNewApi = () => {
-    Services.fetchNewApi()
-      .then((e) => {
-        const verb = faker.hacker.verb();
-        const apiName =
-          verb.charAt(0).toUpperCase() +
-          verb.slice(1) +
-          ' ' +
-          faker.hacker.adjective() +
-          ' ' +
-          faker.hacker.noun() +
-          ' api';
-
-        e.name = apiName;
-        e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
-        return e;
-      })
-      .then((newApi) => {
-        props.history.push(
-          `/${props.currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
-          { newApi: { ...newApi, team: props.currentTeam._id } }
-        );
-      });
-  };
+  
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
     props.setError({ error: { status: 403, message: 'unauthorized' } });
@@ -186,23 +161,6 @@ function TeamApisComponent(props) {
       <Can I={read} a={API} dispatchError={true} team={props.currentTeam}>
         <div className="row">
           <div className="col">
-            <h1>
-              <Translation i18nkey="Team apis">Team APIs</Translation>
-              {props.apiCreationPermitted && props.currentTeam.type !== 'Admin' && (
-                <Can I={manage} a={API} team={props.currentTeam}>
-                  <a
-                    className="btn btn-sm btn-access-negative mb-1 ml-1"
-                    title={translateMethod('Create a new API')}
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      createNewApi();
-                    }}>
-                    <i className="fas fa-plus-circle" />
-                  </a>
-                </Can>
-              )}
-            </h1>
             <div className="p-2">
               <Table
                 selfUrl="apis"

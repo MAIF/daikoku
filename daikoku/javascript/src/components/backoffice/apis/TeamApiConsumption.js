@@ -170,15 +170,15 @@ export const TeamApiConsumption = connect(mapStateToProps)(TeamApiConsumptionCom
 function PlanLightConsumption(props) {
   const { translateMethod } = useContext(I18nContext);
 
-  renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
+  const renderFreeWithoutQuotas = () => <span>You'll pay nothing and do whatever you want :)</span>;
 
-  renderFreeWithQuotas = () => (
+  const renderFreeWithQuotas = () => (
     <span>
       You'll pay nothing but you'll have {props.plan.maxPerMonth} authorized requests per month
     </span>
   );
 
-  renderQuotasWithLimits = () => (
+  const renderQuotasWithLimits = () => (
     <span>
       You'll pay {props.plan.costPerMonth}
       <Currency plan={props.plan} /> and you'll have {props.plan.maxPerMonth} authorized requests
@@ -186,7 +186,7 @@ function PlanLightConsumption(props) {
     </span>
   );
 
-  renderQuotasWithoutLimits = () => (
+  const renderQuotasWithoutLimits = () => (
     <span>
       You'll pay {props.plan.costPerMonth}
       <Currency plan={props.plan} /> for {props.plan.maxPerMonth} authorized requests per month and
@@ -195,7 +195,7 @@ function PlanLightConsumption(props) {
     </span>
   );
 
-  renderPayPerUse = () => {
+  const renderPayPerUse = () => {
     if (props.plan.costPerMonth === 0.0) {
       return (
         <span>
