@@ -1803,6 +1803,17 @@ case class CmsPage(
         handlebars.registerHelper("daikoku-page-preview-url", new Helper[String] {
           override def apply(id: String, options: Options): CharSequence = s"/cms/pages/${id}?draft=true"
         })
+        handlebars.registerHelper("daikoku-include-block", new Helper[String] {
+          override def apply(id: String, options: Options): CharSequence = {
+            Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id), 10.seconds) match {
+              case None => Await.result(env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)), 10.seconds) match {
+                case None => s"block '$id' not found"
+                case Some(page) => page.render(ctx).map(t => t._2)
+              }
+              case Some(page) => page.render(ctx).map(t => t._2)
+            }
+          }
+        })
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "api", _.dataStore.apiRepo, (api: Api) => new JavaBeanApi(api))
         enrichHandlebarsWithEntity(handlebars, env, ctx.tenant, "teams", _.dataStore.teamRepo, (team: Team) => new JavaBeanTeam(team))
         val context = Context
