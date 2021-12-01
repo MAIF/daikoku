@@ -1,4 +1,4 @@
-#Managing APIs
+# Managing APIs
 
 ## Create a new API
 To create a new API, you can click on the `+ API` button in the catalog page or the `Create new API` button in the Team's APIs page in your back offices' team.
@@ -49,7 +49,7 @@ It's important to choose a type of plan :
 * quotas without limit: a priced plan with unlimited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. The cost per additional requests can be set.
 * pay per use: a plan priced on usage. A fixed cost by month can be set. The cost per additional requests can be set.
 
-####Otoroshi, billing and security
+#### Otoroshi, billing and security
 Depending on chosen plan type, certain custom properties may be accessibles.
 
 - Plan needs an Otoroshi instance to allow users to subscribe. After choosing an instance, a list of Otoroshi service groups and services is accessible to link daikoku api/plan with one or more Otoroshi service group or services.
