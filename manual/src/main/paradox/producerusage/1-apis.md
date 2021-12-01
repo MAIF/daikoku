@@ -72,8 +72,46 @@ As Otoroshi does, it's possible to add metadata on API keys. __Automatic metadat
 The swagger can be provided as a url or just some content paste on the UI.
 
 ### Testing
+
 You can enable the testing for your API.
+
 Click on the `Generate a dedicated testing key in Otoroshi` to choose an otoroshi instance and and service group or service which is used to receive the testing APIkey. Then, just follow the instruction display on UI?
+
+#### Configure your openAPI
+
+Your openAPI have to be configured to accept apikey from Basic authentication header or from the `Otoroshi-Client-Id` and `Otoroshi-Client-Secret` headers.
+
+If you had changed the Otoroshi headers to pass the apikey don't forget to apply the changes on your openAPI.
+
+```json
+...
+paths:
+  /api/_verify:
+    get:
+      summary: Verification using query params
+      operationId: getVerify
+      ...
+      security:
+      - basicAuth: []
+      - otoClientId: []
+        otoClientSecret: []
+components:
+  schemas:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    otoClientId:
+      type: apiKey
+      name: Otoroshi-Client-Id
+      in: header
+    otoClientSecret:
+      type: apiKey
+      name: Otoroshi-Client-Secret
+      in: header
+```
+
+
 
 @@@warning
 Make sure this service descriptor is the right one for testing and not your production system !
