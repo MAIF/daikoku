@@ -238,7 +238,7 @@ export class SignupComponent extends Component {
 export class ResetPasswordComponent extends Component {
   state = {
     user: {},
-  });
+  };
 
   formSchema = (currentLanguage) => ({
     email: {
