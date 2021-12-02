@@ -229,7 +229,7 @@ export function SignupComponent(props) {
 export function ResetPasswordComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
 
-  const [state, setState] = {
+  const [state, setState] = useState({
     user: {},
   });
 
