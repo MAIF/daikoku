@@ -136,10 +136,7 @@ function TeamBackOfficeHomeComponent(props) {
 
 const NavItem = ({ to, icon, name, subItem }) => (
   <li className="nav-item">
-    <NavLink
-      activeClassName="active"
-      className="nav-link"
-      to={to}>
+    <NavLink activeClassName="active" className="nav-link" to={to}>
       <i className={`fas fa-${icon}`} style={{ marginLeft: subItem ? '12px' : 0 }} />
       {name}
     </NavLink>
@@ -154,30 +151,24 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
 
   const promptVersion = () => {
     window
-      .prompt(
-        'Version number',
-        undefined,
-        false,
-        'New version',
-        `Current version : ${versionId}`
-      )
-      .then(newVersion => {
+      .prompt('Version number', undefined, false, 'New version', `Current version : ${versionId}`)
+      .then((newVersion) => {
         if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-          toastr.error('Can\'t create version with special characters : ' + reservedCharacters.join(' | '));
-        else
-          createNewVersion(newVersion);
+          toastr.error(
+            "Can't create version with special characters : " + reservedCharacters.join(' | ')
+          );
+        else createNewVersion(newVersion);
       });
   };
 
-  const createNewVersion = newVersion => {
-    Services.createNewApiVersion(apiId, currentTeam._id, newVersion)
-      .then(res => {
-        if (res.error) toastr.error(res.error);
-        else {
-          toastr.success('New version of api created');
-          history.push(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
-        }
-      });
+  const createNewVersion = (newVersion) => {
+    Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
+      if (res.error) toastr.error(res.error);
+      else {
+        toastr.success('New version of api created');
+        history.push(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
+      }
+    });
   };
 
   return (
@@ -192,8 +183,9 @@ const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
   const history = useHistory();
 
   useEffect(() => {
-    Services.getAllApiVersions(currentTeam._id, apiId)
-      .then(res => setVersions(res.map((v) => ({ label: v, value: v }))));
+    Services.getAllApiVersions(currentTeam._id, apiId).then((res) =>
+      setVersions(res.map((v) => ({ label: v, value: v })))
+    );
   }, []);
 
   if (versions.length)
@@ -202,7 +194,7 @@ const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
         name="versions-selector"
         value={{ label: versionId, value: versionId }}
         options={versions}
-        onChange={e => history.push(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
+        onChange={(e) => history.push(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
         classNamePrefix="reactSelect"
         className="m-2"
         menuPlacement="auto"
@@ -213,14 +205,7 @@ const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
   return null;
 };
 
-const TeamBackOfficeComponent = ({
-  currentTeam,
-  tenant,
-  isLoading,
-  error,
-  title,
-  children,
-}) => {
+const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title, children }) => {
   useEffect(() => {
     if (title) {
       document.title = title;
@@ -240,295 +225,350 @@ const TeamBackOfficeComponent = ({
   const location = useLocation();
   const history = useHistory();
 
-  return <div className="row">
-    <button
-      id="toggle-sidebar"
-      type="button"
-      className="navbar-toggle btn btn-sm btn-access-negative float-left mr-2"
-      data-toggle="collapse"
-      data-target="#sidebar"
-      aria-expanded="false"
-      aria-controls="sidebar">
-      <span className="sr-only">Toggle sidebar</span>
-      <span className="chevron" />
-    </button>
-    <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
-      <div className="sidebar-sticky d-flex flex-column p-0">
-        <Route
-          path={[
-            teamBasePath
-          ]}
-          component={() => <span className="mt-4 px-3 text-muted" style={{ textTransform: 'uppercase' }}>
-            {currentTeam.name}
-          </span>} />
-        <Route
-          exact
-          path={`${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
-          component={() => {
-            const [name, setName] = useState('');
-            useEffect(() => {
-              if (params.subscription)
-                Services.getSubscriptionInformations(
-                  params.subscription,
-                  currentTeam._id,
-                )
-                  .then(r => setName(r.plan?.customName || r.plan?.type || params.apiId));
-            }, [params.subscription]);
-            return <div className="d-flex justify-content-between align-items-center mt-4 px-3">
-              <span className="text-muted" style={{ textTransform: 'uppercase' }}>
-                {name}
+  return (
+    <div className="row">
+      <button
+        id="toggle-sidebar"
+        type="button"
+        className="navbar-toggle btn btn-sm btn-access-negative float-left mr-2"
+        data-toggle="collapse"
+        data-target="#sidebar"
+        aria-expanded="false"
+        aria-controls="sidebar">
+        <span className="sr-only">Toggle sidebar</span>
+        <span className="chevron" />
+      </button>
+      <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
+        <div className="sidebar-sticky d-flex flex-column p-0">
+          <Route
+            path={[teamBasePath]}
+            component={() => (
+              <span className="mt-4 px-3 text-muted" style={{ textTransform: 'uppercase' }}>
+                {currentTeam.name}
               </span>
-            </div>;
-          }}
-        />
-        <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
-          <Route
-            exact
-            path={apiBasePath}
-            render={() => {
-              const to = `/${currentTeam._humanReadableId}/settings/apis/${params.apiId}/${params.versionId}`;
-              return <>
-                <VersionsButton {...params} currentTeam={currentTeam} />
-                {[
-                  { route: 'infos', icon: 'info', name: 'Informations' },
-                  { route: 'description', icon: 'file-alt', name: 'Description' },
-                  { route: 'plans', icon: 'dollar-sign', name: 'Plans' },
-                  { route: 'swagger', icon: 'file-code', name: 'Swagger' },
-                  { route: 'testing', icon: 'vial', name: 'Testing' },
-                  { route: 'documentation', icon: 'book', name: 'Documentation' },
-                  { route: 'news', icon: 'newspaper', name: 'News' },
-                ].map((item, i) => <NavItem {...item} to={`${to}/${item.route}`} key={`item-${i}`} />)}
-
-                <div className="px-3 mb-4 mt-auto d-flex flex-column">
-                  <Link
-                    to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
-                    className="btn btn-sm btn-access-negative mb-2">
-                    {translateMethod('View this Api')}
-                  </Link>
-                  <CreateNewVersionButton {...params} currentTeam={currentTeam} />
-                  <Link className="d-flex justify-content-around mt-3 align-items-center" style={{
-                    border: 0,
-                    background: 'transparent',
-                    outline: 'none'
-                  }} to={`/${currentTeam._humanReadableId}/settings`}>
-                    <i className="fas fa-chevron-left" />
-                    Back to {currentTeam._humanReadableId}
-                  </Link>
-                </div>
-              </>;
-            }} />
-          <Route
-            exact
-            path={`${teamBasePath}/apis/:apiId/:tab`}
-            render={() => {
-              return <div className="px-3 mb-4 mt-auto d-flex flex-column">
-                <Link className="d-flex justify-content-around mt-3 align-items-center" style={{
-                  border: 0,
-                  background: 'transparent',
-                  outline: 'none'
-                }} to={`/${currentTeam._humanReadableId}/settings`}>
-                  <i className="fas fa-chevron-left" />
-                  Back to {currentTeam._humanReadableId}
-                </Link>
-              </div>;
-            }} />
-          <Route
-            exact
-            path={`${teamBasePath}/apikeys/:apiId/:versionId`}
-            render={() => (
-              <>
-                <Can I={read} a={apikey} team={currentTeam}>
-                  <NavItem
-                    to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}
-                    icon="key"
-                    name={translateMethod('Api keys')} />
-                </Can>
-                <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
-                  border: 0,
-                  background: 'transparent',
-                  outline: 'none'
-                }} to={`/${currentTeam._humanReadableId}/settings/apikeys`}>
-                  <i className="fas fa-chevron-left" />
-                  Back to apis
-                </Link>
-              </>
-            )} />
+            )}
+          />
           <Route
             exact
             path={`${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
-            render={() => (
-              <>
-                <Can I={read} a={apikey} team={currentTeam}>
-                  <NavItem
-                    to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${params.subscription}/consumptions`}
-                    icon="key"
-                    name={translateMethod('Consumptions')} />
-                </Can>
-                <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
-                  border: 0,
-                  background: 'transparent',
-                  outline: 'none'
-                }} to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}>
-                  <i className="fas fa-chevron-left" />
-                  Back to apikeys
-                </Link>
-              </>
-            )} />
-          <Route
-            exact
-            path={[
-              teamBasePath,
-              `${teamBasePath}/:tab`,
-              `${teamBasePath}/consumptions/apis/:apiId/:versionId`,
-              `${teamBasePath}/subscriptions/apis/:apiId/:versionId`,
-              `${teamBasePath}/consumptions/apis/:apiId/:versionId/plan/:planId`,
-            ]}
-            render={() => {
-              const tab = location.pathname.split('/').slice(-1)[0];
-              const isOnHomePage = tab === 'settings';
+            component={() => {
+              const [name, setName] = useState('');
+              useEffect(() => {
+                if (params.subscription)
+                  Services.getSubscriptionInformations(params.subscription, currentTeam._id).then(
+                    (r) => setName(r.plan?.customName || r.plan?.type || params.apiId)
+                  );
+              }, [params.subscription]);
+              return (
+                <div className="d-flex justify-content-between align-items-center mt-4 px-3">
+                  <span className="text-muted" style={{ textTransform: 'uppercase' }}>
+                    {name}
+                  </span>
+                </div>
+              );
+            }}
+          />
+          <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
+            <Route
+              exact
+              path={apiBasePath}
+              render={() => {
+                const to = `/${currentTeam._humanReadableId}/settings/apis/${params.apiId}/${params.versionId}`;
+                return (
+                  <>
+                    <VersionsButton {...params} currentTeam={currentTeam} />
+                    {[
+                      { route: 'infos', icon: 'info', name: 'Informations' },
+                      { route: 'description', icon: 'file-alt', name: 'Description' },
+                      { route: 'plans', icon: 'dollar-sign', name: 'Plans' },
+                      { route: 'swagger', icon: 'file-code', name: 'Swagger' },
+                      { route: 'testing', icon: 'vial', name: 'Testing' },
+                      { route: 'documentation', icon: 'book', name: 'Documentation' },
+                      { route: 'news', icon: 'newspaper', name: 'News' },
+                    ].map((item, i) => (
+                      <NavItem {...item} to={`${to}/${item.route}`} key={`item-${i}`} />
+                    ))}
 
-              return <>
-                <Can I={read} a={api} team={currentTeam}>
-                  <li className="nav-item">
+                    <div className="px-3 mb-4 mt-auto d-flex flex-column">
+                      <Link
+                        to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
+                        className="btn btn-sm btn-access-negative mb-2">
+                        {translateMethod('View this Api')}
+                      </Link>
+                      <CreateNewVersionButton {...params} currentTeam={currentTeam} />
+                      <Link
+                        className="d-flex justify-content-around mt-3 align-items-center"
+                        style={{
+                          border: 0,
+                          background: 'transparent',
+                          outline: 'none',
+                        }}
+                        to={`/${currentTeam._humanReadableId}/settings`}>
+                        <i className="fas fa-chevron-left" />
+                        Back to {currentTeam._humanReadableId}
+                      </Link>
+                    </div>
+                  </>
+                );
+              }}
+            />
+            <Route
+              exact
+              path={`${teamBasePath}/apis/:apiId/:tab`}
+              render={() => {
+                return (
+                  <div className="px-3 mb-4 mt-auto d-flex flex-column">
                     <Link
-                      className={`nav-link ${isOnHomePage ? 'active' : ''}`}
+                      className="d-flex justify-content-around mt-3 align-items-center"
+                      style={{
+                        border: 0,
+                        background: 'transparent',
+                        outline: 'none',
+                      }}
                       to={`/${currentTeam._humanReadableId}/settings`}>
-                      <i className="fas fa-cog" />
-                      <Translation i18nkey="Settings">Settings</Translation>
+                      <i className="fas fa-chevron-left" />
+                      Back to {currentTeam._humanReadableId}
                     </Link>
-                  </li>
-                </Can>
+                  </div>
+                );
+              }}
+            />
+            <Route
+              exact
+              path={`${teamBasePath}/apikeys/:apiId/:versionId`}
+              render={() => (
+                <>
+                  <Can I={read} a={apikey} team={currentTeam}>
+                    <NavItem
+                      to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}
+                      icon="key"
+                      name={translateMethod('Api keys')}
+                    />
+                  </Can>
+                  <Link
+                    className="d-flex justify-content-around mb-4 mt-auto align-items-center"
+                    style={{
+                      border: 0,
+                      background: 'transparent',
+                      outline: 'none',
+                    }}
+                    to={`/${currentTeam._humanReadableId}/settings/apikeys`}>
+                    <i className="fas fa-chevron-left" />
+                    Back to apis
+                  </Link>
+                </>
+              )}
+            />
+            <Route
+              exact
+              path={`${teamBasePath}/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
+              render={() => (
+                <>
+                  <Can I={read} a={apikey} team={currentTeam}>
+                    <NavItem
+                      to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${params.subscription}/consumptions`}
+                      icon="key"
+                      name={translateMethod('Consumptions')}
+                    />
+                  </Can>
+                  <Link
+                    className="d-flex justify-content-around mb-4 mt-auto align-items-center"
+                    style={{
+                      border: 0,
+                      background: 'transparent',
+                      outline: 'none',
+                    }}
+                    to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}>
+                    <i className="fas fa-chevron-left" />
+                    Back to apikeys
+                  </Link>
+                </>
+              )}
+            />
+            <Route
+              exact
+              path={[
+                teamBasePath,
+                `${teamBasePath}/:tab`,
+                `${teamBasePath}/consumptions/apis/:apiId/:versionId`,
+                `${teamBasePath}/subscriptions/apis/:apiId/:versionId`,
+                `${teamBasePath}/consumptions/apis/:apiId/:versionId/plan/:planId`,
+              ]}
+              render={() => {
+                const tab = location.pathname.split('/').slice(-1)[0];
+                const isOnHomePage = tab === 'settings';
 
-                <Route exact
-                  path={[teamBasePath, `${teamBasePath}/edition`, `${teamBasePath}/members`, `${teamBasePath}/assets`]}
-                  component={() => (
-                    <>
+                return (
+                  <>
+                    <Can I={read} a={api} team={currentTeam}>
+                      <li className="nav-item">
+                        <Link
+                          className={`nav-link ${isOnHomePage ? 'active' : ''}`}
+                          to={`/${currentTeam._humanReadableId}/settings`}>
+                          <i className="fas fa-cog" />
+                          <Translation i18nkey="Settings">Settings</Translation>
+                        </Link>
+                      </li>
+                    </Can>
+
+                    <Route
+                      exact
+                      path={[
+                        teamBasePath,
+                        `${teamBasePath}/edition`,
+                        `${teamBasePath}/members`,
+                        `${teamBasePath}/assets`,
+                      ]}
+                      component={() => (
+                        <>
+                          <Can I={read} a={api} team={currentTeam}>
+                            <NavItem
+                              to={`/${currentTeam._humanReadableId}/settings/edition`}
+                              icon="info"
+                              name={translateMethod('Informations')}
+                              subItem={true}
+                            />
+                          </Can>
+                          {currentTeam.type === 'Organization' && (
+                            <Can I={manage} a={team} team={currentTeam}>
+                              <NavItem
+                                to={`/${currentTeam._humanReadableId}/settings/members`}
+                                icon="users"
+                                name="Members"
+                                subItem={true}
+                              />
+                            </Can>
+                          )}
+                          {currentTeam.type !== 'Admin' && (
+                            <Can I={manage} a={asset} team={currentTeam}>
+                              <NavItem
+                                to={`/${currentTeam._humanReadableId}/settings/assets`}
+                                icon="tools"
+                                name="Assets"
+                                subItem={true}
+                              />
+                            </Can>
+                          )}
+                        </>
+                      )}
+                    />
+                    {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
                       <Can I={read} a={api} team={currentTeam}>
                         <NavItem
-                          to={`/${currentTeam._humanReadableId}/settings/edition`}
-                          icon="info"
-                          name={translateMethod('Informations')}
-                          subItem={true} />
+                          to={`/${currentTeam._humanReadableId}/settings/apis`}
+                          icon="atlas"
+                          name={translateMethod('Apis')}
+                        />
                       </Can>
-                      {currentTeam.type === 'Organization' && (
-                        <Can I={manage} a={team} team={currentTeam}>
-                          <NavItem
-                            to={`/${currentTeam._humanReadableId}/settings/members`}
-                            icon="users"
-                            name="Members"
-                            subItem={true} />
-                        </Can>
+                    )}
+                    <Can I={read} a={apikey} team={currentTeam}>
+                      <NavItem
+                        to={`/${currentTeam._humanReadableId}/settings/apikeys`}
+                        icon="key"
+                        name={translateMethod('Api keys')}
+                      />
+                    </Can>
+                    <Route
+                      exact
+                      path={[
+                        `${teamBasePath}/apikeys`,
+                        `${teamBasePath}/apikeys/:apiId/:versionId`,
+                        `${teamBasePath}/consumption`,
+                      ]}
+                      component={() => (
+                        <>
+                          <Can I={read} a={stat} team={currentTeam}>
+                            <NavItem
+                              to={`/${currentTeam._humanReadableId}/settings/consumption`}
+                              icon="file-invoice-dollar"
+                              name={translateMethod('Global stats')}
+                              subItem={true}
+                            />
+                          </Can>
+                        </>
                       )}
-                      {currentTeam.type !== 'Admin' && (
-                        <Can I={manage} a={asset} team={currentTeam}>
-                          <NavItem
-                            to={`/${currentTeam._humanReadableId}/settings/assets`}
-                            icon="tools"
-                            name="Assets"
-                            subItem={true}
-                          />
-                        </Can>
+                    />
+                    <Can I={read} a={stat} team={currentTeam}>
+                      <NavItem
+                        to={`/${currentTeam._humanReadableId}/settings/billing`}
+                        icon="file-invoice-dollar"
+                        name={translateMethod('Billing')}
+                      />
+                    </Can>
+                    <Route
+                      exact
+                      path={[`${teamBasePath}/billing`, `${teamBasePath}/income`]}
+                      component={() => (
+                        <>
+                          {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
+                            <Can I={read} a={api} team={currentTeam}>
+                              <NavItem
+                                to={`/${currentTeam._humanReadableId}/settings/income`}
+                                icon="file-invoice-dollar"
+                                name="Income"
+                                subItem={true}
+                              />
+                            </Can>
+                          )}
+                        </>
                       )}
-                    </>
-                  )} />
-                {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
-                  <Can I={read} a={api} team={currentTeam}>
-                    <NavItem
-                      to={`/${currentTeam._humanReadableId}/settings/apis`}
-                      icon="atlas"
-                      name={translateMethod('Apis')} />
-                  </Can>
-                )}
-                <Can I={read} a={apikey} team={currentTeam}>
-                  <NavItem
-                    to={`/${currentTeam._humanReadableId}/settings/apikeys`}
-                    icon="key"
-                    name={translateMethod('Api keys')} />
-                </Can>
-                <Route exact
-                  path={[`${teamBasePath}/apikeys`, `${teamBasePath}/apikeys/:apiId/:versionId`, `${teamBasePath}/consumption`]}
-                  component={() => (
-                    <>
-                      <Can I={read} a={stat} team={currentTeam}>
-                        <NavItem
-                          to={`/${currentTeam._humanReadableId}/settings/consumption`}
-                          icon="file-invoice-dollar"
-                          name={translateMethod('Global stats')}
-                          subItem={true} />
-                      </Can>
-                    </>
-                  )}
-                />
-                <Can I={read} a={stat} team={currentTeam}>
-                  <NavItem
-                    to={`/${currentTeam._humanReadableId}/settings/billing`}
-                    icon="file-invoice-dollar"
-                    name={translateMethod('Billing')} />
-                </Can>
-                <Route exact
-                  path={[`${teamBasePath}/billing`, `${teamBasePath}/income`]}
-                  component={() => (
-                    <>
-                      {(!tenant.creationSecurity || currentTeam.apisCreationPermission) && (
-                        <Can I={read} a={api} team={currentTeam}>
-                          <NavItem
-                            to={`/${currentTeam._humanReadableId}/settings/income`}
-                            icon="file-invoice-dollar"
-                            name="Income"
-                            subItem={true} />
-                        </Can>
-                      )}
-                    </>
-                  )} />
-                <Route exact
-                  path={`${teamBasePath}/apis`}
-                  component={() => (
-                    <div className="px-3 mb-4 mt-auto d-flex flex-column">
-                      <button
-                        onClick={() => {
-                          Services.fetchNewApi()
-                            .then((e) => {
-                              const verb = faker.hacker.verb();
-                              const apiName =
-                                verb.charAt(0).toUpperCase() +
-                                verb.slice(1) +
-                                ' ' +
-                                faker.hacker.adjective() +
-                                ' ' +
-                                faker.hacker.noun() +
-                                ' api';
+                    />
+                    <Route
+                      exact
+                      path={`${teamBasePath}/apis`}
+                      component={() => (
+                        <div className="px-3 mb-4 mt-auto d-flex flex-column">
+                          <button
+                            onClick={() => {
+                              Services.fetchNewApi()
+                                .then((e) => {
+                                  const verb = faker.hacker.verb();
+                                  const apiName =
+                                    verb.charAt(0).toUpperCase() +
+                                    verb.slice(1) +
+                                    ' ' +
+                                    faker.hacker.adjective() +
+                                    ' ' +
+                                    faker.hacker.noun() +
+                                    ' api';
 
-                              e.name = apiName;
-                              e._humanReadableId = apiName.replace(/\s/gi, '-').toLowerCase().trim();
-                              return e;
-                            })
-                            .then((newApi) => {
-                              history.push(
-                                `/${currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
-                                { newApi: { ...newApi, team: currentTeam._id } }
-                              );
-                            });
-                        }
-                        }
-                        className="btn btn-outline-primary mb-2">
-                        {translateMethod('Create a new API')}
-                      </button>
-                    </div>
-                  )} />
-              </>;
-            }} />
-        </ul>
-      </div >
-    </nav >
-    <main role="main" className="col-md-10 ml-sm-auto px-4 mt-3">
-      <div
-        className={classNames('back-office-overlay', {
-          active: isLoading && !error.status,
-        })}
-      />
-      <BackOfficeContent error={error}>{children}</BackOfficeContent>
-    </main>
-  </div >;
+                                  e.name = apiName;
+                                  e._humanReadableId = apiName
+                                    .replace(/\s/gi, '-')
+                                    .toLowerCase()
+                                    .trim();
+                                  return e;
+                                })
+                                .then((newApi) => {
+                                  history.push(
+                                    `/${currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
+                                    { newApi: { ...newApi, team: currentTeam._id } }
+                                  );
+                                });
+                            }}
+                            className="btn btn-outline-primary mb-2">
+                            {translateMethod('Create a new API')}
+                          </button>
+                        </div>
+                      )}
+                    />
+                  </>
+                );
+              }}
+            />
+          </ul>
+        </div>
+      </nav>
+      <main role="main" className="col-md-10 ml-sm-auto px-4 mt-3">
+        <div
+          className={classNames('back-office-overlay', {
+            active: isLoading && !error.status,
+          })}
+        />
+        <BackOfficeContent error={error}>{children}</BackOfficeContent>
+      </main>
+    </div>
+  );
 };
 
 const UserBackOfficeComponent = ({

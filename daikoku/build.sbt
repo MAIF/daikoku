@@ -67,7 +67,8 @@ libraryDependencies ++= Seq(
   "io.nayuki" % "qrcodegen" % "1.6.0",
   "com.eatthepath" % "java-otp" % "0.2.0",
   "com.sun.mail" % "javax.mail" % "1.6.2",
-  "org.gnieh" %% "diffson-play-json" % "4.1.1" excludeAll ExclusionRule(organization = "com.typesafe.akka"),
+  "org.gnieh" %% "diffson-play-json" % "4.1.1" excludeAll ExclusionRule(
+    organization = "com.typesafe.akka"),
   "org.reactivemongo" %% "play2-reactivemongo" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",
   "org.reactivemongo" %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",

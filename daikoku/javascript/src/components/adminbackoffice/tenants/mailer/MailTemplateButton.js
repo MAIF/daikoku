@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { I18nContext } from '../../../../core';
 
-export const MailTemplateButton = ({ history, isTenantUpdated, openModal, save}) => {
+export const MailTemplateButton = ({ history, isTenantUpdated, openModal, save }) => {
   const { translateMethod } = useContext(I18nContext);
 
   return (
@@ -10,7 +10,7 @@ export const MailTemplateButton = ({ history, isTenantUpdated, openModal, save})
         {translateMethod('mailing_internalization.mail_template_tab')}
       </label>
       <div className="col-sm-10">
-        <button 
+        <button
           type="button"
           className="btn btn-outline-success"
           onClick={() => {
@@ -20,7 +20,11 @@ export const MailTemplateButton = ({ history, isTenantUpdated, openModal, save})
                 open: true,
                 dontsave: () => RedirectToUI(),
                 save: () => save().then(() => RedirectToUI()),
-                title: translateMethod('unsaved.modifications.title', false, 'Unsaved modifications'),
+                title: translateMethod(
+                  'unsaved.modifications.title',
+                  false,
+                  'Unsaved modifications'
+                ),
                 message: translateMethod(
                   'unsaved.modifications.message',
                   false,

@@ -177,91 +177,118 @@ class EntitiesController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def newPlan(planType: String): Action[AnyContent] = DaikokuAction.async { ctx =>
-    PublicUserAccess(
-      AuditTrailEvent(s"@{user.name} has asked for a template entity of type Plan"))(ctx) {
+  def newPlan(planType: String): Action[AnyContent] = DaikokuAction.async {
+    ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has asked for a template entity of type Plan"))(ctx) {
         planType match {
-          case "Admin" => Ok(UsagePlan.Admin(id = UsagePlanId(BSONObjectID.generate().stringify), otoroshiTarget = None).asJson)
-          case "PayPerUse" => Ok(UsagePlan.PayPerUse(
-            id = UsagePlanId(BSONObjectID.generate().stringify),
-            BigDecimal(0),
-            BigDecimal(0),
-            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-            trialPeriod = None,
-            currency = Currency("EUR"),
-            customName = None,
-            customDescription = None,
-            otoroshiTarget = None,
-            allowMultipleKeys = Some(false),
-            visibility = Private,
-            autoRotation = Some(false),
-            subscriptionProcess = SubscriptionProcess.Automatic,
-            integrationProcess = IntegrationProcess.ApiKey
-          ).asJson)
-          case "FreeWithQuotas" => Ok(UsagePlan.FreeWithQuotas(
-            id = UsagePlanId(BSONObjectID.generate().stringify),
-            0,
-            0,
-            0,
-            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-            currency = Currency("EUR"),
-            customName = None,
-            customDescription = None,
-            otoroshiTarget = None,
-            allowMultipleKeys = Some(false),
-            subscriptionProcess = SubscriptionProcess.Automatic,
-            integrationProcess = IntegrationProcess.ApiKey,
-            autoRotation = Some(false)
-          ).asJson)
-          case "FreeWithoutQuotas" => Ok(UsagePlan.FreeWithoutQuotas(
-            id = UsagePlanId(BSONObjectID.generate().stringify),
-            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-            currency = Currency("EUR"),
-            customName = None,
-            customDescription = None,
-            otoroshiTarget = None,
-            allowMultipleKeys = Some(false),
-            subscriptionProcess = SubscriptionProcess.Automatic,
-            integrationProcess = IntegrationProcess.ApiKey,
-            autoRotation = Some(false)
-          ).asJson)
-          case "QuotasWithLimits" => Ok(UsagePlan.QuotasWithLimits(
-            id = UsagePlanId(BSONObjectID.generate().stringify),
-            0,
-            0,
-            0,
-            BigDecimal(0),
-            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-            trialPeriod = None,
-            currency = Currency("EUR"),
-            customName = None,
-            customDescription = None,
-            otoroshiTarget = None,
-            allowMultipleKeys = Some(false),
-            subscriptionProcess = SubscriptionProcess.Automatic,
-            integrationProcess = IntegrationProcess.ApiKey,
-            autoRotation = Some(false)
-          ).asJson)
-          case "QuotasWithoutLimits" => Ok(UsagePlan.QuotasWithoutLimits(
-            id = UsagePlanId(BSONObjectID.generate().stringify),
-            0,
-            0,
-            0,
-            BigDecimal(0),
-            BigDecimal(0),
-            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-            trialPeriod = None,
-            currency = Currency("EUR"),
-            customName = None,
-            customDescription = None,
-            otoroshiTarget = None,
-            allowMultipleKeys = Some(true),
-            subscriptionProcess = SubscriptionProcess.Automatic,
-            integrationProcess = IntegrationProcess.ApiKey,
-            autoRotation = Some(false)
-          ).asJson)
+          case "Admin" =>
+            Ok(
+              UsagePlan
+                .Admin(id = UsagePlanId(BSONObjectID.generate().stringify),
+                       otoroshiTarget = None)
+                .asJson)
+          case "PayPerUse" =>
+            Ok(
+              UsagePlan
+                .PayPerUse(
+                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  BigDecimal(0),
+                  BigDecimal(0),
+                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                  trialPeriod = None,
+                  currency = Currency("EUR"),
+                  customName = None,
+                  customDescription = None,
+                  otoroshiTarget = None,
+                  allowMultipleKeys = Some(false),
+                  visibility = Private,
+                  autoRotation = Some(false),
+                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  integrationProcess = IntegrationProcess.ApiKey
+                )
+                .asJson)
+          case "FreeWithQuotas" =>
+            Ok(
+              UsagePlan
+                .FreeWithQuotas(
+                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  0,
+                  0,
+                  0,
+                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                  currency = Currency("EUR"),
+                  customName = None,
+                  customDescription = None,
+                  otoroshiTarget = None,
+                  allowMultipleKeys = Some(false),
+                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  integrationProcess = IntegrationProcess.ApiKey,
+                  autoRotation = Some(false)
+                )
+                .asJson)
+          case "FreeWithoutQuotas" =>
+            Ok(
+              UsagePlan
+                .FreeWithoutQuotas(
+                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                  currency = Currency("EUR"),
+                  customName = None,
+                  customDescription = None,
+                  otoroshiTarget = None,
+                  allowMultipleKeys = Some(false),
+                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  integrationProcess = IntegrationProcess.ApiKey,
+                  autoRotation = Some(false)
+                )
+                .asJson)
+          case "QuotasWithLimits" =>
+            Ok(
+              UsagePlan
+                .QuotasWithLimits(
+                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  0,
+                  0,
+                  0,
+                  BigDecimal(0),
+                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                  trialPeriod = None,
+                  currency = Currency("EUR"),
+                  customName = None,
+                  customDescription = None,
+                  otoroshiTarget = None,
+                  allowMultipleKeys = Some(false),
+                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  integrationProcess = IntegrationProcess.ApiKey,
+                  autoRotation = Some(false)
+                )
+                .asJson)
+          case "QuotasWithoutLimits" =>
+            Ok(
+              UsagePlan
+                .QuotasWithoutLimits(
+                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  0,
+                  0,
+                  0,
+                  BigDecimal(0),
+                  BigDecimal(0),
+                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                  trialPeriod = None,
+                  currency = Currency("EUR"),
+                  customName = None,
+                  customDescription = None,
+                  otoroshiTarget = None,
+                  allowMultipleKeys = Some(true),
+                  subscriptionProcess = SubscriptionProcess.Automatic,
+                  integrationProcess = IntegrationProcess.ApiKey,
+                  autoRotation = Some(false)
+                )
+                .asJson)
           case _ => BadRequest(Json.obj("error" -> "Unrecognized type of plan"))
         }
-    }
+      }
   }
 }

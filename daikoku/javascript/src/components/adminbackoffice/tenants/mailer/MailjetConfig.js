@@ -34,7 +34,7 @@ export function MailjetConfig({ value, onChange, ...props }) {
       },
     },
     template: {
-      type: () => <MailTemplateButton  {...props}/>,
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 

@@ -148,7 +148,6 @@ function TeamApisComponent(props) {
         }
       });
   };
-  
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
     props.setError({ error: { status: 403, message: 'unauthorized' } });

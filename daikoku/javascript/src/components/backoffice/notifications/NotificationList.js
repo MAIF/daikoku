@@ -67,8 +67,9 @@ function NotificationListComponent(props) {
           // page: state.page + 1,
           teams,
           apis: visibleApis.map(({ api }) => api),
-        })
-      });
+        });
+      }
+    );
   }, []);
 
   useEffect(() => {
