@@ -231,7 +231,7 @@ export function ResetPasswordComponent(props) {
 
   const [state, setState] = {
     user: {},
-  };
+  });
 
   const formSchema = {
     email: {
