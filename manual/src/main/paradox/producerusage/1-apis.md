@@ -39,7 +39,8 @@ An API needs a plan to be subscribed.
 Plan needs a name, possibly a description and an @ref:[otoroshi instance](../tenantusage/1-otoroshi.md).
 
 You can define a plan as **default plan** as it's possible to **make it private** (only accessible by the producer team)
-It's possible to **allow multiple APIkeys** for a plan (by default a team can only have one API key).
+It's possible to **allow multiple API keys** for a plan (by default a team can only have one API key).
+It's possible to **allow API keys aggregation**
 
 It's important to choose a type of plan :
 
@@ -74,6 +75,8 @@ The swagger can be provided as a url or just some content paste on the UI.
 ### Testing
 
 You can enable the testing for your API.
+
+> The testing is based on the swagger of your API. Beware of set up the right host of your testing service.
 
 Click on the `Generate a dedicated testing key in Otoroshi` to choose an otoroshi instance and and service group or service which is used to receive the testing APIkey. Then, just follow the instruction display on UI?
 
