@@ -223,7 +223,7 @@ case class Tenant(
       val moreFontFamily = s.fontFamilyUrl
         .map(u => s"""<style>
              |@font-face{
-             |font-family: "custom";
+             |font-family: "Custom";
              |src: url("$u")
              |}
              |</style>""".stripMargin)
