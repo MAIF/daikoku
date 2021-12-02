@@ -18,10 +18,10 @@
     "cypress:start:backend": "cd .. && sbt  'run -Dhttp.port=9000 -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson'"
   },
   "dependencies": {
-    "@apollo/client": "^3.4.8",
+    "@apollo/client": "^3.5.5",
     "@fortawesome/fontawesome-free": "5.15.4",
-    "@xstate/react": "1.5.1",
-    "antd": "4.16.12",
+    "@xstate/react": "1.6.3",
+    "antd": "4.17.2",
     "asciidoctor": "2.2.5",
     "bcryptjs": "2.4.3",
     "bootstrap": "4.5.3",
@@ -41,8 +41,9 @@
     "popper.js": "1.16.1",
     "prop-types": "15.7.2",
     "query-string": "6.13.8",
+    "rc-util": "^5.16.0",
     "react": "17.0.2",
-    "react-ace": "9.4.3",
+    "react-ace": "9.5.0",
     "react-color": "2.19.3",
     "react-dom": "17.0.2",
     "react-feather": "2.0.9",
@@ -58,14 +59,14 @@
     "recharts": "1.8.5",
     "redux": "4.1.2",
     "redux-logger": "3.0.6",
-    "redux-thunk": "2.3.0",
+    "redux-thunk": "2.4.1",
     "set-value": "3.0.2",
     "showdown": "1.9.1",
     "swagger-editor": "3.18.0",
     "swagger-ui-dist": "3.38.0",
     "uuid": "8.3.2",
     "whatwg-fetch": "3.6.2",
-    "xstate": "4.23.1"
+    "xstate": "4.26.1"
   },
   "devDependencies": {
     "@babel/core": "7.15.0",
