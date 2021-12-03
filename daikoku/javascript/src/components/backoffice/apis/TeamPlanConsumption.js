@@ -4,7 +4,6 @@ import moment from 'moment';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
-import { TeamBackOffice } from '../..';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { I18nContext } from '../../../core';
 
@@ -94,41 +93,39 @@ function TeamPlanConsumptionComponent(props) {
 
   useEffect(() => {
     Services.teams().then((teams) => setState({ ...state, teams }));
+
+    document.title = `${props.currentTeam.name} - ${translateMethod('Plan consumption')}`
   }, []);
 
   return (
-    <TeamBackOffice
-      tab="Apis"
-      title={`${props.currentTeam.name} - ${translateMethod('Plan consumption')}`}>
-      <div>
-        <div className="row">
-          <div className="col">
-            <h1>Api Consumption</h1>
-            <PlanInformations fetchData={() => getPlanInformation()} />
-          </div>
-          <p className="col">
-            <Link
-              to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${params.apiId}/${params.versionId}`}
-              className="btn my-2 btn-access-negative">
-              <i className="fas fa-angle-left" /> Back to plans
-            </Link>
-          </p>
+    <div>
+      <div className="row">
+        <div className="col">
+          <h1>Api Consumption</h1>
+          <PlanInformations fetchData={() => getPlanInformation()} />
         </div>
-        <OtoroshiStatsVizualization
-          sync={() => Services.syncApiConsumption(params.apiId, props.currentTeam._id)}
-          fetchData={(from, to) =>
-            Services.apiConsumption(
-              params.apiId,
-              params.planId,
-              props.currentTeam._id,
-              from.valueOf(),
-              to.valueOf()
-            )
-          }
-          mappers={mappers}
-        />
+        <p className="col">
+          <Link
+            to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${params.apiId}/${params.versionId}`}
+            className="btn my-2 btn-access-negative">
+            <i className="fas fa-angle-left" /> Back to plans
+          </Link>
+        </p>
       </div>
-    </TeamBackOffice>
+      <OtoroshiStatsVizualization
+        sync={() => Services.syncApiConsumption(params.apiId, props.currentTeam._id)}
+        fetchData={(from, to) =>
+          Services.apiConsumption(
+            params.apiId,
+            params.planId,
+            props.currentTeam._id,
+            from.valueOf(),
+            to.valueOf()
+          )
+        }
+        mappers={mappers}
+      />
+    </div>
   );
 }
 

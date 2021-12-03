@@ -6,7 +6,6 @@ import classNames from 'classnames';
 import { sortBy } from 'lodash';
 
 import * as Services from '../../../services';
-import { TeamBackOffice } from '..';
 import {
   formatPlanType,
   Can,
@@ -46,6 +45,10 @@ function TeamApiKeysForApiComponent(props) {
       Services.team(api.team).then((apiTeam) => setApiTeam(apiTeam));
     });
   }, [location]);
+
+  useEffect(() => {
+    document.title = `${props.currentTeam.name} - ApiKeys`
+  }, [])
 
   const updateCustomName = (subscription, customName) => {
     return Services.updateSubscriptionCustomName(props.currentTeam, subscription, customName);
@@ -145,18 +148,18 @@ function TeamApiKeysForApiComponent(props) {
     search === ''
       ? subscriptions
       : subscriptions.filter((subs) => {
-          const plan = currentPlan(subs);
+        const plan = currentPlan(subs);
 
-          if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
-            return true;
-          } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
-            return true;
-          } else {
-            return formatPlanType(currentPlan(subs), translateMethod)
-              .toLowerCase()
-              .includes(search);
-          }
-        });
+        if (plan && plan.customName && plan.customName.toLowerCase().includes(search)) {
+          return true;
+        } else if (subs.customName && subs.customName.toLowerCase().includes(search)) {
+          return true;
+        } else {
+          return formatPlanType(currentPlan(subs), translateMethod)
+            .toLowerCase()
+            .includes(search);
+        }
+      });
 
   const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
   const sortedApiKeys = sorted
@@ -165,79 +168,73 @@ function TeamApiKeysForApiComponent(props) {
       (acc, sub) => {
         return acc.find((a) => a._id === sub.parent)
           ? acc.map((a) => {
-              if (a._id === sub.parent) a.children.push(sub);
-              return a;
-            })
+            if (a._id === sub.parent) a.children.push(sub);
+            return a;
+          })
           : [...acc, { ...sub, children: [] }];
       },
       sorted.filter((f) => !f.parent).map((sub) => ({ ...sub, children: [] }))
     );
 
   return (
-    <TeamBackOffice
-      title={`${props.currentTeam.name} - ApiKeys`}
-      tab="ApiKeys"
-      apiId={params.apiId}
-      isLoading={!apiTeam}>
-      <Can I={read} a={apikey} team={props.currentTeam} dispatchError>
-        {api && apiTeam ? (
-          <div className="row">
-            <div className="col-12 d-flex align-items-center">
-              <h1>
-                <Translation i18nkey="Api keys for">Api keys for</Translation>
-                &nbsp;
-                <Link
-                  to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
-                  className="cursor-pointer underline-on-hover a-fake">
-                  {api.name}
-                </Link>
-              </h1>
-            </div>
-            <div className="col-12 mt-2 mb-4">
-              <input
-                type="text"
-                className="form-control col-5"
-                placeholder={translateMethod('Search your apiKey...')}
-                aria-label="Search your apikey"
-                value={searched}
-                onChange={(e) => setSearched(e.target.value)}
-              />
-            </div>
-
-            <div className="col-12">
-              <PaginatedComponent
-                items={sortedApiKeys}
-                count={5}
-                formatter={(subscription) => {
-                  const plan = currentPlan(subscription);
-
-                  return (
-                    <ApiKeyCard
-                      currentTeam={props.currentTeam}
-                      openInfoNotif={(message) => toastr.info(message)}
-                      statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
-                      key={subscription._id}
-                      subscription={subscription}
-                      showApiKey={showApiKey}
-                      plan={plan}
-                      api={api}
-                      updateCustomName={(name) => updateCustomName(subscription, name)}
-                      archiveApiKey={() => archiveApiKey(subscription)}
-                      makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
-                      toggleRotation={(rotationEvery, gracePeriod) =>
-                        toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)
-                      }
-                      regenerateSecret={() => regenerateApiKeySecret(subscription)}
-                      disableRotation={api.visibility === 'AdminOnly'}
-                    />
-                  );
-                }}
-              />
-            </div>
+    <Can I={read} a={apikey} team={props.currentTeam} dispatchError>
+      {api && apiTeam ? (
+        <div className="row">
+          <div className="col-12 d-flex align-items-center">
+            <h1>
+              <Translation i18nkey="Api keys for">Api keys for</Translation>
+              &nbsp;
+              <Link
+                to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
+                className="cursor-pointer underline-on-hover a-fake">
+                {api.name}
+              </Link>
+            </h1>
           </div>
-        ) : null}
-      </Can>
-    </TeamBackOffice>
+          <div className="col-12 mt-2 mb-4">
+            <input
+              type="text"
+              className="form-control col-5"
+              placeholder={translateMethod('Search your apiKey...')}
+              aria-label="Search your apikey"
+              value={searched}
+              onChange={(e) => setSearched(e.target.value)}
+            />
+          </div>
+
+          <div className="col-12">
+            <PaginatedComponent
+              items={sortedApiKeys}
+              count={5}
+              formatter={(subscription) => {
+                const plan = currentPlan(subscription);
+
+                return (
+                  <ApiKeyCard
+                    currentTeam={props.currentTeam}
+                    openInfoNotif={(message) => toastr.info(message)}
+                    statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
+                    key={subscription._id}
+                    subscription={subscription}
+                    showApiKey={showApiKey}
+                    plan={plan}
+                    api={api}
+                    updateCustomName={(name) => updateCustomName(subscription, name)}
+                    archiveApiKey={() => archiveApiKey(subscription)}
+                    makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
+                    toggleRotation={(rotationEvery, gracePeriod) =>
+                      toggleApiKeyRotation(subscription, plan, rotationEvery, gracePeriod)
+                    }
+                    regenerateSecret={() => regenerateApiKeySecret(subscription)}
+                    disableRotation={api.visibility === 'AdminOnly'}
+                  />
+                );
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+    </Can>
   );
 }
 
@@ -591,9 +588,8 @@ const ApiKeyCard = ({
                     </div>
                   )}
                   <button
-                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${
-                      showAggregatePlan ? 'mt-3' : ''
-                    }`}
+                    className={`btn btn-sm btn-outline-info mx-auto d-flex ${showAggregatePlan ? 'mt-3' : ''
+                      }`}
                     onClick={() => setAggregatePlan(!showAggregatePlan)}>
                     {showAggregatePlan
                       ? translateMethod('team_apikey_for_api.hide_aggregate_sub')

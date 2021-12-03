@@ -8,6 +8,7 @@ import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise, history } from '../core';
+import { TeamBackOffice } from '../components/backoffice/TeamBackOffice'
 
 import 'react-redux-toastr/src/styles/index.scss';
 
@@ -25,23 +26,9 @@ import {
 } from '../components/frontend';
 
 import {
-  TeamBackOfficeHome,
-  TeamApiKeys,
-  TeamApiKeysForApi,
-  TeamApis,
-  TeamApi,
-  TeamMembers,
   NotificationList,
   MyProfile,
-  TeamApiKeyConsumption,
-  TeamApiConsumption,
-  TeamPlanConsumption,
-  TeamConsumption,
-  TeamBilling,
-  TeamIncome,
-  TeamEdit,
   AssetsList,
-  TeamApiSubscriptions,
   MessagesProvider,
 } from '../components/backoffice';
 
@@ -449,8 +436,6 @@ export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
 //custom component route to get team object if it's not present in  redux store...
 
 const TeamBackOfficeRouter = ({ tenant }) => {
-  const { translateMethod } = useContext(I18nContext);
-
   const { currentTeam } = useSelector((state) => state.context);
 
   const dispatch = useDispatch();
@@ -478,26 +463,7 @@ const TeamBackOfficeRouter = ({ tenant }) => {
 
   if (!currentTeam || loading) return <Spinner />;
   else
-    return (
-      <Routes>
-        <Route path={`/edition`} element={<TeamEdit />} />
-        <Route path={`/consumption`} element={<TeamConsumption />} />
-        <Route path={`/billing`} element={<TeamBilling />} />
-        <Route path={`/income`} element={<TeamIncome />} />
-        <Route path={`/subscriptions/apis/:apiId/:versionId`} element={<TeamApiSubscriptions />} />
-        <Route path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`} element={<TeamApiKeyConsumption />} />
-        <Route path={`/apikeys/:apiId/:versionId`} element={<TeamApiKeysForApi />} />
-        <Route path={`/apikeys`} element={<TeamApiKeys />} />
-        <Route path={`/consumptions/apis/:apiId/:versionId`} element={<TeamApiConsumption />} />
-        <Route path={`/consumptions/apis/:apiId/:versionId/plan/:planId`} element={<TeamPlanConsumption />} />
-        <Route path={`/members`} element={<TeamMembers />} />
-        <Route path={`/assets`} element={<AssetsList tenantMode={false} />} />
-        <Route path={`/apis/:apiId/:versionId`} element={<TeamApi />} />
-        <Route path={`/apis/:apiId/:versionId/:tab`} element={<TeamApi />} />
-        <Route path={`/apis`} element={<TeamApis />} />
-        <Route path={`/`} element={<TeamBackOfficeHome />} />
-      </Routes>
-    );
+    return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />
 };
 
 const FrontOfficeRoute = (props) => {

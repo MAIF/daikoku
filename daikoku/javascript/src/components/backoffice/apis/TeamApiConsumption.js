@@ -7,7 +7,7 @@ import _ from 'lodash';
 
 import * as Services from '../../../services';
 
-import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
+import { OtoroshiStatsVizualization } from '../..';
 import { currencies } from '../../../services/currencies';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
 import { I18nContext } from '../../../core';
@@ -122,45 +122,42 @@ function TeamApiConsumptionComponent(props) {
         params.versionId
       ),
     ]).then(([teams, api]) => setState({ ...state, teams, api }));
+
+    document.title = `${props.currentTeam.name} - ${translateMethod('API consumption')}`
   }, []);
 
   return (
-    <TeamBackOffice
-      tab="Apis"
-      isLoading={!state.api}
-      title={`${props.currentTeam.name} - ${translateMethod('API consumption')}`}>
-      <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
-        {!!state.api && (
-          <div className="d-flex col flex-column pricing-content">
-            <div className="row">
-              <div className="col-12">
-                <h1>
-                  <Translation i18nkey="api.consumption.title" replacements={[state.api.name]}>
-                    Api Consumption - {state.api.name}
-                  </Translation>
-                </h1>
-              </div>
-              <div className="col section p-2">
-                <OtoroshiStatsVizualization
-                  sync={() =>
-                    Services.syncApiConsumption(params.apiId, props.currentTeam._id)
-                  }
-                  fetchData={(from, to) =>
-                    Services.apiGlobalConsumption(
-                      params.apiId,
-                      props.currentTeam._id,
-                      from.valueOf(),
-                      to.valueOf()
-                    )
-                  }
-                  mappers={mappers}
-                />
-              </div>
+    <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
+      {!!state.api && (
+        <div className="d-flex col flex-column pricing-content">
+          <div className="row">
+            <div className="col-12">
+              <h1>
+                <Translation i18nkey="api.consumption.title" replacements={[state.api.name]}>
+                  Api Consumption - {state.api.name}
+                </Translation>
+              </h1>
+            </div>
+            <div className="col section p-2">
+              <OtoroshiStatsVizualization
+                sync={() =>
+                  Services.syncApiConsumption(params.apiId, props.currentTeam._id)
+                }
+                fetchData={(from, to) =>
+                  Services.apiGlobalConsumption(
+                    params.apiId,
+                    props.currentTeam._id,
+                    from.valueOf(),
+                    to.valueOf()
+                  )
+                }
+                mappers={mappers}
+              />
             </div>
           </div>
-        )}
-      </Can>
-    </TeamBackOffice>
+        </div>
+      )}
+    </Can>
   );
 }
 

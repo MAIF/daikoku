@@ -20,6 +20,23 @@ import {
   tenant as TENANT,
 } from '../utils';
 
+import {
+  TeamApiKeys,
+  TeamApiKeysForApi,
+  TeamApis,
+  TeamApi,
+  TeamMembers,
+  TeamApiKeyConsumption,
+  TeamApiConsumption,
+  TeamPlanConsumption,
+  TeamConsumption,
+  TeamBilling,
+  TeamIncome,
+  AssetsList,
+  TeamApiSubscriptions,
+  TeamEdit
+} from '../backoffice';
+
 import { I18nContext } from '../../core';
 import { toastr } from 'react-redux-toastr';
 
@@ -38,6 +55,8 @@ function TeamBackOfficeHomeComponent(props) {
 
   useEffect(() => {
     Services.teamHome(props.currentTeam._id).then(setTeam);
+
+    document.title = `${props.currentTeam.name}`
   }, []);
 
   if (!team) {
@@ -45,72 +64,70 @@ function TeamBackOfficeHomeComponent(props) {
   }
 
   return (
-    <TeamBackOffice tab="Home" title={`${props.currentTeam.name}`}>
-      <div className="row">
-        <div className="col">
-          <h1>
-            {props.currentTeam.name}
-            <a
-              className="ml-1 btn btn-sm btn-access-negative"
-              title="View this Team"
-              href={`/${props.currentTeam._humanReadableId}`}>
-              <i className="fas fa-eye"></i>
-            </a>
-          </h1>
-          <div className="d-flex justify-content-center align-items-center col-12 mt-5">
-            <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
-              <Link
-                to={`/${props.currentTeam._humanReadableId}/settings/apis`}
-                className="home-tile">
-                <span className="home-tile-number">{team.apisCount}</span>
-                <span className="home-tile-text">
-                  <Translation i18nkey="apis published" count={team.apisCount}>
-                    apis published
-                  </Translation>
-                </span>
-              </Link>
-              <Link
-                to={`/${props.currentTeam._humanReadableId}/settings/apikeys`}
-                className="home-tile">
-                <span className="home-tile-number">{team.subscriptionsCount}</span>
-                <span className="home-tile-text">
-                  <Translation i18nkey="apis subcriptions" count={team.subscriptionsCount}>
-                    apis subcriptions
-                  </Translation>
-                </span>
-              </Link>
-              <Link
-                to={
-                  props.currentTeam.type === 'Personal'
-                    ? '#'
-                    : `/${props.currentTeam._humanReadableId}/settings/members`
-                }
-                className="home-tile"
-                disabled={props.currentTeam.type === 'Personal' ? 'disabled' : null}>
-                {props.currentTeam.type !== 'Personal' && (
-                  <>
-                    <span className="home-tile-number">{team.users.length}</span>
-                    <span className="home-tile-text">
-                      <Translation i18nkey="members" count={team.users.length}>
-                        members
-                      </Translation>
-                    </span>
-                  </>
-                )}
-              </Link>
-              <Link to={'/notifications'} className="home-tile">
-                <span className="home-tile-number">{team.notificationCount}</span>
-                <span className="home-tile-text">
-                  <Translation i18nkey="unread notifications" count={team.notificationCount}>
-                    unread notifications
-                  </Translation>
-                </span>
-              </Link>
-            </div>
+    <div className="row">
+      <div className="col">
+        <h1>
+          {props.currentTeam.name}
+          <a
+            className="ml-1 btn btn-sm btn-access-negative"
+            title="View this Team"
+            href={`/${props.currentTeam._humanReadableId}`}>
+            <i className="fas fa-eye"></i>
+          </a>
+        </h1>
+        <div className="d-flex justify-content-center align-items-center col-12 mt-5">
+          <div className="home-tiles d-flex justify-content-center align-items-center flex-wrap">
+            <Link
+              to={`/${props.currentTeam._humanReadableId}/settings/apis`}
+              className="home-tile">
+              <span className="home-tile-number">{team.apisCount}</span>
+              <span className="home-tile-text">
+                <Translation i18nkey="apis published" count={team.apisCount}>
+                  apis published
+                </Translation>
+              </span>
+            </Link>
+            <Link
+              to={`/${props.currentTeam._humanReadableId}/settings/apikeys`}
+              className="home-tile">
+              <span className="home-tile-number">{team.subscriptionsCount}</span>
+              <span className="home-tile-text">
+                <Translation i18nkey="apis subcriptions" count={team.subscriptionsCount}>
+                  apis subcriptions
+                </Translation>
+              </span>
+            </Link>
+            <Link
+              to={
+                props.currentTeam.type === 'Personal'
+                  ? '#'
+                  : `/${props.currentTeam._humanReadableId}/settings/members`
+              }
+              className="home-tile"
+              disabled={props.currentTeam.type === 'Personal' ? 'disabled' : null}>
+              {props.currentTeam.type !== 'Personal' && (
+                <>
+                  <span className="home-tile-number">{team.users.length}</span>
+                  <span className="home-tile-text">
+                    <Translation i18nkey="members" count={team.users.length}>
+                      members
+                    </Translation>
+                  </span>
+                </>
+              )}
+            </Link>
+            <Link to={'/notifications'} className="home-tile">
+              <span className="home-tile-number">{team.notificationCount}</span>
+              <span className="home-tile-text">
+                <Translation i18nkey="unread notifications" count={team.notificationCount}>
+                  unread notifications
+                </Translation>
+              </span>
+            </Link>
           </div>
         </div>
       </div>
-    </TeamBackOffice>
+    </div>
   );
 }
 
@@ -197,8 +214,7 @@ const TeamBackOfficeComponent = ({
   tenant,
   isLoading,
   error,
-  title,
-  children,
+  title
 }) => {
   useEffect(() => {
     if (title) {
@@ -212,34 +228,16 @@ const TeamBackOfficeComponent = ({
     return null;
   }
 
-  const teamBasePath = '/';
-  const apiBasePath = `/apis/:apiId/:version/:tab`;
-
-  const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const Consumptions = () => {
-    const [name, setName] = useState('');
-    useEffect(() => {
-      if (params.subscription)
-        Services.getSubscriptionInformations(
-          params.subscription,
-          currentTeam._id,
-        )
-          .then(r => setName(r.plan?.customName || r.plan?.type || params.apiId));
-    }, [params.subscription]);
-    return <div className="d-flex justify-content-between align-items-center mt-4 px-3">
-      <span className="text-muted" style={{ textTransform: 'uppercase' }}>
-        {name}
-      </span>
-    </div>;
-  }
-
   const ApiSidebar = () => {
-    const to = `/${currentTeam._humanReadableId}/settings/apis/${params.apiId}/${params.versionId}`;
+    const sidebarParams = useParams();
+
+    const to = `/${currentTeam._humanReadableId}/settings/apis/${sidebarParams.apiId}/${sidebarParams.versionId}`;
+
     return <>
-      <VersionsButton {...params} currentTeam={currentTeam} />
+      <VersionsButton {...sidebarParams} currentTeam={currentTeam} />
       {[
         { route: 'infos', icon: 'info', name: 'Informations' },
         { route: 'description', icon: 'file-alt', name: 'Description' },
@@ -252,11 +250,11 @@ const TeamBackOfficeComponent = ({
 
       <div className="px-3 mb-4 mt-auto d-flex flex-column">
         <Link
-          to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}`}
+          to={`/${currentTeam._humanReadableId}/${sidebarParams.apiId}/${sidebarParams.versionId}`}
           className="btn btn-sm btn-access-negative mb-2">
           {translateMethod('View this Api')}
         </Link>
-        <CreateNewVersionButton {...params} currentTeam={currentTeam} />
+        <CreateNewVersionButton {...sidebarParams} currentTeam={currentTeam} />
         <Link className="d-flex justify-content-around mt-3 align-items-center" style={{
           border: 0,
           background: 'transparent',
@@ -286,7 +284,7 @@ const TeamBackOfficeComponent = ({
       </Can>
 
       <Routes>
-        {[teamBasePath, `${teamBasePath}/edition`, `${teamBasePath}/members`, `${teamBasePath}/assets`]
+        {['/', '/edition', '/members', '/assets']
           .map((r, i) => (
             <Route
               key={`route-${r}-${i}`}
@@ -340,7 +338,7 @@ const TeamBackOfficeComponent = ({
       </Can>
 
       <Routes>
-        {[`${teamBasePath}/apikeys`, `${teamBasePath}/apikeys/:apiId/:versionId`, `${teamBasePath}/consumption`].map(r =>
+        {['/apikeys', '/apikeys/:apiId/:versionId', '/consumption'].map(r =>
           <Route
             key={r}
             path={r}
@@ -367,7 +365,7 @@ const TeamBackOfficeComponent = ({
       </Can>
 
       <Routes>
-        {[`${teamBasePath}/billing`, `${teamBasePath}/income`].map(r =>
+        {['/billing', '/income'].map(r =>
           <Route
             key={r}
             path={r}
@@ -386,7 +384,7 @@ const TeamBackOfficeComponent = ({
             } />
         )}
         <Route
-          path={`${teamBasePath}/apis`}
+          path="/apis"
           element={
             <div className="px-3 mb-4 mt-auto d-flex flex-column">
               <button
@@ -423,6 +421,59 @@ const TeamBackOfficeComponent = ({
     </>;
   }
 
+  const ConsumptionsBar = () => {
+    const params = useParams();
+    return <>
+      <Can I={read} a={apikey} team={currentTeam}>
+        <NavItem
+          to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${params.sub}/consumptions`}
+          icon="key"
+          name={translateMethod('Consumptions')} />
+      </Can>
+      <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
+        border: 0,
+        background: 'transparent',
+        outline: 'none'
+      }} to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}>
+        <i className="fas fa-chevron-left" />
+        Back to apikeys
+      </Link>
+    </>
+  }
+
+  const ApiKeysBar = () => {
+    const params = useParams();
+    return <>
+      <Can I={read} a={apikey} team={currentTeam}>
+        <NavItem
+          to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}
+          icon="key"
+          name={translateMethod('Api keys')} />
+      </Can>
+      <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
+        border: 0,
+        background: 'transparent',
+        outline: 'none'
+      }} to={`/${currentTeam._humanReadableId}/settings/apikeys`}>
+        <i className="fas fa-chevron-left" />
+        Back to apis
+      </Link>
+    </>
+  }
+
+  const NewApiBar = () => (
+    <div className="px-3 mb-4 mt-auto d-flex flex-column">
+      <Link className="d-flex justify-content-around mt-3 align-items-center" style={{
+        border: 0,
+        background: 'transparent',
+        outline: 'none'
+      }} to={`/${currentTeam._humanReadableId}/settings`}>
+        <i className="fas fa-chevron-left" />
+        Back to {currentTeam._humanReadableId}
+      </Link>
+    </div>
+  )
+
   return <div className="row">
     <button
       id="toggle-sidebar"
@@ -437,84 +488,25 @@ const TeamBackOfficeComponent = ({
     </button>
     <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
       <div className="sidebar-sticky d-flex flex-column p-0">
-        <Routes>
-          <Route
-            path={teamBasePath}
-            element={
-              <span className="mt-4 px-3 text-muted" style={{ textTransform: 'uppercase' }}>
-                {currentTeam.name}
-              </span>
-            } />
-        </Routes>
-
-        <Routes>
-          <Route
-            path={`${teamBasePath}/apikeys/: apiId/: versionId/subscription/: sub/consumptions`}
-            element={<Consumptions />}
-          />
-        </Routes>
-
+        <span className="mt-4 px-3 text-muted" style={{ textTransform: 'uppercase' }}>
+          {currentTeam.name}
+        </span>
         <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
           <Routes>
             <Route
-              path={apiBasePath}
+              path="/apis/:apiId/:versionId/:tab"
               element={<ApiSidebar />} />
             <Route
-              path={`${teamBasePath}/apis/:apiId/:tab`}
-              element={<div className="px-3 mb-4 mt-auto d-flex flex-column">
-                <Link className="d-flex justify-content-around mt-3 align-items-center" style={{
-                  border: 0,
-                  background: 'transparent',
-                  outline: 'none'
-                }} to={`/${currentTeam._humanReadableId}/settings`}>
-                  <i className="fas fa-chevron-left" />
-                  Back to {currentTeam._humanReadableId}
-                </Link>
-              </div>} />
+              path={`/apis/:apiId/:tab`}
+              element={<NewApiBar />} />
             <Route
-              path={`${teamBasePath}/apikeys/: apiId/: versionId`}
-              element={
-                <>
-                  <Can I={read} a={apikey} team={currentTeam}>
-                    <NavItem
-                      to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}
-                      icon="key"
-                      name={translateMethod('Api keys')} />
-                  </Can>
-                  <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
-                    border: 0,
-                    background: 'transparent',
-                    outline: 'none'
-                  }} to={`/${currentTeam._humanReadableId}/settings/apikeys`}>
-                    <i className="fas fa-chevron-left" />
-                    Back to apis
-                  </Link>
-                </>
-              } />
+              path={`/apikeys/:apiId/:versionId`}
+              element={<ApiKeysBar />} />
             <Route
-              path={`${teamBasePath}/apikeys/: apiId/: versionId/subscription/: sub/consumptions`}
-              element={
-                <>
-                  <Can I={read} a={apikey} team={currentTeam}>
-                    <NavItem
-                      to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${params.subscription}/consumptions`}
-                      icon="key"
-                      name={translateMethod('Consumptions')} />
-                  </Can>
-                  <Link className="d-flex justify-content-around mb-4 mt-auto align-items-center" style={{
-                    border: 0,
-                    background: 'transparent',
-                    outline: 'none'
-                  }} to={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}`}>
-                    <i className="fas fa-chevron-left" />
-                    Back to apikeys
-                  </Link>
-                </>
-              } />
-          </Routes>
-          <Routes>
+              path={`/apikeys/:apiId/:versionId/subscription/:sub/consumptions`}
+              element={<ConsumptionsBar />} />
             <Route
-              path={`${teamBasePath}/*`}
+              path="*"
               element={<TeamSidebar />} />
           </Routes>
         </ul>
@@ -526,7 +518,26 @@ const TeamBackOfficeComponent = ({
           active: isLoading && !error.status,
         })}
       />
-      <BackOfficeContent error={error}>{children}</BackOfficeContent>
+      <BackOfficeContent error={error}>
+        <Routes>
+          <Route path={`/edition`} element={<TeamEdit />} />
+          <Route path={`/consumption`} element={<TeamConsumption />} />
+          <Route path={`/billing`} element={<TeamBilling />} />
+          <Route path={`/income`} element={<TeamIncome />} />
+          <Route path={`/subscriptions/apis/:apiId/:versionId`} element={<TeamApiSubscriptions />} />
+          <Route path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`} element={<TeamApiKeyConsumption />} />
+          <Route path={`/apikeys/:apiId/:versionId`} element={<TeamApiKeysForApi />} />
+          <Route path={`/apikeys`} element={<TeamApiKeys />} />
+          <Route path={`/consumptions/apis/:apiId/:versionId`} element={<TeamApiConsumption />} />
+          <Route path={`/consumptions/apis/:apiId/:versionId/plan/:planId`} element={<TeamPlanConsumption />} />
+          <Route path={`/members`} element={<TeamMembers />} />
+          <Route path={`/assets`} element={<AssetsList tenantMode={false} />} />
+          <Route path={`/apis/:apiId/:versionId/:tab`} element={<TeamApi />} />
+          <Route path={`/apis/:apiId/:versionId`} element={<TeamApi />} />
+          <Route path={`/apis`} element={<TeamApis />} />
+          <Route path="/" element={<TeamBackOfficeHome />} />
+        </Routes>
+      </BackOfficeContent>
     </main>
   </div >;
 };
@@ -729,4 +740,4 @@ const mapStateToProps = (state) => ({
 export const TeamBackOffice = connect(mapStateToProps)(TeamBackOfficeComponent);
 export const UserBackOffice = connect(mapStateToProps)(UserBackOfficeComponent);
 
-export const TeamBackOfficeHome = connect(mapStateToProps)(TeamBackOfficeHomeComponent);
+const TeamBackOfficeHome = connect(mapStateToProps)(TeamBackOfficeHomeComponent);

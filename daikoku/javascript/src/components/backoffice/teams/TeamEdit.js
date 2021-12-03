@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,7 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
 
-import { TeamBackOffice } from '..';
 import { AvatarChooser, Spinner } from '../../utils';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -81,6 +80,10 @@ export function TeamEditForm(props) {
     return null;
   }
 
+  useEffect(() => {
+    document.title = `${props.team.name} - ${translateMethod('Edition')}`
+  }, [])
+
   return (
     <>
       <div className="row d-flex justify-content-start align-items-center mb-2">
@@ -132,7 +135,7 @@ const TeamEditComponent = ({ currentTeam }) => {
   };
 
   return (
-    <TeamBackOffice title={`${team.name} - ${translateMethod('Edition')}`}>
+    <>
       <TeamEditForm team={team} updateTeam={setTeam} />
       <div className="row form-back-fixedBtns">
         <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
@@ -160,7 +163,7 @@ const TeamEditComponent = ({ currentTeam }) => {
           </span>
         </button>
       </div>
-    </TeamBackOffice>
+    </>
   );
 };
 
