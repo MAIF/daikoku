@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Redirect } from 'react-router-dom';
+import { Redirect, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
@@ -439,11 +439,12 @@ export function TeamMembersSimpleComponent(props) {
 
 const TeamMembersComponent = (props) => {
   const { translateMethod } = useContext(I18nContext);
+  const params = useParams();
 
   return (
     <TeamBackOffice
       tab="Members"
-      apiId={props.match.params.apiId}
+      apiId={params.apiId}
       title={`${props.currentTeam.name} - ${translateMethod('Member', true)}`}>
       <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
         <TeamMembersSimpleComponent {...props} />

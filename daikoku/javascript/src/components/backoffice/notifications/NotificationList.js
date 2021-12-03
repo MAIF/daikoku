@@ -9,9 +9,11 @@ import { Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
 import { updateNotications, openSubMetadataModal, I18nContext } from '../../../core';
 import { getApolloContext, gql } from '@apollo/client';
+import { useParams } from 'react-router-dom';
 
 function NotificationListComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const params = useParams()
 
   const [state, setState] = useState({
     notifications: [],
@@ -182,7 +184,7 @@ function NotificationListComponent(props) {
   return (
     <UserBackOffice
       tab="Notifications"
-      apiId={props.match.params.apiId}
+      apiId={params.apiId}
       notificationSubMenu={
         <ul className="nav flex-column sub-nav">
           <li
@@ -250,7 +252,6 @@ function NotificationListComponent(props) {
                           getTeam={(id) => state.teams.find((team) => team._id === id)}
                           getApi={(id) => state.apis.find((a) => a._id === id)}
                           openSubMetadataModal={props.openSubMetadataModal}
-                          history={props.history}
                         />
                       ))}
                   </div>

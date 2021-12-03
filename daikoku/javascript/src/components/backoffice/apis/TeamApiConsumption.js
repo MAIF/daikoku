@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment';
+import { useParams, useNavigate } from 'react-router-dom'
 import classNames from 'classnames';
 import _ from 'lodash';
 
@@ -40,6 +41,8 @@ function TeamApiConsumptionComponent(props) {
     viewByPlan: true,
   });
 
+  const navigate = useNavigate();
+  const params = useParams();
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const mappers = [
@@ -98,7 +101,7 @@ function TeamApiConsumptionComponent(props) {
                 data={sumGlobalInformations(data.filter((d) => d.plan === plan._id))}
                 period={state.period}
                 handleClick={() =>
-                  props.history.push(
+                  navigate(
                     `/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${state.api._humanReadableId}/${state.api.currentVersion}/plan/${plan._id}`
                   )
                 }
@@ -115,8 +118,8 @@ function TeamApiConsumptionComponent(props) {
       Services.teams(),
       Services.teamApi(
         props.currentTeam._id,
-        props.match.params.apiId,
-        props.match.params.versionId
+        params.apiId,
+        params.versionId
       ),
     ]).then(([teams, api]) => setState({ ...state, teams, api }));
   }, []);
@@ -140,11 +143,11 @@ function TeamApiConsumptionComponent(props) {
               <div className="col section p-2">
                 <OtoroshiStatsVizualization
                   sync={() =>
-                    Services.syncApiConsumption(props.match.params.apiId, props.currentTeam._id)
+                    Services.syncApiConsumption(params.apiId, props.currentTeam._id)
                   }
                   fetchData={(from, to) =>
                     Services.apiGlobalConsumption(
-                      props.match.params.apiId,
+                      params.apiId,
                       props.currentTeam._id,
                       from.valueOf(),
                       to.valueOf()

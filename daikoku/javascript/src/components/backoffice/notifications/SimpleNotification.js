@@ -1,11 +1,14 @@
 import React, { useContext } from 'react';
 import moment from 'moment';
+import { useNavigate } from 'react-router-dom';
 
 import { formatPlanType, Option } from '../../utils';
 import { I18nContext } from '../../../core';
 
 export function SimpleNotification(props) {
   const { translateMethod, language, Translation } = useContext(I18nContext);
+
+  const navigate = useNavigate()
 
   const typeFormatter = (type) => {
     switch (type) {
@@ -138,7 +141,7 @@ export function SimpleNotification(props) {
             className="btn btn-sm btn-outline-success"
             onClick={() => {
               props.accept();
-              props.history.push(notification.action.linkTo);
+              navigate(notification.action.linkTo);
             }}>
             <i className="fas fa-eye" />
           </button>

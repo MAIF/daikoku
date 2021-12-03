@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import Pagination from 'react-paginate';
-
+import { useNavigate } from 'react-router-dom';
 import * as Services from '../../../services';
 
 import { TeamCard } from '.';
@@ -10,6 +10,7 @@ import { I18nContext } from '../../../locales/i18n-context';
 
 function TeamChooserComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
 
   const [state, setState] = useState({
     teams: [],
@@ -30,7 +31,7 @@ function TeamChooserComponent(props) {
   };
 
   const redirectToTeamSettings = (team) => {
-    props.updateTeam(team).then(() => props.history.push(`/${team._humanReadableId}/settings`));
+    props.updateTeam(team).then(() => navigate(`/${team._humanReadableId}/settings`));
   };
 
   const handlePageClick = (data) => {
@@ -43,10 +44,10 @@ function TeamChooserComponent(props) {
     searched === ''
       ? teams
       : teams.filter((team) => {
-          if (team.name.toLowerCase().indexOf(searched) > -1) {
-            return true;
-          } else return team.description.toLowerCase().indexOf(searched) > -1;
-        });
+        if (team.name.toLowerCase().indexOf(searched) > -1) {
+          return true;
+        } else return team.description.toLowerCase().indexOf(searched) > -1;
+      });
   const paginateTeams = filteredTeams.slice(state.offset, state.offset + state.pageNumber);
 
   return (
@@ -90,7 +91,7 @@ function TeamChooserComponent(props) {
                 user={props.connectedUser}
                 team={team}
                 askToJoin={(e) => askToJoin(e, team)}
-                redirectToTeamPage={() => props.history.push(`/${team._humanReadableId}`)}
+                redirectToTeamPage={() => navigate(`/${team._humanReadableId}`)}
                 redirectToTeamSettings={() => redirectToTeamSettings(team)}
               />
             ))}

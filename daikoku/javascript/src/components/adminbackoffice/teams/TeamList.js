@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import _ from 'lodash';
+import { useNavigate } from 'react-router-dom';
 
 import { UserBackOffice } from '../../backoffice';
 import { PaginatedComponent, AvatarWithAction, Can, manage, tenant } from '../../utils';
@@ -11,10 +12,11 @@ function TeamListComponent(props) {
   const [state, setState] = useState({
     teams: [],
   });
+  const navigate = useNavigate();
 
   const createNewTeam = () => {
     Services.fetchNewTeam().then((newTeam) => {
-      props.history.push(`/settings/teams/${newTeam._id}`, { newTeam });
+      navigate(`/settings/teams/${newTeam._id}`, { newTeam });
     });
   };
 
@@ -52,7 +54,7 @@ function TeamListComponent(props) {
         tooltip: translateMethod('Delete team'),
       },
       {
-        redirect: () => props.history.push(`/settings/teams/${team._humanReadableId}`),
+        redirect: () => navigate(`/settings/teams/${team._humanReadableId}`),
         iconClass: 'fas fa-pen',
         tooltip: translateMethod('Edit team'),
       },
@@ -65,7 +67,7 @@ function TeamListComponent(props) {
     return [
       ...basicActions,
       {
-        redirect: () => props.history.push(`/settings/teams/${team._humanReadableId}/members`),
+        redirect: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
         iconClass: 'fas fa-users',
         tooltip: translateMethod('Team members'),
       },

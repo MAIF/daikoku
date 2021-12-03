@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
@@ -10,7 +10,8 @@ import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { I18nContext, setError } from '../../../core';
 
 function TeamApisComponent(props) {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
+  const params = useParams();
 
   let table;
 
@@ -155,7 +156,7 @@ function TeamApisComponent(props) {
   return (
     <TeamBackOffice
       tab="Apis"
-      apiId={props.match.params.apiId}
+      apiId={params.apiId}
       title={`${props.currentTeam.name} - ${translateMethod('API', true)}`}>
       <Can I={read} a={API} dispatchError={true} team={props.currentTeam}>
         <div className="row">

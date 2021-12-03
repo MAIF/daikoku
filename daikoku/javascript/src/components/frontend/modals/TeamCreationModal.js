@@ -4,18 +4,20 @@ import { PropTypes } from 'prop-types';
 import { TeamEditForm } from '../../backoffice/teams/TeamEdit';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
+import { useNavigate } from 'react-router-dom';
 
 export const TeamCreationModal = (props) => {
   const [team, setTeam] = useState(props.team);
   const [created, setCreated] = useState(false);
   const [error, setError] = useState(undefined);
+  const navigate = useNavigate()
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (created) {
       props.closeModal();
-      props.history.push(`/${team._humanReadableId}/settings/members`);
+      navigate(`/${team._humanReadableId}/settings/members`);
     }
   }, [created]);
 

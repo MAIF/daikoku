@@ -1,4 +1,5 @@
 import React, { Component, useContext, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { ApiList } from './ApiList';
@@ -8,12 +9,16 @@ import { updateUser } from '../../../core';
 import { setError, updateTeamPromise } from '../../../core';
 import { getApolloContext } from '@apollo/client';
 
+
 function TeamHomeComponent(props) {
   const [state, setState] = useState({
     searched: '',
     team: null,
     apis: [],
   });
+
+  const navigate = useNavigate();
+  const params = useParams();
 
   const { client } = useContext(getApolloContext());
 
@@ -54,12 +59,12 @@ function TeamHomeComponent(props) {
   };
 
   useEffect(() => {
-    fetchData(props.match.params.teamId);
+    fetchData(params.teamId);
   }, []);
 
   const askForApiAccess = (api, teams) => {
     return Services.askForApiAccess(teams, api._id).then(() =>
-      fetchData(props.match.params.teamId)
+      fetchData(params.teamId)
     );
   };
 
@@ -94,25 +99,25 @@ function TeamHomeComponent(props) {
           api._humanReadableId
         }/${version}`;
 
-      props.history.push(route(api.currentVersion));
+      navigate(route(api.currentVersion));
     }
   };
 
   const redirectToTeamPage = (team) => {
-    props.history.push(`/${team._humanReadableId}`);
+    navigate(`/${team._humanReadableId}`);
   };
 
   const redirectToEditPage = (api) => {
-    props.history.push(
-      `/${props.match.params.teamId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
+    navigate(
+      `/${params.teamId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
     );
   };
 
   const redirectToTeamSettings = (team) => {
-    props.history.push(`/${team._humanReadableId}/settings`);
+    navigate(`/${team._humanReadableId}/settings`);
     // props
     //   .updateTeam(team)
-    //   .then(() => props.history.push(`/${team._humanReadableId}/settings`));
+    //   .then(() => navigate(`/${team._humanReadableId}/settings`));
   };
 
   if (!state.team) {
@@ -164,7 +169,7 @@ function TeamHomeComponent(props) {
         history={props.history}
         myTeams={state.myTeams}
         showTeam={false}
-        team={state.teams.find((team) => team._humanReadableId === props.match.params.teamId)}
+        team={state.teams.find((team) => team._humanReadableId === params.teamId)}
       />
     </main>
   );

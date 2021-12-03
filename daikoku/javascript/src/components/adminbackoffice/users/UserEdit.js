@@ -1,5 +1,5 @@
-import React, { Component, useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import faker from 'faker';
@@ -110,6 +110,9 @@ function AvatarChooser(props) {
 
 export function UserEditComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
+  const location = useLocation()
+  const params = useParams();
 
   const [state, setState] = useState({
     user: null,
@@ -205,17 +208,17 @@ export function UserEditComponent(props) {
   ];
 
   useEffect(() => {
-    if (props.location && props.location.state && props.location.state.newUser) {
+    if (location && location.state && location.state.newUser) {
       setState({
         ...state,
         user: {
-          ...props.location.state.newUser,
+          ...location.state.newUser,
           personalToken: faker.random.alphaNumeric(32),
         },
         create: true,
       });
     } else {
-      Services.findUserById(props.match.params.userId).then((user) => setState({ ...state, user }));
+      Services.findUserById(params.userId).then((user) => setState({ ...state, user }));
     }
   }, []);
 
@@ -231,7 +234,7 @@ export function UserEditComponent(props) {
               state.user.name
             )
           );
-          props.history.push('/settings/users');
+          navigate('/settings/users');
         });
       }
     });
@@ -250,7 +253,7 @@ export function UserEditComponent(props) {
               state.user.name
             )
           );
-          props.history.push('/settings/users');
+          navigate('/settings/users');
         });
       } else {
         Services.updateUserById(state.user).then((user) => {
@@ -263,7 +266,7 @@ export function UserEditComponent(props) {
               state.user.name
             )
           );
-          props.history.push('/settings/users');
+          navigate('/settings/users');
         });
       }
     } else {

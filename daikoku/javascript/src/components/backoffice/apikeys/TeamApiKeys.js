@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
@@ -18,8 +18,8 @@ export function TeamApiKeysComponent(props) {
   useEffect(() => {
     setShowApiKey(
       props.connectedUser.isDaikokuAdmin ||
-        !props.currentTeam.showApiKeyOnlyToAdmins ||
-        isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
+      !props.currentTeam.showApiKeyOnlyToAdmins ||
+      isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
     );
   }, [props.connectedUser.isDaikokuAdmin, props.currentTeam.showApiKeyOnlyToAdmins]);
 
@@ -78,10 +78,12 @@ export function TeamApiKeysComponent(props) {
       });
   };
 
+  const params = useParams()
+
   return (
     <TeamBackOffice
       tab="ApiKeys"
-      apiId={props.match.params.apiId}
+      apiId={params.apiId}
       title={`${props.currentTeam.name} - ${translateMethod('API key')}`}>
       <Can I={manage} a={apikey} team={props.currentTeam} dispatchError={true}>
         <div className="row">

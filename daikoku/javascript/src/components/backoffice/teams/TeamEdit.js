@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { I18nContext, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
@@ -105,19 +105,20 @@ export function TeamEditForm(props) {
   );
 }
 
-const TeamEditComponent = ({ history, currentTeam }) => {
+const TeamEditComponent = ({ currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
+  const navigate = useNavigate()
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const members = () => {
-    history.push(`/${team._humanReadableId}/settings/members`);
+    navigate(`/${team._humanReadableId}/settings/members`);
   };
 
   const save = () => {
     Services.updateTeam(team).then((updatedTeam) => {
       if (team._humanReadableId !== updatedTeam._humanReadableId) {
-        history.push(`/${updatedTeam._humanReadableId}/settings/edition`);
+        navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
       }
       toastr.success(
         translateMethod(

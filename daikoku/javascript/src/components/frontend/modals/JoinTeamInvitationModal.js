@@ -1,13 +1,14 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { withRouter } from 'react-router-dom';
-import * as Services from '../../../services';
+import { useNavigate } from 'react-router-dom';
 import { toastr } from 'react-redux-toastr';
+import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 
-export const JoinTeamInvitationModal = withRouter((props) => {
+export const JoinTeamInvitationModal = (props) => {
   const [error, setError] = useState(undefined);
   const [team, setTeam] = useState('');
   const [notificationId, setNotificationId] = useState('');
+  const navigate = useNavigate()
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -43,7 +44,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
 
   function goToHome() {
     props.closeModal();
-    props.history.push('/apis');
+    navigate('/apis');
   }
 
   return (
@@ -67,7 +68,7 @@ export const JoinTeamInvitationModal = withRouter((props) => {
             type="button"
             onClick={() => {
               props.closeModal();
-              props.history.push('/apis');
+              navigate('/apis');
             }}>
             {translateMethod('Home')}
           </button>
@@ -84,4 +85,4 @@ export const JoinTeamInvitationModal = withRouter((props) => {
       </div>
     </div>
   );
-});
+};

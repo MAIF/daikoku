@@ -15,6 +15,7 @@ import {
   Option,
 } from '../../utils';
 import { I18nContext } from '../../../core';
+import { useParams } from 'react-router-dom';
 
 const TenantAdminListComponent = (props) => {
   const [search, setSearch] = useState('');
@@ -27,9 +28,10 @@ const TenantAdminListComponent = (props) => {
   const [selectedAdmin, setSelectedAdmin] = useState(undefined);
 
   const { translateMethod, Translation } = useContext(I18nContext);
+  const params = useParams();
 
   useEffect(() => {
-    const tenantId = props.match.params.tenantId || props.tenant._id;
+    const tenantId = params.tenantId || props.tenant._id;
     Promise.all([
       Services.tenantAdmins(tenantId),
       Services.addableAdminsForTenant(tenantId),
@@ -42,7 +44,7 @@ const TenantAdminListComponent = (props) => {
       setAdmins(admins);
       setLoading(false);
     });
-  }, [props.match.params.tenantId]);
+  }, [params.tenantId]);
 
   useEffect(() => {
     const filteredAdmins = Option(search)

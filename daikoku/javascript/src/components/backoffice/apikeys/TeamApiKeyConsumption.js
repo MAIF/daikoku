@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Progress } from 'antd';
 import moment from 'moment';
 import { connect } from 'react-redux';
+import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { OtoroshiStatsVizualization, TeamBackOffice } from '../..';
@@ -10,6 +11,7 @@ import { I18nContext } from '../../../core';
 
 function TeamApiKeyConsumptionComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const params = useParams();
 
   const mappers = [
     {
@@ -61,7 +63,7 @@ function TeamApiKeyConsumptionComponent(props) {
 
   const getInformations = () => {
     return Services.getSubscriptionInformations(
-      props.match.params.subscription,
+      params.subscription,
       props.currentTeam._id
     );
   };
@@ -81,13 +83,13 @@ function TeamApiKeyConsumptionComponent(props) {
               <OtoroshiStatsVizualization
                 sync={() =>
                   Services.syncSubscriptionConsumption(
-                    props.match.params.subscription,
+                    params.subscription,
                     props.currentTeam._id
                   )
                 }
                 fetchData={(from, to) =>
                   Services.subscriptionConsumption(
-                    props.match.params.subscription,
+                    params.subscription,
                     props.currentTeam._id,
                     from.valueOf(),
                     to.valueOf()

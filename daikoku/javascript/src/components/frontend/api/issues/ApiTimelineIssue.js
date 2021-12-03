@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import { useEffect, useState } from 'react';
 import { converter } from '../../../../services/showdown';
@@ -38,7 +38,7 @@ const styles = {
   },
 };
 
-export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, history }) {
+export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }) {
   const [issue, setIssue] = useState({ comments: [] });
   const [editionMode, handleEdition] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -46,13 +46,15 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
 
   const [tags, setTags] = useState([]);
 
+  const navigate = useNavigate();
+
   const id = issueId || useParams().issueId;
 
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
     Services.getAPIIssue(api._humanReadableId, id).then((res) => {
-      if (res.error) history.push(`${basePath}/issues`);
+      if (res.error) navigate(`${basePath}/issues`);
       else {
         const entryTags = res.tags.map((tag) => ({ value: tag.id, label: tag.name }));
         setIssue({ ...res, tags: entryTags });
@@ -111,7 +113,7 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath, 
           tags: issue.tags.map((tag) => tag.value),
         }).then((res) => {
           if (res.error) toastr.error(translateMethod('issues.on_error'));
-          else history.push(`${basePath}/issues`);
+          else navigate(`${basePath}/issues`);
         });
     });
   }

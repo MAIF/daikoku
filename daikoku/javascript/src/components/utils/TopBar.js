@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import _ from 'lodash';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
 import Select, { components } from 'react-select';
@@ -61,6 +61,8 @@ const TopBarComponent = (props) => {
   const [teams, setTeams] = useState([]);
   const [daikokuVersion, setVersion] = useState(null);
 
+  const navigate = useNavigate();
+
   const { translateMethod, setLanguage, language, isTranslationMode, languages } =
     useContext(I18nContext);
 
@@ -80,16 +82,16 @@ const TopBarComponent = (props) => {
     const team = teams.find((t) => t._id === item.team);
     switch (item.type) {
       case 'link':
-        props.history.push(item.url);
+        navigate(item.url);
         break;
       case 'tenant':
-        props.history.push(`/settings/tenants/${item.value}`);
+        navigate(`/settings/tenants/${item.value}`);
         break;
       case 'team':
-        props.history.push(`/${item.value}`);
+        navigate(`/${item.value}`);
         break;
       case 'api':
-        props.history.push(`/${team ? team._humanReadableId : item.team}/${item.value}`);
+        navigate(`/${team ? team._humanReadableId : item.team}/${item.value}`);
         break;
     }
   };
@@ -163,7 +165,7 @@ const TopBarComponent = (props) => {
   const isDefaultLogo = props.tenant.logo === '/assets/images/daikoku.svg';
   return (
     <header className={impersonator ? 'impersonator-topbar-mb' : ''}>
-      {}
+      { }
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
@@ -267,11 +269,9 @@ const TopBarComponent = (props) => {
                     data-toggle="dropdown"
                     title={
                       impersonator
-                        ? `${props.connectedUser.name} (${
-                            props.connectedUser.email
-                          }) ${translateMethod('Impersonated by')} ${impersonator.name} (${
-                            impersonator.email
-                          })`
+                        ? `${props.connectedUser.name} (${props.connectedUser.email
+                        }) ${translateMethod('Impersonated by')} ${impersonator.name} (${impersonator.email
+                        })`
                         : props.connectedUser.name
                     }
                     alt="user menu"

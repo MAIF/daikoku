@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { TeamBackOffice, UserBackOffice } from '..';
@@ -95,7 +96,7 @@ const handleAssetType = (tenantMode, type) => {
         type === 'text/css' ||
         type === 'text/javascript' ||
         type === 'application/x-javascript',
-      type === 'font/openntype')
+        type === 'font/openntype')
     ) {
       return reject(translateMethod('content type is not allowed'));
     } else {
@@ -215,7 +216,7 @@ const AddAsset = (props) => {
   );
 };
 
-const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysywygModal }) => {
+const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal }) => {
   const [assets, setAssets] = useState([]);
   const [newAsset, setNewAsset] = useState({});
   const [loading, setLoading] = useState(true);
@@ -524,11 +525,13 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
       }
     });
 
+  const params = useParams()
+
   const BackOffice = tenantMode ? UserBackOffice : TeamBackOffice;
   return (
     <BackOffice
       tab="Assets"
-      apiId={match.params.apiId}
+      apiId={params.apiId}
       title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}>
       <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
         {loading && <Spinner />}

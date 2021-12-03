@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
@@ -43,7 +43,7 @@ function TeamApiComponent(props) {
 
   const { translateMethod, Translation } = useContext(I18nContext);
   const location = useLocation();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (location && location.state && location.state.newApi) {
@@ -96,7 +96,7 @@ function TeamApiComponent(props) {
         })
         .then((api) => {
           setState({ ...state, create: false, api });
-          props.history.push(
+          navigate(
             `/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
           );
         })
@@ -123,7 +123,7 @@ function TeamApiComponent(props) {
                   res._humanReadableId !== params.apiId ||
                   res.currentVersion !== params.versionId
                 )
-                  history.push(
+                  navigate(
                     `/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`
                   );
               }
@@ -137,7 +137,7 @@ function TeamApiComponent(props) {
     window.confirm(translateMethod('delete.api.confirm')).then((ok) => {
       if (ok) {
         Services.deleteTeamApi(props.currentTeam._id, state.api._id)
-          .then(() => props.history.push(`/${props.currentTeam._humanReadableId}/settings/apis`))
+          .then(() => navigate(`/${props.currentTeam._humanReadableId}/settings/apis`))
           .then(() => toastr.success(translateMethod('deletion successful')));
       }
     });
@@ -245,9 +245,8 @@ function TeamApiComponent(props) {
       if (res.error) toastr.error(res.error);
       else {
         toastr.success('New version of api created');
-        history.push(
-          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${
-            params.tab ? params.tab : 'infos'
+        navigate(
+          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab ? params.tab : 'infos'
           }`
         );
       }
@@ -347,7 +346,7 @@ function TeamApiComponent(props) {
                       value={editedApi}
                       onChange={(api) => setState({ ...state, api })}
                       save={save}
-                      versionId={props.match.params.versionId}
+                      versionId={params.versionId}
                       params={params}
                       reloadState={reloadState}
                       ref={teamApiDocumentationRef}
@@ -380,7 +379,7 @@ function TeamApiComponent(props) {
                 </div>
               </div>
             </div>
-            {!props.location.pathname.includes('/news') && (
+            {!location.pathname.includes('/news') && (
               <div className="row form-back-fixedBtns">
                 {!state.create && (
                   <button type="button" className="btn btn-outline-danger ml-1" onClick={deleteApi}>

@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
-
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import * as Services from '../../../services';
 
 import { UserBackOffice } from '../../backoffice';
@@ -14,6 +13,9 @@ const LazyForm = React.lazy(() => import('../../inputs/Form'));
 function TeamEditForAdministrationComponent(props) {
   const [team, setTeam] = useState(null);
   const [create, setCreate] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -83,7 +85,7 @@ function TeamEditForAdministrationComponent(props) {
   };
 
   const save = () => {
-    if (props.location && props.location.state && props.location.state.newTeam) {
+    if (location && location.state && location.state.newTeam) {
       Services.createTeam(team).then((team) => {
         if (team.error) toastr.error(translateMethod('team_api_post.failed'));
         else {
@@ -95,7 +97,7 @@ function TeamEditForAdministrationComponent(props) {
               team.name
             )
           );
-          props.history.push(`/settings/teams/${team._humanReadableId}/members`);
+          navigate(`/settings/teams/${team._humanReadableId}/members`);
         }
       });
     } else {
@@ -107,14 +109,14 @@ function TeamEditForAdministrationComponent(props) {
   };
 
   const members = () => {
-    props.history.push(`/settings/teams/${team._humanReadableId}/members`);
+    navigate(`/settings/teams/${team._humanReadableId}/members`);
   };
 
   useEffect(() => {
-    if (props.location && props.location.state && props.location.state.newTeam) {
-      setTeam(props.location.state.newTeam);
+    if (location && location.state && location.state.newTeam) {
+      setTeam(location.state.newTeam);
       setCreate(true);
-    } else Services.teamFull(props.match.params.teamSettingId).then(setTeam);
+    } else Services.teamFull(params.teamSettingId).then(setTeam);
   }, []);
 
   if (!team) {

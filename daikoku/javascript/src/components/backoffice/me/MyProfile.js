@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import md5 from 'js-md5';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { useNavigate } from 'react-router-dom';
 
 import { UserBackOffice } from '../../backoffice';
 import { Spinner, validatePassword, ValidateEmail } from '../../utils';
@@ -385,6 +386,8 @@ function MyProfileComponent(props) {
   const { translateMethod, setLanguage, language, Translation, languages } =
     useContext(I18nContext);
 
+  const navigate = useNavigate();
+
   const formSchema = {
     _id: { type: 'string', disabled: true, props: { label: 'Id', placeholder: '---' } },
     tenants: {
@@ -529,7 +532,7 @@ function MyProfileComponent(props) {
       .then((ok) => {
         if (ok) {
           Services.deleteSelfUserById().then(() => {
-            props.history.push('/logout');
+            navigate('/logout');
           });
         }
       });
@@ -580,7 +583,7 @@ function MyProfileComponent(props) {
         </div>
       </div>
       <div className="row" style={{ justifyContent: 'flex-end' }}>
-        <a className="btn btn-outline-primary" href="#" onClick={() => props.history.goBack()}>
+        <a className="btn btn-outline-primary" href="#" onClick={() => navigate(-1)}>
           <i className="fas fa-chevron-left mr-1" />
           <Translation i18nkey="Back">Back</Translation>
         </a>

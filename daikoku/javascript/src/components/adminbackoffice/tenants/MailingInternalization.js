@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { UserBackOffice } from '../../backoffice';
 import * as Services from '../../../services';
 import { toastr } from 'react-redux-toastr';
-import { Link, Route, Switch, useParams } from 'react-router-dom';
+import { Link, Route, Routes, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import { I18nContext } from '../../../core';
 import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
@@ -363,52 +363,50 @@ function MailingInternalizationComponent({ team, tenant }) {
           </li>
         </ul>
 
-        <Switch>
+        <Routes>
           <Route
             path={`${basePath}/mail`}
-            render={() => (
-              <div className="col-12 pb-3">
-                <div className="d-flex justify-space-between py-3">
-                  <span style={{ flex: 1 }} className="lead">
-                    {translateMethod('mailing_internalization.message_text')}
-                  </span>
-                  <span style={{ flex: 1 }} className="lead text-center">
-                    {translateMethod('mailing_internalization.required_variables')}
-                  </span>
-                </div>
-                {translations.map(([key, values, defaultTranslation, edited]) => (
-                  <Collapse
-                    label={translateMethod(key)}
-                    edited={edited === undefined ? false : edited}
-                    translationKey={key}
-                    toggleTranslation={toggleTranslation}
-                    defaultTranslation={defaultTranslation}
-                    key={`${key}-collapse`}>
-                    {values.map((v, i) => (
-                      <MarkdownComponent
-                        {...v}
-                        key={`${key}-${v.language}-${i}`}
-                        team={team}
-                        translationKey={key}
-                        saveTranslation={saveTranslation}
-                        resetTranslation={resetTranslation}
-                        handleInputChange={handleInputChange}
-                      />
-                    ))}
-                  </Collapse>
-                ))}
+            element={<div className="col-12 pb-3">
+              <div className="d-flex justify-space-between py-3">
+                <span style={{ flex: 1 }} className="lead">
+                  {translateMethod('mailing_internalization.message_text')}
+                </span>
+                <span style={{ flex: 1 }} className="lead text-center">
+                  {translateMethod('mailing_internalization.required_variables')}
+                </span>
               </div>
-            )}
+              {translations.map(([key, values, defaultTranslation, edited]) => (
+                <Collapse
+                  label={translateMethod(key)}
+                  edited={edited === undefined ? false : edited}
+                  translationKey={key}
+                  toggleTranslation={toggleTranslation}
+                  defaultTranslation={defaultTranslation}
+                  key={`${key}-collapse`}>
+                  {values.map((v, i) => (
+                    <MarkdownComponent
+                      {...v}
+                      key={`${key}-${v.language}-${i}`}
+                      team={team}
+                      translationKey={key}
+                      saveTranslation={saveTranslation}
+                      resetTranslation={resetTranslation}
+                      handleInputChange={handleInputChange}
+                    />
+                  ))}
+                </Collapse>
+              ))}
+            </div>}
           />
           <Route
             path={`${basePath}/mail-template`}
-            render={() => <EditMailtemplate tenantId={tenant._id} team={team} />}
+            element={<EditMailtemplate tenantId={tenant._id} team={team} />}
           />
           <Route
             path={`${basePath}/front`}
-            render={() => <EditFrontOfficeTranslations tenantId={tenant._id} team={team} />}
+            element={<EditFrontOfficeTranslations tenantId={tenant._id} team={team} />}
           />
-        </Switch>
+        </Routes>
       </Can>
     </UserBackOffice>
   );

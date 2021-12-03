@@ -32,8 +32,8 @@ const TeamApiSubscriptionsComponent = (props) => {
     Promise.all([
       Services.teamApi(
         props.currentTeam._id,
-        props.match.params.apiId,
-        props.match.params.versionId
+        params.apiId,
+        params.versionId
       ),
       Services.teams(),
     ]).then(([api, teams]) => {
@@ -185,7 +185,7 @@ const TeamApiSubscriptionsComponent = (props) => {
   return (
     <TeamBackOffice
       tab="Apis"
-      apiId={props.match.params.apiId}
+      apiId={params.apiId}
       isLoading={loading}
       title={`${props.currentTeam.name} - ${translateMethod('Subscriptions')}`}>
       <Can I={manage} a={API} dispatchError={true} team={props.currentTeam}>
@@ -207,7 +207,7 @@ const TeamApiSubscriptionsComponent = (props) => {
                 columns={columns}
                 fetchItems={() =>
                   Services.apiSubscriptions(
-                    props.match.params.apiId,
+                    params.apiId,
                     props.currentTeam._id,
                     params.versionId
                   )

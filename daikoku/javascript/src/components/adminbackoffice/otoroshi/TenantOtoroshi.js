@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
@@ -12,7 +12,9 @@ const LazyForm = React.lazy(() => import('../../inputs/Form'));
 
 function TenantOtoroshiComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
-
+  const navigate = useNavigate();
+  const location = useLocation()
+  const params = useParams();
   const [state, setState] = useState({
     otoroshi: null,
     create: false,
@@ -51,10 +53,10 @@ function TenantOtoroshiComponent(props) {
   const formFlow = ['_id', 'url', 'host', 'clientId', 'clientSecret'];
 
   useEffect(() => {
-    if (props.location && props.location.state && props.location.state.newSettings) {
-      setState({ ...state, otoroshi: props.location.state.newSettings, create: true });
+    if (location && location.state && location.state.newSettings) {
+      setState({ ...state, otoroshi: location.state.newSettings, create: true });
     } else {
-      Services.oneOtoroshi(props.tenant._id, props.match.params.otoroshiId).then((otoroshi) =>
+      Services.oneOtoroshi(props.tenant._id, params.otoroshiId).then((otoroshi) =>
         setState({ ...state, otoroshi })
       );
     }
@@ -87,7 +89,7 @@ function TenantOtoroshiComponent(props) {
       if (ok) {
         Services.deleteOtoroshiSettings(props.tenant._id, state.otoroshi._id).then(() => {
           toastr.success(translateMethod('otoroshi.settings.deleted.success'));
-          props.history.push('/settings/otoroshis');
+          navigate('/settings/otoroshis');
         });
       }
     });

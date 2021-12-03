@@ -34,9 +34,9 @@ function TeamApiKeysForApiComponent(props) {
 
   useEffect(() => {
     Promise.all([
-      Services.getTeamVisibleApi(props.currentTeam._id, props.match.params.apiId, params.versionId),
+      Services.getTeamVisibleApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.getTeamSubscriptions(
-        props.match.params.apiId,
+        params.apiId,
         props.currentTeam._id,
         params.versionId
       ),
@@ -55,7 +55,7 @@ function TeamApiKeysForApiComponent(props) {
     return Services.archiveApiKey(props.currentTeam._id, subscription._id, !subscription.enabled)
       .then(() =>
         Services.getTeamSubscriptions(
-          props.match.params.apiId,
+          params.apiId,
           props.currentTeam._id,
           params.versionId
         )
@@ -68,7 +68,7 @@ function TeamApiKeysForApiComponent(props) {
       if (ok)
         Services.makeUniqueApiKey(props.currentTeam._id, subscription._id).then(() =>
           Services.getTeamSubscriptions(
-            props.match.params.apiId,
+            params.apiId,
             props.currentTeam._id,
             params.versionId
           )
@@ -97,7 +97,7 @@ function TeamApiKeysForApiComponent(props) {
     )
       .then(() =>
         Services.getTeamSubscriptions(
-          props.match.params.apiId,
+          params.apiId,
           props.currentTeam._id,
           params.versionId
         )
@@ -119,7 +119,7 @@ function TeamApiKeysForApiComponent(props) {
           Services.regenerateApiKeySecret(props.currentTeam._id, subscription._id)
             .then(() =>
               Services.getTeamSubscriptions(
-                props.match.params.apiId,
+                params.apiId,
                 props.currentTeam._id,
                 params.versionId
               )
@@ -177,7 +177,7 @@ function TeamApiKeysForApiComponent(props) {
     <TeamBackOffice
       title={`${props.currentTeam.name} - ApiKeys`}
       tab="ApiKeys"
-      apiId={props.match.params.apiId}
+      apiId={params.apiId}
       isLoading={!apiTeam}>
       <Can I={read} a={apikey} team={props.currentTeam} dispatchError>
         {api && apiTeam ? (
@@ -215,7 +215,7 @@ function TeamApiKeysForApiComponent(props) {
                     <ApiKeyCard
                       currentTeam={props.currentTeam}
                       openInfoNotif={(message) => toastr.info(message)}
-                      statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${props.match.params.apiId}/${props.match.params.versionId}/subscription/${subscription._id}/consumptions`}
+                      statsLink={`/${props.currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
                       key={subscription._id}
                       subscription={subscription}
                       showApiKey={showApiKey}
