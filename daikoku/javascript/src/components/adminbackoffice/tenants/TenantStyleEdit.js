@@ -163,7 +163,7 @@ class Preview extends React.Component {
   _updateIframe() {
     const iframe = this.iframe;
     const document = iframe.contentDocument;
-    const head = document.getElementsByTagName('head')[0];
+    const head = Option(document.getElementsByTagName('head')).map(h => h[0]).getOrNull();
 
     window.parent.document.querySelectorAll('link[rel=stylesheet]').forEach((link) => {
       var newLink = document.createElement('link');
