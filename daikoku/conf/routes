@@ -4,7 +4,7 @@ GET     /assets/*file                                   controllers.Assets.versi
 ### NoDocs ###
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
-GET     /robot.txt                                      fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+GET     /robots.txt                                      fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
 GET     /signup                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
