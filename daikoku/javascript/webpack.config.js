@@ -2,17 +2,15 @@ const path = require('path');
 const TerserJSPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
-const SpeedMeasurePlugin = require('speed-measure-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
-
-const smp = new SpeedMeasurePlugin();
+// const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 
 module.exports = (env, argv) => {
   const isProd = argv.mode === 'production';
   const config = {
+    mode: isProd ? 'production' : 'development',
     devServer: {
-      // firewall: false,
-      liveReload: true,
+      hot: true,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
@@ -171,26 +169,11 @@ module.exports = (env, argv) => {
   } else {
     return {
       ...config,
-      devtool: 'eval'
+      plugins: [
+        ...config.plugins,
+        // new ReactRefreshWebpackPlugin()
+      ],
+      devtool: 'eval-source-map'
     };
   }
 };
-
-/*
-
-minimizer: [
-  new TerserJSPlugin({
-    parallel: true,
-    cache: true
-  }),
-  new OptimizeCSSAssetsPlugin({})
-],
-
-minimizer: [
-  new UglifyJsPlugin({
-    cache: true,
-    parallel: true,
-  }),
-  new OptimizeCSSAssetsPlugin({})
-],
-*/

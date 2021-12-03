@@ -46,16 +46,17 @@ export function ImportExportComponent(props) {
         onSuccessMessage: '',
       },
     });
-    Services.migrateMongoToPostgres().then(async (res) => {
-      setState({
-        ...state,
-        migration: {
-          processing: false,
-          error: res.error || '',
-          onSuccessMessage: res.error ? '' : res.message,
-        },
+    Services.migrateMongoToPostgres()
+      .then((res) => {
+        setState({
+          ...state,
+          migration: {
+            processing: false,
+            error: res.error || '',
+            onSuccessMessage: res.error ? '' : res.message,
+          },
+        });
       });
-    });
   };
 
   const { processing, error, onSuccessMessage } = state.migration;
