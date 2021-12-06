@@ -158,11 +158,13 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
         `Current version : ${versionId}`
       )
       .then(newVersion => {
-        if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-          toastr.error('Can\'t create version with special characters : ' + reservedCharacters.join(' | '));
-        else
-          createNewVersion(newVersion);
-      });
+        if (newVersion) {
+          if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
+            toastr.error('Can\'t create version with special characters : ' + reservedCharacters.join(' | '));
+          else
+            createNewVersion(newVersion);
+        }
+      })
   };
 
   const createNewVersion = newVersion => {
@@ -177,7 +179,7 @@ const CreateNewVersionButton = ({ apiId, versionId, teamId, currentTeam, tab }) 
   };
 
   return (
-    <button onClick={promptVersion} className="btn btn-outline-primary">
+    <button onClick={promptVersion} className="btn btn-sm btn-outline-primary">
       {translateMethod('teamapi.new_version')}
     </button>
   );
@@ -192,21 +194,18 @@ const VersionsButton = ({ apiId, currentTeam, versionId, tab, teamId }) => {
       .then(res => setVersions(res.map((v) => ({ label: v, value: v }))));
   }, []);
 
-  if (versions.length)
-    return (
-      <Select
-        name="versions-selector"
-        value={{ label: versionId, value: versionId }}
-        options={versions}
-        onChange={e => navigate(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
-        classNamePrefix="reactSelect"
-        className="m-2"
-        menuPlacement="auto"
-        menuPosition="fixed"
-      />
-    );
-
-  return null;
+  return (
+    <Select
+      name="versions-selector"
+      value={{ label: versionId, value: versionId }}
+      options={versions}
+      onChange={e => navigate(`/${teamId}/settings/apis/${apiId}/${e.value}/${tab}`)}
+      classNamePrefix="reactSelect"
+      className="m-2"
+      menuPlacement="auto"
+      menuPosition="fixed"
+    />
+  );
 };
 
 const TeamBackOfficeComponent = ({
@@ -246,7 +245,9 @@ const TeamBackOfficeComponent = ({
         { route: 'testing', icon: 'vial', name: 'Testing' },
         { route: 'documentation', icon: 'book', name: 'Documentation' },
         { route: 'news', icon: 'newspaper', name: 'News' },
-      ].map((item, i) => <NavItem {...item} to={`${to}/${item.route}`} key={`item-${i}`} />)}
+      ].map((item, i) => (
+        <NavItem {...item} to={`${to}/${item.route}`} key={`item-${i}`} />
+      ))}
 
       <div className="px-3 mb-4 mt-auto d-flex flex-column">
         <Link
@@ -259,7 +260,7 @@ const TeamBackOfficeComponent = ({
           border: 0,
           background: 'transparent',
           outline: 'none'
-        }} to={`/${currentTeam._humanReadableId}/settings`}>
+        }} to={`/${currentTeam._humanReadableId}/settings/apis`}>
           <i className="fas fa-chevron-left" />
           Back to {currentTeam._humanReadableId}
         </Link>
@@ -408,7 +409,11 @@ const TeamBackOfficeComponent = ({
                     .then((newApi) => {
                       navigate(
                         `/${currentTeam._humanReadableId}/settings/apis/${newApi._id}/infos`,
-                        { newApi: { ...newApi, team: currentTeam._id } }
+                        {
+                          state: {
+                            newApi: { ...newApi, team: currentTeam._id }
+                          }
+                        }
                       );
                     });
                 }}

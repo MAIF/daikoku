@@ -142,7 +142,7 @@ const TeamEditComponent = ({ currentTeam }) => {
           <i className="fas fa-chevron-left mr-1" />
           <Translation i18nkey="Back">Back</Translation>
         </Link>
-        <button
+        {team && team.type !== "Personal" && <button
           style={{ marginLeft: 5 }}
           type="button"
           className="btn btn-outline-primary"
@@ -151,7 +151,7 @@ const TeamEditComponent = ({ currentTeam }) => {
             <i className="fas fa-users mr-1" />
             <Translation i18nkey="Members">Members</Translation>
           </span>
-        </button>
+        </button>}
         <button
           style={{ marginLeft: 5 }}
           type="button"

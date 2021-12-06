@@ -51,7 +51,10 @@ function TeamHomeComponent(props) {
             apis: visibleApis.map(({ api, authorizations }) => ({ ...api, authorizations })),
             team,
             teams,
-            myTeams,
+            myTeams: myTeams.map(({ users, ...data }) => ({
+              ...data,
+              users: users.map(({ teamPermission, user }) => ({ ...user, teamPermission })),
+            })),
           });
         }
       }
@@ -160,14 +163,13 @@ function TeamHomeComponent(props) {
       <ApiList
         apis={state.apis}
         teams={state.teams}
+        myTeams={state.myTeams}
         teamVisible={false}
         askForApiAccess={askForApiAccess}
         toggleStar={toggleStar}
         redirectToApiPage={redirectToApiPage}
         redirectToEditPage={redirectToEditPage}
         redirectToTeamPage={redirectToTeamPage}
-        history={props.history}
-        myTeams={state.myTeams}
         showTeam={false}
         team={state.teams.find((team) => team._humanReadableId === params.teamId)}
       />

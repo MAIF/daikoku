@@ -1142,7 +1142,7 @@ object SchemaDefinition {
         val teamRepo = env.dataStore.teamRepo.forTenant(ctx.ctx._2.tenant)
         (teamId match {
           case None => teamRepo.findAllNotDeleted()
-          case Some(id) => teamRepo.find(Json.obj("id" -> id))
+          case Some(id) => teamRepo.find(Json.obj("_humanReadableId" -> id))
         })
           .map(teams => if (ctx.ctx._2.user.isDaikokuAdmin) teams else teams.filter(team => team.users.exists(u => u.userId == ctx.ctx._2.user.id)))
           .flatMap(teams => {

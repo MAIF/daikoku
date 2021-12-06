@@ -154,10 +154,9 @@ function MyHomeComponent(props) {
         </div>
       </section>
       <ApiList
-        history={props.history}
-        myTeams={state.myTeams}
         apis={state.apis}
         teams={state.teams}
+        myTeams={state.myTeams}
         teamVisible={true}
         askForApiAccess={askForApiAccess}
         toggleStar={toggleStar}

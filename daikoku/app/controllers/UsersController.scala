@@ -418,7 +418,8 @@ class UsersController(DaikokuAction: DaikokuAction,
           env.dataStore.userRepo
             .findOneNotDeleted(
               Json.obj(
-                "invitation.token" -> token
+                "invitation.token" -> token,
+                "email" -> ctx.user.email
               ))
             .map {
               case Some(user)
