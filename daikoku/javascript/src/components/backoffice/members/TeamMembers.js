@@ -89,7 +89,7 @@ export function TeamMembersSimpleComponent(props) {
         translateMethod(
           'remove.member.alert',
           false,
-          'You can\'t delete this user, it must remain an admin in a team.'
+          "You can't delete this user, it must remain an admin in a team."
         )
       );
     } else {
@@ -167,7 +167,7 @@ export function TeamMembersSimpleComponent(props) {
           translateMethod(
             'remove.admin.alert',
             false,
-            'You can\'t remove this admin status, it must remain an admin in a team.'
+            "You can't remove this admin status, it must remain an admin in a team."
           )
         );
       } else {
@@ -195,7 +195,7 @@ export function TeamMembersSimpleComponent(props) {
         translateMethod(
           'not.admin.alert',
           false,
-          'Your are not an administrator. You can\'t do that.'
+          "Your are not an administrator. You can't do that."
         )
       );
     }

@@ -7,7 +7,11 @@ import akka.util.ByteString
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
+import fr.maif.otoroshi.daikoku.env.{
+  Env,
+  LocalAdminApiConfig,
+  OtoroshiAdminApiConfig
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
@@ -289,10 +293,11 @@ abstract class AdminApiController[Of, Id <: ValueType](
   }
 
   def patchEntity(id: String) = DaikokuApiAction.async(parse.json) { ctx =>
-
     object JsonImplicits {
-      implicit val jodaDateTimeWrites: Writes[DateTime] = play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites
-      implicit val jodaDateTimeReads: Reads[DateTime]   = play.api.libs.json.JodaReads.DefaultJodaDateTimeReads
+      implicit val jodaDateTimeWrites: Writes[DateTime] =
+        play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites
+      implicit val jodaDateTimeReads: Reads[DateTime] =
+        play.api.libs.json.JodaReads.DefaultJodaDateTimeReads
     }
 
     object JsonPatchHelpers {
@@ -300,13 +305,16 @@ abstract class AdminApiController[Of, Id <: ValueType](
       import play.api.libs.json._
 
       def patchJson(patchOps: JsValue, document: JsValue): JsValue = {
-        val patch = diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
+        val patch =
+          diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
         patch.apply(document).get
       }
     }
 
     val fu: Future[Option[Of]] =
-      if (ctx.request.queryString.get("notDeleted").exists(_.contains("true"))) {
+      if (ctx.request.queryString
+            .get("notDeleted")
+            .exists(_.contains("true"))) {
         entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
       } else {
         entityStore(ctx.tenant, env.dataStore).findById(id)
@@ -317,18 +325,16 @@ abstract class AdminApiController[Of, Id <: ValueType](
         case Left(e) =>
           logger.error(s"Bad $entityName format", new RuntimeException(e))
           Errors.craftResponseResult(s"Bad $entityName format",
-            Results.BadRequest,
-            ctx.request,
-            None,
-            env)
+                                     Results.BadRequest,
+                                     ctx.request,
+                                     None,
+                                     env)
         case Right(newNewEntity) =>
           entityStore(ctx.tenant, env.dataStore)
             .save(newNewEntity)
             .map(_ => Ok(toJson(newNewEntity)))
       }
     }
-
-
 
     val value: Future[Result] = fu.flatMap {
       case None =>
@@ -342,13 +348,17 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
         ctx.request.body match {
           case JsArray(_) =>
-            val newJson     = JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
+            val newJson =
+              JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
             finalizePatch(newJson)
           case JsObject(_) =>
-            val newJson = currentJson.as[JsObject].deepMerge(ctx.request.body.as[JsObject])
+            val newJson =
+              currentJson.as[JsObject].deepMerge(ctx.request.body.as[JsObject])
             finalizePatch(newJson)
           case _ =>
-            FastFuture.successful(BadRequest(Json.obj("error" -> "[patch error] wrong patch format")))
+            FastFuture.successful(
+              BadRequest(
+                Json.obj("error" -> "[patch error] wrong patch format")))
         }
 
     }
@@ -540,7 +550,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
            |        "schema": {
            |          "oneOf": [
            |           {"$$ref": "#/components/schemas/patch"},
-           |           {"$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"}
+           |           {"$$ref": "#/components/schemas/${computeRef(
+                                 entityClass.getName)}"}
            |          ]
            |        }
            |      }
@@ -677,7 +688,8 @@ abstract class AdminApiController[Of, Id <: ValueType](
           |        "schema": {
           |          "type": "array",
           |          "items": {
-          |           "$$ref": "#/components/schemas/${computeRef(entityClass.getName)}"
+          |           "$$ref": "#/components/schemas/${computeRef(
+                               entityClass.getName)}"
           |          }
           |        }
           |      }
@@ -863,8 +875,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       ),
       //todo: replace with real schema
       s"integration-api/{teamId}" -> Json.obj(
-        "get" -> Json.parse(
-          s"""{
+        "get" -> Json.parse(s"""{
              |  "summary": "get all teams for integration",
              |  "operationId": "integration-api.findallateams",
              |  "responses": {
@@ -909,8 +920,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       ),
       //todo: replace with real schema
       s"integration-api/{teamId}/{apiId}/complete" -> Json.obj(
-        "get" -> Json.parse(
-          s"""{
+        "get" -> Json.parse(s"""{
              |"summary": "get complete API for integration",
              |  "operationId": "integration-api.findcompleteapi",
              |  "responses": {
@@ -960,8 +970,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       ),
       //todo: replace with real schema
       s"integration-api/{teamId}/{apiId}/description" -> Json.obj(
-        "get" -> Json.parse(
-          s"""{
+        "get" -> Json.parse(s"""{
              |"summary": "get API description",
              |  "operationId": "integration-api.findapidescription",
              |  "responses": {
@@ -1011,8 +1020,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       ),
       //todo: replace with real schema
       s"integration-api/{teamId}/{apiId}/plans" -> Json.obj(
-        "get" -> Json.parse(
-          s"""{
+        "get" -> Json.parse(s"""{
              |"summary": "get API plans",
              |  "operationId": "integration-api.findapiplans",
              |  "responses": {
@@ -1062,8 +1070,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       ),
       //todo: update schema
       s"integration-api/{teamId}/{apiId}/documentation" -> Json.obj(
-        "get" -> Json.parse(
-          s"""{
+        "get" -> Json.parse(s"""{
              |"summary": "get API documentation",
              |  "operationId": "integration-api.findapidocumentation",
              |  "responses": {
@@ -1113,8 +1120,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       ),
       //todo: replace with real schema
       s"integration-api/{teamId}/{apiId}/apidoc" -> Json.obj(
-        "get" -> Json.parse(
-          s"""{
+        "get" -> Json.parse(s"""{
              |"summary": "get API description",
              |  "operationId": "integration-api.findapidoc",
              |  "responses": {
@@ -1164,8 +1170,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       ),
       //todo: replace with real schema
       s"integration-api/{teamId}/{apiId}" -> Json.obj(
-        "get" -> Json.parse(
-          s"""{
+        "get" -> Json.parse(s"""{
              |"summary": "get API",
              |  "operationId": "integration-api.findapi",
              |  "responses": {

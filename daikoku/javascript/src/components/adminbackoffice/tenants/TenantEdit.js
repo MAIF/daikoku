@@ -290,7 +290,7 @@ export function TenantEditComponent(props) {
     'style.homePageVisible',
     'style.unloggedHome',
     `>>> ${translateMethod('SEO')}`,
-    'robotTxt'
+    'robotTxt',
   ];
 
   const elasticConfigFormFlow = ['clusterUri', 'index', 'type', 'user', 'password'];
@@ -795,9 +795,9 @@ export function TenantEditComponent(props) {
       type: 'text',
       props: {
         label: translateMethod('Robot.txt.label'),
-        Help: translateMethod('Robot.txt.help')
-      }
-    }
+        Help: translateMethod('Robot.txt.help'),
+      },
+    },
   };
 
   useEffect(() => {

@@ -90,7 +90,9 @@ function TeamHomeComponent(props) {
       const apiOwner = state.teams.find((t) => t._id === api.team._id);
 
       const route = (version) =>
-        `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}`;
+        `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${
+          api._humanReadableId
+        }/${version}`;
 
       props.history.push(route(api.currentVersion));
     }

@@ -1,14 +1,12 @@
 import React, { useContext, useState, useEffect } from 'react';
 import Select, { components } from 'react-select';
 
-
 import { Help } from '../../inputs';
 import { Spinner } from '../../utils';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
-
 
 const OtoroshiServicesAndGroupSelector = (props) => {
   const [loading, setLoading] = useState(true);
@@ -21,14 +19,8 @@ const OtoroshiServicesAndGroupSelector = (props) => {
 
   useEffect(() => {
     Promise.all([
-      Services.getOtoroshiGroupsAsTeamAdmin(
-        props.teamId,
-        props._found.otoroshiSettings
-      ),
-      Services.getOtoroshiServicesAsTeamAdmin(
-        props.teamId,
-        props._found.otoroshiSettings
-      ),
+      Services.getOtoroshiGroupsAsTeamAdmin(props.teamId, props._found.otoroshiSettings),
+      Services.getOtoroshiServicesAsTeamAdmin(props.teamId, props._found.otoroshiSettings),
     ])
       .then(([groups, services]) => {
         if (!groups.error)
@@ -257,7 +249,9 @@ export const TestingApiKeyModal = (props) => {
           type="button"
           className="btn btn-outline-success"
           onClick={apiKeyAction}
-          disabled={!config.otoroshiSettings && !config.authorizedEntities ? 'disabled' : undefined}>
+          disabled={
+            !config.otoroshiSettings && !config.authorizedEntities ? 'disabled' : undefined
+          }>
           <Translation i18nkey={props.update ? 'Update' : 'Create'}>
             {props.update ? 'Update' : 'Create'}
           </Translation>

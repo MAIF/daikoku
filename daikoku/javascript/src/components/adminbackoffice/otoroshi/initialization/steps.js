@@ -498,14 +498,10 @@ export const ApiKeyStep = (props) => {
         },
       }) => {
         const apikey = original;
-        return (
-          <ApiKey apikey={apikey} key={apikey.clientId} {...props} />
-        );
-      }
-    }
+        return <ApiKey apikey={apikey} key={apikey.clientId} {...props} />;
+      },
+    },
   ];
-
-
 
   return (
     <div className="d-flex flex-column">
@@ -683,7 +679,7 @@ const ApiKey = (props) => {
   };
 
   return (
-    <div className='d-flex flex-row justify-content-between'>
+    <div className="d-flex flex-row justify-content-between">
       <div className="flex-grow-1 mr-2">
         <SelectApi apis={apis} setSelectedApi={setSelectedApi} selectedApi={selectedApi} />
       </div>
@@ -708,8 +704,9 @@ const ApiKey = (props) => {
         />
       </div>
       <button
-        className={`btn btn-outline-${props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
-          }`}
+        className={`btn btn-outline-${
+          props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
+        }`}
         disabled={!selectedTeam || error.name || !selectedPlan ? 'disabled' : null}
         onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
         {props.maybeCreatedSub(props.apikey).isDefined

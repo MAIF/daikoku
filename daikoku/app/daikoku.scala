@@ -233,7 +233,7 @@ package object modules {
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net localhost:3000 blob:; img-src * data: blob:; font-src 'self' https://*; connect-src *",
               "X-XSS-Protection" -> "1 ; mode=block",
               "X-Content-Type-Options" -> "nosniff",
-              "X-Frame-Options" -> "DENY"
+              "X-Frame-Options" -> "sameorigin"
             )
           }
         }

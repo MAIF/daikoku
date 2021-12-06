@@ -246,7 +246,8 @@ function TeamApiComponent(props) {
       else {
         toastr.success('New version of api created');
         history.push(
-          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${params.tab ? params.tab : 'infos'
+          `/${params.teamId}/settings/apis/${params.apiId}/${newVersion}/${
+            params.tab ? params.tab : 'infos'
           }`
         );
       }
@@ -273,16 +274,10 @@ function TeamApiComponent(props) {
           <>
             <div className="row">
               {state.create ? (
-                <h2>
-                  {editedApi.name}
-                </h2>
+                <h2>{editedApi.name}</h2>
               ) : (
-                <div
-                  className="d-flex align-items-center"
-                  style={{ flex: 1 }}>
-                  <h2 className='mr-2'>
-                    {editedApi.name}
-                  </h2>
+                <div className="d-flex align-items-center" style={{ flex: 1 }}>
+                  <h2 className="mr-2">{editedApi.name}</h2>
                 </div>
               )}
             </div>

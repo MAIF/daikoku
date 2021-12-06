@@ -341,7 +341,7 @@ export const fetchNewApi = () => customFetch('/api/entities/api');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
-export const fetchNewPlan = planType => customFetch(`/api/entities/plan?planType=${planType}`);
+export const fetchNewPlan = (planType) => customFetch(`/api/entities/plan?planType=${planType}`);
 
 export const checkIfApiNameIsUnique = (name, id) =>
   customFetch('/api/apis/_names', {
@@ -717,9 +717,9 @@ export const checkConnection = (config, user) =>
     method: 'POST',
     body: user
       ? JSON.stringify({
-        config,
-        user,
-      })
+          config,
+          user,
+        })
       : JSON.stringify(config),
   });
 

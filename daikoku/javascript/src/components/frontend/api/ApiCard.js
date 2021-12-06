@@ -40,15 +40,15 @@ export const ApiCard = (props) => {
           teams={props.myTeams.filter((t) => t.type !== 'Admin')}
           action={(teams) => props.askForApiAccess(teams)}
           withAllTeamSelector={true}>
-          {isPending ?
+          {isPending ? (
             <button className="btn btn-sm btn-access-negative mr-1">
               <Translation i18nkey="Pending request">Pending request</Translation>
             </button>
-            :
+          ) : (
             <button className="btn btn-sm btn-access-negative mr-1">
               <Translation i18nkey="Access">Access</Translation>
             </button>
-          }
+          )}
         </ActionWithTeamSelector>
       );
     }

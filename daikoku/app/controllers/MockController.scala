@@ -1433,25 +1433,26 @@ class MockController(DaikokuAction: DaikokuAction,
   }
 
   def fakeOtoroshiApiKey(clientId: String) = Action.async {
-    env.dataStore.apiSubscriptionRepo.forAllTenant()
+    env.dataStore.apiSubscriptionRepo
+      .forAllTenant()
       .findOne(Json.obj("apiKey.clientId" -> clientId))
       .map {
         case Some(subscription) =>
-        Ok(
-          ActualOtoroshiApiKey(
-            clientId = clientId,
-            clientSecret = subscription.apiKey.clientSecret,
-            clientName = "",
-            authorizedEntities = AuthorizedEntities(),
-            throttlingQuota = 10,
-            dailyQuota = 10000,
-            monthlyQuota = 300000,
-            constrainedServicesOnly = true,
-            tags = Seq(),
-            restrictions = ApiKeyRestrictions(),
-            metadata = Map(),
-            rotation = None
-          ).asJson)
+          Ok(
+            ActualOtoroshiApiKey(
+              clientId = clientId,
+              clientSecret = subscription.apiKey.clientSecret,
+              clientName = "",
+              authorizedEntities = AuthorizedEntities(),
+              throttlingQuota = 10,
+              dailyQuota = 10000,
+              monthlyQuota = 300000,
+              constrainedServicesOnly = true,
+              tags = Seq(),
+              restrictions = ApiKeyRestrictions(),
+              metadata = Map(),
+              rotation = None
+            ).asJson)
         case _ => BadRequest(Json.obj("error" -> "Subscription not found"))
       }
   }

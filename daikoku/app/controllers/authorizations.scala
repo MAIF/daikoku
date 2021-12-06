@@ -249,8 +249,8 @@ object authorizations {
                   AuthorizationLevel.AuthorizedDaikokuAdmin)
             }
           case Some(team)
-            if team.users.exists(u =>
-              u.userId == ctx.user.id && u.teamPermission == Administrator) =>
+              if team.users.exists(u =>
+                u.userId == ctx.user.id && u.teamPermission == Administrator) =>
             ctx.setCtxValue("tenant.id", tenant.id)
             ctx.setCtxValue("tenant.name", tenant.name)
             f.andThen {
@@ -264,25 +264,25 @@ object authorizations {
                   AuthorizationLevel.AuthorizedTenantAdmin)
             }
           case Some(team)
-            if !team.users.exists(u =>
-              u.userId == ctx.user.id && u.teamPermission == Administrator) =>
+              if !team.users.exists(u =>
+                u.userId == ctx.user.id && u.teamPermission == Administrator) =>
             ctx.setCtxValue("team.id", tenant.id)
             ctx.setCtxValue("team.name", tenant.name)
             audit.logTenantAuditEvent(ctx.tenant,
-              ctx.user,
-              session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.NotAuthorized)
-            FastFuture.successful(Results.Forbidden(
-              Json.obj("error" -> "Access Forbidden")))
+                                      ctx.user,
+                                      session,
+                                      ctx.request,
+                                      ctx.ctx,
+                                      AuthorizationLevel.NotAuthorized)
+            FastFuture.successful(
+              Results.Forbidden(Json.obj("error" -> "Access Forbidden")))
           case _ =>
             audit.logTenantAuditEvent(ctx.tenant,
-              ctx.user,
-              session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.NotAuthorized)
+                                      ctx.user,
+                                      session,
+                                      ctx.request,
+                                      ctx.ctx,
+                                      AuthorizationLevel.NotAuthorized)
             FastFuture.successful(Results.NotFound(Json.obj(
               "error" -> "Tenant admin team not found, please contact your administrator")))
         }

@@ -25,7 +25,7 @@ export function SendGridConfig({ value, onChange, ...props }) {
       },
     },
     template: {
-      type: () => <MailTemplateButton  {...props}/>,
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 

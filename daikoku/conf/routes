@@ -4,7 +4,7 @@ GET     /assets/*file                                   controllers.Assets.versi
 ### NoDocs ###
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
-GET     /robot.txt                                      fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+GET     /robots.txt                                      fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
 GET     /signup                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 ### NoDocs ###
@@ -263,7 +263,7 @@ POST    /api/teams/:teamId/assets/:assetId/_replace     fr.maif.otoroshi.daikoku
 ### NoDocs ###
 DELETE  /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.deleteAsset(assetId)
 ### NoDocs ###
-GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.getAsset(assetId, streamed: Option[Boolean] ?= None)
+GET     /tenant-assets/:assetId                         fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.getAsset(assetId)
 ### NoDocs ###
 GET     /tenant-assets                                  fr.maif.otoroshi.daikoku.ctrls.TenantAssetsController.listAssets()
 ### NoDocs ###

@@ -138,7 +138,9 @@ const InitializeFromOtoroshiComponent = (props) => {
   const orderedApikeys = _.orderBy(state.context.apikeys, ['clientName']);
 
   const filterApikeys = (entitie) => {
-    return orderedApikeys.filter((apikey) => (apikey.authorizedEntities || '').includes(`${entitie.prefix}${entitie.value}`));
+    return orderedApikeys.filter((apikey) =>
+      (apikey.authorizedEntities || '').includes(`${entitie.prefix}${entitie.value}`)
+    );
   };
 
   const afterCreation = () => {
@@ -232,7 +234,7 @@ const InitializeFromOtoroshiComponent = (props) => {
                 groups={state.context.groups}
                 services={state.context.services}
                 addNewTeam={(t) => setTeams([...teams, t])}
-                addSub={(apikey, team, api, plan) => 
+                addSub={(apikey, team, api, plan) =>
                   setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])
                 }
                 infos={(idx) => ({ index: idx, total: state.context.apikeys.length })}

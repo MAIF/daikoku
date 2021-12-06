@@ -144,7 +144,8 @@ object json {
 
     override def writes(o: TestingConfig): JsValue = Json.obj(
       "otoroshiSettings" -> OtoroshiSettingsIdFormat.writes(o.otoroshiSettings),
-      "authorizedEntities" -> AuthorizedEntitiesFormat.writes(o.authorizedEntities),
+      "authorizedEntities" -> AuthorizedEntitiesFormat.writes(
+        o.authorizedEntities),
       "clientName" -> o.clientName,
       "api" -> ApiIdFormat.writes(o.api),
       "tag" -> o.tag,

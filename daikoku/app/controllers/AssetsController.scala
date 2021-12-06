@@ -26,6 +26,7 @@ import play.api.mvc.{
 }
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 
 trait NormalizeSupport {
@@ -454,7 +455,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getAsset(assetId: String, streamed: Option[Boolean]) =
+  def getAsset(assetId: String) = {
     DaikokuTenantAction.async { ctx =>
       ctx.tenant.bucketSettings match {
         case None =>
@@ -462,6 +463,7 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
             NotFound(Json.obj("error" -> "No bucket config found !")))
         case Some(cfg) =>
           val download = ctx.request.getQueryString("download").contains("true")
+          val redirect = ctx.request.getQueryString("redirect").contains("true")
 
           env.assetsStore.getTenantAssetPresignedUrl(
             ctx.tenant.id,
@@ -469,7 +471,8 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
             case None =>
               FastFuture.successful(
                 NotFound(Json.obj("error" -> "Asset not found!")))
-            case Some(_) if download || streamed.contains(true) =>
+            case Some(url) if redirect => FastFuture.successful(Redirect(url))
+            case Some(_) if download =>
               env.assetsStore
                 .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
                 .map {
@@ -491,10 +494,30 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
                       .withHeaders(
                         "Content-Disposition" -> s"""attachment; filename="$filename"""")
                 }
-            case Some(url) => FastFuture.successful(Redirect(url))
+            case Some(url) =>
+              env.wsClient
+                .url(url)
+                .withRequestTimeout(10.minutes)
+                .get()
+                .map(resp => {
+                  resp.status match {
+                    case 200 =>
+                      Ok.sendEntity(
+                        HttpEntity.Streamed(resp.bodyAsSource,
+                                            None,
+                                            Option(resp.contentType)))
+                    case _ => NotFound(Json.obj("error" -> "Asset not found!"))
+                  }
+                })
+                .recover {
+                  case err =>
+                    InternalServerError(Json.obj("error" -> err.getMessage))
+                }
+
           }
       }
     }
+  }
 }
 
 class UserAssetsController(DaikokuAction: DaikokuAction,

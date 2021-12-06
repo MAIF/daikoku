@@ -36,7 +36,9 @@ A creation security option can be activated to forbid all unauthorized teams to 
 
 A subscription security option can be activated to forbid all personal team to subscribe to an API.
 
-An API keys aggregation security can be activated to allow admin API to activate the possibility to aggregate the generated key with an existing API key.
+An API keys aggregation security can be activated to allow admin API to activate the possibility to aggregate the generated key with an existing API key. It must be activated in every plan
+
+> Beware the risk of override metadata between key using multiple plans. 
 
 It's possible to hide API Reference tab (for all APIs) to unlogged user. This is a feature primally intended for public tenants.
 
