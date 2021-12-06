@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import * as Services from '../../../services';
 import faker from 'faker';
-import bcrypt from 'bcryptjs';
 import md5 from 'js-md5';
 import { toastr } from 'react-redux-toastr';
 
@@ -23,8 +22,7 @@ function SetPassword(props) {
         window.prompt(translateMethod('Re-type the password'), undefined, true).then((pw2) => {
           const validation = validatePassword(pw1, pw2, translateMethod);
           if (validation.ok) {
-            const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-            props.changeValue('password', hashed);
+            props.changeValue('password', pw2);
           } else {
             props.displayError(validation.error);
           }
@@ -108,7 +106,7 @@ function AvatarChooser(props) {
   );
 }
 
-export function UserEditComponent(props) {
+export function UserEditComponent() {
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
   const location = useLocation()

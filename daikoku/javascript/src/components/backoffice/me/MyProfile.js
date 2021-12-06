@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import * as Services from '../../../services';
 import faker from 'faker';
-import bcrypt from 'bcryptjs';
 import md5 from 'js-md5';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
@@ -210,8 +209,7 @@ function SetPassword(props) {
         window.prompt(translateMethod('Re-type the password'), undefined, true).then((pw2) => {
           const validation = validatePassword(pw1, pw2, translateMethod);
           if (validation.ok) {
-            const hashed = bcrypt.hashSync(pw1, bcrypt.genSaltSync(10));
-            props.changeValue('password', hashed);
+            props.changeValue('password', pw2);
           } else {
             props.displayError(validation.error);
           }

@@ -23,7 +23,6 @@
     "@xstate/react": "1.6.3",
     "antd": "4.17.2",
     "asciidoctor": "2.2.5",
-    "bcryptjs": "2.4.3",
     "bootstrap": "4.5.3",
     "byte-converter": "0.1.4",
     "classnames": "2.3.1",
