@@ -8,8 +8,8 @@
   "scripts": {
     "prettier": "prettier --write --single-quote --trailing-comma es5 --print-width 100 --tab-width 2 --jsx-bracket-same-line \"src/**/*.js\"",
     "test:eslint": "eslint src/ --ext .js --ext .jsx",
-    "start": "webpack serve --port 3000 --host 0.0.0.0 --hot --color --mode development",
-    "watch": "webpack --watch --mode development --hot -d --color",
+    "start": "webpack serve --port 3000 --host 0.0.0.0 --live-reload --color --mode development",
+    "watch": "webpack --watch --mode development --live-reload -d --color",
     "build": "rm -rf ../public/react-app && mkdir ../public/react-app && webpack --mode production --progress",
     "cypress": "cypress open",
     "test:cypress": "cypress run --record --key $CYPRESS_RECORD_KEY",
@@ -74,7 +74,6 @@
     "@babel/plugin-syntax-dynamic-import": "7.8.3",
     "@babel/preset-env": "7.16.4",
     "@babel/preset-react": "7.16.0",
-    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
     "babel-eslint": "10.1.0",
     "babel-loader": "8.2.3",
     "babel-minify-webpack-plugin": "0.3.1",
@@ -92,15 +91,14 @@
     "path-browserify": "^1.0.1",
     "prettier": "2.5.0",
     "raw-loader": "4.0.2",
-    "react-refresh": "^0.11.0",
     "sass": "1.44.0",
     "sass-loader": "12.3.0",
     "speed-measure-webpack-plugin": "1.5.0",
     "style-loader": "3.3.1",
     "uglifyjs-webpack-plugin": "2.2.0",
     "url-loader": "4.1.1",
-    "webpack": "^5.64.4",
-    "webpack-cli": "^4.9.1",
+    "webpack": "5.64.4",
+    "webpack-cli": "4.9.1",
     "webpack-dev-server": "4.6.0"
   }
 }

@@ -3,7 +3,7 @@ module.exports = (api) => {
   return {
     presets: [
       '@babel/preset-env',
-      ['@babel/preset-react', { development: !api.env('production'), runtime: 'automatic' }]
+      ['@babel/preset-react', { development: !api.env('production'), runtime: 'classic' }]
     ],
     plugins: [
       '@babel/plugin-syntax-dynamic-import',
@@ -13,7 +13,6 @@ module.exports = (api) => {
           'loose': false
         }
       ],
-      // ...(!api.env('production') ? ['react-refresh/babel'] : [])
     ]
   }
 };

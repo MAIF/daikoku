@@ -3,7 +3,6 @@ const TerserJSPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
-// const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 
 module.exports = (env, argv) => {
   const isProd = argv.mode === 'production';
@@ -30,7 +29,7 @@ module.exports = (env, argv) => {
       },
       {
         test: /\.css$/,
-        use: [MiniCssExtractPlugin.loader,'css-loader']
+        use: [MiniCssExtractPlugin.loader, 'css-loader']
       },
       {
         test: /\.scss$/,
@@ -170,8 +169,7 @@ module.exports = (env, argv) => {
     return {
       ...config,
       plugins: [
-        ...config.plugins,
-        // new ReactRefreshWebpackPlugin()
+        ...config.plugins
       ],
       devtool: 'eval-source-map'
     };
