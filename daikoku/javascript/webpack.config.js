@@ -1,8 +1,8 @@
 const path = require('path');
 const TerserJSPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 
 module.exports = (env, argv) => {
   const isProd = argv.mode === 'production';
@@ -153,7 +153,8 @@ module.exports = (env, argv) => {
       ...config,
       plugins: [
         ...config.plugins,
-        new CompressionPlugin()
+        new CompressionPlugin(),
+        new MiniCssExtractPlugin()
       ],
       optimization: {
         minimize: true,
@@ -161,7 +162,7 @@ module.exports = (env, argv) => {
           new TerserJSPlugin({
             parallel: true
           }),
-          new OptimizeCSSAssetsPlugin({})
+          new CssMinimizerPlugin()
         ],
       }
     };
