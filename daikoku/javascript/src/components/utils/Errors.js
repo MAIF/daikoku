@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../locales/i18n-context';
@@ -27,10 +27,17 @@ const getErrorLabel = (status, error) => {
 const ErrorComponent = ({ error, tenant, setError }) => {
   const navigate = useNavigate();
 
+  const [label, setLabel] = useState();
+
   const { translateMethod } = useContext(I18nContext);
 
-  document.title = `${tenant} - ${translateMethod('Error')}`;
-  const label = getErrorLabel(error.status, error);
+  useEffect(() => {
+    setLabel(getErrorLabel(error.status, error));
+    if (error?.status) {
+      document.title = `${tenant} - ${translateMethod('Error')}`;
+    }
+  }, [error, label])
+
 
   if (!label || !error) {
     return null;

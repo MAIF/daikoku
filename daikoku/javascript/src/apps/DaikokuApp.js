@@ -402,24 +402,24 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
           </Routes>
           <Routes>
             <Route
-              path="*"
-              element={<RouteWithTitle title={`${tenant.name} - ${translateMethod('404 Error')}`}>
-                <Error error={{ status: 404 }} />
-              </RouteWithTitle>}
-            />
-          </Routes>
-          <Routes>
-            <Route
-              path="/"
+              path="/*"
               element={<Discussion />}
             />
           </Routes>
           <Routes>
+            {['/settings', '/notifications', '/:teamId/settings']
+              .map(r => (
+                <Route
+                  path={r}
+                  element={<></>} />
+              ))}
+
             <Route
               path='/'
               element={<Footer isBackOffice={false} />}
             />
           </Routes>
+          <Error error={{ status: 404 }} />
         </div>
       </MessagesProvider>
     </BrowserRouter >

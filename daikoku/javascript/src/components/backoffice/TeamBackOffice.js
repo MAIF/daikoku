@@ -472,7 +472,7 @@ const TeamBackOfficeComponent = ({
         border: 0,
         background: 'transparent',
         outline: 'none'
-      }} to={`/${currentTeam._humanReadableId}/settings`}>
+      }} to={`/${currentTeam._humanReadableId}/settings/apis`}>
         <i className="fas fa-chevron-left" />
         Back to {currentTeam._humanReadableId}
       </Link>
