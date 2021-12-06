@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Redirect, useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
@@ -220,7 +220,7 @@ export function TeamMembersSimpleComponent(props) {
   };
 
   if (props.currentTeam.type === 'Personal') {
-    return <Redirect to="/settings/me" />;
+    return <Navigate to="/settings/me" />;
   }
 
   if (!state.members) {

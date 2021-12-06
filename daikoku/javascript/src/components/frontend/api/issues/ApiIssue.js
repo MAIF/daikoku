@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Routes, useParams, Route, Redirect } from 'react-router-dom';
+import { Routes, useParams, Route, Navigate } from 'react-router-dom';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
@@ -54,7 +54,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
               I={manage}
               a={API}
               team={ownerTeam}
-              orElse={<Redirect to={`${basePath}/issues`} />}>
+              orElse={<Navigate to={`${basePath}/issues`} />}>
               <TeamApiIssueTags value={api} onChange={onChange} />
             </Can>
           }
