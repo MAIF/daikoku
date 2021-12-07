@@ -53,8 +53,11 @@ jobs:
       run: |
         find ./manual/src/main/paradox -type f -name '*.md' | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
         find ./docs -type f -name '*.html' -d 1 | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
+        cd manual
+        sbt "release with-defaults release-version ${{ github.event.inputs.releaseversion }}"
         sh ./scripts/build.sh manual
         echo "::set-output name=diff::$(git diff --numstat | wc -l)"
+        cd ..
     - name: Commit manual
       if: steps.manual.outputs.diff != '0'
       run: |
@@ -81,6 +84,10 @@ jobs:
         branch: ${{ github.ref }}
         tags: true
         github_token: ${{ secrets.GITHUB_TOKEN}}
+    - name: Checkout release tag
+      uses: actions/checkout@v2.2.0
+      with: 
+        ref: 'v${{ github.event.inputs.releaseVersion }}'
     - name: Get yarn cache directory path
       id: yarn-cache-dir-path
       run: |
