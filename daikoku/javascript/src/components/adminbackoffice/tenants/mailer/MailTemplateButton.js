@@ -1,8 +1,10 @@
 import React, { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../../../core';
 
-export const MailTemplateButton = ({ history, isTenantUpdated, openModal, save }) => {
+export const MailTemplateButton = ({ isTenantUpdated, openModal, save }) => {
   const { translateMethod } = useContext(I18nContext);
+  const navigate = useNavigate()
 
   return (
     <div className="form-group row">
@@ -14,7 +16,7 @@ export const MailTemplateButton = ({ history, isTenantUpdated, openModal, save }
           type="button"
           className="btn btn-outline-success"
           onClick={() => {
-            const RedirectToUI = () => history.push('/settings/internationalization/mail-template');
+            const RedirectToUI = () => navigate('/settings/internationalization/mail-template');
             if (isTenantUpdated()) {
               openModal({
                 open: true,

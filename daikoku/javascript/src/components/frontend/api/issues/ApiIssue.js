@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Switch, useParams, Route, Redirect } from 'react-router-dom';
+import { Routes, useParams, Route, Navigate } from 'react-router-dom';
 import { ApiFilter } from './ApiFilter';
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
@@ -40,67 +40,64 @@ export function ApiIssue({ ownerTeam, ...props }) {
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;
 
+  if (!api)
+    return null
+
+
   return (
     <div className="container-fluid">
-      {api ? (
-        <Switch>
-          <Route
-            exact
-            path={`${basePath}/labels`}
-            component={() => (
-              <Can
-                I={manage}
-                a={API}
-                team={ownerTeam}
-                orElse={<Redirect to={`${basePath}/issues`} />}>
-                <TeamApiIssueTags value={api} onChange={onChange} />
-              </Can>
-            )}
-          />
-          <Route
-            exact
-            path={`${basePath}/issues/new`}
-            component={() => (
-              <NewIssue api={api} user={props.connectedUser} basePath={basePath} {...props} />
-            )}
-          />
-          <Route
-            exact
-            path={`${basePath}/issues/:issueId`}
-            component={() => (
-              <ApiTimelineIssue
-                issueId={issueId}
-                team={ownerTeam}
-                api={api}
+      <Routes>
+        <Route
+          path={`${basePath}/labels`}
+          element={
+            <Can
+              I={manage}
+              a={API}
+              team={ownerTeam}
+              orElse={<Navigate to={`${basePath}/issues`} />}>
+              <TeamApiIssueTags value={api} onChange={onChange} />
+            </Can>
+          }
+        />
+        <Route
+          path={`${basePath}/issues/new`}
+          element={
+            <NewIssue api={api} user={props.connectedUser} basePath={basePath} {...props} />
+          }
+        />
+        <Route
+          path={`${basePath}/issues/:issueId`}
+          element={
+            <ApiTimelineIssue
+              issueId={issueId}
+              team={ownerTeam}
+              api={api}
+              connectedUser={props.connectedUser}
+              basePath={basePath}
+            />
+          }
+        />
+        <Route
+          path={`${basePath}/issues`}
+          element={
+            <>
+              <ApiFilter
+                pathname={basePath}
+                tags={api.issuesTags}
+                handleFilter={(value) => setFilter(value)}
+                filter={filter}
                 connectedUser={props.connectedUser}
-                basePath={basePath}
-                history={props.history}
+                api={api}
+                team={ownerTeam._id}
+                ownerTeam={ownerTeam}
+                selectedVersion={selectedVersion}
+                setSelectedVersion={setSelectedVersion}
               />
-            )}
-          />
-          <Route
-            exact
-            path={`${basePath}/issues/`}
-            render={() => (
-              <>
-                <ApiFilter
-                  pathname={basePath}
-                  tags={api.issuesTags}
-                  handleFilter={(value) => setFilter(value)}
-                  filter={filter}
-                  connectedUser={props.connectedUser}
-                  api={api}
-                  team={ownerTeam._id}
-                  ownerTeam={ownerTeam}
-                  selectedVersion={selectedVersion}
-                  setSelectedVersion={setSelectedVersion}
-                />
-                <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} />
-              </>
-            )}
-          />
-        </Switch>
-      ) : null}
+              <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} />
+            </>
+          }
+        />
+      </Routes>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 import { AssetChooserByModal, MimeTypeFilter } from '../../frontend';
@@ -167,6 +167,7 @@ function StyleFontFamilyUrlAssetButton(props) {
 
 function ThemeUpdatorFromUI(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
 
   return (
     <div className="form-group d-flex justify-content-end">
@@ -175,7 +176,7 @@ function ThemeUpdatorFromUI(props) {
         className="btn btn-access-negative"
         onClick={(e) => {
           const RedirectToUI = () =>
-            props.history.push(`/settings/tenants/${props.tenant()._id}/style`);
+            navigate(`/settings/tenants/${props.tenant()._id}/style`);
           if (props.isTenantUpdated()) {
             props.openModal({
               open: true,
@@ -215,6 +216,9 @@ function HomePageVisibilitySwitch(props) {
 export function TenantEditComponent(props) {
   const { translateMethod, language, Translation, languages, setTranslationMode } =
     useContext(I18nContext);
+
+  const params = useParams()
+  const location = useLocation()
 
   const [state, setState] = useState({
     tenant: null,
@@ -463,7 +467,6 @@ export function TenantEditComponent(props) {
       props: {
         tenant: () => state.tenant,
         save: () => save(),
-        history: props.history,
         isTenantUpdated: () => !!state.updated,
         openModal: (p) => props.openSaveOrCancelModal({ ...p }),
       },
@@ -620,7 +623,6 @@ export function TenantEditComponent(props) {
         label: translateMethod('Mailer'),
         tenant: () => state.tenant,
         save: () => save(),
-        history: props.history,
         isTenantUpdated: () => !!state.updated,
         openModal: (p) => props.openSaveOrCancelModal({ ...p }),
       },
@@ -801,17 +803,17 @@ export function TenantEditComponent(props) {
   };
 
   useEffect(() => {
-    if (props.location && props.location.state && props.location.state.newTenant) {
+    if (location && location.state && location.state.newTenant) {
       setState({
         ...state,
         tenant: {
-          ...props.location.state.newTenant,
-          bucketSettings: props.location.state.newTenant.bucketSettings || {},
+          ...location.state.newTenant,
+          bucketSettings: location.state.newTenant.bucketSettings || {},
         },
         create: true,
       });
     } else {
-      Services.oneTenant(props.match.params.tenantId).then((tenant) => {
+      Services.oneTenant(params.tenantId).then((tenant) => {
         setState({
           ...state,
           tenant: { ...tenant, bucketSettings: tenant.bucketSettings || {} },

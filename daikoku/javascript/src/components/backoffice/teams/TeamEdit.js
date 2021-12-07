@@ -1,12 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { I18nContext, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
 
-import { TeamBackOffice } from '..';
 import { AvatarChooser, Spinner } from '../../utils';
 
 const LazyForm = React.lazy(() => import('../../inputs/Form'));
@@ -81,6 +80,10 @@ export function TeamEditForm(props) {
     return null;
   }
 
+  useEffect(() => {
+    document.title = `${props.team.name} - ${translateMethod('Edition')}`
+  }, [])
+
   return (
     <>
       <div className="row d-flex justify-content-start align-items-center mb-2">
@@ -105,19 +108,20 @@ export function TeamEditForm(props) {
   );
 }
 
-const TeamEditComponent = ({ history, currentTeam }) => {
+const TeamEditComponent = ({ currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
+  const navigate = useNavigate()
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
   const members = () => {
-    history.push(`/${team._humanReadableId}/settings/members`);
+    navigate(`/${team._humanReadableId}/settings/members`);
   };
 
   const save = () => {
     Services.updateTeam(team).then((updatedTeam) => {
       if (team._humanReadableId !== updatedTeam._humanReadableId) {
-        history.push(`/${updatedTeam._humanReadableId}/settings/edition`);
+        navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
       }
       toastr.success(
         translateMethod(
@@ -131,14 +135,14 @@ const TeamEditComponent = ({ history, currentTeam }) => {
   };
 
   return (
-    <TeamBackOffice title={`${team.name} - ${translateMethod('Edition')}`}>
+    <>
       <TeamEditForm team={team} updateTeam={setTeam} />
       <div className="row form-back-fixedBtns">
         <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
           <i className="fas fa-chevron-left mr-1" />
           <Translation i18nkey="Back">Back</Translation>
         </Link>
-        <button
+        {team && team.type !== "Personal" && <button
           style={{ marginLeft: 5 }}
           type="button"
           className="btn btn-outline-primary"
@@ -147,7 +151,7 @@ const TeamEditComponent = ({ history, currentTeam }) => {
             <i className="fas fa-users mr-1" />
             <Translation i18nkey="Members">Members</Translation>
           </span>
-        </button>
+        </button>}
         <button
           style={{ marginLeft: 5 }}
           type="button"
@@ -159,7 +163,7 @@ const TeamEditComponent = ({ history, currentTeam }) => {
           </span>
         </button>
       </div>
-    </TeamBackOffice>
+    </>
   );
 };
 

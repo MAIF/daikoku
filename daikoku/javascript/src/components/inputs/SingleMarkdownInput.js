@@ -169,7 +169,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
 
   const showPreview = () => {
     window.$('pre code').each((i, block) => {
-      window.hljs.highlightBlock(block);
+      window.hljs.highlightElement(block);
     });
   };
 

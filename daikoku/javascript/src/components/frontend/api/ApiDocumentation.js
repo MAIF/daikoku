@@ -46,7 +46,7 @@ export function ApiDocumentation(props) {
   useEffect(() => {
     if (state.content)
       window.$('pre code').each((i, block) => {
-        hljs.highlightBlock(block);
+        hljs.highlightElement(block);
       });
   }, [state.content]);
 
@@ -173,7 +173,7 @@ function Markdown(props) {
   useEffect(() => {
     if (content)
       window.$('pre code').each((i, block) => {
-        hljs.highlightBlock(block);
+        hljs.highlightElement(block);
       });
   }, [content]);
 
@@ -209,7 +209,7 @@ function Asciidoc(props) {
   useEffect(() => {
     if (content)
       window.$('pre code').each((i, block) => {
-        hljs.highlightBlock(block);
+        hljs.highlightElement(block);
       });
   }, [content]);
 

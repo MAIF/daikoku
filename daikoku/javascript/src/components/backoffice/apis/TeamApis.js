@@ -1,16 +1,19 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
 import * as Services from '../../../services';
 import { Can, read, manage, stat, api as API } from '../../utils';
-import { TeamBackOffice } from '../..';
 import { SwitchButton, Table, BooleanColumnFilter } from '../../inputs';
 import { I18nContext, setError } from '../../../core';
 
 function TeamApisComponent(props) {
-  const { translateMethod, Translation } = useContext(I18nContext);
+  const { translateMethod } = useContext(I18nContext);
+
+  useEffect(() => {
+    document.title = `${props.currentTeam.name} - ${translateMethod('API', true)}`
+  }, [])
 
   let table;
 
@@ -149,36 +152,32 @@ function TeamApisComponent(props) {
       });
   };
 
+
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
     props.setError({ error: { status: 403, message: 'unauthorized' } });
   }
   return (
-    <TeamBackOffice
-      tab="Apis"
-      apiId={props.match.params.apiId}
-      title={`${props.currentTeam.name} - ${translateMethod('API', true)}`}>
-      <Can I={read} a={API} dispatchError={true} team={props.currentTeam}>
-        <div className="row">
-          <div className="col">
-            <div className="p-2">
-              <Table
-                selfUrl="apis"
-                defaultTitle="Team Apis"
-                defaultValue={() => ({})}
-                defaultSort="name"
-                itemName="api"
-                columns={columns}
-                fetchItems={() => Services.teamApis(props.currentTeam._id)}
-                showActions={false}
-                showLink={false}
-                extractKey={(item) => item._id}
-                injectTable={(t) => (table = t)}
-              />
-            </div>
+    <Can I={read} a={API} dispatchError={true} team={props.currentTeam}>
+      <div className="row">
+        <div className="col">
+          <div className="p-2">
+            <Table
+              selfUrl="apis"
+              defaultTitle="Team Apis"
+              defaultValue={() => ({})}
+              defaultSort="name"
+              itemName="api"
+              columns={columns}
+              fetchItems={() => Services.teamApis(props.currentTeam._id)}
+              showActions={false}
+              showLink={false}
+              extractKey={(item) => item._id}
+              injectTable={(t) => (table = t)}
+            />
           </div>
         </div>
-      </Can>
-    </TeamBackOffice>
+      </div>
+    </Can>
   );
 }
 

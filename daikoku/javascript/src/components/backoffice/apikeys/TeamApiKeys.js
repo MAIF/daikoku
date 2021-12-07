@@ -1,9 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import * as Services from '../../../services';
-import { TeamBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
 import { I18nContext } from '../../../core';
@@ -18,10 +17,14 @@ export function TeamApiKeysComponent(props) {
   useEffect(() => {
     setShowApiKey(
       props.connectedUser.isDaikokuAdmin ||
-        !props.currentTeam.showApiKeyOnlyToAdmins ||
-        isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
+      !props.currentTeam.showApiKeyOnlyToAdmins ||
+      isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
     );
   }, [props.connectedUser.isDaikokuAdmin, props.currentTeam.showApiKeyOnlyToAdmins]);
+
+  useEffect(() => {
+    document.title = `${props.currentTeam.name} - ${translateMethod('API key')}`
+  }, [])
 
   const columns = [
     {
@@ -78,45 +81,42 @@ export function TeamApiKeysComponent(props) {
       });
   };
 
+  const params = useParams()
+
   return (
-    <TeamBackOffice
-      tab="ApiKeys"
-      apiId={props.match.params.apiId}
-      title={`${props.currentTeam.name} - ${translateMethod('API key')}`}>
-      <Can I={manage} a={apikey} team={props.currentTeam} dispatchError={true}>
-        <div className="row">
-          <div className="col">
-            <h1>
-              <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
-            </h1>
-            <Link
-              to={`/${props.currentTeam._humanReadableId}/settings/consumption`}
-              className="btn btn-sm btn-access-negative mb-2">
-              <i className="fas fa-chart-bar mr-1" />
-              <Translation i18nkey="See Stats">See Stats</Translation>
-            </Link>
-            <div className="section p-2">
-              <Table
-                selfUrl="apikeys"
-                defaultTitle="Apikeys"
-                defaultValue={() => ({})}
-                defaultSort="name"
-                itemName="apikey"
-                columns={columns}
-                fetchItems={() => Services.subscribedApis(props.currentTeam._id)}
-                showActions={false}
-                showLink={false}
-                extractKey={(item) => item._id}
-                injectTable={(t) => (table = t)}
-              />
-              <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
-                <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
-              </button>
-            </div>
+    <Can I={manage} a={apikey} team={props.currentTeam} dispatchError={true}>
+      <div className="row">
+        <div className="col">
+          <h1>
+            <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
+          </h1>
+          <Link
+            to={`/${props.currentTeam._humanReadableId}/settings/consumption`}
+            className="btn btn-sm btn-access-negative mb-2">
+            <i className="fas fa-chart-bar mr-1" />
+            <Translation i18nkey="See Stats">See Stats</Translation>
+          </Link>
+          <div className="section p-2">
+            <Table
+              selfUrl="apikeys"
+              defaultTitle="Apikeys"
+              defaultValue={() => ({})}
+              defaultSort="name"
+              itemName="apikey"
+              columns={columns}
+              fetchItems={() => Services.subscribedApis(props.currentTeam._id)}
+              showActions={false}
+              showLink={false}
+              extractKey={(item) => item._id}
+              injectTable={(t) => (table = t)}
+            />
+            <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
+              <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
+            </button>
           </div>
         </div>
-      </Can>
-    </TeamBackOffice>
+      </div>
+    </Can>
   );
 }
 

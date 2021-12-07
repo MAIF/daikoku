@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
 import { SketchPicker } from 'react-color';
+import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
@@ -15,6 +16,7 @@ const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;
 
 export function TenantStyleEditComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const params = useParams();
 
   const [state, setState] = useState({
     tenant: null,
@@ -36,7 +38,7 @@ export function TenantStyleEditComponent(props) {
         create: true,
       });
     } else {
-      Services.oneTenant(props.match.params.tenantId).then((tenant) => {
+      Services.oneTenant(params.tenantId).then((tenant) => {
         const style = state.style.map(({ value, defaultColor, group }) => {
           const color = Option(tenant.style.colorTheme.match(`${value}:\\s*([#r].*);`)).fold(
             () => defaultColor,
@@ -60,7 +62,7 @@ export function TenantStyleEditComponent(props) {
     }, ':root {\n') + '}';
 
   const goBack = () => {
-    props.history.goBack();
+    navigate(`/settings/tenants/${state.tenant._id}`)
   };
 
   const reset = () => {

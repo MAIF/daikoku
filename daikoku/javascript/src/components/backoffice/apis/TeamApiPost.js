@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
-import { Route, Link, Switch, useLocation, useHistory } from 'react-router-dom';
+import { Route, Link, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Spinner } from '../..';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services/index';
@@ -53,7 +53,7 @@ const ApiPost = ({ publishPost, params, team }) => {
 };
 
 export function TeamApiPost({ team, params, api, ...props }) {
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
   const { translateMethod } = useContext(I18nContext);
 
@@ -141,7 +141,7 @@ export function TeamApiPost({ team, params, api, ...props }) {
       if (res.error) toastr.error(translateMethod('team_api_post.failed'));
       else {
         toastr.success(translateMethod('team_api_post.saved'));
-        history.push(`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`);
+        navigate(`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`);
       }
     });
   }
@@ -168,14 +168,14 @@ export function TeamApiPost({ team, params, api, ...props }) {
 
   return (
     <div>
-      <Switch>
+      <Routes>
         <Route
           path={`${basePath}/new`}
-          render={(props) => <ApiPost {...props} publishPost={publishPost} params={params} />}
+          element={<ApiPost publishPost={publishPost} params={params} />}
         />
         <Route
           path={basePath}
-          render={() => (
+          element={
             <div className="p-3">
               <div className="d-flex align-items-center justify-content-between">
                 <h2>{translateMethod('News')}</h2>
@@ -237,10 +237,9 @@ export function TeamApiPost({ team, params, api, ...props }) {
                   {translateMethod('team_api_post.load_old_posts')}
                 </button>
               )}
-            </div>
-          )}
+            </div>}
         />
-      </Switch>
+      </Routes>
     </div>
   );
 }

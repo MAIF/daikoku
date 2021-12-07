@@ -1,9 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { LoginOrRegisterModal } from '..';
 import { I18nContext } from '../../../core';
 
 export function ApiRedoc(props) {
   const [error, setError] = useState();
+  const params = useParams()
 
   const { translateMethod } = useContext(I18nContext);
 
@@ -12,7 +14,7 @@ export function ApiRedoc(props) {
     const showSwagger = !(connectedUser.isGuest && tenant.apiReferenceHideForGuest);
 
     if (showSwagger) {
-      const url = `${window.location.origin}/api/teams/${props.teamId}/apis/${props.api._id}/${props.match.params.versionId}/swagger.json`;
+      const url = `${window.location.origin}/api/teams/${props.teamId}/apis/${props.api._id}/${params.versionId}/swagger.json`;
 
       fetch(url).then((res) => {
         if (res.status > 300) setError(translateMethod('api_redoc.failed_to_retrieve_doc'));

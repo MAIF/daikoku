@@ -7,6 +7,7 @@ import _, { filter } from 'lodash';
 import faker from 'faker';
 import { Grid, List } from 'react-feather';
 import classNames from 'classnames';
+import { useNavigate } from 'react-router-dom';
 
 import { ApiCard } from '../api';
 import { ActionWithTeamSelector, Can, CanIDoAction, manage, api } from '../../utils';
@@ -36,6 +37,7 @@ const computeTop = (arrayOfArray) => {
 
 const ApiListComponent = (props) => {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate()
 
   const allCategories = () => ({ value: 'All', label: translateMethod('All categories') });
   const allTags = () => ({ value: 'All', label: translateMethod('All tags') });
@@ -75,8 +77,10 @@ const ApiListComponent = (props) => {
           return e;
         })
         .then((newApi) => {
-          props.history.push(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
-            newApi: { ...newApi, team: team._id },
+          navigate(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
+            state: {
+              newApi: { ...newApi, team: team._id },
+            }
           });
         });
     }
@@ -84,15 +88,12 @@ const ApiListComponent = (props) => {
 
   const createNewteam = () => {
     Services.fetchNewTeam().then((team) =>
-      props.openCreationTeamModal({
-        history: props.history,
-        team,
-      })
+      props.openCreationTeamModal({ team})
     );
   };
 
   const redirectToTeam = (team) => {
-    props.history.push(`/${team._humanReadableId}/settings`);
+    navigate(`/${team._humanReadableId}/settings`);
   };
 
   const computeTops = (apis) => {
@@ -175,14 +176,14 @@ const ApiListComponent = (props) => {
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (teamMatch(api, searchedTrim)) {
-            return true;
-          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-        })
+        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (teamMatch(api, searchedTrim)) {
+          return true;
+        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+      })
   )
     .groupBy('_humanReadableId')
     .map((value) => {
@@ -395,7 +396,6 @@ const mapDispatchToProps = {
 export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
 
 ApiListComponent.propTypes = {
-  history: PropTypes.object.isRequired,
   myTeams: PropTypes.array.isRequired,
   apis: PropTypes.array.isRequired,
   teams: PropTypes.array.isRequired,

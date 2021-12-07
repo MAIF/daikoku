@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { v4 as uuid } from 'uuid';
 import faker from 'faker';
@@ -13,6 +13,7 @@ import { I18nContext } from '../../../locales/i18n-context';
 
 export function TenantOtoroshisComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate();
 
   let table;
 
@@ -92,7 +93,11 @@ export function TenantOtoroshisComponent(props) {
       clientId: faker.random.alphaNumeric(16),
       clientSecret: faker.random.alphaNumeric(64),
     };
-    props.history.push(`/settings/otoroshis/${settings._id}`, { newSettings: settings });
+    navigate(`/settings/otoroshis/${settings._id}`, {
+      state: {
+        newSettings: settings
+      }
+    });
   };
 
   return (

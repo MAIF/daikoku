@@ -1,12 +1,12 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
-import { Link, useHistory } from 'react-router-dom';
-import { goBack } from 'connected-react-router';
+import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../locales/i18n-context';
 import { setError } from '../../core';
 
 const getErrorLabel = (status, error) => {
-  console.log(status, error);
+  if (status)
+    console.log(status, error);
   if (status === 400) {
     return 'Bad Request';
   } else if (status === 401) {
@@ -25,14 +25,21 @@ const getErrorLabel = (status, error) => {
 };
 
 const ErrorComponent = ({ error, tenant, setError }) => {
-  const history = useHistory();
+  const navigate = useNavigate();
+
+  const [label, setLabel] = useState();
 
   const { translateMethod } = useContext(I18nContext);
 
-  document.title = `${tenant} - ${translateMethod('Error')}`;
-  const label = getErrorLabel(error.status, error);
+  useEffect(() => {
+    setLabel(getErrorLabel(error.status, error));
+    if (error?.status) {
+      document.title = `${tenant.title} - ${translateMethod('Error')}`;
+    }
+  }, [error, label])
 
-  if (!label) {
+
+  if (!label || !error) {
     return null;
   }
 
@@ -52,7 +59,7 @@ const ErrorComponent = ({ error, tenant, setError }) => {
               className="btn btn-access-negative"
               onClick={() => {
                 setError({ error: { status: -1 } });
-                history.goBack();
+                navigate(-1)
               }}>
               <i className="fas fa-angle-double-left" /> Go back
             </button>
@@ -65,12 +72,10 @@ const ErrorComponent = ({ error, tenant, setError }) => {
 
 const mapStateToProps = (state) => ({
   tenant: state.context.tenant.name,
-  error: state.error,
-  router: state.router,
+  error: state.error
 });
 
 const mapDispatchToProps = {
-  goBack: () => goBack(),
   setError: (error) => setError(error),
 };
 

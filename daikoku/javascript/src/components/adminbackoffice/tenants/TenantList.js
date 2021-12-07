@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import _ from 'lodash';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
@@ -10,6 +11,8 @@ export function TenantListComponent(props) {
   const [state, setState] = useState({
     tenants: [],
   });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     getTenants();
@@ -22,7 +25,7 @@ export function TenantListComponent(props) {
 
   const createNewTenant = () => {
     Services.fetchNewTenant().then((newTenant) => {
-      props.history.push(`/settings/tenants/${newTenant._id}`, { newTenant });
+      navigate(`/settings/tenants/${newTenant._id}`, { newTenant });
     });
   };
 
@@ -87,7 +90,7 @@ export function TenantListComponent(props) {
                       },
                       {
                         redirect: () =>
-                          props.history.push(`/settings/tenants/${tenant._humanReadableId}`),
+                          navigate(`/settings/tenants/${tenant._humanReadableId}`),
                         iconClass: 'fas fa-pen',
                         tooltip: translateMethod('Edit tenant'),
                       },
@@ -98,7 +101,7 @@ export function TenantListComponent(props) {
                       },
                       {
                         redirect: () =>
-                          props.history.push(`/settings/tenants/${tenant._humanReadableId}/admins`),
+                          navigate(`/settings/tenants/${tenant._humanReadableId}/admins`),
                         iconClass: 'fas fa-user-shield',
                         tooltip: translateMethod('Admins'),
                       },

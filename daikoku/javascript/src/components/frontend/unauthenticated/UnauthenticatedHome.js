@@ -1,15 +1,17 @@
 import React, { useContext, useEffect } from 'react';
 import { connect } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import { converter } from '../../../services/showdown';
 import hljs from 'highlight.js';
 import { I18nContext } from '../../../core';
 
 export function UnauthenticatedHomeComponent(props) {
   const { Translation } = useContext(I18nContext);
+  const location = useLocation();
 
   const content = props.tenant.unloggedHome || '';
-  const location = props.location ? props.location.pathname : '';
-  const displayInformation = location !== '/2fa' && location !== '/signup';
+  const pathname = location ? location.pathname : '';
+  const displayInformation = pathname !== '/2fa' && pathname !== '/signup';
 
   return (
     <main role="main" className="row">
@@ -107,7 +109,7 @@ export function UnauthenticatedHomeComponent(props) {
 function TenantDescription(props) {
   useEffect(() => {
     window.$('pre code').each((i, block) => {
-      hljs.highlightBlock(block);
+      hljs.highlightElement(block);
     });
   }, []);
 

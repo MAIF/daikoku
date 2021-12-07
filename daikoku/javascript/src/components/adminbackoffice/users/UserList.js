@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import faker from 'faker';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
@@ -13,6 +14,7 @@ function UserListComponent(props) {
   const [state, setState] = useState({
     users: [],
   });
+  const navigate = useNavigate()
 
   useEffect(() => {
     updateUsers();
@@ -37,7 +39,7 @@ function UserListComponent(props) {
       password: '',
       hardwareKeyRegistrations: [],
     };
-    props.history.push(`/settings/users/${user._id}`, {
+    navigate(`/settings/users/${user._id}`, {
       newUser: user,
     });
   };
@@ -74,8 +76,8 @@ function UserListComponent(props) {
 
   const filteredUsers = state.search
     ? state.users.filter(({ name, email }) =>
-        [name, email].some((item) => item.toLowerCase().includes(state.search))
-      )
+      [name, email].some((item) => item.toLowerCase().includes(state.search))
+    )
     : state.users;
   return (
     <UserBackOffice tab="Users">
@@ -128,7 +130,7 @@ function UserListComponent(props) {
                       },
                       {
                         redirect: () =>
-                          props.history.push(`/settings/users/${user._humanReadableId}`),
+                          navigate(`/settings/users/${user._humanReadableId}`),
                         iconClass: 'fas fa-pen',
                         tooltip: translateMethod('Edit user'),
                       },
@@ -139,9 +141,8 @@ function UserListComponent(props) {
                       },
                       {
                         action: () => toggleAdmin(user),
-                        iconClass: `fas fa-shield-alt ${
-                          user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
-                        }`,
+                        iconClass: `fas fa-shield-alt ${user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
+                          }`,
                         tooltip: translateMethod('toggle admin status'),
                       },
                     ]}

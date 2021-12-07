@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { TeamBackOffice, UserBackOffice } from '..';
+import { UserBackOffice } from '..';
 import { Table } from '../../inputs';
 import { Can, manage, asset, Spinner, tenant as TENANT } from '../../utils';
 import { openWysywygModal } from '../../../core/modal';
@@ -95,7 +96,7 @@ const handleAssetType = (tenantMode, type) => {
         type === 'text/css' ||
         type === 'text/javascript' ||
         type === 'application/x-javascript',
-      type === 'font/openntype')
+        type === 'font/openntype')
     ) {
       return reject(translateMethod('content type is not allowed'));
     } else {
@@ -215,7 +216,7 @@ const AddAsset = (props) => {
   );
 };
 
-const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysywygModal }) => {
+const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal }) => {
   const [assets, setAssets] = useState([]);
   const [newAsset, setNewAsset] = useState({});
   const [loading, setLoading] = useState(true);
@@ -230,6 +231,8 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
 
   useEffect(() => {
     fetchAssets();
+
+    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translateMethod('Asset', true)}`
   }, []);
 
   const flow = ['filename', 'title', 'description', 'contentType', 'input', 'add'];
@@ -524,49 +527,52 @@ const AssetsListComponent = ({ match, currentTeam, tenant, tenantMode, openWysyw
       }
     });
 
-  const BackOffice = tenantMode ? UserBackOffice : TeamBackOffice;
-  return (
-    <BackOffice
-      tab="Assets"
-      apiId={match.params.apiId}
-      title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}>
-      <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
-        {loading && <Spinner />}
-        {error && <div className="alert alert-danger">{error}</div>}
-        {!loading && !error && (
-          <>
-            <div className="row">
-              <div className="col-12 mb-3 d-flex justify-content-start">
-                <React.Suspense fallback={<Spinner />}>
-                  <LazyForm
-                    flow={flow}
-                    schema={schema}
-                    value={newAsset}
-                    onChange={(newAsset) => setNewAsset(newAsset)}
-                  />
-                </React.Suspense>
-              </div>
-            </div>
-            <div className="row">
-              <div className="col">
-                <Table
-                  selfUrl="assets"
-                  defaultTitle="Team assets"
-                  defaultValue={() => ({})}
-                  itemName="asset"
-                  columns={columns}
-                  fetchItems={() => Promise.resolve(assetList)}
-                  showActions={false}
-                  showLink={false}
-                  extractKey={(item) => item.key}
+  const params = useParams()
+
+  const View = () => (
+    <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
+      {loading && <Spinner />}
+      {error && <div className="alert alert-danger">{error}</div>}
+      {!loading && !error && (
+        <>
+          <div className="row">
+            <div className="col-12 mb-3 d-flex justify-content-start">
+              <React.Suspense fallback={<Spinner />}>
+                <LazyForm
+                  flow={flow}
+                  schema={schema}
+                  value={newAsset}
+                  onChange={(newAsset) => setNewAsset(newAsset)}
                 />
-              </div>
+              </React.Suspense>
             </div>
-          </>
-        )}
-      </Can>
-    </BackOffice>
-  );
+          </div>
+          <div className="row">
+            <div className="col">
+              <Table
+                selfUrl="assets"
+                defaultTitle="Team assets"
+                defaultValue={() => ({})}
+                itemName="asset"
+                columns={columns}
+                fetchItems={() => Promise.resolve(assetList)}
+                showActions={false}
+                showLink={false}
+                extractKey={(item) => item.key}
+              />
+            </div>
+          </div>
+        </>
+      )}
+    </Can>
+  )
+
+  if (tenantMode)
+    return <UserBackOffice tab="Assets" apiId={params.apiId} title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}>
+      <View />
+    </UserBackOffice>
+
+  return <View />
 };
 
 const mapStateToProps = (state) => ({

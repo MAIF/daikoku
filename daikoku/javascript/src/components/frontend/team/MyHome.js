@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { I18nContext, openContactModal, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
@@ -18,6 +18,7 @@ function MyHomeComponent(props) {
   });
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   const { translateMethod } = useContext(I18nContext);
 
@@ -58,7 +59,6 @@ function MyHomeComponent(props) {
   };
 
   useEffect(() => {
-    // console.log(location.pathname);
     fetchData();
   }, [props.connectedUser._id, location.pathname]);
 
@@ -89,7 +89,7 @@ function MyHomeComponent(props) {
   };
 
   const redirectToTeamPage = (team) => {
-    props.history.push(`/${team._humanReadableId}`);
+    navigate(`/${team._humanReadableId}`);
   };
 
   const redirectToApiPage = (api) => {
@@ -98,10 +98,10 @@ function MyHomeComponent(props) {
     const route = (version) =>
       `/${apiOwner ? apiOwner._humanReadableId : api.team._id}/${api._humanReadableId}/${version}`;
 
-    if (api.isDefault) props.history.push(route(api.currentVersion));
+    if (api.isDefault) navigate(route(api.currentVersion));
     else
       Services.getDefaultApiVersion(api._humanReadableId).then((res) =>
-        props.history.push(route(res.defaultVersion))
+        navigate(route(res.defaultVersion))
       );
   };
 
@@ -114,7 +114,7 @@ function MyHomeComponent(props) {
       props
         .updateTeam(adminTeam)
         .then(() =>
-          props.history.push(
+          navigate(
             `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
           )
         );
@@ -154,10 +154,9 @@ function MyHomeComponent(props) {
         </div>
       </section>
       <ApiList
-        history={props.history}
-        myTeams={state.myTeams}
         apis={state.apis}
         teams={state.teams}
+        myTeams={state.myTeams}
         teamVisible={true}
         askForApiAccess={askForApiAccess}
         toggleStar={toggleStar}
