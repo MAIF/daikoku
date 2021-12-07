@@ -115,7 +115,6 @@ object SchemaDefinition {
         Field("deleted", BooleanType, resolve = _.value.deleted),
         Field("name", StringType, resolve = _.value.name),
         Field("domain", StringType, resolve = _.value.domain),
-        Field("exposedPort", OptionType(IntType), resolve = _.value.exposedPort),
         Field("contact", StringType, resolve = _.value.contact),
         Field("style", OptionType(DaikokuStyleType), resolve = _.value.style),
         Field("defaultLanguage", OptionType(StringType), resolve = _.value.defaultLanguage),
