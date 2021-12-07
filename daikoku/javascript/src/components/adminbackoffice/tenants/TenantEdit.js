@@ -231,7 +231,6 @@ export function TenantEditComponent(props) {
     'enabled',
     'name',
     'domain',
-    'exposedPort',
     'defaultLanguage',
     'contact',
     'tenantMode',
@@ -373,12 +372,6 @@ export function TenantEditComponent(props) {
     domain: {
       type: 'string',
       props: { label: translateMethod('Domain name') },
-    },
-    exposedPort: {
-      type: 'number',
-      props: {
-        label: translateMethod('Exposed port'),
-      },
     },
     defaultLanguage: {
       type: 'select',

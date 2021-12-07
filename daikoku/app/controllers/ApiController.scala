@@ -51,11 +51,10 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   val logger = Logger("ApiController")
 
-  def getDaikokuUrl(tenant: Tenant, path: String) = tenant.exposedPort match {
-    case Some(80) => s"http://${tenant.domain}$path"
-    case Some(443) => s"https://${tenant.domain}$path"
-    case Some(value) => s"http://${tenant.domain}:$value/$path"
-    case None => s"http://${tenant.domain}:${env.config.exposedPort}$path"
+  def getDaikokuUrl(tenant: Tenant, path: String) = env.config.exposedPort match {
+    case 80 => s"http://${tenant.domain}$path"
+    case 443 => s"https://${tenant.domain}$path"
+    case _ => s"http://${tenant.domain}:${env.config.exposedPort}$path"
   }
 
   def me() = DaikokuAction.async { ctx =>

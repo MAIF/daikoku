@@ -1576,7 +1576,6 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             name = (json \ "name").as[String],
             domain = (json \ "domain").asOpt[String].getOrElse("localhost"),
-            exposedPort = (json \ "exposedPort").asOpt[Int],
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
             contact = (json \ "contact").as[String],
             style = (json \ "style").asOpt(DaikokuStyleFormat),
@@ -1658,10 +1657,6 @@ object json {
       "_deleted" -> o.deleted,
       "name" -> o.name,
       "domain" -> o.domain,
-      "exposedPort" -> o.exposedPort
-        .map(JsNumber(_))
-        .getOrElse(JsNull)
-        .as[JsValue],
       "defaultLanguage" -> o.defaultLanguage.fold(JsNull.as[JsValue])(
         JsString.apply),
       "enabled" -> o.enabled,

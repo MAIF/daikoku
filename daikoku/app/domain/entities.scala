@@ -130,7 +130,6 @@ case class Tenant(
     deleted: Boolean = false,
     name: String,
     domain: String,
-    exposedPort: Option[Int] = None,
     contact: String,
     style: Option[DaikokuStyle],
     defaultLanguage: Option[String],
