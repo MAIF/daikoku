@@ -68,7 +68,7 @@ function TeamApiComponent(props) {
 
   useEffect(() => {
     document.title = `${props.currentTeam.name} - ${state.api ? state.api.name : translateMethod('API')}`
-  }, [])
+  }, [state])
 
   function reloadState() {
     Promise.all([

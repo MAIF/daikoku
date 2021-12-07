@@ -127,7 +127,7 @@ function TeamHomeComponent(props) {
     return null;
   }
 
-  document.title = `${props.tenant.name} - ${state.team.name}`;
+  document.title = `${props.tenant.title} - ${state.team.name}`;
 
   return (
     <main role="main" className="row">

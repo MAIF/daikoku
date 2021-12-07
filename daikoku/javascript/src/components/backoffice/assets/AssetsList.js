@@ -232,7 +232,7 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
   useEffect(() => {
     fetchAssets();
 
-    document.title = `${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`
+    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translateMethod('Asset', true)}`
   }, []);
 
   const flow = ['filename', 'title', 'description', 'contentType', 'input', 'add'];

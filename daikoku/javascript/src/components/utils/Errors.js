@@ -34,7 +34,7 @@ const ErrorComponent = ({ error, tenant, setError }) => {
   useEffect(() => {
     setLabel(getErrorLabel(error.status, error));
     if (error?.status) {
-      document.title = `${tenant} - ${translateMethod('Error')}`;
+      document.title = `${tenant.title} - ${translateMethod('Error')}`;
     }
   }, [error, label])
 

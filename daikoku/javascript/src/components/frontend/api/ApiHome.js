@@ -360,7 +360,7 @@ const ApiHomeComponent = ({
   const userName = isGuest ? undefined : name;
   const userEmail = isGuest ? undefined : email;
 
-  document.title = `${tenant.name} - ${api ? api.name : 'API'}`;
+  document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
   return (
     <main role="main" className="row">
