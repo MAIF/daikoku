@@ -85,9 +85,7 @@ const maybeCreateThumbnail = (id, file) => {
   });
 };
 
-const handleAssetType = (tenantMode, type) => {
-  const { translateMethod } = useContext(I18nContext);
-
+const handleAssetType = (tenantMode, type, translateMethod) => {
   return new Promise(function (resolve, reject) {
     if (tenantMode) {
       return resolve(true);
@@ -477,7 +475,7 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
             });
           });
         } else {
-          return handleAssetType(tenantMode, file.type)
+          return handleAssetType(tenantMode, file.type, translateMethod)
             .then(() =>
               Services.storeAsset(
                 currentTeam._id,
