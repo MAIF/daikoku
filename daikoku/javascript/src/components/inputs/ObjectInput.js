@@ -43,7 +43,7 @@ export class ObjectInput extends Component {
     return (
       <div>
         {values.length === 0 && (
-          <div className="form-group row">
+          <div className="mb-3 row">
             <label
               htmlFor={`input-${this.props.label}`}
               className="col-xs-12 col-sm-2 col-form-label">
@@ -157,7 +157,7 @@ export class VerticalObjectInput extends Component {
     return (
       <div>
         {values.length === 0 && (
-          <div className="form-group row">
+          <div className="mb-3 row">
             <div className="col-xs-12">
               <label htmlFor={`input-${this.props.label}`} className="col-form-label">
                 <Help text={this.props.help} label={this.props.label} />
@@ -177,7 +177,7 @@ export class VerticalObjectInput extends Component {
         {values.map((value, idx) => (
           <div
             key={`from-group-${idx}`}
-            className="form-group row"
+            className="mb-3 row"
             style={{ marginBottom: 5, flexWrap: 'nowrap' }}>
             <div className="col-xs-12">
               {idx === 0 && (

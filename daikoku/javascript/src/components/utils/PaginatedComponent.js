@@ -27,7 +27,7 @@ export const PaginatedComponent = (props) => {
       <div className="flex-column">
         {props.help && (
           <i
-            className="far fa-question-circle ml-1 cursor-pointer"
+            className="far fa-question-circle ms-1 cursor-pointer"
             style={{ fontSize: '20px' }}
             onClick={() => props.help()}
           />

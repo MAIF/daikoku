@@ -53,7 +53,7 @@ function AssetButton(props) {
 
   const team = props.parentProps().team;
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div
         className="col-sm-10"
@@ -348,7 +348,7 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                 onClick={deletePage}
                 type="button"
                 className="btn btn-sm btn-outline-danger mb-2">
-                <i className="fas fa-trash mr-1" />
+                <i className="fas fa-trash me-1" />
                 <Translation i18nkey="Delete page">Delete page</Translation>
               </button>
             </div>

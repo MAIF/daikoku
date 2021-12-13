@@ -211,15 +211,15 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
             onChange={(e) => setIssue({ ...issue, title: e.target.value })}
           />
         ) : (
-          <h1 style={{ fontSize: '1.5rem', margin: 0 }} className="pr-3">
+          <h1 style={{ fontSize: '1.5rem', margin: 0 }} className="pe-3">
             {issue.title} <span style={{ fontWeight: 'bold' }}>#{issue.seqId}</span>
           </h1>
         )}
         {connectedUser && !connectedUser.isGuest && (
           <div className="d-flex">
             {editionMode ? (
-              <div className="d-flex ml-3">
-                <button className="btn btn-success mr-1" onClick={updateIssue}>
+              <div className="d-flex ms-3">
+                <button className="btn btn-success me-1" onClick={updateIssue}>
                   {translateMethod('Save')}
                 </button>
                 <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>
@@ -229,7 +229,7 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
             ) : (
               <>
                 <button
-                  className="btn btn-outline-secondary mr-1"
+                  className="btn btn-outline-secondary me-1"
                   onClick={() => handleEdition(true)}>
                   {translateMethod('Edit')}
                 </button>
@@ -246,12 +246,12 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
       <div className="d-flex align-items-center pb-3 mb-3">
         <div
           style={styles.getStatus(issue.open)}
-          className="d-flex justify-content-center align-items-center mr-3">
-          <i className="fa fa-exclamation-circle mr-2" style={{ color: '#fff' }} />
+          className="d-flex justify-content-center align-items-center me-3">
+          <i className="fa fa-exclamation-circle me-2" style={{ color: '#fff' }} />
           {issue.open ? translateMethod('issues.open') : translateMethod('issues.closed')}
         </div>
         <div>
-          <span className="pr-1" style={styles.bold}>
+          <span className="pe-1" style={styles.bold}>
             {issue.by ? issue.by._humanReadableId : ''}
           </span>
           {translateMethod('issues.opened_message')}{' '}
@@ -315,7 +315,7 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
                     classNamePrefix="reactSelect"
                   />
                   <button
-                    className="btn btn-outline-danger my-3 mr-1"
+                    className="btn btn-outline-danger my-3 me-1"
                     onClick={() => {
                       setTags([]);
                       onTagEdit(false);
@@ -330,7 +330,7 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
                 <>
                   {(tags || []).map((tag) => (
                     <span
-                      className="badge badge-primary mr-1"
+                      className="badge badge-primary me-1"
                       style={{
                         backgroundColor: api.issuesTags.find((t) => t.id === tag.value).color,
                       }}
@@ -391,7 +391,7 @@ function Comment({
 
   return (
     <div className="d-flex pb-4">
-      <div className="dropdown pr-2">
+      <div className="dropdown pe-2">
         <img
           style={{ width: 42 }}
           src={by.picture}
@@ -402,16 +402,16 @@ function Comment({
       </div>
       <div className="container">
         <div className="d-flex px-3 py-2" style={styles.commentHeader}>
-          <span className="pr-1" style={styles.bold}>
+          <span className="pe-1" style={styles.bold}>
             {by._humanReadableId}
           </span>
-          <span className="pr-1">{translateMethod('issues.commented_on')}</span>
+          <span className="pe-1">{translateMethod('issues.commented_on')}</span>
           {moment(createdDate).format(translateMethod('moment.date.format.without.hours'))}
           {by._id === connectedUser._id && editing !== true && (
             <>
               {showActions ? (
                 <div className="ml-auto">
-                  <button className="btn btn-xs btn-outline-secondary mr-1" onClick={editComment}>
+                  <button className="btn btn-xs btn-outline-secondary me-1" onClick={editComment}>
                     <i className="fas fa-edit align-self-center" />
                   </button>
                   {i !== 0 && (
@@ -442,7 +442,7 @@ function Comment({
               />
             </React.Suspense>
             <div className="d-flex mt-3 justify-content-end">
-              <button className="btn btn-outline-danger mr-1" onClick={editComment}>
+              <button className="btn btn-outline-danger me-1" onClick={editComment}>
                 {translateMethod('Cancel')}
               </button>
               <button className="btn btn-success" onClick={updateComment}>
@@ -475,7 +475,7 @@ function NewComment({
   const { translateMethod } = useContext(I18nContext);
   return (
     <div className="d-flex pb-4">
-      <div className="dropdown pr-2">
+      <div className="dropdown pe-2">
         <img
           style={{ width: 42 }}
           src={picture}
@@ -508,13 +508,13 @@ function NewComment({
           <div className="d-flex mt-3 justify-content-end">
             <Can I={manage} a={API} team={team}>
               {open ? (
-                <button className="btn btn-outline-danger mr-1" onClick={closeIssue}>
-                  <i className="fa fa-exclamation-circle mr-2" />
+                <button className="btn btn-outline-danger me-1" onClick={closeIssue}>
+                  <i className="fa fa-exclamation-circle me-2" />
                   {translateMethod('issues.actions.close')}
                 </button>
               ) : (
-                <button className="btn btn-outline-success mr-1" onClick={openIssue}>
-                  <i className="fa fa-exclamation-circle mr-2" />
+                <button className="btn btn-outline-success me-1" onClick={openIssue}>
+                  <i className="fa fa-exclamation-circle me-2" />
                   {translateMethod('issues.actions.reopen')}
                 </button>
               )}

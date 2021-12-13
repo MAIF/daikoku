@@ -172,12 +172,12 @@ const CheckingAdminConnection = (props) => {
   const { Translation } = useContext(I18nContext);
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label">
         <Help text={props.help} label={props.label} />
       </label>
-      <div className="col-sm-10 pl-3" id="input-Testing buttons">
-        <a type="button" className="btn btn-outline-primary mr-1" onClick={props.checkConnection}>
+      <div className="col-sm-10 ps-3" id="input-Testing buttons">
+        <a type="button" className="btn btn-outline-primary me-1" onClick={props.checkConnection}>
           <Translation i18nkey="Testing">Testing</Translation>
         </a>
       </div>
@@ -192,24 +192,24 @@ const CheckingUserConnection = (props) => {
   const { Translation } = useContext(I18nContext);
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label">
         <Help text={props.help} label={props.label} />
       </label>
-      <div className="col-sm-10 pl-3 d-flex" id="input-Testing buttons">
+      <div className="col-sm-10 ps-3 d-flex" id="input-Testing buttons">
         <input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="username"
-          className="form-control mr-1"
+          className="form-control me-1"
         />
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="password"
-          className="form-control mr-1"
+          className="form-control me-1"
         />
         <a
           type="button"

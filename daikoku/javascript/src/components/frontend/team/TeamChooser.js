@@ -51,7 +51,7 @@ function TeamChooserComponent(props) {
   const paginateTeams = filteredTeams.slice(state.offset, state.offset + state.pageNumber);
 
   return (
-    <main role="main" className="row">
+    <main role="main">
       <section className="organisation__header col-12 mb-4 p-3">
         <div className="container">
           <div className="row text-center">

@@ -132,7 +132,7 @@ export function SimpleNotification(props) {
         <div>
           <button
             type="button"
-            className="btn btn-outline-success btn-sm mr-1"
+            className="btn btn-outline-success btn-sm me-1"
             onClick={() => props.accept()}>
             <i className="fas fa-check" />
           </button>
@@ -155,7 +155,7 @@ export function SimpleNotification(props) {
               return (
                 <div>
                   <a
-                    className="btn btn-outline-success btn-sm mr-1"
+                    className="btn btn-outline-success btn-sm me-1"
                     href="#"
                     title={translateMethod('Accept')}
                     onClick={() =>
@@ -183,7 +183,7 @@ export function SimpleNotification(props) {
               return (
                 <div>
                   <a
-                    className="btn btn-outline-success btn-sm mr-1"
+                    className="btn btn-outline-success btn-sm me-1"
                     href="#"
                     title={translateMethod('Accept')}
                     onClick={() => props.accept()}>

@@ -40,7 +40,7 @@ const ApiPost = ({ publishPost, params, team }) => {
       </React.Suspense>
       <div className="d-flex justify-content-end my-3">
         <Link
-          className="btn btn-outline-danger mr-1"
+          className="btn btn-outline-danger me-1"
           to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}>
           {translateMethod('Cancel')}
         </Link>
@@ -195,7 +195,7 @@ export function TeamApiPost({ team, params, api, ...props }) {
                           type="text"
                           value={post.title}
                           onChange={(e) => handleTitle(i, e.target.value)}
-                          className="form-control mr-1"
+                          className="form-control me-1"
                           style={{ flex: 1 }}
                         />
                       ) : (
@@ -204,13 +204,13 @@ export function TeamApiPost({ team, params, api, ...props }) {
                       <div>
                         {post.isOpen && (
                           <button
-                            className="btn btn-outline-success mr-1"
+                            className="btn btn-outline-success me-1"
                             onClick={() => savePost(i)}>
                             <i className="fas fa-save" />
                           </button>
                         )}
                         <button
-                          className="btn btn-outline-danger mr-1"
+                          className="btn btn-outline-danger me-1"
                           onClick={() => removePost(post._id, i)}>
                           <i className="fas fa-trash" />
                         </button>

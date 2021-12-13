@@ -15,10 +15,10 @@ const StarsButton = ({ stars, toggleStar, starred, connectedUser }) => (
     {connectedUser && !connectedUser.isGuest ? (
       <>
         <button
-          className="btn flex-row align-items-center pr-2"
+          className="btn flex-row align-items-center pe-2"
           style={{ color: 'var(--btn-bg-color, "#000")', padding: '0' }}
           onClick={toggleStar}>
-          <i className={`${starred ? 'fas' : 'far'} fa-star pl-2`} />
+          <i className={`${starred ? 'fas' : 'far'} fa-star ps-2`} />
         </button>
         <div className="px-2 d-flex align-items-center" style={{ backgroundColor: '#fff' }}>
           <span>{stars}</span>
@@ -28,7 +28,7 @@ const StarsButton = ({ stars, toggleStar, starred, connectedUser }) => (
       stars > 0 && (
         <div className="badge p-2" style={{ color: '#fff' }}>
           {stars}
-          <i className="fas fa-star pl-2" />
+          <i className="fas fa-star ps-2" />
         </div>
       )
     )}

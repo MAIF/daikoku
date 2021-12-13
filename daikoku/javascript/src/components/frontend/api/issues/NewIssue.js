@@ -55,7 +55,7 @@ export function NewIssue({ user, api, ...props }) {
 
   return issue ? (
     <div className="d-flex">
-      <div className="dropdown pr-2">
+      <div className="dropdown pe-2">
         <img
           style={{ width: 42 }}
           src={user.picture}

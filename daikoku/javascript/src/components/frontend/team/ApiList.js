@@ -148,7 +148,7 @@ const ApiListComponent = (props) => {
           )}
         </div>
         <div className="clear cursor-pointer" onClick={clearFilter}>
-          <i className="far fa-times-circle mr-1" />
+          <i className="far fa-times-circle me-1" />
           <Translation i18nkey="clear filter">clear filter</Translation>
         </div>
       </div>
@@ -289,25 +289,27 @@ const ApiListComponent = (props) => {
           </ActionWithTeamSelector>
         )}
       </div>
-      <div className="d-flex mb-1 view-selectors">
-        <button
-          className={classNames('btn btn-access-negative mr-2', { active: view === LIST })}
-          onClick={() => setView(LIST)}>
-          <List />
-        </button>
-        <button
-          className={classNames('btn btn-access-negative', { active: view === GRID })}
-          onClick={() => setView(GRID)}>
-          <Grid />
-        </button>
+      <div className="row mb-2 view-selectors">
+        <div className="col-9 d-flex justify-content-end">
+          <button
+            className={classNames('btn btn-sm btn-access-negative me-2', { active: view === LIST })}
+            onClick={() => setView(LIST)}>
+            <List />
+          </button>
+          <button
+            className={classNames('btn btn-sm btn-access-negative', { active: view === GRID })}
+            onClick={() => setView(GRID)}>
+            <Grid />
+          </button>
+        </div>
       </div>
-      <div className="d-flex flex-row">
+      <div className="row">
         <div className="section col-9 d-flex flex-column">
           <div
             className={classNames('d-flex justify-content-between p-3', {
               'flex-column': view === LIST,
               'flex-wrap': view === GRID,
-              'flex-row': view === GRID,
+              'row': view === GRID,
             })}>
             {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => (
@@ -362,7 +364,7 @@ const ApiListComponent = (props) => {
             <Top
               className="p-3 rounded additionalContent mb-2"
               title="Top tags"
-              icon="fas fa-tag mr-2"
+              icon="fas fa-tag me-2"
               list={tags}
               formatter={(tag) => tag.value}
               handleClick={setSelectedTag}
@@ -372,7 +374,7 @@ const ApiListComponent = (props) => {
             <Top
               className="p-3 rounded additionalContent"
               title="Top categories"
-              icon="fas fa-folder mr-2"
+              icon="fas fa-folder me-2"
               list={categories}
               formatter={(category) => category.value}
               handleClick={setSelectedCategory}
@@ -419,7 +421,7 @@ const Top = (props) => {
       {props.list.slice(0, 10).map((item, idx) => {
         return (
           <span
-            className="badge badge-warning mr-1 cursor-pointer"
+            className="badge badge-warning me-1 cursor-pointer"
             key={idx}
             onClick={() => props.handleClick(item)}>
             {props.formatter(item)}
@@ -442,7 +444,7 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
     <div className={'top__container p-3 rounded additionalContent mb-2'}>
       <div>
         <h5>
-          <i className="fas fa-users mr-2" />
+          <i className="fas fa-users me-2" />
           {translateMethod('your teams', language)}
         </h5>
       </div>

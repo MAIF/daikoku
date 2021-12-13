@@ -52,7 +52,7 @@ const ErrorComponent = ({ error, tenant, setError }) => {
             <p data-p={label}>{label}</p>
           </div>
           <div>
-            <Link className="btn btn-access-negative mr-1" to="/">
+            <Link className="btn btn-access-negative me-1" to="/">
               <i className="fas fa-home" /> Go home
             </Link>
             <button

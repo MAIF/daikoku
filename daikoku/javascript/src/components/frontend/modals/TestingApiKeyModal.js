@@ -93,7 +93,7 @@ const OtoroshiServicesAndGroupSelector = (props) => {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
         <Help text={props.help} label={props.label} />
       </label>
@@ -227,7 +227,7 @@ export const TestingApiKeyModal = (props) => {
     <div className="modal-content" style={{ fontWeight: 'normal' }}>
       <div className="modal-header">
         <h5 className="modal-title">{props.title}</h5>
-        <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}>
           <span aria-hidden="true">&times;</span>
         </button>
       </div>

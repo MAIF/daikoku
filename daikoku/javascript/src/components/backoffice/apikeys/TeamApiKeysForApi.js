@@ -367,7 +367,7 @@ const ApiKeyCard = ({
                   <button
                     disabled={!subscription.enabled}
                     type="button"
-                    className="btn btn-sm btn-access-negative ml-2"
+                    className="btn btn-sm btn-access-negative ms-2"
                     onClick={() => setEditMode(true)}>
                     <i className="fas fa-pen cursor-pointer a-fake" />
                   </button>
@@ -415,7 +415,7 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('Reset secret')}>
                       <button
                         type="button"
-                        className="btn btn-sm btn-outline-danger ml-1"
+                        className="btn btn-sm btn-outline-danger ms-1"
                         disabled={!subscription.enabled}
                         onClick={regenerateSecret}>
                         <i className="fas fa-sync-alt" />
@@ -424,7 +424,7 @@ const ApiKeyCard = ({
                   )}
                   <Can I={read} a={stat} team={currentTeam}>
                     <BeautifulTitle title={translateMethod('View usage statistics')}>
-                      <Link to={statsLink} className="btn btn-sm btn-access-negative ml-1">
+                      <Link to={statsLink} className="btn btn-sm btn-access-negative ms-1">
                         <i className="fas fa-chart-bar" />
                       </Link>
                     </BeautifulTitle>
@@ -433,7 +433,7 @@ const ApiKeyCard = ({
                     <button
                       type="button"
                       disabled={!subscription.enabled}
-                      className="btn btn-sm btn-access-negative ml-1"
+                      className="btn btn-sm btn-access-negative ms-1"
                       onClick={() => {
                         clipboard.current.select();
                         document.execCommand('Copy');
@@ -446,7 +446,7 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('Setup rotation')}>
                       <button
                         type="button"
-                        className="btn btn-sm btn-access-negative ml-1"
+                        className="btn btn-sm btn-access-negative ms-1"
                         onClick={() => setSettingMode(true)}>
                         <i className="fas fa-history" />
                       </button>
@@ -456,7 +456,7 @@ const ApiKeyCard = ({
                     <button
                       type="button"
                       disabled={subscription.parent ? !subscription.parentUp : false}
-                      className={classNames('btn btn-sm ml-1', {
+                      className={classNames('btn btn-sm ms-1', {
                         'btn-outline-danger':
                           subscription.enabled &&
                           (subscription.parent ? subscription.parentUp : true),
@@ -472,7 +472,7 @@ const ApiKeyCard = ({
                     <BeautifulTitle title={translateMethod('team_apikey_for_api.make_unique')}>
                       <button
                         type="button"
-                        className="btn btn-sm ml-1 btn-outline-danger"
+                        className="btn btn-sm ms-1 btn-outline-danger"
                         onClick={makeUniqueApiKey}>
                         <i className="fas fa-share" />
                       </button>
@@ -504,7 +504,7 @@ const ApiKeyCard = ({
               )}
               {activeTab == 'apikey' && (
                 <>
-                  <div className="form-group">
+                  <div className="mb-3">
                     <label htmlFor={`client-id-${_id}`} className="">
                       <Translation i18nkey="Client Id">Client Id</Translation>
                     </label>
@@ -518,7 +518,7 @@ const ApiKeyCard = ({
                       />
                     </div>
                   </div>
-                  <div className="form-group">
+                  <div className="mb-3">
                     <label htmlFor={`client-secret-${_id}`} className="">
                       <Translation i18nkey="Client secret">Client secret</Translation>
                     </label>
@@ -553,7 +553,7 @@ const ApiKeyCard = ({
               )}
               {activeTab == 'token' && (
                 <>
-                  <div className="form-group">
+                  <div className="mb-3">
                     <label htmlFor={`token-${_id}`} className="">
                       <Translation i18nkey="Integration token">Integration token</Translation>
                     </label>
@@ -693,12 +693,12 @@ const ApiKeyCard = ({
                   <Translation i18nkey="Back">Back</Translation>
                 </button>
                 <button
-                  className="btn btn-outline-success ml-2"
+                  className="btn btn-outline-success ms-2"
                   disabled={
                     !subscription.enabled || Object.keys(error).length ? 'disabled' : undefined
                   }
                   onClick={handleChanges}>
-                  <i className="fas fa-save mr-1"></i>
+                  <i className="fas fa-save me-1"></i>
                   <Translation i18nkey="Save">Save</Translation>
                 </button>
               </div>
@@ -713,7 +713,7 @@ const ApiKeyCard = ({
 const Help = ({ message }) => {
   return (
     <BeautifulTitle placement="bottom" title={message}>
-      <i className="ml-4 far fa-question-circle" />
+      <i className="ms-4 far fa-question-circle" />
     </BeautifulTitle>
   );
 };

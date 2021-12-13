@@ -289,7 +289,7 @@ export function OAuth2Config(props) {
     },
     oidcProvider: {
       type: () => (
-        <div className="form-group row">
+        <div className="mb-3 row">
           <label className="col-xs-12 col-sm-2 col-form-label" />
           <div className="col-sm-10">
             <button type="button" className="btn btn-success" onClick={fetchConfig}>

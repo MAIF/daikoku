@@ -132,7 +132,7 @@ const OtoroshiServicesAndGroupSelector = (props) => {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
         <Help text={props.help} label={props.label} />
       </label>
@@ -1454,14 +1454,14 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
         style={{ borderBottom: '1px solid #DFDFDF' }}>
         {value.visibility !== 'AdminOnly' && (
           <>
-            <button onClick={addNewPlan} type="button" className="btn btn-outline-primary mr-1">
+            <button onClick={addNewPlan} type="button" className="btn btn-outline-primary me-1">
               {translateMethod('add a new plan')}
             </button>
             {value.possibleUsagePlans.length > 1 && (
               <button
                 onClick={importPlan}
                 type="button"
-                className="btn btn-outline-primary mr-1"
+                className="btn btn-outline-primary me-1"
                 style={{ marginTop: 0 }}>
                 {translateMethod('import a plan')}
               </button>
@@ -1492,8 +1492,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={makesDefault}
                   type="button"
-                  className="btn btn-sm btn-outline-primary mr-1 mb-2">
-                  <i className="fas fa-star mr-1" title="Default plan" />
+                  className="btn btn-sm btn-outline-primary me-1 mb-2">
+                  <i className="fas fa-star me-1" title="Default plan" />
                   <Translation i18nkey="Make default plan">Make default plan</Translation>
                 </button>
               )}
@@ -1501,9 +1501,9 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={makePrivate}
                   type="button"
-                  className="btn btn-sm btn-outline-primary mb-2 mr-1">
+                  className="btn btn-sm btn-outline-primary mb-2 me-1">
                   <i
-                    className={classNames('fas mr-1', {
+                    className={classNames('fas me-1', {
                       'fa-lock': selected.visibility === 'Public',
                       'fa-unlock': selected.visibility === 'Private',
                     })}
@@ -1520,8 +1520,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={clonePlan}
                   type="button"
-                  className="btn btn-sm btn-outline-primary mb-2 mr-1">
-                  <i className="fas fa-clone mr-1" />
+                  className="btn btn-sm btn-outline-primary mb-2 me-1">
+                  <i className="fas fa-clone me-1" />
                   <Translation i18nkey="Duplicate plan">Duplicate plan</Translation>
                 </button>
               )}
@@ -1530,7 +1530,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                   onClick={deletePlan}
                   type="button"
                   className="btn btn-sm btn-outline-danger mb-2">
-                  <i className="fas fa-trash mr-1" />
+                  <i className="fas fa-trash me-1" />
                   <Translation i18nkey="Delete plan">Delete plan</Translation>
                 </button>
               )}
@@ -1594,7 +1594,7 @@ const CustomMetadataInput = (props) => {
   return (
     <div>
       {props.value.length === 0 && (
-        <div className="form-group row">
+        <div className="mb-3 row">
           <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
             <Help text={props.help} label={props.label} />
           </label>
@@ -1622,7 +1622,7 @@ const CustomMetadataInput = (props) => {
               <input
                 disabled={props.disabled}
                 type="text"
-                className="form-control col-5 mr-1"
+                className="form-control col-5 me-1"
                 placeholder={props.placeholderKey}
                 value={key}
                 onChange={(e) => changeKey(e, key)}
@@ -1711,7 +1711,7 @@ const OtoroshiPathInput = (props) => {
   return (
     <div>
       {props.value.length === 0 && (
-        <div className="form-group row">
+        <div className="mb-3 row">
           <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
             <Help text={props.help} label={props.label} />
           </label>
@@ -1740,7 +1740,7 @@ const OtoroshiPathInput = (props) => {
                 placeholder="Select a language"
                 options={httpMethods.sort().map((l) => ({ label: l, value: l }))}
                 type="text"
-                className="reactSelect flex-grow-1 mr-1"
+                className="reactSelect flex-grow-1 me-1"
                 value={{ label: method, value: method }}
                 onChange={(e) => changeMethod(e.value, idx)}
                 classNamePrefix="reactSelect"

@@ -21,8 +21,8 @@ export class Collapse extends Component {
       return (
         <div>
           <hr />
-          <div className="form-group row">
-            <label className="col-sm-2 control-label" />
+          <div className="mb-3 row">
+            <label className="col-sm-2 control-label mb-2" />
             <div className="col-sm-10" onClick={this.toggle} style={{ cursor: 'pointer' }}>
               <span style={{ fontWeight: 'bold', marginTop: 7 }}>{this.props.label}</span>
               <button
@@ -41,8 +41,8 @@ export class Collapse extends Component {
       return (
         <div>
           <hr />
-          <div className="form-group row">
-            <label className="col-sm-2 control-label" />
+          <div className="mb-3 row">
+            <label className="col-sm-2 control-label mb-2" />
             <div className="col-sm-10" onClick={this.toggle} style={{ cursor: 'pointer' }}>
               <span style={{ fontWeight: 'bold', marginTop: 7 }}>{this.props.label}</span>
               <button

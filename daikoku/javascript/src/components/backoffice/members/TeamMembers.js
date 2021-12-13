@@ -295,15 +295,15 @@ export function TeamMembersSimpleComponent(props) {
             alert(
               <div className="d-flex flex-column">
                 <div>
-                  <i className="fas fa-shield-alt mr-1" />
+                  <i className="fas fa-shield-alt me-1" />
                   {translateMethod('permission.caption.administrator')}
                 </div>
                 <div>
-                  <i className="fas fa-pencil-alt mr-1" />
+                  <i className="fas fa-pencil-alt me-1" />
                   {translateMethod('permission.caption.apiEditor')}
                 </div>
                 <div>
-                  <i className="fas fa-user-alt mr-1" />
+                  <i className="fas fa-user-alt me-1" />
                   {translateMethod('permission.caption.user')}
                 </div>
               </div>,
@@ -322,7 +322,7 @@ export function TeamMembersSimpleComponent(props) {
                   avatar={member.picture}
                   infos={
                     <>
-                      <i className="fas fa-question mr-2" />
+                      <i className="fas fa-question me-2" />
                       <span className="team-member__name">{member.name}</span>
                     </>
                   }

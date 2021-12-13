@@ -40,14 +40,14 @@ export function ApiIssues({ filter, api, selectedVersion }) {
                 style={{ color: open ? 'inherit' : 'red' }}></i>
               <div>
                 <div>
-                  <Link to={`issues/${_id}`} className="mr-2">
+                  <Link to={`issues/${_id}`} className="me-2">
                     {title}
                   </Link>
                   {tags
                     .sort((a, b) => (a.name < b.name ? -1 : 1))
                     .map((tag, i) => (
                       <span
-                        className="badge badge-primary mr-1"
+                        className="badge badge-primary me-1"
                         style={{ backgroundColor: tag.color }}
                         key={`issue-${seqId}-tag${i}`}>
                         {tag.name}

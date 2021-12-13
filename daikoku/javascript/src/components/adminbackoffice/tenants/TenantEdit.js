@@ -73,7 +73,7 @@ function StyleLogoAssetButton(props) {
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.image}
         onlyPreview
@@ -93,7 +93,7 @@ function StyleJsUrlAssetButton(props) {
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.javascript}
         tenantMode
@@ -113,7 +113,7 @@ function StyleCssUrlAssetButton(props) {
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
 
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.css}
         tenantMode
@@ -132,7 +132,7 @@ function StyleFaviconUrlAssetButton(props) {
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.image}
         onlyPreview
@@ -152,7 +152,7 @@ function StyleFontFamilyUrlAssetButton(props) {
   const origin =
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.font}
         tenantMode
@@ -170,7 +170,7 @@ function ThemeUpdatorFromUI(props) {
   const navigate = useNavigate();
 
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <button
         type="button"
         className="btn btn-access-negative"
@@ -860,7 +860,7 @@ export function TenantEditComponent(props) {
                   alt="avatar"
                 />
               </div>
-              <h1 className="h1-rwd-reduce ml-2">{state.tenant.name}</h1>
+              <h1 className="h1-rwd-reduce ms-2">{state.tenant.name}</h1>
             </div>
             <React.Suspense fallback={<Spinner />}>
               <LazyForm
@@ -873,15 +873,15 @@ export function TenantEditComponent(props) {
             </React.Suspense>
             <div style={{ height: 60 }} />
             <div className="row form-back-fixedBtns">
-              <Link className="btn btn-outline-primary mr-1" to={'/settings/tenants'}>
-                <i className="fas fa-chevron-left mr-1" />
+              <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
+                <i className="fas fa-chevron-left me-1" />
                 <Translation i18nkey="Back">Back</Translation>
               </Link>
               {!state.create && (
                 <Link
-                  className="btn btn-outline-primary mr-1"
+                  className="btn btn-outline-primary me-1"
                   to={`/settings/tenants/${state.tenant._humanReadableId}/admins`}>
-                  <i className="fas fa-user-shield mr-1" />
+                  <i className="fas fa-user-shield me-1" />
                   <Translation i18nkey="Admins">Admins</Translation>
                 </Link>
               )}
@@ -892,13 +892,13 @@ export function TenantEditComponent(props) {
                 onClick={save}>
                 {!state.create && (
                   <span>
-                    <i className="fas fa-save mr-1" />
+                    <i className="fas fa-save me-1" />
                     <Translation i18nkey="Save">Save</Translation>
                   </span>
                 )}
                 {state.create && (
                   <span>
-                    <i className="fas fa-save mr-1" />
+                    <i className="fas fa-save me-1" />
                     <Translation i18nkey="Create">Create</Translation>
                   </span>
                 )}
