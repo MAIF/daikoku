@@ -84,7 +84,8 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" % "sangria-play-json_2.13" % "2.0.2" excludeAll ExclusionRule(
     organization = "com.typesafe.play"
   ),
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2"
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2",
+  "org.apache.logging.log4j" % "log4j-api" % "2.15.0"
 )
 
 dependencyOverrides += "io.netty" % "netty-handler" % "4.1.58.Final"
