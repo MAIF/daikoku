@@ -150,7 +150,7 @@ function TeamEditForAdministrationComponent(props) {
               <i className="fas fa-chevron-left mr-1" />
               <Translation i18nkey="Back">Back</Translation>
             </Link>
-            <button
+            {team.type !== "Personal" && <button
               style={{ marginLeft: 5 }}
               type="button"
               className="btn btn-outline-primary"
@@ -162,7 +162,7 @@ function TeamEditForAdministrationComponent(props) {
                   Members
                 </Translation>
               </span>
-            </button>
+            </button>}
             <button
               style={{ marginLeft: 5 }}
               type="button"
