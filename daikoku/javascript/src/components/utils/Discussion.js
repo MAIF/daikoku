@@ -30,7 +30,7 @@ const DiscussionComponent = (props) => {
     }
   }, [opened, totalUnread]);
 
-  const { translateMethod } = useContext(I18nContext);
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const handleKeyDown = (event) => {
     if (!newMessage.trim()) return;
