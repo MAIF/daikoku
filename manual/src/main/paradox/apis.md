@@ -17,6 +17,8 @@ Every Daikoku instance provides its own embedded OpenAPI descriptor at :
 
 http://daikoku.oto.tools:8080/api/swagger/ui
 
+Admin API OpenAPI descriptor is also accessoble in admin API page in UI, in the `Api Reference` tab.
+
 You can also read the swagger UI documentation of the Daikoku admin API below :
 
 @@@ div { .swagger-frame }

@@ -11,12 +11,14 @@ import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamApiKeyVisibility
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
+import fr.maif.otoroshi.daikoku.domain.{Evolution, DatastoreId}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
+import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
@@ -31,30 +33,40 @@ import scala.util.{Failure, Success}
 sealed trait DaikokuMode {
   def name: String
 }
+
 object DaikokuMode {
+
   case object Prod extends DaikokuMode {
     def name = "Prod"
   }
+
   case object Dev extends DaikokuMode {
     def name = "Dev"
   }
+
 }
 
 sealed trait TenantProvider {
   def name: String
 }
+
 object TenantProvider {
+
   case object Local extends TenantProvider {
     def name: String = "Local"
   }
+
   case object Header extends TenantProvider {
     def name: String = "Header"
   }
+
   case object Hostname extends TenantProvider {
     def name: String = "Hostname"
   }
+
   val values: Seq[TenantProvider] =
     Seq(Local, Header, Hostname)
+
   def apply(name: String): Option[TenantProvider] = name.toLowerCase() match {
     case "Local"    => Some(Local)
     case "local"    => Some(Local)
@@ -102,7 +114,9 @@ object InitConfig {
 }
 
 sealed trait AdminApiConfig
+
 case class LocalAdminApiConfig(key: String) extends AdminApiConfig
+
 case class OtoroshiAdminApiConfig(claimsHeaderName: String, algo: Algorithm)
     extends AdminApiConfig
 
@@ -218,22 +232,33 @@ class Config(val underlying: Configuration) {
 
 sealed trait Env {
   def environment: Environment
+
   def onStartup(): Unit
+
   def onShutdown(): Unit
+
   def snowflakeGenerator: IdGenerator
+
   def auditActor: ActorRef
+
   def defaultActorSystem: ActorSystem
+
   def defaultMaterializer: Materializer
+
   def defaultExecutionContext: ExecutionContext
+
   def dataStore: DataStore
   def updateDataStore(newDataStore: DataStore)(
       implicit ec: ExecutionContext): Future[Unit]
   def assetsStore: AssetsDataStore
+
   def wsClient: WSClient
+
   def config: Config
   def rawConfiguration: Configuration
   def identityFilters(implicit mat: Materializer,
                       ec: ExecutionContext): Seq[EssentialFilter]
+
   def expositionFilters(implicit mat: Materializer,
                         ec: ExecutionContext): Seq[EssentialFilter]
 }
@@ -242,17 +267,20 @@ class DaikokuEnv(ws: WSClient,
                  val environment: Environment,
                  configuration: Configuration,
                  context: Context,
-                 messagesApi: MessagesApi)
+                 messagesApi: MessagesApi,
+                 translator: Translator)
     extends Env {
 
   val actorSystem: ActorSystem = ActorSystem("daikoku")
-  val materializer: Materializer = Materializer.createMaterializer(actorSystem)
+  implicit val materializer: Materializer =
+    Materializer.createMaterializer(actorSystem)
   val snowflakeSeed: Long =
     configuration.getOptional[Long]("daikoku.snowflake.seed").get
   val snowflakeGenerator: IdGenerator = IdGenerator(snowflakeSeed)
 
   val auditActor: ActorRef =
-    actorSystem.actorOf(AuditActorSupervizer.props(this, messagesApi))
+    actorSystem.actorOf(
+      AuditActorSupervizer.props(this, messagesApi, translator))
 
   private val daikokuConfig = new Config(configuration)
 
@@ -272,11 +300,15 @@ class DaikokuEnv(ws: WSClient,
 
   override def defaultExecutionContext: ExecutionContext =
     actorSystem.dispatcher
+
   override def defaultActorSystem: ActorSystem = actorSystem
+
   override def defaultMaterializer: Materializer = materializer
   override def dataStore: DataStore = _dataStore
   override def wsClient: WSClient = ws
+
   override def config: Config = daikokuConfig
+
   override def assetsStore: AssetsDataStore = s3assetsStore
 
   override def updateDataStore(newDataStore: DataStore)(
@@ -301,12 +333,11 @@ class DaikokuEnv(ws: WSClient,
           }).map { _ =>
             config.init.data.from match {
               case Some(path)
-                  if path.startsWith("http://") || path
-                    .startsWith("https://") =>
+                  if path.startsWith("http://") || path.startsWith(
+                    "https://") =>
                 AppLogger.warn(
                   s"Main dataStore seems to be empty, importing from $path ...")
                 implicit val ec: ExecutionContext = defaultExecutionContext
-                implicit val mat: Materializer = defaultMaterializer
                 implicit val env: DaikokuEnv = this
                 val initialDataFu = wsClient
                   .url(path)
@@ -326,7 +357,6 @@ class DaikokuEnv(ws: WSClient,
                 AppLogger.warn(
                   s"Main dataStore seems to be empty, importing from $path ...")
                 implicit val ec: ExecutionContext = defaultExecutionContext
-                implicit val mat: Materializer = defaultMaterializer
                 implicit val env: DaikokuEnv = this
                 val initialDataFu =
                   dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
@@ -348,10 +378,22 @@ class DaikokuEnv(ws: WSClient,
                 val administrationTeamId = TeamId("administration")
                 val adminApiDefaultTenantId =
                   ApiId(s"admin-api-tenant-${Tenant.Default.value}")
+                val defaultAdminTeam = Team(
+                  id = TeamId(IdGenerator.token),
+                  tenant = Tenant.Default,
+                  `type` = TeamType.Admin,
+                  name = s"default-admin-team",
+                  description = s"The admin team for the default tenant",
+                  avatar = Some(
+                    s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
+                  users = Set(UserWithPermission(userId, Administrator)),
+                  subscriptions = Seq.empty,
+                  authorizedOtoroshiGroups = Set.empty
+                )
                 val adminApiDefaultTenant = Api(
                   id = adminApiDefaultTenantId,
                   tenant = Tenant.Default,
-                  team = administrationTeamId,
+                  team = defaultAdminTeam.id,
                   name = s"admin-api-tenant-${Tenant.Default.value}",
                   lastUpdate = DateTime.now(),
                   smallDescription = "admin api",
@@ -364,7 +406,7 @@ class DaikokuEnv(ws: WSClient,
                     pages = Seq.empty[ApiDocumentationPageId],
                     lastModificationAt = DateTime.now()
                   ),
-                  swagger = None,
+                  swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
                   possibleUsagePlans = Seq(
                     FreeWithoutQuotas(
                       id = UsagePlanId("1"),
@@ -402,18 +444,6 @@ class DaikokuEnv(ws: WSClient,
                   bucketSettings = None,
                   otoroshiSettings = Set(),
                   adminApi = adminApiDefaultTenantId
-                )
-                val defaultAdminTeam = Team(
-                  id = administrationTeamId,
-                  tenant = Tenant.Default,
-                  `type` = TeamType.Admin,
-                  name = s"default-admin-team",
-                  description = s"The admin team for the default tenant",
-                  avatar = Some(
-                    s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
-                  users = Set(UserWithPermission(userId, Administrator)),
-                  subscriptions = Seq.empty,
-                  authorizedOtoroshiGroups = Set.empty
                 )
                 val team = Team(
                   id = TeamId(BSONObjectID.generate().stringify),
@@ -463,6 +493,12 @@ class DaikokuEnv(ws: WSClient,
             }
           }
         case false =>
+          (dataStore match {
+            case store: PostgresDataStore => store.checkDatabase()
+            case _                        => FastFuture.successful(None)
+          }).flatMap { _ =>
+            evolutions.run(dataStore)
+          }
       }
     }
 

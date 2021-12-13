@@ -9,8 +9,6 @@ const JoinTeamComponent = (props) => {
     });
   }, []);
 
-  function showModal() {}
-
   return null;
 };
 

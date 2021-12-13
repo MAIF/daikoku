@@ -1,6 +1,7 @@
 # Daikoku
 
 **Daikoku** is the developer portal which was missing for Otoroshi. It is written in <a href="https://www.scala-lang.org/" target="_blank">Scala</a> and developped by the <a href="https://maif.github.io" target="_blank">MAIF OSS</a> team.
+Since the v1.5, Daikoku & Otoroshi share the same Major & Minor version, so, please use the same version of Otoroshi as Daikoku for a better experience.
 
 
 > *In Japan, <a href="https://en.wikipedia.org/wiki/File:Daikoku.jpg" target="blank">Daikokuten</a> (大黒天), the god of great darkness or blackness, or the god of five cereals, is one of the Seven Lucky Gods (Fukujin). Daikokuten evolved from the Buddhist form of the Indian deity Shiva intertwined with the Shinto god Ōkuninushi. The name is the Japanese equivalent of Mahākāla, the Hindu name for Shiva.*

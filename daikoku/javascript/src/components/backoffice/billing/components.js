@@ -1,7 +1,7 @@
 import { formatCurrency, getCurrencySymbol } from '../../utils/formatters';
 import classNames from 'classnames';
-import React from 'react';
-import { Translation } from '../../../locales';
+import React, { useContext } from 'react';
+import { I18nContext } from '../../../core';
 
 export const ApiTotal = (props) => {
   return (
@@ -33,19 +33,19 @@ export const PriceCartridge = ({ label, total, currency, handleClick, ...props }
   );
 };
 
-export const NoData = ({ language }) => {
+export const NoData = () => {
+  const { Translation } = useContext(I18nContext);
   return (
     <div className="col-12 no-data__container">
       <span className="badge badge-secondary no-data">
-        <Translation i18nkey="No datas" language={language}>
-          No Datas
-        </Translation>
+        <Translation i18nkey="No datas">No Datas</Translation>
       </span>
     </div>
   );
 };
 
 export const TheadBillingContainer = (props) => {
+  const { Translation } = useContext(I18nContext);
   return (
     <div className="col-12 total ">
       <div className="title__container__bloc">
@@ -53,9 +53,7 @@ export const TheadBillingContainer = (props) => {
       </div>
       <div className="pricing__zone">
         <span className="label">
-          <Translation i18nkey="Total" language={props.language}>
-            Total
-          </Translation>
+          <Translation i18nkey="Total">Total</Translation>
         </span>
         <span className="currency__total">
           {props.total}

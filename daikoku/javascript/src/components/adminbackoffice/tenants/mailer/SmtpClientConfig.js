@@ -1,59 +1,55 @@
-import React, { Component } from 'react';
+import React, { useContext } from 'react';
 
 import { Spinner } from '../../../utils';
-import { t } from '../../../../locales';
+import { MailTemplateButton } from './MailTemplateButton';
+import { I18nContext } from '../../../../locales/i18n-context';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export class SmtpClientConfig extends Component {
-  formFlow = ['host', 'port', 'fromTitle', 'fromEmail', 'template'];
+export function SmtpClientConfig({ value, onChange, ...props }) {
+  const { translateMethod } = useContext(I18nContext);
 
-  formSchema = {
+  const formFlow = ['host', 'port', 'fromTitle', 'fromEmail', 'template'];
+
+  const formSchema = {
     host: {
       type: 'string',
       props: {
-        label: t('smtp_client.host', this.props.currentLanguage),
+        label: translateMethod('smtp_client.host'),
       },
     },
     port: {
       type: 'string',
       props: {
-        label: t('smtp_client.port', this.props.currentLanguage),
+        label: translateMethod('smtp_client.port'),
       },
     },
     fromTitle: {
       type: 'string',
       props: {
-        label: t('Email title', this.props.currentLanguage),
+        label: translateMethod('Email title'),
       },
     },
     fromEmail: {
       type: 'string',
       props: {
-        label: t('Email from', this.props.currentLanguage),
+        label: translateMethod('Email from'),
       },
     },
     template: {
-      type: 'markdown',
-      props: {
-        label: t('Mail template', this.props.currentLanguage),
-        help: t('mail.template.help', this.props.currentLanguage),
-      },
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 
-  render() {
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          currentLanguage={this.props.currentLanguage}
-          value={this.props.value}
-          onChange={this.props.onChange}
-          flow={this.formFlow}
-          schema={this.formSchema}
-          style={{ marginTop: 50 }}
-        />
-      </React.Suspense>
-    );
-  }
+  return (
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
+        value={value}
+        onChange={onChange}
+        flow={formFlow}
+        schema={formSchema}
+        style={{ marginTop: 50 }}
+      />
+    </React.Suspense>
+  );
 }

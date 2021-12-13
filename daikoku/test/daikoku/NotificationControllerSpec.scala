@@ -4,7 +4,6 @@ import fr.maif.otoroshi.daikoku.domain.ApiVisibility.PublicWithAuthorizations
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
   ApiAccess,
   ApiSubscriptionDemand,
-  NewIssueOpen,
   TeamAccess,
   TeamInvitation
 }
@@ -19,7 +18,7 @@ import fr.maif.otoroshi.daikoku.tests.utils.{
   OneServerPerSuiteWithMyComponents
 }
 import org.joda.time.DateTime
-import org.scalatest.{BeforeAndAfterEach, nocolor}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{
@@ -186,7 +185,7 @@ class NotificationControllerSpec()
         (resp.json \ "notifications").as[JsArray])
       eventualNotifications.isSuccess mustBe true
       eventualNotifications.get.head.id mustBe untreatedNotification.id
-      eventualNotifications.get.forall(_.status == Pending) mustBe true
+      eventualNotifications.get.forall(_.status == Pending()) mustBe true
     }
     "read his count of notifications" in {
       setupEnvBlocking(
@@ -233,7 +232,7 @@ class NotificationControllerSpec()
         (resp.json \ "notifications").as[JsArray])
       eventualNotifications.isSuccess mustBe true
       eventualNotifications.get.head.id mustBe untreatedNotification.id
-      eventualNotifications.get.forall(_.status == Pending) mustBe true
+      eventualNotifications.get.forall(_.status == Pending()) mustBe true
     }
     "accept notification - team access" in {
       setupEnvBlocking(
@@ -313,7 +312,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.humanReadableId}/${defaultApi.currentVersion.value}")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -342,7 +341,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -370,7 +369,8 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                             Some(AuthorizedEntities(groups =
+                               Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -395,7 +395,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/subscriptions")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -423,7 +423,8 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                             Some(AuthorizedEntities(groups =
+                               Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -447,7 +448,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/subscriptions")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -507,7 +508,7 @@ class NotificationControllerSpec()
         (resp.json \ "notifications").as[JsArray])
       eventualNotifications.isSuccess mustBe true
       eventualNotifications.get.head.id mustBe untreatedNotification.id
-      eventualNotifications.get.forall(_.status == Pending) mustBe true
+      eventualNotifications.get.forall(_.status == Pending()) mustBe true
     }
     "accept notification - team access" in {
       setupEnvBlocking(
@@ -587,7 +588,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -616,7 +617,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -644,7 +645,8 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                             Some(AuthorizedEntities(groups =
+                               Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -669,7 +671,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/subscriptions")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -697,7 +699,8 @@ class NotificationControllerSpec()
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(OtoroshiSettingsId("default"),
-                             OtoroshiServiceGroupId("12345"))
+                             Some(AuthorizedEntities(groups =
+                               Set(OtoroshiServiceGroupId("12345")))))
             ),
             allowMultipleKeys = Some(false),
             subscriptionProcess = SubscriptionProcess.Manual,
@@ -721,7 +724,7 @@ class NotificationControllerSpec()
 
       val respVerif =
         httpJsonCallBlocking(
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/subscriptions")(
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.id.value}/${defaultApi.currentVersion.value}/subscriptions")(
           tenant,
           session)
       respVerif.status mustBe 200
@@ -779,12 +782,13 @@ class NotificationControllerSpec()
       val session = loginWithBlocking(daikokuAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumer.id.value}/apis/${defaultApi.id.value}/issues",
+          s"/api/teams/${teamConsumer.id.value}/apis/${defaultApi.humanReadableId}/issues",
         method = "POST",
         body = Some(issues.head.asJson))(
         tenant,
         session
       )
+
       resp.status mustBe 201
 
       val notificationsResp = httpJsonCallBlocking(
@@ -986,4 +990,5 @@ class NotificationControllerSpec()
     }
 
   }
+
 }

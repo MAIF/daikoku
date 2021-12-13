@@ -4,7 +4,7 @@ import { Spinner } from '../../utils';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../inputs/SingleMarkdownInput'));
 
-export const WysiwygModal = ({ closeModal, action, value, team, currentLanguage, title }) => {
+export const WysiwygModal = ({ closeModal, action, value, team, title }) => {
   const [newValue, setNewValue] = useState(value);
 
   const actionAndClose = () => {
@@ -28,7 +28,6 @@ export const WysiwygModal = ({ closeModal, action, value, team, currentLanguage,
         <div className="team-selection__container">
           <React.Suspense fallback={<Spinner />}>
             <LazySingleMarkdownInput
-              currentLanguage={currentLanguage}
               team={team}
               height={window.innerHeight - 300 + 'px'}
               value={newValue}
@@ -53,6 +52,5 @@ WysiwygModal.propTypes = {
   closeModal: PropTypes.func.isRequired,
   action: PropTypes.func.isRequired,
   value: PropTypes.string.isRequired,
-  currentLanguage: PropTypes.string,
   title: PropTypes.string,
 };

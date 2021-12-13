@@ -1,8 +1,8 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import { I18nContext } from '../../core';
 import { Help } from './Help';
-import { t } from '../../locales';
 
 const valueToSelectOption = (value) => {
   if (value === null) {
@@ -14,23 +14,27 @@ const valueToSelectOption = (value) => {
   };
 };
 
-export class ArrayInput extends Component {
-  state = {
+export function ArrayInput(props) {
+  const [state, setState] = useState({
     loading: false,
     values: [],
-    value: (this.props.value || []).map(valueToSelectOption),
+    value: (props.value || []).map(valueToSelectOption),
     inputValue: '',
-  };
+  });
 
-  componentDidMount() {
-    if (this.props.valuesFrom) {
-      this.reloadValues(this.props.valuesFrom);
+  const { translateMethod } = useContext(I18nContext);
+
+  useEffect(() => {
+    if (props.value) {
+      if (props.valuesFrom) {
+        reloadValues();
+      } else setState({ ...state, value: (props.value || []).map(valueToSelectOption) });
     }
-  }
+  }, [props.valuesFrom]);
 
-  reloadValues = (from) => {
-    this.setState({ loading: true });
-    return fetch(from || this.props.valuesFrom, {
+  const reloadValues = (from) => {
+    setState({ ...state, loading: true });
+    return fetch(from || props.valuesFrom, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -38,142 +42,120 @@ export class ArrayInput extends Component {
       },
     })
       .then((r) => r.json())
-      .then((values) => values.map(this.props.transformer || ((a) => a)))
+      .then((values) => values.map(props.transformer || ((a) => a)))
       .then((values) =>
-        this.setState({
+        setState({
+          ...state,
           values,
-          value: values.filter((v) => this.props.value.includes(v.value)),
+          value: !props.creatable
+            ? values.filter((v) => props.value.includes(v.value))
+            : (props.value || []).map(valueToSelectOption),
           loading: false,
         })
       );
   };
 
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    if (nextProps.valuesFrom !== this.props.valuesFrom) {
-      this.reloadValues(nextProps.valuesFrom);
-    }
-    if (nextProps.valuesFrom && nextProps.value !== this.props.value) {
-      this.reloadValues().then(() => {
-        if (!this.props.creatable) {
-          this.setState({
-            value: this.state.values.filter((v) => nextProps.value.includes(v.value)),
-          });
-        } else {
-          this.setState({ value: (nextProps.value || []).map(valueToSelectOption) });
-        }
-      });
-    }
-
-    if (!nextProps.valuesFrom && nextProps.value !== this.props.value) {
-      this.setState({ value: (nextProps.value || []).map(valueToSelectOption) });
-    }
-  }
-
-  changeValue = (e) => {
+  const changeValue = (e) => {
     if (e) {
       if (e.some((item) => item.__isNew__)) {
         const newVals = e.filter((item) => item.__isNew__);
-        this.setState({ value: e, values: [...this.state.values, ...newVals] });
+        setState({ ...state, value: e, values: [...state.values, ...newVals] });
       } else {
-        this.setState({ value: e });
+        setState({ ...state, value: e });
         const finaItem = (item) =>
-          this.props.transformSet ? this.props.transformSet(item.value) : item.value;
-        this.props.onChange(e.map(finaItem));
+          props.transformSet ? props.transformSet(item.value) : item.value;
+        props.onChange(e.map(finaItem));
       }
     } else {
-      this.setState({ value: null });
-      this.props.onChange(null);
+      setState({ ...state, value: null });
+      props.onChange(null);
     }
   };
 
-  handleInputChange = (inputValue) => {
-    this.setState({ inputValue });
+  const handleInputChange = (inputValue) => {
+    setState({ ...state, inputValue });
   };
 
-  handleKeyDown = (event) => {
-    const { inputValue, value } = this.state;
+  const handleKeyDown = (event) => {
+    const { inputValue, value } = state;
     if (!inputValue) return;
 
     const newValue = [...value, { label: inputValue, value: inputValue }];
-    const finaItem = (item) =>
-      this.props.transformSet ? this.props.transformSet(item.value) : item.value;
+    const finaItem = (item) => (props.transformSet ? props.transformSet(item.value) : item.value);
     switch (event.key) {
       case 'Enter':
       case 'Tab':
-        this.setState(
-          {
-            inputValue: '',
-            value: newValue,
-          },
-          () => this.props.onChange(newValue.map(finaItem))
-        );
+        setState({
+          ...state,
+          inputValue: '',
+          value: newValue,
+        });
+        props.onChange(newValue.map(finaItem));
         event.preventDefault();
     }
   };
 
-  render() {
-    const placeholder = t('array.input.placeholder', this.props.currentLanguage || 'En');
-    return (
-      <div>
-        <div className="form-group row" style={{ marginBottom: 15 }}>
-          <label
-            htmlFor={`input-${this.props.label}`}
-            className="col-xs-12 col-sm-2 col-form-label">
-            <Help text={this.props.help} label={this.props.label} />
-          </label>
-          <div className="col-sm-10">
-            <div style={{ width: '100%' }}>
-              {!this.props.valuesFrom && !this.props.creatable && (
-                <CreatableSelect
-                  isDisabled={this.props.disabled}
-                  components={{ DropdownIndicator: null }}
-                  inputValue={this.state.inputValue}
-                  isClearable
-                  isMulti
-                  menuIsOpen={false}
-                  onChange={this.changeValue}
-                  onInputChange={this.handleInputChange}
-                  onKeyDown={this.handleKeyDown}
-                  options={this.props.options}
-                  placeholder={placeholder}
-                  value={this.state.value}
-                  className="input-select reactSelect"
-                  classNamePrefix="reactSelect"
-                />
-              )}
-              {!!this.props.valuesFrom && this.props.creatable && (
-                <CreatableSelect
-                  isDisabled={this.props.disabled}
-                  components={{ DropdownIndicator: null }}
-                  inputValue={this.state.inputValue}
-                  isClearable
-                  isMulti
-                  onChange={this.changeValue}
-                  onInputChange={this.handleInputChange}
-                  onKeyDown={this.handleKeyDown}
-                  options={this.state.values}
-                  placeholder={placeholder}
-                  value={this.state.value}
-                />
-              )}
-              {!!this.props.valuesFrom && !this.props.creatable && (
-                <Select
-                  name={`${this.props.label}-selector`}
-                  className={this.props.selectClassName}
-                  value={this.state.value}
-                  isLoading={this.state.loading}
-                  isMulti
-                  isDisabled={this.props.disabled}
-                  placeholder={this.props.placeholder}
-                  options={this.state.values}
-                  onChange={this.changeValue}
-                  classNamePrefix="reactSelect"
-                />
-              )}
-            </div>
+  const placeholder = translateMethod('array.input.placeholder');
+  return (
+    <div>
+      <div className="form-group row" style={{ marginBottom: 15 }}>
+        <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
+          <Help text={props.help} label={props.label} />
+        </label>
+        <div className="col-sm-10">
+          <div style={{ width: '100%' }}>
+            {!props.valuesFrom && !props.creatable && (
+              <CreatableSelect
+                isDisabled={props.disabled}
+                components={{ DropdownIndicator: null }}
+                inputValue={state.inputValue}
+                isClearable
+                isMulti
+                menuIsOpen={false}
+                onChange={changeValue}
+                onInputChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                options={props.options}
+                placeholder={placeholder}
+                value={state.value}
+                className="input-select reactSelect"
+                classNamePrefix="reactSelect"
+              />
+            )}
+            {!!props.valuesFrom && props.creatable && (
+              <CreatableSelect
+                isDisabled={props.disabled}
+                components={{ DropdownIndicator: null }}
+                inputValue={state.inputValue}
+                isClearable
+                isMulti
+                onChange={changeValue}
+                onInputChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                options={state.values}
+                placeholder={placeholder}
+                value={state.value}
+              />
+            )}
+            {!!props.valuesFrom && !props.creatable && (
+              <Select
+                name={`${props.label}-selector`}
+                className={props.selectClassName}
+                value={state.value}
+                isLoading={state.loading}
+                isMulti
+                isDisabled={props.disabled}
+                placeholder={props.placeholder}
+                options={state.values}
+                onChange={changeValue}
+                classNamePrefix="reactSelect"
+                menuPortalTarget={document.body}
+                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+              />
+            )}
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }

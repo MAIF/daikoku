@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
@@ -6,63 +6,55 @@ import _ from 'lodash';
 
 import { OPEN_MODAL } from '../../core/modal';
 
-class Alert extends Component {
-  defaultButton = (e) => {
+function Alert(props) {
+  const defaultButton = (e) => {
     if (e.keyCode === 13) {
-      this.props.close();
+      props.close();
     }
   };
-  componentDidMount() {
-    document.body.addEventListener('keydown', this.defaultButton);
-  }
-  componentWillUnmount() {
-    document.body.removeEventListener('keydown', this.defaultButton);
-  }
-  render() {
-    const res = _.isFunction(this.props.message)
-      ? this.props.message(this.props.close)
-      : this.props.message;
-    return (
-      <div>
-        <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-lg" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{this.props.title ? this.props.title : 'Alert'}</h5>
-                <button type="button" className="close" onClick={this.props.close}>
-                  <span aria-hidden="true">&times;</span>
-                </button>
+
+  useEffect(() => {
+    document.body.addEventListener('keydown', defaultButton);
+
+    return document.body.removeEventListener('keydown', defaultButton);
+  }, []);
+
+  const res = _.isFunction(props.message) ? props.message(props.close) : props.message;
+
+  return (
+    <div>
+      <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
+        <div className="modal-dialog modal-lg" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">{props.title ? props.title : 'Alert'}</h5>
+              <button type="button" className="close" onClick={props.close}>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-description">
+                {_.isString(res) && <p>{res}</p>}
+                {!_.isString(res) && !_.isFunction(res) && res}
+                {!_.isString(res) && _.isFunction(res) && res(props.close)}
               </div>
-              <div className="modal-body">
-                <div className="modal-description">
-                  {_.isString(res) && <p>{res}</p>}
-                  {!_.isString(res) && !_.isFunction(res) && res}
-                  {!_.isString(res) && _.isFunction(res) && res(this.props.close)}
-                </div>
-              </div>
-              <div className="modal-footer">
-                {this.props.linkOpt && (
-                  <a
-                    href={this.props.linkOpt.to}
-                    className="btn btn-secondary"
-                    onClick={this.props.close}>
-                    {this.props.linkOpt.title}
-                  </a>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-outline-primary"
-                  onClick={this.props.close}>
-                  Close
-                </button>
-              </div>
+            </div>
+            <div className="modal-footer">
+              {props.linkOpt && (
+                <a href={props.linkOpt.to} className="btn btn-secondary" onClick={props.close}>
+                  {props.linkOpt.title}
+                </a>
+              )}
+              <button type="button" className="btn btn-outline-primary" onClick={props.close}>
+                {props.closeMessage ? props.closeMessage : 'Close'}
+              </button>
             </div>
           </div>
         </div>
-        <div className="modal-backdrop show" />
       </div>
-    );
-  }
+      <div className="modal-backdrop show" />
+    </div>
+  );
 }
 
 Alert.propTypes = {
@@ -72,53 +64,48 @@ Alert.propTypes = {
   linkOpt: PropTypes.object,
 };
 
-class Confirm extends Component {
-  defaultButton = (e) => {
+function Confirm(props) {
+  const defaultButton = (e) => {
     if (e.keyCode === 13) {
-      this.props.ok();
+      props.ok();
     }
   };
-  componentDidMount() {
-    document.body.addEventListener('keydown', this.defaultButton);
-  }
-  componentWillUnmount() {
-    document.body.removeEventListener('keydown', this.defaultButton);
-  }
-  render() {
-    return (
-      <div>
-        <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-lg" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Confirm</h5>
-                <button type="button" className="close" onClick={this.props.cancel}>
-                  <span aria-hidden="true">&times;</span>
-                </button>
+  useEffect(() => {
+    document.body.addEventListener('keydown', defaultButton);
+
+    return () => document.body.removeEventListener('keydown', defaultButton);
+  }, []);
+
+  return (
+    <div>
+      <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
+        <div className="modal-dialog modal-lg" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Confirm</h5>
+              <button type="button" className="close" onClick={props.cancel}>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-description">
+                <p>{props.message}</p>
               </div>
-              <div className="modal-body">
-                <div className="modal-description">
-                  <p>{this.props.message}</p>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-outline-danger"
-                  onClick={this.props.cancel}>
-                  Cancel
-                </button>
-                <button type="button" className="btn btn-outline-success" onClick={this.props.ok}>
-                  Ok
-                </button>
-              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-outline-danger" onClick={props.cancel}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-outline-success" onClick={props.ok}>
+                Ok
+              </button>
             </div>
           </div>
         </div>
-        <div className="modal-backdrop show" />
       </div>
-    );
-  }
+      <div className="modal-backdrop show" />
+    </div>
+  );
 }
 
 Confirm.propTypes = {
@@ -127,69 +114,67 @@ Confirm.propTypes = {
   message: PropTypes.string,
 };
 
-class Prompt extends Component {
-  state = {
-    text: this.props.value || '',
-  };
-  defaultButton = (e) => {
+function Prompt(props) {
+  const [text, setText] = useState(props.value || '');
+
+  let ref;
+
+  const defaultButton = (e) => {
     if (e.keyCode === 13) {
-      this.props.ok(this.state.text);
+      props.ok(state.text);
     }
   };
-  componentDidMount() {
-    document.body.addEventListener('keydown', this.defaultButton);
-    if (this.ref) {
-      this.ref.focus();
+
+  useEffect(() => {
+    document.body.addEventListener('keydown', defaultButton);
+    if (ref) {
+      ref.focus();
     }
-  }
-  componentWillUnmount() {
-    document.body.removeEventListener('keydown', this.defaultButton);
-  }
-  render() {
-    return (
-      <div>
-        <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-lg" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Confirm</h5>
-                <button type="button" className="close" onClick={this.props.cancel}>
-                  <span aria-hidden="true">&times;</span>
-                </button>
+
+    return () => document.body.removeEventListener('keydown', defaultButton);
+  }, []);
+
+  return (
+    <div>
+      <div className="modal show" style={{ display: 'block' }} tabIndex="-1" role="dialog">
+        <div className="modal-dialog modal-lg" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">{props.title || 'Confirm'}</h5>
+              <button type="button" className="close" onClick={props.cancel}>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-description">
+                <p>{props.message}</p>
+                <input
+                  type={props.isPassword ? 'password' : 'text'}
+                  className="form-control"
+                  value={text}
+                  placeholder={props.placeholder || ''}
+                  ref={(r) => (ref = r)}
+                  onChange={(e) => setText(e.target.value)}
+                />
               </div>
-              <div className="modal-body">
-                <div className="modal-description">
-                  <p>{this.props.message}</p>
-                  <input
-                    type={this.props.isPassword ? 'password' : 'text'}
-                    className="form-control"
-                    value={this.state.text}
-                    ref={(r) => (this.ref = r)}
-                    onChange={(e) => this.setState({ text: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-outline-danger"
-                  onClick={this.props.cancel}>
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline-success"
-                  onClick={() => this.props.ok(this.state.text)}>
-                  Ok
-                </button>
-              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-outline-danger" onClick={props.cancel}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-success"
+                onClick={() => props.ok(text)}>
+                Ok
+              </button>
             </div>
           </div>
         </div>
-        <div className="modal-backdrop show" />
       </div>
-    );
-  }
+      <div className="modal-backdrop show" />
+    </div>
+  );
 }
 
 Prompt.propTypes = {
@@ -206,7 +191,7 @@ export function registerAlert(store) {
     div.setAttribute('id', 'daikoku-alerts-container');
     document.body.appendChild(div);
   }
-  window.alert = (message, title, linkOpt) => {
+  window.alert = (message, title, linkOpt, closeMessage) => {
     return new Promise((success) => {
       ReactDOM.render(
         <Provider store={store}>
@@ -214,6 +199,7 @@ export function registerAlert(store) {
             message={message}
             title={title}
             linkOpt={linkOpt}
+            closeMessage={closeMessage}
             close={() => {
               ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));
               success();
@@ -262,7 +248,7 @@ export function registerPrompt(store) {
     div.setAttribute('id', 'daikoku-alerts-container');
     document.body.appendChild(div);
   }
-  window.prompt = (message, value, isPassword) => {
+  window.prompt = (message, value, isPassword, title, placeholder) => {
     return new Promise((success) => {
       ReactDOM.render(
         <Provider store={store}>
@@ -270,6 +256,8 @@ export function registerPrompt(store) {
             isPassword={!!isPassword}
             message={message}
             value={value}
+            title={title}
+            placeholder={placeholder}
             ok={(inputValue) => {
               success(inputValue);
               ReactDOM.unmountComponentAtNode(document.getElementById('daikoku-alerts-container'));

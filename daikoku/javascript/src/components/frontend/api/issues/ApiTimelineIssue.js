@@ -1,14 +1,14 @@
-import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import { useEffect, useState } from 'react';
-import { t } from '../../../../locales';
 import { converter } from '../../../../services/showdown';
 import * as Services from '../../../../services';
 import { toastr } from 'react-redux-toastr';
 import Select from 'react-select';
 import { api as API, manage } from '../../..';
 import { Can } from '../../../utils';
+import { I18nContext } from '../../../../core';
 
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 
@@ -38,15 +38,7 @@ const styles = {
   },
 };
 
-export function ApiTimelineIssue({
-  issueId,
-  currentLanguage,
-  connectedUser,
-  team,
-  api,
-  basePath,
-  history,
-}) {
+export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }) {
   const [issue, setIssue] = useState({ comments: [] });
   const [editionMode, handleEdition] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -54,13 +46,20 @@ export function ApiTimelineIssue({
 
   const [tags, setTags] = useState([]);
 
+  const navigate = useNavigate();
+
   const id = issueId || useParams().issueId;
 
+  const { translateMethod } = useContext(I18nContext);
+
   useEffect(() => {
-    Services.getAPIIssue(api._id, id).then((res) => {
-      const entryTags = res.tags.map((tag) => ({ value: tag.id, label: tag.name }));
-      setIssue({ ...res, tags: entryTags });
-      setTags(entryTags);
+    Services.getAPIIssue(api._humanReadableId, id).then((res) => {
+      if (res.error) navigate(`${basePath}/issues`);
+      else {
+        const entryTags = res.tags.map((tag) => ({ value: tag.id, label: tag.name }));
+        setIssue({ ...res, tags: entryTags });
+        setTags(entryTags);
+      }
     });
   }, [id]);
 
@@ -72,7 +71,7 @@ export function ApiTimelineIssue({
   }, [issue.comments]);
 
   function updateIssue() {
-    if (issue.title.length <= 0) toastr.error(t('issues.timeline.title.error', currentLanguage));
+    if (issue.title.length <= 0) toastr.error(translateMethod('issues.timeline.title.error'));
     else {
       handleEdition(false);
       onTagEdit(false);
@@ -80,7 +79,7 @@ export function ApiTimelineIssue({
         ...issue,
         tags: tags.map((tag) => tag.value),
       }).then((res) => {
-        if (res.status > 300) res.json().then((r) => toastr.error(r.error));
+        if (res.error) toastr.error(res.error);
         else
           setIssue({
             ...issue,
@@ -92,7 +91,7 @@ export function ApiTimelineIssue({
 
   function updateComment(i) {
     if (issue.comments[i].content.length <= 0)
-      toastr.error(t('issues.timeline.comment_content.error', currentLanguage));
+      toastr.error(translateMethod('issues.timeline.comment_content.error'));
     else {
       setIssue({
         ...issue,
@@ -106,15 +105,15 @@ export function ApiTimelineIssue({
   }
 
   function deleteIssue() {
-    window.confirm(t('issues.confirm_delete', currentLanguage)).then((ok) => {
+    window.confirm(translateMethod('issues.confirm_delete')).then((ok) => {
       if (ok)
-        Services.updateIssue(api._id, team._id, id, {
+        Services.updateIssue(api._humanReadableId, team._id, id, {
           ...issue,
           _deleted: true,
           tags: issue.tags.map((tag) => tag.value),
         }).then((res) => {
-          if (res.status < 400) history.push(`${basePath}/issues`);
-          else toastr.error(t('issues.on_error', currentLanguage));
+          if (res.error) toastr.error(translateMethod('issues.on_error'));
+          else navigate(`${basePath}/issues`);
         });
     });
   }
@@ -130,16 +129,16 @@ export function ApiTimelineIssue({
   }
 
   function removeComment(i) {
-    window.confirm(t('issues.comments.confirm_delete', currentLanguage)).then((ok) => {
+    window.confirm(translateMethod('issues.comments.confirm_delete')).then((ok) => {
       if (ok) {
         const updatedIssue = {
           ...issue,
           comments: issue.comments.filter((_, j) => i !== j),
         };
         setIssue(updatedIssue);
-        Services.updateIssue(api._id, team._id, id, updatedIssue).then((res) => {
-          if (res.status > 300) res.json().then((r) => toastr.error(r.error));
-          else toastr.success(t('Api saved', currentLanguage));
+        Services.updateIssue(api._humanReadableId, team._id, id, updatedIssue).then((res) => {
+          if (res.error) toastr.error(res.error);
+          else toastr.success(translateMethod('Api saved'));
         });
       }
     });
@@ -156,8 +155,7 @@ export function ApiTimelineIssue({
   }
 
   function createComment() {
-    if (newComment.length <= 0)
-      toastr.error(t('issues.on_missing_comment_content', currentLanguage));
+    if (newComment.length <= 0) toastr.error(translateMethod('issues.on_missing_comment_content'));
     else {
       setIssue({
         ...issue,
@@ -173,7 +171,7 @@ export function ApiTimelineIssue({
   }
 
   function setIssueStatus(value) {
-    Services.updateIssue(api._id, team._id, id, {
+    Services.updateIssue(api._humanReadableId, team._id, id, {
       ...issue,
       open: value,
       tags: issue.tags.map((tag) => tag.value),
@@ -195,7 +193,7 @@ export function ApiTimelineIssue({
             ]
           : issue.comments,
     };
-    Services.updateIssue(api._id, team._id, id, {
+    Services.updateIssue(api._humanReadableId, team._id, id, {
       ...newIssue,
       tags: issue.tags.map((tag) => tag.value),
     }).then(() => setIssue(newIssue));
@@ -222,10 +220,10 @@ export function ApiTimelineIssue({
             {editionMode ? (
               <div className="d-flex ml-3">
                 <button className="btn btn-success mr-1" onClick={updateIssue}>
-                  {t('Save', currentLanguage)}
+                  {translateMethod('Save')}
                 </button>
                 <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>
-                  {t('Cancel', currentLanguage)}
+                  {translateMethod('Cancel')}
                 </button>
               </div>
             ) : (
@@ -233,14 +231,12 @@ export function ApiTimelineIssue({
                 <button
                   className="btn btn-outline-secondary mr-1"
                   onClick={() => handleEdition(true)}>
-                  {t('Edit', currentLanguage)}
+                  {translateMethod('Edit')}
                 </button>
                 <Link
-                  to={`/${team._humanReadableId}/${api._humanReadableId}/issues/new`}
+                  to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/new`}
                   style={{ whiteSpace: 'nowrap' }}>
-                  <button className="btn btn-success">
-                    {t('issues.new_issue', currentLanguage)}
-                  </button>
+                  <button className="btn btn-success">{translateMethod('issues.new_issue')}</button>
                 </Link>
               </>
             )}
@@ -252,15 +248,15 @@ export function ApiTimelineIssue({
           style={styles.getStatus(issue.open)}
           className="d-flex justify-content-center align-items-center mr-3">
           <i className="fa fa-exclamation-circle mr-2" style={{ color: '#fff' }} />
-          {issue.open ? t('issues.open', currentLanguage) : t('issues.closed', currentLanguage)}
+          {issue.open ? translateMethod('issues.open') : translateMethod('issues.closed')}
         </div>
         <div>
           <span className="pr-1" style={styles.bold}>
             {issue.by ? issue.by._humanReadableId : ''}
           </span>
-          {t('issues.opened_message', currentLanguage)}{' '}
-          {moment(issue.createdDate).format(t('moment.date.format.without.hours', currentLanguage))}{' '}
-          · {issue.comments ? issue.comments.length : 0} {t('issues.comments', currentLanguage)}
+          {translateMethod('issues.opened_message')}{' '}
+          {moment(issue.createdDate).format(translateMethod('moment.date.format.without.hours'))} ·{' '}
+          {issue.comments ? issue.comments.length : 0} {translateMethod('issues.comments')}
         </div>
       </div>
 
@@ -271,7 +267,6 @@ export function ApiTimelineIssue({
               {...comment}
               key={`comment${i}`}
               i={i}
-              currentLanguage={currentLanguage}
               editComment={() => editComment(i)}
               removeComment={() => removeComment(i)}
               handleEditCommentContent={(e) => handleEditCommentContent(e, i)}
@@ -281,7 +276,6 @@ export function ApiTimelineIssue({
           ))}
           {connectedUser && !connectedUser.isGuest && (
             <NewComment
-              currentLanguage={currentLanguage}
               content={newComment}
               picture={connectedUser.picture}
               open={issue.open}
@@ -296,7 +290,7 @@ export function ApiTimelineIssue({
         <div className="col-md-3">
           <div>
             <div className="d-flex">
-              <label htmlFor="tags">{t('issues.tags', currentLanguage)}</label>
+              <label htmlFor="tags">{translateMethod('issues.tags')}</label>
               {!showTag && connectedUser && !connectedUser.isGuest && (
                 <Can I={manage} a={API} team={team}>
                   <i
@@ -326,10 +320,10 @@ export function ApiTimelineIssue({
                       setTags([]);
                       onTagEdit(false);
                     }}>
-                    {t('Cancel', currentLanguage)}
+                    {translateMethod('Cancel')}
                   </button>
                   <button className="btn btn-outline-success my-3" onClick={updateIssue}>
-                    {t('Save', currentLanguage)}
+                    {translateMethod('Save')}
                   </button>
                 </>
               ) : (
@@ -344,7 +338,7 @@ export function ApiTimelineIssue({
                       {tag.label}
                     </span>
                   ))}
-                  {tags && tags.length <= 0 && <p>{t('issues.no_tags', currentLanguage)}</p>}
+                  {tags && tags.length <= 0 && <p>{translateMethod('issues.no_tags')}</p>}
                 </>
               )}
             </div>
@@ -355,7 +349,7 @@ export function ApiTimelineIssue({
               <Can I={manage} a={API} team={team}>
                 <hr className="hr-apidescription" />
                 <div>
-                  <label htmlFor="actions">{t('issues.actions', currentLanguage)}</label>
+                  <label htmlFor="actions">{translateMethod('issues.actions')}</label>
                   <div id="actions">
                     <i className="fa fa-trash"></i>
                     <button
@@ -366,7 +360,7 @@ export function ApiTimelineIssue({
                         outline: 'none',
                       }}
                       onClick={deleteIssue}>
-                      {t('issues.delete_issue', currentLanguage)}
+                      {translateMethod('issues.delete_issue')}
                     </button>
                   </div>
                 </div>
@@ -383,7 +377,6 @@ function Comment({
   by,
   createdDate,
   content,
-  currentLanguage,
   editing,
   editComment,
   removeComment,
@@ -393,6 +386,8 @@ function Comment({
   i,
 }) {
   const [showActions, toggleActions] = useState(false);
+
+  const { translateMethod } = useContext(I18nContext);
 
   return (
     <div className="d-flex pb-4">
@@ -410,8 +405,8 @@ function Comment({
           <span className="pr-1" style={styles.bold}>
             {by._humanReadableId}
           </span>
-          <span className="pr-1">{t('issues.commented_on', currentLanguage)}</span>
-          {moment(createdDate).format(t('moment.date.format.without.hours', currentLanguage))}
+          <span className="pr-1">{translateMethod('issues.commented_on')}</span>
+          {moment(createdDate).format(translateMethod('moment.date.format.without.hours'))}
           {by._id === connectedUser._id && editing !== true && (
             <>
               {showActions ? (
@@ -437,9 +432,9 @@ function Comment({
         </div>
         {editing ? (
           <div className="p-3" style={styles.commentBody}>
-            <React.Suspense fallback={<div>{t('loading', currentLanguage)}</div>}>
+            <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
               <LazySingleMarkdownInput
-                currentLanguage={currentLanguage}
+                fullWidth
                 height="300px"
                 value={content}
                 fixedWitdh="0px"
@@ -448,10 +443,10 @@ function Comment({
             </React.Suspense>
             <div className="d-flex mt-3 justify-content-end">
               <button className="btn btn-outline-danger mr-1" onClick={editComment}>
-                {t('Cancel', currentLanguage)}
+                {translateMethod('Cancel')}
               </button>
               <button className="btn btn-success" onClick={updateComment}>
-                {t('issues.update', currentLanguage)}
+                {translateMethod('issues.update')}
               </button>
             </div>
           </div>
@@ -471,13 +466,13 @@ function NewComment({
   handleContent,
   content,
   picture,
-  currentLanguage,
   createComment,
   closeIssue,
   open,
   openIssue,
   team,
 }) {
+  const { translateMethod } = useContext(I18nContext);
   return (
     <div className="d-flex pb-4">
       <div className="dropdown pr-2">
@@ -491,7 +486,7 @@ function NewComment({
       </div>
       <div className="container">
         <div className="d-flex px-3 py-2" style={styles.commentHeader}>
-          {t('issues.new_comment', currentLanguage)}
+          {translateMethod('issues.new_comment')}
         </div>
         <div
           className="p-3"
@@ -501,9 +496,9 @@ function NewComment({
             borderBottomRightRadius: '8px',
             backgroundColor: '#fff',
           }}>
-          <React.Suspense fallback={<div>{t('loading', currentLanguage)}</div>}>
+          <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
-              currentLanguage={currentLanguage}
+              fullWidth={true}
               height="300px"
               value={content}
               fixedWitdh="0px"
@@ -515,17 +510,17 @@ function NewComment({
               {open ? (
                 <button className="btn btn-outline-danger mr-1" onClick={closeIssue}>
                   <i className="fa fa-exclamation-circle mr-2" />
-                  {t('issues.actions.close', currentLanguage)}
+                  {translateMethod('issues.actions.close')}
                 </button>
               ) : (
                 <button className="btn btn-outline-success mr-1" onClick={openIssue}>
                   <i className="fa fa-exclamation-circle mr-2" />
-                  {t('issues.actions.reopen', currentLanguage)}
+                  {translateMethod('issues.actions.reopen')}
                 </button>
               )}
             </Can>
             <button className="btn btn-success" onClick={createComment}>
-              {t('issues.actions.comment', currentLanguage)}
+              {translateMethod('issues.actions.comment')}
             </button>
           </div>
         </div>

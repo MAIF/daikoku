@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, withRouter, Switch } from 'react-router-dom';
-import { Redirect } from 'react-router';
-import { ConnectedRouter } from 'connected-react-router';
-import { connect } from 'react-redux';
+import React, { useContext, useEffect, useState } from 'react';
+import { BrowserRouter, BrowserRouter as Router, Route, Routes, useParams } from 'react-router-dom';
+import { Navigate } from 'react-router';
+import { connect, useDispatch, useSelector } from 'react-redux';
 import ReduxToastr from 'react-redux-toastr';
 
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise, history } from '../core';
-import { t } from '../locales';
+import { TeamBackOffice } from '../components/backoffice/TeamBackOffice'
 
 import 'react-redux-toastr/src/styles/index.scss';
 
@@ -27,23 +26,9 @@ import {
 } from '../components/frontend';
 
 import {
-  TeamBackOfficeHome,
-  TeamApiKeys,
-  TeamApiKeysForApi,
-  TeamApis,
-  TeamApi,
-  TeamMembers,
   NotificationList,
   MyProfile,
-  TeamApiKeyConsumption,
-  TeamApiConsumption,
-  TeamPlanConsumption,
-  TeamConsumption,
-  TeamBilling,
-  TeamIncome,
-  TeamEdit,
   AssetsList,
-  TeamApiSubscriptions,
   MessagesProvider,
 } from '../components/backoffice';
 
@@ -63,13 +48,15 @@ import {
   TeamList,
   TenantAdminList,
   InitializeFromOtoroshi,
+  MailingInternalization,
   AdminMessages,
 } from '../components/adminbackoffice';
 
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { MessagesEvents } from '../services/messages';
+import { I18nContext } from '../locales/i18n-context';
 
-const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, currentLanguage }) => {
+const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
   useEffect(() => {
     if (!user.isGuest) {
       MessagesEvents.start();
@@ -78,6 +65,8 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
       };
     }
   }, []);
+
+  const { translateMethod } = useContext(I18nContext);
 
   if (!user) {
     return (
@@ -90,38 +79,22 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
             position: 'relative',
             paddingBottom: '6rem',
           }}>
-          <Route
-            exact
-            path="/"
-            render={(p) => (
-              <UnauthenticatedTopBar
-                tenant={tenant}
-                location={p.location}
-                history={p.history}
-                match={p.match}
-              />
-            )}
-          />
-          <Route
-            exact
-            path="/"
-            render={(p) => (
-              <UnauthenticatedHome tenant={tenant} match={p.match} history={p.history} />
-            )}
-          />
-          <Route
-            exact
-            path="/"
-            render={(p) => (
-              <UnauthenticatedFooter tenant={tenant} match={p.match} history={p.history} />
-            )}
-          />
+          <Routes>
+            <Route
+              path="/"
+              element={<>
+                <UnauthenticatedTopBar tenant={tenant} />
+                <UnauthenticatedHome tenant={tenant} />
+                <UnauthenticatedFooter tenant={tenant} />
+              </>}
+            />
+          </Routes>
         </div>
       </Router>
     );
   }
   return (
-    <ConnectedRouter history={history}>
+    <BrowserRouter history={history}>
       <MessagesProvider>
         <div role="root-container" className="container-fluid main-content-container">
           <ModalRoot />
@@ -133,456 +106,323 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction, current
             transitionOut="fadeOut"
             closeOnToastrClick
           />
-          <Route
-            path={[
-              '/notifications',
-              '/teams',
-              '/settings',
-              '/consumptions',
-              '/:teamId/settings',
-              '/:teamId/:apiId',
-              '/:teamId',
-              '/',
-            ]}
-            render={(p) => (
-              <TopBar
-                location={p.location}
-                history={p.history}
-                match={p.match}
-                loginAction={loginAction}
-                loginProvider={loginProvider}
-              />
-            )}
+          <TopBar
+            loginAction={loginAction}
+            loginProvider={loginProvider}
           />
-          <Switch>
-            <UnauthenticatedRoute
-              title={`${tenant.name} - ${t('Verification code', currentLanguage)}`}
-              exact
+          <Routes>
+            <Route
               path="/2fa"
-              tenant={tenant}
-              render={(p) => (
-                <TwoFactorAuthentication
-                  match={p.match}
-                  history={p.history}
-                  currentLanguage={currentLanguage}
-                  title={`${tenant.name} - ${t('Verification code', currentLanguage)}`}
-                />
-              )}
-            />
-            <UnauthenticatedRoute
-              title={`${tenant.name} - ${t('Reset password', currentLanguage)}`}
-              exact
-              path="/reset"
-              tenant={tenant}
-              render={(p) => <ResetPassword match={p.match} history={p.history} />}
-            />
-            <UnauthenticatedRoute
-              title={`${tenant.name} - ${t('Signup', currentLanguage)}`}
-              exact
-              path="/signup"
-              tenant={tenant}
-              render={(p) => <Signup match={p.match} history={p.history} />}
-            />
-            <RouteWithTitle
-              exact
-              title={`${tenant.name} - ${t('Notifications', currentLanguage)}`}
-              path="/notifications"
-              render={(p) => (
-                <NotificationList match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <FrontOfficeRoute
-              exact
-              path="/join"
-              title={`${tenant.name} - ${t('Join team', currentLanguage)}`}
-              render={(p) => <JoinTeam connectedUser={p.connectedUser} />}
-            />
-            <FrontOfficeRoute
-              title={`${tenant.name} - ${t('Apis', currentLanguage)}`}
-              exact
-              path="/apis"
-              render={(p) => <MyHome match={p.match} history={p.history} />}
-            />
-            <FrontOfficeRoute
-              title={`${tenant.name} - ${t('Home', currentLanguage)}`}
-              exact
-              path="/"
-              render={(p) => (
-                <MaybeHomePage
-                  match={p.match}
-                  history={p.history}
-                  connectedUser={p.connectedUser}
-                />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Message', currentLanguage, true)}`}
-              exact
-              path="/settings/messages"
-              render={(p) => (
-                <AdminMessages match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Otoroshi', currentLanguage)}`}
-              exact
-              path="/settings/otoroshis/:otoroshiId"
-              render={(p) => (
-                <TenantOtoroshi match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Otoroshis', currentLanguage, true)}`}
-              exact
-              path="/settings/otoroshis"
-              render={(p) => (
-                <TenantOtoroshis match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Tenant edit', currentLanguage)}`}
-              exact
-              path="/settings/tenants/:tenantId"
-              render={(p) => (
-                <TenantEdit match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Style', currentLanguage)}`}
-              exact
-              path="/settings/tenants/:tenantId/style"
-              render={(p) => (
-                <TenantStyleEdit match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Tenants', currentLanguage, true)}`}
-              exact
-              path="/settings/tenants"
-              render={(p) => (
-                <TenantList match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Admins', currentLanguage)}`}
-              exact
-              path="/settings/tenants/:tenantId/admins"
-              render={(p) => (
-                <TenantAdminList
-                  match={p.match}
-                  history={p.history}
-                  location={p.location}
-                  tenantMode={false}
-                />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('User', currentLanguage)}`}
-              exact
-              path="/settings/users/:userId"
-              render={(p) => <UserEdit match={p.match} history={p.history} location={p.location} />}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Users', currentLanguage, true)}`}
-              exact
-              path="/settings/users"
-              render={(p) => <UserList match={p.match} history={p.history} location={p.location} />}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Audit trail', currentLanguage)}`}
-              exact
-              path="/settings/audit"
-              render={(p) => (
-                <AuditTrailList match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('User sessions', currentLanguage)}`}
-              exact
-              path="/settings/sessions"
-              render={(p) => (
-                <SessionList match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Import / Export', currentLanguage)}`}
-              exact
-              path="/settings/import-export"
-              render={(p) => (
-                <ImportExport match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('My profile', currentLanguage)}`}
-              exact
-              path="/settings/me"
-              render={(p) => (
-                <MyProfile match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Team', currentLanguage)}`}
-              exact
-              path="/settings/teams/:teamSettingId"
-              render={(p) => (
-                <TeamEditForAdmin match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Team members', currentLanguage)}`}
-              exact
-              path="/settings/teams/:teamSettingId/members"
-              render={(p) => (
-                <TeamMembersForAdmin match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Teams', currentLanguage)}`}
-              exact
-              path="/settings/teams"
-              render={(p) => <TeamList match={p.match} history={p.history} location={p.location} />}
+              element={
+                <UnauthenticatedRoute title={`${tenant.title} - ${translateMethod('Verification code')}`} tenant={tenant}>
+                  <TwoFactorAuthentication title={`${tenant.title} - ${translateMethod('Verification code')}`} />
+                </UnauthenticatedRoute>
+              }
             />
             <Route
-              exact
+              path="/reset"
+              element={
+                <UnauthenticatedRoute title={`${tenant.title} - ${translateMethod('Reset password')}`} tenant={tenant}>
+                  <ResetPassword />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+              path="/signup"
+              element={<UnauthenticatedRoute title={`${tenant.title} - ${translateMethod('Signup')}`} tenant={tenant}>
+                <Signup />
+              </UnauthenticatedRoute>}
+            />
+            <Route
+              path="/notifications"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Notifications')}`}>
+                  <NotificationList />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/join"
+              element={<FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Join team')}`}>
+                <JoinTeam />
+              </FrontOfficeRoute>}
+            />
+            <Route
+              path="/apis"
+              element={<FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Apis')}`}>
+                <MyHome />
+              </FrontOfficeRoute>}
+            />
+            <Route
+              path="/"
+              element={
+                <FrontOfficeRoute
+                  title={`${tenant.title} - ${translateMethod('Home')}`}>
+                  <MaybeHomePage tenant={tenant} />
+                </FrontOfficeRoute>
+              }
+            />
+            <Route
+              path="/settings/messages"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Message', true)}`}>
+                  <AdminMessages />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/otoroshis/:otoroshiId"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshi')}`}>
+                  <TenantOtoroshi />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/otoroshis"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshis', true)}`}>
+                  <TenantOtoroshis />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/tenants/:tenantId"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenant edit')}`}>
+                  <TenantEdit />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/tenants/:tenantId/style"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Style')}`}>
+                  <TenantStyleEdit />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/tenants"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Tenants', true)}`}>
+                  <TenantList />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/tenants/:tenantId/admins"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
+                  <TenantAdminList tenantMode={false} />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/users/:userId"
+              element={<RouteWithTitle title={`${tenant.title} - ${translateMethod('User')}`}>
+                <UserEdit />
+              </RouteWithTitle>}
+            />
+            <Route
+              path="/settings/users"
+              element={<RouteWithTitle title={`${tenant.title} - ${translateMethod('Users', true)}`}>
+                <UserList />
+              </RouteWithTitle>}
+            />
+            <Route
+              path="/settings/audit"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Audit trail')}`}>
+                  <AuditTrailList />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/sessions"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('User sessions')}`}>
+                  <SessionList />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/import-export"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Import / Export')}`}>
+                  <ImportExport />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/me"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('My profile')}`}>
+                  <MyProfile />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/teams/:teamSettingId"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Team')}`}>
+                  <TeamEditForAdmin />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/teams/:teamSettingId/members"
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Team members')}`}>
+                  <TeamMembersForAdmin />
+                </RouteWithTitle>
+              }
+            />
+            <Route
+              path="/settings/teams"
+              element={<RouteWithTitle title={`${tenant.title} - ${translateMethod('Teams')}`}>
+                <TeamList />
+              </RouteWithTitle>}
+            />
+            <Route
               path="/settings/assets"
-              render={(p) => (
-                <AssetsList
-                  match={p.match}
-                  history={p.history}
-                  location={p.location}
-                  tenantMode={true}
-                />
-              )}
+              element={<AssetsList tenantMode={true} />}
             />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Admins', currentLanguage)}`}
-              exact
+            <Route
               path="/settings/admins"
-              render={(p) => (
-                <TenantAdminList
-                  match={p.match}
-                  history={p.history}
-                  location={p.location}
-                  tenantMode={true}
-                />
-              )}
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Admins')}`}>
+                  <TenantAdminList tenantMode={true} />
+                </RouteWithTitle>
+              }
             />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('Init', currentLanguage)}`}
-              exact
+            <Route
               path="/settings/init"
-              render={(p) => (
-                <InitializeFromOtoroshi match={p.match} history={p.history} location={p.location} />
-              )}
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Init')}`}>
+                  <InitializeFromOtoroshi />
+                </RouteWithTitle>
+              }
             />
+            {['/settings/internationalization', '/settings/internationalization/:domain'].map(r =>
+              <Route
+                key={r}
+                path={r}
+                element={
+                  <RouteWithTitle title={`${tenant.title} - ${translateMethod('Internalization')}`}>
+                    <MailingInternalization tenant={tenant} />
+                  </RouteWithTitle>
+                }
+              />
+            )}
             {!tenant.hideTeamsPage && (
-              <FrontOfficeRoute
-                title={`${tenant.name} - ${t('Teams', currentLanguage)}`}
-                exact
+              <Route
                 path="/teams"
-                render={(p) => (
-                  <TeamChooser match={p.match} history={p.history} location={p.location} />
-                )}
+                element={
+                  <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Teams')}`}>
+                    <TeamChooser />
+                  </FrontOfficeRoute>
+                }
               />
             )}
 
-            {/* NEW ROUTING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */}
-            {/* NEW ROUTING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */}
-            {/* NEW ROUTING HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */}
-
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/edition"
-              render={(p) => <TeamEdit match={p.match} history={p.history} location={p.location} />}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/consumption"
-              render={(p) => (
-                <TeamConsumption match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/billing"
-              render={(p) => (
-                <TeamBilling match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/income"
-              render={(p) => (
-                <TeamIncome match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apikeys/:apiId"
-              render={(p) => (
-                <TeamApiKeysForApi match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/subscriptions/apis/:apiId"
-              render={(p) => (
-                <TeamApiSubscriptions match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apikeys/:apiId/subscription/:subscription/consumptions"
-              render={(p) => (
-                <TeamApiKeyConsumption match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apikeys"
-              render={(p) => (
-                <TeamApiKeys match={p.match} history={p.history} location={p.location} />
-              )}
-            />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apis"
-              render={(p) => <TeamApis match={p.match} history={p.history} location={p.location} />}
+            <Route
+              path="/:teamId/settings/*"
+              element={<TeamBackOfficeRouter tenant={tenant} />}
             />
 
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/consumptions/apis/:apiId"
-              render={(p) => (
-                <TeamApiConsumption match={p.match} history={p.history} location={p.location} />
-              )}
+            <Route
+              path="/:teamId/:apiId/:versionId/documentation/:pageId"
+              element={
+                <FrontOfficeRoute>
+                  <ApiHome tab="documentation-page" />
+                </FrontOfficeRoute>
+              }
             />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/consumptions/apis/:apiId/plan/:planId"
-              render={(p) => (
-                <TeamPlanConsumption match={p.match} history={p.history} location={p.location} />
-              )}
+            <Route
+              path="/:teamId/:apiId/:versionId/documentation"
+              element={<FrontOfficeRoute>
+                <ApiHome tab="documentation" />
+              </FrontOfficeRoute>}
             />
-            <TeamBackOfficeRoute
-              title={`${tenant.name} - ${t('member', currentLanguage, true)}`}
-              exact
-              path="/:teamId/settings/members"
-              render={(p) => (
-                <TeamMembers match={p.match} history={p.history} location={p.location} />
-              )}
+            <Route
+              path="/:teamId/:apiId/:versionId/pricing"
+              element={<FrontOfficeRoute>
+                <ApiHome tab="pricing" />
+              </FrontOfficeRoute>}
             />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/assets"
-              render={(p) => (
-                <AssetsList
-                  match={p.match}
-                  history={p.history}
-                  location={p.location}
-                  tenantMode={false}
-                />
-              )}
+            <Route
+              path="/:teamId/:apiId/:versionId/swagger"
+              element={<FrontOfficeRoute>
+                <ApiHome tab="swagger" />
+              </FrontOfficeRoute>}
             />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings"
-              render={(p) => (
-                <TeamBackOfficeHome match={p.match} history={p.history} location={p.location} />
-              )}
+            <Route
+              path="/:teamId/:apiId/:versionId/redoc"
+              element={<FrontOfficeRoute>
+                <ApiHome tab="redoc" />
+              </FrontOfficeRoute>}
             />
-            <TeamBackOfficeRoute
-              exact
-              path="/:teamId/settings/apis/:apiId"
-              render={(p) => <TeamApi match={p.match} history={p.history} location={p.location} />}
+            <Route
+              path="/:teamId/:apiId/:versionId/console"
+              element={<FrontOfficeRoute>
+                <ApiHome tab="console" />
+              </FrontOfficeRoute>}
             />
-            <TeamBackOfficeRoute
-              title={`${tenant.name} - ${t('API', currentLanguage)}`}
-              path="/:teamId/settings/apis/:apiId/:tab"
-              render={(p) => <TeamApi match={p.match} history={p.history} location={p.location} />}
+            {['/:teamId/:apiId/:versionId', '/:teamId/:apiId/:versionId/description'].map(r => (
+              <Route
+                key={r}
+                path={r}
+                element={<FrontOfficeRoute>
+                  <ApiHome tab="description" />
+                </FrontOfficeRoute>}
+              />
+            ))}
+            <Route
+              path="/:teamId/:apiId/:versionId/news"
+              element={<FrontOfficeRoute>
+                <ApiHome tab="news" />
+              </FrontOfficeRoute>}
             />
-
-            <FrontOfficeRoute
-              exact
-              path="/:teamId/:apiId/documentation/:pageId"
-              render={(p) => (
-                <ApiHome match={p.match} history={p.history} tab="documentation-page" />
-              )}
-            />
-            <FrontOfficeRoute
-              exact
-              path="/:teamId/:apiId/documentation"
-              render={(p) => <ApiHome match={p.match} history={p.history} tab="documentation" />}
-            />
-            <FrontOfficeRoute
-              exact
-              path="/:teamId/:apiId/pricing"
-              render={(p) => <ApiHome match={p.match} history={p.history} tab="pricing" />}
-            />
-            <FrontOfficeRoute
-              exact
-              path="/:teamId/:apiId/swagger"
-              render={(p) => <ApiHome match={p.match} history={p.history} tab="swagger" />}
-            />
-            <FrontOfficeRoute
-              exact
-              path="/:teamId/:apiId/redoc"
-              render={(p) => <ApiHome match={p.match} history={p.history} tab="redoc" />}
-            />
-            <FrontOfficeRoute
-              exact
-              path="/:teamId/:apiId/console"
-              render={(p) => <ApiHome match={p.match} history={p.history} tab="console" />}
-            />
-            <FrontOfficeRoute
-              exact
-              path="/:teamId/:apiId"
-              render={(p) => <ApiHome match={p.match} history={p.history} tab="description" />}
-            />
-            <FrontOfficeRoute
-              exact
-              path="/:teamId/:apiId/news"
-              render={(p) => <ApiHome match={p.match} history={p.history} tab="news" />}
-            />
-            <FrontOfficeRoute
-              path={['/:teamId/:apiId/issues', '/:teamId/:apiId/labels']}
-              render={(p) => <ApiHome match={p.match} history={p.history} tab="issues" />}
-            />
-            <FrontOfficeRoute
-              exact
+            {['/:teamId/:apiId/:versionId/labels', '/:teamId/:apiId/:versionId/issues'].map(r =>
+              <Route
+                key={r}
+                path={r}
+                element={<FrontOfficeRoute>
+                  <ApiHome tab="issues" />
+                </FrontOfficeRoute>}
+              />
+            )}
+            <Route
               path="/:teamId"
-              render={(p) => <TeamHome match={p.match} history={p.history} location={p.location} />}
+              element={<FrontOfficeRoute>
+                <TeamHome />
+              </FrontOfficeRoute>}
             />
-            <RouteWithTitle
-              title={`${tenant.name} - ${t('404 Error', currentLanguage)}`}
-              path="*"
-              render={() => <Error error={{ status: 404 }} />}
-            />
-          </Switch>
-          <Route
-            path="/"
-            render={(p) => <Discussion location={p.location} history={p.history} match={p.match} />}
-          />
-          <Switch>
+          </Routes>
+          <Routes>
             <Route
-              path={['/settings', '/notifications', '/:teamId/settings']}
-              render={() => null}
+              path="/*"
+              element={<Discussion />}
             />
+          </Routes>
+          <Routes>
+            {['/settings', '/notifications', '/:teamId/settings']
+              .map(r => (
+                <Route
+                  path={r}
+                  element={<></>} />
+              ))}
+
             <Route
-              path={['/']}
-              render={(p) => (
-                <Footer
-                  isBackOffice={false}
-                  location={p.location}
-                  history={p.history}
-                  match={p.match}
-                />
-              )}
+              path='/'
+              element={<Footer isBackOffice={false} />}
             />
-          </Switch>
+          </Routes>
+          <Error error={{ status: 404 }} />
         </div>
       </MessagesProvider>
-    </ConnectedRouter>
+    </BrowserRouter >
   );
 };
 
@@ -591,80 +431,45 @@ const mapStateToProps = (state) => ({
   error: state.error,
 });
 
-const mapDispatchToProps = {
-  updateTeam: (team) => updateTeamPromise(team),
-};
-
 export const DaikokuApp = connect(mapStateToProps)(DaikokuAppComponent);
 
 //custom component route to get team object if it's not present in  redux store...
 
-const TeamBackOfficeRouteComponent = ({
-  component: ComponentToRender,
-  render,
-  currentTeam,
-  updateTeam,
-  ...rest
-}) => {
-  const [loading, setLoading] = useState(false);
-  const [match, setMatch] = useState();
-  const [noRender, setNoRender] = useState(false);
-  const [teamError, setTeamError] = useState(null);
+const TeamBackOfficeRouter = ({ tenant }) => {
+  const { currentTeam } = useSelector((state) => state.context);
+
+  const dispatch = useDispatch();
+  const params = useParams();
+  const [teamError, setTeamError] = useState();
+
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (loading && match && rest.path.includes(match.path)) {
-      if (match.params.teamId !== 'settings') {
-        Services.oneOfMyTeam(match.params.teamId)
-          .then((team) => {
-            if (team.error) {
-              return Promise.reject(team);
-            }
-            return updateTeam(team);
-          })
-          .then(() => setLoading(false))
-          .catch((error) => setTeamError(error));
-      } else {
-        setNoRender(true);
-      }
-    }
-  }, [loading]);
+    if (!currentTeam || params.teamId !== currentTeam._humanReadableId) {
+      setLoading(true);
+      getMyTeam();
+    } else setLoading(false);
+  }, [params.teamId]);
 
-  useEffect(() => {
-    if (teamError) {
+  function getMyTeam() {
+    Services.oneOfMyTeam(params.teamId).then((team) => {
+      if (team.error) setTeamError(team.error);
+      else dispatch(updateTeamPromise(team));
       setLoading(false);
-    }
-  }, [teamError]);
-
-  if (noRender) {
-    return null;
+    });
   }
 
-  return (
-    <Route
-      {...rest}
-      render={(props) => {
-        //todo: if error => show error page
-        if (loading) {
-          return <Spinner />;
-        } else if (teamError) {
-          return <Error error={{ status: 404 }} />;
-        } else if (!currentTeam || props.match.params.teamId !== currentTeam._humanReadableId) {
-          setLoading(true);
-          setMatch(props.match);
-        } else {
-          return ComponentToRender ? <ComponentToRender {...props} /> : render(props);
-        }
-      }}
-    />
-  );
+  if (teamError) return <Error error={{ status: 404 }} />;
+
+  if (!currentTeam || loading) return <Spinner />;
+  else
+    return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />
 };
 
-const TeamBackOfficeRoute = withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(TeamBackOfficeRouteComponent)
-);
-
 const FrontOfficeRoute = (props) => {
-  return <RouteWithTitle {...props} render={(p) => <FrontOffice>{props.render(p)}</FrontOffice>} />;
+  return <RouteWithTitle {...props}>
+    <FrontOffice>{props.children}</FrontOffice>
+  </RouteWithTitle>;
 };
 
 const RouteWithTitle = (props) => {
@@ -674,28 +479,26 @@ const RouteWithTitle = (props) => {
     }
   }, [props.title]);
 
-  return <Route {...props} />;
+  return props.children;
 };
 
 const UnauthenticatedRouteComponent = ({
-  component: ComponentToRender,
-  render,
   connectedUser,
-  ...rest
+  children,
+  title
 }) => {
+
   if (connectedUser._humanReadableId) {
-    return <Redirect to="/" />;
+    return <Navigate to="/" />;
   }
+
   return (
-    <RouteWithTitle
-      {...rest}
-      render={(props) => (
-        <UnauthenticatedHome {...rest}>
-          {ComponentToRender ? <ComponentToRender {...props} /> : render(props)}
-        </UnauthenticatedHome>
-      )}
-    />
+    <RouteWithTitle title={title}>
+      <UnauthenticatedHome title={title}>
+        {children}
+      </UnauthenticatedHome>
+    </RouteWithTitle>
   );
 };
 
-const UnauthenticatedRoute = withRouter(connect(mapStateToProps)(UnauthenticatedRouteComponent));
+const UnauthenticatedRoute = connect(mapStateToProps)(UnauthenticatedRouteComponent);

@@ -1,23 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import Select from 'react-select';
 import Pagination from 'react-paginate';
-import _ from 'lodash';
+import _, { filter } from 'lodash';
 import faker from 'faker';
 import { Grid, List } from 'react-feather';
 import classNames from 'classnames';
+import { useNavigate } from 'react-router-dom';
 
 import { ApiCard } from '../api';
 import { ActionWithTeamSelector, Can, CanIDoAction, manage, api } from '../../utils';
-import { updateTeamPromise, openCreationTeamModal } from '../../../core';
-import { Translation, t } from '../../../locales';
+import { updateTeamPromise, openCreationTeamModal, I18nContext } from '../../../core';
 
 import * as Services from '../../../services';
 
 const all = { value: 'All', label: 'All' };
-const allCategories = (language) => ({ value: 'All', label: t('All categories', language) });
-const allTags = (language) => ({ value: 'All', label: t('All tags', language) });
 const GRID = 'GRID';
 const LIST = 'LIST';
 
@@ -38,11 +36,17 @@ const computeTop = (arrayOfArray) => {
 };
 
 const ApiListComponent = (props) => {
+  const { translateMethod, Translation } = useContext(I18nContext);
+  const navigate = useNavigate()
+
+  const allCategories = () => ({ value: 'All', label: translateMethod('All categories') });
+  const allTags = () => ({ value: 'All', label: translateMethod('All tags') });
+
   const [searched, setSearched] = useState('');
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [selectedTag, setSelectedTag] = useState(allTags(props.currentLanguage));
-  const [selectedCategory, setSelectedCategory] = useState(allCategories(props.currentLanguage));
+  const [selectedTag, setSelectedTag] = useState(allTags());
+  const [selectedCategory, setSelectedCategory] = useState(allCategories());
   const [tags, setTags] = useState([]);
   const [categories, setCategories] = useState([]);
   const [view, setView] = useState(LIST);
@@ -54,7 +58,7 @@ const ApiListComponent = (props) => {
 
   const createNewApi = (teamId) => {
     if (props.apiCreationPermitted) {
-      const team = props.myTeams.find((t) => t._id === teamId);
+      const team = props.myTeams.find((t) => teamId.includes(t._id));
 
       Services.fetchNewApi()
         .then((e) => {
@@ -73,8 +77,10 @@ const ApiListComponent = (props) => {
           return e;
         })
         .then((newApi) => {
-          props.history.push(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
-            newApi: { ...newApi, team: team._id },
+          navigate(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
+            state: {
+              newApi: { ...newApi, team: team._id },
+            }
           });
         });
     }
@@ -82,16 +88,12 @@ const ApiListComponent = (props) => {
 
   const createNewteam = () => {
     Services.fetchNewTeam().then((team) =>
-      props.openCreationTeamModal({
-        currentLanguage: props.currentLanguage,
-        history: props.history,
-        team,
-      })
+      props.openCreationTeamModal({ team})
     );
   };
 
   const redirectToTeam = (team) => {
-    props.history.push(`/${team._humanReadableId}/settings`);
+    navigate(`/${team._humanReadableId}/settings`);
   };
 
   const computeTops = (apis) => {
@@ -109,12 +111,12 @@ const ApiListComponent = (props) => {
     return !!_.find(api.categories, (cat) => cat.trim().toLowerCase().indexOf(term) > -1);
   };
   const teamMatch = (api, searched) => {
-    const ownerTeam = props.teams.find((t) => t._id === api.team);
+    const ownerTeam = props.teams.find((t) => t._id === api.team._id);
     return ownerTeam && ownerTeam.name.trim().toLowerCase().indexOf(searched) > -1;
   };
   const clearFilter = () => {
-    setSelectedTag(allTags(props.currentLanguage));
-    setSelectedCategory(allCategories(props.currentLanguage));
+    setSelectedTag(allTags());
+    setSelectedCategory(allCategories());
     setSearched('');
   };
 
@@ -126,30 +128,28 @@ const ApiListComponent = (props) => {
     return (
       <div className="d-flex justify-content-between">
         <div className="preview">
-          <strong>{count}</strong> {`${t('result', props.currentLanguage)}${count > 1 ? 's' : ''}`}
+          <strong>{count}</strong> {`${translateMethod('result')}${count > 1 ? 's' : ''}`}
           &nbsp;
           {!!searched && (
             <span>
-              {t('matching', props.currentLanguage)} <strong>{searched}</strong>&nbsp;
+              {translateMethod('matching')} <strong>{searched}</strong>&nbsp;
             </span>
           )}
           {selectedCategory.value !== all.value && (
             <span>
-              {t('categorised in', props.currentLanguage)} <strong>{selectedCategory.value}</strong>
+              {translateMethod('categorised in')} <strong>{selectedCategory.value}</strong>
               &nbsp;
             </span>
           )}
           {selectedTag.value !== all.value && (
             <span>
-              {t('tagged', props.currentLanguage)} <strong>{selectedTag.value}</strong>
+              {translateMethod('tagged')} <strong>{selectedTag.value}</strong>
             </span>
           )}
         </div>
         <div className="clear cursor-pointer" onClick={clearFilter}>
           <i className="far fa-times-circle mr-1" />
-          <Translation i18nkey="clear filter" language={props.currentLanguage}>
-            clear filter
-          </Translation>
+          <Translation i18nkey="clear filter">clear filter</Translation>
         </div>
       </div>
     );
@@ -172,20 +172,30 @@ const ApiListComponent = (props) => {
     (api) => selectedTag.value === all.value || api.tags.includes(selectedTag.value)
   );
 
-  const filteredApis =
+  const filteredApis = _.chain(
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (api.description.toLowerCase().indexOf(searchedTrim) > -1) {
-            return true;
-          } else if (teamMatch(api, searchedTrim)) {
-            return true;
-          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-        });
+        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+          return true;
+        } else if (teamMatch(api, searchedTrim)) {
+          return true;
+        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+      })
+  )
+    .groupBy('_humanReadableId')
+    .map((value) => {
+      if (value.length === 1) return value[0];
+
+      const app = value.find((v) => v.isDefault);
+
+      if (!app) return value.find((v) => v.currentVersion === '1.0.0') || value[0];
+
+      return app;
+    })
+    .value();
 
   const paginateApis = (() => {
     const starredApis = [],
@@ -196,8 +206,12 @@ const ApiListComponent = (props) => {
     });
 
     return [
-      ...starredApis.sort((a, b) => (a.stars === b.stars ? 0 : a.stars < b.stars ? 1 : -1)),
-      ...unstarredApis.sort((a, b) => (a.stars === b.stars ? 0 : a.stars < b.stars ? 1 : -1)),
+      ...starredApis.sort(
+        (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
+      ),
+      ...unstarredApis.sort(
+        (a, b) => String(a.stars).localeCompare(String(b.stars)) || a.name.localeCompare(b.name)
+      ),
     ];
   })().slice(offset, offset + pageNumber);
 
@@ -208,7 +222,7 @@ const ApiListComponent = (props) => {
           <input
             type="text"
             className="form-control"
-            placeholder={t('Search your API...', props.currentLanguage)}
+            placeholder={translateMethod('Search your API...')}
             aria-label="Search your API"
             value={searched}
             onChange={(e) => {
@@ -223,7 +237,7 @@ const ApiListComponent = (props) => {
           className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
           value={selectedTag}
           clearable={false}
-          options={[allTags(props.currentLanguage), ...tags]}
+          options={[allTags(), ...tags]}
           onChange={(e) => {
             setSelectedTag(e);
             setOffset(0);
@@ -236,7 +250,7 @@ const ApiListComponent = (props) => {
           className="category__selector filter__select reactSelect col-6 col-sm mb-2"
           value={selectedCategory}
           clearable={false}
-          options={[allCategories(props.currentLanguage), ...categories]}
+          options={[allCategories(), ...categories]}
           onChange={(e) => {
             setSelectedCategory(e);
             setOffset(0);
@@ -257,18 +271,8 @@ const ApiListComponent = (props) => {
         )}
         {props.apiCreationPermitted && !props.team && !props.connectedUser.isGuest && (
           <ActionWithTeamSelector
-            title={t(
-              'api.creation.title.modal',
-              props.currentLanguage,
-              false,
-              'Select the team for which to create new api'
-            )}
-            description={t(
-              'api.creation.description.modal',
-              props.currentLanguage,
-              false,
-              'You are going to create an api. For which team do you want to create it ?'
-            )}
+            title={translateMethod('api.creation.title.modal')}
+            description={translateMethod('api.creation.description.modal')}
             teams={props.myTeams
               .filter((t) => t.type !== 'Admin')
               .filter((t) => !props.tenant.creationSecurity || t.apisCreationPermission)
@@ -305,7 +309,7 @@ const ApiListComponent = (props) => {
               'flex-wrap': view === GRID,
               'flex-row': view === GRID,
             })}>
-            <div className="col-12 mb-1">{filterPreview(filteredApis.length)}</div>
+            {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => (
               <ApiCard
                 key={api._id}
@@ -313,7 +317,7 @@ const ApiListComponent = (props) => {
                 api={api}
                 showTeam={props.showTeam}
                 teamVisible={props.teamVisible}
-                team={props.teams.find((t) => t._id === api.team)}
+                team={props.teams.find((t) => t._id === api.team._id)}
                 myTeams={props.myTeams}
                 askForApiAccess={(teams) => props.askForApiAccess(api, teams)}
                 redirectToTeamPage={(team) => props.redirectToTeamPage(team)}
@@ -324,7 +328,6 @@ const ApiListComponent = (props) => {
                 handleCategorySelect={(category) =>
                   setSelectedCategory(categories.find((c) => c.value === category))
                 }
-                currentLanguage={props.currentLanguage}
                 view={view}
                 connectedUser={props.connectedUser}
               />
@@ -332,8 +335,8 @@ const ApiListComponent = (props) => {
           </div>
           <div className="apis__pagination">
             <Pagination
-              previousLabel={t('Previous', props.currentLanguage)}
-              nextLabel={t('Next', props.currentLanguage)}
+              previousLabel={translateMethod('Previous')}
+              nextLabel={translateMethod('Next')}
               breakLabel="..."
               breakClassName={'break'}
               pageCount={Math.ceil(filteredApis.length / pageNumber)}
@@ -352,7 +355,6 @@ const ApiListComponent = (props) => {
             <YourTeams
               teams={props.myTeams}
               redirectToTeam={redirectToTeam}
-              currentlanguage={props.currentLanguage}
               createNewTeam={createNewteam}
             />
           )}
@@ -394,14 +396,11 @@ const mapDispatchToProps = {
 export const ApiList = connect(mapStateToProps, mapDispatchToProps)(ApiListComponent);
 
 ApiListComponent.propTypes = {
-  history: PropTypes.object.isRequired,
   myTeams: PropTypes.array.isRequired,
   apis: PropTypes.array.isRequired,
   teams: PropTypes.array.isRequired,
   teamVisible: PropTypes.bool,
   team: PropTypes.object,
-  refreshTeams: PropTypes.func.isRequired,
-
   askForApiAccess: PropTypes.func.isRequired,
   redirectToTeamPage: PropTypes.func.isRequired,
   redirectToApiPage: PropTypes.func.isRequired,
@@ -432,6 +431,8 @@ const Top = (props) => {
 };
 
 const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
+  const { translateMethod } = useContext(I18nContext);
+
   const [searchedTeam, setSearchedTeam] = useState();
   const maybeTeams = searchedTeam
     ? teams.filter((team) => team.name.toLowerCase().includes(searchedTeam))
@@ -442,12 +443,12 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
       <div>
         <h5>
           <i className="fas fa-users mr-2" />
-          {t('your teams', language)}
+          {translateMethod('your teams', language)}
         </h5>
       </div>
       <div className="input-group">
         <input
-          placeholder={t('find team', language)}
+          placeholder={translateMethod('find team', language)}
           className="form-control"
           onChange={(e) => setSearchedTeam(e.target.value)}
         />

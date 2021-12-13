@@ -26,12 +26,14 @@ import scala.util.Try
 class TenantController(DaikokuAction: DaikokuAction,
                        DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
                        env: Env,
-                       cc: ControllerComponents)
+                       cc: ControllerComponents,
+                       translator: Translator)
     extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
+  implicit val tr = translator
 
   def namesOfTenants() = DaikokuAction.async(parse.json) { ctx =>
     val tenantIdsJs: JsArray = ctx.request.body.as[JsArray]
@@ -131,12 +133,12 @@ class TenantController(DaikokuAction: DaikokuAction,
               } else {
                 FastFuture.successful(())
               }
-              fu.map { _ =>
-                tenant.exposedPort match {
-                  case Some(80)    => Redirect(s"http://${tenant.domain}/")
-                  case Some(443)   => Redirect(s"https://${tenant.domain}/")
-                  case Some(port) => Redirect(s"http://${tenant.domain}:$port/")
-                  case None   => Redirect(s"https://${tenant.domain}/")
+              fu.map { _ => {
+                env.config.exposedPort match {
+                    case 80    => Redirect(s"http://${tenant.domain}/")
+                    case 443   => Redirect(s"https://${tenant.domain}/")
+                    case _   => Redirect(s"https://${tenant.domain}:${env.config.exposedPort}/")
+                  }
                 }
               }
             }
@@ -216,7 +218,7 @@ class TenantController(DaikokuAction: DaikokuAction,
               pages = Seq.empty[ApiDocumentationPageId],
               lastModificationAt = DateTime.now()
             ),
-            swagger = None,
+            swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json")),
             possibleUsagePlans = Seq(
               FreeWithoutQuotas(
                 id = UsagePlanId("admin"),
@@ -419,10 +421,7 @@ class TenantController(DaikokuAction: DaikokuAction,
         AuditTrailEvent(
           s"@{name} - @{email} send a contact email to @{contact}"))(ctx) {
 
-        val tenantLanguage = ctx.tenant.defaultLanguage
-          .getOrElse("en")
-
-        val currentLanguage = ctx.request.headers.toSimpleMap
+        implicit val currentLanguage: String = ctx.request.headers.toSimpleMap
           .find(test => test._1 == "X-contact-language")
           .map(h => h._2)
           .orElse(ctx.tenant.defaultLanguage)
@@ -442,29 +441,21 @@ class TenantController(DaikokuAction: DaikokuAction,
 
         val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
 
-        val titleToSender: String =
-          messagesApi("mail.contact.title")(Lang(currentLanguage))
-        val titleToContact: String =
-          messagesApi("mail.contact.title")(Lang(tenantLanguage))
-        val mailToSender: String =
-          messagesApi("mail.contact.sender",
-                      name,
-                      email,
-                      subject,
-                      sanitizeBody)(Lang(currentLanguage))
-        val mailToContact: String =
-          messagesApi("mail.contact.contact",
-                      name,
-                      email,
-                      subject,
-                      sanitizeBody)(Lang(tenantLanguage))
-
         def sendMail: String => Future[Result] = (contact: String) => {
           for {
-            _ <- ctx.tenant.mailer.send(titleToSender, Seq(email), mailToSender)
+            titleToSender <- translator.translate("mail.contact.title", ctx.tenant)
+            titleToContact <- translator.translate("mail.contact.title", ctx.tenant)
+            mailToSender <- translator.translate("mail.contact.sender",
+              ctx.tenant,
+                Map("user" -> name, "email" -> email, "subject" -> subject, "body" -> sanitizeBody))
+            mailToContact <- translator.translate("mail.contact.contact",
+              ctx.tenant,
+              Map("user" -> name, "email" -> email, "subject" -> subject, "body" -> sanitizeBody))
+            _ <- ctx.tenant.mailer.send(titleToSender, Seq(email), mailToSender, ctx.tenant)
             _ <- ctx.tenant.mailer.send(titleToContact,
                                         Seq(contact),
-                                        mailToContact)
+                                        mailToContact,
+                                        ctx.tenant)
           } yield {
             ctx.setCtxValue("contact", contact)
             Ok(Json.obj("send" -> true))

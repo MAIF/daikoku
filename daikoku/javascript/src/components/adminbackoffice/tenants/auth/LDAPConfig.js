@@ -1,31 +1,31 @@
-import React, { Component, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
 
-import { t, Translation } from '../../../../locales';
 import { Spinner } from '../../../utils';
 import { Help } from '../../../inputs';
-import { checkConnection } from '../../../../services';
+import * as Services from '../../../../services';
+import { I18nContext } from '../../../../core';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export class LDAPConfig extends Component {
-  static defaultConfig = {
-    sessionMaxAge: 86400,
-    serverUrls: ['ldap://ldap.forumsys.com:389'],
-    connectTimeout: 2,
-    searchBase: 'dc=example,dc=com',
-    userBase: '',
-    searchFilter: '(mail=${username})',
-    groupFilter: '()',
-    adminGroupFilter: '()',
-    adminUsername: 'cn=read-only-admin,dc=example,dc=com',
-    adminPassword: 'password',
-    nameField: 'cn',
-    emailField: 'mail',
-    metadataField: null,
-  };
+const defaultConfig = {
+  sessionMaxAge: 86400,
+  serverUrls: ['ldap://ldap.forumsys.com:389'],
+  connectTimeout: 2,
+  searchBase: 'dc=example,dc=com',
+  userBase: '',
+  searchFilter: '(mail=${username})',
+  groupFilter: '',
+  adminGroupFilter: '',
+  adminUsername: 'cn=read-only-admin,dc=example,dc=com',
+  adminPassword: 'password',
+  nameField: 'cn',
+  emailField: 'mail',
+  metadataField: null,
+};
 
-  formFlow = [
+export function LDAPConfig(props) {
+  const formFlow = [
     'sessionMaxAge',
     'serverUrls',
     'connectTimeout',
@@ -42,133 +42,135 @@ export class LDAPConfig extends Component {
     'testingWithUser',
   ];
 
-  formSchema = {
+  const { translateMethod } = useContext(I18nContext);
+
+  const formSchema = {
     sessionMaxAge: {
       type: 'number',
       props: {
-        suffix: t('seconds', this.props.currentLanguage),
-        label: t('Session max. age', this.props.currentLanguage),
+        suffix: translateMethod('seconds'),
+        label: translateMethod('Session max. age'),
       },
     },
     serverUrls: {
       type: 'array',
       props: {
-        label: t('LDAP Server URLs', this.props.currentLanguage, true),
+        label: translateMethod('LDAP Server URLs', true),
       },
     },
     connectTimeout: {
       type: 'number',
       props: {
-        suffix: t('seconds', this.props.currentLanguage),
-        label: t('Connect timeout', this.props.currentLanguage),
+        suffix: translateMethod('seconds'),
+        label: translateMethod('Connect timeout'),
       },
     },
     searchBase: {
       type: 'string',
       props: {
-        label: t('Search Base', this.props.currentLanguage),
+        label: translateMethod('Search Base'),
       },
     },
     userBase: {
       type: 'string',
       props: {
-        label: t('Users search base', this.props.currentLanguage),
+        label: translateMethod('Users search base'),
       },
     },
     groupFilter: {
       type: 'string',
       props: {
-        label: t('Simple user filter', this.props.currentLanguage),
+        label: translateMethod('Simple user filter'),
       },
     },
     adminGroupFilter: {
       type: 'string',
       props: {
-        label: t('Tenants admin filter', this.props.currentLanguage),
+        label: translateMethod('Tenants admin filter'),
       },
     },
     searchFilter: {
       type: 'string',
       props: {
-        label: t('Search filter', this.props.currentLanguage),
+        label: translateMethod('Search filter'),
       },
     },
     adminUsername: {
       type: 'string',
       props: {
-        label: t('Admin username (bind DN)', this.props.currentLanguage),
+        label: translateMethod('Admin username (bind DN)'),
       },
     },
     adminPassword: {
       type: 'string',
       props: {
-        label: t('Admin password', this.props.currentLanguage),
+        label: translateMethod('Admin password'),
       },
     },
     nameField: {
       type: 'string',
       props: {
-        label: t('Name field name', this.props.currentLanguage),
+        label: translateMethod('Name field name'),
       },
     },
     emailField: {
       type: 'string',
       props: {
-        label: t('Email field name', this.props.currentLanguage),
+        label: translateMethod('Email field name'),
       },
     },
     testing: {
       type: CheckingAdminConnection,
       props: {
-        label: t('Testing connection', this.props.currentLanguage),
-        checkConnection: () => this.checkConnection(),
+        label: translateMethod('Testing connection'),
+        checkConnection: () => checkConnection(),
       },
     },
     testingWithUser: {
       type: CheckingUserConnection,
       props: {
-        label: t('Testing user', this.props.currentLanguage),
-        checkConnection: (username, password) => this.checkConnection({ username, password }),
+        label: translateMethod('Testing user'),
+        checkConnection: (username, password) => checkConnection({ username, password }),
       },
     },
   };
 
-  componentDidMount() {
-    if (this.props.rawValue.authProvider === 'LDAP') {
-      const { value } = this.props;
+  useEffect(() => {
+    if (props.rawValue.authProvider === 'LDAP') {
+      const { value } = props;
 
       if (value.serverUrl)
         value.serverUrl = Array.isArray(value.serverUrl) ? value.serverUrl : [value.serverUrl];
 
-      this.props.onChange({ ...LDAPConfig.defaultConfig, ...value });
+      props.onChange({ ...defaultConfig, ...value });
     }
-  }
+  }, []);
 
-  checkConnection = (user) => {
-    checkConnection(this.props.value, user).then((res) => {
-      if (res.works) toastr.success(t('Worked!'));
+  const checkConnection = (user) => {
+    Services.checkConnection(props.value, user).then((res) => {
+      if (res.works) toastr.success(translateMethod('Worked!'));
       else toastr.error(res.error);
     });
   };
 
-  render() {
-    const { value, onChange } = this.props;
+  const { value, onChange } = props;
 
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          value={value}
-          onChange={onChange}
-          flow={this.formFlow}
-          schema={this.formSchema}
-          style={{ marginTop: 50 }}
-        />
-      </React.Suspense>
-    );
-  }
+  return (
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
+        value={value}
+        onChange={onChange}
+        flow={formFlow}
+        schema={formSchema}
+        style={{ marginTop: 50 }}
+      />
+    </React.Suspense>
+  );
 }
 
 const CheckingAdminConnection = (props) => {
+  const { Translation } = useContext(I18nContext);
+
   return (
     <div className="form-group row">
       <label className="col-xs-12 col-sm-2 col-form-label">
@@ -176,9 +178,7 @@ const CheckingAdminConnection = (props) => {
       </label>
       <div className="col-sm-10 pl-3" id="input-Testing buttons">
         <a type="button" className="btn btn-outline-primary mr-1" onClick={props.checkConnection}>
-          <Translation i18nkey="Testing" language={props.currentLanguage}>
-            Testing
-          </Translation>
+          <Translation i18nkey="Testing">Testing</Translation>
         </a>
       </div>
     </div>
@@ -188,6 +188,8 @@ const CheckingAdminConnection = (props) => {
 const CheckingUserConnection = (props) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  const { Translation } = useContext(I18nContext);
 
   return (
     <div className="form-group row">
@@ -213,9 +215,7 @@ const CheckingUserConnection = (props) => {
           type="button"
           className="btn btn-outline-primary"
           onClick={() => props.checkConnection(username, password)}>
-          <Translation i18nkey="Testing" language={props.currentLanguage}>
-            Testing
-          </Translation>
+          <Translation i18nkey="Testing">Testing</Translation>
         </a>
       </div>
     </div>

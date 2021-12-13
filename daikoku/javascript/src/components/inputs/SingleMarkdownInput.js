@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import AceEditor from 'react-ace';
 import _ from 'lodash';
 import { converter } from '../../services/showdown';
@@ -13,15 +13,17 @@ import 'brace/ext/language_tools';
 import { Help } from './Help';
 import { BeautifulTitle, Option } from '../utils';
 import { AssetChooserByModal, MimeTypeFilter } from '../frontend';
-import { t, Translation } from '../../locales';
 
 import hljs from 'highlight.js';
+import { I18nContext } from '../../core';
 
 window.hljs = window.hljs || hljs;
 
 const SingleMardownInput = (props) => {
   const [preview, setPreview] = useState(false);
   const [editor, setEditor] = useState(undefined);
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   useEffect(() => {
     if (preview) {
@@ -35,100 +37,101 @@ const SingleMardownInput = (props) => {
     window.location.origin.indexOf(domain) > -1 ? window.location.origin : `https://${domain}`;
   const commands = [
     {
-      name: t('Add header', props.currentLanguage),
+      name: translateMethod('Add header'),
       icon: 'heading',
       inject: (selected = ' ') => `# ${selected}`,
     },
     {
-      name: t('Add bold text', props.currentLanguage),
+      name: translateMethod('Add bold text'),
       icon: 'bold',
       inject: (selected = ' ') => `**${selected}**`,
     },
     {
-      name: t('Add italic text', props.currentLanguage),
+      name: translateMethod('Add italic text'),
       icon: 'italic',
       inject: (selected = ' ') => `*${selected}*`,
     },
     {
-      name: t('Add strikethrough text', props.currentLanguage),
+      name: translateMethod('Add strikethrough text'),
       icon: 'strikethrough',
       inject: (selected = ' ') => `~~${selected}~~`,
     },
     {
-      name: t('Add link', props.currentLanguage),
+      name: translateMethod('Add link'),
       icon: 'link',
       inject: (selected = ' ') => `[${selected}](url)`,
     },
     {
-      name: t('Add code', props.currentLanguage),
+      name: translateMethod('Add code'),
       icon: 'code',
       inject: (selected = ' ') => '```\n' + selected + '\n```\n',
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Add quotes', props.currentLanguage),
+      name: translateMethod('Add quotes'),
       icon: 'quote-right',
       inject: (selected = ' ') => `> ${selected}`,
     },
     {
-      name: t('Add image', props.currentLanguage),
+      name: translateMethod('Add image'),
       icon: 'image',
       inject: (selected = ' ') => `![${selected}](image-url)`,
     },
     {
-      name: t('Add unordered list', props.currentLanguage),
+      name: translateMethod('Add unordered list'),
       icon: 'list-ul',
       inject: (selected = ' ') => `* ${selected}`,
     },
     {
-      name: t('Add ordered list', props.currentLanguage),
+      name: translateMethod('Add ordered list'),
       icon: 'list-ol',
       inject: (selected = ' ') => `1. ${selected}`,
     },
     {
-      name: t('Add check list', props.currentLanguage),
+      name: translateMethod('Add check list'),
       icon: 'tasks',
       inject: (selected = ' ') => `* [ ] ${selected}`,
     },
     {
-      name: t('Page ref', props.currentLanguage),
+      name: translateMethod('Page ref'),
       icon: 'book',
       inject: (selected = ' ') => `@ref:[${selected}](team/api/doc)`,
     },
     {
-      name: t('Warning', props.currentLanguage),
+      name: translateMethod('Warning'),
       icon: 'exclamation-triangle',
       inject: (selected = ' ') => `@@@ warning\n${selected}\n@@@\n`,
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Warning with title', props.currentLanguage),
+      name: translateMethod('Warning with title'),
       icon: 'exclamation-circle',
       inject: (selected = ' ') => `@@@ warning { title='A nice title' }\n${selected}\n@@@\n`,
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Note', props.currentLanguage),
+      name: translateMethod('Note'),
       icon: 'sticky-note',
       inject: (selected = ' ') => `@@@ note\n${selected}\n@@@\n`,
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Note with title', props.currentLanguage),
+      name: translateMethod('Note with title'),
       icon: 'clipboard',
       inject: (selected = ' ') => `@@@ note { title='A nice title' }\n${selected}\n@@@\n`,
       move: (pos, setPos) => setPos({ column: 0, row: pos.row - 2 }),
     },
     {
-      name: t('Lorem Ipsum', props.currentLanguage),
+      name: translateMethod('Lorem Ipsum'),
       icon: 'feather-alt',
       inject: () =>
         'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.',
     },
     {
-      name: t('Long Lorem Ipsum', props.currentLanguage),
+      name: translateMethod('Long Lorem Ipsum'),
       icon: 'feather',
-      inject: () => `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.
+      inject:
+        () => `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.
 
 Cras ut ultrices quam. Nulla eu purus sed turpis consequat sodales. Aenean vitae efficitur velit, vel accumsan felis. Curabitur aliquam odio dictum urna convallis faucibus. Vivamus eu dignissim lorem. Donec sed hendrerit massa. Suspendisse volutpat, nisi at fringilla consequat, eros lacus aliquam metus, eu convallis nulla mauris quis lacus. Aliquam ultricies, mi eget feugiat vestibulum, enim nunc eleifend nisi, nec tincidunt turpis elit id diam. Nunc placerat accumsan tincidunt. Nulla ut interdum dui. Praesent venenatis cursus aliquet. Nunc pretium rutrum felis nec pharetra.
 
@@ -139,11 +142,11 @@ Donec id mi cursus, volutpat dolor sed, bibendum sapien. Etiam vitae mauris sit 
 Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut felis eu fringilla. Quisque sodales tortor nec justo tristique, sit amet consequat mi tincidunt. Suspendisse porttitor laoreet velit, non gravida nibh cursus at. Pellentesque faucibus, tellus in dapibus viverra, dolor mi dignissim tortor, id convallis ipsum lorem id nisl. Sed id nisi felis. Aliquam in ullamcorper ipsum, vel consequat magna. Donec nec mollis lacus, a euismod elit.`,
     },
     {
-      name: t('Test asset'),
+      name: translateMethod('Test asset'),
       component: (idx) => (
         <BeautifulTitle
           placement="bottom"
-          title={t('image url from asset', props.currentLanguage)}
+          title={translateMethod('image url from asset')}
           key={`toolbar-btn-${idx}`}>
           <AssetChooserByModal
             typeFilter={MimeTypeFilter.image}
@@ -155,7 +158,6 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               .getOrNull()}
             icon="fas fa-file-image"
             classNames="btn-for-descriptionToolbar"
-            currentLanguage={props.currentLanguage}
             onSelect={(asset) =>
               editor.session.insert(editor.getCursorPosition(), origin + asset.link)
             }
@@ -167,7 +169,7 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
 
   const showPreview = () => {
     window.$('pre code').each((i, block) => {
-      window.hljs.highlightBlock(block);
+      window.hljs.highlightElement(block);
     });
   };
 
@@ -208,16 +210,13 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
   const team = _.isFunction(props.team) ? props.team() : props.team;
 
   return (
-    <div className="d-flex flex-column">
-      <label htmlFor={`input-${props.label}`} className="col-form-label d-flex align-items-center">
-        <Help place="right" text={props.help} label={props.label} />
-      </label>
-      <div
-        style={{
-          marginBottom: 10,
-          flexWrap: 'wrap',
-        }}
-        className="d-flex flex-sm-row flex-column align-items-center">
+    <div className="form-group row">
+      {props.label && (
+        <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
+          <Help place="right" text={props.help} label={props.label} />
+        </label>
+      )}
+      <div className={props.fullWidth ? 'col-sm-12' : 'col-sm-10'}>
         <div>
           <div className="btn-group">
             <button
@@ -225,29 +224,24 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               className="btn btn-secondary"
               style={{ color: !preview ? '#7f96af' : 'white' }}
               onClick={() => setPreview(false)}>
-              <Translation i18nkey="Write" language={props.currentLanguage}>
-                Write
-              </Translation>
+              <Translation i18nkey="Write">Write</Translation>
             </button>
             <button
               type="button"
               className="btn btn-secondary"
               style={{ color: preview ? '#7f96af' : 'white' }}
               onClick={() => setPreview(true)}>
-              <Translation i18nkey="Preview" language={props.currentLanguage}>
-                Preview
-              </Translation>
+              <Translation i18nkey="Preview">Preview</Translation>
             </button>
           </div>
         </div>
-        <div className="d-flex flex-row">{injectButtons()}</div>
+        <div className="d-flex flex-row mt-1 mb-2">{injectButtons()}</div>
         <div style={{ width: props.fixedWitdh || 250 }}>
           {props.assertChooserActive && (
             <AssetChooserByModal
-              currentLanguage={props.currentLanguage}
               tenantMode={props.tenantMode}
               team={team}
-              label={t('Set from asset', props.currentLanguage)}
+              label={translateMethod('Set from asset')}
               onSelect={(asset) => {
                 editor.session.insert(editor.getCursorPosition(), asset.link);
                 editor.focus();
@@ -255,35 +249,35 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
             />
           )}
         </div>
+        {!preview && (
+          <AceEditor
+            ref={(r) => {
+              if (r && r.editor) {
+                setEditor(r.editor);
+              }
+            }}
+            mode="markdown"
+            theme="monokai"
+            onChange={props.onChange}
+            value={code}
+            name="scriptParam"
+            editorProps={{ $blockScrolling: true }}
+            height={props.height || '300px'}
+            width={props.width || '100%'}
+            showGutter={true}
+            tabSize={2}
+            highlightActiveLine={true}
+            enableBasicAutocompletion={true}
+            enableLiveAutocompletion={true}
+          />
+        )}
+        {preview && (
+          <div
+            className="api-description"
+            dangerouslySetInnerHTML={{ __html: converter.makeHtml(code) }}
+          />
+        )}
       </div>
-      {!preview && (
-        <AceEditor
-          ref={(r) => {
-            if (r && r.editor) {
-              setEditor(r.editor);
-            }
-          }}
-          mode="markdown"
-          theme="monokai"
-          onChange={props.onChange}
-          value={code}
-          name="scriptParam"
-          editorProps={{ $blockScrolling: true }}
-          height={props.height || '300px'}
-          width={props.width || '100%'}
-          showGutter={true}
-          tabSize={2}
-          highlightActiveLine={true}
-          enableBasicAutocompletion={true}
-          enableLiveAutocompletion={true}
-        />
-      )}
-      {preview && (
-        <div
-          className="api-description"
-          dangerouslySetInnerHTML={{ __html: converter.makeHtml(code) }}
-        />
-      )}
     </div>
   );
 };

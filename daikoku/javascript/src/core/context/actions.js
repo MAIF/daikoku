@@ -4,20 +4,21 @@ import {
   LOGOUT,
   UPDATE_NOTIFS,
   UPDATE_TEAM,
-  UPDATE_LANGUAGE,
   UPDATE_TENANT,
   UPDATE_USER,
 } from './';
 
-export const login = ({ user, team, tenant, language }) => (dispatch) => {
-  return dispatch({
-    type: LOGIN,
-    user,
-    team,
-    tenant,
-    language,
-  });
-};
+export const login =
+  ({ user, team, tenant, language }) =>
+  (dispatch) => {
+    return dispatch({
+      type: LOGIN,
+      user,
+      team,
+      tenant,
+      language,
+    });
+  };
 
 export const logout = () => (dispatch) => {
   return dispatch({
@@ -25,12 +26,14 @@ export const logout = () => (dispatch) => {
   });
 };
 
-export const impersonate = ({ impersonator }) => (dispatch) => {
-  return dispatch({
-    type: IMPERSONATE,
-    impersonator,
-  });
-};
+export const impersonate =
+  ({ impersonator }) =>
+  (dispatch) => {
+    return dispatch({
+      type: IMPERSONATE,
+      impersonator,
+    });
+  };
 
 export const updateTeam = (team) => (dispatch) => {
   return dispatch({
@@ -52,13 +55,6 @@ export const updateNotications = (unreadNotificationsCount) => (dispatch) => {
   return dispatch({
     type: UPDATE_NOTIFS,
     unreadNotificationsCount,
-  });
-};
-
-export const udpateLanguage = (language) => (dispatch) => {
-  return dispatch({
-    type: UPDATE_LANGUAGE,
-    language,
   });
 };
 

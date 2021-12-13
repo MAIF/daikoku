@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { goBack } from 'connected-react-router';
-import { t } from '../../locales';
+import { Link, useNavigate } from 'react-router-dom';
+import { I18nContext } from '../../locales/i18n-context';
+import { setError } from '../../core';
 
 const getErrorLabel = (status, error) => {
+  if (status)
+    console.log(status, error);
   if (status === 400) {
     return 'Bad Request';
   } else if (status === 401) {
-    return 'Forbidden';
+    return error.message || 'Forbidden';
   } else if (status === 403) {
-    return 'Unauthorized';
+    return error.message || 'Unauthorized';
   } else if (status === 404) {
     return error.message || 'Page Not Found';
   } else if (status > 399 && status < 500) {
@@ -22,11 +24,22 @@ const getErrorLabel = (status, error) => {
   }
 };
 
-const ErrorComponent = ({ error, goBack, tenant, currentLanguage }) => {
-  document.title = `${tenant} - ${t('Error', currentLanguage)}`;
-  const label = getErrorLabel(error.status, error);
+const ErrorComponent = ({ error, tenant, setError }) => {
+  const navigate = useNavigate();
 
-  if (!label) {
+  const [label, setLabel] = useState();
+
+  const { translateMethod } = useContext(I18nContext);
+
+  useEffect(() => {
+    setLabel(getErrorLabel(error.status, error));
+    if (error?.status) {
+      document.title = `${tenant.title} - ${translateMethod('Error')}`;
+    }
+  }, [error, label])
+
+
+  if (!label || !error) {
     return null;
   }
 
@@ -42,7 +55,12 @@ const ErrorComponent = ({ error, goBack, tenant, currentLanguage }) => {
             <Link className="btn btn-access-negative mr-1" to="/">
               <i className="fas fa-home" /> Go home
             </Link>
-            <button className="btn btn-access-negative" onClick={() => goBack()}>
+            <button
+              className="btn btn-access-negative"
+              onClick={() => {
+                setError({ error: { status: -1 } });
+                navigate(-1)
+              }}>
               <i className="fas fa-angle-double-left" /> Go back
             </button>
           </div>
@@ -54,13 +72,11 @@ const ErrorComponent = ({ error, goBack, tenant, currentLanguage }) => {
 
 const mapStateToProps = (state) => ({
   tenant: state.context.tenant.name,
-  currentLanguage: state.context.currentLanguage,
-  error: state.error,
-  router: state.router,
+  error: state.error
 });
 
 const mapDispatchToProps = {
-  goBack,
+  setError: (error) => setError(error),
 };
 
 export const Error = connect(mapStateToProps, mapDispatchToProps)(ErrorComponent);

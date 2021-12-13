@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 
-import { t, Translation } from '../../../locales';
 import * as Services from '../../../services';
+import { I18nContext } from '../../../core';
 
 const ContactModalComponent = (props) => {
   const [email, setEmail] = useState(props.email);
@@ -14,6 +14,8 @@ const ContactModalComponent = (props) => {
   const [formRef, setFormRef] = useState(undefined);
   const [validity, setValidity] = useState(false);
 
+  const { translateMethod, Translation } = useContext(I18nContext);
+
   useEffect(() => {
     if (formRef) {
       setValidity(formRef.checkValidity());
@@ -22,16 +24,9 @@ const ContactModalComponent = (props) => {
 
   const sendEmail = () => {
     if (!honeyName && validity) {
-      Services.sendEmails(
-        name,
-        email,
-        subject,
-        body,
-        props.tenant._id,
-        props.team,
-        props.api,
-        props.currentLanguage
-      ).then(() => props.closeModal());
+      Services.sendEmails(name, email, subject, body, props.tenant._id, props.team, props.api).then(
+        () => props.closeModal()
+      );
     }
   };
 
@@ -39,9 +34,7 @@ const ContactModalComponent = (props) => {
     <div className="modal-content">
       <div className="modal-header">
         <h5 className="modal-title">
-          <Translation i18nkey="Contact request" language={props.currentLanguage}>
-            Contact request
-          </Translation>
+          <Translation i18nkey="Contact request">Contact request</Translation>
         </h5>
         <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
           <span aria-hidden="true">&times;</span>
@@ -54,9 +47,7 @@ const ContactModalComponent = (props) => {
             {!props.name && (
               <div className="form-group">
                 <label htmlFor="sender-name">
-                  <Translation i18nkey="Name" language={props.currentLanguage}>
-                    Name
-                  </Translation>
+                  <Translation i18nkey="Name">Name</Translation>
                 </label>
                 <input
                   onChange={(e) => setName(e.target.value)}
@@ -65,17 +56,15 @@ const ContactModalComponent = (props) => {
                   type="text"
                   className="form-control"
                   id="sender-name"
-                  aria-describedby={t('Enter your name', props.currentLanguage)}
-                  placeholder={t('Enter your name', props.currentLanguage)}
+                  aria-describedby={translateMethod('Enter your name')}
+                  placeholder={translateMethod('Enter your name')}
                 />
               </div>
             )}
             {!props.email && (
               <div className="form-group">
                 <label htmlFor="sender-email">
-                  <Translation i18nkey="Email address" language={props.currentLanguage}>
-                    Email address
-                  </Translation>
+                  <Translation i18nkey="Email address">Email address</Translation>
                 </label>
                 <input
                   onChange={(e) => setEmail(e.target.value)}
@@ -84,16 +73,14 @@ const ContactModalComponent = (props) => {
                   type="email"
                   className="form-control"
                   id="sender-email"
-                  aria-describedby={t('Enter email', props.currentLanguage)}
-                  placeholder={t('Enter email', props.currentLanguage)}
+                  aria-describedby={translateMethod('Enter email')}
+                  placeholder={translateMethod('Enter email')}
                 />
               </div>
             )}
             <div className="form-group">
               <label htmlFor="subject">
-                <Translation i18nkey="Subject" language={props.currentLanguage}>
-                  Subject
-                </Translation>
+                <Translation i18nkey="Subject">Subject</Translation>
               </label>
               <input
                 onChange={(e) => setSubject(e.target.value)}
@@ -102,15 +89,13 @@ const ContactModalComponent = (props) => {
                 type="text"
                 className="form-control"
                 id="subject"
-                aria-describedby={t('subject', props.currentLanguage)}
-                placeholder={t('Subject', props.currentLanguage)}
+                aria-describedby={translateMethod('subject')}
+                placeholder={translateMethod('Subject')}
               />
             </div>
             <div className="form-group">
               <label htmlFor="message">
-                <Translation i18nkey="Message" language={props.currentLanguage}>
-                  Message
-                </Translation>
+                <Translation i18nkey="Message">Message</Translation>
               </label>
               <textarea
                 onChange={(e) => setBody(e.target.value)}
@@ -121,16 +106,14 @@ const ContactModalComponent = (props) => {
                 cols="30"
                 rows="7"
                 className="form-control"
-                aria-describedby={t('Your message', props.currentLanguage)}
-                placeholder={t('Your message', props.currentLanguage)}
+                aria-describedby={translateMethod('Your message')}
+                placeholder={translateMethod('Your message')}
               />
             </div>
 
             <div className="form-group ohnohoney">
               <label htmlFor="name">
-                <Translation i18nkey="Name" language={props.currentLanguage}>
-                  Name
-                </Translation>
+                <Translation i18nkey="Name">Name</Translation>
               </label>
               <input
                 onChange={(e) => setHoneyName(e.target.value)}
@@ -138,8 +121,8 @@ const ContactModalComponent = (props) => {
                 type="text"
                 className="form-control"
                 id="name"
-                aria-describedby={t('Enter your name', props.currentLanguage)}
-                placeholder={t('Enter your name', props.currentLanguage)}
+                aria-describedby={translateMethod('Enter your name')}
+                placeholder={translateMethod('Enter your name')}
               />
             </div>
           </form>
@@ -148,9 +131,7 @@ const ContactModalComponent = (props) => {
 
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => props.closeModal()}>
-          <Translation i18nkey="Cancel" language={props.currentLanguage}>
-            Cancel
-          </Translation>
+          <Translation i18nkey="Cancel">Cancel</Translation>
         </button>
 
         <button
@@ -158,9 +139,7 @@ const ContactModalComponent = (props) => {
           className="btn btn-outline-success"
           disabled={!validity ? 'disabled' : undefined}
           onClick={() => sendEmail()}>
-          <Translation i18nkey="Send" language={props.currentLanguage}>
-            Send
-          </Translation>
+          <Translation i18nkey="Send">Send</Translation>
         </button>
       </div>
     </div>

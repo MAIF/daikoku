@@ -22,6 +22,11 @@ class HomeController(
 
   def actualIndex[A](ctx: DaikokuActionMaybeWithoutUserContext[A]): Result = {
     ctx.user match {
+      case _ if ctx.request.uri.startsWith("/robot.txt") =>
+        ctx.tenant.robotTxt match {
+          case Some(robotTxt) => Ok(views.txt.robot.render(robotTxt));
+          case None           => NotFound(Json.obj("error" -> "robot.txt not found"))
+        }
       case Some(_) =>
         Ok(
           views.html.index(ctx.user.get,

@@ -212,8 +212,7 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                                   implicit val otoroshiSettings
                                     : OtoroshiSettings = otoSettings
                                   otoroshiClient
-                                    .getApiKeyQuotas(clientId,
-                                                     target.serviceGroup.value)
+                                    .getApiKeyQuotas(clientId)
                                     .map(result => Ok(result))
                               }
                         }

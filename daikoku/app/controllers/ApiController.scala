@@ -12,13 +12,13 @@ import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, Da
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
-import fr.maif.otoroshi.daikoku.domain.TranslationElement.ApiTranslationElement
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient}
+import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
+import fr.maif.otoroshi.daikoku.utils.{ApiService, IdGenerator, OtoroshiClient, Translator}
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -40,14 +40,22 @@ class ApiController(DaikokuAction: DaikokuAction,
                     env: Env,
                     otoroshiClient: OtoroshiClient,
                     cc: ControllerComponents,
-                    otoroshiSynchronisator: OtoroshiVerifierJob)
+                    otoroshiSynchronisator: OtoroshiVerifierJob,
+                    translator: Translator)
   extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec = env.defaultExecutionContext
   implicit val ev = env
+  implicit val tr = translator
 
   val logger = Logger("ApiController")
+
+  def getDaikokuUrl(tenant: Tenant, path: String) = env.config.exposedPort match {
+    case 80 => s"http://${tenant.domain}$path"
+    case 443 => s"https://${tenant.domain}$path"
+    case _ => s"http://${tenant.domain}:${env.config.exposedPort}$path"
+  }
 
   def me() = DaikokuAction.async { ctx =>
     authorizations.sync.PublicUserAccess(AuditTrailEvent("@{user.name} has accessed his own profile"))(ctx) {
@@ -59,14 +67,14 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def apiSwagger(teamId: String, apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+  def apiSwagger(teamId: String, apiId: String, version: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed swagger of api @{api.name} on team @{team.name}"))(ctx) {
 
       def fetchSwagger(api: Api): Future[Result] = {
         api.swagger match {
           case Some(SwaggerAccess(_, Some(content), _)) => FastFuture.successful(Ok(content).as("application/json"))
           case Some(SwaggerAccess(url, None, headers)) => {
-            val finalUrl = if (url.startsWith("/")) s"http://127.0.0.1:${env.config.port}${url}" else url
+            val finalUrl = if (url.startsWith("/")) getDaikokuUrl(ctx.tenant, url) else url
             Try {
               env.wsClient.url(finalUrl).withHttpHeaders(headers.toSeq: _*).get().map { resp =>
                 Ok(resp.body).as(resp.header("Content-Type").getOrElse("application/json"))
@@ -85,7 +93,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         case (_, _) => env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(teamId).flatMap {
           case Some(team) =>
             ctx.setCtxValue("team.name", team.name)
-            env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrIdNotDeleted(apiId).flatMap {
+            env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version).flatMap {
               case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
               case Some(api) if api.visibility == ApiVisibility.Public =>
                 ctx.setCtxValue("api.name", api.name)
@@ -96,7 +104,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               case Some(api) if api.visibility != ApiVisibility.Public && api.authorizedTeams.contains(team.id) =>
                 ctx.setCtxValue("api.name", api.name)
                 fetchSwagger(api)
-              case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api")))
+              case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api", "status" -> 403)))
             }
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Team not found")))
         }
@@ -144,14 +152,6 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def myVisibleApis() = DaikokuActionMaybeWithGuest.async { ctx =>
-    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed the list of visible apis"))(ctx) {
-      env.dataStore.teamRepo.forTenant(ctx.tenant).findAllNotDeleted()
-        .flatMap(teams => getVisibleApis(teams, ctx.user, ctx.tenant))
-        .map(Ok(_))
-    }
-  }
-
   def subscribedApis(teamId: String) = DaikokuAction.async { ctx =>
     TeamMemberOnly(
       AuditTrailEvent(s"@{user.name} has accessed the subscribed api list of team @{team.name} - @{team.id}")
@@ -164,32 +164,37 @@ class ApiController(DaikokuAction: DaikokuAction,
           )
         )
         .flatMap { subscriptions =>
-          env.dataStore.apiRepo
+          env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant.id)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj("$in" -> JsArray(subscriptions.map(_.api.asJson)))
-              )
-            )
-            .map { apis =>
-              Ok(JsArray(apis.map(_.asJson)))
+            .find(Json.obj("_id" -> Json.obj(
+              "$in" -> subscriptions.flatMap(s => s.parent).map(_.value)
+            )))
+            .flatMap { s =>
+                env.dataStore.apiRepo
+                  .forTenant(ctx.tenant.id)
+                  .findNotDeleted(
+                    Json.obj(
+                      "_id" -> Json.obj("$in" -> JsArray((s ++ subscriptions).map(_.api.asJson)))
+                    )
+                  )
+                  .flatMap(apis => FastFuture.successful(Ok(JsArray(apis.map(_.asJson)))))
             }
         }
     }
   }
 
-  def getTeamVisibleApis(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+  def getTeamVisibleApis(teamId: String, apiId: String, version: String) = DaikokuAction.async { ctx =>
     import cats.implicits._
 
-    TeamMemberOnly(AuditTrailEvent("@{user.name} is accessing team @{team.name} visible api @{api.name}"))(teamId, ctx) {
+    TeamMemberOnly(AuditTrailEvent(s"@{user.name} is accessing team @{team.name} visible api @{api.name} ($version)"))(teamId, ctx) {
       team =>
         val r: EitherT[Future, Result, Result] = for {
-          api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId),
+          api <- EitherT.fromOptionF(env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
             NotFound(Json.obj("error" -> "Api not found")))
           pendingRequests <- if (api.team == team.id) EitherT.liftF(FastFuture.successful(Seq.empty[Notification]))
-          else if (api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id))
+          else if (!ctx.user.isDaikokuAdmin && api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id))
             EitherT.leftT[Future, Seq[Notification]](
-              Unauthorized(Json.obj("error" -> "You're not authorized on this api"))
+              Unauthorized(Json.obj("error" -> "You're not authorized on this api", "status" -> 403))
             )
           else
             EitherT.liftF(
@@ -227,57 +232,80 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getVisibleApi(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+  def getApi(api: Api, ctx: DaikokuActionContext[AnyContent]) = {
     import cats.implicits._
 
-    UberPublicUserAccess(AuditTrailEvent("@{user.name} is accessing visible api @{api.name}"))(ctx) {
-      val r: EitherT[Future, Result, Result] = for {
-        myTeams <- EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
-        api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId),
-          NotFound(Json.obj("error" -> "Api not found")))
-        error: EitherT[Future, Result, Seq[Notification]] = EitherT.leftT[Future, Seq[Notification]](NotFound(Json.obj("error" -> "Api not found")))
-        value: EitherT[Future, Result, Seq[Notification]] = EitherT.liftF(
-          env.dataStore.notificationRepo
-            .forTenant(ctx.tenant.id)
-            .findNotDeleted(
-              Json.obj(
-                "action.type" -> "ApiSubscription",
-                "status.status" -> "Pending",
-                "action.api" -> api.id.asJson,
-                "action.team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-              )
+    val r: EitherT[Future, Result, Result] = for {
+      myTeams <- EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
+      error: EitherT[Future, Result, Seq[Notification]] = EitherT.leftT[Future, Seq[Notification]](AppError.render(ApiNotFound))
+      value: EitherT[Future, Result, Seq[Notification]] = EitherT.liftF(
+        env.dataStore.notificationRepo
+          .forTenant(ctx.tenant.id)
+          .findNotDeleted(
+            Json.obj(
+              "action.type" -> "ApiSubscription",
+              "status.status" -> "Pending",
+              "action.api" -> api.id.asJson,
+              "action.team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
             )
-        )
-        pendingRequests <- if (api.published || myTeams.exists(_.id == api.team)) value else error
-        subscriptions <- EitherT.liftF(
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(ctx.tenant.id)
-            .findNotDeleted(
-              Json.obj("api" -> api.id.value,
-                "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))))
-            )
-        )
-      } yield {
-        if (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
-          .intersect(myTeams.map(_.id))
-          .nonEmpty) {
-          val betterApi = api
-            .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || p.typeName == "Admin" || myTeams.exists(_.id == api.team)))
-            .asJson.as[JsObject] ++ Json.obj(
-            "pendingRequests" -> JsArray(
-              pendingRequests.map(_.asJson)
-            )
-          ) ++ Json.obj(
-            "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
           )
-          ctx.setCtxValue("api.name", api.name)
-          Ok(if(ctx.tenant.apiReferenceHideForGuest.getOrElse(true) && ctx.user.isGuest) betterApi - "swagger" else  betterApi)
-        } else {
-          Unauthorized(Json.obj("error" -> "You're not authorized on this api"))
-        }
+      )
+      pendingRequests <- value
+      subscriptions <- EitherT.liftF(
+        env.dataStore.apiSubscriptionRepo
+          .forTenant(ctx.tenant.id)
+          .findNotDeleted(
+            Json.obj("api" -> api.id.value,
+              "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))))
+          )
+      )
+    } yield {
+      if ((api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
+        .intersect(myTeams.map(_.id))
+        .nonEmpty) && (api.published || myTeams.exists(_.id == api.team))) {
+        val betterApi = api
+          .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || p.typeName == "Admin" || myTeams.exists(_.id == api.team)))
+          .asJson.as[JsObject] ++ Json.obj(
+          "pendingRequests" -> JsArray(
+            pendingRequests.map(_.asJson)
+          )
+        ) ++ Json.obj(
+          "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson))
+        )
+        ctx.setCtxValue("api.name", api.name)
+        Ok(if(ctx.tenant.apiReferenceHideForGuest.getOrElse(true) && ctx.user.isGuest) betterApi - "swagger" else  betterApi)
+      } else {
+        Unauthorized(Json.obj(
+          "error" -> "You're not authorized on this api",
+          "status" -> 401,
+          "visibility" -> api.visibility.name
+        ))
       }
+    }
 
-      r.value.map(_.merge)
+    r.value.map(_.merge)
+  }
+
+  def getVisibleApiWithId(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent("@{user.name} is accessing visible api @{api.name}"))(ctx) {
+      env.dataStore.apiRepo
+        .forTenant(ctx.tenant)
+        .findById(apiId)
+        .flatMap {
+          case None => FastFuture.successful(AppError.render(ApiNotFound))
+          case Some(api) => getApi(api, ctx)
+        }
+    }
+  }
+
+  def getVisibleApi(humanReadableId: String, version: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent("@{user.name} is accessing visible api @{api.name}"))(ctx) {
+      env.dataStore.apiRepo
+        .findByVersion(ctx.tenant, humanReadableId, version)
+        .flatMap {
+          case None => FastFuture.successful(AppError.render(ApiNotFound))
+          case Some(api) => getApi(api, ctx)
+        }
     }
   }
 
@@ -389,16 +417,19 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  private def getDocumentationDetailsImpl(tenant: Tenant, apiId: String): Future[Either[JsValue, JsValue]] = {
-    env.dataStore.apiRepo.forTenant(tenant.id).findByIdOrHrId(apiId).flatMap {
+  private def getDocumentationDetailsImpl(tenant: Tenant, apiId: String, version: String): Future[Either[JsValue, JsValue]] = {
+    env.dataStore.apiRepo
+        .findByVersion(tenant, apiId, version).flatMap {
       case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
       case Some(api) =>
         val doc = api.documentation
         env.dataStore.apiDocumentationPageRepo
           .forTenant(tenant.id)
           .findWithProjection(
-            Json.obj("_deleted" -> false,
-              "_id" -> Json.obj("$in" -> JsArray(doc.pages.map(_.value).map(JsString.apply).toSeq))),
+            Json.obj(
+              "_deleted" -> false,
+              "_id" -> Json.obj("$in" -> JsArray(doc.pages.map(_.value).map(JsString.apply).toSeq))
+            ),
             Json.obj(
               "_id" -> true,
               "_humanReadableId" -> true,
@@ -423,12 +454,26 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getDocumentationDetails(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+  def getRootApi(apiId: String)  = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has requested root api @{api.id}"))(ctx) {
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+        .findOne(Json.obj(
+          "_humanReadableId" -> apiId,
+          "parent" -> JsNull
+        ))
+        .map {
+          case None => AppError.render(ApiNotFound)
+          case Some(api) => Ok(ApiFormat.writes(api))
+        }
+    }
+  }
+
+  def getDocumentationDetails(apiId: String, version: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed documentation details for @{api.id}"))(
       ctx
     ) {
       ctx.setCtxValue("api.id", apiId)
-      getDocumentationDetailsImpl(ctx.tenant, apiId).map {
+      getDocumentationDetailsImpl(ctx.tenant, apiId, version).map {
         case Left(r) => NotFound(r)
         case Right(r) => Ok(r)
       }
@@ -580,14 +625,21 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
+  def extendApiKey(apiId: String, apiKeyId: String) = DaikokuAction.async(parse.json) { ctx =>
+    _createOrExtendApiKey(apiId, ctx, Some(ApiSubscriptionId(apiKeyId)))
+  }
+
   def askForApiKey(apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    _createOrExtendApiKey(apiId, ctx)
+  }
+
+  def _createOrExtendApiKey(apiId: String, ctx: DaikokuActionContext[JsValue], parentSubscriptionId: Option[ApiSubscriptionId] = None)= {
     import cats.implicits._
 
     implicit val c = ctx;
     PublicUserAccess(AuditTrailEvent(s"@{user.name} has asked for an apikey for @{api.name} - @{api.id}"))(ctx) {
       val teams: Seq[String] = (ctx.request.body \ "teams").as[Seq[String]]
       val planId: String = (ctx.request.body \ "plan").as[String]
-
 
       val results: EitherT[Future, Result, Result] = for {
         api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId),
@@ -628,16 +680,30 @@ class ApiController(DaikokuAction: DaikokuAction,
                                   "plan" -> plan.id.asJson)
                               )
                               .flatMap {
-                                case Some(sub) if !plan.allowMultipleKeys.getOrElse(false) =>
+                                case Some(_) if !plan.allowMultipleKeys.getOrElse(false) =>
                                   Future.successful(AppError.toJson(SubscriptionConflict))
                                 case _ =>
-                                  applyProcessForApiSubscription(ctx.tenant,
-                                    ctx.user,
-                                    api,
-                                    plan.id.value,
-                                    team).leftMap { appError =>
-                                    AppError.toJson(appError)
-                                  }.merge
+                                  def process() = applyProcessForApiSubscription(ctx.tenant,
+                                      ctx.user,
+                                      api,
+                                      plan.id.value,
+                                      team,
+                                      parentSubscriptionId).leftMap(AppError.toJson).merge
+
+                                  parentSubscriptionId match {
+                                    case Some(apiKey) => env.dataStore.apiSubscriptionRepo
+                                      .forTenant(ctx.tenant)
+                                      .findByIdNotDeleted(apiKey.value)
+                                      .flatMap {
+                                        case Some(sub) if sub.parent.isDefined =>
+                                          FastFuture.successful(AppError.toJson(SubscriptionParentExisted))
+                                        case Some(_) if (plan.aggregationApiKeysSecurity.isEmpty || plan.aggregationApiKeysSecurity.exists(a => !a)) =>
+                                          FastFuture.successful(AppError.toJson(SubscriptionAggregationDisabled))
+                                        case Some(_) => process()
+                                        case None => FastFuture.successful(AppError.toJson(SubscriptionNotFound))
+                                      }
+                                    case _ => process()
+                                  }
                               }
                           case None => Future.successful(Json.obj(teamId -> "team not found"))
                         }
@@ -659,18 +725,19 @@ class ApiController(DaikokuAction: DaikokuAction,
                                      user: User,
                                      api: Api,
                                      planId: String,
-                                     team: Team)(implicit ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, JsObject] = {
+                                     team: Team,
+                                     apiKeyId: Option[ApiSubscriptionId])(implicit ctx: DaikokuActionContext[JsValue]): EitherT[Future, AppError, JsObject] = {
     import cats.implicits._
 
     api.possibleUsagePlans.find(_.id.value == planId) match {
       case None => EitherT.leftT[Future, JsObject](PlanNotFound)
       case Some(_)
-        if api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id) => EitherT.leftT[Future, JsObject](ApiUnauthorized)
+        if api.visibility != ApiVisibility.Public && !api.authorizedTeams.contains(team.id) && !user.isDaikokuAdmin => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(_) if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin => EitherT.leftT[Future, JsObject](ApiUnauthorized)
       case Some(plan) if plan.visibility == UsagePlanVisibility.Private && api.team != team.id => EitherT.leftT[Future, JsObject](PlanUnauthorized)
       case Some(plan) => plan.subscriptionProcess match {
-        case SubscriptionProcess.Manual => EitherT(notifyApiSubscription(tenant, user, api, planId, team))
-        case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team))
+        case SubscriptionProcess.Manual => EitherT(notifyApiSubscription(tenant, user, api, planId, team, apiKeyId))
+        case SubscriptionProcess.Automatic => EitherT(apiService.subscribeToApi(tenant, user, api, planId, team, apiKeyId))
       }
     }
   }
@@ -679,7 +746,8 @@ class ApiController(DaikokuAction: DaikokuAction,
                             user: User,
                             api: Api,
                             planId: String,
-                            team: Team)(implicit ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, JsObject]] = {
+                            team: Team,
+                            apiKeyId: Option[ApiSubscriptionId])(implicit ctx: DaikokuActionContext[JsValue]): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     val defaultPlanOpt = api.possibleUsagePlans.find(p => p.id == api.defaultUsagePlan)
@@ -691,19 +759,11 @@ class ApiController(DaikokuAction: DaikokuAction,
       tenant = tenant.id,
       team = Some(api.team),
       sender = user,
-      action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id)
+      action = NotificationAction.ApiSubscriptionDemand(api.id, plan.id, team.id, apiKeyId)
     )
 
-    val language = tenant.defaultLanguage.getOrElse("en")
-    implicit val lang: Lang = Lang(language)
-    val title = messagesApi("mail.apikey.demand.title")
-    val notificationUrl = env.config.exposedPort match {
-      case 80 => s"http://${tenant.domain}/notifications"
-      case 443 => s"https://${tenant.domain}/notifications"
-      case value => s"http://${tenant.domain}:$value/"
-    }
-    val body = messagesApi("mail.apikey.demand.body", user.name, api.name, notificationUrl)
-
+    val tenantLanguage: String = tenant.defaultLanguage.getOrElse("en")
+    val notificationUrl = getDaikokuUrl(tenant, "/notifications")
     for {
       _ <- env.dataStore.notificationRepo.forTenant(tenant.id).save(notification)
       maybeApiTeam <- env.dataStore.teamRepo.forTenant(tenant.id).findByIdNotDeleted(api.team)
@@ -718,12 +778,18 @@ class ApiController(DaikokuAction: DaikokuAction,
             )
       )
       _ <- maybeAdmins.traverse(
-        admins =>
-          tenant.mailer.send(
-            title,
-            admins.map(admin => admin.email),
-            body
-          )
+        admins => Future.sequence(admins.map(admin => {
+          implicit val language: String = admin.defaultLanguage.getOrElse(tenantLanguage)
+          (for {
+            title <- translator.translate("mail.apikey.demand.title", tenant)
+            body <- translator.translate("mail.apikey.demand.body", tenant, Map(
+              "user" -> user.name,
+              "apiName" -> api.name,
+              "link" -> notificationUrl))
+          } yield {
+            tenant.mailer.send(title, Seq(admin.email), body, tenant)
+          }).flatten
+        }))
       )
     } yield {
       Right(Json.obj("creation" -> "waiting", "subscription" -> Json.obj("team" -> team.id.asJson, "plan" -> planId)))
@@ -731,7 +797,7 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   }
 
-  def getMyTeamsApiSubscriptions(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+  def getMyTeamsApiSubscriptions(apiId: String, version: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(ctx) {
 
       def findSubscriptions(api: Api, teams: Seq[Team]): Future[Result] = {
@@ -778,17 +844,17 @@ class ApiController(DaikokuAction: DaikokuAction,
       env.dataStore.teamRepo
         .myTeams(ctx.tenant, ctx.user)
         .flatMap(
-          myTeams =>
+          myTeams => {
             env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .findByIdOrHrId(apiId)
+              .findByVersion(ctx.tenant, apiId, version)
               .flatMap {
                 case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
                 case Some(api)
                   if api.visibility == ApiVisibility.Public || api.authorizedTeams.intersect(myTeams.map(_.id)).nonEmpty || myTeams.exists(t => t.id == api.team) =>
                   findSubscriptions(api, myTeams)
-                case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api")))
+                case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api", "status" -> 401)))
               }
+          }
         )
     }
   }
@@ -838,39 +904,141 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getApiSubscriptionsForTeam(apiId: String, teamId: String) = DaikokuAction.async { ctx =>
+  def getApiSubscriptionsForTeam(apiId: String, teamId: String, version: String) = DaikokuAction.async { ctx =>
     TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has accessed subscriptions for @{api.name} - @{api.id}"))(teamId, ctx) {
       team =>
+        val teamPermission = team.users
+          .find(u => u.userId == ctx.user.id)
+          .map(_.teamPermission)
+          .getOrElse(TeamPermission.TeamUser)
+
+        val repo = env.dataStore.apiSubscriptionRepo
+          .forTenant(ctx.tenant.id)
+
+        def subscriptionToJson(api: Api, sub: ApiSubscription, parentSub: Option[ApiSubscription]): Future[JsValue] = {
+          val planIntegrationProcess = api.possibleUsagePlans
+            .find(p => p.id == sub.plan)
+            .map(_.integrationProcess)
+            .getOrElse(IntegrationProcess.Automatic)
+
+          val r = sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
+            api.possibleUsagePlans
+              .find(p => p.id == sub.plan)
+              .map { plan => Json.obj("planType" -> plan.typeName) }
+              .getOrElse(Json.obj("planType" -> "")) ++
+            Json.obj("apiName" -> api.name) ++
+            Json.obj("_humanReadableId" -> api.humanReadableId) ++
+            Json.obj("parentUp" -> false)
+
+
+          sub.parent match {
+            case None => FastFuture.successful(r)
+            case Some(parentId) =>
+              parentSub match {
+                case Some(parent) => FastFuture.successful(r ++ Json.obj("parentUp" -> parent.enabled))
+                case None => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
+                  .findById(parentId.value)
+                  .map {
+                    case None => r
+                    case Some(p) => r ++ Json.obj("parentUp" -> p.enabled)
+                  }
+              }
+
+          }
+        }
+
         def findSubscriptions(api: Api, team: Team): Future[Result] = {
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(ctx.tenant.id)
+          repo
             .findNotDeleted(Json.obj("api" -> api.id.value, "team" -> team.id.value))
-            .map { subscriptions =>
-              val teamPermission = team.users
-                .find(u => u.userId == ctx.user.id)
-                .map(_.teamPermission).getOrElse(TeamPermission.TeamUser)
-              Ok(
-                JsArray(
-                  subscriptions
+            .flatMap { subscriptions =>
+              repo
+                .find(Json.obj(
+                  "parent" -> Json.obj("$in" -> subscriptions.map(s => s.id.value))
+                ))
+                .flatMap { subs =>
+                  Future.sequence((subscriptions ++ subs)
                     .filter(s => team.subscriptions.contains(s.id))
                     .map(sub => {
-                      val planIntegrationProcess = api.possibleUsagePlans.find(p => p.id == sub.plan).map(_.integrationProcess).getOrElse(IntegrationProcess.Automatic)
-                      sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin)
-                    }
-                    )
-                )
-              )
+                      (sub.parent match {
+                        case Some(_) => env.dataStore.apiRepo.forTenant(ctx.tenant.id).findById(sub.api.value)
+                        case None => FastFuture.successful(Some(api))
+                      })
+                        .flatMap {
+                          case Some(api) => subscriptionToJson(api, sub,
+                            sub.parent.flatMap(p => subscriptions.find(s => s.id == p)))
+                          case None => FastFuture.successful(Json.obj())
+                        }
+                    }))
+                    .map(values => Ok(JsArray(values)))
+                }
             }
         }
 
-        env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
+        env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version).flatMap {
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
-          case Some(api) if api.visibility == ApiVisibility.Public => findSubscriptions(api, team)
+          case Some(api) if ctx.user.isDaikokuAdmin || api.visibility == ApiVisibility.Public => findSubscriptions(api, team)
           case Some(api) if api.team == team.id => findSubscriptions(api, team)
           case Some(api) if api.visibility != ApiVisibility.Public && api.authorizedTeams.contains(team.id) =>
             findSubscriptions(api, team)
-          case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api")))
+          case _ => FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized on this api", "status" -> 403)))
         }
+    }
+  }
+
+  def getSubscriptionsOfTeam(teamId: String) = DaikokuAction.async { ctx =>
+    TeamApiKeyAction(AuditTrailEvent(s"@{user.name} has accessed subscriptions of team : - $teamId"))(teamId, ctx) {
+      team =>
+        def findSubscriptions(api: Api, team: Team) =
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant.id)
+            .findNotDeleted(Json.obj("api" -> api.id.value, "team" -> team.id.value))
+            .flatMap { subscriptions =>
+              val teamPermission = team.users
+                .find(u => u.userId == ctx.user.id)
+                .map(_.teamPermission).getOrElse(TeamPermission.TeamUser)
+
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.tenant.id)
+                .find(Json.obj(
+                    "parent" -> Json.obj("$in" -> subscriptions.map(s => s.id.value))
+                ))
+                .flatMap { subs =>
+                  FastFuture.successful(
+                    (subscriptions ++ subs)
+                      .filter(s => team.subscriptions.contains(s.id) && s.parent.isEmpty)
+                      .map(sub => {
+                        val planIntegrationProcess = api.possibleUsagePlans
+                          .find(p => p.id == sub.plan)
+                          .map(_.integrationProcess)
+                          .getOrElse(IntegrationProcess.Automatic)
+
+                        sub.asAuthorizedJson(teamPermission, planIntegrationProcess, ctx.user.isDaikokuAdmin).as[JsObject] ++
+                          api.possibleUsagePlans
+                            .find(p => p.id == sub.plan)
+                            .map { plan => Json.obj("planType" -> plan.typeName) }
+                            .getOrElse(Json.obj("planType" -> "")) ++
+                          Json.obj("apiName" -> api.name)
+                      })
+                  )
+                }
+            }
+
+        env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .findAll()
+          .flatMap { apis =>
+            Future.sequence(apis.map { api =>
+              env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(api.id.value).flatMap {
+                case Some(api) if api.visibility == ApiVisibility.Public => findSubscriptions(api, team)
+                case Some(api) if api.team == team.id => findSubscriptions(api, team)
+                case Some(api) if api.visibility != ApiVisibility.Public && api.authorizedTeams.contains(team.id) =>
+                  findSubscriptions(api, team)
+              case _ => FastFuture.successful(Seq.empty)
+              }
+            })
+          }
+          .map(_.flatten)
+          .map(subs => Ok(JsArray(subs)))
     }
   }
 
@@ -910,6 +1078,49 @@ class ApiController(DaikokuAction: DaikokuAction,
       apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
         ctx.setCtxValue("subscription", subscription)
         toggleSubscription(plan, subscription, ctx.tenant, enabled.getOrElse(false))
+      })
+    }
+  }
+
+  def makeUniqueSubscription(teamId: String, subscriptionId: String) = DaikokuAction.async { ctx =>
+    TeamApiKeyAction(
+      AuditTrailEvent(s"@{user.name} has made unique aggregate api subscription @{subscription.id} of @{team.name} - @{team.id}")
+    )(teamId, ctx) { team =>
+      apiSubscriptionAction(ctx.tenant, team, subscriptionId, (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
+        if (subscription.parent.isEmpty)
+            FastFuture.successful(Left(MissingParentSubscription))
+        else
+          plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+            ctx.tenant.otoroshiSettings.find(_.id == id)
+          } match {
+            case None => FastFuture.successful(Left(OtoroshiSettingsNotFound))
+            case Some(otoroshiSettings) =>
+              implicit val o = otoroshiSettings
+              import cats.implicits._
+
+              (for {
+                apiKey        <- EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId)(o))
+                _             <- EitherT(toggleSubscription(plan, subscription, ctx.tenant, enabled = false))
+                createdApiKey <- EitherT(otoroshiClient.createApiKey(apiKey.copy(
+                  clientId = IdGenerator.token(32),
+                  clientSecret = IdGenerator.token(64),
+                  clientName = s"daikoku-api-key-${api.humanReadableId}-${
+                    plan.customName
+                      .getOrElse(plan.typeName)
+                      .urlPathSegmentSanitized
+                  }-${team.humanReadableId}-${System.currentTimeMillis()}"))(o))
+                _             <- EitherT.right[AppError](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id)
+                  .save(subscription.copy(
+                    parent = None,
+                    apiKey = subscription.apiKey.copy(
+                      clientId = createdApiKey.clientId,
+                      clientSecret = createdApiKey.clientSecret,
+                      clientName = createdApiKey.clientName)
+                  )))
+              } yield {
+                Json.obj("created" -> true)
+              }).value
+          }
       })
     }
   }
@@ -1034,18 +1245,22 @@ class ApiController(DaikokuAction: DaikokuAction,
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  def apiOfTeam(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+  def apiOfTeam(teamId: String, apiId: String, version: String) = DaikokuAction.async { ctx =>
     TeamMemberOnly(
       AuditTrailEvent(s"@{user.name} has accessed one api @{api.name} - @{api.id} of @{team.name} - @{team.id}")
     )(teamId, ctx) { team =>
+      var query = Json.obj(
+        "team" -> team.id.value,
+        "$or" -> Json.arr(
+          Json.obj("_id" -> apiId),
+          Json.obj("_humanReadableId" -> apiId),
+        ),
+        "currentVersion" -> version
+      )
+
       env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
-        .findOneNotDeleted(
-          Json.obj(
-            "team" -> team.id.value,
-            "$or" -> Json.arr(Json.obj("_id" -> apiId), Json.obj("_humanReadableId" -> apiId))
-          )
-        )
+        .findOneNotDeleted(query)
         .flatMap {
           case Some(api) =>
             ctx.setCtxValue("api.id", api.id)
@@ -1095,114 +1310,83 @@ class ApiController(DaikokuAction: DaikokuAction,
 
       val maybeHumanReadableId = name.urlPathSegmentSanitized
 
+      val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+
       id match {
-        case Some(value) => env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId, "_id" -> Json.obj("$ne" -> value)))
-          .map(exists => Ok(Json.obj("exists" -> exists)))
-        case None => env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .exists(Json.obj("_humanReadableId" -> maybeHumanReadableId))
+        case Some(value) =>
+          apiRepo.findByIdNotDeleted(value)
+            .flatMap {
+              case None => FastFuture.successful(Ok(Json.obj("exists" -> false)))
+              case Some(api) =>
+                val v = api.parent match {
+                  case Some(parent) => parent.value
+                  case None => value
+                }
+                apiRepo
+                  .exists(Json.obj("parent" -> JsNull, "_humanReadableId" -> maybeHumanReadableId, "_id" -> Json.obj("$ne" -> v)))
+                  .map(exists => Ok(Json.obj("exists" -> exists)))
+            }
+        case None => apiRepo
+          .exists(Json.obj("parent" -> JsNull, "_humanReadableId" -> maybeHumanReadableId))
           .map(exists => Ok(Json.obj("exists" -> exists)))
       }
     }
   }
 
-  def visibleApisOfTeam(teamId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
-    //todo: add authorizations property
-    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed visible apis of team @{team.name} - @{team.id}"))(ctx) {
-      env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdOrHrId(teamId).flatMap {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Team not found")))
-        case Some(team) =>
-          ctx.setCtxValue("team.id", team.id)
-          ctx.setCtxValue("team.name", team.name)
-          getVisibleApis(Seq(team), ctx.user, ctx.tenant)
-            .map(Ok(_))
+  def getAllApiDocumentation(teamId: String, apiId: String, version: String) = DaikokuAction.async { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has requested all pages of @{api.name} - @{team.id}"))(teamId, ctx) {
+      team => {
+        env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+          .find(Json.obj("_humanReadableId" -> apiId, "currentVersion" -> Json.obj("$ne" -> version)))
+          .flatMap(apis => Future.sequence(
+            apis.map { api =>
+              env.dataStore.apiDocumentationPageRepo
+                .forTenant(ctx.tenant.id)
+                .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(api.documentation.pages.map(_.asJson)))))
+                .map { pages => Json.obj(
+                  "currentVersion" -> api.currentVersion.value,
+                  "apiId" -> api.id.asJson,
+                  "pages" -> pages.map(page => Json.obj(
+                    "_id" -> page.id.asJson,
+                    "title" -> JsString(page.title)
+                  ))
+                )}
+            })
+          )
+        .map(v => Ok(JsArray(v)))
       }
     }
   }
 
-  def getVisibleApis(teams: Seq[Team], user: User, tenant: Tenant): Future[JsArray] = {
-    val teamFilter = Json.obj("team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))))
-    for {
-      myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
-      myCurrentRequests <- if (user.isGuest) FastFuture.successful(Seq.empty) else env.dataStore.notificationRepo
-        .forTenant(tenant.id)
-        .findNotDeleted(
-          Json.obj("action.type" -> "ApiAccess",
-            "action.team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson))),
-            "status.status" -> "Pending")
-        )
-      apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
-      publicApis <- apiRepo.findNotDeleted(Json.obj("visibility" -> "Public") ++ teamFilter)
-      almostPublicApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-        Json.obj("visibility" -> "PublicWithAuthorizations") ++ teamFilter
-      )
-      privateApis <- if (user.isGuest) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-        Json.obj(
-          "visibility" -> "Private",
-          "$or" -> Json.arr(
-            Json.obj("authorizedTeams" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))),
-            teamFilter
-          )
-        )
-      )
-      adminApis <- if (!user.isDaikokuAdmin) FastFuture.successful(Seq.empty) else apiRepo.findNotDeleted(
-        Json.obj("visibility" -> ApiVisibility.AdminOnly.name) ++ teamFilter
-      )
-      translations <- env.dataStore.translationRepo.forTenant(tenant)
-        .find(Json.obj(
-          "element.id" -> Json.obj(
-            "$in" -> JsArray(publicApis.map(_.id.asJson) ++ almostPublicApis.map(_.id.asJson) ++ privateApis.map(_.id.asJson)))))
-    } yield {
-      val apis = (publicApis ++ almostPublicApis ++ privateApis).filter(api => api.published || myTeams.exists(api.team == _.id))
+  def cloneDocumentation(teamId: String, apiId: String, version: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has imported pages from $version in @{api.name} @{team.id}"))(teamId, ctx) {
+      team => {
+        val pages = (ctx.request.body \ "pages").as[Seq[JsObject]]
 
-      val sortedApis = apis.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-
-      val apiTranslations: Map[ApiId, Seq[Translation]] = translations.groupBy(t => t.element.asInstanceOf[ApiTranslationElement].api)
-
-      val jsons = sortedApis.map { api =>
-
-        val translations: Seq[Translation] = apiTranslations.getOrElse(api.id, Seq.empty)
-        val translationAsJsObject = translations
-          .groupBy(t => t.language)
-          .map {
-            case (k, v) => Json.obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
-          }.fold(Json.obj())(_ deepMerge _)
-        val translation = Json.obj("translation" -> translationAsJsObject)
-        val json = api
-          .copy(possibleUsagePlans = api.possibleUsagePlans.filter(p => p.visibility == UsagePlanVisibility.Public || myTeams.exists(_.id == api.team)))
-          .asSimpleJson.as[JsObject] ++ translation
-        val authorizations = teams
-          .filter(t => t.`type` != TeamType.Admin)
-          .map(
-            team =>
-              Json.obj(
-                "team" -> team.id.asJson,
-                "authorized" -> (api.authorizedTeams.contains(team.id) || api.team == team.id),
-                "pending" -> myCurrentRequests.exists(notif => {
-                  val accessApi = notif.action.asInstanceOf[ApiAccess]
-                  accessApi.team == team.id && accessApi.api == api.id
-                })
-              )
-          )
-
-        api.visibility.name match {
-          case "PublicWithAuthorizations" =>
-            json.as[JsObject] ++ Json.obj("authorizations" -> JsArray(authorizations))
-          case "Private" => json.as[JsObject] ++ Json.obj("authorizations" -> authorizations)
-          case _ => json
-        }
+        (for {
+          fromPages <- env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id)
+            .find(Json.obj(
+              "_id" -> Json.obj("$in" -> JsArray(pages.map(page => (page \ "pageId").as[JsString])))
+            ))
+          createdPages <- Future.sequence(
+            fromPages.map(page => {
+              val generatedId = BSONObjectID.generate().stringify
+              env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id)
+                .save(page.copy(id = ApiDocumentationPageId(generatedId)))
+                .flatMap(_ => FastFuture.successful(ApiDocumentationPageId(generatedId)))
+            }))
+          api <- env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version)
+        } yield {
+          api match {
+            case None => FastFuture.successful(AppError.render(ApiNotFound))
+            case Some(api) => env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(
+              api.copy(documentation = api.documentation.copy(pages = api.documentation.pages ++ createdPages))
+            ).map { _ =>
+              Ok(Json.obj("cloned" -> true))
+            }
+          }
+        }).flatten
       }
-
-      val result = if (user.isDaikokuAdmin) adminApis.map(api => api.asJson.as[JsObject] ++ Json.obj("authorizations" -> teams.map(team =>
-        Json.obj(
-          "team" -> team.id.asJson,
-          "authorized" -> (user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users.exists(u => u.userId == user.id)),
-          "pending" -> false
-        )
-      ))) ++ jsons else jsons
-      JsArray(result)
     }
   }
 
@@ -1244,16 +1428,12 @@ class ApiController(DaikokuAction: DaikokuAction,
       action = NotificationAction.ApiAccess(api.id, team.id)
     )
 
-    val language = ctx.tenant.defaultLanguage.getOrElse("en")
-    implicit val lang: Lang = Lang(language)
-    val title = messagesApi("mail.api.access.title")
-    val body = messagesApi("mail.api.access.body", ctx.user.name, api.name, team.name, s"${ctx.tenant.domain}/notifications")
+    val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
 
     for {
       notificationRepo <- env.dataStore.notificationRepo.forTenantF(ctx.tenant.id)
       saved <- notificationRepo.save(notification)
       maybeOwnerteam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(api.team)
-
       maybeAdmins <- maybeOwnerteam.traverse { ownerTeam =>
         env.dataStore.userRepo
           .find(
@@ -1264,14 +1444,23 @@ class ApiController(DaikokuAction: DaikokuAction,
               )
           )
       }
-
       _ <- maybeAdmins.traverse { admins =>
-        ctx.tenant.mailer.send(
-          title,
-          admins.map(admin => admin.email),
-          body
-        )
-      }
+        Future.sequence(
+          admins.map { admin =>
+            implicit val language: String = admin.defaultLanguage.getOrElse(tenantLanguage)
+            (for {
+              title <- translator.translate("mail.api.access.title", ctx.tenant)
+              body <- translator.translate("mail.api.access.body", ctx.tenant, Map(
+                "user" -> ctx.user.name,
+                "apiName" -> api.name,
+                "teamName" -> team.name,
+                "link" -> s"${ctx.tenant.domain}/notifications"
+              ))
+            } yield {
+              ctx.tenant.mailer.send(title, Seq(admin.email), body, ctx.tenant)
+            }).flatten
+          })
+        }
     } yield {
       Json.obj(s"${team.id.value}" -> saved)
     }
@@ -1346,60 +1535,121 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def updateApiOfTeam(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+  def updateApiOfTeam(teamId: String, apiId: String, version: String) = DaikokuAction.async(parse.json) { ctx =>
     val finalBody = ctx.request.body
     TeamApiEditorOnly(
       AuditTrailEvent(s"@{user.name} has updated an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})")
     )(teamId, ctx) { team =>
       env.dataStore.apiRepo
-        .forTenant(ctx.tenant.id)
-        .findOneNotDeleted(Json.obj("_id" -> apiId, "team" -> team.id.asJson)) flatMap {
+        .findByVersion(ctx.tenant, apiId, version) flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         case Some(oldApi) =>
-          ApiFormat.reads(finalBody) match {
-            case JsError(e) =>
-              FastFuture
-                .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
-            case JsSuccess(api, _) if oldApi.visibility == ApiVisibility.AdminOnly =>
-              val oldAdminPlan = oldApi.possibleUsagePlans.head
-              val planToSave = api.possibleUsagePlans.find(_.id == oldAdminPlan.id)
-              ctx.setCtxValue("api.name", api.name)
-              ctx.setCtxValue("api.id", api.id)
-              planToSave match {
-                case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api Plan not found")))
-                case Some(plan) =>
-                  val apiToSave = oldApi.copy(possibleUsagePlans = Seq(plan), issuesTags = api.issuesTags)
-                  for {
-                    _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
-                    _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
-                  } yield {
-                    Ok(apiToSave.asJson)
-                  }
-              }
-            case JsSuccess(api, _) =>
-              val flippedPlans = api.possibleUsagePlans.filter(pp => oldApi.possibleUsagePlans.exists(oldPp => pp.id == oldPp.id && oldPp.visibility != pp.visibility))
-              val untouchedPlans = api.possibleUsagePlans.diff(flippedPlans)
-
-              val newPlans = api.possibleUsagePlans.map(_.id)
-              val oldPlans = oldApi.possibleUsagePlans.map(_.id)
-              val deletedPlansId = oldPlans.diff(newPlans)
-              val deletedPlans = oldApi.possibleUsagePlans.filter(pp => deletedPlansId.contains(pp.id))
-
-              for {
-                plans <- changePlansVisibility(flippedPlans, api, ctx.tenant)
-                _ <- deleteApiPlansSubscriptions(deletedPlans, oldApi, ctx.tenant, ctx.user)
-                apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
-                _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
-                _ <- otoroshiSynchronisator.verify(Json.obj("api" -> apiId)) //launch synhro to maybe update customeMetadata & authorizedEntities
-                _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
-              } yield {
+          if(oldApi.team != team.id)
+            FastFuture.successful(AppError.render(ApiNotFound))
+          else
+            ApiFormat.reads(finalBody) match {
+              case JsError(e) =>
+                FastFuture
+                  .successful(BadRequest(Json.obj("error" -> "Error while parsing payload", "msg" -> e.toString())))
+              case JsSuccess(api, _) if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) &&
+                api.possibleUsagePlans.exists(plan => plan.aggregationApiKeysSecurity.exists(identity)) =>
+                FastFuture.successful(BadRequest(AppError.toJson(SubscriptionAggregationDisabled)))
+              case JsSuccess(api, _) if oldApi.visibility == ApiVisibility.AdminOnly =>
+                val oldAdminPlan = oldApi.possibleUsagePlans.head
+                val planToSave = api.possibleUsagePlans.find(_.id == oldAdminPlan.id)
                 ctx.setCtxValue("api.name", api.name)
                 ctx.setCtxValue("api.id", api.id)
-                Ok(apiToSave.asJson)
-              }
-          }
+                planToSave match {
+                  case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api Plan not found")))
+                  case Some(plan) =>
+                    val apiToSave = oldApi.copy(possibleUsagePlans = Seq(plan), issuesTags = api.issuesTags)
+                    for {
+                      _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
+                      _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
+                    } yield {
+                      Ok(apiToSave.asJson)
+                    }
+                }
+              case JsSuccess(api, _) =>
+                val flippedPlans = api.possibleUsagePlans.filter(pp => oldApi.possibleUsagePlans.exists(oldPp => pp.id == oldPp.id && oldPp.visibility != pp.visibility))
+                val untouchedPlans = api.possibleUsagePlans.diff(flippedPlans)
+
+                val newPlans = api.possibleUsagePlans.map(_.id)
+                val oldPlans = oldApi.possibleUsagePlans.map(_.id)
+                val deletedPlansId = oldPlans.diff(newPlans)
+                val deletedPlans = oldApi.possibleUsagePlans.filter(pp => deletedPlansId.contains(pp.id))
+
+                env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+                   .exists(Json.obj(
+                     "_humanReadableId" -> api.humanReadableId,
+                     "currentVersion" -> api.currentVersion.asJson,
+                     "_id" -> Json.obj("$ne" -> api.id.value)
+                   ))
+                   .flatMap {
+                     case true  => FastFuture.successful(AppError.render(ApiVersionConflict))
+                     case false =>
+                       for {
+                         plans <- changePlansVisibility(flippedPlans, api, ctx.tenant)
+                         _ <- deleteApiPlansSubscriptions(deletedPlans, oldApi, ctx.tenant, ctx.user)
+                         apiToSave = api.copy(possibleUsagePlans = untouchedPlans ++ plans)
+                         _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(apiToSave)
+                         _ <- otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value)) //launch synhro to maybe update customeMetadata & authorizedEntities
+                         _ <- updateTagsOfIssues(ctx.tenant.id, apiToSave)
+                         _ <- updateAllHumanReadableId(ctx, apiToSave, oldApi)
+                         _ <- turnOffDefaultVersion(ctx, apiToSave, oldApi, apiToSave.humanReadableId, apiToSave.currentVersion.value)
+                         _ <- checkIssuesVersion(ctx, apiToSave, oldApi)
+                       } yield {
+                         ctx.setCtxValue("api.name", api.name)
+                         ctx.setCtxValue("api.id", api.id)
+
+                         Ok(apiToSave.asJson)
+                       }
+                   }
+            }
       }
     }
+  }
+
+  private def checkIssuesVersion(ctx: DaikokuActionContext[JsValue], apiToSave: Api, oldApi: Api) = {
+    if(oldApi.currentVersion != oldApi.currentVersion) {
+      env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id)
+        .find(Json.obj("_id" -> Json.obj("$in" -> apiToSave.issues.map(_.value))))
+        .map { issues =>
+          Future.sequence(issues
+              .filter(issue => issue.apiVersion match {
+                case None => true
+                case Some(version) => version == apiToSave.currentVersion.value
+              })
+              .map(issue => env.dataStore.apiIssueRepo
+            .forTenant(ctx.tenant.id)
+            .save(issue.copy(apiVersion = Some(apiToSave.currentVersion.value)))))
+        }
+    } else
+      FastFuture.successful(())
+  }
+
+  private def updateAllHumanReadableId(ctx: DaikokuActionContext[JsValue], apiToSave: Api, oldApi: Api) = {
+    if(oldApi.name != apiToSave.name) {
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+        .find(Json.obj("_humanReadableId" -> oldApi.humanReadableId))
+        .flatMap { apis =>
+          Future
+            .sequence(apis.map(api => env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+              .save(api.copy(name = apiToSave.name))))
+        }
+    } else
+      FastFuture.successful(())
+  }
+
+  private def turnOffDefaultVersion(ctx: DaikokuActionContext[JsValue], apiToSave: Api, oldApi: Api, humanReadableId: String, version: String) = {
+    if (apiToSave.isDefault && !oldApi.isDefault)
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+        .find(Json.obj("_humanReadableId" -> humanReadableId, "currentVersion" -> Json.obj("$ne" -> version)))
+        .map { apis => Future.sequence(apis.map(api => env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+          .save(api.copy(isDefault = false))))
+        }
+    else
+      FastFuture.successful(())
   }
 
   private def updateTagsOfIssues(tenantId: TenantId, api: Api) = {
@@ -1444,6 +1694,7 @@ class ApiController(DaikokuAction: DaikokuAction,
       ctx
     ) { team =>
       ctx.setCtxValue("page.id", pageId)
+
       env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id).deleteByIdLogically(pageId).map { _ =>
         Ok(Json.obj("done" -> true))
       }
@@ -1466,38 +1717,6 @@ class ApiController(DaikokuAction: DaikokuAction,
               env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant.id).save(page).map { _ =>
                 Ok(page.asJson)
               }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  def reorderApiDocPagesIndex(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
-    TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has reordered pages of api @{api.name}"))(teamId, ctx) { team =>
-      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
-        case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found (20)")))
-        case Some(api) => {
-          val pageIds = api.documentation.pages
-          Future
-            .sequence(
-              api.documentation.pages
-                .map(id => env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant).findByIdNotDeleted(id.value))
-            )
-            .map(_.collect { case Some(p) => p })
-            .flatMap { pages =>
-              Future.sequence(
-                pageIds
-                  .map(id => pages.find(_.id == id))
-                  .collect { case Some(p) => p }
-                  .zipWithIndex
-                  .map(t => t._1 /*.copy(index = t._2.toDouble)*/)
-                  .map(p => env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant).save(p))
-              )
-            } flatMap { _ =>
-            getDocumentationDetailsImpl(ctx.tenant, apiId).map {
-              case Left(r) => NotFound(r)
-              case Right(r) => Ok(r)
             }
           }
         }
@@ -1635,9 +1854,9 @@ class ApiController(DaikokuAction: DaikokuAction,
       }
   }
 
-  def getApiSubscriptions(teamId: String, apiId: String) = DaikokuAction.async { ctx =>
+  def getApiSubscriptions(teamId: String, apiId: String, version: String) = DaikokuAction.async { ctx =>
     TeamApiEditorOnly(AuditTrailEvent(s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"))(teamId, ctx) { team =>
-      env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(apiId).flatMap {
+      env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version).flatMap {
         case Some(api) if api.team != team.id => FastFuture.successful(Unauthorized(Json.obj("error" -> "Unauthorized to access to this api")))
         case Some(api) => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
           .findNotDeleted(Json.obj("api" -> api.id.asJson))
@@ -1647,29 +1866,20 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getPosts(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+  def getPosts(apiId: String, version: String, offset: Option[Int], limit: Option[Int]) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed posts for @{api.id}"))(ctx) {
       ctx.setCtxValue("api.id", apiId)
 
-      val limit: Int = ctx.request.queryString.get("limit").flatMap(_.headOption) match {
-        case Some(value) => Integer.valueOf(value)
-        case None => 1
-      }
-      val offset: Int = ctx.request.queryString.get("offset").flatMap(_.headOption) match {
-        case Some(value) => Integer.valueOf(value)
-        case None => 0
-      }
-
-      getPostsImpl(ctx.tenant, apiId, limit, offset).map {
+      getPostsImpl(ctx.tenant, apiId, version, limit.getOrElse(10), offset.getOrElse(0)).map {
         case Left(r) => NotFound(r)
         case Right(r) => Ok(r)
       }
     }
   }
 
-  private def getPostsImpl(tenant: Tenant, apiId: String, limit: Int, offset: Int):
+  private def getPostsImpl(tenant: Tenant, apiId: String, version: String, limit: Int, offset: Int):
   Future[Either[JsValue, JsValue]] = {
-    env.dataStore.apiRepo.forTenant(tenant.id).findByIdOrHrId(apiId).flatMap {
+    env.dataStore.apiRepo.findByVersion(tenant, apiId, version).flatMap {
       case None => FastFuture.successful(Left(Json.obj("error" -> "Api not found")))
       case Some(api) =>
         env.dataStore.apiPostRepo
@@ -1795,7 +2005,7 @@ class ApiController(DaikokuAction: DaikokuAction,
               ))
               _ <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).save(api.copy(stars = newStars))
             } yield {
-              NoContent
+              Ok(Json.obj("done" -> true))
             }
           case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         }
@@ -1807,27 +2017,32 @@ class ApiController(DaikokuAction: DaikokuAction,
       ctx.setCtxValue("api.id", apiId)
 
       env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
-        "seqId" -> issueId
+        "_id" -> issueId
       )).flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Issue not found")))
         case Some(issue) =>
           for {
             creators      <- Future.sequence(issue.comments.map(comment => env.dataStore.userRepo.findById(comment.by.value)))
             issueCreator  <- env.dataStore.userRepo.findById(issue.by.value)
-            api           <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findById(apiId)
+            api           <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+              "_humanReadableId" -> apiId,
+              "parent" -> JsNull
+            ))
           } yield {
             issueCreator
               .map { creator =>
                 val issuesTags = api.map(_.issuesTags).getOrElse(Set.empty)
                 Ok(
-                  (issue.asJson.as[JsObject] +
-                    ("tags" -> Json.toJson(issue.tags
-                      .map(tagId => issuesTags.find(_.id == tagId).map(tag => ApiTagFormat.writes(tag)).getOrElse(Json.obj())))) +
-                    ("comments" -> JsArray(issue.comments.zipWithIndex.map { case (comment, i) =>
-                    ApiIssueCommentFormat.writes(comment) + ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj()))
-                  })))
-                    +
-                    ("by" -> creator.asSimpleJson))
+                  (issue.asJson.as[JsObject] ++
+                    Json.obj(
+                      "by" -> creator.asSimpleJson,
+                      "tags" -> Json.toJson(issue.tags
+                      .map(tagId => issuesTags.find(_.id == tagId).map(tag => ApiTagFormat.writes(tag)))),
+                      "comments" -> Json.toJson(issue.comments.zipWithIndex
+                        .map { case (comment, i) =>
+                          ApiIssueCommentFormat.writes(comment) + ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj()))
+                        }))
+                  ))
               }
               .getOrElse(BadRequest(Json.obj("error" -> "The issue creator is missing")))
           }
@@ -1839,32 +2054,33 @@ class ApiController(DaikokuAction: DaikokuAction,
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed issues for @{api.id}"))(ctx) {
       ctx.setCtxValue("api.id", apiId)
 
-      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+        "_humanReadableId" -> apiId,
+        "parent" -> JsNull
+      )).flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         case Some(api) =>
           env.dataStore.apiIssueRepo
             .forTenant(ctx.tenant.id)
             .find(Json.obj(
-              "_id" -> Json.obj(
-              "$in" -> JsArray(api.issues.map(_.asJson))
-              )
+              "_id" -> Json.obj("$in" -> JsArray(api.issues.map(_.asJson)))
             ))
             .map(issues => issues.filter(!_.deleted))
             .flatMap(issues =>
               for {
-                creators  <- Future.sequence(issues.map(issue => env.dataStore.userRepo.findById(issue.by.value)))
+                creators <- Future.sequence(issues.map(issue => env.dataStore.userRepo.findById(issue.by.value)))
               } yield {
                 Ok(
                   JsArray(
-                  issues
-                    .zipWithIndex
-                    .map {
-                      case (issue, i) =>
-                        issue.asJson.as[JsObject] +
-                          ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj())) +
-                          ("tags" -> Json.toJson(issue.tags
+                    issues
+                      .zipWithIndex
+                      .map {
+                        case (issue, i) =>
+                          issue.asJson.as[JsObject] +
+                            ("by" -> creators(i).map(_.asSimpleJson).getOrElse(Json.obj())) +
+                            ("tags" -> Json.toJson(issue.tags
                               .map(tagId => api.issuesTags.find(_.id == tagId).map(tag => ApiTagFormat.writes(tag)).getOrElse(Json.obj()))))
-                    }
+                      }
                   )
                 )
               }
@@ -1878,29 +2094,31 @@ class ApiController(DaikokuAction: DaikokuAction,
       ApiIssueFormat.reads(ctx.request.body) match {
         case JsError(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "Body can't be parse to issue")))
         case JsSuccess(issue, _) =>
-          (for {
-            issues    <- env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).count()
-            newIssue = issue.copy(seqId = issues.toInt)
-            created   <- env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).save(newIssue)
-            optTeam   <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId)
-          } yield {
-            if (created) {
-              env.dataStore.apiRepo
-                .forTenant(ctx.tenant.id)
-                .findByIdNotDeleted(apiId)
+          env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+            "_humanReadableId" -> apiId,
+            "parent" -> JsNull
+          )).flatMap {
+            case None => FastFuture.successful(AppError.render(ApiNotFound))
+            case Some(api) =>
+              env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id)
+                .save(issue.copy(seqId = api.issues.size))
                 .flatMap {
-                  case Some(api) =>
+                  case false => FastFuture.successful(BadRequest(Json.obj("error" -> "failed to create issue")))
+                  case true =>
                     env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-                      .save(api.copy(issues = api.issues ++ Seq(issue.id)))
-                      .flatMap {
-                        case true =>
-                          for {
-                            subs <- env.dataStore.apiSubscriptionRepo
-                              .forTenant(ctx.tenant.id)
-                              .find(Json.obj("api" -> apiId))
-                            api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId)
-                            _ <- {
-                              Future.sequence(subs.distinctBy(_.team)
+                        .save(api.copy(issues = api.issues ++ Seq(issue.id)))
+                        .flatMap {
+                          case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to save new issue in api issues list")))
+                          case true =>
+                            for {
+                              subs <- env.dataStore.apiSubscriptionRepo
+                                .forTenant(ctx.tenant.id)
+                                .find(Json.obj(
+                                  "api" -> api.id.value
+                                ))
+                              optTeam <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId)
+                              _ <- {
+                                Future.sequence(subs.distinctBy(_.team)
                                   .map(sub =>
                                     env.dataStore.notificationRepo
                                       .forTenant(ctx.tenant.id)
@@ -1909,28 +2127,20 @@ class ApiController(DaikokuAction: DaikokuAction,
                                         tenant = ctx.tenant.id,
                                         sender = ctx.user,
                                         action = NotificationAction.NewIssueOpen(teamId,
-                                          api.map(_.name).getOrElse(""),
-                                          s"${optTeam.map(_.humanReadableId).getOrElse("")}/${api.map(_.humanReadableId).getOrElse("")}/issues/${issues.toInt}"
+                                          api.name,
+                                          s"${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
                                         ),
                                         notificationType = NotificationType.AcceptOnly,
                                         team = Some(sub.team)
                                       ))
                                   ))
+                              }
+                            } yield {
+                              Created(Json.obj("created" -> true))
                             }
-                          } yield {
-                            Created(Json.obj("created" -> true))
-                          }
-                        case false => FastFuture.successful(BadRequest(Json.obj("error" -> "Failed to create issue")))
-                      }
-                  case None =>
-                    AppLogger.error("Api not found after issue creation")
-                    FastFuture.successful(NotFound(Json.obj("error" -> "Failed to create issue : Api not found")))
+                        }
                 }
-            } else {
-              BadRequest(Json.obj("error" -> "Failed to create issue"))
-            }
-          })
-            .flatMap(_.asInstanceOf[Future[Result]])
+          }
       }
     }
   }
@@ -1963,7 +2173,7 @@ class ApiController(DaikokuAction: DaikokuAction,
         case JsError(_) => FastFuture.successful(BadRequest(Json.obj("error" -> "Body can't be parse to issue")))
         case JsSuccess(issue, _) =>
           (for {
-            optIssue  <- env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).findOne(Json.obj("seqId" -> issueId))
+            optIssue  <- env.dataStore.apiIssueRepo.forTenant(ctx.tenant.id).findOne(Json.obj("_id" -> issueId))
             optTeam   <- env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId)
           } yield {
             (optIssue, optTeam) match {
@@ -1982,7 +2192,7 @@ class ApiController(DaikokuAction: DaikokuAction,
                   FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not allowed to edit a comment that does not belong to you")))
                 else if (existingIssue.open != issue.open && isTeamMember.isEmpty && !isDaikokuAdmin)
                   FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized to close or re-open an issue")))
-                else if (existingIssue.title != issue.title && (isTeamMember.isEmpty || issue.by != ctx.user.id) && !isDaikokuAdmin)
+                else if (existingIssue.title != issue.title && !isDaikokuAdmin && (issue.by != ctx.user.id || (issue.by != ctx.user.id && isTeamMember.isEmpty)))
                     FastFuture.successful(Unauthorized(Json.obj("error" -> "You're not authorized to edit issue")))
                 else
                   env.dataStore.apiIssueRepo
@@ -1992,19 +2202,24 @@ class ApiController(DaikokuAction: DaikokuAction,
                       if (updated) {
                         if (existingIssue.comments.size < issue.comments.size)
                           for {
-                            subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id).find(Json.obj("api" -> apiId))
-                            api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdNotDeleted(apiId)
+                            subs <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant.id).find(Json.obj(
+                              "_humanReadableId" -> apiId
+                            ))
+                            api <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+                              "_humanReadableId" -> apiId,
+                              "parent" -> JsNull
+                            ))
                             _ <- {
                               Future.sequence(subs.distinctBy(_.team)
                                 .map(sub => notifyTeam(
                                   api.map(_.name).getOrElse(""),
-                                  s"${team.humanReadableId}/${api.map(_.humanReadableId).getOrElse("")}/issues/${issue.humanReadableId}",
+                                  s"${team.humanReadableId}/${api.map(_.humanReadableId).getOrElse("")}/${api.map(_.currentVersion.value).getOrElse("1.0.0")}/issues/${issue.id.value}",
                                   sub.team)
                                 ))
                             }
                           } yield Ok(Json.obj("message" -> "Issue saved"))
                         else
-                          FastFuture.successful(Ok(Json.obj("error" -> "Issue saved")))
+                          FastFuture.successful(Ok(Json.obj("message" -> "Issue saved")))
                       } else
                         FastFuture.successful(BadRequest(Json.obj("error" -> "Something went wrong")))
                     }
@@ -2016,11 +2231,14 @@ class ApiController(DaikokuAction: DaikokuAction,
     }
   }
 
-  def getComments(apiId: String, issueId: String) = DaikokuAction.async { ctx =>
+  def getComments(apiId: String, issueId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
     UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has accessed comments for @{api.id}"))(ctx) {
       ctx.setCtxValue("api.id", apiId)
 
-      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findByIdOrHrId(apiId).flatMap {
+      env.dataStore.apiRepo.forTenant(ctx.tenant.id).findOne(Json.obj(
+        "_humanReadableId" -> apiId,
+        "parent" -> JsNull
+      )).flatMap {
         case None => FastFuture.successful(NotFound(Json.obj("error" -> "Api not found")))
         case Some(_) =>
           env.dataStore.apiIssueRepo
@@ -2037,6 +2255,210 @@ class ApiController(DaikokuAction: DaikokuAction,
               )
             ))
       }
+    }
+  }
+
+  def createVersion(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(
+      AuditTrailEvent(s"@{user.name} has created new version (@{newVersion}) of api @{api.id} with @{team.name} - @{team.id}")
+    )(teamId, ctx) { team =>
+      val newVersion = (ctx.request.body \ "version").asOpt[String]
+
+      ctx.setCtxValue("newVersion", newVersion)
+
+      newVersion match {
+        case None => FastFuture.successful(BadRequest(Json.obj("error" -> "Missing parameters")))
+        case Some(newVersion) if newVersion.isEmpty => FastFuture.successful(BadRequest(Json.obj("error" -> "Version number is too short")))
+        case Some(newVersion) =>
+          val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+          val generatedApiId = ApiId(BSONObjectID.generate().stringify)
+          apiRepo
+            .findOne(Json.obj("$or" -> Json.arr(Json.obj("_humanReadableId" -> apiId), Json.obj("_id" -> apiId)), "parent" -> JsNull))
+            .flatMap {
+              case None => FastFuture.successful(AppError.render(ApiNotFound))
+              case Some(api) if api.currentVersion.value == newVersion => FastFuture.successful(AppError.render(ApiVersionConflict))
+              case Some(api) =>
+                apiRepo.exists(Json.obj("currentVersion" -> newVersion, "_humanReadableId" -> api.humanReadableId))
+                  .flatMap {
+                    case true => FastFuture.successful(AppError.render(ApiVersionConflict))
+                    case false =>
+                      apiRepo.save(api.copy(
+                        id = generatedApiId,
+                        parent = Some(api.id),
+                        currentVersion = Version(newVersion),
+                        published = false,
+                        isDefault = true,
+                        testing = Testing(),
+                        documentation = ApiDocumentation(
+                          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+                          tenant = ctx.tenant.id,
+                          lastModificationAt = DateTime.now(),
+                          pages = Seq.empty
+                        ),
+                        swagger = Some(SwaggerAccess(url = "/assets/swaggers/petstore.json")),
+                        possibleUsagePlans = Seq.empty,
+                        defaultUsagePlan = UsagePlanId(""),
+                        posts = Seq.empty,
+                        issues = Seq.empty
+                      ))
+                        .flatMap {
+                          case true   =>
+                            apiRepo.updateManyByQuery(
+                              Json.obj(
+                                "_humanReadableId" -> api.humanReadableId,
+                                "_id" -> Json.obj("$ne" -> generatedApiId.value)
+                              ),
+                              Json.obj("$set" -> Json.obj("isDefault" -> false))
+                            )
+                              .map(_ => Created(Json.obj("created" -> true)))
+                          case false  => FastFuture.successful(BadRequest(Json.obj("error" -> "The creation of api has failed")))
+                        }
+                  }
+            }
+      }
+    }
+  }
+
+  def getAllApiVersions(teamId: String, apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent(s"@{user.name} has requested all versions of api @{api.id}"))(ctx) {
+      val repo = env.dataStore.apiRepo
+        .forTenant(ctx.tenant.id)
+
+      repo.find(Json.obj("_humanReadableId" -> apiId))
+        .map { apis =>
+          Ok(SeqVersionFormat.writes(apis
+            .filter(api => !ctx.user.isGuest || api.visibility.name == ApiVisibility.Public.name)
+            .map(_.currentVersion)
+            .sortWith((a, b) => a.value.compareToIgnoreCase(b.value) < 0)))
+        }
+    }
+  }
+
+  def getDefaultApiVersion(apiId: String) = DaikokuActionMaybeWithGuest.async { ctx =>
+    UberPublicUserAccess(AuditTrailEvent("@{user.name} has accessed to default version of api @{api.name}"))(ctx) {
+      for {
+        myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+        apis <- env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .find(Json.obj(
+            "_humanReadableId" -> apiId
+          ))
+      } yield {
+        val filteredApis = apis
+          .filter(api => api.authorizedTeams.exists(t => myTeams.exists(a => a.id == t)) || myTeams.exists(a => a.id == api.team))
+
+        filteredApis.find(api => api.isDefault) match {
+            case None => Ok(Json.obj("defaultVersion" -> apis.find(api => api.parent.isEmpty).get.currentVersion.asJson))
+            case Some(api) => Ok(Json.obj("defaultVersion" -> api.currentVersion.asJson))
+          }
+      }
+    }
+  }
+
+  def getAllPlan(teamId: String, apiId: String, version: String) = DaikokuAction.async { ctx =>
+    TeamApiEditorOnly(
+      AuditTrailEvent(s"@{user.name} has requested all plan of api @{api.id} with @{team.name} - @{team.id}")
+    )(teamId, ctx) { _ =>
+      env.dataStore.apiRepo
+        .forTenant(ctx.tenant.id)
+        .find(Json.obj("_humanReadableId" -> apiId, "currentVersion" -> Json.obj("$ne" -> version)))
+        .flatMap { apis => FastFuture.successful(Ok(SeqApiFormat.writes(apis))) }
+    }
+  }
+
+  def clonePlan(teamId: String, apiId: String) = DaikokuAction.async(parse.json) { ctx =>
+    TeamApiEditorOnly(
+      AuditTrailEvent(s"@{user.name} has cloned plan of api @{api.id} with @{team.name} - @{team.id}")
+    )(teamId, ctx) { _ =>
+      val planId = (ctx.request.body \ "plan").as[String]
+      val fromApiId = (ctx.request.body \ "api").as[String]
+
+      val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
+
+      for {
+        fromApi <- apiRepo.findById(fromApiId)
+        api <- apiRepo.findById(apiId)
+      } yield {
+        fromApi match {
+          case None if api.isEmpty || fromApi.isEmpty => AppError.render(ApiNotFound)
+          case Some(fromApi) =>
+            fromApi.possibleUsagePlans.find(_.id.value == planId) match {
+              case None => AppError.render(PlanNotFound)
+              case Some(originalPlan) =>
+                val id = UsagePlanId(BSONObjectID.generate().stringify)
+                val customName = Some(s"Imported plan from ${fromApi.currentVersion} - ${originalPlan.typeName}")
+                apiRepo.save(api.get.copy(
+                  possibleUsagePlans = api.get.possibleUsagePlans ++ Seq((originalPlan match {
+                    case u: UsagePlan.Admin => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.PayPerUse => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.FreeWithQuotas => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.FreeWithoutQuotas => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.QuotasWithLimits => u.copy(id = id, customName = customName)
+                    case u: UsagePlan.QuotasWithoutLimits => u.copy(id = id, customName = customName)
+                  }).asInstanceOf[UsagePlan])
+                ))
+                .map(_ => Created(Json.obj("done" -> true)))
+            }
+        }
+      }
+
+      FastFuture.successful(Ok(Json.obj()))
+    }
+  }
+
+  def getMyTeamsStatusAccess(teamId: String, apiId: String, version: String) = DaikokuAction.async { ctx =>
+    PublicUserAccess(AuditTrailEvent(
+      s"@{user.name} has requested status of own teams requests for api @{api.name}"))(
+      ctx) {
+      env.dataStore.apiRepo
+        .findByVersion(ctx.tenant, apiId, version)
+        .flatMap {
+          case None => FastFuture.successful(AppError.render(ApiNotFound))
+          case Some(api) =>
+            ctx.setCtxValue("api.name", api.name)
+
+            (for {
+              myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+              pendingRequests <- env.dataStore.notificationRepo
+                  .forTenant(ctx.tenant.id)
+                  .findNotDeleted(
+                    Json.obj(
+                      "action.type" -> "ApiAccess",
+                      "status.status" -> "Pending",
+                      "action.api" -> api.id.asJson,
+                      "action.team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
+                    )
+                  )
+              subscriptions <-
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.tenant.id)
+                  .findNotDeleted(
+                    Json.obj("api" -> api.id.value,
+                      "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson))))
+                  )
+            } yield {
+                api.asPublicWithAuthorizationsJson()
+                  .as[JsObject] ++ Json.obj(
+                  "pendingRequests" -> JsArray(pendingRequests.map(_.asJson)),
+                  "subscriptions" -> JsArray(subscriptions.map(_.asSimpleJson)),
+                  "myTeams" -> SeqTeamFormat.writes(myTeams),
+                  "authorizations" -> JsArray(myTeams
+                    .filter(t => t.`type` != TeamType.Admin)
+                    .map(
+                      team =>
+                        Json.obj(
+                          "team" -> team.id.asJson,
+                          "authorized" -> (api.authorizedTeams.contains(team.id) || api.team == team.id),
+                          "pending" -> pendingRequests.exists(notif => {
+                            val accessApi = notif.action.asInstanceOf[ApiAccess]
+                            accessApi.team == team.id && accessApi.api == api.id
+                          })
+                        )
+                    )
+                ))
+            })
+              .map(p => Ok(p))
+        }
     }
   }
 }

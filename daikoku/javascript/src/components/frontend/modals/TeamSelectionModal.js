@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { PropTypes } from 'prop-types';
 import { CheckSquare, Square } from 'react-feather';
 import classNames from 'classnames';
-import { t, Translation } from '../../../locales';
+import { I18nContext } from '../../../core';
 
 export const TeamSelectorModal = ({
   closeModal,
   title,
   description,
-  currentLanguage,
   teams,
   pendingTeams = [],
   acceptedTeams = [],
@@ -20,6 +19,8 @@ export const TeamSelectorModal = ({
   const allTeams = teams.filter(
     (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
   );
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const finalAction = () => {
     if (selectedTeams.length) {
@@ -39,7 +40,7 @@ export const TeamSelectorModal = ({
     if (!allowMultipleDemand && pendingTeams.includes(team._id)) {
       return (
         <button type="button" className="btn btn-sm btn-access disabled">
-          <Translation i18nkey="Request in progress" language={currentLanguage} />
+          <Translation i18nkey="Request in progress" />
         </button>
       );
     } else if (allowMultipleDemand || !acceptedTeams.includes(team._id)) {
@@ -69,7 +70,7 @@ export const TeamSelectorModal = ({
           setSelectedTeams([...selectedTeams, team._id]);
         }
       } else {
-        actionAndClose(team._id);
+        actionAndClose([team._id]);
       }
     }
   };
@@ -101,32 +102,36 @@ export const TeamSelectorModal = ({
               onClick={() => toggleAllTeam()}>
               {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
               <span className="ml-2">
-                <Translation i18nkey="All" language={currentLanguage}>
-                  All
-                </Translation>
+                <Translation i18nkey="All">All</Translation>
               </span>
             </div>
           )}
-          {teams.map((team) => {
-            return (
-              <div
-                key={team._id}
-                className={classNames('team-selection team-selection__team', {
-                  selectable:
-                    allowMultipleDemand ||
-                    (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)),
-                })}
-                onClick={() => doTeamAction(team)}>
-                {getButton(team)}
-                <span className="ml-2">{getTeamLabel(team)}</span>
-              </div>
-            );
-          })}
+          {teams
+            // .filter(
+            //   (team) =>
+            //     allowMultipleDemand ||
+            //     (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))
+            // )
+            .map((team) => {
+              return (
+                <div
+                  key={team._id}
+                  className={classNames('team-selection team-selection__team', {
+                    selectable:
+                      allowMultipleDemand ||
+                      (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)),
+                  })}
+                  onClick={() => doTeamAction(team)}>
+                  {getButton(team)}
+                  <span className="ml-2">{getTeamLabel(team)}</span>
+                </div>
+              );
+            })}
         </div>
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={() => closeModal()}>
-          {t('Close', currentLanguage, 'Close')}
+          {translateMethod('Close')}
         </button>
         {!!allTeamSelector && (
           <button
@@ -135,7 +140,7 @@ export const TeamSelectorModal = ({
               disabled: !selectedTeams.length,
             })}
             onClick={() => finalAction()}>
-            {t('Subscribe', currentLanguage, 'Subscribe')}
+            {translateMethod('Subscribe')}
           </button>
         )}
       </div>
@@ -147,7 +152,6 @@ TeamSelectorModal.propTypes = {
   closeModal: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   description: PropTypes.string,
-  currentLanguage: PropTypes.string,
   teams: PropTypes.array.isRequired,
   pendingTeams: PropTypes.array,
   acceptedTeams: PropTypes.array,

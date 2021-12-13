@@ -1,7 +1,5 @@
 package fr.maif.otoroshi.daikoku
 
-import java.security.SecureRandom
-import java.util.regex.Pattern
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import com.softwaremill.macwire._
@@ -17,17 +15,24 @@ import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
-import fr.maif.otoroshi.daikoku.utils.{ApiService, Errors, OtoroshiClient}
-import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob, AuditTrailPurgeJob}
+import fr.maif.otoroshi.daikoku.utils.{
+  ApiService,
+  Errors,
+  OtoroshiClient,
+  Translator
+}
+import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, OtoroshiVerifierJob}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
-import play.api.i18n.I18nSupport
+import play.api.i18n.{I18nSupport, Langs}
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc._
 import play.api.routing.Router
 import router.Routes
 
+import java.security.SecureRandom
+import java.util.regex.Pattern
 import scala.concurrent.{ExecutionContext, Future}
 
 class DaikokuLoader extends ApplicationLoader {
@@ -56,6 +61,8 @@ package object modules {
     lazy val otoroshiClient = wire[OtoroshiClient]
 
     lazy val apiService = wire[ApiService]
+
+    lazy val translator = wire[Translator]
 
     override lazy val httpFilters: Seq[EssentialFilter] = Seq(
       new SecurityFilter(env)) ++ env.expositionFilters ++ env.identityFilters
@@ -114,6 +121,9 @@ package object modules {
     lazy val messagesAdminApiController = wire[MessagesAdminApiController]
     lazy val postsAdminApiController = wire[PostsAdminApiController]
     lazy val issuesAdminApiController = wire[IssuesAdminApiController]
+    lazy val translationsAdminApiController =
+      wire[TranslationsAdminApiController]
+    lazy val graphQLController = wire[GraphQLController]
 
     override lazy val assets: Assets = wire[Assets]
     lazy val router: Router = {
@@ -223,7 +233,7 @@ package object modules {
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net localhost:3000 blob:; img-src * data: blob:; font-src 'self' https://*; connect-src *",
               "X-XSS-Protection" -> "1 ; mode=block",
               "X-Content-Type-Options" -> "nosniff",
-              "X-Frame-Options" -> "DENY"
+              "X-Frame-Options" -> "sameorigin"
             )
           }
         }

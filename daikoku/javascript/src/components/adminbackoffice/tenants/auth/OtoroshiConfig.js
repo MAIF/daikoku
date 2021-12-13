@@ -1,55 +1,55 @@
-import React, { Component } from 'react';
-import { t } from '../../../../locales';
+import React, { useContext } from 'react';
+import { I18nContext } from '../../../../core';
 import { Spinner } from '../../../utils';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export class OtoroshiConfig extends Component {
-  formFlow = ['sessionMaxAge', 'claimSecret', 'claimHeaderName'];
+export function OtoroshiConfig(props) {
+  const { translateMethod } = useContext(I18nContext);
 
-  formSchema = {
+  const formFlow = ['sessionMaxAge', 'claimSecret', 'claimHeaderName'];
+
+  const formSchema = {
     sessionMaxAge: {
       type: 'number',
       props: {
-        suffix: t('Second', this.props.currentLanguage, true),
-        label: t('Session max. age', this.props.currentLanguage),
+        suffix: translateMethod('Second', true),
+        label: translateMethod('Session max. age'),
       },
     },
     claimHeaderName: {
       type: 'string',
       props: {
-        label: t('Claim header name', this.props.currentLanguage),
+        label: translateMethod('Claim header name'),
       },
     },
     claimSecret: {
       type: 'string',
       props: {
-        label: t('Claim Secret', this.props.currentLanguage),
+        label: translateMethod('Claim Secret'),
       },
     },
   };
 
-  componentDidMount() {
-    if (this.props.rawValue.authProvider === 'Otoroshi') {
-      this.props.onChange({
-        sessionMaxAge: this.props.value.sessionMaxAge || 86400,
-        claimSecret: this.props.value.claimSecret || 'secret',
-        claimHeaderName: this.props.value.claimHeaderName || 'Otoroshi-Claim',
+  useEffect(() => {
+    if (props.rawValue.authProvider === 'Otoroshi') {
+      props.onChange({
+        sessionMaxAge: props.value.sessionMaxAge || 86400,
+        claimSecret: props.value.claimSecret || 'secret',
+        claimHeaderName: props.value.claimHeaderName || 'Otoroshi-Claim',
       });
     }
-  }
+  }, []);
 
-  render() {
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          value={this.props.value}
-          onChange={this.props.onChange}
-          flow={this.formFlow}
-          schema={this.formSchema}
-          style={{ marginTop: 50 }}
-        />
-      </React.Suspense>
-    );
-  }
+  return (
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
+        value={props.value}
+        onChange={props.onChange}
+        flow={formFlow}
+        schema={formSchema}
+        style={{ marginTop: 50 }}
+      />
+    </React.Suspense>
+  );
 }

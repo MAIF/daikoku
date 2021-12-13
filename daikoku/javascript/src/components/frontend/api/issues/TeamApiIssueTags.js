@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import { toastr } from 'react-redux-toastr';
-import { t } from '../../../../locales';
+import { I18nContext } from '../../../../core';
 
-export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
+export function TeamApiIssueTags({ value, onChange }) {
   const [showTagForm, showNewTagForm] = useState(false);
-  const [issue, setIssue] = useState(value);
+  const [api, setApi] = useState(value);
+
+  const { translateMethod } = useContext(I18nContext);
 
   function deleteTag(id) {
-    setIssue({
-      ...issue,
-      issuesTags: [...issue.issuesTags.filter((iss) => iss.id !== id)],
+    setApi({
+      ...api,
+      issuesTags: [...api.issuesTags.filter((iss) => iss.id !== id)],
     });
   }
 
@@ -18,10 +20,9 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
     <div style={{ paddingBottom: '250px' }}>
       {showTagForm ? (
         <NewTag
-          issuesTags={issue.issuesTags}
-          currentLanguage={currentLanguage}
+          issuesTags={api.issuesTags}
           handleCreate={(newTag) => {
-            setIssue({ ...issue, issuesTags: [...issue.issuesTags, newTag] });
+            setApi({ ...api, issuesTags: [...api.issuesTags, newTag] });
             showNewTagForm(false);
           }}
           onCancel={() => showNewTagForm(false)}
@@ -31,15 +32,15 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
           <label className="col-xs-12 col-sm-2">Actions</label>
           <div className="col-sm-10">
             <button className="btn btn-success" onClick={() => showNewTagForm(true)}>
-              {t('issues.new_tag', currentLanguage)}
+              {translateMethod('issues.new_tag')}
             </button>
           </div>
         </div>
       )}
       <div className="form-group row pt-3">
-        <label className="col-xs-12 col-sm-2">{t('issues.tags', currentLanguage)}</label>
+        <label className="col-xs-12 col-sm-2">{translateMethod('issues.tags')}</label>
         <div className="col-sm-10">
-          {issue.issuesTags.map((issueTag, i) => (
+          {api.issuesTags.map((issueTag, i) => (
             <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
               <span
                 className="badge badge-primary d-flex align-items-center justify-content-center px-3 py-2"
@@ -55,9 +56,9 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
                 className="form-control mx-3"
                 value={issueTag.name}
                 onChange={(e) =>
-                  setIssue({
-                    ...issue,
-                    issuesTags: issue.issuesTags.map((issue, j) => {
+                  setApi({
+                    ...api,
+                    issuesTags: api.issuesTags.map((issue, j) => {
                       if (i === j) issue.name = e.target.value;
                       return issue;
                     }),
@@ -68,9 +69,9 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
                 className="pr-3"
                 initialColor={issueTag.color}
                 handleColorChange={(color) =>
-                  setIssue({
-                    ...issue,
-                    issuesTags: issue.issuesTags.map((issue, j) => {
+                  setApi({
+                    ...api,
+                    issuesTags: api.issuesTags.map((issue, j) => {
                       if (i === j) issue.color = color;
                       return issue;
                     }),
@@ -83,19 +84,19 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
                   className="btn btn-sm btn-outline-danger"
                   type="button"
                   onClick={() => deleteTag(issueTag.id)}>
-                  {t('Delete', currentLanguage)}
+                  {translateMethod('Delete')}
                 </button>
               </div>
             </div>
           ))}
-          {issue.issuesTags.length === 0 && <p>{t('issues.no_tags', currentLanguage)}</p>}
+          {api.issuesTags.length === 0 && <p>{translateMethod('issues.no_tags')}</p>}
         </div>
       </div>
       <div className="form-group row">
         <label className="col-xs-12 col-sm-2" />
         <div className="col-sm-10 d-flex">
-          <button className="btn btn-success ml-auto" onClick={() => onChange(issue)}>
-            {t('Save', currentLanguage)}
+          <button className="btn btn-success ml-auto" onClick={() => onChange(api)}>
+            {translateMethod('Save')}
           </button>
         </div>
       </div>
@@ -103,8 +104,10 @@ export function TeamApiIssueTags({ value, onChange, currentLanguage }) {
   );
 }
 
-function NewTag({ issuesTags, handleCreate, onCancel, currentLanguage }) {
+function NewTag({ issuesTags, handleCreate, onCancel }) {
   const [tag, setTag] = useState({ name: '', color: '#2980b9' });
+
+  const { translateMethod } = useContext(I18nContext);
 
   function confirmTag() {
     if (tag.name.length <= 0) toastr.error('Tag name must be filled');
@@ -117,22 +120,22 @@ function NewTag({ issuesTags, handleCreate, onCancel, currentLanguage }) {
 
   return (
     <div className="form-group row">
-      <label className="col-xs-12 col-sm-2">{t('issues.new_tag', currentLanguage)}</label>
+      <label className="col-xs-12 col-sm-2">{translateMethod('issues.new_tag')}</label>
       <div className="col-sm-10">
         <div className="d-flex align-items-end">
           <div className="pr-3" style={{ flex: 0.5 }}>
-            <label htmlFor="tag">{t('issues.tag_name', currentLanguage)}</label>
+            <label htmlFor="tag">{translateMethod('issues.tag_name')}</label>
             <input
               className="form-control"
               type="text"
               id="tag"
               value={tag.name}
               onChange={(e) => setTag({ ...tag, name: e.target.value })}
-              placeholder={t('issues.tag_name', currentLanguage)}
+              placeholder={translateMethod('issues.tag_name')}
             />
           </div>
           <div className="px-3">
-            <label htmlFor="color">{t('issues.tag_color', currentLanguage)}</label>
+            <label htmlFor="color">{translateMethod('issues.tag_color')}</label>
             <ColorTag
               initialColor={tag.color || '#2980b9'}
               handleColorChange={(color) => setTag({ ...tag, color })}
@@ -141,10 +144,10 @@ function NewTag({ issuesTags, handleCreate, onCancel, currentLanguage }) {
           </div>
           <div className="ml-auto">
             <button className="btn btn-outline-danger mr-2" type="button" onClick={onCancel}>
-              {t('Cancel', currentLanguage)}
+              {translateMethod('Cancel')}
             </button>
             <button className="btn btn-outline-success" type="button" onClick={confirmTag}>
-              {t('issues.create_tag', currentLanguage)}
+              {translateMethod('issues.create_tag')}
             </button>
           </div>
         </div>

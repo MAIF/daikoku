@@ -476,33 +476,34 @@ class TenantAssetsController(DaikokuAction: DaikokuAction,
                       .getOrElse("asset.txt")
 
                     Ok.sendEntity(
-                      HttpEntity.Streamed(
-                        source,
-                        None,
-                        meta.contentType
-                          .map(Some.apply)
-                          .getOrElse(Some("application/octet-stream"))))
+                        HttpEntity.Streamed(
+                          source,
+                          None,
+                          meta.contentType
+                            .map(Some.apply)
+                            .getOrElse(Some("application/octet-stream"))))
                       .withHeaders(
                         "Content-Disposition" -> s"""attachment; filename="$filename"""")
                 }
             case Some(url) =>
-              env.wsClient.url(url)
+              env.wsClient
+                .url(url)
                 .withRequestTimeout(10.minutes)
                 .get()
                 .map(resp => {
                   resp.status match {
-                    case 200 => Ok.sendEntity(
-                      HttpEntity.Streamed(
-                        resp.bodyAsSource,
-                        None,
-                        Option(resp.contentType)))
-                    case _ =>  NotFound(Json.obj("error" -> "Asset not found!"))
+                    case 200 =>
+                      Ok.sendEntity(
+                        HttpEntity.Streamed(resp.bodyAsSource,
+                                            None,
+                                            Option(resp.contentType)))
+                    case _ => NotFound(Json.obj("error" -> "Asset not found!"))
                   }
                 })
                 .recover {
-                  case err => InternalServerError(Json.obj("error" -> err.getMessage))
+                  case err =>
+                    InternalServerError(Json.obj("error" -> err.getMessage))
                 }
-
 
           }
       }

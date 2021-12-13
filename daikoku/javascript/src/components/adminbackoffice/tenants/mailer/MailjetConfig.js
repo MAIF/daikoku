@@ -1,57 +1,52 @@
-import React, { Component } from 'react';
-
-import { t } from '../../../../locales';
+import React, { useContext } from 'react';
+import { I18nContext } from '../../../../core';
+import { MailTemplateButton } from './MailTemplateButton';
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export class MailjetConfig extends Component {
-  formFlow = ['apiKeyPublic', 'apiKeyPrivate', 'fromTitle', 'fromEmail', 'template'];
+export function MailjetConfig({ value, onChange, ...props }) {
+  const { translateMethod } = useContext(I18nContext);
 
-  formSchema = {
+  const formFlow = ['apiKeyPublic', 'apiKeyPrivate', 'fromTitle', 'fromEmail', 'template'];
+
+  const formSchema = {
     apiKeyPublic: {
       type: 'string',
       props: {
-        label: t('Mailjet apikey public', this.props.currentLanguage),
+        label: translateMethod('Mailjet apikey public'),
       },
     },
     apiKeyPrivate: {
       type: 'string',
       props: {
-        label: t('Mailjet apikey private', this.props.currentLanguage),
+        label: translateMethod('Mailjet apikey private'),
       },
     },
     fromTitle: {
       type: 'string',
       props: {
-        label: t('Email title', this.props.currentLanguage),
+        label: translateMethod('Email title'),
       },
     },
     fromEmail: {
       type: 'string',
       props: {
-        label: t('Email from', this.props.currentLanguage),
+        label: translateMethod('Email from'),
       },
     },
     template: {
-      type: 'markdown',
-      props: {
-        label: t('Mail template', this.props.currentLanguage),
-        help: t('mail.template.help', this.props.currentLanguage),
-      },
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 
-  render() {
-    return (
-      <React.Suspense>
-        <LazyForm
-          currentLanguage={this.props.currentLanguage}
-          value={this.props.value}
-          onChange={this.props.onChange}
-          flow={this.formFlow}
-          schema={this.formSchema}
-          style={{ marginTop: 50 }}
-        />
-      </React.Suspense>
-    );
-  }
+  return (
+    <React.Suspense>
+      <LazyForm
+        value={value}
+        onChange={onChange}
+        flow={formFlow}
+        schema={formSchema}
+        style={{ marginTop: 50 }}
+      />
+    </React.Suspense>
+  );
 }

@@ -1,47 +1,43 @@
-import React, { Component } from 'react';
+import React, { useContext } from 'react';
+import { I18nContext } from '../../../../core';
 
 import { Spinner } from '../../../utils';
-import { t } from '../../../../locales';
+import { MailTemplateButton } from './MailTemplateButton';
 
 const LazyForm = React.lazy(() => import('../../../inputs/Form'));
 
-export class SendGridConfig extends Component {
-  formFlow = ['apikey', 'fromEmail', 'template'];
+export function SendGridConfig({ value, onChange, ...props }) {
+  const { translateMethod } = useContext(I18nContext);
 
-  formSchema = {
+  const formFlow = ['apikey', 'fromEmail', 'template'];
+
+  const formSchema = {
     apikey: {
       type: 'string',
       props: {
-        label: t('send_grid.api_key', this.props.currentLanguage),
+        label: translateMethod('send_grid.api_key'),
       },
     },
     fromEmail: {
       type: 'string',
       props: {
-        label: t('send_grid.from_email', this.props.currentLanguage),
+        label: translateMethod('send_grid.from_email'),
       },
     },
     template: {
-      type: 'markdown',
-      props: {
-        label: t('Mail template', this.props.currentLanguage),
-        help: t('mail.template.help', this.props.currentLanguage),
-      },
+      type: () => <MailTemplateButton {...props} />,
     },
   };
 
-  render() {
-    return (
-      <React.Suspense fallback={<Spinner />}>
-        <LazyForm
-          currentLanguage={this.props.currentLanguage}
-          value={this.props.value}
-          onChange={this.props.onChange}
-          flow={this.formFlow}
-          schema={this.formSchema}
-          style={{ marginTop: 50 }}
-        />
-      </React.Suspense>
-    );
-  }
+  return (
+    <React.Suspense fallback={<Spinner />}>
+      <LazyForm
+        value={value}
+        onChange={onChange}
+        flow={formFlow}
+        schema={formSchema}
+        style={{ marginTop: 50 }}
+      />
+    </React.Suspense>
+  );
 }

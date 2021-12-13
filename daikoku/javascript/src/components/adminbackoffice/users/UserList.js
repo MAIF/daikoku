@@ -1,5 +1,6 @@
-import React, { Component } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import faker from 'faker';
 import _ from 'lodash';
 import { toastr } from 'react-redux-toastr';
@@ -7,23 +8,26 @@ import { toastr } from 'react-redux-toastr';
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
-import { t } from '../../../locales';
+import { I18nContext } from '../../../locales/i18n-context';
 
-class UserListComponent extends Component {
-  state = {
+function UserListComponent(props) {
+  const [state, setState] = useState({
     users: [],
+  });
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    updateUsers();
+  }, []);
+
+  const { translateMethod } = useContext(I18nContext);
+
+  const updateUsers = () => {
+    Services.fetchAllUsers().then((users) => setState({ ...state, users }));
   };
 
-  componentDidMount() {
-    this.updateUsers();
-  }
-
-  updateUsers = () => {
-    Services.fetchAllUsers().then((users) => this.setState({ users }));
-  };
-
-  createNewUser = () => {
-    const tenant = this.props.tenant;
+  const createNewUser = () => {
+    const tenant = props.tenant;
     const user = {
       _id: faker.random.alphaNumeric(32),
       tenants: [tenant._id],
@@ -35,137 +39,124 @@ class UserListComponent extends Component {
       password: '',
       hardwareKeyRegistrations: [],
     };
-    this.props.history.push(`/settings/users/${user._id}`, {
-      newUser: user,
+    navigate(`/settings/users/${user._id}`, {
+      state: {
+        newUser: user,
+      }
     });
   };
 
-  removeUser = (user) => {
+  const removeUser = (user) => {
     window
       .confirm(
-        t(
-          'remove.user.confirm',
-          this.props.currentLanguage,
-          'Are you sure you want to delete this user ?'
-        )
+        translateMethod('remove.user.confirm', false, 'Are you sure you want to delete this user ?')
       )
       .then((ok) => {
         if (ok) {
           Services.deleteUserById(user._id).then(() => {
             toastr.info(
-              t(
+              translateMethod(
                 'remove.user.success',
-                this.props.currentLanguage,
                 false,
                 `user ${user.name} is successfully deleted`,
                 user.name
               )
             );
-            this.updateUsers();
+            updateUsers();
           });
         }
       });
   };
 
-  toggleAdmin = (member) => {
-    if (member._id === this.props.connectedUser._id) {
-      alert(
-        t(
-          'toggle.admin.alert',
-          this.props.currentLanguage,
-          "You can't remove your admin status, ask another admin."
-        )
-      );
+  const toggleAdmin = (member) => {
+    if (member._id === props.connectedUser._id) {
+      alert(translateMethod('toggle.admin.alert'));
     } else {
-      Services.setAdminStatus(member, !member.isDaikokuAdmin).then(() => this.updateUsers());
+      Services.setAdminStatus(member, !member.isDaikokuAdmin).then(() => updateUsers());
     }
   };
 
-  render() {
-    const filteredUsers = this.state.search
-      ? this.state.users.filter(({ name, email }) =>
-          [name, email].some((item) => item.toLowerCase().includes(this.state.search))
-        )
-      : this.state.users;
-    return (
-      <UserBackOffice tab="Users">
-        <Can I={manage} a={daikoku} dispatchError>
-          <div className="row">
-            <div className="col">
-              <div className="d-flex justify-content-between align-items-center">
-                <h1>
-                  {t('Users', this.props.currentLanguage)}
-                  <a
-                    className="btn btn-sm btn-access-negative mb-1 ml-1"
-                    title={t('Create a new user', this.props.currentLanguage)}
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      this.createNewUser();
-                    }}>
-                    <i className="fas fa-user-plus" />
-                  </a>
-                </h1>
-                <input
-                  placeholder={t('Find a user', this.props.currentLanguage)}
-                  className="form-control col-5"
-                  onChange={(e) => {
-                    this.setState({ search: e.target.value });
-                  }}
-                />
-              </div>
-              <PaginatedComponent
-                items={_.sortBy(filteredUsers, [(user) => user.name.toLowerCase()])}
-                count={15}
-                formatter={(user) => {
-                  return (
-                    <AvatarWithAction
-                      key={user._id}
-                      avatar={user.picture}
-                      infos={
-                        <>
-                          {user.isDaikokuAdmin && (
-                            <i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />
-                          )}
-                          <span className="team__name text-truncate">{user.name}</span>
-                        </>
-                      }
-                      actions={[
-                        {
-                          action: () => this.removeUser(user),
-                          iconClass: 'fas fa-trash delete-icon',
-                          tooltip: t('Remove user', this.props.currentLanguage),
-                        },
-                        {
-                          redirect: () =>
-                            this.props.history.push(`/settings/users/${user._humanReadableId}`),
-                          iconClass: 'fas fa-pen',
-                          tooltip: t('Edit user', this.props.currentLanguage),
-                        },
-                        {
-                          link: `/api/admin/users/${user._id}/_impersonate`,
-                          iconClass: 'fas fa-user-ninja',
-                          tooltip: t('Impersonate this user', this.props.currentLanguage),
-                        },
-                        {
-                          action: () => this.toggleAdmin(user),
-                          iconClass: `fas fa-shield-alt ${
-                            user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
-                          }`,
-                          tooltip: t('toggle admin status', this.props.currentLanguage),
-                        },
-                      ]}
-                    />
-                  );
+  const filteredUsers = state.search
+    ? state.users.filter(({ name, email }) =>
+      [name, email].some((item) => item.toLowerCase().includes(state.search))
+    )
+    : state.users;
+  return (
+    <UserBackOffice tab="Users">
+      <Can I={manage} a={daikoku} dispatchError>
+        <div className="row">
+          <div className="col">
+            <div className="d-flex justify-content-between align-items-center">
+              <h1>
+                {translateMethod('Users')}
+                <a
+                  className="btn btn-sm btn-access-negative mb-1 ml-1"
+                  title={translateMethod('Create a new user')}
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    createNewUser();
+                  }}>
+                  <i className="fas fa-user-plus" />
+                </a>
+              </h1>
+              <input
+                placeholder={translateMethod('Find a user')}
+                className="form-control col-5"
+                onChange={(e) => {
+                  setState({ ...state, search: e.target.value });
                 }}
-                currentLanguage={this.props.currentLanguage}
               />
             </div>
+            <PaginatedComponent
+              items={_.sortBy(filteredUsers, [(user) => user.name.toLowerCase()])}
+              count={15}
+              formatter={(user) => {
+                return (
+                  <AvatarWithAction
+                    key={user._id}
+                    avatar={user.picture}
+                    infos={
+                      <>
+                        {user.isDaikokuAdmin && (
+                          <i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />
+                        )}
+                        <span className="team__name text-truncate">{user.name}</span>
+                      </>
+                    }
+                    actions={[
+                      {
+                        action: () => removeUser(user),
+                        iconClass: 'fas fa-trash delete-icon',
+                        tooltip: translateMethod('Remove user'),
+                      },
+                      {
+                        redirect: () =>
+                          navigate(`/settings/users/${user._humanReadableId}`),
+                        iconClass: 'fas fa-pen',
+                        tooltip: translateMethod('Edit user'),
+                      },
+                      {
+                        link: `/api/admin/users/${user._id}/_impersonate`,
+                        iconClass: 'fas fa-user-ninja',
+                        tooltip: translateMethod('Impersonate this user'),
+                      },
+                      {
+                        action: () => toggleAdmin(user),
+                        iconClass: `fas fa-shield-alt ${user.isDaikokuAdmin ? 'admin-active' : 'admin-inactive'
+                          }`,
+                        tooltip: translateMethod('toggle admin status'),
+                      },
+                    ]}
+                  />
+                );
+              }}
+            />
           </div>
-        </Can>
-      </UserBackOffice>
-    );
-  }
+        </div>
+      </Can>
+    </UserBackOffice>
+  );
 }
 
 const mapStateToProps = (state) => ({

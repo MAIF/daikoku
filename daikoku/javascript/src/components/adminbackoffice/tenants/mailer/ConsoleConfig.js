@@ -1,7 +1,6 @@
 import React from 'react';
+import { MailTemplateButton } from './MailTemplateButton';
 
-export class ConsoleConfig extends React.Component {
-  render() {
-    return null;
-  }
+export function ConsoleConfig({ ...props }) {
+  return <MailTemplateButton {...props} />;
 }

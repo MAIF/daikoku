@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
+import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
-import { t } from '../../../../locales';
+
+import { I18nContext } from '../../../../core';
 const LazySingleMarkdownInput = React.lazy(() => import('../../../inputs/SingleMarkdownInput'));
 import * as Services from '../../../../services';
 import { Can, manage } from '../../../utils';
@@ -18,27 +20,35 @@ const styles = {
   },
 };
 
-export function NewIssue({ currentLanguage, user, api, ...props }) {
-  const { issuesTags, _id, team, _tenant } = api;
+export function NewIssue({ user, api, ...props }) {
+  const { issuesTags, team, _humanReadableId } = api;
   const [issue, setIssue] = useState(null);
+  const [availableApiVersions, setApiVersions] = useState([]);
+
+  const { translateMethod } = useContext(I18nContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     Services.fetchNewIssue().then((template) => setIssue(template));
+
+    Services.getAllApiVersions(team, api._humanReadableId).then(setApiVersions);
   }, []);
 
   function createIssue() {
     if (issue.title.length === 0 || issue.comments[0].content.length === 0)
       toastr.error('Title or content are too short');
+    else if (!issue.apiVersion) toastr.error('Select a version to continue');
     else {
-      Services.createNewIssue(_id, team, {
+      Services.createNewIssue(_humanReadableId, team, {
         ...issue,
+        apiVersion: issue.apiVersion.value,
         tags: issue.tags.map((tag) => tag.value.id),
       }).then((res) => {
-        if (res.status === 201) {
+        if (res.error) toastr.error(res.error);
+        else {
           toastr.success('Issue created');
-          props.history.push(`${props.basePath}/issues`);
-        } else res.json().then((r) => toastr.error(r.error));
-        s;
+          navigate(`${props.basePath}/issues`);
+        }
       });
     }
   }
@@ -57,19 +67,38 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
       <div>
         <div className="px-3 py-2" style={styles.commentHeader}>
           <div>
-            <label htmlFor="title">{t('Title', currentLanguage)}</label>
+            <label htmlFor="title">{translateMethod('Title')}</label>
             <input
               id="title"
               type="text"
               className="form-control"
-              placeholder={t('Title', currentLanguage)}
+              placeholder={translateMethod('Title')}
               value={issue.title}
               onChange={(e) => setIssue({ ...issue, title: e.target.value })}
             />
           </div>
+          <div className="py-2">
+            <label htmlFor="apiVersion">{translateMethod('issues.apiVersion')}</label>
+            <Select
+              id="apiVersion"
+              onChange={(apiVersion) =>
+                setIssue({
+                  ...issue,
+                  apiVersion,
+                })
+              }
+              options={availableApiVersions.map((iss) => ({ value: iss, label: iss }))}
+              value={issue.apiVersion}
+              className="input-select reactSelect"
+              classNamePrefix="reactSelect"
+              styles={{
+                menu: (provided) => ({ ...provided, zIndex: 9999 }),
+              }}
+            />
+          </div>
           <Can I={manage} a={API} team={props.currentTeam}>
             <div className="py-2">
-              <label htmlFor="tags">{t('issues.tags', currentLanguage)}</label>
+              <label htmlFor="tags">{translateMethod('issues.tags')}</label>
               <Select
                 id="tags"
                 isMulti
@@ -98,9 +127,9 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
             borderBottomRightRadius: '8px',
             backgroundColor: '#fff',
           }}>
-          <React.Suspense fallback={<div>{t('loading', currentLanguage)}</div>}>
+          <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
-              currentLanguage={currentLanguage}
+              fullWidth
               height="300px"
               value={issue.comments[0].content}
               fixedWitdh="0px"
@@ -119,13 +148,13 @@ export function NewIssue({ currentLanguage, user, api, ...props }) {
           </React.Suspense>
           <div className="d-flex mt-3 justify-content-end">
             <button className="btn btn-success" onClick={createIssue}>
-              {t('issues.submit_new_issue', currentLanguage)}
+              {translateMethod('issues.submit_new_issue')}
             </button>
           </div>
         </div>
       </div>
     </div>
   ) : (
-    <p>{t('loading', currentLanguage)}</p>
+    <p>{translateMethod('loading')}</p>
   );
 }

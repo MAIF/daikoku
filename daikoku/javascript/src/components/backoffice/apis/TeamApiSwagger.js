@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-
-import { t } from '../../../locales';
+import React, { useState, useEffect, useContext } from 'react';
+import { I18nContext } from '../../../core';
 import { TextInput, BooleanInput, ObjectInput } from '../../inputs';
 
-export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
+export const TeamApiSwagger = ({ value, onChange }) => {
   const [lastContent, setLastContent] = useState(undefined);
   let unsubscribe = () => {};
 
+  const { translateMethod } = useContext(I18nContext);
+
   useEffect(() => {
-    if (value.swagger.content) {
+    if (value.swagger && value.swagger.content) {
       initSwaggerEditor(value.swagger.content);
     } else {
       killSwaggerEditor();
@@ -20,7 +21,6 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
   }, [value]);
 
   const initSwaggerEditor = (content) => {
-    console.log('init swagger editor');
     window.editor = SwaggerEditorBundle({
       // eslint-disable-line no-undef
       dom_id: '#swagger-editor',
@@ -44,13 +44,11 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
   };
 
   const updateStateFromSwaggerEditor = () => {
-    console.log('updateStateFromSwaggerEditor');
     const content = window.editor.specSelectors.specStr();
     onChange({ ...value, swagger: { ...value.swagger, content } });
   };
 
   const killSwaggerEditor = () => {
-    console.log('killSwaggerEditor');
     if (unsubscribe) {
       unsubscribe();
     }
@@ -66,7 +64,7 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
       {!swagger.content && (
         <TextInput
           key={'test'}
-          label={t('URL', currentLanguage)}
+          label={translateMethod('URL')}
           placeholder="The url of the swagger file"
           value={swagger.url}
           onChange={(url) => onChange({ ...value, swagger: { ...value.swagger, url } })}
@@ -74,13 +72,13 @@ export const TeamApiSwagger = ({ value, onChange, currentLanguage }) => {
       )}
       {!swagger.content && (
         <ObjectInput
-          label={t('Headers', currentLanguage)}
+          label={translateMethod('Headers')}
           value={swagger.headers}
           onChange={(headers) => onChange({ ...value, swagger: { ...value.swagger, headers } })}
         />
       )}
       <BooleanInput
-        label={t('Use swagger content', currentLanguage)}
+        label={translateMethod('Use swagger content')}
         value={!!swagger.content}
         onChange={(e) => {
           let content;

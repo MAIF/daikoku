@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useTable, usePagination, useSortBy, useFilters } from 'react-table';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -6,9 +6,9 @@ import PropTypes from 'prop-types';
 import Pagination from 'react-paginate';
 import Select from 'react-select';
 
-import { t, Translation } from '../../locales';
 import { Spinner } from '../utils';
 import { DefaultColumnFilter } from '.';
+import { I18nContext } from '../../core';
 
 export function useForceUpdate() {
   const [, setTick] = useState(0);
@@ -28,12 +28,13 @@ export const Table = ({
   search,
   pageSizee = 15,
   mobileSize = 767,
-  currentLanguage,
 }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(undefined);
   const forceUpdate = useForceUpdate();
+
+  const { translateMethod, Translation } = useContext(I18nContext);
 
   const filterTypes = React.useMemo(
     () => ({
@@ -149,24 +150,35 @@ export const Table = ({
   }, [error]);
 
   useEffect(() => {
-    setLoading(false);
     setError(undefined);
   }, [items]);
 
   const update = () => {
     setLoading(true);
-    return fetchItems().then(
-      (rawItems) => {
-        if (rawItems.error) {
-          setError(rawItems);
-        } else {
-          setItems(rawItems);
-          setLoading(false);
-        }
-      },
-      (e) => setError(e)
-    );
+    const isPromise = Boolean(fetchItems && typeof fetchItems().then === 'function');
+    if (isPromise) {
+      return fetchItems().then(
+        (rawItems) => {
+          if (rawItems.error) {
+            setError(rawItems);
+          } else {
+            setItems(rawItems);
+            setLoading(false);
+          }
+        },
+        (e) => setError(e)
+      );
+    } else {
+      setItems(fetchItems());
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    if (fetchItems) {
+      update();
+    }
+  }, [fetchItems]);
 
   if (error) {
     return <h3>{`Something went wrong: ${error.error}`}</h3>;
@@ -188,14 +200,14 @@ export const Table = ({
     <div className="d-flex flex-row align-items-baseline justify-content-end flex-grow-1">
       <span>
         {rows.length}{' '}
-        <Translation i18nkey="Result" language={currentLanguage} isPlural={rows.length > 1}>
+        <Translation i18nkey="Result" isPlural={rows.length > 1}>
           Results
         </Translation>
       </span>
       <Select
         className="reactSelect reactSelect-pagination col-3 ml-3 mr-3"
         value={{
-          label: t('Show.results', currentLanguage, false, `Show ${pageSize}`, pageSize),
+          label: translateMethod('Show.results', false, `Show ${pageSize}`, pageSize),
           value: pageSize,
         }}
         options={[10, 20, 50, 100].map((x) => ({ label: `Show ${x}`, value: x }))}
@@ -205,8 +217,8 @@ export const Table = ({
       />
       <Pagination
         containerClassName="pagination"
-        previousLabel={t('<', currentLanguage)}
-        nextLabel={t('>', currentLanguage)}
+        previousLabel={translateMethod('<')}
+        nextLabel={translateMethod('>')}
         breakLabel={'...'}
         breakClassName={'break'}
         pageCount={pageOptions.length}
@@ -219,7 +231,7 @@ export const Table = ({
       <button
         type="button"
         className="ml-3 btn btn-sm btn-access-negative float-right"
-        title={t('Reload the table content', currentLanguage)}
+        title={translateMethod('Reload the table content')}
         onClick={update}>
         <span className="fas fa-sync-alt" />
       </button>
