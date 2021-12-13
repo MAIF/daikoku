@@ -63,7 +63,7 @@ export function init(
   ReactDOM.render(
     <Provider store={storeInst}>
       <ApolloProvider client={client}>
-        <I18nProvider tenant={tenant}>
+        <I18nProvider tenant={tenant} user={user}>
           <DaikokuApp
             user={user}
             tenant={tenant}

@@ -17,8 +17,11 @@ const configuration = {
   },
 };
 
-export const I18nProvider = ({ tenant, children }) => {
-  const [language, setLanguage] = useState(Option(tenant.defaultLanguage).getOrElse('en'));
+export const I18nProvider = ({ user, tenant, children }) => {
+  const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse('en');
+  const currentLanguage = Option(user?.defaultLanguage).getOrElse(tenantDefaultLanguage);
+
+  const [language, setLanguage] = useState(currentLanguage);
   const [isTranslationMode, setTranslationMode] = useState(
     tenant.tenantMode && tenant.tenantMode === 'Translation'
   );
