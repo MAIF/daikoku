@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>Managing Otoroshi instances · Daikoku</title>
+<title>Team billing · Daikoku</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='daikoku-manual'/>
@@ -65,7 +65,7 @@
   </ul></li>
   <li><a href="../tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
   <ul>
-    <li><a href="../tenantusage/1-otoroshi.html" class="active page">Managing Otoroshi instances</a></li>
+    <li><a href="../tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
     <li><a href="../tenantusage/1.5-initialize.html" class="page">Initialize Tenant from Otoroshi instances</a></li>
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
@@ -85,7 +85,7 @@
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
     <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
-    <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
+    <li><a href="../consumerusage/4-billing.html" class="active page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
   <li><a href="../apis.html" class="page">Admin REST API</a></li>
@@ -158,7 +158,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   </ul></li>
   <li><a href="../tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
   <ul>
-    <li><a href="../tenantusage/1-otoroshi.html" class="active page">Managing Otoroshi instances</a></li>
+    <li><a href="../tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
     <li><a href="../tenantusage/1.5-initialize.html" class="page">Initialize Tenant from Otoroshi instances</a></li>
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
@@ -178,7 +178,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../consumerusage/1-subscribe.html" class="page">Subscribe to an api</a></li>
     <li><a href="../consumerusage/2-apikeys.html" class="page">Manage APIkeys</a></li>
     <li><a href="../consumerusage/3-aggregation-of-apikeys.html" class="page">Use an api key on multiple apis</a></li>
-    <li><a href="../consumerusage/4-billing.html" class="page">Team billing</a></li>
+    <li><a href="../consumerusage/4-billing.html" class="active page">Team billing</a></li>
   </ul></li>
   <li><a href="../integrations.html" class="page">Integrations API</a></li>
   <li><a href="../apis.html" class="page">Admin REST API</a></li>
@@ -199,8 +199,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-breadcrumbs">
 <ul>
   <li><a href="../index.html">Daikoku</a></li>
-  <li><a href="../tenantusage/index.html">Using Daikoku as Tenant admin</a></li>
-  <li>Managing Otoroshi instances</li>
+  <li><a href="../consumerusage/index.html">Using Daikoku as api consumer</a></li>
+  <li>Team billing</li>
 </ul>
 </div>
 </div>
@@ -208,35 +208,13 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#managing-otoroshi-instances" name="managing-otoroshi-instances" class="anchor"><span class="anchor-link"></span></a>Managing Otoroshi instances</h1>
-<p>Go to <code>settings/Organizations settings</code> and click <code>Otoroshi instances</code> on the left menu.</p>
-<p>And you should see the list of existing <code>Otoroshi instances</code>.</p>
-<h2><a href="#add-a-new-otoroshi" name="add-a-new-otoroshi" class="anchor"><span class="anchor-link"></span></a>Add a new Otoroshi</h2>
-<p>Click on the <code>Create</code> button. A Otoroshi instance is really simple to create. Just fill Otoroshi&rsquo;s url (otoroshi-api URL, not client 😉), the host and credentials (client id and client secret of an API key for Otorshi&rsquo;s admin-api).</p>
-<h2><a href="#update-an-existing-instance" name="update-an-existing-instance" class="anchor"><span class="anchor-link"></span></a>Update an existing instance</h2>
-<p>To update an Otoroshi instance, just click the <code>Update</code> button (Pen icon). You can modify the otoroshi url, the host or credentials.</p>
-<h2><a href="#remove-an-existing-instance" name="remove-an-existing-instance" class="anchor"><span class="anchor-link"></span></a>Remove an existing instance</h2>
-<p>To delete an Otoroshi instances, just click the <code>Delete</code> button (trash icon) and confirm the command.</p>
+<h1><a href="#team-billing" name="team-billing" class="anchor"><span class="anchor-link"></span></a>Team billing</h1>
+<p>Team billing page is basically the same view than <a href="../producerusage/4-income.html">Team income</a> with consumer point of view.</p>
 <div class="nav-next">
-<p><strong>Next:</strong> <a href="../tenantusage/1.5-initialize.html">Initialize Tenant from Otoroshi instances</a></p>
+<p><strong>Next:</strong> <a href="../integrations.html">Integrations API</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
-<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
-<div class="page-nav">
-<div class="nav-title">On this page:</div>
-<div class="nav-toc">
-<ul>
-  <li><a href="../tenantusage/1-otoroshi.html#managing-otoroshi-instances" class="header">Managing Otoroshi instances</a>
-  <ul>
-    <li><a href="../tenantusage/1-otoroshi.html#add-a-new-otoroshi" class="header">Add a new Otoroshi</a></li>
-    <li><a href="../tenantusage/1-otoroshi.html#update-an-existing-instance" class="header">Update an existing instance</a></li>
-    <li><a href="../tenantusage/1-otoroshi.html#remove-an-existing-instance" class="header">Remove an existing instance</a></li>
-  </ul></li>
-</ul>
-</div>
-</div>
-</nav>
 </div>
 </div>
 

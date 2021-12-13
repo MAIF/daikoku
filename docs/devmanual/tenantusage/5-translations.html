@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>Managing Otoroshi instances · Daikoku</title>
+<title>Translate mail content and front office · Daikoku</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='daikoku-manual'/>
@@ -65,12 +65,12 @@
   </ul></li>
   <li><a href="../tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
   <ul>
-    <li><a href="../tenantusage/1-otoroshi.html" class="active page">Managing Otoroshi instances</a></li>
+    <li><a href="../tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
     <li><a href="../tenantusage/1.5-initialize.html" class="page">Initialize Tenant from Otoroshi instances</a></li>
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
-    <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
+    <li><a href="../tenantusage/5-translations.html" class="active page">Translate mail content and front office</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -158,12 +158,12 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   </ul></li>
   <li><a href="../tenantusage/index.html" class="page">Using Daikoku as Tenant admin</a>
   <ul>
-    <li><a href="../tenantusage/1-otoroshi.html" class="active page">Managing Otoroshi instances</a></li>
+    <li><a href="../tenantusage/1-otoroshi.html" class="page">Managing Otoroshi instances</a></li>
     <li><a href="../tenantusage/1.5-initialize.html" class="page">Initialize Tenant from Otoroshi instances</a></li>
     <li><a href="../tenantusage/2-teams.html" class="page">Managing teams</a></li>
     <li><a href="../tenantusage/3-assets.html" class="page">Managing assets</a></li>
     <li><a href="../tenantusage/4-messages.html" class="page">User messages</a></li>
-    <li><a href="../tenantusage/5-translations.html" class="page">Translate mail content and front office</a></li>
+    <li><a href="../tenantusage/5-translations.html" class="active page">Translate mail content and front office</a></li>
   </ul></li>
   <li><a href="../producerusage/index.html" class="page">Using Daikoku as api producer</a>
   <ul>
@@ -200,7 +200,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <ul>
   <li><a href="../index.html">Daikoku</a></li>
   <li><a href="../tenantusage/index.html">Using Daikoku as Tenant admin</a></li>
-  <li>Managing Otoroshi instances</li>
+  <li>Translate mail content and front office</li>
 </ul>
 </div>
 </div>
@@ -208,17 +208,53 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#managing-otoroshi-instances" name="managing-otoroshi-instances" class="anchor"><span class="anchor-link"></span></a>Managing Otoroshi instances</h1>
-<p>Go to <code>settings/Organizations settings</code> and click <code>Otoroshi instances</code> on the left menu.</p>
-<p>And you should see the list of existing <code>Otoroshi instances</code>.</p>
-<h2><a href="#add-a-new-otoroshi" name="add-a-new-otoroshi" class="anchor"><span class="anchor-link"></span></a>Add a new Otoroshi</h2>
-<p>Click on the <code>Create</code> button. A Otoroshi instance is really simple to create. Just fill Otoroshi&rsquo;s url (otoroshi-api URL, not client 😉), the host and credentials (client id and client secret of an API key for Otorshi&rsquo;s admin-api).</p>
-<h2><a href="#update-an-existing-instance" name="update-an-existing-instance" class="anchor"><span class="anchor-link"></span></a>Update an existing instance</h2>
-<p>To update an Otoroshi instance, just click the <code>Update</code> button (Pen icon). You can modify the otoroshi url, the host or credentials.</p>
-<h2><a href="#remove-an-existing-instance" name="remove-an-existing-instance" class="anchor"><span class="anchor-link"></span></a>Remove an existing instance</h2>
-<p>To delete an Otoroshi instances, just click the <code>Delete</code> button (trash icon) and confirm the command.</p>
+<h1><a href="#translate-mail-content-and-front-office" name="translate-mail-content-and-front-office" class="anchor"><span class="anchor-link"></span></a>Translate mail content and front office</h1>
+<p>Daikoku supports two languages : french and english (If your language is missing, you can contribute, do not hesitate). All translations can be override when navigating on the <code>internationalization</code> page from a tenant settings page (the full route is <code>https://&lt;your-domain-name&gt;/settings/internationalization/mail</code>).</p>
+<p>On this page, you have 3 tabs : <code>Mail</code>, <code>Mail Template</code> and <code>Front office</code>.</p>
+<h3><a href="#mail" name="mail" class="anchor"><span class="anchor-link"></span></a>Mail</h3>
+<p>The mail tab manage all the translations of the mails content. For each translation, you have a list of <code>required variables</code> which will be replaced by Daikoku when an email is send</p>
+<blockquote>
+  <p>Beware of surroound your variable by square brackets if you wants it to be replaced .</p>
+</blockquote>
+<p>For example, the message </p>
+<pre><code>Your apikey for api [apiName] and plan [planName] have been updated.
+</code></pre>
+<p>has by default two variable <code>apiName</code> and <code>planName</code> which will be replace by the name of the api and the name of the plan respectively. </p>
+<pre><code>Your apikey for api My First API and plan My first plan have been updated. 
+</code></pre>
+<p>Each translation has one field by language. Once a translation is overloaded, a reset button will appear to retrieve the original translation.</p>
+<h3><a href="#mail-template" name="mail-template" class="anchor"><span class="anchor-link"></span></a>Mail template</h3>
+<p>All sent mails are composed of the subject of the mail as body, incorporate in a template. This template can be change and translate in the supported langauges.</p>
+<p>When you want to change one of these fields, we have to include one <code>required variable</code> which is the <code>email</code> variable. That variable are replaced by Daikoku, depending on the subject of the email. </p>
+<p>If we take the previous example, without any changes, you should have for an update of api :</p>
+<pre><code>Your apikey for api My First API and plan My first plan have been updated. 
+</code></pre>
+<p>Now if you want to add a header and a footer at your mail, you have to write in the first field <code>Default mail template</code></p>
+<pre><code>Hello,
+
+{{email}}
+
+Send from Daikoku.
+</code></pre>
+<p>The mail will be send with the following content :</p>
+<pre><code>Hello,
+
+Your apikey for api My First API and plan My first plan have been updated. 
+
+Send from Daikoku.
+</code></pre>
+<h3><a href="#front-office" name="front-office" class="anchor"><span class="anchor-link"></span></a>Front office</h3>
+<p>Daikoku is a fully customizable user interface that includes the ability to translate the front office (which represents a list of one thousand words).</p>
+<p>To change one expression.</p>
+<ol>
+  <li>Search the expression to change.</li>
+  <li>Replace the value for your current language.</li>
+  <li>Click on the save button on your right.</li>
+  <li>Refresh your page (Daikoku is caching the translations to avoid to fetch the translations in back office each time that needed).</li>
+</ol><div class="callout warning "><div class="callout-title">Warning</div>
+<p>some expressions are use in different pages, beware of breaking changes.</p></div>
 <div class="nav-next">
-<p><strong>Next:</strong> <a href="../tenantusage/1.5-initialize.html">Initialize Tenant from Otoroshi instances</a></p>
+<p><strong>Next:</strong> <a href="../producerusage/index.html">Using Daikoku as api producer</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
@@ -227,11 +263,11 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-title">On this page:</div>
 <div class="nav-toc">
 <ul>
-  <li><a href="../tenantusage/1-otoroshi.html#managing-otoroshi-instances" class="header">Managing Otoroshi instances</a>
+  <li><a href="../tenantusage/5-translations.html#translate-mail-content-and-front-office" class="header">Translate mail content and front office</a>
   <ul>
-    <li><a href="../tenantusage/1-otoroshi.html#add-a-new-otoroshi" class="header">Add a new Otoroshi</a></li>
-    <li><a href="../tenantusage/1-otoroshi.html#update-an-existing-instance" class="header">Update an existing instance</a></li>
-    <li><a href="../tenantusage/1-otoroshi.html#remove-an-existing-instance" class="header">Remove an existing instance</a></li>
+    <li><a href="../tenantusage/5-translations.html#mail" class="header">Mail</a></li>
+    <li><a href="../tenantusage/5-translations.html#mail-template" class="header">Mail template</a></li>
+    <li><a href="../tenantusage/5-translations.html#front-office" class="header">Front office</a></li>
   </ul></li>
 </ul>
 </div>
