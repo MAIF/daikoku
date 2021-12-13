@@ -4,11 +4,7 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.alpakka.s3.ObjectMetadata
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuTenantAction
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.AssetId
@@ -18,12 +14,7 @@ import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  BodyParser,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, BodyParser, ControllerComponents}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
