@@ -16,7 +16,11 @@ function TeamListComponent(props) {
 
   const createNewTeam = () => {
     Services.fetchNewTeam().then((newTeam) => {
-      navigate(`/settings/teams/${newTeam._id}`, { newTeam });
+      navigate(`/settings/teams/${newTeam._id}`, {
+        state: {
+          newTeam
+        }
+      });
     });
   };
 

@@ -40,7 +40,9 @@ function UserListComponent(props) {
       hardwareKeyRegistrations: [],
     };
     navigate(`/settings/users/${user._id}`, {
-      newUser: user,
+      state: {
+        newUser: user,
+      }
     });
   };
 

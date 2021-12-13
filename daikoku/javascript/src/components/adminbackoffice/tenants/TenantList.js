@@ -25,7 +25,11 @@ export function TenantListComponent(props) {
 
   const createNewTenant = () => {
     Services.fetchNewTenant().then((newTenant) => {
-      navigate(`/settings/tenants/${newTenant._id}`, { newTenant });
+      navigate(`/settings/tenants/${newTenant._id}`, {
+        state: {
+          newTenant
+        }
+      });
     });
   };
 
