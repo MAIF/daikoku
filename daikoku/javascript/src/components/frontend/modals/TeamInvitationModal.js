@@ -36,7 +36,7 @@ export const TeamInvitationModal = (props) => {
   return (
     <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
       <div className="modal-header d-flex flex-column align-items-center">
-        <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}>
           <span aria-hidden="true">&times;</span>
         </button>
         <i className="fas fa-users fa-2x mb-3" />

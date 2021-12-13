@@ -78,7 +78,7 @@ function TwoFactorAuthentication({ rawValue }) {
           <div className="d-flex w-100 mb-3">
             <input type="text" disabled={true} value={backupCodes} className="form-control" />
             <button
-              className="btn btn-outline-success ml-1"
+              className="btn btn-outline-success ms-1"
               type="button"
               onClick={() => {
                 navigator.clipboard.writeText(backupCodes);
@@ -159,7 +159,7 @@ function TwoFactorAuthentication({ rawValue }) {
     </div>
   ) : (
     <>
-      <div className="form-group row">
+      <div className="mb-3 row">
         <label className="col-xs-12 col-sm-2 col-form-label">{translateMethod('2fa')}</label>
         <div className="col-sm-10">
           {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled ? (
@@ -174,7 +174,7 @@ function TwoFactorAuthentication({ rawValue }) {
         </div>
       </div>
       {rawValue.twoFactorAuthentication && rawValue.twoFactorAuthentication.enabled && (
-        <div className="form-group row">
+        <div className="mb-3 row">
           <label className="col-xs-12 col-sm-2 col-form-label">
             {translateMethod('2fa.backup_codes')}
           </label>
@@ -187,7 +187,7 @@ function TwoFactorAuthentication({ rawValue }) {
                 className="form-control"
               />
               <button
-                className="btn btn-outline-success ml-1"
+                className="btn btn-outline-success ms-1"
                 type="button"
                 onClick={copyToClipboard}>
                 <i className="fas fa-copy" />
@@ -220,11 +220,13 @@ function SetPassword(props) {
 
   if (props.rawValue.origins.length === 1 && props.rawValue.origins[0].toLowerCase() === 'local') {
     return (
-      <div className="form-group row">
-        <label className="col-xs-12 col-sm-2 col-form-label" />
+      <div className="mb-3 row">
+        <label className="col-xs-12 col-sm-2 col-form-label">
+          <Translation i18nkey="Password">Password</Translation>
+        </label>
         <div className="col-sm-10">
           <button type="button" className="btn btn-outline-primary" onClick={genAndSetPassword}>
-            <i className="fas fa-unlock-alt mr-1" />
+            <i className="fas fa-unlock-alt me-1" />
             <Translation i18nkey="Change my password">Change my password</Translation>
           </button>
         </div>
@@ -243,11 +245,11 @@ function RefreshToken(props) {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div className="col-sm-10">
         <button type="button" className="btn btn-outline-primary" onClick={reloadToken}>
-          <i className="fas fa-sync-alt mr-1" />
+          <i className="fas fa-sync-alt me-1" />
           <Translation i18nkey="Reload personal token">Reload personal token</Translation>
         </button>
       </div>
@@ -282,7 +284,7 @@ const Avatar = ({ value, rawValue, changeValue, label, ...props }) => {
     return null;
   }
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label">{label}</label>
       <div className="col-sm-10">
         <input
@@ -293,8 +295,8 @@ const Avatar = ({ value, rawValue, changeValue, label, ...props }) => {
         />
       </div>
       <div className="col-sm-10 offset-sm-2 d-flex mt-1">
-        <button type="button" className="btn btn-outline-primary mr-1" onClick={setGravatarLink}>
-          <i className="fas fa-user-circle mr-1" />
+        <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink}>
+          <i className="fas fa-user-circle me-1" />
           <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
         </button>
         {isOtherOriginThanLocal && (
@@ -303,7 +305,7 @@ const Avatar = ({ value, rawValue, changeValue, label, ...props }) => {
             className="btn btn-outline-primary"
             onClick={setPictureFromProvider}
             disabled={rawValue.pictureFromProvider ? 'disabled' : null}>
-            <i className="fas fa-user-circle mr-1" />
+            <i className="fas fa-user-circle me-1" />
             <Translation i18nkey="Set avatar from auth. provider">
               Set avatar from auth. Provider
             </Translation>
@@ -324,7 +326,7 @@ function TenantList(props) {
   }, []);
 
   return (
-    <div className="form-group row pt-3">
+    <div className="mb-3 row pt-3">
       <label className="col-xs-12 col-sm-2 col-form-label">
         <Translation i18nkey="Tenants">Tenants</Translation>
       </label>
@@ -393,7 +395,7 @@ function MyProfileComponent(props) {
     },
     origins: {
       type: ({ value }) => (
-        <div className="form-group row">
+        <div className="mb-3 row">
           <label className="col-xs-12 col-sm-2 col-form-label">
             <Translation i18nkey="Origins">Origins</Translation>
           </label>
@@ -552,7 +554,7 @@ function MyProfileComponent(props) {
                     position: 'relative',
                   }}
                   alt="avatar"
-                  className="mr-3"
+                  className="me-3"
                 />
                 <PictureUpload setFiles={setFiles} />
               </div>
@@ -580,29 +582,31 @@ function MyProfileComponent(props) {
           )}
         </div>
       </div>
-      <div className="row" style={{ justifyContent: 'flex-end' }}>
-        <a className="btn btn-outline-primary" href="#" onClick={() => navigate(-1)}>
-          <i className="fas fa-chevron-left mr-1" />
-          <Translation i18nkey="Back">Back</Translation>
-        </a>
-        <button
-          type="button"
-          className="btn btn-outline-danger"
-          style={{ marginLeft: 5 }}
-          onClick={removeUser}>
-          <i className="fas fa-trash mr-1" />
-          <Translation i18nkey="Delete my profile">Delete my profile</Translation>
-        </button>
-        <button
-          style={{ marginLeft: 5 }}
-          type="button"
-          className="btn btn-outline-success"
-          onClick={save}>
-          <span>
-            <i className="fas fa-save mr-1" />
-            <Translation i18nkey="Save">Save</Translation>
-          </span>
-        </button>
+      <div className="row">
+        <div className="d-flex justify-content-end">
+          <a className="btn btn-outline-primary" href="#" onClick={() => navigate(-1)}>
+            <i className="fas fa-chevron-left me-1" />
+            <Translation i18nkey="Back">Back</Translation>
+          </a>
+          <button
+            type="button"
+            className="btn btn-outline-danger"
+            style={{ marginLeft: 5 }}
+            onClick={removeUser}>
+            <i className="fas fa-trash me-1" />
+            <Translation i18nkey="Delete my profile">Delete my profile</Translation>
+          </button>
+          <button
+            style={{ marginLeft: 5 }}
+            type="button"
+            className="btn btn-outline-success"
+            onClick={save}>
+            <span>
+              <i className="fas fa-save me-1" />
+              <Translation i18nkey="Save">Save</Translation>
+            </span>
+          </button>
+        </div>
       </div>
     </UserBackOffice>
   );

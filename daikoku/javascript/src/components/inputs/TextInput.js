@@ -13,7 +13,7 @@ export function TextInput(props) {
     return null;
   }
   return (
-    <div className={`form-group ${isColmunFormat ? '' : 'row'}`}>
+    <div className={`mb-3 ${isColmunFormat ? '' : 'row'}`}>
       <label
         htmlFor={`input-${props.label}`}
         className={isColmunFormat ? '' : 'col-xs-12 col-sm-2 col-form-label'}>
@@ -58,7 +58,7 @@ export function TextareaInput(props) {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
         <Help text={props.help} label={props.label} />
       </label>
@@ -88,7 +88,7 @@ export function RangeTextInput(props) {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
         <Help text={props.help} label={props.label} />
       </label>
@@ -161,9 +161,9 @@ export function VerticalTextInput(props) {
   };
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <div className="col-xs-12">
-        <label htmlFor={`input-${props.label}`} className="control-label">
+        <label htmlFor={`input-${props.label}`} className="control-label mb-2">
           <Help text={props.help} label={props.label} />
         </label>
         <div>

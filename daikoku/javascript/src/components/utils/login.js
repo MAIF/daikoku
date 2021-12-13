@@ -55,7 +55,7 @@ export function LoginPage(props) {
         </div>
 
         <form
-          className="form-horizontal text-left mx-auto"
+          className="form-horizontal text-start mx-auto"
           method={props.method}
           onSubmit={submit}
           style={{ maxWidth: '448px' }}>
@@ -67,8 +67,8 @@ export function LoginPage(props) {
               </Translation>
             </span>
           )}
-          <div className="form-group">
-            <label className="control-label">
+          <div className="mb-3">
+            <label className="control-label mb-2">
               <Translation i18nkey="Email address">Email address</Translation>
             </label>
             <input
@@ -79,8 +79,8 @@ export function LoginPage(props) {
               onChange={onChange}
             />
           </div>
-          <div className="form-group">
-            <label className="control-label">
+          <div className="mb-3">
+            <label className="control-label mb-2">
               <Translation i18nkey="Password">Password</Translation>
             </label>
             <input
@@ -91,14 +91,14 @@ export function LoginPage(props) {
               onChange={onChange}
             />
           </div>
-          <div className="form-group">
-            <button type="submit" className="btn btn-success btn-block">
+          <div className="mb-3 d-grid gap-1">
+            <button type="submit" className="btn btn-success">
               <Translation i18nkey="Login">Login</Translation>
             </button>
           </div>
           {props.provider == 'Local' && (
             <div
-              className="form-group p-3 text-center"
+              className="mb-3 p-3 text-center"
               style={{
                 border: '1px solid var(--form-border-color, #586069)',
                 borderRadius: '6px',
@@ -110,7 +110,7 @@ export function LoginPage(props) {
               <a href="/signup">{' '}Create an account.</a>
             </div>
           )}
-          <div className="form-group">
+          <div className="mb-3">
             <a href="/reset">
               <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
             </a>

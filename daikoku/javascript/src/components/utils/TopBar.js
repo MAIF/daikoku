@@ -169,10 +169,10 @@ const TopBarComponent = (props) => {
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
-            <div className="pl-1 pr-2">
+            <div className="ps-1 pe-2">
               <Link
                 to="/apis"
-                className="navbar-brand d-flex align-items-center mr-4"
+                className="navbar-brand d-flex align-items-center me-4"
                 title="Daikoku home"
                 style={{
                   maxWidth: '59px',
@@ -214,7 +214,7 @@ const TopBarComponent = (props) => {
             {props.impersonator && (
               <a href="/api/me/_deimpersonate" className="btn btn-danger">
                 <i className="fas fa-user-ninja" /> {translateMethod('Quit impersonation')}
-                <b className="ml-1">{impersonator.email}</b>
+                <b className="ms-1">{impersonator.email}</b>
               </a>
             )}
             {!props.connectedUser._humanReadableId && (
@@ -238,12 +238,12 @@ const TopBarComponent = (props) => {
                     (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1
                   }>
                   {isMaintenanceMode && (
-                    <span className="badge badge-danger mr-3">
+                    <span className="badge badge-danger me-3">
                       {translateMethod('Global maintenance mode enabled')}
                     </span>
                   )}
                   {isTranslationMode && (
-                    <span className="badge badge-warning mr-3">
+                    <span className="badge badge-warning me-3">
                       {translateMethod('Translation mode enabled')}
                     </span>
                   )}

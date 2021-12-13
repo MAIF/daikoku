@@ -36,7 +36,7 @@ const ContactModalComponent = (props) => {
         <h5 className="modal-title">
           <Translation i18nkey="Contact request">Contact request</Translation>
         </h5>
-        <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}>
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -45,7 +45,7 @@ const ContactModalComponent = (props) => {
         <div className="modal-description">
           <form ref={(ref) => setFormRef(ref)}>
             {!props.name && (
-              <div className="form-group">
+              <div className="mb-3">
                 <label htmlFor="sender-name">
                   <Translation i18nkey="Name">Name</Translation>
                 </label>
@@ -62,7 +62,7 @@ const ContactModalComponent = (props) => {
               </div>
             )}
             {!props.email && (
-              <div className="form-group">
+              <div className="mb-3">
                 <label htmlFor="sender-email">
                   <Translation i18nkey="Email address">Email address</Translation>
                 </label>
@@ -78,7 +78,7 @@ const ContactModalComponent = (props) => {
                 />
               </div>
             )}
-            <div className="form-group">
+            <div className="mb-3">
               <label htmlFor="subject">
                 <Translation i18nkey="Subject">Subject</Translation>
               </label>
@@ -93,7 +93,7 @@ const ContactModalComponent = (props) => {
                 placeholder={translateMethod('Subject')}
               />
             </div>
-            <div className="form-group">
+            <div className="mb-3">
               <label htmlFor="message">
                 <Translation i18nkey="Message">Message</Translation>
               </label>
@@ -111,7 +111,7 @@ const ContactModalComponent = (props) => {
               />
             </div>
 
-            <div className="form-group ohnohoney">
+            <div className="mb-3 ohnohoney">
               <label htmlFor="name">
                 <Translation i18nkey="Name">Name</Translation>
               </label>

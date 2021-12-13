@@ -41,11 +41,11 @@ export const ApiCard = (props) => {
           action={(teams) => props.askForApiAccess(teams)}
           withAllTeamSelector={true}>
           {isPending ? (
-            <button className="btn btn-sm btn-access-negative mr-1">
+            <button className="btn btn-sm btn-access-negative me-1">
               <Translation i18nkey="Pending request">Pending request</Translation>
             </button>
           ) : (
-            <button className="btn btn-sm btn-access-negative mr-1">
+            <button className="btn btn-sm btn-access-negative me-1">
               <Translation i18nkey="Access">Access</Translation>
             </button>
           )}
@@ -57,7 +57,8 @@ export const ApiCard = (props) => {
 
   if (props.view === 'GRID') {
     return (
-      <div className="card mb-4 shadow-sm api-card" style={{ width: '250px' }}>
+      <div className="col-4">
+        <div className="card mb-4 shadow-sm api-card ">
         <div
           className={classNames('card-img-top card-link card-skin', { 'card-skin': !api.image })}
           data-holder-rendered="true">
@@ -84,12 +85,13 @@ export const ApiCard = (props) => {
           <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
           {props.teamVisible && (
             <small
-              className="cursor-pointer underline-on-hover a-fake d-flex align-items-center justify-content-end"
+              className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline justify-content-end"
               onClick={() => props.redirectToTeamPage(team)}>
               <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
               {team.name}
             </small>
           )}
+        </div>
         </div>
       </div>
     );
@@ -101,12 +103,12 @@ export const ApiCard = (props) => {
         <div className="cursor-pointer underline-on-hover a-fake" onClick={props.redirectToApiPage}>
           <h3>{api.name}</h3>
         </div>
-        <div className="ml-2">
+        <div className="ms-2">
           <div className="btn_group d-flex align-items-start">
             <Can I={manage} a={API} team={team}>
               <button
                 type="button"
-                className="btn btn-sm btn-access-negative mr-1 mb-1"
+                className="btn btn-sm btn-access-negative me-1 mb-1"
                 onClick={props.redirectToEditPage}>
                 <i className="fas fa-edit" />
               </button>
@@ -128,11 +130,11 @@ export const ApiCard = (props) => {
       </div>
       <div className="col-12 d-flex mt-3">
         {!!api.tags.length && (
-          <div className="d-flex">
-            <i className="fas fa-tag mr-2" />
+          <div className="d-flex align-items-center">
+            <i className="fas fa-tag me-2" />
             {api.tags.map((tag) => (
               <span
-                className="badge badge-warning mr-1 cursor-pointer"
+                className="badge badge-warning me-1 cursor-pointer"
                 key={tag}
                 onClick={() => props.handleTagSelect(tag)}>
                 {tag}
@@ -144,10 +146,10 @@ export const ApiCard = (props) => {
       <div className="col-12 d-flex mt-1">
         {!!api.categories.length && (
           <div className="d-flex">
-            <i className="fas fa-folder mr-2" />
+            <i className="fas fa-folder me-2" />
             {api.categories.map((category) => (
               <small
-                className="badge badge-warning mr-1 cursor-pointer"
+                className="badge badge-warning me-1 cursor-pointer"
                 key={category}
                 onClick={() => props.handleCategorySelect(category)}>
                 {category}
@@ -159,7 +161,7 @@ export const ApiCard = (props) => {
       <div className="col-12 d-flex mt-2">
         {props.teamVisible && (
           <small
-            className="cursor-pointer underline-on-hover a-fake d-flex align-items-center"
+            className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline"
             onClick={() => props.redirectToTeamPage(team)}>
             <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
             {team.name}

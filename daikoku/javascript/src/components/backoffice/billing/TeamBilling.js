@@ -109,10 +109,10 @@ function TeamBillingComponent(props) {
                 <div className="col-12 month__selector d-flex align-items-center">
                   <MonthPicker updateDate={getBilling} value={state.date} />
                   <button className="btn btn-sm btn-access-negative" onClick={sync}>
-                    <i className="fas fa-sync-alt ml-1" />
+                    <i className="fas fa-sync-alt ms-1" />
                   </button>
                   {lastDate && (
-                    <i className="ml-1">
+                    <i className="ms-1">
                       <Translation i18nkey="date.update" replacements={[lastDate]}>
                         upd. {lastDate}
                       </Translation>

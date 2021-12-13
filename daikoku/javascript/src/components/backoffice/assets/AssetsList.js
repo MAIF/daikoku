@@ -188,8 +188,8 @@ const FileInput = (props) => {
         className="btn btn-outline-success pl"
         disabled={uploading}
         onClick={trigger}>
-        {uploading && <i className="fas fa-spinner mr-1" />}
-        {!uploading && <i className="fas fa-upload mr-1" />}
+        {uploading && <i className="fas fa-spinner me-1" />}
+        {!uploading && <i className="fas fa-upload me-1" />}
         <Translation i18nkey="Select file">Select file</Translation>
       </button>
     </div>
@@ -199,7 +199,7 @@ const FileInput = (props) => {
 const AddAsset = (props) => {
   const { translateMethod, Translation } = useContext(I18nContext);
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div className="col-sm-10">
         <button
@@ -208,7 +208,7 @@ const AddAsset = (props) => {
           title={translateMethod('Add asset')}
           disabled={props.disabled ? 'disabled' : undefined}
           onClick={() => props.addAsset()}>
-          <i className="fas fa-plus mr-1" />
+          <i className="fas fa-plus me-1" />
           <Translation i18nkey="Add asset">Add asset</Translation>
         </button>
       </div>
@@ -359,7 +359,7 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
             </a>
             <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
               <button
-                className="btn btn-sm btn-outline-primary mr-1"
+                className="btn btn-sm btn-outline-primary me-1"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
                 <i className="fas fa-download" />
               </button>

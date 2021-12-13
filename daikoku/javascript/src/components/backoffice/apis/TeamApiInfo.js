@@ -25,7 +25,7 @@ function NameAlreadyExists(props) {
   if (!exists) return null;
 
   return (
-    <div className="form-group row">
+    <div className="mb-3 row">
       <div
         className="col-sm-12"
         style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
@@ -48,7 +48,7 @@ const StyleLogoAssetButton = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   return (
-    <div className="form-group d-flex justify-content-end">
+    <div className="mb-3 d-flex justify-content-end">
       <AssetChooserByModal
         typeFilter={MimeTypeFilter.image}
         onlyPreview

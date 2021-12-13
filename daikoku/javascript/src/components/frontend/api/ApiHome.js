@@ -77,7 +77,7 @@ const ApiHeader = ({
 
   const EditButton = () => (
     <Can I={manage} a={API} team={ownerTeam}>
-      <Link to={editUrl} className="team__settings ml-2">
+      <Link to={editUrl} className="team__settings ms-2">
         <button type="button" className="btn btn-sm btn-access-negative">
           <i className="fas fa-edit" />
         </button>
@@ -118,7 +118,7 @@ const ApiHeader = ({
                       navigate(`/${params.teamId}/${params.apiId}/${e.value}/${tab}`)
                     }
                     classNamePrefix="reactSelect"
-                    className="mr-2"
+                    className="me-2"
                     menuPlacement="auto"
                     menuPosition="fixed"
                   />
@@ -363,7 +363,7 @@ const ApiHomeComponent = ({
   document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
   return (
-    <main role="main" className="row">
+    <main role="main">
       <ApiHeader
         api={api}
         ownerTeam={ownerTeam}

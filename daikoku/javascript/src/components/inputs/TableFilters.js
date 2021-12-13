@@ -6,8 +6,8 @@ import { SwitchButton } from './Switch';
 // Define a default UI for filtering
 export const DefaultColumnFilter = ({ column: { filterValue, preFilteredRows, setFilter } }) => {
   return (
-    <div className="form-group pb-0">
-      <div className="input-group input-group-sm mb-2 pr-2">
+    <div className="mb-3 pb-0">
+      <div className="input-group input-group-sm mb-2 pe-2">
         <div className="input-group-prepend">
           <div className="input-group-text">
             <i className="fas fa-search" />
@@ -19,7 +19,7 @@ export const DefaultColumnFilter = ({ column: { filterValue, preFilteredRows, se
             setFilter(e.target.value || undefined); // Set undefined to remove the filter entirely
           }}
           placeholder={'Search'}
-          className="form-control form-control-sm mr-2"
+          className="form-control form-control-sm me-2"
           style={{ borderColor: '#9ab0c5' }}
         />
       </div>

@@ -205,7 +205,7 @@ export const Table = ({
         </Translation>
       </span>
       <Select
-        className="reactSelect reactSelect-pagination col-3 ml-3 mr-3"
+        className="reactSelect reactSelect-pagination col-3 ms-3 me-3"
         value={{
           label: translateMethod('Show.results', false, `Show ${pageSize}`, pageSize),
           value: pageSize,
@@ -230,7 +230,7 @@ export const Table = ({
       />
       <button
         type="button"
-        className="ml-3 btn btn-sm btn-access-negative float-right"
+        className="ms-3 btn btn-sm btn-access-negative float-right"
         title={translateMethod('Reload the table content')}
         onClick={update}>
         <span className="fas fa-sync-alt" />

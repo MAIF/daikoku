@@ -207,7 +207,7 @@ export const SubscriptionMetadataModal = (props) => {
             </Translation>
           </h5>
         )}
-        <button type="button" className="close" aria-label="Close" onClick={props.closeModal}>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}>
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -256,7 +256,7 @@ export const SubscriptionMetadataModal = (props) => {
                     return (
                       <div className="d-flex flex-row mb-1" key={idx}>
                         <input
-                          className="form-control col-5 mr-1"
+                          className="form-control col-5 me-1"
                           value={key}
                           disabled="disabled"
                         />

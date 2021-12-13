@@ -111,14 +111,14 @@ export function ApiDocumentation(props) {
         <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
           {prevId && (
             <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
-              <i className="fas fa-chevron-left mr-1" />
+              <i className="fas fa-chevron-left me-1" />
               <Translation i18nkey="Previous page">Previous page</Translation>
             </Link>
           )}
           {nextId && (
             <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
               <Translation i18nkey="Next page">Next page</Translation>
-              <i className="fas fa-chevron-right ml-1" />
+              <i className="fas fa-chevron-right ms-1" />
             </Link>
           )}
         </div>
@@ -134,14 +134,14 @@ export function ApiDocumentation(props) {
         <div className="d-flex" style={{ justifyContent: prevId ? 'space-between' : 'flex-end' }}>
           {prevId && (
             <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${prevId}`}>
-              <i className="fas fa-chevron-left mr-1" />
+              <i className="fas fa-chevron-left me-1" />
               <Translation i18nkey="Previous page">Previous page</Translation>
             </Link>
           )}
           {nextId && (
             <Link to={`/${params.teamId}/${apiId}/${versionId}/documentation/${nextId}`}>
               <Translation i18nkey="Next page">Next page</Translation>
-              <i className="fas fa-chevron-right ml-1" />
+              <i className="fas fa-chevron-right ms-1" />
             </Link>
           )}
         </div>

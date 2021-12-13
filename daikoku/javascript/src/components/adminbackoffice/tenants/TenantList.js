@@ -51,7 +51,7 @@ export function TenantListComponent(props) {
                   Tenants
                 </Translation>
                 <a
-                  className="btn btn-sm btn-access-negative mb-1 ml-1"
+                  className="btn btn-sm btn-access-negative mb-1 ms-1"
                   title={translateMethod('Create a new tenant')}
                   href="#"
                   onClick={(e) => {
