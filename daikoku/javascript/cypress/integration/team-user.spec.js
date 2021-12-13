@@ -95,19 +95,15 @@ describe('Team back-office', () => {
       .get('.col.apikeys h3').should('have.text', 'test API');
   });
 
-  it('Team billing works', () => {
-    cy
-      .get('nav#sidebar a.nav-link').contains('Billing').click()
-      .url().should('include', '/testers/settings/billing')
-      .get('.month__and__total button.btn-access-negative').click()
-      .get('.col.apis').should('be.visible')
-      .get('.api__billing__card').click()
-      .waitFor('.apikeys h3', {
-        timeout: 200, // The time in ms to poll for changes
-        tries: 10,   // How many times to try before failing
-      })
-      .get('.apikeys h3').should('have.text', 'test API');
-  });
+  // it('Team billing works', () => {
+  //   cy
+  //     .get('nav#sidebar a.nav-link').contains('Billing').click()
+  //     .url().should('include', '/testers/settings/billing')
+  //     .get('.month__and__total button.btn-access-negative').click()
+  //     .get('.col.apis').should('be.visible')
+  //     .get('.api__billing__card').click()
+  //     .get('.apikeys h3').should('have.text', 'test API');
+  // });
 
   it('Team assets works', () => {
     cy
