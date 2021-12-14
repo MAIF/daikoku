@@ -15,16 +15,15 @@ export function TenantOtoroshisComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
-  const [isTenantAdmin, setIsTenantAdmin] = useState(props.connectedUser.isDaikokuAdmin)
+  const [isTenantAdmin, setIsTenantAdmin] = useState(props.connectedUser.isDaikokuAdmin);
 
   useEffect(() => {
     if (!isTenantAdmin)
-      Services.tenantAdmins(props.tenant._id)
-        .then(res => {
-          if (res.admins)
-            setIsTenantAdmin(res.admins.find(admin => admin._id === props.connectedUser._id))
-        })
-  }, [])
+      Services.tenantAdmins(props.tenant._id).then((res) => {
+        if (res.admins)
+          setIsTenantAdmin(res.admins.find((admin) => admin._id === props.connectedUser._id));
+      });
+  }, []);
 
   let table;
 
