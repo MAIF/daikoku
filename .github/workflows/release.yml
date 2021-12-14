@@ -33,18 +33,17 @@ jobs:
       id: fmt
       run: |
         sh ./scripts/build.sh fmt
-        echo "::set-output name=diff::$(git diff --numstat | wc -l)"
-        echo "${{steps.fmt.output.diff}}"
+        echo "set-output name=diff::$(git diff --numstat | wc -l)"
 
     - name: Commit formatted sources
-      if: steps.fmt.output.diff != '0'
+      if: steps.fmt.outputs.diff != '0'
       run: |
         git config --local user.email "daikoku-github-actions@users.noreply.github.com"
         git config --local user.name "daikoku-github-actions"
         git add --all
         git commit -am "Format sources before release"
     - name: Push formatted sources
-      if: steps.fmt.output.diff != '0'
+      if: steps.fmt.outputs.diff != '0'
       uses: ad-m/github-push-action@master
       with:
         branch: ${{ github.ref }}
