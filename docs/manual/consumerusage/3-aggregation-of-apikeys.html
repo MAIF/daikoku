@@ -30,7 +30,7 @@
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.5
+1.5-rc.1
 </div>
 </div>
 <div class="nav-toc">
@@ -123,7 +123,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Daikoku
 </a>
 <div class="version-number">
-1.5
+1.5-rc.1
 </div>
 </div>
 <div class="nav-toc">
@@ -209,17 +209,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
 <h1><a href="#use-an-api-key-on-multiple-apis" name="use-an-api-key-on-multiple-apis" class="anchor"><span class="anchor-link"></span></a>Use an api key on multiple apis</h1>
-<p>By default, the api keys, generated from Daikoku, can&rsquo;t be used on multiple plans.</p>
-<p>To enable this feature, you have to navigate to the settings of your tenant, to jump on the <code>Security</code> section, and to enable <code>Aggregation api keys security</code> option. Once clicked, an alert message will advert you on the risk of override metadata between key using multiple plans.</p>
-<pre><code>You&#39;re enabled the aggregation of api keys.
-It&#39;s an advanced usage of the api keys. 
-Keep in mind that the metadatas and the quotas will be shared 
-between the parent api key and his aggregate api keys. 
-Daikoku will not apply any control when conflict metadata.
-</code></pre>
-<p>Now, you can navigate to your plans, and enable this security on each plan you expected this behaviour.</p>
-<p>Once the feature is enabled on a plan, and when an user has already an existing api key, the <code>request api key</code> button will prompt to the user a choice : subscribe with a new api key or subscribe using an existing api key.</p>
-<p>When the rights of an api key is extended, the user can visualize the link between root api key and the children &ldquo;extended&rdquo; api keys, directly in the api keys view.</p>
+<p>By default, the api keys, generated from Daikoku, can&rsquo;t be used on multiple plans. If this feature is enable for the tenant and the API, the <code>request api key</code> button will prompt a choice : subscribe with a new api key or subscribe using an existing api key.</p>
+<p>When the rights of an api key is extended, you can visualize the link between root api key and the children &ldquo;extended&rdquo; api keys, directly in the api keys view.</p>
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="../consumerusage/4-billing.html">Team billing</a></p>
 </div>
@@ -287,7 +278,7 @@ Daikoku will not apply any control when conflict metadata.
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.5', '')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.5-rc.1', '')});</script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/elasticlunr/0.9.5/elasticlunr.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112498312-1"></script>
 <script>
