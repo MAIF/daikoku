@@ -23,11 +23,11 @@ jobs:
       with:
         java-version: 11
     - uses: coursier/cache-action@v5
-    # install node 14
+    # install node 16
     - name: setup node
       uses: actions/setup-node@v1
       with:
-        node-version: '14'
+        node-version: '16'
     #format sources
     - name: format sources
       id: fmt
@@ -55,6 +55,7 @@ jobs:
         find ./docs -type f -name '*.html' -d 1 | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
         cd manual
         sbt "release with-defaults release-version ${{ github.event.inputs.releaseversion }}"
+        cd ..
         sh ./scripts/build.sh manual
         echo "::set-output name=diff::$(git diff --numstat | wc -l)"
         cd ..
