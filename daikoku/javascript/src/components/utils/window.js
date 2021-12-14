@@ -165,7 +165,8 @@ function Prompt(props) {
               <button
                 type="button"
                 className="btn btn-outline-success"
-                onClick={() => props.ok(text)}>
+                onClick={() => props.ok(text)}
+              >
                 Ok
               </button>
             </div>

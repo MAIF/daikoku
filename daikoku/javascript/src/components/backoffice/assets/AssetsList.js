@@ -94,7 +94,7 @@ const handleAssetType = (tenantMode, type, translateMethod) => {
         type === 'text/css' ||
         type === 'text/javascript' ||
         type === 'application/x-javascript',
-        type === 'font/openntype')
+      type === 'font/openntype')
     ) {
       return reject(translateMethod('content type is not allowed'));
     } else {
@@ -185,7 +185,8 @@ const FileInput = (props) => {
         type="button"
         className="btn btn-outline-success pl"
         disabled={uploading}
-        onClick={trigger}>
+        onClick={trigger}
+      >
         {uploading && <i className="fas fa-spinner mr-1" />}
         {!uploading && <i className="fas fa-upload mr-1" />}
         <Translation i18nkey="Select file">Select file</Translation>
@@ -205,7 +206,8 @@ const AddAsset = (props) => {
           className="btn btn-access-negative"
           title={translateMethod('Add asset')}
           disabled={props.disabled ? 'disabled' : undefined}
-          onClick={() => props.addAsset()}>
+          onClick={() => props.addAsset()}
+        >
           <i className="fas fa-plus mr-1" />
           <Translation i18nkey="Add asset">Add asset</Translation>
         </button>
@@ -230,7 +232,10 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
   useEffect(() => {
     fetchAssets();
 
-    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translateMethod('Asset', true)}`
+    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translateMethod(
+      'Asset',
+      true
+    )}`;
   }, []);
 
   const flow = ['filename', 'title', 'description', 'contentType', 'input', 'add'];
@@ -335,7 +340,8 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
               <button
                 type="button"
                 onClick={() => readAndUpdate(item)}
-                className="btn btn-sm btn-outline-primary">
+                className="btn btn-sm btn-outline-primary"
+              >
                 <i className="fas fa-pen" />
               </button>
             )}
@@ -351,21 +357,24 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
             <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
               <button
                 className="btn btn-sm btn-outline-primary"
-                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
+                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
+              >
                 <i className="fas fa-eye" />
               </button>
             </a>
             <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
               <button
                 className="btn btn-sm btn-outline-primary mr-1"
-                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}>
+                style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
+              >
                 <i className="fas fa-download" />
               </button>
             </a>
             <button
               type="button"
               onClick={() => deleteAsset(item)}
-              className="btn btn-sm btn-outline-danger">
+              className="btn btn-sm btn-outline-danger"
+            >
               <i className="fas fa-trash" />
             </button>
           </div>
@@ -525,7 +534,7 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
       }
     });
 
-  const params = useParams()
+  const params = useParams();
 
   const View = () => (
     <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
@@ -563,14 +572,20 @@ const AssetsListComponent = ({ currentTeam, tenant, tenantMode, openWysywygModal
         </>
       )}
     </Can>
-  )
+  );
 
   if (tenantMode)
-    return <UserBackOffice tab="Assets" apiId={params.apiId} title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}>
-      <View />
-    </UserBackOffice>
+    return (
+      <UserBackOffice
+        tab="Assets"
+        apiId={params.apiId}
+        title={`${tenantMode ? tenant.name : currentTeam.name} - ${translateMethod('Asset', true)}`}
+      >
+        <View />
+      </UserBackOffice>
+    );
 
-  return <View />
+  return <View />;
 };
 
 const mapStateToProps = (state) => ({

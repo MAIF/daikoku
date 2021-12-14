@@ -44,7 +44,8 @@ const ModalContainer = ({ modalType, modalProps, open, closeModal }) => {
         ariaHideApp={false}
         overlayClassName={ClasseNames('modal fade in show', { right: modalProps.panelView })}
         bodyOpenClassName="modal-open"
-        className="modal-dialog modal-lg">
+        className="modal-dialog modal-lg"
+      >
         {SpecifiedModal ? <SpecifiedModal closeModal={closeModal} {...modalProps} /> : null}
       </ReactModal>
     </div>

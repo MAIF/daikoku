@@ -62,7 +62,7 @@ export function TenantStyleEditComponent(props) {
     }, ':root {\n') + '}';
 
   const goBack = () => {
-    navigate(`/settings/tenants/${state.tenant._id}`)
+    navigate(`/settings/tenants/${state.tenant._id}`);
   };
 
   const reset = () => {
@@ -88,7 +88,8 @@ export function TenantStyleEditComponent(props) {
             <div>
               <button
                 className="btn btn-access-negative"
-                onClick={() => setState({ ...state, preview: !state.preview })}>
+                onClick={() => setState({ ...state, preview: !state.preview })}
+              >
                 <Translation i18nkey="Preview">Preview</Translation>
               </button>
             </div>
@@ -165,7 +166,9 @@ class Preview extends React.Component {
   _updateIframe() {
     const iframe = this.iframe;
     const document = iframe.contentDocument;
-    const head = Option(document.getElementsByTagName('head')).map(h => h[0]).getOrNull();
+    const head = Option(document.getElementsByTagName('head'))
+      .map((h) => h[0])
+      .getOrNull();
 
     window.parent.document.querySelectorAll('link[rel=stylesheet]').forEach((link) => {
       var newLink = document.createElement('link');

@@ -18,8 +18,8 @@ function TeamListComponent(props) {
     Services.fetchNewTeam().then((newTeam) => {
       navigate(`/settings/teams/${newTeam._id}`, {
         state: {
-          newTeam
-        }
+          newTeam,
+        },
       });
     });
   };
@@ -93,7 +93,8 @@ function TeamListComponent(props) {
                   onClick={(e) => {
                     e.preventDefault();
                     createNewTeam();
-                  }}>
+                  }}
+                >
                   <i className="fas fa-plus-circle" />
                 </a>
               </h1>

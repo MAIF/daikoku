@@ -57,7 +57,8 @@ function AssetButton(props) {
       <label className="col-xs-12 col-sm-2 col-form-label" />
       <div
         className="col-sm-10"
-        style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}>
+        style={{ width: '100%', marginLeft: 0, display: 'flex', justifyContent: 'flex-end' }}
+      >
         <AssetChooserByModal
           team={team}
           teamId={team._id}
@@ -303,13 +304,15 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                   <button
                     onClick={addNewPage}
                     type="button"
-                    className="btn btn-sm btn-outline-primary">
+                    className="btn btn-sm btn-outline-primary"
+                  >
                     <i className="fas fa-plus" />
                   </button>
                   <button
                     onClick={importPage}
                     type="button"
-                    className="btn btn-sm btn-outline-primary">
+                    className="btn btn-sm btn-outline-primary"
+                  >
                     <i className="fas fa-download" />
                   </button>
                 </div>
@@ -323,12 +326,14 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
                   <tr key={page._id}>
                     <td
                       className={isSelected(page) ? 'planSelected' : ''}
-                      onClick={() => select(page)}>
+                      onClick={() => select(page)}
+                    >
                       <span>
                         {index + 1} - {page.title}
                         <button
                           type="button"
-                          className="btn btn-sm btn-outline-primary float-right">
+                          className="btn btn-sm btn-outline-primary float-right"
+                        >
                           <i className="fas fa-edit" />
                         </button>
                       </span>
@@ -347,7 +352,8 @@ const TeamApiDocumentationComponent = React.forwardRef((props, ref) => {
               <button
                 onClick={deletePage}
                 type="button"
-                className="btn btn-sm btn-outline-danger mb-2">
+                className="btn btn-sm btn-outline-danger mb-2"
+              >
                 <i className="fas fa-trash mr-1" />
                 <Translation i18nkey="Delete page">Delete page</Translation>
               </button>

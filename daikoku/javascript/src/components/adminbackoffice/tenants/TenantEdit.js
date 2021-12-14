@@ -175,8 +175,7 @@ function ThemeUpdatorFromUI(props) {
         type="button"
         className="btn btn-access-negative"
         onClick={(e) => {
-          const RedirectToUI = () =>
-            navigate(`/settings/tenants/${props.tenant()._id}/style`);
+          const RedirectToUI = () => navigate(`/settings/tenants/${props.tenant()._id}/style`);
           if (props.isTenantUpdated()) {
             props.openModal({
               open: true,
@@ -192,7 +191,8 @@ function ThemeUpdatorFromUI(props) {
           } else {
             RedirectToUI();
           }
-        }}>
+        }}
+      >
         <Translation i18nkey="Set Color Theme from UI">Set Color Theme from UI</Translation>
       </button>
     </div>
@@ -217,8 +217,8 @@ export function TenantEditComponent(props) {
   const { translateMethod, language, Translation, languages, setTranslationMode } =
     useContext(I18nContext);
 
-  const params = useParams()
-  const location = useLocation()
+  const params = useParams();
+  const location = useLocation();
 
   const [state, setState] = useState({
     tenant: null,
@@ -880,7 +880,8 @@ export function TenantEditComponent(props) {
               {!state.create && (
                 <Link
                   className="btn btn-outline-primary mr-1"
-                  to={`/settings/tenants/${state.tenant._humanReadableId}/admins`}>
+                  to={`/settings/tenants/${state.tenant._humanReadableId}/admins`}
+                >
                   <i className="fas fa-user-shield mr-1" />
                   <Translation i18nkey="Admins">Admins</Translation>
                 </Link>
@@ -889,7 +890,8 @@ export function TenantEditComponent(props) {
                 type="button"
                 className="btn btn-outline-success"
                 {...disabled}
-                onClick={save}>
+                onClick={save}
+              >
                 {!state.create && (
                   <span>
                     <i className="fas fa-save mr-1" />

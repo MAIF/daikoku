@@ -13,7 +13,7 @@ const LazyForm = React.lazy(() => import('../../inputs/Form'));
 function TenantOtoroshiComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
-  const location = useLocation()
+  const location = useLocation();
   const params = useParams();
   const [state, setState] = useState({
     otoroshi: null,
@@ -134,7 +134,8 @@ function TenantOtoroshiComponent(props) {
                 style={{ marginLeft: 5 }}
                 type="button"
                 className="btn btn-outline-danger"
-                onClick={onDelete}>
+                onClick={onDelete}
+              >
                 <i className="fas fa-trash mr-1" />
                 <Translation i18nkey="Delete">Delete</Translation>
               </button>
@@ -143,7 +144,8 @@ function TenantOtoroshiComponent(props) {
               style={{ marginLeft: 5 }}
               type="button"
               className="btn btn-outline-success"
-              onClick={save}>
+              onClick={save}
+            >
               {!state.create && (
                 <span>
                   <i className="fas fa-save mr-1" />

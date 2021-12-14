@@ -230,12 +230,14 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
               <>
                 <button
                   className="btn btn-outline-secondary mr-1"
-                  onClick={() => handleEdition(true)}>
+                  onClick={() => handleEdition(true)}
+                >
                   {translateMethod('Edit')}
                 </button>
                 <Link
                   to={`/${team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/issues/new`}
-                  style={{ whiteSpace: 'nowrap' }}>
+                  style={{ whiteSpace: 'nowrap' }}
+                >
                   <button className="btn btn-success">{translateMethod('issues.new_issue')}</button>
                 </Link>
               </>
@@ -246,7 +248,8 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
       <div className="d-flex align-items-center pb-3 mb-3">
         <div
           style={styles.getStatus(issue.open)}
-          className="d-flex justify-content-center align-items-center mr-3">
+          className="d-flex justify-content-center align-items-center mr-3"
+        >
           <i className="fa fa-exclamation-circle mr-2" style={{ color: '#fff' }} />
           {issue.open ? translateMethod('issues.open') : translateMethod('issues.closed')}
         </div>
@@ -298,7 +301,8 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
                     onClick={() => {
                       setTags(issue.tags);
                       onTagEdit(true);
-                    }}></i>
+                    }}
+                  ></i>
                 </Can>
               )}
             </div>
@@ -319,7 +323,8 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
                     onClick={() => {
                       setTags([]);
                       onTagEdit(false);
-                    }}>
+                    }}
+                  >
                     {translateMethod('Cancel')}
                   </button>
                   <button className="btn btn-outline-success my-3" onClick={updateIssue}>
@@ -334,7 +339,8 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
                       style={{
                         backgroundColor: api.issuesTags.find((t) => t.id === tag.value).color,
                       }}
-                      key={tag.value}>
+                      key={tag.value}
+                    >
                       {tag.label}
                     </span>
                   ))}
@@ -359,7 +365,8 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
                         background: 'transparent',
                         outline: 'none',
                       }}
-                      onClick={deleteIssue}>
+                      onClick={deleteIssue}
+                    >
                       {translateMethod('issues.delete_issue')}
                     </button>
                   </div>
@@ -495,7 +502,8 @@ function NewComment({
             borderBottomLeftRadius: '8px',
             borderBottomRightRadius: '8px',
             backgroundColor: '#fff',
-          }}>
+          }}
+        >
           <React.Suspense fallback={<div>{translateMethod('loading')}</div>}>
             <LazySingleMarkdownInput
               fullWidth={true}

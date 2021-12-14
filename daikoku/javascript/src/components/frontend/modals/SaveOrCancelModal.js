@@ -29,13 +29,15 @@ export const SaverOrCancelModal = (props) => {
         <button
           type="button"
           className="btn btn-outline-danger"
-          onClick={() => actionAndClose(props.dontsave)}>
+          onClick={() => actionAndClose(props.dontsave)}
+        >
           don't save
         </button>
         <button
           type="button"
           className="btn btn-outline-success"
-          onClick={() => actionAndClose(props.save)}>
+          onClick={() => actionAndClose(props.save)}
+        >
           Save
         </button>
       </div>

@@ -60,7 +60,8 @@ const ApiKeysView = ({ apiKeys, extendApiKey }) => {
           <div
             key={apiKey._id}
             className="team-selection team-selection__team selectable mt-1"
-            onClick={() => extendApiKey(apiKey)}>
+            onClick={() => extendApiKey(apiKey)}
+          >
             <span className="ml-2">{`${apiKey.apiName}/${
               apiKey.customName || apiKey.planType
             }`}</span>
@@ -78,17 +79,20 @@ const SelectOrCreateApiKey = ({ create, disableExtendButton, aggregationApiKeysS
       className="btn"
       style={{ maxWidth: '200px' }}
       onClick={onClick}
-      disabled={disabled}>
+      disabled={disabled}
+    >
       <div
         className="d-flex flex-column p-2"
         style={{
           border: '1px solid rgb(222, 226, 230)',
           minHeight: '196px',
           borderRadius: '8px',
-        }}>
+        }}
+      >
         <div
           style={{ flex: 1, minHeight: '100px' }}
-          className="d-flex align-items-center justify-content-center">
+          className="d-flex align-items-center justify-content-center"
+        >
           <i className={`fas fa-${icon} fa-2x`} />
         </div>
         <div style={{ flex: 1 }} className="d-flex align-items-start justify-content-center">

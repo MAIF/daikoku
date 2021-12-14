@@ -34,7 +34,7 @@ function TeamApiKeyConsumptionComponent(props) {
   ];
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translateMethod('API key consumption')}`
+    document.title = `${props.currentTeam.name} - ${translateMethod('API key consumption')}`;
   }, []);
 
   const getLabelForDataIn = (datas, max) => {
@@ -66,10 +66,7 @@ function TeamApiKeyConsumptionComponent(props) {
   };
 
   const getInformations = () => {
-    return Services.getSubscriptionInformations(
-      params.subscription,
-      props.currentTeam._id
-    );
+    return Services.getSubscriptionInformations(params.subscription, props.currentTeam._id);
   };
 
   return (
@@ -83,10 +80,7 @@ function TeamApiKeyConsumptionComponent(props) {
           <div className="col section p-2">
             <OtoroshiStatsVizualization
               sync={() =>
-                Services.syncSubscriptionConsumption(
-                  params.subscription,
-                  props.currentTeam._id
-                )
+                Services.syncSubscriptionConsumption(params.subscription, props.currentTeam._id)
               }
               fetchData={(from, to) =>
                 Services.subscriptionConsumption(

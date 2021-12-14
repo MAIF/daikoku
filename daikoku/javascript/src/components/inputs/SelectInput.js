@@ -106,7 +106,8 @@ export class SelectInput extends Component {
         <div className="form-group row">
           <label
             htmlFor={`input-${this.props.label}`}
-            className="col-xs-12 col-sm-2 col-form-label">
+            className="col-xs-12 col-sm-2 col-form-label"
+          >
             <Help text={this.props.help} label={this.props.label} />
           </label>
           <div className="col-sm-10">
@@ -122,7 +123,8 @@ export class SelectInput extends Component {
         <div className="form-group row">
           <label
             htmlFor={`input-${this.props.label}`}
-            className="col-xs-12 col-sm-2 col-form-label">
+            className="col-xs-12 col-sm-2 col-form-label"
+          >
             <Help text={this.props.help} label={this.props.label} />
           </label>
           <div className="col-sm-10">
@@ -130,7 +132,8 @@ export class SelectInput extends Component {
               <select
                 className="form-control classic-select"
                 value={this.state.value}
-                onChange={this.onChangeClassic}>
+                onChange={this.onChangeClassic}
+              >
                 {this.state.values.map((value, idx) => (
                   <option key={idx} value={value.value}>
                     {value.label}

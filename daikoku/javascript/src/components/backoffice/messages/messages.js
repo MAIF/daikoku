@@ -20,7 +20,8 @@ export const MessagesTopBarTools = (_) => {
           'unread-messages': totalUnread > 0,
         })}
         onClick={() => setOpened(!opened)}
-        title={translateMethod('Access to the messages')}>
+        title={translateMethod('Access to the messages')}
+      >
         <i className="fas fa-comment-alt" />
       </Link>
     </div>

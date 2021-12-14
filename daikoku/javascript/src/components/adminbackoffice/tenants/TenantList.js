@@ -27,8 +27,8 @@ export function TenantListComponent(props) {
     Services.fetchNewTenant().then((newTenant) => {
       navigate(`/settings/tenants/${newTenant._id}`, {
         state: {
-          newTenant
-        }
+          newTenant,
+        },
       });
     });
   };
@@ -61,7 +61,8 @@ export function TenantListComponent(props) {
                   onClick={(e) => {
                     e.preventDefault();
                     createNewTenant();
-                  }}>
+                  }}
+                >
                   <i className="fas fa-plus-circle" />
                 </a>
               </h1>
@@ -93,8 +94,7 @@ export function TenantListComponent(props) {
                         tooltip: translateMethod('Remove tenant'),
                       },
                       {
-                        redirect: () =>
-                          navigate(`/settings/tenants/${tenant._humanReadableId}`),
+                        redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}`),
                         iconClass: 'fas fa-pen',
                         tooltip: translateMethod('Edit tenant'),
                       },

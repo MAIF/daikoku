@@ -29,11 +29,7 @@ const TeamApiSubscriptionsComponent = (props) => {
 
   useEffect(() => {
     Promise.all([
-      Services.teamApi(
-        props.currentTeam._id,
-        params.apiId,
-        params.versionId
-      ),
+      Services.teamApi(props.currentTeam._id, params.apiId, params.versionId),
       Services.teams(),
     ]).then(([api, teams]) => {
       setApi(api);
@@ -41,7 +37,7 @@ const TeamApiSubscriptionsComponent = (props) => {
       setLoading(false);
     });
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('Subscriptions')}`
+    document.title = `${props.currentTeam.name} - ${translateMethod('Subscriptions')}`;
   }, []);
 
   useEffect(() => {
@@ -128,7 +124,8 @@ const TeamApiSubscriptionsComponent = (props) => {
                     key={`edit-meta-${sub._humanReadableId}`}
                     type="button"
                     className="btn btn-sm btn-access-negative"
-                    onClick={() => updateMeta(sub)}>
+                    onClick={() => updateMeta(sub)}
+                  >
                     <i className="fas fa-edit" />
                   </button>
                 </BeautifulTitle>
@@ -137,7 +134,8 @@ const TeamApiSubscriptionsComponent = (props) => {
                     key={`edit-meta-${sub._humanReadableId}`}
                     type="button"
                     className="btn btn-sm btn-access-negative btn-danger"
-                    onClick={() => regenerateSecret(sub)}>
+                    onClick={() => regenerateSecret(sub)}
+                  >
                     <i className="fas fa-sync" />
                   </button>
                 </BeautifulTitle>
@@ -189,8 +187,7 @@ const TeamApiSubscriptionsComponent = (props) => {
         <div className="row">
           <div className="col-12">
             <h1>
-              <Translation i18nkey="Api subscriptions">Api subscriptions</Translation> -{' '}
-              {api.name}
+              <Translation i18nkey="Api subscriptions">Api subscriptions</Translation> - {api.name}
             </h1>
           </div>
           <div className="col-12">
@@ -202,11 +199,7 @@ const TeamApiSubscriptionsComponent = (props) => {
               itemName="sub"
               columns={columns}
               fetchItems={() =>
-                Services.apiSubscriptions(
-                  params.apiId,
-                  props.currentTeam._id,
-                  params.versionId
-                )
+                Services.apiSubscriptions(params.apiId, props.currentTeam._id, params.versionId)
               }
               showActions={false}
               showLink={false}

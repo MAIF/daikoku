@@ -27,7 +27,7 @@ function TeamIncomeComponent(props) {
   useEffect(() => {
     getBillingData(props.currentTeam);
 
-    document.title = `${props.currentTeam.name} - ${translateMethod('Income')}`
+    document.title = `${props.currentTeam.name} - ${translateMethod('Income')}`;
   }, []);
 
   const { client } = useContext(getApolloContext());
@@ -215,8 +215,7 @@ function TeamIncomeComponent(props) {
                     </div>
                     {state.consumptions
                       .filter(
-                        (c) =>
-                          c.api === state.selectedApi._id && c.plan === state.selectedPlan._id
+                        (c) => c.api === state.selectedApi._id && c.plan === state.selectedPlan._id
                       )
                       .map((c, idx) => {
                         const team = state.teams.find((t) => t._id === c.team);

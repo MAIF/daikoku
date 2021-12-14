@@ -222,7 +222,8 @@ export const SubscriptionMetadataModal = (props) => {
                   replacements={[
                     props.team.name,
                     plan.customName || formatPlanType(plan, translateMethod),
-                  ]}>
+                  ]}
+                >
                   {props.team.name} ask you an apikey for plan{' '}
                   {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
@@ -235,7 +236,8 @@ export const SubscriptionMetadataModal = (props) => {
                   replacements={[
                     props.team.name,
                     plan.customName || formatPlanType(plan, translateMethod),
-                  ]}>
+                  ]}
+                >
                   Team: {props.team.name} - Plan:{' '}
                   {plan.customName || formatPlanType(plan, translateMethod)}
                 </Translation>
@@ -250,7 +252,8 @@ export const SubscriptionMetadataModal = (props) => {
                   `Mandatory metadata (${plan.otoroshiTarget.apikeyCustomization.customMetadata.length})`,
                   plan.otoroshiTarget.apikeyCustomization.customMetadata.length
                 )}
-                collapsed={false}>
+                collapsed={false}
+              >
                 {_.sortBy(plan.otoroshiTarget.apikeyCustomization.customMetadata, ['key']).map(
                   ({ key, possibleValues }, idx) => {
                     return (
@@ -312,14 +315,16 @@ export const SubscriptionMetadataModal = (props) => {
           <button
             type="button"
             className="btn btn-outline-danger"
-            onClick={() => props.closeModal()}>
+            onClick={() => props.closeModal()}
+          >
             <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
           <button
             type="button"
             className="btn btn-outline-success"
             disabled={isValid ? undefined : 'disabled'}
-            onClick={() => actionAndClose(props.save)}>
+            onClick={() => actionAndClose(props.save)}
+          >
             {props.creationMode ? translateMethod('Accept') : translateMethod('Update')}
           </button>
         </div>

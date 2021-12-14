@@ -41,7 +41,8 @@ const ApiPost = ({ publishPost, params, team }) => {
       <div className="d-flex justify-content-end my-3">
         <Link
           className="btn btn-outline-danger mr-1"
-          to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}>
+          to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news`}
+        >
           {translateMethod('Cancel')}
         </Link>
         <button className="btn btn-outline-success" onClick={() => publishPost(selected)}>
@@ -181,7 +182,8 @@ export function TeamApiPost({ team, params, api, ...props }) {
                 <h2>{translateMethod('News')}</h2>
                 <Link
                   className="btn btn-outline-success"
-                  to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news/new`}>
+                  to={`/${params.teamId}/settings/apis/${params.apiId}/${params.versionId}/news/new`}
+                >
                   {translateMethod('team_api_post.new')}
                 </Link>
               </div>
@@ -205,13 +207,15 @@ export function TeamApiPost({ team, params, api, ...props }) {
                         {post.isOpen && (
                           <button
                             className="btn btn-outline-success mr-1"
-                            onClick={() => savePost(i)}>
+                            onClick={() => savePost(i)}
+                          >
                             <i className="fas fa-save" />
                           </button>
                         )}
                         <button
                           className="btn btn-outline-danger mr-1"
-                          onClick={() => removePost(post._id, i)}>
+                          onClick={() => removePost(post._id, i)}
+                        >
                           <i className="fas fa-trash" />
                         </button>
                         <button className="btn btn-outline-info" onClick={() => togglePost(i)}>
@@ -237,7 +241,8 @@ export function TeamApiPost({ team, params, api, ...props }) {
                   {translateMethod('team_api_post.load_old_posts')}
                 </button>
               )}
-            </div>}
+            </div>
+          }
         />
       </Routes>
     </div>

@@ -45,12 +45,14 @@ export class TeamApiOtoroshi extends Component {
             flexDirection: 'column',
             padding: 5,
             backgroundColor: '#f6f7f7',
-          }}>
+          }}
+        >
           <button
             onClick={this.addNewPlan}
             type="button"
             className="btn btn-sm btn-outline-secondary"
-            style={{ marginBottom: 10, width: '100%' }}>
+            style={{ marginBottom: 10, width: '100%' }}
+          >
             <i className="fas fa-plus" /> add a new service
           </button>
           <table className="table table-striped table-bordered table-hover table-sm">
@@ -69,7 +71,8 @@ export class TeamApiOtoroshi extends Component {
                         backgroundColor: this.isSelected(service) ? '#343a40' : '',
                         color: this.isSelected(service) ? 'white' : 'black',
                       }}
-                      onClick={() => this.select(service)}>
+                      onClick={() => this.select(service)}
+                    >
                       <span>{service.name}</span>
                     </td>
                   </tr>
@@ -86,7 +89,8 @@ export class TeamApiOtoroshi extends Component {
                   onClick={this.deletePlan}
                   type="button"
                   className="btn btn-sm btn-outline-secondary"
-                  style={{ marginBottom: 10 }}>
+                  style={{ marginBottom: 10 }}
+                >
                   <i className="fas fa-trash" /> delete service
                 </button>
               </div>

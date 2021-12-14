@@ -5,8 +5,7 @@ import { I18nContext } from '../../locales/i18n-context';
 import { setError } from '../../core';
 
 const getErrorLabel = (status, error) => {
-  if (status)
-    console.log(status, error);
+  if (status) console.log(status, error);
   if (status === 400) {
     return 'Bad Request';
   } else if (status === 401) {
@@ -36,8 +35,7 @@ const ErrorComponent = ({ error, tenant, setError }) => {
     if (error?.status) {
       document.title = `${tenant.title} - ${translateMethod('Error')}`;
     }
-  }, [error, label])
-
+  }, [error, label]);
 
   if (!label || !error) {
     return null;
@@ -59,8 +57,9 @@ const ErrorComponent = ({ error, tenant, setError }) => {
               className="btn btn-access-negative"
               onClick={() => {
                 setError({ error: { status: -1 } });
-                navigate(-1)
-              }}>
+                navigate(-1);
+              }}
+            >
               <i className="fas fa-angle-double-left" /> Go back
             </button>
           </div>
@@ -72,7 +71,7 @@ const ErrorComponent = ({ error, tenant, setError }) => {
 
 const mapStateToProps = (state) => ({
   tenant: state.context.tenant.name,
-  error: state.error
+  error: state.error,
 });
 
 const mapDispatchToProps = {

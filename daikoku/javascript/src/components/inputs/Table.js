@@ -232,7 +232,8 @@ export const Table = ({
         type="button"
         className="ml-3 btn btn-sm btn-access-negative float-right"
         title={translateMethod('Reload the table content')}
-        onClick={update}>
+        onClick={update}
+      >
         <span className="fas fa-sync-alt" />
       </button>
     </div>
@@ -259,7 +260,8 @@ export const Table = ({
                         '--sort-asc': column.isSorted && !column.isSortedDesc,
                         '--sort-desc': column.isSorted && column.isSortedDesc,
                       })}
-                      style={column.style}>
+                      style={column.style}
+                    >
                       <div {...column.getHeaderProps(column.getSortByToggleProps())}>
                         {column.render('Header')}
                       </div>

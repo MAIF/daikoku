@@ -1451,7 +1451,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 100 }}>
       <div
         className="d-flex align-items-center justify-space-between py-3 mb-2"
-        style={{ borderBottom: '1px solid #DFDFDF' }}>
+        style={{ borderBottom: '1px solid #DFDFDF' }}
+      >
         {value.visibility !== 'AdminOnly' && (
           <>
             <button onClick={addNewPlan} type="button" className="btn btn-outline-primary mr-1">
@@ -1462,7 +1463,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 onClick={importPlan}
                 type="button"
                 className="btn btn-outline-primary mr-1"
-                style={{ marginTop: 0 }}>
+                style={{ marginTop: 0 }}
+              >
                 {translateMethod('import a plan')}
               </button>
             )}
@@ -1492,7 +1494,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={makesDefault}
                   type="button"
-                  className="btn btn-sm btn-outline-primary mr-1 mb-2">
+                  className="btn btn-sm btn-outline-primary mr-1 mb-2"
+                >
                   <i className="fas fa-star mr-1" title="Default plan" />
                   <Translation i18nkey="Make default plan">Make default plan</Translation>
                 </button>
@@ -1501,7 +1504,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={makePrivate}
                   type="button"
-                  className="btn btn-sm btn-outline-primary mb-2 mr-1">
+                  className="btn btn-sm btn-outline-primary mb-2 mr-1"
+                >
                   <i
                     className={classNames('fas mr-1', {
                       'fa-lock': selected.visibility === 'Public',
@@ -1520,7 +1524,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={clonePlan}
                   type="button"
-                  className="btn btn-sm btn-outline-primary mb-2 mr-1">
+                  className="btn btn-sm btn-outline-primary mb-2 mr-1"
+                >
                   <i className="fas fa-clone mr-1" />
                   <Translation i18nkey="Duplicate plan">Duplicate plan</Translation>
                 </button>
@@ -1529,7 +1534,8 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
                 <button
                   onClick={deletePlan}
                   type="button"
-                  className="btn btn-sm btn-outline-danger mb-2">
+                  className="btn btn-sm btn-outline-danger mb-2"
+                >
                   <i className="fas fa-trash mr-1" />
                   <Translation i18nkey="Delete plan">Delete plan</Translation>
                 </button>
@@ -1603,7 +1609,8 @@ const CustomMetadataInput = (props) => {
               disabled={props.disabled}
               type="button"
               className="btn btn-outline-primary"
-              onClick={addFirst}>
+              onClick={addFirst}
+            >
               <i className="fas fa-plus" />{' '}
             </button>
           </div>
@@ -1643,12 +1650,14 @@ const CustomMetadataInput = (props) => {
 
               <span
                 className="input-group-append"
-                style={{ height: 'calc(1.5em + 0.75rem + 2px)' }}>
+                style={{ height: 'calc(1.5em + 0.75rem + 2px)' }}
+              >
                 <button
                   disabled={props.disabled}
                   type="button"
                   className="btn btn-outline-danger"
-                  onClick={(e) => remove(e, key)}>
+                  onClick={(e) => remove(e, key)}
+                >
                   <i className="fas fa-trash" />
                 </button>
                 {idx === props.value.length - 1 && (
@@ -1656,7 +1665,8 @@ const CustomMetadataInput = (props) => {
                     disabled={props.disabled}
                     type="button"
                     className="btn btn-outline-primary"
-                    onClick={addNext}>
+                    onClick={addNext}
+                  >
                     <i className="fas fa-plus" />{' '}
                   </button>
                 )}
@@ -1720,7 +1730,8 @@ const OtoroshiPathInput = (props) => {
               disabled={props.disabled}
               type="button"
               className="btn btn-outline-primary"
-              onClick={addItem}>
+              onClick={addItem}
+            >
               <i className="fas fa-plus" />{' '}
             </button>
           </div>
@@ -1754,12 +1765,14 @@ const OtoroshiPathInput = (props) => {
 
               <span
                 className="input-group-append"
-                style={{ height: 'calc(1.5em + 0.75rem + 2px)' }}>
+                style={{ height: 'calc(1.5em + 0.75rem + 2px)' }}
+              >
                 <button
                   disabled={props.disabled}
                   type="button"
                   className="btn btn-outline-danger"
-                  onClick={() => removeItem(idx)}>
+                  onClick={() => removeItem(idx)}
+                >
                   <i className="fas fa-trash" />
                 </button>
                 {idx === props.value.length - 1 && (
@@ -1767,7 +1780,8 @@ const OtoroshiPathInput = (props) => {
                     disabled={props.disabled}
                     type="button"
                     className="btn btn-outline-primary"
-                    onClick={addItem}>
+                    onClick={addItem}
+                  >
                     <i className="fas fa-plus" />{' '}
                   </button>
                 )}

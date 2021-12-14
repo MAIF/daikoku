@@ -150,24 +150,28 @@ function TeamEditForAdministrationComponent(props) {
               <i className="fas fa-chevron-left mr-1" />
               <Translation i18nkey="Back">Back</Translation>
             </Link>
-            {team.type !== "Personal" && <button
-              style={{ marginLeft: 5 }}
-              type="button"
-              className="btn btn-outline-primary"
-              disabled={create}
-              onClick={members}>
-              <span>
-                <i className="fas fa-users mr-1" />
-                <Translation i18nkey="Members" isPlural>
-                  Members
-                </Translation>
-              </span>
-            </button>}
+            {team.type !== 'Personal' && (
+              <button
+                style={{ marginLeft: 5 }}
+                type="button"
+                className="btn btn-outline-primary"
+                disabled={create}
+                onClick={members}
+              >
+                <span>
+                  <i className="fas fa-users mr-1" />
+                  <Translation i18nkey="Members" isPlural>
+                    Members
+                  </Translation>
+                </span>
+              </button>
+            )}
             <button
               style={{ marginLeft: 5 }}
               type="button"
               className="btn btn-outline-success"
-              onClick={save}>
+              onClick={save}
+            >
               {!create && (
                 <span>
                   <i className="fas fa-save mr-1" />

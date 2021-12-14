@@ -33,11 +33,13 @@ export function ApiIssues({ filter, api, selectedVersion }) {
           <div
             className="border-bottom py-3 d-flex align-items-center justify-content-between"
             key={`issue-${seqId}`}
-            style={{ backgroundColor: '#fff' }}>
+            style={{ backgroundColor: '#fff' }}
+          >
             <div className="d-flex align-items-center">
               <i
                 className="fa fa-exclamation-circle mx-3"
-                style={{ color: open ? 'inherit' : 'red' }}></i>
+                style={{ color: open ? 'inherit' : 'red' }}
+              ></i>
               <div>
                 <div>
                   <Link to={`issues/${_id}`} className="mr-2">
@@ -49,7 +51,8 @@ export function ApiIssues({ filter, api, selectedVersion }) {
                       <span
                         className="badge badge-primary mr-1"
                         style={{ backgroundColor: tag.color }}
-                        key={`issue-${seqId}-tag${i}`}>
+                        key={`issue-${seqId}-tag${i}`}
+                      >
                         {tag.name}
                       </span>
                     ))}

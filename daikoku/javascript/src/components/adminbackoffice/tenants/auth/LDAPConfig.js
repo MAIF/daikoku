@@ -111,7 +111,7 @@ export function LDAPConfig(props) {
       type: 'array',
       props: {
         label: translateMethod('Name field name'),
-        help: translateMethod('ldap.namefields.help')
+        help: translateMethod('ldap.namefields.help'),
       },
     },
     emailField: {
@@ -215,7 +215,8 @@ const CheckingUserConnection = (props) => {
         <a
           type="button"
           className="btn btn-outline-primary"
-          onClick={() => props.checkConnection(username, password)}>
+          onClick={() => props.checkConnection(username, password)}
+        >
           <Translation i18nkey="Testing">Testing</Translation>
         </a>
       </div>

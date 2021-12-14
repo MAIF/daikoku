@@ -39,7 +39,8 @@ export const ApiCard = (props) => {
             .map((auth) => auth.team)}
           teams={props.myTeams.filter((t) => t.type !== 'Admin')}
           action={(teams) => props.askForApiAccess(teams)}
-          withAllTeamSelector={true}>
+          withAllTeamSelector={true}
+        >
           {isPending ? (
             <button className="btn btn-sm btn-access-negative mr-1">
               <Translation i18nkey="Pending request">Pending request</Translation>
@@ -60,7 +61,8 @@ export const ApiCard = (props) => {
       <div className="card mb-4 shadow-sm api-card" style={{ width: '250px' }}>
         <div
           className={classNames('card-img-top card-link card-skin', { 'card-skin': !api.image })}
-          data-holder-rendered="true">
+          data-holder-rendered="true"
+        >
           {api.image && (
             <img style={{ height: '100%', width: '100%' }} src={api.image} alt={api.name} />
           )}
@@ -70,7 +72,8 @@ export const ApiCard = (props) => {
             <button
               type="button"
               className="btn btn-sm btn-access-negative btn-edit"
-              onClick={props.redirectToEditPage}>
+              onClick={props.redirectToEditPage}
+            >
               <i className="fas fa-edit" />
             </button>
           </Can>
@@ -78,14 +81,16 @@ export const ApiCard = (props) => {
         <div className="card-body plan-body d-flex flex-column">
           <h4
             className="cursor-pointer underline-on-hover a-fake"
-            onClick={props.redirectToApiPage}>
+            onClick={props.redirectToApiPage}
+          >
             {api.name}
           </h4>
           <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
           {props.teamVisible && (
             <small
               className="cursor-pointer underline-on-hover a-fake d-flex align-items-center justify-content-end"
-              onClick={() => props.redirectToTeamPage(team)}>
+              onClick={() => props.redirectToTeamPage(team)}
+            >
               <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
               {team.name}
             </small>
@@ -107,7 +112,8 @@ export const ApiCard = (props) => {
               <button
                 type="button"
                 className="btn btn-sm btn-access-negative mr-1 mb-1"
-                onClick={props.redirectToEditPage}>
+                onClick={props.redirectToEditPage}
+              >
                 <i className="fas fa-edit" />
               </button>
             </Can>
@@ -134,7 +140,8 @@ export const ApiCard = (props) => {
               <span
                 className="badge badge-warning mr-1 cursor-pointer"
                 key={tag}
-                onClick={() => props.handleTagSelect(tag)}>
+                onClick={() => props.handleTagSelect(tag)}
+              >
                 {tag}
               </span>
             ))}
@@ -149,7 +156,8 @@ export const ApiCard = (props) => {
               <small
                 className="badge badge-warning mr-1 cursor-pointer"
                 key={category}
-                onClick={() => props.handleCategorySelect(category)}>
+                onClick={() => props.handleCategorySelect(category)}
+              >
                 {category}
               </small>
             ))}
@@ -160,7 +168,8 @@ export const ApiCard = (props) => {
         {props.teamVisible && (
           <small
             className="cursor-pointer underline-on-hover a-fake d-flex align-items-center"
-            onClick={() => props.redirectToTeamPage(team)}>
+            onClick={() => props.redirectToTeamPage(team)}
+          >
             <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
             {team.name}
           </small>

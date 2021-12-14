@@ -40,9 +40,7 @@ export function ApiIssue({ ownerTeam, ...props }) {
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;
 
-  if (!api)
-    return null
-
+  if (!api) return null;
 
   return (
     <div className="container-fluid">
@@ -54,16 +52,15 @@ export function ApiIssue({ ownerTeam, ...props }) {
               I={manage}
               a={API}
               team={ownerTeam}
-              orElse={<Navigate to={`${basePath}/issues`} />}>
+              orElse={<Navigate to={`${basePath}/issues`} />}
+            >
               <TeamApiIssueTags value={api} onChange={onChange} />
             </Can>
           }
         />
         <Route
           path={`${basePath}/issues/new`}
-          element={
-            <NewIssue api={api} user={props.connectedUser} basePath={basePath} {...props} />
-          }
+          element={<NewIssue api={api} user={props.connectedUser} basePath={basePath} {...props} />}
         />
         <Route
           path={`${basePath}/issues/:issueId`}

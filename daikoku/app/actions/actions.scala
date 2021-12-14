@@ -44,7 +44,9 @@ object tenantSecurity {
     }
   }
 
-  def isDefaultMode(tenant: Tenant, user: Option[User], isTenantAdmin: Option[Boolean]): Boolean = {
+  def isDefaultMode(tenant: Tenant,
+                    user: Option[User],
+                    isTenantAdmin: Option[Boolean]): Boolean = {
     tenant.tenantMode match {
       case None => true
       case Some(value) =>

@@ -13,7 +13,7 @@ import { useParams } from 'react-router-dom';
 
 function NotificationListComponent(props) {
   const { translateMethod, Translation } = useContext(I18nContext);
-  const params = useParams()
+  const params = useParams();
 
   const [state, setState] = useState({
     notifications: [],
@@ -191,7 +191,8 @@ function NotificationListComponent(props) {
             className={classNames({
               'nav-item': true,
               active: state.tab === 'unread',
-            })}>
+            })}
+          >
             <a href="#" onClick={() => onSelectTab('unread')}>
               <Translation i18nkey="Untreated" count={state.untreatedCount}>
                 Untreated
@@ -203,13 +204,15 @@ function NotificationListComponent(props) {
             className={classNames({
               'nav-item': true,
               active: state.tab === 'all',
-            })}>
+            })}
+          >
             <a href="#" onClick={() => onSelectTab('all')}>
               <Translation i18nkey="All notifications">All notifications</Translation>
             </a>
           </li>
         </ul>
-      }>
+      }
+    >
       <div className="row">
         <h1>
           <Translation i18nkey="Notifications" isPlural={true}>
@@ -262,7 +265,8 @@ function NotificationListComponent(props) {
             {!state.nextIsPending && moreBtnIsDisplay() && (
               <button
                 className="btn btn-access-negative my-2 ml-2"
-                onClick={() => getMoreNotifications()}>
+                onClick={() => getMoreNotifications()}
+              >
                 <Translation i18nkey="more">more</Translation>
               </button>
             )}

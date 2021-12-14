@@ -47,7 +47,8 @@ export function TenantOtoroshisComponent(props) {
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
-                  title={translateMethod('Edit this settings')}>
+                  title={translateMethod('Edit this settings')}
+                >
                   <i className="fas fa-edit" />
                 </button>
               </Link>
@@ -57,7 +58,8 @@ export function TenantOtoroshisComponent(props) {
                 type="button"
                 className="btn btn-sm btn-outline-danger"
                 title={translateMethod('Delete this settings')}
-                onClick={() => onDelete(otoroshi._id)}>
+                onClick={() => onDelete(otoroshi._id)}
+              >
                 <i className="fas fa-trash" />
               </button>
             )}
@@ -95,8 +97,8 @@ export function TenantOtoroshisComponent(props) {
     };
     navigate(`/settings/otoroshis/${settings._id}`, {
       state: {
-        newSettings: settings
-      }
+        newSettings: settings,
+      },
     });
   };
 
@@ -114,7 +116,8 @@ export function TenantOtoroshisComponent(props) {
                 onClick={(e) => {
                   e.preventDefault();
                   createNewSettings();
-                }}>
+                }}
+              >
                 <i className="fas fa-plus-circle" />
               </a>
             </h1>

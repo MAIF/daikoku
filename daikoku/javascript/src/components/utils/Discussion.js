@@ -73,7 +73,8 @@ const DiscussionComponent = (props) => {
                     'discussion-messages--send': group.every(
                       (m) => m.sender === props.connectedUser._id
                     ),
-                  })}>
+                  })}
+                >
                   {group.map((mess, idx) => {
                     return (
                       <div key={`discussion-message-${idx}`} className="discussion-message">
@@ -87,7 +88,8 @@ const DiscussionComponent = (props) => {
             {props.tenant.defaultMessage && (
               <div
                 key="discussion-messages-default"
-                className="discussion-messages discussion-messages--received">
+                className="discussion-messages discussion-messages--received"
+              >
                 <div
                   key="discussion-message-default"
                   className="discussion-message"
@@ -104,7 +106,8 @@ const DiscussionComponent = (props) => {
                 <button
                   disabled={loading ? 'disabled' : null}
                   className="btn btn-sm btn-outline-primary"
-                  onClick={() => getPreviousMessages(props.connectedUser._id)}>
+                  onClick={() => getPreviousMessages(props.connectedUser._id)}
+                >
                   <Translation i18nkey="Load previous messages">Load previous messages</Translation>
                 </button>
               </div>
@@ -122,7 +125,8 @@ const DiscussionComponent = (props) => {
             <button
               disabled={loading ? 'disabled' : null}
               className="send-button"
-              onClick={sendMessage}>
+              onClick={sendMessage}
+            >
               <Send />
             </button>
           </div>

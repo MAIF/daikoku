@@ -249,9 +249,8 @@ export const TestingApiKeyModal = (props) => {
           type="button"
           className="btn btn-outline-success"
           onClick={apiKeyAction}
-          disabled={
-            !config.otoroshiSettings && !config.authorizedEntities ? 'disabled' : undefined
-          }>
+          disabled={!config.otoroshiSettings && !config.authorizedEntities ? 'disabled' : undefined}
+        >
           <Translation i18nkey={props.update ? 'Update' : 'Create'}>
             {props.update ? 'Update' : 'Create'}
           </Translation>

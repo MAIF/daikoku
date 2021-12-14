@@ -144,7 +144,8 @@ function MyHomeComponent(props) {
                 <div>
                   <Link
                     to={`/settings/tenants/${props.tenant._humanReadableId}`}
-                    className="tenant__settings float-right btn btn-sm btn-access-negative">
+                    className="tenant__settings float-right btn btn-sm btn-access-negative"
+                  >
                     <i className="fas fa-cogs" />
                   </Link>
                 </div>

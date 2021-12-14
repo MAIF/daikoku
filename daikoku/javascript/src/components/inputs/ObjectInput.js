@@ -46,7 +46,8 @@ export class ObjectInput extends Component {
           <div className="form-group row">
             <label
               htmlFor={`input-${this.props.label}`}
-              className="col-xs-12 col-sm-2 col-form-label">
+              className="col-xs-12 col-sm-2 col-form-label"
+            >
               <Help text={this.props.help} label={this.props.label} />
             </label>
             <div className="col-sm-10">
@@ -54,7 +55,8 @@ export class ObjectInput extends Component {
                 disabled={this.props.disabled}
                 type="button"
                 className="btn btn-outline-primary"
-                onClick={this.addFirst}>
+                onClick={this.addFirst}
+              >
                 <i className="fas fa-plus" />{' '}
               </button>
             </div>
@@ -93,7 +95,8 @@ export class ObjectInput extends Component {
                     disabled={this.props.disabled}
                     type="button"
                     className="btn btn-outline-danger"
-                    onClick={(e) => this.remove(e, value[0])}>
+                    onClick={(e) => this.remove(e, value[0])}
+                  >
                     <i className="fas fa-trash" />
                   </button>
                   {idx === values.length - 1 && (
@@ -101,7 +104,8 @@ export class ObjectInput extends Component {
                       disabled={this.props.disabled}
                       type="button"
                       className="btn btn-outline-primary"
-                      onClick={this.addNext}>
+                      onClick={this.addNext}
+                    >
                       <i className="fas fa-plus" />{' '}
                     </button>
                   )}
@@ -167,7 +171,8 @@ export class VerticalObjectInput extends Component {
                   disabled={this.props.disabled}
                   type="button"
                   className="btn btn-primary"
-                  onClick={this.addFirst}>
+                  onClick={this.addFirst}
+                >
                   <i className="fas fa-plus" />{' '}
                 </button>
               </div>
@@ -178,7 +183,8 @@ export class VerticalObjectInput extends Component {
           <div
             key={`from-group-${idx}`}
             className="form-group row"
-            style={{ marginBottom: 5, flexWrap: 'nowrap' }}>
+            style={{ marginBottom: 5, flexWrap: 'nowrap' }}
+          >
             <div className="col-xs-12">
               {idx === 0 && (
                 <label className="col-form-label">
@@ -211,7 +217,8 @@ export class VerticalObjectInput extends Component {
                     type="button"
                     className="btn btn-sm btn-danger"
                     style={{ marginRight: 0 }}
-                    onClick={(e) => this.remove(e, value[0])}>
+                    onClick={(e) => this.remove(e, value[0])}
+                  >
                     <i className="fas fa-trash" />
                   </button>
                 </span>
@@ -224,13 +231,15 @@ export class VerticalObjectInput extends Component {
                     justifyContent: 'center',
                     alignItems: 'center',
                     marginTop: 5,
-                  }}>
+                  }}
+                >
                   <button
                     disabled={this.props.disabled}
                     type="button"
                     className="btn btn-sm btn-block btn-primary"
                     style={{ marginRight: 0 }}
-                    onClick={this.addNext}>
+                    onClick={this.addNext}
+                  >
                     <i className="fas fa-plus" />{' '}
                   </button>
                 </div>

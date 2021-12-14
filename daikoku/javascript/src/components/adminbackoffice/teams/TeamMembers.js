@@ -8,13 +8,12 @@ import { UserBackOffice, TeamMembersSimpleComponent } from '../../backoffice';
 import { Can, manage, tenant } from '../../utils';
 
 const TeamMembersComponent = (props) => {
-  const [team, setTeam] = useState()
-  const params = useParams()
+  const [team, setTeam] = useState();
+  const params = useParams();
 
   useEffect(() => {
-    Services.teamFull(params.teamSettingId)
-      .then(setTeam);
-  }, [])
+    Services.teamFull(params.teamSettingId).then(setTeam);
+  }, []);
 
   if (!team) {
     return null;
@@ -32,7 +31,7 @@ const TeamMembersComponent = (props) => {
       </Can>
     </UserBackOffice>
   );
-}
+};
 
 const mapStateToProps = (state) => ({
   ...state.context,

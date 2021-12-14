@@ -9,7 +9,6 @@ import { updateUser } from '../../../core';
 import { setError, updateTeamPromise } from '../../../core';
 import { getApolloContext } from '@apollo/client';
 
-
 function TeamHomeComponent(props) {
   const [state, setState] = useState({
     searched: '',
@@ -66,9 +65,7 @@ function TeamHomeComponent(props) {
   }, []);
 
   const askForApiAccess = (api, teams) => {
-    return Services.askForApiAccess(teams, api._id).then(() =>
-      fetchData(params.teamId)
-    );
+    return Services.askForApiAccess(teams, api._id).then(() => fetchData(params.teamId));
   };
 
   const toggleStar = (api) => {
@@ -111,9 +108,7 @@ function TeamHomeComponent(props) {
   };
 
   const redirectToEditPage = (api) => {
-    navigate(
-      `/${params.teamId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`
-    );
+    navigate(`/${params.teamId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`);
   };
 
   const redirectToTeamSettings = (team) => {
@@ -151,7 +146,8 @@ function TeamHomeComponent(props) {
                   <a
                     href="#"
                     className="float-right team__settings btn btn-sm btn-access-negative"
-                    onClick={() => redirectToTeamSettings(state.team)}>
+                    onClick={() => redirectToTeamSettings(state.team)}
+                  >
                     <i className="fas fa-cogs" />
                   </a>
                 </div>

@@ -97,7 +97,9 @@ class TranslationController(
                                .getOrElse("")))
                     )
                   else
-                    Json.obj("translations" -> translations.map(TranslationFormat.writes))
+                    Json.obj(
+                      "translations" -> translations.map(
+                        TranslationFormat.writes))
                 )
               })
         }

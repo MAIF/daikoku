@@ -10,7 +10,7 @@ export const TeamCreationModal = (props) => {
   const [team, setTeam] = useState(props.team);
   const [created, setCreated] = useState(false);
   const [error, setError] = useState(undefined);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -61,7 +61,8 @@ export const TeamCreationModal = (props) => {
                 .catch((e) => {
                   setError(e.error);
                 })
-            }>
+            }
+          >
             <Translation i18nkey="Create">Create</Translation>
           </button>
         )}

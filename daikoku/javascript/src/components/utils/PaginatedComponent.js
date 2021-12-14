@@ -39,7 +39,8 @@ export const PaginatedComponent = (props) => {
             'flex-column-reverse': props.columnMode && props.reverse,
             'flex-row': !props.columnMode,
             'flex-row-reverse': !props.columnMode && props.reverse,
-          })}>
+          })}
+        >
           {pagedItems.map((item) => {
             if (React.isValidElement(item)) {
               return item;

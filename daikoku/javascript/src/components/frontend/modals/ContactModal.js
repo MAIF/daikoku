@@ -138,7 +138,8 @@ const ContactModalComponent = (props) => {
           type="button"
           className="btn btn-outline-success"
           disabled={!validity ? 'disabled' : undefined}
-          onClick={() => sendEmail()}>
+          onClick={() => sendEmail()}
+        >
           <Translation i18nkey="Send">Send</Translation>
         </button>
       </div>

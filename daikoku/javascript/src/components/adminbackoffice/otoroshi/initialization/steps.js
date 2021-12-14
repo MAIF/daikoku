@@ -275,7 +275,8 @@ export const ServicesStep = (props) => {
           <span style={{ fontWeight: 'bold' }}>
             <Translation
               i18nkey="init.services.title"
-              replacements={[props.infos.index + 1, props.infos.total]}>
+              replacements={[props.infos.index + 1, props.infos.total]}
+            >
               Api {props.infos.index + 1}/{props.infos.total}
             </Translation>
           </span>{' '}
@@ -353,13 +354,15 @@ export const ServicesStep = (props) => {
           <button
             className="btn btn-access"
             disabled={props.currentStep === 1 ? 'disabled' : null}
-            onClick={() => props.goToStep(1)}>
+            onClick={() => props.goToStep(1)}
+          >
             <i className="fas fa-angle-double-left" />
           </button>
           <button
             className="btn btn-access mr-2"
             disabled={props.currentStep === 1 ? 'disabled' : null}
-            onClick={props.previousStep}>
+            onClick={props.previousStep}
+          >
             <i className="fas fa-angle-left" />
           </button>
           {props.maybeCreatedApi.isDefined && (
@@ -371,7 +374,8 @@ export const ServicesStep = (props) => {
             <button
               className="btn btn-outline-success mr-2"
               disabled={!selectedTeam || error.name ? 'disabled' : null}
-              onClick={update}>
+              onClick={update}
+            >
               <Translation i18nkey="Update">Update</Translation>
             </button>
           )}
@@ -379,7 +383,8 @@ export const ServicesStep = (props) => {
             <button
               className="btn btn-outline-success mr-2"
               disabled={!selectedTeam || error.name ? 'disabled' : null}
-              onClick={getIt}>
+              onClick={getIt}
+            >
               <Translation i18nkey="Import">Import this service</Translation>
             </button>
           )}
@@ -389,7 +394,8 @@ export const ServicesStep = (props) => {
           <button
             className="btn btn-access"
             disabled={props.currentStep === props.totalSteps ? 'disabled' : null}
-            onClick={() => props.goToStep(props.totalSteps)}>
+            onClick={() => props.goToStep(props.totalSteps)}
+          >
             <i className="fas fa-angle-double-right" />
           </button>
         </div>
@@ -708,7 +714,8 @@ const ApiKey = (props) => {
           props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'
         }`}
         disabled={!selectedTeam || error.name || !selectedPlan ? 'disabled' : null}
-        onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
+        onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}
+      >
         {props.maybeCreatedSub(props.apikey).isDefined
           ? translateMethod('initialize_from_otoroshi.remove')
           : translateMethod('initialize_from_otoroshi.add')}

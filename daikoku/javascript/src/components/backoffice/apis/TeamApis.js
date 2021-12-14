@@ -12,8 +12,8 @@ function TeamApisComponent(props) {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translateMethod('API', true)}`
-  }, [])
+    document.title = `${props.currentTeam.name} - ${translateMethod('API', true)}`;
+  }, []);
 
   let table;
 
@@ -74,7 +74,8 @@ function TeamApisComponent(props) {
               rel="noopener"
               to={`/${props.currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}`}
               className="btn btn-sm btn-access-negative"
-              title="View this Api">
+              title="View this Api"
+            >
               <i className="fas fa-eye" />
             </Link>
             {api.published && (
@@ -83,7 +84,8 @@ function TeamApisComponent(props) {
                   key={`consumption-${api._humanReadableId}`}
                   to={`/${props.currentTeam._humanReadableId}/settings/consumptions/apis/${api._humanReadableId}/${api.currentVersion}`}
                   className="btn btn-sm btn-access-negative"
-                  title={translateMethod('View this api consumption')}>
+                  title={translateMethod('View this api consumption')}
+                >
                   <i className="fas fa-chart-bar" />
                 </Link>
               </Can>
@@ -94,7 +96,8 @@ function TeamApisComponent(props) {
                   key={`apikeys-${api._humanReadableId}`}
                   to={`/${props.currentTeam._humanReadableId}/settings/subscriptions/apis/${api._humanReadableId}/${api.currentVersion}`}
                   className="btn btn-sm btn-access-negative"
-                  title={translateMethod('View this api subscriptions')}>
+                  title={translateMethod('View this api subscriptions')}
+                >
                   <i className="fas fa-key" />
                 </Link>
               </Can>
@@ -104,7 +107,8 @@ function TeamApisComponent(props) {
                 key={`edit-${api._humanReadableId}`}
                 to={`/${props.currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`}
                 className="btn btn-sm btn-access-negative"
-                title="Edit this Api">
+                title="Edit this Api"
+              >
                 <i className="fas fa-edit" />
               </Link>
               {api.visibility !== 'AdminOnly' && (
@@ -113,7 +117,8 @@ function TeamApisComponent(props) {
                   type="button"
                   className="btn btn-sm btn-access-negative"
                   title="Delete this Api"
-                  onClick={() => deleteApi(api)}>
+                  onClick={() => deleteApi(api)}
+                >
                   <i className="fas fa-trash" />
                 </button>
               )}
@@ -151,7 +156,6 @@ function TeamApisComponent(props) {
         }
       });
   };
-
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
     props.setError({ error: { status: 403, message: 'unauthorized' } });

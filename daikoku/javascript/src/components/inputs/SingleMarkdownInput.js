@@ -147,7 +147,8 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
         <BeautifulTitle
           placement="bottom"
           title={translateMethod('image url from asset')}
-          key={`toolbar-btn-${idx}`}>
+          key={`toolbar-btn-${idx}`}
+        >
           <AssetChooserByModal
             typeFilter={MimeTypeFilter.image}
             onlyPreview
@@ -199,7 +200,8 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               command.move(editor.getCursorPosition(), (p) => editor.moveCursorToPosition(p));
             }
             editor.focus();
-          }}>
+          }}
+        >
           <i className={`fas fa-${command.icon}`} />
         </button>
       );
@@ -223,14 +225,16 @@ Proin vehicula ligula vel enim euismod, sed congue mi egestas. Nullam varius ut 
               type="button"
               className="btn btn-secondary"
               style={{ color: !preview ? '#7f96af' : 'white' }}
-              onClick={() => setPreview(false)}>
+              onClick={() => setPreview(false)}
+            >
               <Translation i18nkey="Write">Write</Translation>
             </button>
             <button
               type="button"
               className="btn btn-secondary"
               style={{ color: preview ? '#7f96af' : 'white' }}
-              onClick={() => setPreview(true)}>
+              onClick={() => setPreview(true)}
+            >
               <Translation i18nkey="Preview">Preview</Translation>
             </button>
           </div>

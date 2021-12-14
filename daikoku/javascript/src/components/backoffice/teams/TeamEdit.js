@@ -81,8 +81,8 @@ export function TeamEditForm(props) {
   }
 
   useEffect(() => {
-    document.title = `${props.team.name} - ${translateMethod('Edition')}`
-  }, [])
+    document.title = `${props.team.name} - ${translateMethod('Edition')}`;
+  }, []);
 
   return (
     <>
@@ -110,7 +110,7 @@ export function TeamEditForm(props) {
 
 const TeamEditComponent = ({ currentTeam }) => {
   const [team, setTeam] = useState(currentTeam);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -142,21 +142,25 @@ const TeamEditComponent = ({ currentTeam }) => {
           <i className="fas fa-chevron-left mr-1" />
           <Translation i18nkey="Back">Back</Translation>
         </Link>
-        {team && team.type !== "Personal" && <button
-          style={{ marginLeft: 5 }}
-          type="button"
-          className="btn btn-outline-primary"
-          onClick={members}>
-          <span>
-            <i className="fas fa-users mr-1" />
-            <Translation i18nkey="Members">Members</Translation>
-          </span>
-        </button>}
+        {team && team.type !== 'Personal' && (
+          <button
+            style={{ marginLeft: 5 }}
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={members}
+          >
+            <span>
+              <i className="fas fa-users mr-1" />
+              <Translation i18nkey="Members">Members</Translation>
+            </span>
+          </button>
+        )}
         <button
           style={{ marginLeft: 5 }}
           type="button"
           className="btn btn-outline-success"
-          onClick={save}>
+          onClick={save}
+        >
           <span>
             <i className="fas fa-save mr-1" />
             <Translation i18nkey="Save">Save</Translation>

@@ -33,7 +33,8 @@ export function SwitchButton(props) {
         'switch--loading': loading,
         'switch--loaded': !loading,
         'switch--disabled': props.disabled,
-      })}>
+      })}
+    >
       <label className="switch--item" htmlFor={id}>
         {label && <div className="switch__label">{label}</div>}
         <input

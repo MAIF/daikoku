@@ -14,9 +14,5 @@ export const store = (context) => {
   //   middleware = [...middleware, createLogger(), routerMiddleware(history)];
   // }
 
-  return createStore(
-    reducers(),
-    { context },
-    composeEnhancers(applyMiddleware(...middleware))
-  );
+  return createStore(reducers(), { context }, composeEnhancers(applyMiddleware(...middleware)));
 };

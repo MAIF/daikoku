@@ -122,13 +122,15 @@ export const I18nProvider = ({ user, tenant, children }) => {
             <button
               className="btn btn-sm btn-outline-success mx-1"
               style={{ minWidth: '38px' }}
-              onClick={() => setShowEditButton(false)}>
+              onClick={() => setShowEditButton(false)}
+            >
               <i className="fas fa-check" />
             </button>
             <button
               className="btn btn-sm btn-outline-danger"
               style={{ minWidth: '38px' }}
-              onClick={() => setShowEditButton(false)}>
+              onClick={() => setShowEditButton(false)}
+            >
               <i className="fas fa-times" />
             </button>
           </div>
@@ -136,7 +138,8 @@ export const I18nProvider = ({ user, tenant, children }) => {
       return (
         <div
           onMouseEnter={() => setShowEditButton(true)}
-          onMouseLeave={() => setShowEditButton(false)}>
+          onMouseLeave={() => setShowEditButton(false)}
+        >
           {translatedMessage}
         </div>
       );
@@ -166,7 +169,8 @@ export const I18nProvider = ({ user, tenant, children }) => {
           label: translations[value].label,
         })),
         translations,
-      }}>
+      }}
+    >
       {children}
     </I18nContext.Provider>
   );

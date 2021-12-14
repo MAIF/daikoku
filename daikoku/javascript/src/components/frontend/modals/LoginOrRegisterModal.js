@@ -13,12 +13,14 @@ export const LoginOrRegisterModal = (props) => {
       <div className="m-2 d-flex align-items-center justify-content-center">
         <a
           href={`/auth/${loginProvider}/login`}
-          className="btn btn-outline-success mx-1 login-button">
+          className="btn btn-outline-success mx-1 login-button"
+        >
           {translateMethod('Login')}
         </a>
         <a
           href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-          className="btn btn-success register-button">
+          className="btn btn-success register-button"
+        >
           {translateMethod('Register')}
         </a>
       </div>
@@ -40,15 +42,18 @@ export const LoginOrRegisterModal = (props) => {
       </div>
       <div
         className="p-2 d-flex align-items-center justify-content-end"
-        style={{ borderTop: '1px solid #dee2e6' }}>
+        style={{ borderTop: '1px solid #dee2e6' }}
+      >
         <a
           href={`/auth/${loginProvider}/login`}
-          className="btn btn-outline-success mx-1 login-button">
+          className="btn btn-outline-success mx-1 login-button"
+        >
           {translateMethod('Login')}
         </a>
         <a
           href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-          className="btn btn-success register-button">
+          className="btn btn-success register-button"
+        >
           {translateMethod('Register')}
         </a>
       </div>

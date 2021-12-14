@@ -99,7 +99,8 @@ export const TeamSelectorModal = ({
             <div
               key={'all'}
               className="team-selection team-selection__all-team selectable"
-              onClick={() => toggleAllTeam()}>
+              onClick={() => toggleAllTeam()}
+            >
               {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
               <span className="ml-2">
                 <Translation i18nkey="All">All</Translation>
@@ -121,7 +122,8 @@ export const TeamSelectorModal = ({
                       allowMultipleDemand ||
                       (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)),
                   })}
-                  onClick={() => doTeamAction(team)}>
+                  onClick={() => doTeamAction(team)}
+                >
                   {getButton(team)}
                   <span className="ml-2">{getTeamLabel(team)}</span>
                 </div>
@@ -139,7 +141,8 @@ export const TeamSelectorModal = ({
             className={classNames('btn btn-outline-success', {
               disabled: !selectedTeams.length,
             })}
-            onClick={() => finalAction()}>
+            onClick={() => finalAction()}
+          >
             {translateMethod('Subscribe')}
           </button>
         )}

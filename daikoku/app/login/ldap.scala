@@ -65,7 +65,8 @@ object LdapConfig {
             (json \ "adminUsername").asOpt[String].filterNot(_.trim.isEmpty),
           adminPassword =
             (json \ "adminPassword").asOpt[String].filterNot(_.trim.isEmpty),
-          nameFields = (json \ "nameFields").asOpt[Seq[String]].getOrElse(Seq("cn")),
+          nameFields =
+            (json \ "nameFields").asOpt[Seq[String]].getOrElse(Seq("cn")),
           emailField = (json \ "emailField").as[String],
           pictureField = (json \ "pictureField").asOpt[String],
         )
@@ -275,21 +276,25 @@ object LdapSupport {
               val dn = item.getNameInNamespace
               val attrs = item.getAttributes
               val maybeEmail = Option(attrs.get(ldapConfig.emailField))
-              val email = maybeEmail.map(_.toString.split(":").last.trim).getOrElse("")
-              val maybeNames = ldapConfig.nameFields.map(f => (Option(attrs.get(f)), f))
+              val email =
+                maybeEmail.map(_.toString.split(":").last.trim).getOrElse("")
+              val maybeNames =
+                ldapConfig.nameFields.map(f => (Option(attrs.get(f)), f))
               val name =
                 maybeNames
-                  .map(tuple => tuple._1.map(_.toString.split(":").last.trim).getOrElse(""))
+                  .map(tuple =>
+                    tuple._1.map(_.toString.split(":").last.trim).getOrElse(""))
                   .mkString(" ")
 
-
               if (maybeEmail.isEmpty) {
-                AppLogger.warn(s"[ldapConfig] :: email field not found - ${ldapConfig.emailField}")
+                AppLogger.warn(
+                  s"[ldapConfig] :: email field not found - ${ldapConfig.emailField}")
               }
 
               maybeNames.foreach(tuple => {
                 if (tuple._1.isEmpty) {
-                  AppLogger.warn(s"[ldapConfig] :: field not found - ${tuple._2}")
+                  AppLogger.warn(
+                    s"[ldapConfig] :: field not found - ${tuple._2}")
                 }
               })
 
@@ -562,16 +567,19 @@ object LdapSupport {
           val dn = item.getNameInNamespace
           val attrs = item.getAttributes
           val maybeEmail = Option(attrs.get(ldapConfig.emailField))
-          val email = maybeEmail.map(_.toString.split(":").last.trim).getOrElse("")
-          val maybeNames = ldapConfig.nameFields.map(f => (Option(attrs.get(f)), f))
+          val email =
+            maybeEmail.map(_.toString.split(":").last.trim).getOrElse("")
+          val maybeNames =
+            ldapConfig.nameFields.map(f => (Option(attrs.get(f)), f))
           val name =
             maybeNames
-              .map(tuple => tuple._1.map(_.toString.split(":").last.trim).getOrElse(""))
+              .map(tuple =>
+                tuple._1.map(_.toString.split(":").last.trim).getOrElse(""))
               .mkString(" ")
 
-
           if (maybeEmail.isEmpty) {
-            AppLogger.warn(s"[ldapConfig] :: email field not found - ${ldapConfig.emailField}")
+            AppLogger.warn(
+              s"[ldapConfig] :: email field not found - ${ldapConfig.emailField}")
           }
 
           maybeNames.foreach(tuple => {

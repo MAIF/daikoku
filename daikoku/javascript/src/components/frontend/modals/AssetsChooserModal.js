@@ -51,7 +51,8 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
               'asset-selection__container--column': !onlyPreview,
               'asset-selection__container--row': onlyPreview,
               tiles: onlyPreview,
-            })}>
+            })}
+          >
             {filteredAssets.map((asset, idx) => {
               if (onlyPreview) {
                 return (
@@ -59,7 +60,8 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
                     className={classNames('tile', {
                       selected: asset.value === selectedAsset.value,
                     })}
-                    key={idx}>
+                    key={idx}
+                  >
                     <img
                       onClick={() => setSelectedAsset(asset)}
                       onDoubleClick={() => {
@@ -83,7 +85,8 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
                   className={classNames('asset-selection', {
                     selected: asset.value === selectedAsset.value,
                   })}
-                  onClick={() => setSelectedAsset(asset)}>
+                  onClick={() => setSelectedAsset(asset)}
+                >
                   <span className="ml-2">{asset.title}</span>
                 </div>
               );
@@ -109,7 +112,8 @@ export const AssetSelectorModal = ({ closeModal, assets, onSelect, onlyPreview }
         <button
           type="button"
           className="btn btn-outline-success"
-          onClick={() => selectAssetAndCloseModal()}>
+          onClick={() => selectAssetAndCloseModal()}
+        >
           <Translation i18nkey="Select">Select</Translation>
         </button>
       </div>
@@ -246,7 +250,8 @@ export function AssetChooserComponent(props) {
           onlyPreview: props.onlyPreview,
           panelView: true,
         })
-      }>
+      }
+    >
       <i
         className={
           props.icon

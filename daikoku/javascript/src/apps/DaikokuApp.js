@@ -8,7 +8,7 @@ import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
 import { updateTeamPromise, history } from '../core';
-import { TeamBackOffice } from '../components/backoffice/TeamBackOffice'
+import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 
 import 'react-redux-toastr/src/styles/index.scss';
 
@@ -78,15 +78,18 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             minHeight: '100vh',
             position: 'relative',
             paddingBottom: '6rem',
-          }}>
+          }}
+        >
           <Routes>
             <Route
               path="/"
-              element={<>
-                <UnauthenticatedTopBar tenant={tenant} />
-                <UnauthenticatedHome tenant={tenant} />
-                <UnauthenticatedFooter tenant={tenant} />
-              </>}
+              element={
+                <>
+                  <UnauthenticatedTopBar tenant={tenant} />
+                  <UnauthenticatedHome tenant={tenant} />
+                  <UnauthenticatedFooter tenant={tenant} />
+                </>
+              }
             />
           </Routes>
         </div>
@@ -106,32 +109,42 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             transitionOut="fadeOut"
             closeOnToastrClick
           />
-          <TopBar
-            loginAction={loginAction}
-            loginProvider={loginProvider}
-          />
+          <TopBar loginAction={loginAction} loginProvider={loginProvider} />
           <Routes>
             <Route
               path="/2fa"
               element={
-                <UnauthenticatedRoute title={`${tenant.title} - ${translateMethod('Verification code')}`} tenant={tenant}>
-                  <TwoFactorAuthentication title={`${tenant.title} - ${translateMethod('Verification code')}`} />
+                <UnauthenticatedRoute
+                  title={`${tenant.title} - ${translateMethod('Verification code')}`}
+                  tenant={tenant}
+                >
+                  <TwoFactorAuthentication
+                    title={`${tenant.title} - ${translateMethod('Verification code')}`}
+                  />
                 </UnauthenticatedRoute>
               }
             />
             <Route
               path="/reset"
               element={
-                <UnauthenticatedRoute title={`${tenant.title} - ${translateMethod('Reset password')}`} tenant={tenant}>
+                <UnauthenticatedRoute
+                  title={`${tenant.title} - ${translateMethod('Reset password')}`}
+                  tenant={tenant}
+                >
                   <ResetPassword />
                 </UnauthenticatedRoute>
               }
             />
             <Route
               path="/signup"
-              element={<UnauthenticatedRoute title={`${tenant.title} - ${translateMethod('Signup')}`} tenant={tenant}>
-                <Signup />
-              </UnauthenticatedRoute>}
+              element={
+                <UnauthenticatedRoute
+                  title={`${tenant.title} - ${translateMethod('Signup')}`}
+                  tenant={tenant}
+                >
+                  <Signup />
+                </UnauthenticatedRoute>
+              }
             />
             <Route
               path="/notifications"
@@ -143,21 +156,24 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             />
             <Route
               path="/join"
-              element={<FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Join team')}`}>
-                <JoinTeam />
-              </FrontOfficeRoute>}
+              element={
+                <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Join team')}`}>
+                  <JoinTeam />
+                </FrontOfficeRoute>
+              }
             />
             <Route
               path="/apis"
-              element={<FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Apis')}`}>
-                <MyHome />
-              </FrontOfficeRoute>}
+              element={
+                <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Apis')}`}>
+                  <MyHome />
+                </FrontOfficeRoute>
+              }
             />
             <Route
               path="/"
               element={
-                <FrontOfficeRoute
-                  title={`${tenant.title} - ${translateMethod('Home')}`}>
+                <FrontOfficeRoute title={`${tenant.title} - ${translateMethod('Home')}`}>
                   <MaybeHomePage tenant={tenant} />
                 </FrontOfficeRoute>
               }
@@ -220,15 +236,19 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             />
             <Route
               path="/settings/users/:userId"
-              element={<RouteWithTitle title={`${tenant.title} - ${translateMethod('User')}`}>
-                <UserEdit />
-              </RouteWithTitle>}
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('User')}`}>
+                  <UserEdit />
+                </RouteWithTitle>
+              }
             />
             <Route
               path="/settings/users"
-              element={<RouteWithTitle title={`${tenant.title} - ${translateMethod('Users', true)}`}>
-                <UserList />
-              </RouteWithTitle>}
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Users', true)}`}>
+                  <UserList />
+                </RouteWithTitle>
+              }
             />
             <Route
               path="/settings/audit"
@@ -280,14 +300,13 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             />
             <Route
               path="/settings/teams"
-              element={<RouteWithTitle title={`${tenant.title} - ${translateMethod('Teams')}`}>
-                <TeamList />
-              </RouteWithTitle>}
+              element={
+                <RouteWithTitle title={`${tenant.title} - ${translateMethod('Teams')}`}>
+                  <TeamList />
+                </RouteWithTitle>
+              }
             />
-            <Route
-              path="/settings/assets"
-              element={<AssetsList tenantMode={true} />}
-            />
+            <Route path="/settings/assets" element={<AssetsList tenantMode={true} />} />
             <Route
               path="/settings/admins"
               element={
@@ -304,16 +323,20 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 </RouteWithTitle>
               }
             />
-            {['/settings/internationalization', '/settings/internationalization/:domain'].map(r =>
-              <Route
-                key={r}
-                path={r}
-                element={
-                  <RouteWithTitle title={`${tenant.title} - ${translateMethod('Internalization')}`}>
-                    <MailingInternalization tenant={tenant} />
-                  </RouteWithTitle>
-                }
-              />
+            {['/settings/internationalization', '/settings/internationalization/:domain'].map(
+              (r) => (
+                <Route
+                  key={r}
+                  path={r}
+                  element={
+                    <RouteWithTitle
+                      title={`${tenant.title} - ${translateMethod('Internalization')}`}
+                    >
+                      <MailingInternalization tenant={tenant} />
+                    </RouteWithTitle>
+                  }
+                />
+              )
             )}
             {!tenant.hideTeamsPage && (
               <Route
@@ -326,10 +349,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               />
             )}
 
-            <Route
-              path="/:teamId/settings/*"
-              element={<TeamBackOfficeRouter tenant={tenant} />}
-            />
+            <Route path="/:teamId/settings/*" element={<TeamBackOfficeRouter tenant={tenant} />} />
 
             <Route
               path="/:teamId/:apiId/:versionId/documentation/:pageId"
@@ -341,88 +361,97 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
             />
             <Route
               path="/:teamId/:apiId/:versionId/documentation"
-              element={<FrontOfficeRoute>
-                <ApiHome tab="documentation" />
-              </FrontOfficeRoute>}
+              element={
+                <FrontOfficeRoute>
+                  <ApiHome tab="documentation" />
+                </FrontOfficeRoute>
+              }
             />
             <Route
               path="/:teamId/:apiId/:versionId/pricing"
-              element={<FrontOfficeRoute>
-                <ApiHome tab="pricing" />
-              </FrontOfficeRoute>}
+              element={
+                <FrontOfficeRoute>
+                  <ApiHome tab="pricing" />
+                </FrontOfficeRoute>
+              }
             />
             <Route
               path="/:teamId/:apiId/:versionId/swagger"
-              element={<FrontOfficeRoute>
-                <ApiHome tab="swagger" />
-              </FrontOfficeRoute>}
+              element={
+                <FrontOfficeRoute>
+                  <ApiHome tab="swagger" />
+                </FrontOfficeRoute>
+              }
             />
             <Route
               path="/:teamId/:apiId/:versionId/redoc"
-              element={<FrontOfficeRoute>
-                <ApiHome tab="redoc" />
-              </FrontOfficeRoute>}
+              element={
+                <FrontOfficeRoute>
+                  <ApiHome tab="redoc" />
+                </FrontOfficeRoute>
+              }
             />
             <Route
               path="/:teamId/:apiId/:versionId/console"
-              element={<FrontOfficeRoute>
-                <ApiHome tab="console" />
-              </FrontOfficeRoute>}
+              element={
+                <FrontOfficeRoute>
+                  <ApiHome tab="console" />
+                </FrontOfficeRoute>
+              }
             />
-            {['/:teamId/:apiId/:versionId', '/:teamId/:apiId/:versionId/description'].map(r => (
+            {['/:teamId/:apiId/:versionId', '/:teamId/:apiId/:versionId/description'].map((r) => (
               <Route
                 key={r}
                 path={r}
-                element={<FrontOfficeRoute>
-                  <ApiHome tab="description" />
-                </FrontOfficeRoute>}
+                element={
+                  <FrontOfficeRoute>
+                    <ApiHome tab="description" />
+                  </FrontOfficeRoute>
+                }
               />
             ))}
             <Route
               path="/:teamId/:apiId/:versionId/news"
-              element={<FrontOfficeRoute>
-                <ApiHome tab="news" />
-              </FrontOfficeRoute>}
+              element={
+                <FrontOfficeRoute>
+                  <ApiHome tab="news" />
+                </FrontOfficeRoute>
+              }
             />
-            {['/:teamId/:apiId/:versionId/labels', '/:teamId/:apiId/:versionId/issues'].map(r =>
+            {['/:teamId/:apiId/:versionId/labels', '/:teamId/:apiId/:versionId/issues'].map((r) => (
               <Route
                 key={r}
                 path={r}
-                element={<FrontOfficeRoute>
-                  <ApiHome tab="issues" />
-                </FrontOfficeRoute>}
+                element={
+                  <FrontOfficeRoute>
+                    <ApiHome tab="issues" />
+                  </FrontOfficeRoute>
+                }
               />
-            )}
+            ))}
             <Route
               path="/:teamId"
-              element={<FrontOfficeRoute>
-                <TeamHome />
-              </FrontOfficeRoute>}
+              element={
+                <FrontOfficeRoute>
+                  <TeamHome />
+                </FrontOfficeRoute>
+              }
             />
           </Routes>
           <Routes>
-            <Route
-              path="/*"
-              element={<Discussion />}
-            />
+            <Route path="/*" element={<Discussion />} />
           </Routes>
           <Routes>
-            {['/settings', '/notifications', '/:teamId/settings']
-              .map(r => (
-                <Route
-                  path={r}
-                  element={<></>} />
-              ))}
+            {['/settings', '/notifications', '/:teamId/settings'].map((r) => (
+              <Route path={r} element={<></>} />
+            ))}
 
-            <Route
-              path='/'
-              element={<Footer isBackOffice={false} />}
-            />
+            <Route path="/" element={<Footer isBackOffice={false} />} />
           </Routes>
           <Error error={{ status: 404 }} />
         </div>
       </MessagesProvider>
-    </BrowserRouter >
+    </BrowserRouter>
   );
 };
 
@@ -462,14 +491,15 @@ const TeamBackOfficeRouter = ({ tenant }) => {
   if (teamError) return <Error error={{ status: 404 }} />;
 
   if (!currentTeam || loading) return <Spinner />;
-  else
-    return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />
+  else return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />;
 };
 
 const FrontOfficeRoute = (props) => {
-  return <RouteWithTitle {...props}>
-    <FrontOffice>{props.children}</FrontOffice>
-  </RouteWithTitle>;
+  return (
+    <RouteWithTitle {...props}>
+      <FrontOffice>{props.children}</FrontOffice>
+    </RouteWithTitle>
+  );
 };
 
 const RouteWithTitle = (props) => {
@@ -482,21 +512,14 @@ const RouteWithTitle = (props) => {
   return props.children;
 };
 
-const UnauthenticatedRouteComponent = ({
-  connectedUser,
-  children,
-  title
-}) => {
-
+const UnauthenticatedRouteComponent = ({ connectedUser, children, title }) => {
   if (connectedUser._humanReadableId) {
     return <Navigate to="/" />;
   }
 
   return (
     <RouteWithTitle title={title}>
-      <UnauthenticatedHome title={title}>
-        {children}
-      </UnauthenticatedHome>
+      <UnauthenticatedHome title={title}>{children}</UnauthenticatedHome>
     </RouteWithTitle>
   );
 };

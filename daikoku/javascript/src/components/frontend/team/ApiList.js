@@ -37,7 +37,7 @@ const computeTop = (arrayOfArray) => {
 
 const ApiListComponent = (props) => {
   const { translateMethod, Translation } = useContext(I18nContext);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const allCategories = () => ({ value: 'All', label: translateMethod('All categories') });
   const allTags = () => ({ value: 'All', label: translateMethod('All tags') });
@@ -80,16 +80,14 @@ const ApiListComponent = (props) => {
           navigate(`/${team._humanReadableId}/settings/apis/${newApi._id}/infos`, {
             state: {
               newApi: { ...newApi, team: team._id },
-            }
+            },
           });
         });
     }
   };
 
   const createNewteam = () => {
-    Services.fetchNewTeam().then((team) =>
-      props.openCreationTeamModal({ team})
-    );
+    Services.fetchNewTeam().then((team) => props.openCreationTeamModal({ team }));
   };
 
   const redirectToTeam = (team) => {
@@ -176,14 +174,14 @@ const ApiListComponent = (props) => {
     searchedTrim === ''
       ? taggedApis
       : taggedApis.filter((api) => {
-        if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
-          return true;
-        } else if (teamMatch(api, searchedTrim)) {
-          return true;
-        } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
-      })
+          if (api.name.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (api.smallDescription.toLowerCase().indexOf(searchedTrim) > -1) {
+            return true;
+          } else if (teamMatch(api, searchedTrim)) {
+            return true;
+          } else return tagMatches(api, searchedTrim) || categoryMatches(api, searchedTrim);
+        })
   )
     .groupBy('_humanReadableId')
     .map((value) => {
@@ -263,7 +261,8 @@ const ApiListComponent = (props) => {
             <div className="col-12 col-sm-2">
               <button
                 className="btn btn-access-negative mb-2 float-right"
-                onClick={() => createNewApi(props.team._id)}>
+                onClick={() => createNewApi(props.team._id)}
+              >
                 <i className="fas fa-plus-square" /> API
               </button>
             </div>
@@ -280,7 +279,8 @@ const ApiListComponent = (props) => {
                 CanIDoAction(props.connectedUser, manage, api, t, props.apiCreationPermitted)
               )}
             action={(team) => createNewApi(team)}
-            withAllTeamSelector={false}>
+            withAllTeamSelector={false}
+          >
             <div className="col-12 col-sm-2">
               <button className="btn btn-access-negative mb-2 float-right">
                 <i className="fas fa-plus-square" /> API
@@ -292,12 +292,14 @@ const ApiListComponent = (props) => {
       <div className="d-flex mb-1 view-selectors">
         <button
           className={classNames('btn btn-access-negative mr-2', { active: view === LIST })}
-          onClick={() => setView(LIST)}>
+          onClick={() => setView(LIST)}
+        >
           <List />
         </button>
         <button
           className={classNames('btn btn-access-negative', { active: view === GRID })}
-          onClick={() => setView(GRID)}>
+          onClick={() => setView(GRID)}
+        >
           <Grid />
         </button>
       </div>
@@ -308,7 +310,8 @@ const ApiListComponent = (props) => {
               'flex-column': view === LIST,
               'flex-wrap': view === GRID,
               'flex-row': view === GRID,
-            })}>
+            })}
+          >
             {filterPreview(filteredApis.length)}
             {paginateApis.map((api) => (
               <ApiCard
@@ -421,7 +424,8 @@ const Top = (props) => {
           <span
             className="badge badge-warning mr-1 cursor-pointer"
             key={idx}
-            onClick={() => props.handleClick(item)}>
+            onClick={() => props.handleClick(item)}
+          >
             {props.formatter(item)}
           </span>
         );
@@ -466,7 +470,8 @@ const YourTeams = ({ teams, redirectToTeam, createNewTeam, ...props }) => {
               <span
                 className="p-1 cursor-pointer underline-on-hover text-break"
                 key={team._id}
-                onClick={() => redirectToTeam(team)}>
+                onClick={() => redirectToTeam(team)}
+              >
                 {team.name}
               </span>
             );

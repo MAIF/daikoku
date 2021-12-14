@@ -115,7 +115,8 @@ export function OtoroshiStatsVizualization(props) {
         className={classNames('data__navbar__tab', {
           'data__navbar__tab--active': state.tab === value,
         })}
-        onClick={() => setState({ ...state, tab: value })}>
+        onClick={() => setState({ ...state, tab: value })}
+      >
         {realLabel}
       </a>
     );
@@ -145,7 +146,8 @@ export function OtoroshiStatsVizualization(props) {
                   right: 30,
                   left: 20,
                   bottom: 5,
-                }}>
+                }}
+              >
                 <XAxis dataKey={xAxis} />
                 <YAxis />
                 <Tooltip />

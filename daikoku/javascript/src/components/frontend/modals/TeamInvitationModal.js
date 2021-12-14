@@ -66,14 +66,16 @@ export const TeamInvitationModal = (props) => {
           <button
             onClick={invitUser}
             className="btn btn-success mt-3 btn-block btn-lg"
-            type="button">
+            type="button"
+          >
             {translateMethod('Search')}
           </button>
         ) : (
           <button
             className="btn btn-success mt-3 btn-block btn-lg"
             type="button"
-            onClick={invitUser}>
+            onClick={invitUser}
+          >
             {translateMethod('team_member.send_email')}
           </button>
         )}

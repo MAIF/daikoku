@@ -20,12 +20,14 @@ const GuestUserMenu = ({ loginProvider }) => {
     <>
       <a
         href={`/auth/${loginProvider}/login`}
-        className="btn btn-outline-success mx-1 login-button">
+        className="btn btn-outline-success mx-1 login-button"
+      >
         {translateMethod('Login')}
       </a>
       <a
         href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-        className="btn btn-success register-button">
+        className="btn btn-success register-button"
+      >
         {translateMethod('Register')}
       </a>
     </>
@@ -51,7 +53,8 @@ const DarkModeActivator = ({ initialDark }) => {
   return (
     <div
       className="cursor-pointer d-flex align-items-center darkmode"
-      onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
+      onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}
+    >
       {theme === DARK ? <Sun /> : <Moon />}
     </div>
   );
@@ -165,7 +168,7 @@ const TopBarComponent = (props) => {
   const isDefaultLogo = props.tenant.logo === '/assets/images/daikoku.svg';
   return (
     <header className={impersonator ? 'impersonator-topbar-mb' : ''}>
-      { }
+      {}
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
@@ -177,7 +180,8 @@ const TopBarComponent = (props) => {
                 style={{
                   maxWidth: '59px',
                   maxHeight: '38px',
-                }}>
+                }}
+              >
                 {props.tenant.logo && !isDefaultLogo && (
                   <img
                     src={props.tenant.logo}
@@ -236,7 +240,8 @@ const TopBarComponent = (props) => {
                   isTenantAdmin={
                     props.connectedUser.isDaikokuAdmin ||
                     (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1
-                  }>
+                  }
+                >
                   {isMaintenanceMode && (
                     <span className="badge badge-danger mr-3">
                       {translateMethod('Global maintenance mode enabled')}
@@ -255,7 +260,8 @@ const TopBarComponent = (props) => {
                     'unread-notifications': !!unreadNotificationsCount,
                   })}
                   to="/notifications"
-                  title={translateMethod('Access to the notifications')}>
+                  title={translateMethod('Access to the notifications')}
+                >
                   <i className="fas fa-bell" />
                 </Link>
                 {(props.connectedUser.isDaikokuAdmin || props.isTenantAdmin) && (
@@ -269,9 +275,11 @@ const TopBarComponent = (props) => {
                     data-toggle="dropdown"
                     title={
                       impersonator
-                        ? `${props.connectedUser.name} (${props.connectedUser.email
-                        }) ${translateMethod('Impersonated by')} ${impersonator.name} (${impersonator.email
-                        })`
+                        ? `${props.connectedUser.name} (${
+                            props.connectedUser.email
+                          }) ${translateMethod('Impersonated by')} ${impersonator.name} (${
+                            impersonator.email
+                          })`
                         : props.connectedUser.name
                     }
                     alt="user menu"

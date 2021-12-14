@@ -4,7 +4,7 @@ import { I18nContext } from '../../../../core';
 
 export const MailTemplateButton = ({ isTenantUpdated, openModal, save }) => {
   const { translateMethod } = useContext(I18nContext);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   return (
     <div className="form-group row">
@@ -36,7 +36,8 @@ export const MailTemplateButton = ({ isTenantUpdated, openModal, save }) => {
             } else {
               RedirectToUI();
             }
-          }}>
+          }}
+        >
           {translateMethod('mailing_internalization.go_to_edit_template')}
         </button>
       </div>

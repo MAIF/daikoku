@@ -106,14 +106,14 @@ export function TeamMembersSimpleComponent(props) {
             Services.removeMemberFromTeam(teamId, member._id).then(({ done, team }) => {
               done
                 ? toastr.success(
-                  'Success',
-                  translateMethod(
-                    'remove.member.success',
-                    false,
-                    `${member.name} is no longer member of your team`,
-                    member.name
+                    'Success',
+                    translateMethod(
+                      'remove.member.success',
+                      false,
+                      `${member.name} is no longer member of your team`,
+                      member.name
+                    )
                   )
-                )
                 : toastr.error('Failure');
               props.updateTeam(team).then(() => updateMembers(props.currentTeam));
             });
@@ -129,14 +129,14 @@ export function TeamMembersSimpleComponent(props) {
         setState({ ...state, selectedMember: null });
         done
           ? toastr.success(
-            'Success',
-            translateMethod(
-              'member.now.invited',
-              false,
-              `${member.name} has been invited as new member of your team`,
-              member.name
+              'Success',
+              translateMethod(
+                'member.now.invited',
+                false,
+                `${member.name} has been invited as new member of your team`,
+                member.name
+              )
             )
-          )
           : toastr.error('Failure');
       })
       .then(() => updateMembers(props.currentTeam));
@@ -175,15 +175,15 @@ export function TeamMembersSimpleComponent(props) {
           ({ done, team }) => {
             done
               ? toastr.success(
-                'Success',
-                translateMethod(
-                  'member.new.permission.success',
-                  false,
-                  `${member.name} is now ${newPermission}`,
-                  member.name,
-                  newPermission
+                  'Success',
+                  translateMethod(
+                    'member.new.permission.success',
+                    false,
+                    `${member.name} is now ${newPermission}`,
+                    member.name,
+                    newPermission
+                  )
                 )
-              )
               : toastr.error('Failure');
             props.updateTeam(team).then(() => updateMembers(props.currentTeam));
           }
@@ -229,14 +229,14 @@ export function TeamMembersSimpleComponent(props) {
 
   const filteredMembers = state.search
     ? state.members.filter(({ name, email }) =>
-      [name, email].some((value) => value.toLowerCase().includes(state.search))
-    )
+        [name, email].some((value) => value.toLowerCase().includes(state.search))
+      )
     : state.members;
 
   const filteredPending = state.search
     ? state.pendingUsers.filter(({ name, email }) =>
-      [name, email].some((value) => value.toLowerCase().includes(state.search))
-    )
+        [name, email].some((value) => value.toLowerCase().includes(state.search))
+      )
     : state.pendingUsers;
   return (
     <>
@@ -256,7 +256,8 @@ export function TeamMembersSimpleComponent(props) {
               invitUser: invitUser,
               pendingUsers: filteredPending,
             });
-          }}>
+          }}
+        >
           {translateMethod('team_member.invit_user')}
         </button>
         <div className="row">
@@ -264,9 +265,11 @@ export function TeamMembersSimpleComponent(props) {
             <ul className="nav nav-tabs flex-column flex-sm-row">
               <li className="nav-item">
                 <span
-                  className={`nav-link cursor-pointer ${state.tab === TABS.members ? 'active' : ''
-                    }`}
-                  onClick={() => setState({ ...state, tab: TABS.members })}>
+                  className={`nav-link cursor-pointer ${
+                    state.tab === TABS.members ? 'active' : ''
+                  }`}
+                  onClick={() => setState({ ...state, tab: TABS.members })}
+                >
                   <Translation i18nkey="Member" isPlural={state.members.length > 1}>
                     Member
                   </Translation>
@@ -277,10 +280,12 @@ export function TeamMembersSimpleComponent(props) {
                   className={classnames('nav-link cursor-pointer', {
                     active: state.tab === TABS.pending,
                   })}
-                  onClick={() => setState({ ...state, tab: TABS.pending })}>
+                  onClick={() => setState({ ...state, tab: TABS.pending })}
+                >
                   <Translation
                     i18nkey="pending members"
-                    replacements={[(state.pendingUsers || []).length]}>
+                    replacements={[(state.pendingUsers || []).length]}
+                  >
                     Pending ({(state.pendingUsers || []).length})
                   </Translation>
                 </span>
@@ -355,21 +360,25 @@ export function TeamMembersSimpleComponent(props) {
                     action: [
                       {
                         action: () => togglePermission(member, administrator),
-                        iconClass: `fas fa-shield-alt ${isAdmin ? 'admin-active' : 'admin-inactive'
-                          }`,
-                        tooltip: `${isAdmin
-                          ? translateMethod('Remove administrator status')
-                          : translateMethod('Add administrator status')
-                          }`,
+                        iconClass: `fas fa-shield-alt ${
+                          isAdmin ? 'admin-active' : 'admin-inactive'
+                        }`,
+                        tooltip: `${
+                          isAdmin
+                            ? translateMethod('Remove administrator status')
+                            : translateMethod('Add administrator status')
+                        }`,
                       },
                       {
                         action: () => togglePermission(member, apiEditor),
-                        iconClass: `fas fa-pencil-alt ${isApiEditor ? 'admin-active' : 'admin-inactive'
-                          }`,
-                        tooltip: `${isApiEditor
-                          ? translateMethod('Remove api editor status')
-                          : translateMethod('Add api editor status')
-                          }`,
+                        iconClass: `fas fa-pencil-alt ${
+                          isApiEditor ? 'admin-active' : 'admin-inactive'
+                        }`,
+                        tooltip: `${
+                          isApiEditor
+                            ? translateMethod('Remove api editor status')
+                            : translateMethod('Add api editor status')
+                        }`,
                       },
                     ],
                     iconClass: 'fas fa-user-cog',
@@ -400,22 +409,22 @@ export function TeamMembersSimpleComponent(props) {
                   actions={
                     invitedUser
                       ? [
-                        {
-                          action: () => {
-                            window
-                              .confirm(translateMethod('team_member.confirm_remove_invitation'))
-                              .then((ok) => {
-                                if (ok)
-                                  Services.removeInvitation(
-                                    props.currentTeam._id,
-                                    member._id
-                                  ).then(() => updateMembers(props.currentTeam));
-                              });
+                          {
+                            action: () => {
+                              window
+                                .confirm(translateMethod('team_member.confirm_remove_invitation'))
+                                .then((ok) => {
+                                  if (ok)
+                                    Services.removeInvitation(
+                                      props.currentTeam._id,
+                                      member._id
+                                    ).then(() => updateMembers(props.currentTeam));
+                                });
+                            },
+                            iconClass: 'fas fa-trash delete-icon',
+                            tooltip: translateMethod('Remove invitation'),
                           },
-                          iconClass: 'fas fa-trash delete-icon',
-                          tooltip: translateMethod('Remove invitation'),
-                        },
-                      ]
+                        ]
                       : []
                   }
                 />
@@ -435,7 +444,7 @@ const TeamMembersComponent = (props) => {
   const { translateMethod } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translateMethod('Member', true)}`
+    document.title = `${props.currentTeam.name} - ${translateMethod('Member', true)}`;
   }, []);
 
   return (
