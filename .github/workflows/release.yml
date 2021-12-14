@@ -34,6 +34,8 @@ jobs:
       run: |
         sh ./scripts/build.sh fmt
         echo "::set-output name=diff::$(git diff --numstat | wc -l)"
+        echo "${{steps.fmt.output.diff}}"
+
     - name: Commit formatted sources
       if: steps.fmt.output.diff != '0'
       run: |
