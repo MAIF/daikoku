@@ -190,7 +190,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               path="/settings/otoroshis/:otoroshiId"
               element={
                 <RouteWithTitle title={`${tenant.title} - ${translateMethod('Otoroshi')}`}>
-                  <TenantOtoroshi tenant={tenant}/>
+                  <TenantOtoroshi tenant={tenant} />
                 </RouteWithTitle>
               }
             />
