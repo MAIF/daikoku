@@ -19,7 +19,7 @@ const defaultConfig = {
   adminGroupFilter: '',
   adminUsername: 'cn=read-only-admin,dc=example,dc=com',
   adminPassword: 'password',
-  nameField: 'cn',
+  nameFields: ['cn'],
   emailField: 'mail',
   metadataField: null,
 };
@@ -36,7 +36,7 @@ export function LDAPConfig(props) {
     'searchFilter',
     'adminUsername',
     'adminPassword',
-    'nameField',
+    'nameFields',
     'emailField',
     'testing',
     'testingWithUser',
@@ -107,10 +107,11 @@ export function LDAPConfig(props) {
         label: translateMethod('Admin password'),
       },
     },
-    nameField: {
-      type: 'string',
+    nameFields: {
+      type: 'array',
       props: {
         label: translateMethod('Name field name'),
+        help: translateMethod('ldap.namefields.help')
       },
     },
     emailField: {

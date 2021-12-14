@@ -965,5 +965,6 @@
   "SEO": "SEO",
   "Robot.txt.label": "Contenu  du Robot.txt",
   "Robot.txt.content": "Le contenu du fichier Robot.txt file servi par Daikoku",
-  "Mode": "Mode"
+  "Mode": "Mode",
+  "ldap.namefields.help": "le nom d'utilisateur est construit en concaténant les champs ldap fournis"
 }
