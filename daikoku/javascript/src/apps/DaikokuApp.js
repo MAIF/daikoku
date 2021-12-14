@@ -399,6 +399,17 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 </FrontOfficeRoute>
               }
             />
+            {['/:teamId/:apiId/:versionId/labels', '/:teamId/:apiId/:versionId/issues*'].map((r) => (
+              <Route
+                key={r}
+                path={r}
+                element={
+                  <FrontOfficeRoute>
+                    <ApiHome tab="issues" />
+                  </FrontOfficeRoute>
+                }
+              />
+            ))}
             {['/:teamId/:apiId/:versionId', '/:teamId/:apiId/:versionId/description'].map((r) => (
               <Route
                 key={r}
@@ -418,17 +429,6 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 </FrontOfficeRoute>
               }
             />
-            {['/:teamId/:apiId/:versionId/labels', '/:teamId/:apiId/:versionId/issues'].map((r) => (
-              <Route
-                key={r}
-                path={r}
-                element={
-                  <FrontOfficeRoute>
-                    <ApiHome tab="issues" />
-                  </FrontOfficeRoute>
-                }
-              />
-            ))}
             <Route
               path="/:teamId"
               element={
