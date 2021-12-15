@@ -51,7 +51,6 @@ import { toastr } from 'react-redux-toastr';
 const BackOfficeContent = (props) => {
   return (
     <div className="" style={{ height: '100%' }}>
-      {props.error.status && <Error error={props.error} />}
       {!props.error.status && props.children}
     </div>
   );
@@ -114,7 +113,7 @@ function TeamBackOfficeHomeComponent(props) {
               className="home-tile"
               disabled={props.currentTeam.type === 'Personal' ? 'disabled' : null}
             >
-              {props.currentTeam.type !== 'Personal' && (
+              {props.currentTeam.type !== 'Personal' ? (
                 <>
                   <span className="home-tile-number">{team.users.length}</span>
                   <span className="home-tile-text">
@@ -123,7 +122,15 @@ function TeamBackOfficeHomeComponent(props) {
                     </Translation>
                   </span>
                 </>
-              )}
+              ) :
+                <>
+                  <span className="home-tile-number">{1}</span>
+                  <span className="home-tile-text">
+                    <Translation i18nkey="members" count={1}>
+                      members
+                    </Translation>
+                  </span>
+                </>}
             </Link>
             <Link to={'/notifications'} className="home-tile">
               <span className="home-tile-number">{team.notificationCount}</span>
@@ -527,14 +534,14 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
         <span className="sr-only">Toggle sidebar</span>
         <span className="chevron" />
       </button>
-      <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
+      <nav className="col-md-3 d-md-block sidebar collapse" id="sidebar">
         <div className="sidebar-sticky d-flex flex-column p-0">
           <span className="mt-4 px-3 text-muted" style={{ textTransform: 'uppercase' }}>
             {currentTeam.name}
           </span>
           <ul className="nav flex-column pt-2" style={{ flex: 1 }}>
             <Routes>
-              <Route path="/apis/:apiId/:versionId/:tab" element={<ApiSidebar />} />
+              <Route path="/apis/:apiId/:versionId/:tab*" element={<ApiSidebar />} />
               <Route path={`/apis/:apiId/:tab`} element={<NewApiBar />} />
               <Route path={`/apikeys/:apiId/:versionId`} element={<ApiKeysBar />} />
               <Route
@@ -546,7 +553,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
           </ul>
         </div>
       </nav>
-      <main role="main" className="col-md-10 ml-sm-auto px-4 mt-3">
+      <main role="main" className="col-md-9 ml-sm-auto px-4 mt-3">
         <div
           className={classNames('back-office-overlay', {
             active: isLoading && !error.status,
@@ -575,7 +582,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
             />
             <Route path={`/members`} element={<TeamMembers />} />
             <Route path={`/assets`} element={<AssetsList tenantMode={false} />} />
-            <Route path={`/apis/:apiId/:versionId/:tab`} element={<TeamApi />} />
+            <Route path={`/apis/:apiId/:versionId/:tab*`} element={<TeamApi />} />
             <Route path={`/apis/:apiId/:versionId`} element={<TeamApi />} />
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/" element={<TeamBackOfficeHome />} />
@@ -617,7 +624,7 @@ const UserBackOfficeComponent = ({
         <span className="sr-only">Toggle sidebar</span>
         <span className="chevron" />
       </button>
-      <nav className="col-md-2 d-md-block sidebar collapse" id="sidebar">
+      <nav className="col-md-3 d-md-block sidebar collapse" id="sidebar">
         <div className="sidebar-sticky">
           <ul className="nav flex-column mt-3">
             <li className="nav-item">
@@ -777,7 +784,7 @@ const UserBackOfficeComponent = ({
           </Can>
         </div>
       </nav>
-      <main role="main" className="col-md-10 ml-sm-auto px-4">
+      <main role="main" className="col-md-9 ml-sm-auto px-4">
         <div className={classNames('back-office-overlay', { active: isLoading })} />
         <BackOfficeContent error={error}>{children}</BackOfficeContent>
       </main>

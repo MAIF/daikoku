@@ -187,9 +187,9 @@ class TeamController(DaikokuAction: DaikokuAction,
   }
 
   def deleteTeam(teamId: String) = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(
+    TenantAdminOnly(
       AuditTrailEvent(
-        s"@{user.name} has deleted team @{team.name} - @{team.id}"))(ctx) {
+        s"@{user.name} has deleted team @{team.name} - @{team.id}"))(ctx.tenant.id.value, ctx) { (tenant, team) =>
       env.dataStore.teamRepo.forTenant(ctx.tenant.id).findById(teamId) flatMap {
         case Some(team) if team.`type` == TeamType.Admin =>
           FastFuture.successful(

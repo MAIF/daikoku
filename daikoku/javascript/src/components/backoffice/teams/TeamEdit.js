@@ -24,6 +24,7 @@ export function TeamEditForm(props) {
       type: 'select',
       props: {
         label: translateMethod('Tenant'),
+        disabled: props.team.type === "Personal" || props.team.type === "Admin",
         valuesFrom: '/api/tenants',
         transformer: (tenant) => ({ label: tenant.name, value: tenant._id }),
       },
@@ -32,6 +33,7 @@ export function TeamEditForm(props) {
       type: 'select',
       props: {
         label: translateMethod('Type'),
+        disabled: props.team.type === "Personal" || props.team.type === "Admin",
         possibleValues: [
           { label: translateMethod('Personal'), value: 'Personal' },
           {
@@ -43,30 +45,32 @@ export function TeamEditForm(props) {
     },
     name: {
       type: 'string',
-      props: { label: translateMethod('Name') },
+      props: { label: translateMethod('Name'), disabled: props.team.type === "Personal" || props.team.type === "Admin" },
     },
     description: {
       type: 'string',
-      props: { label: translateMethod('Description') },
+      props: { label: translateMethod('Description'), disabled: props.team.type === "Personal" || props.team.type === "Admin" },
     },
     contact: {
       type: 'string',
-      props: { label: translateMethod('Team contact') },
+      props: { label: translateMethod('Team contact'), disabled: props.team.type === "Personal" || props.team.type === "Admin" },
     },
     avatar: {
       type: 'string',
-      props: { label: translateMethod('Team avatar') },
+      props: { label: translateMethod('Team avatar'), disabled: props.team.type === "Personal" || props.team.type === "Admin" },
     },
     avatarFrom: {
       type: AvatarChooser,
       props: {
         team: () => props.team,
+        disabled: props.team.type === "Personal" || props.team.type === "Admin"
       },
     },
     apiKeyVisibility: {
       type: 'select',
       props: {
         label: translateMethod('apikey visibility'),
+        disabled: props.team.type === "Personal" || props.team.type === "Admin",
         possibleValues: [
           { label: translateMethod('Administrator'), value: 'Administrator' },
           { label: translateMethod('ApiEditor'), value: 'ApiEditor' },

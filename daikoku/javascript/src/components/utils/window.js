@@ -121,7 +121,7 @@ function Prompt(props) {
 
   const defaultButton = (e) => {
     if (e.keyCode === 13) {
-      props.ok(state.text);
+      props.ok(text);
     }
   };
 

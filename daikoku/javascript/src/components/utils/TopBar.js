@@ -168,17 +168,17 @@ const TopBarComponent = (props) => {
   const isDefaultLogo = props.tenant.logo === '/assets/images/daikoku.svg';
   return (
     <header className={impersonator ? 'impersonator-topbar-mb' : ''}>
-      {}
+      { }
       <div className="navbar shadow-sm fixed-top">
         <div className="container-fluid d-flex justify-content-center justify-content-lg-between align-items-end px-0">
           <div className="d-flex flex-column flex-md-row">
             <div className="pl-1 pr-2">
               <Link
                 to="/apis"
-                className="navbar-brand d-flex align-items-center mr-4"
+                className="navbar-brand d-flex align-items-center mr-2"
                 title="Daikoku home"
                 style={{
-                  maxWidth: '59px',
+                  // maxWidth: '59px',
                   maxHeight: '38px',
                 }}
               >
@@ -216,8 +216,8 @@ const TopBarComponent = (props) => {
           </div>
           <div className="d-flex flex-column flex-md-row mt-1 mt-xl-0">
             {props.impersonator && (
-              <a href="/api/me/_deimpersonate" className="btn btn-danger">
-                <i className="fas fa-user-ninja" /> {translateMethod('Quit impersonation')}
+              <a href="/api/me/_deimpersonate" className="btn btn-sm btn-danger mr-2" style={{ display: "flex", alignItems: "center" }}>
+                <i className="fas fa-user-ninja mr-1" /> {translateMethod('Quit impersonation')}
                 <b className="ml-1">{impersonator.email}</b>
               </a>
             )}
@@ -275,11 +275,9 @@ const TopBarComponent = (props) => {
                     data-toggle="dropdown"
                     title={
                       impersonator
-                        ? `${props.connectedUser.name} (${
-                            props.connectedUser.email
-                          }) ${translateMethod('Impersonated by')} ${impersonator.name} (${
-                            impersonator.email
-                          })`
+                        ? `${props.connectedUser.name} (${props.connectedUser.email
+                        }) ${translateMethod('Impersonated by')} ${impersonator.name} (${impersonator.email
+                        })`
                         : props.connectedUser.name
                     }
                     alt="user menu"

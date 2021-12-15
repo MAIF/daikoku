@@ -10,11 +10,12 @@ const initialState = {
 export function errorReducer(state = initialState, { type, error }) {
   switch (type) {
     case SET_ERROR:
+      const err = { ...initialState, ...(error || {}) }
       return {
-        status: error.status,
-        message: error.message,
-        args: error.args,
-        response: error.response,
+        status: err.status,
+        message: err.message,
+        args: err.args,
+        response: err.response,
       };
 
     case UNSET_ERROR:

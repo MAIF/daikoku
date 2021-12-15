@@ -37,7 +37,7 @@ export const I18nProvider = ({ user, tenant, children }) => {
     });
   });
 
-  const capitalize = (l) => l.charAt(0).toUpperCase() + l.slice(1);
+  const capitalize = (l) => (l || "En").charAt(0).toUpperCase() + (l || "En").slice(1);
 
   const translate = (
     i18nkey,
@@ -117,7 +117,7 @@ export const I18nProvider = ({ user, tenant, children }) => {
               type="text"
               className="form-control"
               value={translatedMessage}
-              onChange={(e) => {}}
+              onChange={(e) => { }}
             />
             <button
               className="btn btn-sm btn-outline-success mx-1"

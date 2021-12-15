@@ -7,7 +7,7 @@ import ReduxToastr from 'react-redux-toastr';
 import { ModalRoot } from '../components/frontend/modals/ModalRoot';
 import { TopBar, Spinner, Error, Footer, Discussion } from '../components/utils';
 import * as Services from '../services';
-import { updateTeamPromise, history } from '../core';
+import { updateTeamPromise, history, setError } from '../core';
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 
 import 'react-redux-toastr/src/styles/index.scss';
@@ -147,7 +147,7 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
               }
             />
             <Route
-              path="/notifications"
+              path="/notifications*"
               element={
                 <RouteWithTitle title={`${tenant.title} - ${translateMethod('Notifications')}`}>
                   <NotificationList />
@@ -443,12 +443,13 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
           </Routes>
           <Routes>
             {['/settings', '/notifications', '/:teamId/settings'].map((r) => (
-              <Route path={r} element={<></>} />
+              <Route key={r} path={r} element={<></>} />
             ))}
 
             <Route path="/" element={<Footer isBackOffice={false} />} />
           </Routes>
-          <Error error={{ status: 404 }} />
+
+          <Error />
         </div>
       </MessagesProvider>
     </BrowserRouter>
@@ -469,7 +470,6 @@ const TeamBackOfficeRouter = ({ tenant }) => {
 
   const dispatch = useDispatch();
   const params = useParams();
-  const [teamError, setTeamError] = useState();
 
   const [loading, setLoading] = useState(true);
 
@@ -482,13 +482,12 @@ const TeamBackOfficeRouter = ({ tenant }) => {
 
   function getMyTeam() {
     Services.oneOfMyTeam(params.teamId).then((team) => {
-      if (team.error) setTeamError(team.error);
+      if (team.error)
+        dispatch(setError(team.error));
       else dispatch(updateTeamPromise(team));
       setLoading(false);
     });
   }
-
-  if (teamError) return <Error error={{ status: 404 }} />;
 
   if (!currentTeam || loading) return <Spinner />;
   else return <TeamBackOffice currentTeam={currentTeam} tenant={tenant} />;
@@ -519,7 +518,7 @@ const UnauthenticatedRouteComponent = ({ connectedUser, children, title }) => {
 
   return (
     <RouteWithTitle title={title}>
-      <UnauthenticatedHome title={title}>{children}</UnauthenticatedHome>
+      {children}
     </RouteWithTitle>
   );
 };

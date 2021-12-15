@@ -856,11 +856,11 @@ export function TenantEditComponent(props) {
               <div className="avatar__container">
                 <img
                   style={{ width: '100%', height: 'auto' }}
-                  src={state.tenant.style.logo}
+                  src={state.tenant?.style?.logo}
                   alt="avatar"
                 />
               </div>
-              <h1 className="h1-rwd-reduce ml-2">{state.tenant.name}</h1>
+              <h1 className="h1-rwd-reduce ml-2">{state.tenant?.name}</h1>
             </div>
             <React.Suspense fallback={<Spinner />}>
               <LazyForm
@@ -880,7 +880,7 @@ export function TenantEditComponent(props) {
               {!state.create && (
                 <Link
                   className="btn btn-outline-primary mr-1"
-                  to={`/settings/tenants/${state.tenant._humanReadableId}/admins`}
+                  to={`/settings/tenants/${state.tenant?._humanReadableId}/admins`}
                 >
                   <i className="fas fa-user-shield mr-1" />
                   <Translation i18nkey="Admins">Admins</Translation>

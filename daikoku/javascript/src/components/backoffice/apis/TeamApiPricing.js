@@ -263,7 +263,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
       'otoroshiTarget.otoroshiSettings': {
         type: 'select',
         props: {
-          label: translateMethod('Otoroshi instance'),
+          label: translateMethod('Otoroshi instances'),
           possibleValues: otoroshiSettings.map((s) => ({
             label: s.url,
             value: s._id,

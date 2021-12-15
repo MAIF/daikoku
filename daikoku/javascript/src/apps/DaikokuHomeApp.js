@@ -467,14 +467,16 @@ export function DaikokuHomeApp(props) {
       <div role="root-container" className="container-fluid">
         <Routes>
           <Route
-            path="/"
+            path="*"
             element={
               <>
                 <UnauthenticatedTopBar tenant={tenant} />
-                <UnauthenticatedHome tenant={tenant} />
               </>
             }
           />
+        </Routes>
+        <Routes>
+          <Route path="/" element={<UnauthenticatedHome tenant={tenant} />} />
         </Routes>
         <Routes>
           <Route path="/signup" element={<Signup tenant={tenant} />} />

@@ -165,17 +165,15 @@ export function TeamApiPost({ team, params, api, ...props }) {
 
   const { posts, pagination } = state;
 
-  const basePath = '/:teamId/settings/apis/:apiId/:versionId/news';
-
   return (
     <div>
       <Routes>
         <Route
-          path={`${basePath}/new`}
+          path="/new"
           element={<ApiPost publishPost={publishPost} params={params} />}
         />
         <Route
-          path={basePath}
+          path="/"
           element={
             <div className="p-3">
               <div className="d-flex align-items-center justify-content-between">

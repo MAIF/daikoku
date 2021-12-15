@@ -966,5 +966,7 @@
   "Robot.txt.label": "Contenu  du Robot.txt",
   "Robot.txt.content": "Le contenu du fichier Robot.txt file servi par Daikoku",
   "Mode": "Mode",
-  "ldap.namefields.help": "le nom d'utilisateur est construit en concaténant les champs ldap fournis"
+  "ldap.namefields.help": "le nom d'utilisateur est construit en concaténant les champs ldap fournis",
+  "Go home": "Retourner à l'accueil",
+  "notification.accept.on_error.title": "Impossible d'accepter la notification"
 }

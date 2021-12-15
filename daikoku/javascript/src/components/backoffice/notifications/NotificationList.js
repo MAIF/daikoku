@@ -88,6 +88,15 @@ function NotificationListComponent(props) {
       }),
     });
     Services.acceptNotificationOfTeam(notificationId, values)
+      .then(res => {
+        if (res.error)
+          window.alert(
+            res.error,
+            translateMethod('notification.accept.on_error.title')
+          );
+        else
+          return Promise.resolve()
+      })
       .then(() => Services.myNotifications(0, state.notifications.length))
       .then(({ notifications, count }) =>
         setState({
@@ -110,18 +119,15 @@ function NotificationListComponent(props) {
     });
     Services.rejectNotificationOfTeam(notificationId)
       .then(() => Services.myNotifications(0, state.notifications.length))
-      .then(({ notifications, count }) =>
-        setState(
-          {
-            ...state,
-            notifications,
-            count,
-            untreatedCount: count,
-            untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
-          },
-          () => props.updateNotifications(state.untreatedNotifications.length)
-        )
-      );
+      .then(({ notifications, count }) => {
+        setState({
+          ...state,
+          notifications,
+          count,
+          untreatedCount: count,
+          untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
+        })
+      });
   };
 
   useEffect(() => {
@@ -193,7 +199,7 @@ function NotificationListComponent(props) {
               active: state.tab === 'unread',
             })}
           >
-            <a href="#" onClick={() => onSelectTab('unread')}>
+            <a href="#unread" onClick={() => onSelectTab('unread')}>
               <Translation i18nkey="Untreated" count={state.untreatedCount}>
                 Untreated
               </Translation>
@@ -206,7 +212,7 @@ function NotificationListComponent(props) {
               active: state.tab === 'all',
             })}
           >
-            <a href="#" onClick={() => onSelectTab('all')}>
+            <a href="#all" onClick={() => onSelectTab('all')}>
               <Translation i18nkey="All notifications">All notifications</Translation>
             </a>
           </li>
