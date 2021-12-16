@@ -427,10 +427,13 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = httpJsonCallBlocking("/api/search", "POST",
-        body = Some(Json.obj(
-          "query" ->
-            """
+      val resp = httpJsonCallBlocking(
+        "/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              """
               |query MyTeams {
               |    myTeams {
               |      name
@@ -446,7 +449,8 @@ class ApiControllerSpec()
               |    }
               |  }
               |""".stripMargin
-        )))(tenant, session)
+          ))
+      )(tenant, session)
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]

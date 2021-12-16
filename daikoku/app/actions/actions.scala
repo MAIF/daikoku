@@ -35,8 +35,8 @@ object tenantSecurity {
                     team.users.exists { u: UserWithPermission =>
                       user.id == u.userId && (
                         u.teamPermission.name == Administrator.name ||
-                          u.teamPermission.name == ApiEditor.name
-                        )
+                        u.teamPermission.name == ApiEditor.name
+                      )
                     }
                   }
               }
