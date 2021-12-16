@@ -207,9 +207,7 @@ export const SubscriptionMetadataModal = (props) => {
             </Translation>
           </h5>
         )}
-        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}>
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" className="btn-close" aria-label="Close" onClick={props.closeModal}/>
       </div>
       <div className="modal-body">
         {loading && <Spinner />}
