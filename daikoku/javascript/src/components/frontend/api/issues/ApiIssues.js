@@ -63,11 +63,11 @@ export function ApiIssues({ filter, api, selectedVersion }) {
                     {moment(createdDate).format(
                       translateMethod('moment.date.format.without.hours')
                     )}{' '}
-                    {translateMethod('issues.by')} {by._humanReadableId}
+                    {translateMethod('issues.by')} {by.name}
                   </span>
                 ) : (
                   <span>
-                    #{seqId} {translateMethod('issues.by')} {by._humanReadableId}{' '}
+                    #{seqId} {translateMethod('issues.by')} {by.name}{' '}
                     {translateMethod('was closed on')}{' '}
                     {moment(closedDate).format(translateMethod('moment.date.format.without.hours'))}{' '}
                   </span>

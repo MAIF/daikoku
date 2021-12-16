@@ -255,7 +255,7 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
         </div>
         <div>
           <span className="pr-1" style={styles.bold}>
-            {issue.by ? issue.by._humanReadableId : ''}
+            {issue.by ? issue.by.name : ''}
           </span>
           {translateMethod('issues.opened_message')}{' '}
           {moment(issue.createdDate).format(translateMethod('moment.date.format.without.hours'))} ·{' '}
@@ -410,7 +410,7 @@ function Comment({
       <div className="container">
         <div className="d-flex px-3 py-2" style={styles.commentHeader}>
           <span className="pr-1" style={styles.bold}>
-            {by._humanReadableId}
+            {by.name}
           </span>
           <span className="pr-1">{translateMethod('issues.commented_on')}</span>
           {moment(createdDate).format(translateMethod('moment.date.format.without.hours'))}
