@@ -1594,7 +1594,7 @@ const CustomMetadataInput = (props) => {
   return (
     <div>
       {props.value.length === 0 && (
-        <div className="mb-3 row">
+        <div className="mb-3 row align-items-center">
           <label htmlFor={`input-${props.label}`} className="col-xs-12 col-sm-2 col-form-label">
             <Help text={props.help} label={props.label} />
           </label>
@@ -1610,14 +1610,14 @@ const CustomMetadataInput = (props) => {
         </div>
       )}
       {props.value.map(({ key, possibleValues }, idx) => (
-        <div key={`form-group-${idx}`} className="row mb-2">
+        <div key={`form-group-${idx}`} className="row mb-2 align-items-center">
           {idx === 0 && (
             <label className="col-xs-12 col-sm-2 col-form-label">
               <Help text={props.help} label={props.label} />
             </label>
           )}
           {idx > 0 && <label className="col-xs-12 col-sm-2 col-form-label">&nbsp;</label>}
-          <div className="col-sm-10 d-flex">
+          <div className="col-sm-10">
             <div className="input-group">
               <input
                 disabled={props.disabled}
@@ -1640,27 +1640,22 @@ const CustomMetadataInput = (props) => {
                 className="input-select reactSelect flex-grow-1"
                 classNamePrefix="reactSelect"
               />
-
-              <span
-                className="input-group-append"
-                style={{ height: 'calc(1.5em + 0.75rem + 2px)' }}>
+              <button
+                disabled={props.disabled}
+                type="button"
+                className="input-group-text btn btn-outline-danger"
+                onClick={(e) => remove(e, key)}>
+                <i className="fas fa-trash" />
+              </button>
+              {idx === props.value.length - 1 && (
                 <button
                   disabled={props.disabled}
                   type="button"
-                  className="btn btn-outline-danger"
-                  onClick={(e) => remove(e, key)}>
-                  <i className="fas fa-trash" />
+                  className="input-group-text btn btn-outline-primary"
+                  onClick={addNext}>
+                  <i className="fas fa-plus" />{' '}
                 </button>
-                {idx === props.value.length - 1 && (
-                  <button
-                    disabled={props.disabled}
-                    type="button"
-                    className="btn btn-outline-primary"
-                    onClick={addNext}>
-                    <i className="fas fa-plus" />{' '}
-                  </button>
-                )}
-              </span>
+              )}
             </div>
           </div>
         </div>
