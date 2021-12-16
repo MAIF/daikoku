@@ -138,30 +138,32 @@ const TeamEditComponent = ({ currentTeam }) => {
     <>
       <TeamEditForm team={team} updateTeam={setTeam} />
       <div className="row form-back-fixedBtns">
-        <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
-          <i className="fas fa-chevron-left me-1" />
-          <Translation i18nkey="Back">Back</Translation>
-        </Link>
-        {team && team.type !== "Personal" && <button
-          style={{ marginLeft: 5 }}
-          type="button"
-          className="btn btn-outline-primary"
-          onClick={members}>
-          <span>
-            <i className="fas fa-users me-1" />
-            <Translation i18nkey="Members">Members</Translation>
-          </span>
-        </button>}
-        <button
-          style={{ marginLeft: 5 }}
-          type="button"
-          className="btn btn-outline-success"
-          onClick={save}>
-          <span>
-            <i className="fas fa-save me-1" />
-            <Translation i18nkey="Save">Save</Translation>
-          </span>
-        </button>
+        <div className="d-flex justify-content-end">
+          <Link className="btn btn-outline-primary" to={`/${currentTeam._humanReadableId}/settings`}>
+            <i className="fas fa-chevron-left me-1" />
+            <Translation i18nkey="Back">Back</Translation>
+          </Link>
+          {team && team.type !== "Personal" && <button
+            style={{ marginLeft: 5 }}
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={members}>
+            <span>
+              <i className="fas fa-users me-1" />
+              <Translation i18nkey="Members">Members</Translation>
+            </span>
+          </button>}
+          <button
+            style={{ marginLeft: 5 }}
+            type="button"
+            className="btn btn-outline-success"
+            onClick={save}>
+            <span>
+              <i className="fas fa-save me-1" />
+              <Translation i18nkey="Save">Save</Translation>
+            </span>
+          </button>
+        </div>
       </div>
     </>
   );
