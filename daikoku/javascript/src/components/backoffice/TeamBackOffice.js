@@ -242,13 +242,13 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
       <>
         <VersionsButton {...sidebarParams} currentTeam={currentTeam} />
         {[
-          { route: 'infos', icon: 'info', name: 'Informations' },
-          { route: 'description', icon: 'file-alt', name: 'Description' },
-          { route: 'plans', icon: 'dollar-sign', name: 'Plans' },
-          { route: 'swagger', icon: 'file-code', name: 'Swagger' },
-          { route: 'testing', icon: 'vial', name: 'Testing' },
-          { route: 'documentation', icon: 'book', name: 'Documentation' },
-          { route: 'news', icon: 'newspaper', name: 'News' },
+          { route: 'infos', icon: 'info', name: translateMethod('Informations') },
+          { route: 'description', icon: 'file-alt', name: translateMethod('Description') },
+          { route: 'plans', icon: 'dollar-sign', name: translateMethod('Plans') },
+          { route: 'swagger', icon: 'file-code', name: translateMethod('Swagger') },
+          { route: 'testing', icon: 'vial', name: translateMethod('Testing') },
+          { route: 'documentation', icon: 'book', name: translateMethod('Documentation') },
+          { route: 'news', icon: 'newspaper', name: translateMethod('News') },
         ].map((item, i) => (
           <NavItem {...item} to={`${to}/${item.route}`} key={`item-${i}`} />
         ))}
@@ -316,7 +316,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
                       <NavItem
                         to={`/${currentTeam._humanReadableId}/settings/members`}
                         icon="users"
-                        name="Members"
+                        name={translateMethod('Member', true)}
                         subItem={true}
                       />
                     </Can>
@@ -326,7 +326,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
                       <NavItem
                         to={`/${currentTeam._humanReadableId}/settings/assets`}
                         icon="tools"
-                        name="Assets"
+                        name={translateMethod("Assets")}
                         subItem={true}
                       />
                     </Can>
@@ -395,7 +395,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
                       <NavItem
                         to={`/${currentTeam._humanReadableId}/settings/income`}
                         icon="file-invoice-dollar"
-                        name="Income"
+                        name={translateMethod("Income")}
                         subItem={true}
                       />
                     </Can>

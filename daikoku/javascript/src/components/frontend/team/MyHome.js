@@ -6,7 +6,7 @@ import { I18nContext, openContactModal, updateTeamPromise } from '../../../core'
 import * as Services from '../../../services';
 import { ApiList } from '../../frontend';
 import { updateUser } from '../../../core';
-import { api as API, CanIDoAction, manage } from '../../utils';
+import { api as API, CanIDoAction, manage, tenant as TENANT, Can } from '../../utils';
 import { converter } from '../../../services/showdown';
 import { getApolloContext } from '@apollo/client';
 
@@ -139,7 +139,7 @@ function MyHomeComponent(props) {
               </h1>
               <Description description={props.tenant.description} />
             </div>
-            {props.connectedUser.isDaikokuAdmin && (
+            <Can I={manage} a={TENANT}>
               <div className="col-sm-1 d-flex flex-column">
                 <div>
                   <Link
@@ -150,7 +150,7 @@ function MyHomeComponent(props) {
                   </Link>
                 </div>
               </div>
-            )}
+            </Can>
           </div>
         </div>
       </section>

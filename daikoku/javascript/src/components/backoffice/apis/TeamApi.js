@@ -265,7 +265,7 @@ function TeamApiComponent(props) {
   const editedApi = transformPossiblePlans(state.api);
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
-    props.setError({ error: { status: 403, message: 'unauthorized' } });
+    props.setError({ error: { status: 403, message: 'Creation security enabled' } });
   }
 
   return (

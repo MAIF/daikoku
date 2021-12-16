@@ -308,7 +308,7 @@ const ApiHomeComponent = ({
 
     return (
       <div className="mx-auto mt-3 d-flex flex-column justify-content-center">
-        <h1 style={{ margin: 0 }}>{showAccessModal.error}</h1>
+        <h1 style={{ margin: 0 }}>{translateMethod(showAccessModal.error)}</h1>
         {(teams.length === 1 &&
           (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
           showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (

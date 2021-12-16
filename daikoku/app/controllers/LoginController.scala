@@ -495,7 +495,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                     def getUser() = User(
                       id = userId,
                       tenants = Set(ctx.tenant.id),
-                      origins = Set(ctx.tenant.authProvider), // was set as Otoroshi, must be the provider of the current tenant
+                      origins = Set(ctx.tenant.authProvider),
                       name = accountCreation.name,
                       email = accountCreation.email,
                       picture = accountCreation.avatar,

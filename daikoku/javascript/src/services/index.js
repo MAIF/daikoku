@@ -894,6 +894,7 @@ export const graphql = {
         _id
         type
         apiKeyVisibility
+        apisCreationPermission
         users {
           user {
             userId: id

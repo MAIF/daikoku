@@ -130,6 +130,7 @@ function ApiPricingCardComponent(props) {
   const plan = props.plan;
   const type = plan.type;
   const customDescription = plan.customDescription;
+
   const authorizedTeams = props.myTeams
     .filter((t) => !props.tenant.subscriptionSecurity || t.type !== 'Personal')
     .filter(

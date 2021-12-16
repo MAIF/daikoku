@@ -158,7 +158,7 @@ function TeamApisComponent(props) {
   };
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
-    props.setError({ error: { status: 403, message: 'unauthorized' } });
+    props.setError({ error: { status: 403, message: 'Creation security enabled' } });
   }
   return (
     <Can I={read} a={API} dispatchError={true} team={props.currentTeam}>

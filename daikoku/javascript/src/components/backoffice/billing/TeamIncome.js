@@ -84,7 +84,7 @@ function TeamIncomeComponent(props) {
   };
 
   if (props.tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
-    props.setError({ error: { status: 403, message: 'unauthorized' } });
+    props.setError({ error: { status: 403, message: 'Creation security enabled' } });
   }
 
   const total = state.consumptions.reduce((acc, curr) => acc + curr.billing.total, 0);

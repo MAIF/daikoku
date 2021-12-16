@@ -326,7 +326,8 @@ object SchemaDefinition {
         Field("authorizedOtoroshiGroups", ListType(StringType), resolve = _.value.authorizedOtoroshiGroups.toSeq.map(_.value)),
         Field("apiKeyVisibility", OptionType(StringType), resolve = _.value.apiKeyVisibility.map(_.name)),
         Field("metadata", MapType, resolve = _.value.metadata),
-        Field("_humanReadableId", StringType, resolve = _.value.humanReadableId)
+        Field("_humanReadableId", StringType, resolve = _.value.humanReadableId),
+        Field("apisCreationPermission", OptionType(BooleanType), resolve = _.value.apisCreationPermission)
       )
     )
 

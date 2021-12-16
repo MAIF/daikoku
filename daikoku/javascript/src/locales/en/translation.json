@@ -965,5 +965,6 @@
     "Mode": "Mode",
     "ldap.namefields.help": "username is built by concatenating the provided ldap fields",
     "Go home": "Go home",
-    "notification.accept.on_error.title": "Unable to accept the notification"
+    "notification.accept.on_error.title": "Unable to accept the notification",
+    "You're not authorized on this api": "You're not authorized on this api"
 }
