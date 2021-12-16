@@ -873,36 +873,38 @@ export function TenantEditComponent(props) {
             </React.Suspense>
             <div style={{ height: 60 }} />
             <div className="row form-back-fixedBtns">
-              <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
-                <i className="fas fa-chevron-left me-1" />
-                <Translation i18nkey="Back">Back</Translation>
-              </Link>
-              {!state.create && (
-                <Link
-                  className="btn btn-outline-primary me-1"
-                  to={`/settings/tenants/${state.tenant._humanReadableId}/admins`}>
-                  <i className="fas fa-user-shield me-1" />
-                  <Translation i18nkey="Admins">Admins</Translation>
+              <div className="d-flex justify-content-end">
+                <Link className="btn btn-outline-primary me-1" to={'/settings/tenants'}>
+                  <i className="fas fa-chevron-left me-1" />
+                  <Translation i18nkey="Back">Back</Translation>
                 </Link>
-              )}
-              <button
-                type="button"
-                className="btn btn-outline-success"
-                {...disabled}
-                onClick={save}>
                 {!state.create && (
-                  <span>
-                    <i className="fas fa-save me-1" />
-                    <Translation i18nkey="Save">Save</Translation>
-                  </span>
+                  <Link
+                    className="btn btn-outline-primary me-1"
+                    to={`/settings/tenants/${state.tenant._humanReadableId}/admins`}>
+                    <i className="fas fa-user-shield me-1" />
+                    <Translation i18nkey="Admins">Admins</Translation>
+                  </Link>
                 )}
-                {state.create && (
-                  <span>
-                    <i className="fas fa-save me-1" />
-                    <Translation i18nkey="Create">Create</Translation>
-                  </span>
-                )}
-              </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-success"
+                  {...disabled}
+                  onClick={save}>
+                  {!state.create && (
+                    <span>
+                      <i className="fas fa-save me-1" />
+                      <Translation i18nkey="Save">Save</Translation>
+                    </span>
+                  )}
+                  {state.create && (
+                    <span>
+                      <i className="fas fa-save me-1" />
+                      <Translation i18nkey="Create">Create</Translation>
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </Can>
