@@ -220,11 +220,10 @@ const ApiHomeComponent = ({
           return toastr.error(translateMethod('Error'), results.error);
         }
         return results.forEach((result) => {
-          const team = myTeams.find((t) => t._id === result.subscription.team);
-
           if (result.error) {
             return toastr.error(translateMethod('Error'), result.error);
           } else if (result.creation === 'done') {
+            const team = myTeams.find((t) => t._id === result.subscription.team);
             return toastr.success(
               translateMethod('Done'),
               translateMethod(
@@ -236,6 +235,7 @@ const ApiHomeComponent = ({
               )
             );
           } else if (result.creation === 'waiting') {
+            const team = myTeams.find((t) => t._id === result.subscription.team);
             return toastr.info(
               translateMethod('Pending request'),
               translateMethod(
