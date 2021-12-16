@@ -22,8 +22,8 @@ object tenantSecurity {
       FastFuture.successful(true)
     } else {
       tenant.creationSecurity
-        .map(
-          _ =>
+        .map {
+          case true =>
             env.dataStore.teamRepo
               .forTenant(tenant)
               .find(Json.obj("apisCreationPermission" -> true))
@@ -33,13 +33,15 @@ object tenantSecurity {
                 else
                   teams.exists { team =>
                     team.users.exists { u: UserWithPermission =>
-                      user.id == u.userId ||
-                      u.teamPermission.name == Administrator.name ||
-                      u.teamPermission.name == ApiEditor.name
+                      user.id == u.userId && (
+                        u.teamPermission.name == Administrator.name ||
+                          u.teamPermission.name == ApiEditor.name
+                        )
                     }
                   }
-            }
-        )
+              }
+          case false => FastFuture.successful(true)
+        }
         .getOrElse(FastFuture.successful(true))
     }
   }
