@@ -399,17 +399,19 @@ const DaikokuAppComponent = ({ user, tenant, loginProvider, loginAction }) => {
                 </FrontOfficeRoute>
               }
             />
-            {['/:teamId/:apiId/:versionId/labels', '/:teamId/:apiId/:versionId/issues*'].map((r) => (
-              <Route
-                key={r}
-                path={r}
-                element={
-                  <FrontOfficeRoute>
-                    <ApiHome tab="issues" />
-                  </FrontOfficeRoute>
-                }
-              />
-            ))}
+            {['/:teamId/:apiId/:versionId/labels', '/:teamId/:apiId/:versionId/issues*'].map(
+              (r) => (
+                <Route
+                  key={r}
+                  path={r}
+                  element={
+                    <FrontOfficeRoute>
+                      <ApiHome tab="issues" />
+                    </FrontOfficeRoute>
+                  }
+                />
+              )
+            )}
             {['/:teamId/:apiId/:versionId', '/:teamId/:apiId/:versionId/description'].map((r) => (
               <Route
                 key={r}
@@ -482,8 +484,7 @@ const TeamBackOfficeRouter = ({ tenant }) => {
 
   function getMyTeam() {
     Services.oneOfMyTeam(params.teamId).then((team) => {
-      if (team.error)
-        dispatch(setError(team.error));
+      if (team.error) dispatch(setError(team.error));
       else dispatch(updateTeamPromise(team));
       setLoading(false);
     });
@@ -516,11 +517,7 @@ const UnauthenticatedRouteComponent = ({ connectedUser, children, title }) => {
     return <Navigate to="/" />;
   }
 
-  return (
-    <RouteWithTitle title={title}>
-      {children}
-    </RouteWithTitle>
-  );
+  return <RouteWithTitle title={title}>{children}</RouteWithTitle>;
 };
 
 const UnauthenticatedRoute = connect(mapStateToProps)(UnauthenticatedRouteComponent);

@@ -168,10 +168,7 @@ export function TeamApiPost({ team, params, api, ...props }) {
   return (
     <div>
       <Routes>
-        <Route
-          path="/new"
-          element={<ApiPost publishPost={publishPost} params={params} />}
-        />
+        <Route path="/new" element={<ApiPost publishPost={publishPost} params={params} />} />
         <Route
           path="/"
           element={

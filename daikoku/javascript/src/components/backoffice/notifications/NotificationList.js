@@ -88,14 +88,10 @@ function NotificationListComponent(props) {
       }),
     });
     Services.acceptNotificationOfTeam(notificationId, values)
-      .then(res => {
+      .then((res) => {
         if (res.error)
-          window.alert(
-            res.error,
-            translateMethod('notification.accept.on_error.title')
-          );
-        else
-          return Promise.resolve()
+          window.alert(res.error, translateMethod('notification.accept.on_error.title'));
+        else return Promise.resolve();
       })
       .then(() => Services.myNotifications(0, state.notifications.length))
       .then(({ notifications, count }) =>
@@ -126,7 +122,7 @@ function NotificationListComponent(props) {
           count,
           untreatedCount: count,
           untreatedNotifications: notifications.filter((n) => isUntreatedNotification(n)),
-        })
+        });
       });
   };
 

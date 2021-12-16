@@ -284,21 +284,21 @@ export const SubscriptionMetadataModal = (props) => {
                 min="0"
                 label={translateMethod('Max. requests per second')}
                 value={customMaxPerSecond}
-                onChange={value => setCustomMaxPerSecond(Number(value))}
+                onChange={(value) => setCustomMaxPerSecond(Number(value))}
               />
               <NumberInput
                 step="1"
                 min="0"
                 label={translateMethod('Max. requests per day')}
                 value={customMaxPerDay}
-                onChange={value => setCustomMaxPerDay(Number(value))}
+                onChange={(value) => setCustomMaxPerDay(Number(value))}
               />
               <NumberInput
                 step="1"
                 min="0"
                 label={translateMethod('Max. requests per month')}
                 value={customMaxPerMonth}
-                onChange={value => setCustomMaxPerMonth(Number(value))}
+                onChange={(value) => setCustomMaxPerMonth(Number(value))}
               />
             </Collapse>
             <Collapse label={translateMethod('Other custom props')} collapsed={true}>

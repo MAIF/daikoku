@@ -122,7 +122,7 @@ function TeamBackOfficeHomeComponent(props) {
                     </Translation>
                   </span>
                 </>
-              ) :
+              ) : (
                 <>
                   <span className="home-tile-number">{1}</span>
                   <span className="home-tile-text">
@@ -130,7 +130,8 @@ function TeamBackOfficeHomeComponent(props) {
                       members
                     </Translation>
                   </span>
-                </>}
+                </>
+              )}
             </Link>
             <Link to={'/notifications'} className="home-tile">
               <span className="home-tile-number">{team.notificationCount}</span>
@@ -326,7 +327,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
                       <NavItem
                         to={`/${currentTeam._humanReadableId}/settings/assets`}
                         icon="tools"
-                        name={translateMethod("Assets")}
+                        name={translateMethod('Assets')}
                         subItem={true}
                       />
                     </Can>
@@ -395,7 +396,7 @@ const TeamBackOfficeComponent = ({ currentTeam, tenant, isLoading, error, title 
                       <NavItem
                         to={`/${currentTeam._humanReadableId}/settings/income`}
                         icon="file-invoice-dollar"
-                        name={translateMethod("Income")}
+                        name={translateMethod('Income')}
                         subItem={true}
                       />
                     </Can>

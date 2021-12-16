@@ -13,7 +13,7 @@ import { I18nContext } from '../../../../core';
 export function ApiIssue({ ownerTeam, ...props }) {
   const { issueId, versionId, apiId } = useParams();
   const [api, setRootApi] = useState();
-  const location = useLocation()
+  const location = useLocation();
 
   const [filter, setFilter] = useState('open');
   const [selectedVersion, setSelectedVersion] = useState({ value: 'all', label: 'All' });
@@ -41,21 +41,18 @@ export function ApiIssue({ ownerTeam, ...props }) {
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;
 
-  const showLabels = location.pathname.endsWith("labels");
+  const showLabels = location.pathname.endsWith('labels');
 
   if (!api) return null;
 
   if (showLabels)
-    return <div className="container-fluid">
-      <Can
-        I={manage}
-        a={API}
-        team={ownerTeam}
-        orElse={<Navigate to="/" />}
-      >
-        <TeamApiIssueTags value={api} onChange={onChange} />
-      </Can>
-    </div>
+    return (
+      <div className="container-fluid">
+        <Can I={manage} a={API} team={ownerTeam} orElse={<Navigate to="/" />}>
+          <TeamApiIssueTags value={api} onChange={onChange} />
+        </Can>
+      </div>
+    );
 
   return (
     <div className="container-fluid">

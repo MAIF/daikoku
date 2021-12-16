@@ -50,19 +50,23 @@ const ErrorComponent = ({ error, tenant, unsetError }) => {
             <p data-p={label}>{label}</p>
           </div>
           <div>
-            <Link className="btn btn-access-negative mr-1" to="/apis" onClick={() => {
-              unsetError()
-            }}>
-              <i className="fas fa-home" /> {translateMethod("Go home")}
+            <Link
+              className="btn btn-access-negative mr-1"
+              to="/apis"
+              onClick={() => {
+                unsetError();
+              }}
+            >
+              <i className="fas fa-home" /> {translateMethod('Go home')}
             </Link>
             <button
               className="btn btn-access-negative"
               onClick={() => {
-                navigate(-1)
-                setTimeout(unsetError, 300)
+                navigate(-1);
+                setTimeout(unsetError, 300);
               }}
             >
-              <i className="fas fa-angle-double-left" /> {translateMethod("go_back")}
+              <i className="fas fa-angle-double-left" /> {translateMethod('go_back')}
             </button>
           </div>
         </div>
@@ -78,7 +82,7 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = {
   setError: (error) => setError(error),
-  unsetError: () => unsetError()
+  unsetError: () => unsetError(),
 };
 
 export const Error = connect(mapStateToProps, mapDispatchToProps)(ErrorComponent);
