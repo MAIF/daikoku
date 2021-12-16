@@ -1680,11 +1680,11 @@ object json {
         o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes)),
       "creationSecurity" -> o.creationSecurity
         .map(JsBoolean)
-        .getOrElse(JsNull)
+        .getOrElse(JsBoolean(false))
         .as[JsValue],
       "subscriptionSecurity" -> o.subscriptionSecurity
         .map(JsBoolean)
-        .getOrElse(JsNull)
+        .getOrElse(JsBoolean(true))
         .as[JsValue],
       "apiReferenceHideForGuest" -> o.apiReferenceHideForGuest
         .map(JsBoolean)
@@ -1692,7 +1692,7 @@ object json {
         .as[JsValue],
       "hideTeamsPage" -> o.hideTeamsPage
         .map(JsBoolean)
-        .getOrElse(JsNull)
+        .getOrElse(JsBoolean(false))
         .as[JsValue],
       "defaultMessage" -> o.defaultMessage
         .map(JsString.apply)
