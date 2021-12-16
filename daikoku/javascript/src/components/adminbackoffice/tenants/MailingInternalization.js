@@ -80,7 +80,7 @@ const Collapse = ({
           <span style={{ fontWeight: 'bold', flex: 1 }}>{label}</span>
           <div style={{ flex: 1 }} className="text-center">
             {getRequiredVariables(defaultTranslation).map((word, i) => (
-              <span className="badge badge-info me-2" key={`translationKey${i}`}>
+              <span className="badge bg-info me-2" key={`translationKey${i}`}>
                 [{word}]
               </span>
             ))}

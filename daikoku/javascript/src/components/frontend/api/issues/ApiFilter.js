@@ -72,7 +72,7 @@ export function ApiFilter({
             <Link to={`${pathname}/labels`} className="btn btn-outline-primary">
               <i className="fa fa-tag me-1" />
               {translateMethod('issues.tags')}
-              <span className="badge badge-secondary ms-2">{tags.length || 0}</span>
+              <span className="badge bg-secondary ms-2">{tags.length || 0}</span>
             </Link>
           </Can>
           <Link to={`${pathname}/issues/new`} className="btn btn-outline-success ms-1">

@@ -330,7 +330,7 @@ export function ApiTimelineIssue({ issueId, connectedUser, team, api, basePath }
                 <>
                   {(tags || []).map((tag) => (
                     <span
-                      className="badge badge-primary me-1"
+                      className="badge bg-primary me-1"
                       style={{
                         backgroundColor: api.issuesTags.find((t) => t.id === tag.value).color,
                       }}

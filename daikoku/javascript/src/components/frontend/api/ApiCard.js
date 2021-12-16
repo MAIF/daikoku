@@ -134,7 +134,7 @@ export const ApiCard = (props) => {
             <i className="fas fa-tag me-2" />
             {api.tags.map((tag) => (
               <span
-                className="badge badge-warning me-1 cursor-pointer"
+                className="badge bg-warning me-1 cursor-pointer"
                 key={tag}
                 onClick={() => props.handleTagSelect(tag)}>
                 {tag}
@@ -149,7 +149,7 @@ export const ApiCard = (props) => {
             <i className="fas fa-folder me-2" />
             {api.categories.map((category) => (
               <small
-                className="badge badge-warning me-1 cursor-pointer"
+                className="badge bg-warning me-1 cursor-pointer"
                 key={category}
                 onClick={() => props.handleCategorySelect(category)}>
                 {category}

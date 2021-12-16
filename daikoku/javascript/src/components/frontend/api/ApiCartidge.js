@@ -35,13 +35,13 @@ export function ApiCartidge(props) {
       <Separator />
       <span>
         <Translation i18nkey="Version">Version</Translation>
-        <span className="badge badge-info ms-1">{api.currentVersion}</span>
+        <span className="badge bg-info ms-1">{api.currentVersion}</span>
       </span>
       <Separator />
       <span>
         <Translation i18nkey="Supported versions">Supported versions</Translation>
         {(api.supportedVersions || []).map((v, idx) => (
-          <span key={idx} className="badge badge-info ms-1">
+          <span key={idx} className="badge bg-info ms-1">
             {v}
           </span>
         ))}
@@ -50,7 +50,7 @@ export function ApiCartidge(props) {
       <span>
         <Translation i18nkey="Tags">Tags</Translation>
         {(api.tags || []).map((a, idx) => (
-          <span key={idx} className="badge badge-warning ms-1">
+          <span key={idx} className="badge bg-warning ms-1">
             {a}
           </span>
         ))}
@@ -60,7 +60,7 @@ export function ApiCartidge(props) {
         <Translation i18nkey="Visibility">Visibility</Translation>
         <span
           className={`badge ms-1 ${
-            api.visibility === 'Public' ? 'badge-success' : 'badge-danger'
+            api.visibility === 'Public' ? 'bg-success' : 'bg-danger'
           }`}>
           {translateMethod(api.visibility)}
         </span>
@@ -70,7 +70,7 @@ export function ApiCartidge(props) {
         <>
           <span>
             <Translation i18nkey="Default plan">Default plan</Translation>
-            <span className="badge badge-primary word-break ms-1" style={{ whiteSpace: 'normal' }}>
+            <span className="badge bg-primary word-break ms-1" style={{ whiteSpace: 'normal' }}>
               {defaultPlan.customName || translateMethod(pricing)}
             </span>
           </span>

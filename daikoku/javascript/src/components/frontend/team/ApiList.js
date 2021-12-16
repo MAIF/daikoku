@@ -421,7 +421,7 @@ const Top = (props) => {
       {props.list.slice(0, 10).map((item, idx) => {
         return (
           <span
-            className="badge badge-warning me-1 cursor-pointer"
+            className="badge bg-warning me-1 cursor-pointer"
             key={idx}
             onClick={() => props.handleClick(item)}>
             {props.formatter(item)}

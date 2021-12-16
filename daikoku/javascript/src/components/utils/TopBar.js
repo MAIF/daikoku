@@ -238,12 +238,12 @@ const TopBarComponent = (props) => {
                     (props.tenant.admins || []).indexOf(props.connectedUser._id) > -1
                   }>
                   {isMaintenanceMode && (
-                    <span className="badge badge-danger me-3">
+                    <span className="badge bg-danger me-3">
                       {translateMethod('Global maintenance mode enabled')}
                     </span>
                   )}
                   {isTranslationMode && (
-                    <span className="badge badge-warning me-3">
+                    <span className="badge bg-warning me-3">
                       {translateMethod('Translation mode enabled')}
                     </span>
                   )}

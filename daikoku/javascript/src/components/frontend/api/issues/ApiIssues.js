@@ -47,7 +47,7 @@ export function ApiIssues({ filter, api, selectedVersion }) {
                     .sort((a, b) => (a.name < b.name ? -1 : 1))
                     .map((tag, i) => (
                       <span
-                        className="badge badge-primary me-1"
+                        className="badge bg-primary me-1"
                         style={{ backgroundColor: tag.color }}
                         key={`issue-${seqId}-tag${i}`}>
                         {tag.name}
@@ -72,7 +72,7 @@ export function ApiIssues({ filter, api, selectedVersion }) {
               </div>
             </div>
             <div className="py-2 px-3">
-              <span className="badge badge-info">{apiVersion}</span>
+              <span className="badge bg-info">{apiVersion}</span>
             </div>
           </div>
         )

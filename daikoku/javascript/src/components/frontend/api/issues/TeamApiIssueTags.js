@@ -43,7 +43,7 @@ export function TeamApiIssueTags({ value, onChange }) {
           {api.issuesTags.map((issueTag, i) => (
             <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
               <span
-                className="badge badge-primary d-flex align-items-center justify-content-center px-3 py-2"
+                className="badge bg-primary d-flex align-items-center justify-content-center px-3 py-2"
                 style={{
                   backgroundColor: issueTag.color,
                   color: '#fff',
