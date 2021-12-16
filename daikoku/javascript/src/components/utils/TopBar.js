@@ -178,7 +178,6 @@ const TopBarComponent = (props) => {
                 className="navbar-brand d-flex align-items-center mr-2"
                 title="Daikoku home"
                 style={{
-                  // maxWidth: '59px',
                   maxHeight: '38px',
                 }}
               >
@@ -187,7 +186,7 @@ const TopBarComponent = (props) => {
                     src={props.tenant.logo}
                     style={{
                       height: 'auto',
-                      maxWidth: '100%',
+                      maxWidth: '59px',
                     }}
                   />
                 )}
