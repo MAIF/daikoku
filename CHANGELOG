@@ -216,3 +216,56 @@ We'd like to thank all the contributors who worked on this release!
 - An authorized team can't access to private API [#318](https://github.com/MAIF/daikoku/issues/318)
 - Admin API seems to be not created on first Daikoku initialization [#285](https://github.com/MAIF/daikoku/issues/285)
 
+## [v1.5.0] - 2021-12-17
+
+## :star: New Features
+
+- improve the retrieval of ldap fields [#364](https://github.com/MAIF/daikoku/issues/364)
+- Add a way to render robot.txt for a tenant [#352](https://github.com/MAIF/daikoku/issues/352)
+- invited users shouldn't be visibles on the user list [#351](https://github.com/MAIF/daikoku/issues/351)
+- btn edit to latest api version [#348](https://github.com/MAIF/daikoku/issues/348)
+- Rework back office api sidebar [#332](https://github.com/MAIF/daikoku/issues/332)
+- Use graphQL for reading apis [#297](https://github.com/MAIF/daikoku/issues/297)
+- A user can ask api access for all teams that he is member  [#294](https://github.com/MAIF/daikoku/issues/294)
+- Tenant admin should be able to overwrite translations [#289](https://github.com/MAIF/daikoku/issues/289)
+- Custom organization description [#288](https://github.com/MAIF/daikoku/issues/288)
+- [Postgres] : Check if table exists before create it [#283](https://github.com/MAIF/daikoku/issues/283)
+- Register and login buttons visible when user is not logged in [#275](https://github.com/MAIF/daikoku/issues/275)
+- Support full mailing customization [#271](https://github.com/MAIF/daikoku/issues/271)
+- APIkeys aggregation [#270](https://github.com/MAIF/daikoku/issues/270)
+- API versioning [#269](https://github.com/MAIF/daikoku/issues/269)
+- Team invitation [#266](https://github.com/MAIF/daikoku/issues/266)
+- Subscriptions must be cross APIs due to otoroshi service groups usages [#120](https://github.com/MAIF/daikoku/issues/120)
+- An api plan can be linked with 1 to n services instead of service group  [#119](https://github.com/MAIF/daikoku/issues/119)
+- ability to select service instead of a group service [#55](https://github.com/MAIF/daikoku/issues/55)
+
+## :beetle: Bug Fixes
+
+- Some bugs are alive in rc.5 [#367](https://github.com/MAIF/daikoku/issues/367)
+- Construction mode blocks tenant admin [#363](https://github.com/MAIF/daikoku/issues/363)
+- [1.5.0-alpha11] Unable to upload team asset [#360](https://github.com/MAIF/daikoku/issues/360)
+- update a plan type doesn't update plan data [#350](https://github.com/MAIF/daikoku/issues/350)
+- update the testing conf. [#349](https://github.com/MAIF/daikoku/issues/349)
+- ApiKey aggregation doesn't work for manual subscription [#347](https://github.com/MAIF/daikoku/issues/347)
+- The custom name of plan is not displayed on notification list (but plan type) [#346](https://github.com/MAIF/daikoku/issues/346)
+- Initialization does not work [#345](https://github.com/MAIF/daikoku/issues/345)
+- Invitation for a user does not work for an external user [#344](https://github.com/MAIF/daikoku/issues/344)
+- A non super admin user can't subscribe to an api [#343](https://github.com/MAIF/daikoku/issues/343)
+- add missing email html balise and fix thst list of required variables [#339](https://github.com/MAIF/daikoku/pull/339)
+- Wrong required variables read from the description of message [#338](https://github.com/MAIF/daikoku/issues/338)
+- Can't extend the rights of an existing api key [#329](https://github.com/MAIF/daikoku/issues/329)
+- Duplicate a plan doesn,t work [#328](https://github.com/MAIF/daikoku/issues/328)
+- [v1.5] Metadata behaviour with same name [#327](https://github.com/MAIF/daikoku/issues/327)
+- [v1.5] Switch otoroshi instances in plan edition does'nt refresh groups & services [#320](https://github.com/MAIF/daikoku/issues/320)
+- [alpha-3] : Can't display consumption of an api key [#312](https://github.com/MAIF/daikoku/issues/312)
+- Content type not supported using html documentation page [#310](https://github.com/MAIF/daikoku/issues/310)
+- Wrong messages format using smtp client  [#306](https://github.com/MAIF/daikoku/issues/306)
+- if present, read exposedOn port from tenant config [#305](https://github.com/MAIF/daikoku/issues/305)
+- Send mail with user default language [#290](https://github.com/MAIF/daikoku/issues/290)
+
+## :heart: Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@Zwiterrion](https://github.com/Zwiterrion)
+
