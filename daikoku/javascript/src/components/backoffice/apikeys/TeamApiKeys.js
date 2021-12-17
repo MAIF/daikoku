@@ -18,8 +18,8 @@ export function TeamApiKeysComponent(props) {
   useEffect(() => {
     setShowApiKey(
       props.connectedUser.isDaikokuAdmin ||
-      !props.currentTeam.showApiKeyOnlyToAdmins ||
-      isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
+        !props.currentTeam.showApiKeyOnlyToAdmins ||
+        isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
     );
   }, [props.connectedUser.isDaikokuAdmin, props.currentTeam.showApiKeyOnlyToAdmins]);
 
@@ -78,8 +78,9 @@ export function TeamApiKeysComponent(props) {
       )
       .then((ok) => {
         if (ok) {
-          Services.cleanArchivedSubscriptions(props.currentTeam._id)
-            .then(() => tableRef?.current?.update());
+          Services.cleanArchivedSubscriptions(props.currentTeam._id).then(() =>
+            tableRef?.current?.update()
+          );
         }
       });
   };

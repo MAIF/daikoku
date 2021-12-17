@@ -64,10 +64,9 @@ function MyHomeComponent(props) {
   }, [props.connectedUser._id, location.pathname]);
 
   const askForApiAccess = (api, teams) =>
-    Services.askForApiAccess(teams, api._id)
-    .then(() => {
-      toastr.info(translateMethod('ask.api.access.info', false, "", api.name))
-      fetchData()
+    Services.askForApiAccess(teams, api._id).then(() => {
+      toastr.info(translateMethod('ask.api.access.info', false, '', api.name));
+      fetchData();
     });
 
   const toggleStar = (api) => {

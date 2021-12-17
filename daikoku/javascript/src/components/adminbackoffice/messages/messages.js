@@ -166,7 +166,11 @@ const AdminMessagesComponent = (props) => {
             }))}
             value={null}
             onChange={({ value }) => createDialog(value)}
-            filterOption={(data, search) => _.values(data.value).filter(e => typeof e === 'string').some((v) => v.includes(search))}
+            filterOption={(data, search) =>
+              _.values(data.value)
+                .filter((e) => typeof e === 'string')
+                .some((v) => v.includes(search))
+            }
             classNamePrefix="reactSelect"
           />
           {_.orderBy(

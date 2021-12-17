@@ -156,7 +156,11 @@ const TenantAdminListComponent = (props) => {
               options={addableAdmins.map(adminToSelector)}
               onChange={(slug) => setSelectedAdmin(slug.value)}
               value={selectedAdmin}
-              filterOption={(data, search) => _.values(data.value).filter(e => typeof e === 'string').some((v) => v.includes(search))}
+              filterOption={(data, search) =>
+                _.values(data.value)
+                  .filter((e) => typeof e === 'string')
+                  .some((v) => v.includes(search))
+              }
               classNamePrefix="reactSelect"
             />
             <input
