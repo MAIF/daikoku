@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { toastr } from 'react-redux-toastr';
 
 import { I18nContext, openContactModal, updateTeamPromise } from '../../../core';
 import * as Services from '../../../services';
@@ -63,7 +64,11 @@ function MyHomeComponent(props) {
   }, [props.connectedUser._id, location.pathname]);
 
   const askForApiAccess = (api, teams) =>
-    Services.askForApiAccess(teams, api._id).then(() => fetchData());
+    Services.askForApiAccess(teams, api._id)
+    .then(() => {
+      toastr.info(translateMethod('ask.api.access.info', false, "", api.name))
+      fetchData()
+    });
 
   const toggleStar = (api) => {
     Services.toggleStar(api._id).then((res) => {

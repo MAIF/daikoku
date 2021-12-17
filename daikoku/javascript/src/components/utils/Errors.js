@@ -5,7 +5,7 @@ import { I18nContext } from '../../locales/i18n-context';
 import { setError, unsetError } from '../../core';
 
 const getErrorLabel = (status, error) => {
-  if (status) console.log(status, error);
+  // if (status) console.log(status, error);
   if (status === 400) {
     return 'Bad Request';
   } else if (status === 401) {
@@ -76,7 +76,7 @@ const ErrorComponent = ({ error, tenant, unsetError }) => {
 };
 
 const mapStateToProps = (state) => ({
-  tenant: state.context.tenant.name,
+  tenant: state.context.tenant,
   error: state.error,
 });
 

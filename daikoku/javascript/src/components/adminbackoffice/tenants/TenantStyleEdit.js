@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { UserBackOffice } from '../../backoffice';
-import { Can, daikoku, manage, Option } from '../../utils';
+import { Can, tenant as TENANT, manage, Option } from '../../utils';
 
 import styleVariables from '!!raw-loader!../../../style/variables.scss';
 import { I18nContext } from '../../../core';
@@ -83,7 +83,7 @@ export function TenantStyleEditComponent(props) {
   return (
     <UserBackOffice tab="Tenants" isLoading={!state.tenant}>
       {state.tenant && (
-        <Can I={manage} a={daikoku} dispatchError>
+        <Can I={manage} a={TENANT} dispatchError>
           <div className="d-flex flex-row justify-content-between mb-1">
             <div>
               <button

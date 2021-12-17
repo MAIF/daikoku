@@ -918,6 +918,7 @@ export const graphql = {
           smallDescription
           isDefault
           visibility
+          image
           possibleUsagePlans {
             _id
             customName

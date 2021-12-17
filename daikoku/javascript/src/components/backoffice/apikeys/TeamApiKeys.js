@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { connect } from 'react-redux';
 
@@ -8,6 +8,7 @@ import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
 import { I18nContext } from '../../../core';
 
 export function TeamApiKeysComponent(props) {
+  const tableRef = useRef();
   const [showApiKey, setShowApiKey] = useState(false);
 
   const { translateMethod, Translation } = useContext(I18nContext);
@@ -17,8 +18,8 @@ export function TeamApiKeysComponent(props) {
   useEffect(() => {
     setShowApiKey(
       props.connectedUser.isDaikokuAdmin ||
-        !props.currentTeam.showApiKeyOnlyToAdmins ||
-        isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
+      !props.currentTeam.showApiKeyOnlyToAdmins ||
+      isUserIsTeamAdmin(props.connectedUser, props.currentTeam)
     );
   }, [props.connectedUser.isDaikokuAdmin, props.currentTeam.showApiKeyOnlyToAdmins]);
 
@@ -77,7 +78,8 @@ export function TeamApiKeysComponent(props) {
       )
       .then((ok) => {
         if (ok) {
-          Services.cleanArchivedSubscriptions(props.currentTeam._id).then(() => table.update());
+          Services.cleanArchivedSubscriptions(props.currentTeam._id)
+            .then(() => tableRef?.current?.update());
         }
       });
   };
@@ -110,7 +112,8 @@ export function TeamApiKeysComponent(props) {
               showActions={false}
               showLink={false}
               extractKey={(item) => item._id}
-              injectTable={(t) => (table = t)}
+              // injectTable={(t) => (table = t)}
+              ref={tableRef}
             />
             <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
               <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>

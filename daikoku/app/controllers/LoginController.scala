@@ -215,7 +215,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                                        env,
                                        ctx.tenant)
           case Some(form) =>
-            (form.get("username").map(_.last), form.get("password").map(_.last)) match {
+            (form.get("username").map(_.last).map(_.toLowerCase), form.get("password").map(_.last)) match {
               case (Some(username), Some(password)) =>
                 p match {
                   case AuthProvider.Local =>

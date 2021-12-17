@@ -1458,7 +1458,7 @@ function TeamApiPricingComponent({ value, tenant, ...props }) {
             <button onClick={addNewPlan} type="button" className="btn btn-outline-primary mr-1">
               {translateMethod('add a new plan')}
             </button>
-            {value.possibleUsagePlans.length > 1 && (
+            {!!value.parent && (
               <button
                 onClick={importPlan}
                 type="button"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
+import React, { useState, useEffect, useMemo, useContext, useImperativeHandle } from 'react';
 import { useTable, usePagination, useSortBy, useFilters } from 'react-table';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -18,7 +18,7 @@ export function useForceUpdate() {
   return update;
 }
 
-export const Table = ({
+export const Table = React.forwardRef(({
   fetchItems,
   columns,
   injectTopBar,
@@ -27,12 +27,18 @@ export const Table = ({
   defaultSortDesc,
   search,
   pageSizee = 15,
-  mobileSize = 767,
-}) => {
+  mobileSize = 767
+}, ref) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(undefined);
   const forceUpdate = useForceUpdate();
+
+  useImperativeHandle(ref, () => ({
+    update() {
+      update();
+    },
+  }));
 
   const { translateMethod, Translation } = useContext(I18nContext);
 
@@ -295,7 +301,7 @@ export const Table = ({
       </div>
     </div>
   );
-};
+});
 
 Table.propTypes = {
   columns: PropTypes.array.isRequired,

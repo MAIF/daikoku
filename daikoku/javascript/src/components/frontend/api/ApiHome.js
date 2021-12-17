@@ -264,8 +264,7 @@ const ApiHomeComponent = ({
     return Option(myTeams.find((team) => api.team === team._id)).fold(
       () => '#',
       (adminTeam) =>
-        `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${
-          api.currentVersion
+        `/${adminTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion
         }/${matchingFrontAndBackOfficeRoutes[tab] || tab}`
     );
   };
@@ -313,7 +312,7 @@ const ApiHomeComponent = ({
         <h1 style={{ margin: 0 }}>{translateMethod(showAccessModal.error)}</h1>
         {(teams.length === 1 &&
           (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
-        showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
+          showAccessModal.api.authorizations.every((auth) => auth.pending && !auth.authorized) ? (
           <>
             <h2 className="text-center my-3">{translateMethod('request_already_pending')}</h2>
             <button
@@ -339,9 +338,11 @@ const ApiHomeComponent = ({
               authorizedTeams={authorizedTeams}
               teams={teams}
               action={(teams) => {
-                Services.askForApiAccess(teams, showAccessModal.api._id).then((_) =>
-                  updateSubscriptions(showAccessModal.api._id)
-                );
+                Services.askForApiAccess(teams, showAccessModal.api._id)
+                  .then((_) => {
+                    toastr.info(translateMethod('ask.api.access.info', false, "", showAccessModal.api.name))
+                    updateSubscriptions(showAccessModal.api._id)
+                  });
               }}
             >
               <button className="btn btn-success mx-auto" style={{ width: 'fit-content' }}>
@@ -402,9 +403,8 @@ const ApiHomeComponent = ({
               </li>
               <li className="nav-item">
                 <Link
-                  className={`nav-link ${
-                    tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
-                  }`}
+                  className={`nav-link ${tab === 'documentation' || tab === 'documentation-page' ? 'active' : ''
+                    }`}
                   to={`/${params.teamId}/${apiId}/${versionId}/documentation`}
                 >
                   <Translation i18nkey="Documentation">Documentation</Translation>

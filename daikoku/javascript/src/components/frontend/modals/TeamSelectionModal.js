@@ -108,11 +108,6 @@ export const TeamSelectorModal = ({
             </div>
           )}
           {teams
-            // .filter(
-            //   (team) =>
-            //     allowMultipleDemand ||
-            //     (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id))
-            // )
             .map((team) => {
               return (
                 <div
@@ -121,6 +116,9 @@ export const TeamSelectorModal = ({
                     selectable:
                       allowMultipleDemand ||
                       (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)),
+                    'cursor-forbidden':
+                      !(allowMultipleDemand ||
+                      (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)))
                   })}
                   onClick={() => doTeamAction(team)}
                 >
